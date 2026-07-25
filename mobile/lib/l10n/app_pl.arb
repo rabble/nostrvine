@@ -4062,6 +4062,8 @@
     },
     "profileWebsiteSemanticLabel": "Visit website: {url}",
     "profileCouldNotOpenWebsite": "Could not open website",
+    "profileCreatorSiteVisitLabel": "divine.space",
+    "profileCreatorSiteOwnLabel": "moja divine.space",
     "profileSetupWebsiteLabel": "Website (Optional)",
     "profileSetupWebsiteHint": "https://yoursite.com",
     "videoEditorTransformLabel": "Przekształć",

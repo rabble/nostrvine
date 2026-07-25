@@ -34,12 +34,14 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required FollowRepository followRepository,
     bool requireRawKind0 = false,
     IdentityClaimsRepository? identityClaimsRepository,
+    List<Duration> rawKind0RetryDelays = _defaultRawKind0RetryDelays,
   }) : _profileRepository = profileRepository,
        _blocklistRepository = contentBlocklistRepository,
        _currentUserPubkey = currentUserPubkey,
        _followRepository = followRepository,
        _requireRawKind0 = requireRawKind0,
        _identityClaimsRepository = identityClaimsRepository,
+       _rawKind0RetryDelays = rawKind0RetryDelays,
        super(const OtherProfileInitial()) {
     on<OtherProfileLoadRequested>(_onLoadRequested);
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
@@ -57,6 +59,16 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   final FollowRepository _followRepository;
   final bool _requireRawKind0;
   final IdentityClaimsRepository? _identityClaimsRepository;
+
+  /// Repository-owned raw Kind 0 retry delays. Injectable so tests don't wait
+  /// on real relay backoff.
+  final List<Duration> _rawKind0RetryDelays;
+
+  static const _defaultRawKind0RetryDelays = [
+    Duration(milliseconds: 600),
+    Duration(milliseconds: 1200),
+    Duration(milliseconds: 2400),
+  ];
 
   /// The pubkey of the profile being viewed.
   final String pubkey;
@@ -89,10 +101,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     );
 
     try {
-      final freshProfile = await _profileRepository.fetchFreshProfile(
-        pubkey: pubkey,
-        requireRawKind0: _requireRawKind0,
-      );
+      final freshProfile = await _fetchFreshProfile();
       if (isClosed) return;
       final latestClaims = _claimsFromState(state);
       if (freshProfile != null) {
@@ -160,10 +169,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     );
 
     try {
-      final freshProfile = await _profileRepository.fetchFreshProfile(
-        pubkey: pubkey,
-        requireRawKind0: _requireRawKind0,
-      );
+      final freshProfile = await _fetchFreshProfile();
       if (isClosed) return;
       if (freshProfile != null) {
         emit(
@@ -201,6 +207,17 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     }
+  }
+
+  Future<UserProfile?> _fetchFreshProfile() {
+    if (!_requireRawKind0) {
+      return _profileRepository.fetchFreshProfile(pubkey: pubkey);
+    }
+    return _profileRepository.fetchFreshProfile(
+      pubkey: pubkey,
+      requireRawKind0: true,
+      rawKind0RetryDelays: _rawKind0RetryDelays,
+    );
   }
 
   Future<void> _onVerifiedClaimsRequested(

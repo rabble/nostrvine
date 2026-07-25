@@ -95,6 +95,17 @@ class OtherProfileScreen extends ConsumerWidget {
     );
 
     return BlocProvider(
+      // Re-create the bloc when captured dependencies change. A keyless
+      // create: would keep stale repositories/current-user state after auth or
+      // account changes, and would also miss requireRawKind0 flag flips.
+      key: ValueKey((
+        requireRawKind0,
+        profileRepository,
+        blocklistRepository,
+        nostrClient.publicKey,
+        followRepository,
+        identityClaimsRepository,
+      )),
       create: (context) => OtherProfileBloc(
         pubkey: pubkey,
         profileRepository: profileRepository,

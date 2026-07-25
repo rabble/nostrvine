@@ -18,6 +18,8 @@ const _trustedDomains = {
   'relay.divine.video',
   'cdn.divine.video',
   'stream.divine.video',
+  // First-party creator-site property (profile creator-site CTA).
+  'divine.space',
 };
 
 bool isTrustedExternalLinkHost(String host) {

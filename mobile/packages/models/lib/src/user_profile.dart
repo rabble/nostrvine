@@ -201,6 +201,10 @@ class UserProfile {
   final DateTime createdAt;
   final String eventId;
 
+  /// Whether this profile came from Funnelcake's REST projection instead of a
+  /// raw relay Kind 0 event.
+  bool get isRestProjection => eventId.startsWith('rest-');
+
   /// Raw tags from the source kind 0 event, preserved for callers that need
   /// to inspect them (e.g. NIP-39 `i` identity claim parsing).
   ///

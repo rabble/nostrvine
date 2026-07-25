@@ -9748,6 +9748,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
+  String get profileCreatorSiteVisitLabel => 'divine.space';
+
+  @override
+  String get profileCreatorSiteOwnLabel => 'divine.space saya';
+
+  @override
   String get videoMetadataEditCoverTitle => 'Edit sampul';
 
   @override

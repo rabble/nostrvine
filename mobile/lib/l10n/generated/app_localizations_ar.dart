@@ -9714,6 +9714,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
+  String get profileCreatorSiteVisitLabel => 'divine.space';
+
+  @override
+  String get profileCreatorSiteOwnLabel => 'divine.space الخاص بي';
+
+  @override
   String get videoMetadataEditCoverTitle => 'تعديل الغلاف';
 
   @override

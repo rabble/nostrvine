@@ -679,9 +679,7 @@ void main() {
             when(
               () => mockNostrClient.fetchProfile(testPubkey, useCache: false),
             ).thenAnswer((_) async => null);
-            when(
-              () => mockUserProfilesDao.getProfile(testPubkey),
-            ).thenAnswer(
+            when(() => mockUserProfilesDao.getProfile(testPubkey)).thenAnswer(
               (_) async => UserProfile(
                 pubkey: testPubkey,
                 displayName: 'Cached REST User',
@@ -699,6 +697,96 @@ void main() {
             expect(result, isNull);
           },
         );
+
+        test(
+          'does not repeat raw Kind 0 work after confirming it missing',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileFound(
+                profile: UserProfileData.fromJson(testPubkey, const {
+                  'display_name': 'REST User',
+                  'name': 'restuser',
+                }),
+              ),
+            );
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey, useCache: false),
+            ).thenAnswer((_) async => null);
+
+            final first = await repoWithFunnelcake.fetchFreshProfile(
+              pubkey: testPubkey,
+              requireRawKind0: true,
+            );
+            final second = await repoWithFunnelcake.fetchFreshProfile(
+              pubkey: testPubkey,
+              requireRawKind0: true,
+            );
+
+            expect(first, isNull);
+            expect(second, isNull);
+            verify(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).called(1);
+            verify(
+              () => mockNostrClient.fetchProfile(testPubkey, useCache: false),
+            ).called(1);
+          },
+        );
+
+        test('retries raw Kind 0 after the configured delay', () {
+          fakeAsync((async) {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => UserProfileFound(
+                profile: UserProfileData.fromJson(testPubkey, const {
+                  'display_name': 'REST User',
+                  'name': 'restuser',
+                }),
+              ),
+            );
+
+            var relayFetchCount = 0;
+            when(
+              () => mockNostrClient.fetchProfile(testPubkey, useCache: false),
+            ).thenAnswer((_) async {
+              relayFetchCount += 1;
+              return relayFetchCount == 1 ? null : mockProfileEvent;
+            });
+
+            UserProfile? result;
+            unawaited(
+              repoWithFunnelcake
+                  .fetchFreshProfile(
+                    pubkey: testPubkey,
+                    requireRawKind0: true,
+                    rawKind0RetryDelays: const [Duration(milliseconds: 5)],
+                  )
+                  .then((profile) => result = profile),
+            );
+
+            async.flushMicrotasks();
+            expect(result, isNull);
+            expect(relayFetchCount, equals(1));
+
+            async
+              ..elapse(const Duration(milliseconds: 4))
+              ..flushMicrotasks();
+            expect(result, isNull);
+            expect(relayFetchCount, equals(1));
+
+            async
+              ..elapse(const Duration(milliseconds: 1))
+              ..flushMicrotasks();
+            expect(result, isNotNull);
+            expect(result!.displayName, equals('Test User'));
+            expect(relayFetchCount, equals(2));
+          });
+        });
 
         test('falls back to relay when Funnelcake throws', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -4509,9 +4597,9 @@ void main() {
       });
 
       test('returns null on non-200 response', () async {
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) => Future.value(Response('error', 500)),
-        );
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer((_) => Future.value(Response('error', 500)));
         final result = await profileRepository.getUsernameByPubkey(
           pubkeyHex: pubkey,
         );
@@ -4521,9 +4609,9 @@ void main() {
       test('returns null on a non-object 200 body', () async {
         // Valid JSON but not an object: `as Map` throws a TypeError (an Error,
         // not an Exception), so the catch must be `on Object`.
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) => Future.value(Response('123', 200)),
-        );
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer((_) => Future.value(Response('123', 200)));
         final result = await profileRepository.getUsernameByPubkey(
           pubkeyHex: pubkey,
         );

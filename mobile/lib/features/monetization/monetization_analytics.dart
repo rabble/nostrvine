@@ -41,6 +41,18 @@ void trackMonetizationAffordanceTapped({
   );
 }
 
+void trackCreatorSiteCtaTapped({
+  required AnalyticsEventSink analytics,
+  required bool isOwnProfile,
+}) {
+  unawaited(
+    analytics.logEvent(
+      name: 'creator_site_cta_tapped',
+      parameters: <String, Object>{'is_own_profile': isOwnProfile},
+    ),
+  );
+}
+
 void trackMonetizationOutboundClicked({
   required AnalyticsEventSink analytics,
   required MonetizationLink link,

@@ -12,6 +12,8 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/classic_viner_seed_preload_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 
+import '../helpers/flutter_assets_channel.dart';
+
 class _TrackingClassicVinerService extends ClassicVinerSeedPreloadService {
   _TrackingClassicVinerService({required super.markerDirectoryProvider});
 
@@ -86,8 +88,9 @@ void main() {
     tearDown(() async {
       await db.close();
       rootBundle.clear();
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', null);
+      // Restore the framework's default asset handler (not null, which would
+      // strand asset loading for later suites in the shared VGV isolate).
+      restoreFlutterAssetsDefaultHandler();
     });
 
     test('skips load when database already has events', () async {

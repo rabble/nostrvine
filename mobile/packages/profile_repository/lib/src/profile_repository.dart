@@ -135,6 +135,12 @@ class ProfileRepository {
   /// Session-scoped — cleared on app restart.
   final _confirmedMissing = <String>{};
 
+  /// Pubkeys whose raw relay/indexer Kind 0 was not found after an explicit
+  /// raw-Kind-0 fetch. This is narrower than [_confirmedMissing]: Funnelcake
+  /// may still have a REST projection for the user, but there is no raw Kind 0
+  /// to recover fields that REST strips.
+  final _rawKind0ConfirmedMissing = <String>{};
+
   /// In-memory set of pubkeys known to have cached profiles.
   /// Enables synchronous [hasProfile] checks for subscription
   /// manager filtering.
@@ -229,6 +235,9 @@ class ProfileRepository {
   /// it to the known-cached set.
   Future<void> cacheProfile(UserProfile profile) {
     _confirmedMissing.remove(profile.pubkey);
+    if (!profile.isRestProjection) {
+      _rawKind0ConfirmedMissing.remove(profile.pubkey);
+    }
     _knownCached.add(profile.pubkey);
     return _userProfilesDao.upsertProfile(profile);
   }
@@ -492,24 +501,55 @@ class ProfileRepository {
   Future<UserProfile?> fetchFreshProfile({
     required String pubkey,
     bool requireRawKind0 = false,
+    List<Duration> rawKind0RetryDelays = const [],
   }) {
+    if (requireRawKind0 && _rawKind0ConfirmedMissing.contains(pubkey)) {
+      return Future<UserProfile?>.value();
+    }
+
     // Clear stale _confirmedMissing so we always re-check the REST API.
     // The sentinel may have been set by a batch fetch when the user had
     // no Kind 0 profile, but they may have published one since then.
     _confirmedMissing.remove(pubkey);
 
     // Deduplicate: return existing in-flight future if present.
-    final fetchKey = requireRawKind0 ? '$pubkey#raw-kind0' : pubkey;
+    final fetchKey = requireRawKind0
+        ? '$pubkey#raw-kind0#retry-${rawKind0RetryDelays.length}'
+        : pubkey;
     final existing = _inFlightFetches[fetchKey];
     if (existing != null) return existing;
 
-    final future = _doFetchFreshProfile(
+    final future = _doFetchFreshProfileWithRetries(
       pubkey,
       requireRawKind0: requireRawKind0,
+      rawKind0RetryDelays: rawKind0RetryDelays,
     );
     _inFlightFetches[fetchKey] = future;
 
     return future.whenComplete(() => _inFlightFetches.remove(fetchKey));
+  }
+
+  Future<UserProfile?> _doFetchFreshProfileWithRetries(
+    String pubkey, {
+    required bool requireRawKind0,
+    required List<Duration> rawKind0RetryDelays,
+  }) async {
+    final first = await _doFetchFreshProfile(
+      pubkey,
+      requireRawKind0: requireRawKind0,
+    );
+    if (!requireRawKind0 || first != null) return first;
+
+    for (final delay in rawKind0RetryDelays) {
+      if (delay > Duration.zero) {
+        await Future<void>.delayed(delay);
+      }
+      final retry = await _doFetchFreshProfile(pubkey, requireRawKind0: true);
+      if (retry != null) return retry;
+    }
+
+    _rawKind0ConfirmedMissing.add(pubkey);
+    return null;
   }
 
   Future<UserProfile?> _doFetchFreshProfile(
@@ -640,6 +680,9 @@ class ProfileRepository {
     }
 
     _confirmedMissing.remove(profile.pubkey);
+    if (!profile.isRestProjection) {
+      _rawKind0ConfirmedMissing.remove(profile.pubkey);
+    }
     _knownCached.add(profile.pubkey);
     await _userProfilesDao.upsertProfile(profile);
     return true;
@@ -878,6 +921,7 @@ class ProfileRepository {
     switch (result) {
       case PublishSuccess(:final event):
         final profile = UserProfile.fromNostrEvent(event);
+        _rawKind0ConfirmedMissing.remove(profile.pubkey);
         // A relay confirmed the kind-0 (OK true). The local cache write is
         // non-fatal from here on: a Drift hiccup must never turn a landed
         // publish into a thrown failure, or a durable re-drive would re-publish

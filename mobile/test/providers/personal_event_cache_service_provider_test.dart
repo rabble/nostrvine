@@ -135,14 +135,17 @@ void main() {
 
     Future<void> waitForCachedEvent(
       PersonalEventCacheService service,
-      String eventId,
+      Event event,
     ) async {
       for (var attempt = 0; attempt < 20; attempt++) {
         await pumpEventQueue();
-        if (service.hasEvent(eventId)) {
+        if (service
+            .getEventsByKind(event.kind)
+            .any((cachedEvent) => cachedEvent.id == event.id)) {
           return;
         }
       }
+      fail('Event ${event.id} was not added to kind ${event.kind} index');
     }
 
     test(
@@ -233,7 +236,7 @@ void main() {
         await authenticate();
         await waitForInitialized(service);
         service.cacheUserEvent(ownEvent);
-        await waitForCachedEvent(service, ownEvent.id);
+        await waitForCachedEvent(service, ownEvent);
         expect(service.hasEvent(ownEvent.id), isTrue);
 
         unauthenticate();

@@ -37,6 +37,7 @@ import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
+import 'package:openvine/widgets/profile/profile_creator_site_button.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_support_sheet.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -225,6 +226,20 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       if (mounted) _syncIdentitySkeletonTimer(isLoading: isLoadingIdentity);
     });
 
+    // Monetization links live in the custom Kind 0 fields that Funnelcake's
+    // REST projection strips, so on a cold load the link-stripped REST profile
+    // can arrive before the relay/cache Kind 0. Treat the monetization answer
+    // as authoritative only once the flag is off or a non-REST Kind 0 has
+    // landed, so the creator-actions row can reveal the creator-site pill and
+    // the Tip pill together instead of the creator site rendering first and Tip
+    // popping in a beat later (#6328).
+    final isMonetizationEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
+    );
+    final isMonetizationResolved =
+        !isMonetizationEnabled ||
+        (!isLoadingIdentity && !(effectiveProfile?.isRestProjection ?? false));
+
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
     final profilePictureUrl = (effectiveProfile?.picture?.isNotEmpty == true)
@@ -364,14 +379,13 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     displayNameHint: widget.displayNameHint,
                     accentColor: profileColor,
                     isOwnProfile: widget.isOwnProfile,
+                    monetizationLinks: monetizationLinksForCurrentStorefront(
+                      effectiveProfile?.enabledMonetizationLinks ?? const [],
+                    ),
+                    isMonetizationResolved: isMonetizationResolved,
                   ),
                 ),
               ],
-            ),
-          ),
-          _ProfileSupportButton(
-            links: monetizationLinksForCurrentStorefront(
-              effectiveProfile?.enabledMonetizationLinks ?? const [],
             ),
           ),
           if (!widget.isOwnProfile) ...[
@@ -425,12 +439,12 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
     // projection that cannot carry it, even when the REST timestamp is newer.
     if (suppliedHasMonetization &&
         !blocHasMonetization &&
-        blocProfile.eventId.startsWith('rest-')) {
+        blocProfile.isRestProjection) {
       return suppliedProfile;
     }
     if (blocHasMonetization &&
         !suppliedHasMonetization &&
-        suppliedProfile.eventId.startsWith('rest-')) {
+        suppliedProfile.isRestProjection) {
       return blocProfile;
     }
 
@@ -486,6 +500,9 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   }
 }
 
+/// Tip/support pill rendered inline beside the creator-site pill.
+///
+/// Bare — the enclosing row owns spacing and alignment.
 class _ProfileSupportButton extends ConsumerWidget {
   const _ProfileSupportButton({required this.links});
 
@@ -493,39 +510,37 @@ class _ProfileSupportButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (links.isEmpty) return const SizedBox.shrink();
-    final enabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
-    );
-    if (!enabled) return const SizedBox.shrink();
-
-    final analytics = ref.watch(analyticsEventSinkProvider);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Align(
-        child: DivineButton(
-          key: const Key('profile-support-button'),
-          leadingIcon: .heart,
-          type: .secondary,
-          size: .tiny,
-          label: usesAppleAppStoreTipPolicy
-              ? context.l10n.profileTipButtonLabel
-              : context.l10n.profileSupportButtonLabel,
-          onPressed: () {
-            trackMonetizationAffordanceTapped(
-              analytics: analytics,
-              links: links,
-            );
-            showProfileSupportSheet(
-              context: context,
-              links: links,
-              analytics: analytics,
-            );
-          },
-        ),
-      ),
+    return DivineButton(
+      key: const Key('profile-support-button'),
+      type: .secondary,
+      size: .tiny,
+      label: _supportAffordanceLabel(context),
+      onPressed: () => _openSupportSheet(context, ref, links),
     );
   }
+}
+
+/// Whether the tip/support affordance should be offered for [links].
+bool _showSupportAffordance(WidgetRef ref, List<MonetizationLink> links) =>
+    links.isNotEmpty &&
+    ref.watch(isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks));
+
+/// Visible label for the tip/support affordance — "Tip" on iOS storefronts,
+/// "Support" elsewhere. Deliberately label-only: a bolt glyph reads as
+/// Lightning-Network payment, which this is not.
+String _supportAffordanceLabel(BuildContext context) =>
+    usesAppleAppStoreTipPolicy
+    ? context.l10n.profileTipButtonLabel
+    : context.l10n.profileSupportButtonLabel;
+
+void _openSupportSheet(
+  BuildContext context,
+  WidgetRef ref,
+  List<MonetizationLink> links,
+) {
+  final analytics = ref.read(analyticsEventSinkProvider);
+  trackMonetizationAffordanceTapped(analytics: analytics, links: links);
+  showProfileSupportSheet(context: context, links: links, analytics: analytics);
 }
 
 /// Profile name, NIP-05, bio, and public key display.
