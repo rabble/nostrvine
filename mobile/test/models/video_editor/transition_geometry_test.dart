@@ -12,15 +12,16 @@ void main() {
   const fadeToBlack = ClipTransition(type: ClipTransitionType.fadeToBlack);
 
   group('transitionConsumedPerSide', () {
-    test('an overlap consumes twice its duration per side', () {
+    test('an overlap consumes its duration per side', () {
       final t = dissolve.copyWith(duration: const Duration(milliseconds: 400));
+      // The blend fills the consumed span → 400ms consumed per side.
       expect(
         transitionConsumedPerSide(
           const Duration(seconds: 3),
           const Duration(seconds: 3),
           t,
         ),
-        equals(const Duration(milliseconds: 800)),
+        equals(const Duration(milliseconds: 400)),
       );
     });
 
@@ -51,13 +52,13 @@ void main() {
   });
 
   group('transitionDurationForConsumed', () {
-    test('inverts the overlap geometry (consumed × 0.5)', () {
+    test('inverts the overlap geometry (identity — blend fills consumed)', () {
       expect(
         transitionDurationForConsumed(
           const Duration(milliseconds: 800),
           ClipTransitionType.dissolve,
         ),
-        equals(const Duration(milliseconds: 400)),
+        equals(const Duration(milliseconds: 800)),
       );
     });
 
@@ -141,7 +142,7 @@ void main() {
     });
 
     test('passes an in-bounds overlap through unchanged', () {
-      // Two 2s clips → overlap ceiling is half the shorter clip = 1s. 800ms is
+      // Two 2s clips → overlap ceiling is the shorter clip (2s). 800ms is
       // within bounds.
       final eightHundred = dissolve.copyWith(
         duration: const Duration(milliseconds: 800),
@@ -154,16 +155,17 @@ void main() {
       expect(clampTransitions(clips)['a'], equals(eightHundred));
     });
 
-    test('clamps an overlap longer than half the shorter clip', () {
+    test('clamps an overlap that would over-consume the shorter clip', () {
       final tooLong = dissolve.copyWith(
         duration: const Duration(milliseconds: 1500),
       );
       final clips = [
-        clip('a', const Duration(seconds: 2), transition: tooLong),
-        clip('b', const Duration(seconds: 2)),
+        clip('a', const Duration(seconds: 1), transition: tooLong),
+        clip('b', const Duration(seconds: 1)),
       ];
 
-      // Half the shorter (2s) clip = 1s.
+      // A 1500ms overlap wants to consume 1500ms/side, over the 1s clip →
+      // clamped so its consumption fits: 1000ms consumed = 1000ms blend.
       expect(
         clampTransitions(clips)['a']?.duration,
         equals(const Duration(seconds: 1)),
@@ -188,18 +190,20 @@ void main() {
     });
 
     test('clamps on playbackDuration for speed-changed clips', () {
-      // A 2× clip of 4s source occupies 2s of playback → overlap ceiling 1s.
+      // A 2× clip of 2s source occupies 1s of playback → a 1500ms overlap
+      // clamps to that 1s playback, not the 2s source span the trimmed-duration
+      // basis would have used.
       final tooLong = dissolve.copyWith(
         duration: const Duration(milliseconds: 1500),
       );
       final clips = [
         clip(
           'a',
-          const Duration(seconds: 4),
+          const Duration(seconds: 2),
           transition: tooLong,
           playbackSpeed: 2,
         ),
-        clip('b', const Duration(seconds: 4), playbackSpeed: 2),
+        clip('b', const Duration(seconds: 2), playbackSpeed: 2),
       ];
 
       expect(
@@ -227,23 +231,23 @@ void main() {
     });
 
     test('splits a shared middle clip between two over-consuming overlaps', () {
-      // 3×1s clips with a dissolve at the overlap ceiling (500ms) on both
-      // boundaries. Each alone would consume the whole 1s middle clip, leaving
-      // no solo body — and the native overlap (planOverlap) then falls back to
-      // a hard cut, dropping the transition. Clamped, they split the clip: each
-      // becomes 250ms so the middle keeps 500ms of solo body for both blends.
-      final overlap500 = dissolve.copyWith(
-        duration: const Duration(milliseconds: 500),
+      // 3×1s clips with a 600ms dissolve on both boundaries. Each consumes
+      // 600ms per side; together (1200ms) they over-consume the 1s middle clip,
+      // so both scale down to 500ms — exactly filling it (500 + 500). Two 500ms
+      // overlaps would already fit without clamping now that the blend fills the
+      // consumed span with no solo lead.
+      final overlap600 = dissolve.copyWith(
+        duration: const Duration(milliseconds: 600),
       );
       final clips = [
-        clip('a', const Duration(seconds: 1), transition: overlap500),
-        clip('b', const Duration(seconds: 1), transition: overlap500),
+        clip('a', const Duration(seconds: 1), transition: overlap600),
+        clip('b', const Duration(seconds: 1), transition: overlap600),
         clip('c', const Duration(seconds: 1)),
       ];
 
       final clamped = clampTransitions(clips);
-      expect(clamped['a']?.duration, equals(const Duration(milliseconds: 250)));
-      expect(clamped['b']?.duration, equals(const Duration(milliseconds: 250)));
+      expect(clamped['a']?.duration, equals(const Duration(milliseconds: 500)));
+      expect(clamped['b']?.duration, equals(const Duration(milliseconds: 500)));
     });
 
     test('does not reduce a single dip even when the middle clip is short', () {
@@ -263,10 +267,12 @@ void main() {
     test(
       'scales the two boundaries by their demand on an over-consumed clip',
       () {
-        // The middle clip (1s) is over-consumed: its incoming dip wants 1s/side
-        // (2s dip) and its outgoing overlap wants 1s/side (500ms dissolve). They
-        // share the 1s budget proportionally to their equal demand → 0.5s each,
-        // so neither side over-runs and the clip is split between them.
+        // The middle clip (1s) is over-consumed: its incoming dip wants
+        // 1000ms/side (2s dip) and its outgoing overlap wants 500ms/side (500ms
+        // dissolve, blend fills the consumed span). Both boundaries scale by the
+        // same factor (1000/1500 ≈ 0.667): the dip's 667ms consumed → 1333ms,
+        // the overlap's 333ms consumed → 333ms blend. Asserted in whole ms since
+        // the proportional scale lands off a round microsecond.
         final dip2s = fadeToBlack.copyWith(
           duration: const Duration(seconds: 2),
         );
@@ -280,13 +286,8 @@ void main() {
         ];
 
         final clamped = clampTransitions(clips);
-        // Dip: 0.5s consumed → duration 1s. Overlap: 0.5s consumed → duration
-        // 250ms.
-        expect(clamped['a']?.duration, equals(const Duration(seconds: 1)));
-        expect(
-          clamped['b']?.duration,
-          equals(const Duration(milliseconds: 250)),
-        );
+        expect(clamped['a']?.duration.inMilliseconds, equals(1333));
+        expect(clamped['b']?.duration.inMilliseconds, equals(333));
       },
     );
   });
@@ -549,8 +550,8 @@ void main() {
 
     group('clampTransitions', () {
       test('passes an in-bounds single-clip wrap through unchanged', () {
-        // One 4s clip: an 800ms dissolve carves 1.6s head + 1.6s tail, leaving
-        // an 0.8s middle body, so it fits and is not reduced.
+        // One 4s clip: an 800ms dissolve carves 800ms head + 800ms tail,
+        // leaving a 2.4s middle body, so it fits and is not reduced.
         final wrap = dissolve.copyWith(
           duration: const Duration(milliseconds: 800),
         );
@@ -563,8 +564,9 @@ void main() {
       });
 
       test('clamps a single-clip wrap that would consume the whole clip', () {
-        // A 1500ms dissolve on a 2s clip wants 2×(1500×2)=6s of a 2s clip; the
-        // head+tail budget caps it to half the clip per side → 500ms.
+        // A 1500ms dissolve on a 2s single clip wants 1500ms/side; head + tail
+        // (3000ms) over-consume the 2s clip, so it's scaled to fit — 1000ms
+        // consumed/side → 1000ms blend.
         final tooLong = dissolve.copyWith(
           duration: const Duration(milliseconds: 1500),
         );
@@ -572,13 +574,14 @@ void main() {
           clampTransitions([
             clip('a', const Duration(seconds: 2), transition: tooLong),
           ])['a']?.duration,
-          equals(const Duration(milliseconds: 500)),
+          equals(const Duration(seconds: 1)),
         );
       });
 
       test('passes an in-bounds multi-clip wrap through unchanged', () {
-        // Two 4s clips, no interior transition: a 500ms dissolve carves 1s from
-        // the last clip's tail and 1s from the first clip's head, both fit.
+        // Two 4s clips, no interior transition: a 500ms dissolve carves 500ms
+        // from the last clip's tail and 500ms from the first clip's head, both
+        // fit.
         final wrap = dissolve.copyWith(
           duration: const Duration(milliseconds: 500),
         );
@@ -668,7 +671,8 @@ void main() {
       });
 
       test('shortens first head + last tail and appends the overlap seam', () {
-        // 500ms dissolve → 1s consumed per side, seam 2s−1s/2... = 1.5s.
+        // 500ms dissolve → 500ms consumed per side (the blend fills it), seam =
+        // 2×500 − 500 = 500ms.
         final wrap = dissolve.copyWith(
           duration: const Duration(milliseconds: 500),
         );
@@ -678,20 +682,23 @@ void main() {
         ];
         final display = LoopWrapDisplay.fromClips(clips);
 
-        expect(display.consumedPerSide, equals(const Duration(seconds: 1)));
+        expect(
+          display.consumedPerSide,
+          equals(const Duration(milliseconds: 500)),
+        );
         expect(
           display.seamDuration,
-          equals(const Duration(milliseconds: 1500)),
+          equals(const Duration(milliseconds: 500)),
         );
         expect(
           display.displayDuration(clips.first, isFirst: true, isLast: false),
-          equals(const Duration(seconds: 2)),
+          equals(const Duration(milliseconds: 2500)),
         );
         expect(
           display.displayDuration(clips.last, isFirst: false, isLast: true),
-          equals(const Duration(seconds: 2)),
+          equals(const Duration(milliseconds: 2500)),
         );
-        // Total = 6s − 2×1s + 1.5s = 5.5s — exactly the export length
+        // Total = 6s − 2×500ms + 500ms = 5.5s — exactly the export length
         // (6s − 500ms blend).
         expect(
           display.displayTotal(clips),
@@ -730,10 +737,11 @@ void main() {
         ];
         final display = LoopWrapDisplay.fromClips(clips);
 
-        // 250ms dissolve → 500ms per side, both from the same clip.
+        // 250ms dissolve → 250ms per side (the blend fills it), both from the
+        // same clip → 3s − 2×250ms.
         expect(
           display.displayDuration(clips.first, isFirst: true, isLast: true),
-          equals(const Duration(seconds: 2)),
+          equals(const Duration(milliseconds: 2500)),
         );
       });
     });
@@ -757,9 +765,9 @@ void main() {
       });
 
       test('excludes the neighbours own internal transitions', () {
-        // a→b dissolve (500ms) consumes 1s of b's head, leaving 1s tail for the
-        // wrap; a's own outgoing consumes 1s of its tail, leaving 2s head. The
-        // tighter side (1s) wins.
+        // a→b dissolve (500ms) consumes 500ms of b's head, leaving 1500ms tail
+        // for the wrap; a's own outgoing consumes 500ms of its tail, leaving 2s
+        // head. The tighter side (1500ms) wins.
         final internal = dissolve.copyWith(
           duration: const Duration(milliseconds: 500),
         );
@@ -768,7 +776,7 @@ void main() {
             clip('a', const Duration(seconds: 3), transition: internal),
             clip('b', const Duration(seconds: 2)),
           ]),
-          equals(const Duration(seconds: 1)),
+          equals(const Duration(milliseconds: 1500)),
         );
       });
     });

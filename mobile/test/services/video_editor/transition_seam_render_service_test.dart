@@ -55,7 +55,8 @@ void main() {
       // The last clip's transition is the loop-restart wrap. Its consumption is
       // applied even before the seam file lands, so the display axis (timeline
       // strips) never shifts under the playhead; only the blend itself is
-      // missing until rendered. A 500ms dissolve consumes 2×500ms per side.
+      // missing until rendered. A 500ms dissolve consumes 500ms per side (the
+      // blend fills the consumed span).
       final clips = [clip('a'), clip('b', transition: dissolve)];
       final result = buildSeamAwarePlayerClips(
         clips,
@@ -64,11 +65,11 @@ void main() {
 
       expect(result, hasLength(2));
       expect(result[0].uri, equals('/tmp/a.mp4'));
-      expect(result[0].start, equals(const Duration(seconds: 1)));
+      expect(result[0].start, equals(const Duration(milliseconds: 500)));
       expect(result[0].end, equals(const Duration(seconds: 3)));
       expect(result[1].uri, equals('/tmp/b.mp4'));
       expect(result[1].start, equals(Duration.zero));
-      expect(result[1].end, equals(const Duration(seconds: 2)));
+      expect(result[1].end, equals(const Duration(milliseconds: 2500)));
     });
 
     test('consumes the first head + last tail and appends the wrap seam', () {
@@ -283,17 +284,17 @@ void main() {
 
     final service = TransitionSeamRenderService();
 
-    test('overlap uses 2× blend with a solo lead-in/out on long clips', () {
+    test('overlap blend fills the consumed span on long clips', () {
       final spans = service.computeSeamSpans(
         sized('a', const Duration(seconds: 3)),
         sized('b', const Duration(seconds: 3)),
         dissolve,
       );
 
-      expect(spans.consumed, equals(const Duration(seconds: 1)));
+      // The blend fills the consumed span (no solo lead): 500ms each.
+      expect(spans.consumed, equals(const Duration(milliseconds: 500)));
       expect(spans.blend, equals(const Duration(milliseconds: 500)));
-      // Solo lead = consumed - blend > 0 → never a degenerate hard cut.
-      expect(spans.blend, lessThan(spans.consumed));
+      expect(spans.blend, equals(spans.consumed));
       expect(spans.seamTransition.duration, equals(spans.blend));
     });
 
@@ -305,10 +306,10 @@ void main() {
         dissolve, // 500ms, longer than the 200ms clip
       );
 
-      // Clamped to the whole 200ms clip; still blends (blend < consumed).
+      // Clamped to the whole 200ms clip; the blend fills it (blend == consumed).
       expect(spans.consumed, equals(const Duration(milliseconds: 200)));
-      expect(spans.blend, equals(const Duration(milliseconds: 100)));
-      expect(spans.blend, lessThan(spans.consumed));
+      expect(spans.blend, equals(const Duration(milliseconds: 200)));
+      expect(spans.blend, equals(spans.consumed));
     });
 
     test('dip takes half the duration per side and cannot outrun the span', () {
@@ -336,19 +337,19 @@ void main() {
     });
 
     test('clamps on playbackDuration, not source, for speed-changed clips', () {
-      // 4× clips of 2s source each occupy only 500ms of wall-clock time, so the
-      // overlap must clamp to that playback span (consumed 500ms, blend 250ms)
-      // — not the 2s source span the trimmed-duration basis would have used
-      // (which would have allowed the full 1000ms consumed / 500ms blend).
+      // 4× clips of 2s source each occupy only 500ms of wall-clock time, so a
+      // 1s overlap must clamp to that 500ms playback span (consumed 500ms,
+      // blend 500ms) — not the 2s source span the trimmed-duration basis would
+      // have used (which would have allowed the full 1000ms consumed / blend).
       final spans = service.computeSeamSpans(
         sized('a', const Duration(seconds: 2), playbackSpeed: 4),
         sized('b', const Duration(seconds: 2), playbackSpeed: 4),
-        dissolve, // 500ms
+        dissolve.copyWith(duration: const Duration(seconds: 1)),
       );
 
       expect(spans.consumed, equals(const Duration(milliseconds: 500)));
-      expect(spans.blend, equals(const Duration(milliseconds: 250)));
-      expect(spans.blend, lessThan(spans.consumed));
+      expect(spans.blend, equals(const Duration(milliseconds: 500)));
+      expect(spans.blend, equals(spans.consumed));
       expect(spans.seamTransition.duration, equals(spans.blend));
     });
   });

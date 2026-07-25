@@ -23,10 +23,12 @@ bool _shortensTimeline(ClipTransitionType type) => !_isDip(type);
 /// Per-side playback duration a [transition] consumes at the boundary between
 /// clips of playback durations [a] and [b].
 ///
-/// An overlap (dissolve/slide/push/wipe) blends both clips at once and consumes
-/// 2× its duration per side; a dip (fadeToBlack/White) fades out then in,
-/// consuming half its duration per side. Clamped to the shorter clip so a
-/// transition can never overrun a clip.
+/// An overlap (dissolve/slide/push/wipe) blends both clips for its duration and
+/// consumes exactly that duration per side — the blend fills the consumed span,
+/// with no solo lead reserved (the native compositor renders the fully-consumed
+/// overlap). A dip (fadeToBlack/White) fades out then in, consuming half its
+/// duration per side. Clamped to the shorter clip so a transition can never
+/// overrun a clip.
 Duration transitionConsumedPerSide(
   Duration a,
   Duration b,
@@ -35,7 +37,7 @@ Duration transitionConsumedPerSide(
   final shorter = a < b ? a : b;
   final requested = _isDip(transition.type)
       ? Duration(microseconds: transition.duration.inMicroseconds ~/ 2)
-      : transition.duration * 2;
+      : transition.duration;
   return requested < shorter ? requested : shorter;
 }
 
@@ -47,9 +49,7 @@ Duration transitionDurationForConsumed(
   ClipTransitionType type,
 ) {
   if (consumed <= Duration.zero) return Duration.zero;
-  return _isDip(type)
-      ? consumed * 2
-      : Duration(microseconds: consumed.inMicroseconds ~/ 2);
+  return _isDip(type) ? consumed * 2 : consumed;
 }
 
 /// Maps each clip id to its outgoing transition, clamped so that **no clip is
@@ -225,9 +225,9 @@ Duration loopTransitionRoomPerSide(List<DivineVideoClip> clips) {
 /// timeline, preview and export line up 1:1.
 ///
 /// Mirrors `TransitionSeamRenderService.computeSeamSpans`: per side an overlap
-/// consumes 2× its duration (solo lead-in/out around the blend) and its seam
-/// plays 1.5× the consumed span; a dip consumes half its duration per side and
-/// its seam plays the full 2× consumed span (dips don't shorten).
+/// consumes its duration and its seam plays that same span (the blend fills
+/// it); a dip consumes half its duration per side and its seam plays the full
+/// 2× consumed span (dips don't shorten).
 class LoopWrapDisplay {
   const LoopWrapDisplay._({
     required this.consumedPerSide,
@@ -262,9 +262,7 @@ class LoopWrapDisplay {
       wrap,
     );
     if (consumed <= Duration.zero) return none;
-    final blend = _isDip(wrap.type)
-        ? Duration.zero
-        : Duration(microseconds: consumed.inMicroseconds ~/ 2);
+    final blend = _isDip(wrap.type) ? Duration.zero : consumed;
     return LoopWrapDisplay._(
       consumedPerSide: consumed,
       seamDuration: consumed * 2 - blend,

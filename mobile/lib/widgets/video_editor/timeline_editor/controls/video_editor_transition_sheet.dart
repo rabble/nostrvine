@@ -158,10 +158,10 @@ Future<void> _showTransitionSheet(
         toPlaceholder: toClip.thumbnailPath,
       ),
       child: TransitionPickerView(
-        // Overlaps blend both clips at once (so cap at half the room); dips fade
-        // out then in (so up to twice it). The room already excludes what the
-        // adjacent clips' own transitions consume, so two transitions never
-        // over-consume a shared clip — which the native compositor can't render.
+        // Overlaps blend both clips for their duration (so cap at the room);
+        // dips fade out then in (so up to twice the room). The room already
+        // excludes what the adjacent clips' own transitions consume, so two
+        // transitions never over-consume a shared clip.
         overlapMaxMs: _snapDurationMs(
           transitionDurationForConsumed(
             roomPerSide,
@@ -260,12 +260,12 @@ class TransitionPickerView extends StatefulWidget {
   });
 
   /// Duration-slider ceilings for the two transition families. An overlap
-  /// (dissolve/slide/push/wipe) blends both clips at once, so it's capped at
-  /// half the available per-side room; a dip (fadeToBlack/White) fades out then
-  /// in, so it can run up to twice it. The room already excludes what the
-  /// adjacent clips' own transitions consume, so two transitions never overlap
-  /// on a shared clip. The render path clamps to the same budget. Default to
-  /// [_maxDurationMs] in tests.
+  /// (dissolve/slide/push/wipe) blends both clips for its duration, so it's
+  /// capped at the available per-side room; a dip (fadeToBlack/White) fades out
+  /// then in, so it can run up to twice the room. The room already excludes what
+  /// the adjacent clips' own transitions consume, so two transitions never
+  /// overlap on a shared clip. The render path clamps to the same budget.
+  /// Default to [_maxDurationMs] in tests.
   final int overlapMaxMs;
   final int dipMaxMs;
 
@@ -299,7 +299,8 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
   ];
 
   /// Dip transitions fade out then in (no simultaneous blend), so they may run
-  /// up to twice the shorter clip; overlaps blend both at once and cap at half.
+  /// up to twice the shorter clip; overlaps blend both at once and cap at the
+  /// room.
   bool _isDip(ClipTransitionType? type) =>
       type == ClipTransitionType.fadeToBlack ||
       type == ClipTransitionType.fadeToWhite;
