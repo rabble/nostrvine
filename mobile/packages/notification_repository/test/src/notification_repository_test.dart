@@ -966,15 +966,11 @@ void main() {
         expect(item.videoEventId, equals('video_x'));
       });
 
-      test('comment with empty referencedEventId synthesizes the addressable '
-          'id from the payload d-tag and keeps the root video event id '
-          '(#4730 broken-link fix)', () async {
+      test('comment with empty referencedEventId fetches root metadata and '
+          'keeps the root video event id (#6369)', () async {
         // NIP-22 comment whose referenced_event_id is empty carries the video
-        // via rootEventId. The page-load path fetches metadata by
-        // referenced_event_id only (not rootEventId), so ownership of the root
-        // video is unconfirmed here — but the notification is still about the
-        // recipient's own video, so the recipient-scoped route is synthesized
-        // from the payload d-tag instead of dropping to the rootEventId.
+        // via rootEventId. Fetching metadata for the same anchor used by
+        // grouping lets ownership and the stable d-tag come from the root.
         stubNotifications([
           makeNotification(
             id: 'c1',
@@ -988,6 +984,7 @@ void main() {
           ),
         ]);
         stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats('video_root', makeVideoStats(id: 'video_root'));
 
         final page = await repository.getNotifications();
 
@@ -998,10 +995,11 @@ void main() {
           item.videoAddressableId,
           equals(
             '${NIP71VideoKinds.addressableShortVideo}:'
-            '$userPubkey:vine-id',
+            '$userPubkey:d_video_root',
           ),
         );
         expect(item.videoEventId, equals('video_root'));
+        verify(() => funnelcakeApiClient.getVideoStats('video_root')).called(1);
       });
 
       test(
@@ -1372,6 +1370,46 @@ void main() {
         final item = page.items.single as ActorNotification;
         expect(item.type, equals(NotificationKind.likeComment));
         expect(item.targetEventId, equals('foreign_video'));
+      });
+
+      test('comment anchored on a non-owned root video is reclassified as '
+          'reply instead of commented on your video (#6369)', () async {
+        stubNotifications([
+          makeNotification(
+            id: '',
+            sourceEventId: 'comment_evt_id',
+            sourceKind: 1111,
+            notificationType: 'mention',
+            referencedEventId: '',
+            rootEventId: 'foreign_root_video',
+            targetCommentId: 'target_comment_id',
+            referencedDTag: 'foreign-d-tag',
+            content: 'Reply from another creator',
+            isReferencedVideo: false,
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+        stubVideoStats(
+          'foreign_root_video',
+          makeVideoStats(
+            id: 'foreign_root_video',
+            pubkey: 'other_owner_pubkey',
+          ),
+        );
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.id, equals('comment_evt_id'));
+        expect(item.type, equals(NotificationKind.reply));
+        expect(item.targetEventId, equals('target_comment_id'));
+        expect(item.videoAddressableId, isNull);
+        verify(
+          () => funnelcakeApiClient.getVideoStats('foreign_root_video'),
+        ).called(1);
       });
 
       test(
@@ -2483,10 +2521,7 @@ void main() {
               (await hydrated.watchSnapshot().first).items.single
                   as VideoNotification;
           expect(item.id, equals('cached_like_1'));
-          expect(item.actors.map((a) => a.pubkey), [
-            'pubkey_bob',
-            'actor_pub',
-          ]);
+          expect(item.actors.map((a) => a.pubkey), ['pubkey_bob', 'actor_pub']);
           expect(item.totalCount, equals(2));
           expect(item.videoTitle, equals('Server title'));
           expect(
