@@ -78,6 +78,11 @@ jobs:
         working-directory: mobile/
     steps:
       - uses: actions/checkout@v4
+      - name: 🔀 Fetch origin/main for ratchet baselines
+        # The ratchet scripts below compare against origin/main. Fetch it once
+        # here so each script is order-independent; a fetch failure fails the
+        # job (the guards fail closed when the base baseline can't load).
+        run: git fetch --quiet --depth=1 origin main
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -110,7 +115,6 @@ jobs:
           # is the primary guard; this freezes raw setMockMethodCallHandler
           # installs of the five shared channels so new ones must go through
           # overrideSharedChannel(...). #5738.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_shared_channel_overrides.sh
       - name: 📦 Verify no new package-test channel leaks (per-package merged-isolate ratchet)
         run: |
@@ -120,54 +124,38 @@ jobs:
           # channel mock leaks across that package's suite. Freezes package *_test.dart
           # entries that install a channel handler without nulling any back down; new
           # ones must add a tearDown (or a skip tag). #5838.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_package_channel_isolation.sh
       - name: 🚧 Verify Riverpod boundary (@riverpod / StateProvider locations)
         run: bash scripts/check_riverpod_boundary.sh
       - name: 🚧 Verify ChangeNotifier boundary (sanctioned-allowlist ratchet)
         run: bash scripts/check_changenotifier_boundary.sh
       - name: 🚧 Verify UI does not import services directly (layering ratchet)
-        run: |
-          # Provide origin/main so the ratchet can compare the baseline against
-          # the base ref. The fetch is intentionally not error-suppressed: a
-          # fetch failure must fail the job (the guard fails closed when the
-          # base baseline cannot be loaded).
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_ui_service_boundary.sh
+        # Compares the baseline against origin/main (fetched once at job start);
+        # the guard fails closed when the base baseline cannot be loaded.
+        run: bash scripts/check_ui_service_boundary.sh
       - name: 🧪 Verify skipped-test count does not increase (skip-ceiling ratchet)
-        run: |
-          # origin/main was already fetched by the layering-ratchet step above;
-          # fetch again so this step is order-independent. The guard fails closed
-          # if the base baseline cannot be loaded. Skip-debt epic: #4337 (WS-1).
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_skip_ceiling.sh
+        # Skip-debt epic: #4337 (WS-1). Guard fails closed if the baseline can't load.
+        run: bash scripts/check_skip_ceiling.sh
       - name: ⏳ Verify Future.delayed-in-tests count does not increase (ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_future_delayed_ceiling.sh
+        run: bash scripts/check_future_delayed_ceiling.sh
       - name: ⏳ Verify Future.delayed-in-production count does not increase (ratchet)
         run: |
           # Production (mobile/lib) counterpart of the test-scoped ratchet above.
           # Fails closed if the base baseline cannot be loaded. Epic: #4339 (PR-4).
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_future_delayed_production_ceiling.sh
       - name: 🧱 Verify untested-services count does not increase (floor ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_untested_services_floor.sh
+        run: bash scripts/check_untested_services_floor.sh
       - name: 🧱 Verify test/unit does not re-accrete (test-structure ratchet)
         run: |
           # Freezes the legacy non-mirroring test/unit bucket per-file so it can
           # only shrink. New tests must mirror lib/ (test/services/foo_test.dart),
           # never test/unit/. Fails closed if the base baseline cannot load.
           # Test-org epic: #4337 (WS-7).
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_test_unit_structure.sh
       - name: 🧱 Verify every package ships analysis options + a CI workflow (package CI floor)
         run: |
           # Issues #3574 / #3575: optionless packages silently inherit the
           # app's relaxed analyzer config; workflow-less packages get no CI.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_package_ci_floor.sh
       - name: 🧱 Verify per-package coverage floors do not decrease (coverage floor ratchet)
         run: |
@@ -175,22 +163,16 @@ jobs:
           # a baseline and may only RISE. VGV already fails when measured coverage
           # drops below the floor; this stops the floor itself from being lowered.
           # Fails closed if the base baseline cannot be loaded.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_package_coverage_floor.sh
       - name: 🧯 Verify empty-catch count does not increase (reliability ratchet)
         run: |
           # Reliability ceilings (epic #4336). Each fails closed if the base
           # baseline cannot be loaded.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_empty_catch_ceiling.sh
       - name: 🧯 Verify service error-sentinel count does not increase (reliability ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_service_sentinel_ceiling.sh
+        run: bash scripts/check_service_sentinel_ceiling.sh
       - name: 🧯 Verify ARB {error}-interpolation count does not increase (reliability ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_arb_error_ceiling.sh
+        run: bash scripts/check_arb_error_ceiling.sh
       - name: 📏 Report oversized files (advisory — does not block CI)
         run: |
           # The 800-line file-size ceiling is advisory (team decision): it
@@ -208,7 +190,6 @@ jobs:
           # Freezes the deferred raw Material Icons.* residue (#4803) per-file so
           # the migration can only shrink. origin/main provides the base ref for
           # the anti-bypass check; fails closed if it cannot load the baseline.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_raw_icons_ceiling.sh
       - name: 🎨 Verify raw TextStyle( count does not increase (VineTheme ratchet)
         run: |
@@ -217,23 +198,16 @@ jobs:
           # intentional; existing debt is baselined, not fixed. Fails closed if
           # the base baseline cannot be loaded. New UI must use the divine_ui /
           # VineTheme sanctioned replacements — see the script headers.
-          git fetch --quiet --depth=1 origin main
           bash scripts/check_raw_textstyle_ceiling.sh
       - name: 🎨 Verify raw color count does not increase (VineTheme ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_raw_colors_ceiling.sh
+        run: bash scripts/check_raw_colors_ceiling.sh
       - name: 🎨 Verify direct Material-button count does not increase (DivineButton ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_material_button_ceiling.sh
+        run: bash scripts/check_material_button_ceiling.sh
       - name: 🎨 Verify raw dialog/bottom-sheet count does not increase (VineBottomSheet ratchet)
-        run: |
-          git fetch --quiet --depth=1 origin main
-          bash scripts/check_raw_dialog_ceiling.sh
+        run: bash scripts/check_raw_dialog_ceiling.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
-          dart run build_runner build --delete-conflicting-outputs
+          dart run build_runner build
           if [ -n "$(git status --porcelain)" ]; then
             echo "⚠️ Generated files are out of date. Please run 'dart run build_runner build' and commit the changes."
             git diff --name-only
