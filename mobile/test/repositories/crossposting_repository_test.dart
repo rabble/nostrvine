@@ -274,7 +274,7 @@ void main() {
     });
 
     test(
-      'rejects automatic preference when capability is unavailable',
+      'clamps a stale automatic preference to manual when unsupported',
       () async {
         when(apiClient.getPlatforms).thenAnswer(
           (_) async => const [
@@ -295,10 +295,13 @@ void main() {
           ],
         );
 
-        await expectLater(
-          repository.loadSettings(),
-          throwsA(isA<CrosspostingApiException>()),
-        );
+        final settings = await repository.loadSettings();
+
+        // The load no longer throws; the stale preference degrades to manual so
+        // one inconsistent server value cannot brick the settings screen.
+        expect(settings.single.platform, CrosspostingPlatform.x);
+        expect(settings.single.supportsAutomatic, isFalse);
+        expect(settings.single.mode, CrosspostingMode.manual);
       },
     );
   });

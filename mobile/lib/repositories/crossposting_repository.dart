@@ -82,12 +82,16 @@ class CrosspostingRepository {
       preferences,
       platformInfo.platform,
     );
-    if (!platformInfo.supportsAutomatic &&
-        preference?.mode == CrosspostingMode.automatic) {
-      throw CrosspostingApiException(
-        'Automatic mode is not supported for ${platformInfo.platform.wireName}',
-      );
-    }
+    // Degrade a stale automatic preference instead of failing the whole load:
+    // one inconsistent server value must never brick the settings screen.
+    // The user can still pick any supported mode; clamping to manual keeps the
+    // platform reachable while surfaces that hide the automatic chip stay
+    // driven by [CrosspostingPlatformSettings.supportsAutomatic].
+    final mode =
+        !platformInfo.supportsAutomatic &&
+            preference?.mode == CrosspostingMode.automatic
+        ? CrosspostingMode.manual
+        : (preference?.mode ?? CrosspostingMode.disabled);
     return CrosspostingPlatformSettings(
       platform: platformInfo.platform,
       supportsAutomatic: platformInfo.supportsAutomatic,
@@ -96,7 +100,7 @@ class CrosspostingRepository {
         platformInfo.platform,
         preference?.connectionId,
       ),
-      mode: preference?.mode ?? CrosspostingMode.disabled,
+      mode: mode,
     );
   }
 
