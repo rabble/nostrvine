@@ -457,20 +457,20 @@ class _RestorePausedBannerGate extends StatelessWidget {
 /// Ordering is not left to the list's recency sort — a synthetic row carries
 /// no timestamp and would sink out of reach.
 ///
-/// The caller only builds this when
-/// [ConversationListState.pinnedConversation] is non-null: the bloc composes
-/// that inside the same pipeline that applies the blocklist filter and the
-/// protected-minor gate, so a user who blocked the moderation account, or a
-/// restricted minor whose approval was revoked, gets no row rather than one
-/// the conversation route guard would bounce.
+/// The caller only builds this when [ConversationListState.pinnedSupport] is
+/// non-null: the bloc composes that inside the same pipeline that applies the
+/// blocklist filter and the protected-minor gate, so a user who blocked the
+/// moderation account, or a restricted minor whose approval was revoked, gets
+/// no row rather than one the conversation route guard would bounce.
 class _PinnedSupportRow extends StatelessWidget {
   const _PinnedSupportRow({
-    required this.conversation,
+    required this.pinned,
     required this.currentUserPubkey,
+    required this.onLongPress,
   });
 
   /// The adopted real moderation thread, or the synthetic stand-in.
-  final DmConversation conversation;
+  final PinnedSupport pinned;
 
   /// Signed-in pubkey. Passed in rather than derived from the conversation's
   /// participant list — that list is sorted, so its first entry is not
@@ -478,12 +478,17 @@ class _PinnedSupportRow extends StatelessWidget {
   /// participant's avatar to render.
   final String currentUserPubkey;
 
+  /// Opens the conversation action sheet. Null while the pin is synthetic:
+  /// there is no row to mute or remove yet, and the confirmation snackbars
+  /// would report work that did not happen.
+  final VoidCallback? onLongPress;
+
   @override
   Widget build(BuildContext context) {
-    final pinned = conversation;
+    final conversation = pinned.conversation;
 
     return ConversationTile(
-      conversation: pinned,
+      conversation: conversation,
       currentUserPubkey: currentUserPubkey,
       // Fixed identity: the profile lookup yields null until the relay client
       // is ready, and the tile's fallback is a generated name — so sourcing
@@ -491,20 +496,21 @@ class _PinnedSupportRow extends StatelessWidget {
       displayNameOverride: context.l10n.inboxSupportRowTitle,
       // Only stand in for the preview when there is no real thread yet; once
       // the team replies, the last message is more useful than the blurb.
-      subtitleOverride: pinned.lastMessageContent == null
+      subtitleOverride: conversation.lastMessageContent == null
           ? context.l10n.inboxSupportRowSubtitle
           : null,
       onTap: () => _pushConversation(
         context,
-        pinned.id,
+        conversation.id,
         // Self must be stripped, matching _onConversationTapped: the route
         // reads `extra` as the COUNTERPARTY list, so passing the raw
         // participants opens a conversation with the signed-in user instead
         // of with moderation.
-        pinned.participantPubkeys
+        conversation.participantPubkeys
             .where((pk) => pk != currentUserPubkey)
             .toList(),
       ),
+      onLongPress: onLongPress,
     );
   }
 }
@@ -532,10 +538,11 @@ class _MessagesScrollView extends ConsumerStatefulWidget {
   final String currentUserPubkey;
 
   @override
-  ConsumerState<_MessagesScrollView> createState() => _ConversationListState();
+  ConsumerState<_MessagesScrollView> createState() =>
+      _MessagesScrollViewState();
 }
 
-class _ConversationListState extends ConsumerState<_MessagesScrollView>
+class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
   late final TextEditingController _searchController;
@@ -701,15 +708,27 @@ class _ConversationListState extends ConsumerState<_MessagesScrollView>
     final isFiltering = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.isFiltering,
     );
-    final pinned = context.select<ConversationListBloc, DmConversation?>(
-      (bloc) => bloc.state.pinnedConversation,
+    final pinned = context.select<ConversationListBloc, PinnedSupport?>(
+      (bloc) => bloc.state.pinnedSupport,
     );
 
     final supportRow = pinned == null
         ? null
         : _PinnedSupportRow(
-            conversation: pinned,
+            pinned: pinned,
             currentUserPubkey: widget.currentUserPubkey,
+            // Only an adopted thread has something to act on. Its actions are
+            // the ones the ordinary row carried before the pin replaced it —
+            // blocking moderation hides the pin, and Safety Settings is the
+            // way back, exactly as for any other blocked account.
+            onLongPress: pinned.isPersisted
+                ? () => _onConversationLongPressed(
+                    context,
+                    ref,
+                    pinned.conversation,
+                    displayNameOverride: context.l10n.inboxSupportRowTitle,
+                  )
+                : null,
           );
 
     // Nothing but the support row to show. Keep the empty-state copy — a
@@ -759,7 +778,7 @@ class _ConversationListState extends ConsumerState<_MessagesScrollView>
       if (supportRow != null &&
           _supportRowSurvivesFilter(
             context,
-            pinned: pinned!,
+            pinned: pinned!.conversation,
             unreadOnly: unreadOnly,
             query: searchQuery,
           ))
@@ -840,6 +859,11 @@ class _ConversationListState extends ConsumerState<_MessagesScrollView>
   /// Unread chip is on. [query] arrives already thresholded by the bloc — it
   /// is `''` below `minSearchQueryLength` — so an empty string reliably means
   /// "no search active".
+  ///
+  /// Matches title OR last message, mirroring the bloc's `_applyFilters`. Once
+  /// the team has replied the preview is a real message, and a query drawn
+  /// from it should surface this row for the same reason it surfaces any
+  /// other.
   bool _supportRowSurvivesFilter(
     BuildContext context, {
     required DmConversation pinned,
@@ -848,9 +872,9 @@ class _ConversationListState extends ConsumerState<_MessagesScrollView>
   }) {
     if (unreadOnly && pinned.isRead) return false;
     if (query.isEmpty) return true;
-    return context.l10n.inboxSupportRowTitle.toLowerCase().contains(
-      query.toLowerCase(),
-    );
+    final needle = query.toLowerCase();
+    return context.l10n.inboxSupportRowTitle.toLowerCase().contains(needle) ||
+        (pinned.lastMessageContent?.toLowerCase().contains(needle) ?? false);
   }
 
   void _openMessageRequests(BuildContext context) {
@@ -876,17 +900,27 @@ class _ConversationListState extends ConsumerState<_MessagesScrollView>
   Future<void> _onConversationLongPressed(
     BuildContext context,
     WidgetRef ref,
-    DmConversation conversation,
-  ) async {
+    DmConversation conversation, {
+    String? displayNameOverride,
+  }) async {
     final otherPubkey = conversation.participantPubkeys.firstWhere(
       (pk) => pk != widget.currentUserPubkey,
       orElse: () => conversation.participantPubkeys.first,
     );
 
-    final profile = await ref.read(
-      fetchUserProfileProvider(otherPubkey).future,
-    );
-    final displayName = profile?.bestDisplayName ?? 'user';
+    // A known identity skips the lookup entirely: kind-0 for the moderation
+    // account resolves late, and the sheet would open labelled with the
+    // generated fallback name the row's own override exists to avoid.
+    String displayName;
+    if (displayNameOverride != null) {
+      displayName = displayNameOverride;
+    } else {
+      final profile = await ref.read(
+        fetchUserProfileProvider(otherPubkey).future,
+      );
+      if (!context.mounted) return;
+      displayName = profile?.bestDisplayName ?? 'user';
+    }
 
     if (!context.mounted) return;
 

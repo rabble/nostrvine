@@ -13,11 +13,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/router/app_router.dart';
@@ -44,6 +47,12 @@ class _MockConversationListBloc
 
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
+
+class _MockConversationMuteCubit extends MockCubit<ConversationMuteState>
+    implements ConversationMuteCubit {}
+
+class _MockConversationActionsCubit extends MockCubit<ConversationActionsState>
+    implements ConversationActionsCubit {}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
@@ -138,6 +147,25 @@ void main() {
         initialState: notificationUnreadCount,
       );
 
+      final mockMuteCubit = _MockConversationMuteCubit();
+      when(() => mockMuteCubit.state).thenReturn(const ConversationMuteState());
+      whenListen(
+        mockMuteCubit,
+        const Stream<ConversationMuteState>.empty(),
+        initialState: const ConversationMuteState(),
+      );
+
+      final mockActionsCubit = _MockConversationActionsCubit();
+      when(
+        () => mockActionsCubit.state,
+      ).thenReturn(const ConversationActionsState());
+      when(() => mockActionsCubit.isBlocked(any())).thenReturn(false);
+      whenListen(
+        mockActionsCubit,
+        const Stream<ConversationActionsState>.empty(),
+        initialState: const ConversationActionsState(),
+      );
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
@@ -154,6 +182,12 @@ void main() {
               BlocProvider<DmUnreadCountCubit>.value(value: mockDmUnreadCubit),
               BlocProvider<NotificationBadgeCubit>.value(
                 value: mockNotifBadgeCubit,
+              ),
+              BlocProvider<ConversationMuteCubit>.value(
+                value: mockMuteCubit,
+              ),
+              BlocProvider<ConversationActionsCubit>.value(
+                value: mockActionsCubit,
               ),
             ],
             child: const InboxView(),
@@ -1531,19 +1565,22 @@ void main() {
     });
 
     group('pinned support row (#6283)', () {
-      const moderationPubkey =
-          '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
+      const moderationPubkey = kModerationPubkeyHex;
 
-      DmConversation supportPin({
+      PinnedSupport supportPin({
         String? lastMessageContent,
         bool isRead = true,
-      }) => DmConversation(
-        id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-        participantPubkeys: const [currentPubkey, moderationPubkey],
-        isGroup: false,
-        createdAt: 0,
-        lastMessageContent: lastMessageContent,
-        isRead: isRead,
+        bool isPersisted = false,
+      }) => PinnedSupport(
+        isPersisted: isPersisted,
+        conversation: DmConversation(
+          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          participantPubkeys: const [currentPubkey, moderationPubkey],
+          isGroup: false,
+          createdAt: 0,
+          lastMessageContent: lastMessageContent,
+          isRead: isRead,
+        ),
       );
 
       Future<void> openMessages(WidgetTester tester) async {
@@ -1565,7 +1602,7 @@ void main() {
           buildSubject(
             state: ConversationListState(
               status: ConversationListStatus.loaded,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1609,7 +1646,7 @@ void main() {
           buildSubject(
             state: ConversationListState(
               status: ConversationListStatus.loaded,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1636,7 +1673,7 @@ void main() {
               conversations: [conversation],
               searchQuery: 'zzzz',
               hasMore: false,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1673,7 +1710,7 @@ void main() {
               // 'moderation' matches inboxSupportRowTitle, but no real thread.
               searchQuery: 'moderation',
               hasMore: false,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1693,7 +1730,7 @@ void main() {
               conversations: [realConversation],
               unreadOnly: true,
               hasMore: false,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1713,7 +1750,7 @@ void main() {
               conversations: [realConversation],
               unreadOnly: true,
               hasMore: false,
-              pinnedConversation: supportPin(
+              pinnedSupport: supportPin(
                 isRead: false,
                 lastMessageContent: 'We looked into your report.',
               ),
@@ -1753,7 +1790,7 @@ void main() {
                 ),
               ],
               hasMore: false,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1783,7 +1820,7 @@ void main() {
             state: ConversationListState(
               status: ConversationListStatus.loaded,
               hasMore: false,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1803,7 +1840,7 @@ void main() {
           buildSubject(
             state: ConversationListState(
               status: ConversationListStatus.loaded,
-              pinnedConversation: supportPin(
+              pinnedSupport: supportPin(
                 lastMessageContent: 'We looked into your report.',
                 isRead: false,
               ),
@@ -1829,7 +1866,7 @@ void main() {
           buildSubject(
             state: ConversationListState(
               status: ConversationListStatus.loaded,
-              pinnedConversation: pin,
+              pinnedSupport: pin,
             ),
           ),
         );
@@ -1843,7 +1880,7 @@ void main() {
         // router happily accepts either list.
         final captured = verify(
           () => mockGoRouter.push<Object?>(
-            ConversationPage.pathForId(pin.id),
+            ConversationPage.pathForId(pin.conversation.id),
             extra: captureAny(named: 'extra'),
           ),
         ).captured.single;
@@ -1859,7 +1896,7 @@ void main() {
           buildSubject(
             state: ConversationListState(
               status: ConversationListStatus.loaded,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1870,10 +1907,32 @@ void main() {
             .getSemanticsData();
         expect(data.label, contains(l10n.inboxSupportRowTitle));
         expect(data.flagsCollection.isButton, isTrue);
-        // No action sheet is wired for this row, so it must not advertise a
-        // long-press hint it cannot honour.
+        // Nothing is persisted yet, so there is no action sheet to open and
+        // the row must not advertise a long-press it cannot honour.
         expect(data.hasAction(SemanticsAction.longPress), isFalse);
       });
+
+      testWidgets(
+        'advertises long-press to assistive tech once a thread is adopted',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(isPersisted: true),
+              ),
+            ),
+          );
+          await openMessages(tester);
+
+          final data = tester
+              .getSemantics(find.byType(ConversationTile))
+              .getSemanticsData();
+          // The adopted thread carries the actions the ordinary row had before
+          // the pin replaced it, so the affordance must be discoverable.
+          expect(data.hasAction(SemanticsAction.longPress), isTrue);
+        },
+      );
 
       testWidgets('renders the bundled wordmark rather than the account '
           'picture', (tester) async {
@@ -1885,7 +1944,7 @@ void main() {
           buildSubject(
             state: ConversationListState(
               status: ConversationListStatus.loaded,
-              pinnedConversation: supportPin(),
+              pinnedSupport: supportPin(),
             ),
           ),
         );
@@ -1906,6 +1965,71 @@ void main() {
 
         expect(wordmarkFinder, findsNothing);
       });
+
+      testWidgets(
+        'long-press on an adopted thread opens the actions sheet labelled '
+        'Divine Moderation, never a generated profile name',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+            ),
+          );
+          await openMessages(tester);
+
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.pumpAndSettle();
+
+          // The pin replaced an ordinary row that had these actions; losing
+          // them on adoption is the regression this guards (#6388 review).
+          expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+          expect(
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+          // Sourcing the sheet's name from kind-0 would label it with the
+          // deterministic "Adjective Animal N" fallback for this pubkey.
+          expect(
+            find.text(
+              l10n.inboxActionBlock(
+                UserProfile.defaultDisplayNameFor(moderationPubkey),
+              ),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        "survives a search that matches the adopted pin's last message",
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                searchQuery: 'looked',
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+            ),
+          );
+          await openMessages(tester);
+
+          // The bloc's own filter matches name OR preview; matching only the
+          // title here hid the row on a query drawn from the team's reply.
+          expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        },
+      );
     });
   });
 }
