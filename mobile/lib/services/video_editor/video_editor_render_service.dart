@@ -1117,9 +1117,74 @@ class VideoEditorRenderService {
           : null,
     );
 
-    await _cancelAndRender(outputPath, task);
+    await renderWithEncoderFallback(
+      baseTask: task,
+      aspectRatio: aspectRatio,
+      encode: (attemptTask) => _cancelAndRender(outputPath, attemptTask),
+    );
 
     return outputPath;
+  }
+
+  /// Runs the export [encode] for [baseTask], recovering from device
+  /// encoder-init failures (`RenderEncoderException`).
+  ///
+  /// The exception signals that `pro_video_editor`'s own in-process fallback
+  /// chain (operating-rate cap/removal, software encoder, profile downgrade)
+  /// could not initialise an encoder. On codec-limited devices that is usually
+  /// transient contention rather than a true format incompatibility: the
+  /// preview decoder the editor just released (the #5522 decoder-release gate)
+  /// — or another app codec — has not been reclaimed by the OS media server
+  /// yet, and the plugin runs every attempt within a few hundred ms, so it
+  /// cannot outlast that window. We retry at the Dart level with a
+  /// [settleDelay] (letting the codec free up), then once more at
+  /// [VideoEditorConstants.encoderFallbackQuality] for devices genuinely at
+  /// their 1080p encoder ceiling. Only if every attempt fails does the
+  /// exception propagate to the UI's retry affordance (#6058).
+  ///
+  /// The happy path pays no extra latency: the first attempt runs immediately
+  /// and only failures incur a settle.
+  @visibleForTesting
+  static Future<void> renderWithEncoderFallback({
+    required VideoRenderData baseTask,
+    required model.AspectRatio aspectRatio,
+    required Future<void> Function(VideoRenderData task) encode,
+    Duration settleDelay = VideoEditorConstants.encoderRetrySettleDelay,
+  }) async {
+    const fallbackQuality = VideoEditorConstants.encoderFallbackQuality;
+    final reducedTask = baseTask.copyWith(
+      qualityConfig: VideoQualityConfig.custom(
+        bitrate: fallbackQuality.bitrate,
+        resolution: fallbackQuality.resolutionForAspectRatio(aspectRatio),
+      ),
+    );
+
+    final attempts = <({VideoRenderData task, Duration settle, bool reduced})>[
+      (task: baseTask, settle: Duration.zero, reduced: false),
+      (task: baseTask, settle: settleDelay, reduced: false),
+      (task: reducedTask, settle: settleDelay, reduced: true),
+    ];
+
+    for (var i = 0; i < attempts.length; i++) {
+      final attempt = attempts[i];
+      if (attempt.settle > Duration.zero) {
+        await Future<void>.delayed(attempt.settle);
+      }
+      try {
+        await encode(attempt.task);
+        return;
+      } on RenderEncoderException catch (e) {
+        final isLast = i == attempts.length - 1;
+        Log.warning(
+          '⚠️ Export encoder init failed on attempt ${i + 1}/${attempts.length}'
+          '${attempt.reduced ? ' (reduced resolution)' : ''}'
+          '${isLast ? '' : '; retrying'}: $e',
+          name: _logName,
+          category: .video,
+        );
+        if (isLast) rethrow;
+      }
+    }
   }
 
   /// Builds the [ImageLayer]s composited over the exported video from the

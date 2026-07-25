@@ -9,12 +9,22 @@ import 'dart:ui' show Offset, Size;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' as pie;
 import 'package:pro_video_editor/pro_video_editor.dart'
-    show ClipTransition, ClipTransitionType, EditorVideo;
+    show
+        ClipTransition,
+        ClipTransitionType,
+        EditorVideo,
+        RenderCanceledException,
+        RenderEncoderException,
+        VideoQualityConfig,
+        VideoRenderData,
+        VideoSegment;
 
 void main() {
   DivineVideoClip clip(
@@ -239,6 +249,134 @@ void main() {
 
       expect(filters.single.startTime, isNull);
       expect(filters.single.endTime, isNull);
+    });
+  });
+
+  group('renderWithEncoderFallback', () {
+    const aspectRatio = model.AspectRatio.vertical;
+    final baseResolution = VideoEditorConstants.quality
+        .resolutionForAspectRatio(aspectRatio);
+    final fallbackResolution = VideoEditorConstants.encoderFallbackQuality
+        .resolutionForAspectRatio(aspectRatio);
+
+    VideoRenderData baseTask() => VideoRenderData(
+      id: 'render-task',
+      videoSegments: [
+        VideoSegment(
+          video: EditorVideo.file('${Directory.systemTemp.path}/a.mp4'),
+        ),
+      ],
+      qualityConfig: VideoQualityConfig.custom(
+        bitrate: VideoEditorConstants.quality.bitrate,
+        resolution: baseResolution,
+      ),
+    );
+
+    /// An encode that throws [RenderEncoderException] for its first
+    /// [failuresBeforeSuccess] calls, then succeeds, recording every task it
+    /// was handed.
+    ({
+      Future<void> Function(VideoRenderData) encode,
+      List<VideoRenderData> calls,
+    })
+    flakyEncoder({required int failuresBeforeSuccess}) {
+      final calls = <VideoRenderData>[];
+      Future<void> encode(VideoRenderData task) async {
+        calls.add(task);
+        if (calls.length <= failuresBeforeSuccess) {
+          throw const RenderEncoderException('encoder init failed');
+        }
+      }
+
+      return (encode: encode, calls: calls);
+    }
+
+    test('encodes once at full resolution when the first attempt '
+        'succeeds', () async {
+      final harness = flakyEncoder(failuresBeforeSuccess: 0);
+
+      await VideoEditorRenderService.renderWithEncoderFallback(
+        baseTask: baseTask(),
+        aspectRatio: aspectRatio,
+        encode: harness.encode,
+        settleDelay: Duration.zero,
+      );
+
+      expect(harness.calls, hasLength(1));
+      expect(harness.calls.single.qualityConfig?.resolution, baseResolution);
+    });
+
+    test('retries at full resolution after a single encoder failure', () async {
+      final harness = flakyEncoder(failuresBeforeSuccess: 1);
+
+      await VideoEditorRenderService.renderWithEncoderFallback(
+        baseTask: baseTask(),
+        aspectRatio: aspectRatio,
+        encode: harness.encode,
+        settleDelay: Duration.zero,
+      );
+
+      expect(harness.calls, hasLength(2));
+      expect(
+        harness.calls.map((t) => t.qualityConfig?.resolution),
+        everyElement(baseResolution),
+      );
+    });
+
+    test('falls back to the reduced resolution on the third attempt', () async {
+      final harness = flakyEncoder(failuresBeforeSuccess: 2);
+
+      await VideoEditorRenderService.renderWithEncoderFallback(
+        baseTask: baseTask(),
+        aspectRatio: aspectRatio,
+        encode: harness.encode,
+        settleDelay: Duration.zero,
+      );
+
+      expect(harness.calls, hasLength(3));
+      expect(harness.calls[0].qualityConfig?.resolution, baseResolution);
+      expect(harness.calls[1].qualityConfig?.resolution, baseResolution);
+      expect(harness.calls[2].qualityConfig?.resolution, fallbackResolution);
+      expect(
+        harness.calls[2].qualityConfig?.bitrate,
+        VideoEditorConstants.encoderFallbackQuality.bitrate,
+      );
+    });
+
+    test('rethrows after every attempt fails', () async {
+      final harness = flakyEncoder(failuresBeforeSuccess: 3);
+
+      await expectLater(
+        VideoEditorRenderService.renderWithEncoderFallback(
+          baseTask: baseTask(),
+          aspectRatio: aspectRatio,
+          encode: harness.encode,
+          settleDelay: Duration.zero,
+        ),
+        throwsA(isA<RenderEncoderException>()),
+      );
+
+      expect(harness.calls, hasLength(3));
+    });
+
+    test('does not retry non-encoder failures', () async {
+      var calls = 0;
+      Future<void> encode(VideoRenderData task) async {
+        calls++;
+        throw const RenderCanceledException();
+      }
+
+      await expectLater(
+        VideoEditorRenderService.renderWithEncoderFallback(
+          baseTask: baseTask(),
+          aspectRatio: aspectRatio,
+          encode: encode,
+          settleDelay: Duration.zero,
+        ),
+        throwsA(isA<RenderCanceledException>()),
+      );
+
+      expect(calls, 1);
     });
   });
 }
