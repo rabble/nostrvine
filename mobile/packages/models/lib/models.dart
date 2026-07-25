@@ -39,6 +39,8 @@ export 'src/profile_stats.dart';
 export 'src/ready_event_data.dart';
 export 'src/recommendations_response.dart';
 export 'src/social_counts.dart';
+export 'src/supporter_entitlement.dart';
+export 'src/supporter_tier.dart';
 export 'src/trending_hashtag.dart';
 export 'src/user_list.dart';
 export 'src/user_profile.dart';

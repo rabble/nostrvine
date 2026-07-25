@@ -68,7 +68,13 @@ enum FeatureFlag {
     'Email Verification PIN Fallback',
     'Show the in-app email verification PIN and resend fallback. Off by '
         'default until keycast verify-pin support is deployed.',
+  ),
+  divineSupporters(
+    'Divine Supporters',
+    'Optional monthly supporter subscription via in-app purchase. '
+        'Nothing is gated — it keeps Divine running and recognizes supporters.',
   );
+
 
   const FeatureFlag(this.displayName, this.description);
 

@@ -52,6 +52,10 @@ class BuildConfiguration {
       case FeatureFlag.emailVerificationPinFallback:
         // Default OFF until keycast verify-pin support is deployed.
         return const bool.fromEnvironment('FF_EMAIL_VERIFICATION_PIN_FALLBACK');
+      case FeatureFlag.divineSupporters:
+        // Default OFF: MVP exploration behind the flag until store products
+        // are configured in App Store Connect and Google Play Console.
+        return const bool.fromEnvironment('FF_DIVINE_SUPPORTERS');
     }
   }
 
@@ -96,6 +100,8 @@ class BuildConfiguration {
         return 'FF_COMMUNITY_CONTENT_WARNINGS';
       case FeatureFlag.emailVerificationPinFallback:
         return 'FF_EMAIL_VERIFICATION_PIN_FALLBACK';
+      case FeatureFlag.divineSupporters:
+        return 'FF_DIVINE_SUPPORTERS';
     }
   }
 }

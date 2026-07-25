@@ -36,6 +36,7 @@ import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/monetization_links_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:openvine/screens/settings/supporter_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
@@ -182,6 +183,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final monetizationLinksEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
+    final divineSupportersEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.divineSupporters),
+    );
     // Watched here (not just in _VersionTile) so the Developer Options tile
     // appears immediately when dev mode is unlocked via the version tap.
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
@@ -240,6 +244,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         : context.l10n.monetizationSettingsSubtitle,
                     onTap: () =>
                         context.push(MonetizationLinksSettingsScreen.path),
+                  ),
+                if (divineSupportersEnabled)
+                  _SettingsTile(
+                    title: 'Divine Supporters',
+                    divineIcon: DivineIconName.heart,
+                    subtitle:
+                        'Support Divine with an optional monthly subscription.',
+                    onTap: () => context.push(SupporterScreen.path),
                   ),
                 _SettingsTile(
                   title: context.l10n.settingsSupportCenter,
