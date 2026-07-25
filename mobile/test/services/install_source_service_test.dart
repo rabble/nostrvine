@@ -16,7 +16,7 @@ void main() {
   /// for `getInstallerPackageName` and [iosSandbox] for `isSandboxReceipt`.
   void installFakeChannel({
     String? androidResult,
-    bool iosSandbox = false,
+    bool? iosSandbox = false,
     Object? androidError,
     Object? iosError,
   }) {
@@ -42,12 +42,11 @@ void main() {
     TargetPlatform platform,
     Future<void> Function() body,
   ) async {
-    final previous = debugDefaultTargetPlatformOverride;
     debugDefaultTargetPlatformOverride = platform;
     try {
       await body();
     } finally {
-      debugDefaultTargetPlatformOverride = previous;
+      debugDefaultTargetPlatformOverride = null;
     }
   }
 
@@ -117,9 +116,24 @@ void main() {
       });
     });
 
+    test('maps a null iOS receipt response to sideload', () async {
+      await withPlatform(TargetPlatform.iOS, () async {
+        installFakeChannel(iosSandbox: null);
+        final source = await const InstallSourceService().resolve();
+        expect(source, InstallSource.sideload);
+      });
+    });
+
     test('falls back to sideload on iOS PlatformException', () async {
       await withPlatform(TargetPlatform.iOS, () async {
         installFakeChannel(iosError: PlatformException(code: 'UNAVAILABLE'));
+        final source = await const InstallSourceService().resolve();
+        expect(source, InstallSource.sideload);
+      });
+    });
+
+    test('falls back to sideload when the native channel is missing', () async {
+      await withPlatform(TargetPlatform.iOS, () async {
         final source = await const InstallSourceService().resolve();
         expect(source, InstallSource.sideload);
       });

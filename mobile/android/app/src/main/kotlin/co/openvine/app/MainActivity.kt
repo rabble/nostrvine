@@ -154,10 +154,12 @@ class MainActivity : FlutterActivity() {
         )
     }
 
-    /// Resolves the installer package name (e.g. "com.android.vending" for Play
-    /// Store, "com.zapstore.app" for Zapstore) so the Dart side can classify
-    /// the install source. Returns null for sideloaded APKs or on older Android
-    /// versions where the installer cannot be determined.
+    /**
+     * Resolves the installer package name (e.g. "com.android.vending" for Play
+     * Store, "com.zapstore.app" for Zapstore) so the Dart side can classify
+     * the install source. Returns null for sideloaded APKs or on older Android
+     * versions where the installer cannot be determined.
+     */
     @Suppress("DEPRECATION")
     private fun resolveInstallerPackageName(): String? {
         return try {

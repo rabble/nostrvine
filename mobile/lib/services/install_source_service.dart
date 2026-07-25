@@ -4,16 +4,7 @@
 import 'package:app_update_repository/app_update_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-
-/// Contract for resolving the app's [InstallSource].
-///
-/// Surfaces as an interface so tests can inject a deterministic source
-/// without going through the native method channel.
-abstract interface class InstallSourceResolver {
-  /// Resolves the install source. Returns [InstallSource.sideload] when the
-  /// platform does not expose install-source info (web, desktop, failures).
-  Future<InstallSource> resolve();
-}
+import 'package:unified_logger/unified_logger.dart';
 
 /// Method-channel-backed implementation.
 ///
@@ -21,7 +12,7 @@ abstract interface class InstallSourceResolver {
 /// (`com.android.vending` → Play Store, `com.zapstore.app` → Zapstore).
 /// iOS: inspects the app-store receipt URL (`sandboxReceipt` → TestFlight).
 /// On web/desktop/unsupported platforms it returns [InstallSource.sideload].
-class InstallSourceService implements InstallSourceResolver {
+class InstallSourceService {
   const InstallSourceService({MethodChannel? channel})
     : _channel = channel ?? const MethodChannel(_channelName);
 
@@ -29,7 +20,6 @@ class InstallSourceService implements InstallSourceResolver {
 
   final MethodChannel _channel;
 
-  @override
   Future<InstallSource> resolve() async {
     // Web and desktop builds have no native install-referrer channel.
     if (kIsWeb ||
@@ -46,16 +36,33 @@ class InstallSourceService implements InstallSourceResolver {
         return resolveAndroidInstallSource(installer);
       }
       // iOS.
-      final isSandbox =
-          await _channel.invokeMethod<bool>('isSandboxReceipt') ?? false;
+      final isSandbox = await _channel.invokeMethod<bool>('isSandboxReceipt');
+      if (isSandbox == null) {
+        Log.warning(
+          'Install source channel returned no iOS receipt environment; '
+          'falling back to sideload',
+          name: 'InstallSourceService',
+          category: LogCategory.system,
+        );
+        return InstallSource.sideload;
+      }
       return resolveIosInstallSource(isSandbox: isSandbox);
-    } on PlatformException catch (e, st) {
+    } on PlatformException catch (e) {
       // A missing channel (e.g. an older native shell) or a revoked installer
       // permission must never block app launch — fall back to sideload and let
       // the in-app review gate (which only matches Play/App Store) no-op.
-      debugPrint('InstallSourceService.resolve failed: $e\n$st');
+      Log.warning(
+        'Install source resolution failed: ${e.code}',
+        name: 'InstallSourceService',
+        category: LogCategory.system,
+      );
       return InstallSource.sideload;
-    } on MissingPluginException {
+    } on MissingPluginException catch (e) {
+      Log.warning(
+        'Install source channel missing; falling back to sideload: $e',
+        name: 'InstallSourceService',
+        category: LogCategory.system,
+      );
       return InstallSource.sideload;
     }
   }

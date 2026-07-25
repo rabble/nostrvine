@@ -2616,11 +2616,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
             // One gate above every route: once the local database reports
             // corruption there is no screen left that can work, so ask for the
             // restart that repairs it instead of failing route by route. The
-            // AppReviewCoordinator mounts here too: a zero-size widget that
-            // evaluates the in-app review gate on auth/stats/foreground changes
-            // and renders nothing itself.
-            builder: (context, child) => AppReviewCoordinator(
-              child: DatabaseCorruptionGate(
+            // review coordinator lives inside that gate so the recovery screen
+            // cannot be interrupted by an OS-native review card.
+            builder: (context, child) => DatabaseCorruptionGate(
+              child: AppReviewCoordinator(
                 child: child ?? const SizedBox.shrink(),
               ),
             ),
@@ -2649,11 +2648,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
             // One gate above every route: once the local database reports
             // corruption there is no screen left that can work, so ask for the
             // restart that repairs it instead of failing route by route. The
-            // AppReviewCoordinator mounts here too: a zero-size widget that
-            // evaluates the in-app review gate on auth/stats/foreground changes
-            // and renders nothing itself.
-            builder: (context, child) => AppReviewCoordinator(
-              child: DatabaseCorruptionGate(
+            // review coordinator lives inside that gate so the recovery screen
+            // cannot be interrupted by an OS-native review card.
+            builder: (context, child) => DatabaseCorruptionGate(
+              child: AppReviewCoordinator(
                 child: child ?? const SizedBox.shrink(),
               ),
             ),

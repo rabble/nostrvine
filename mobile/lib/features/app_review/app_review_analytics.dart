@@ -21,8 +21,10 @@ void trackInAppReviewEligible({
       parameters: {
         'install_source': installSource.name,
         'video_count_bucket': _videoCountBucket(videoCount),
-        'session_count': sessionCount,
-        'days_since_first_launch': daysSinceFirstLaunch,
+        'session_count_bucket': _sessionCountBucket(sessionCount),
+        'days_since_first_launch_bucket': _daysSinceFirstLaunchBucket(
+          daysSinceFirstLaunch,
+        ),
       },
     ),
   );
@@ -33,10 +35,7 @@ void trackInAppReviewEligible({
 /// event of the prompt flow.
 void trackInAppReviewPrompted({required AnalyticsEventSink analytics}) {
   unawaited(
-    analytics.logEvent(
-      name: 'in_app_review_prompted',
-      parameters: const {},
-    ),
+    analytics.logEvent(name: 'in_app_review_prompted', parameters: const {}),
   );
 }
 
@@ -65,4 +64,22 @@ String _videoCountBucket(int count) {
   if (count <= 50) return '26-50';
   if (count <= 100) return '51-100';
   return '100+';
+}
+
+String _sessionCountBucket(int count) {
+  if (count <= 0) return '0';
+  if (count <= 5) return '1-5';
+  if (count <= 9) return '6-9';
+  if (count <= 20) return '10-20';
+  if (count <= 50) return '21-50';
+  return '50+';
+}
+
+String _daysSinceFirstLaunchBucket(int days) {
+  if (days <= 0) return '0';
+  if (days <= 6) return '1-6';
+  if (days <= 13) return '7-13';
+  if (days <= 30) return '14-30';
+  if (days <= 90) return '31-90';
+  return '90+';
 }

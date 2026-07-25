@@ -48,10 +48,10 @@ void main() {
         expect(sink.events, hasLength(1));
         expect(sink.events.single.name, 'in_app_review_eligible');
         expect(sink.events.single.parameters['install_source'], 'playStore');
-        expect(sink.events.single.parameters['session_count'], 20);
+        expect(sink.events.single.parameters['session_count_bucket'], '10-20');
         expect(
-          sink.events.single.parameters['days_since_first_launch'],
-          30,
+          sink.events.single.parameters['days_since_first_launch_bucket'],
+          '14-30',
         );
       });
 
@@ -108,6 +108,22 @@ void main() {
         expect(bucketFor(100), '51-100');
         expect(bucketFor(101), '100+');
       });
+
+      test('engagement counts are bucketed, never logged exactly', () {
+        trackInAppReviewEligible(
+          analytics: sink,
+          installSource: InstallSource.playStore,
+          videoCount: 50,
+          sessionCount: 47,
+          daysSinceFirstLaunch: 88,
+        );
+
+        final parameters = sink.events.single.parameters;
+        expect(parameters, isNot(contains('session_count')));
+        expect(parameters, isNot(contains('days_since_first_launch')));
+        expect(parameters['session_count_bucket'], '21-50');
+        expect(parameters['days_since_first_launch_bucket'], '31-90');
+      });
     });
 
     group('trackInAppReviewPrompted', () {
@@ -128,10 +144,7 @@ void main() {
 
         expect(sink.events, hasLength(1));
         expect(sink.events.single.name, 'in_app_review_request_failed');
-        expect(
-          sink.events.single.parameters['error_type'],
-          'StateError',
-        );
+        expect(sink.events.single.parameters['error_type'], 'StateError');
         // The raw message must never appear in the payload.
         for (final value in sink.events.single.parameters.values) {
           expect('$value', isNot(contains('sensitive detail')));

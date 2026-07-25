@@ -26,6 +26,20 @@ void main() {
     );
   }
 
+  ReviewLocalEligibilityInputs localInputs({
+    String pubkey = pubkey,
+    InstallSource installSource = InstallSource.playStore,
+    int sessionCount = 20,
+    int daysSinceFirstLaunch = 30,
+  }) {
+    return ReviewLocalEligibilityInputs(
+      pubkey: pubkey,
+      installSource: installSource,
+      sessionCount: sessionCount,
+      daysSinceFirstLaunch: daysSinceFirstLaunch,
+    );
+  }
+
   group(AppReviewPromptService, () {
     late SharedPreferences prefs;
 
@@ -82,26 +96,17 @@ void main() {
 
       test('returns false when videoCount equals the minimum (10)', () {
         final service = AppReviewPromptService(sharedPreferences: prefs);
-        expect(
-          service.shouldShow(eligibleInputs(videoCount: 10)),
-          isFalse,
-        );
+        expect(service.shouldShow(eligibleInputs(videoCount: 10)), isFalse);
       });
 
       test('returns false when videoCount is below the minimum', () {
         final service = AppReviewPromptService(sharedPreferences: prefs);
-        expect(
-          service.shouldShow(eligibleInputs(videoCount: 5)),
-          isFalse,
-        );
+        expect(service.shouldShow(eligibleInputs(videoCount: 5)), isFalse);
       });
 
       test('returns true when videoCount is one above the minimum', () {
         final service = AppReviewPromptService(sharedPreferences: prefs);
-        expect(
-          service.shouldShow(eligibleInputs(videoCount: 11)),
-          isTrue,
-        );
+        expect(service.shouldShow(eligibleInputs(videoCount: 11)), isTrue);
       });
 
       test(
@@ -142,10 +147,45 @@ void main() {
 
       test('returns false for videoCount of 0', () {
         final service = AppReviewPromptService(sharedPreferences: prefs);
+        expect(service.shouldShow(eligibleInputs(videoCount: 0)), isFalse);
+      });
+    });
+
+    group('shouldLoadProfileStats', () {
+      test('returns true when local criteria pass', () {
+        final service = AppReviewPromptService(sharedPreferences: prefs);
+        expect(service.shouldLoadProfileStats(localInputs()), isTrue);
+      });
+
+      test('returns false for non-store installs', () {
+        final service = AppReviewPromptService(sharedPreferences: prefs);
         expect(
-          service.shouldShow(eligibleInputs(videoCount: 0)),
+          service.shouldLoadProfileStats(
+            localInputs(installSource: InstallSource.sideload),
+          ),
           isFalse,
         );
+      });
+
+      test('returns false before sustained use', () {
+        final service = AppReviewPromptService(sharedPreferences: prefs);
+        expect(
+          service.shouldLoadProfileStats(
+            localInputs(sessionCount: 3, daysSinceFirstLaunch: 4),
+          ),
+          isFalse,
+        );
+      });
+
+      test('returns false during cooldown', () async {
+        final now = DateTime(2026, 7, 25);
+        final service = AppReviewPromptService(
+          sharedPreferences: prefs,
+          now: () => now,
+        );
+        await service.recordShown(pubkey);
+
+        expect(service.shouldLoadProfileStats(localInputs()), isFalse);
       });
     });
 
@@ -204,33 +244,6 @@ void main() {
       });
     });
 
-    group('completed flag', () {
-      test('returns false once recordCompleted is set', () async {
-        final service = AppReviewPromptService(sharedPreferences: prefs);
-        await service.recordCompleted(pubkey);
-
-        expect(service.shouldShow(eligibleInputs()), isFalse);
-      });
-
-      test(
-        'completed flag short-circuits even after the cooldown elapses',
-        () async {
-          final service = AppReviewPromptService(
-            sharedPreferences: prefs,
-            now: () => DateTime(2026, 1, 15),
-          );
-          await service.recordShown(pubkey);
-          await service.recordCompleted(pubkey);
-
-          final laterService = AppReviewPromptService(
-            sharedPreferences: prefs,
-            now: () => DateTime(2026, 12, 15),
-          );
-          expect(laterService.shouldShow(eligibleInputs()), isFalse);
-        },
-      );
-    });
-
     group('per-user key isolation', () {
       test('a cooldown on pubkey-a does not block pubkey-b', () async {
         final now = DateTime(2026, 7, 25);
@@ -240,28 +253,31 @@ void main() {
         );
         await service.recordShown('pubkey-a');
 
-        expect(
-          service.shouldShow(eligibleInputs(pubkey: 'pubkey-b')),
-          isTrue,
-        );
+        expect(service.shouldShow(eligibleInputs(pubkey: 'pubkey-b')), isTrue);
       });
 
-      test('reset clears the cooldown for that pubkey only', () async {
-        final now = DateTime(2026, 7, 25);
-        final service = AppReviewPromptService(
-          sharedPreferences: prefs,
-          now: () => now,
-        );
-        await service.recordShown('pubkey-a');
-        await service.recordShown('pubkey-b');
-        await service.reset('pubkey-a');
+      test(
+        'cooldown for pubkey-b does not affect pubkey-a after expiry',
+        () async {
+          final now = DateTime(2026, 7, 25);
+          final service = AppReviewPromptService(
+            sharedPreferences: prefs,
+            now: () => now,
+          );
+          await service.recordShown('pubkey-a');
+          await service.recordShown('pubkey-b');
 
-        expect(service.shouldShow(eligibleInputs()), isTrue);
-        expect(
-          service.shouldShow(eligibleInputs(pubkey: 'pubkey-b')),
-          isFalse,
-        );
-      });
+          final laterService = AppReviewPromptService(
+            sharedPreferences: prefs,
+            now: () => DateTime(2027, 1, 25),
+          );
+          expect(laterService.shouldShow(eligibleInputs()), isTrue);
+          expect(
+            laterService.shouldShow(eligibleInputs(pubkey: 'pubkey-b')),
+            isTrue,
+          );
+        },
+      );
     });
 
     group('recordShown uses the injected clock', () {
@@ -273,7 +289,7 @@ void main() {
         );
         await service.recordShown(pubkey);
 
-        final stored = prefs.getInt('review_prompt_dismissed_at_$pubkey');
+        final stored = prefs.getInt('review_prompt_attempted_at_$pubkey');
         expect(stored, fixed.millisecondsSinceEpoch);
       });
     });

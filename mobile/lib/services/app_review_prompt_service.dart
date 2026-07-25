@@ -35,6 +35,30 @@ class ReviewEligibilityInputs {
   final int daysSinceFirstLaunch;
 }
 
+/// Local-only inputs evaluated before opening the profile-stats stream.
+@immutable
+class ReviewLocalEligibilityInputs {
+  const ReviewLocalEligibilityInputs({
+    required this.pubkey,
+    required this.installSource,
+    required this.sessionCount,
+    required this.daysSinceFirstLaunch,
+  });
+
+  /// Hex pubkey of the currently signed-in account.
+  final String pubkey;
+
+  /// How this install was distributed.
+  final InstallSource installSource;
+
+  /// Cold-start count for this install (from [AppEngagementStore]).
+  final int sessionCount;
+
+  /// Whole days since the install's first cold start
+  /// (from [AppEngagementStore]).
+  final int daysSinceFirstLaunch;
+}
+
 /// Eligibility gate and per-user cooldown for the in-app review prompt.
 ///
 /// Design notes:
@@ -84,11 +108,27 @@ class AppReviewPromptService {
   static const defaultCooldown = Duration(days: 180);
 
   /// SharedPreferences key prefixes (pubkey-suffixed).
-  static const _dismissedAtPrefix = 'review_prompt_dismissed_at_';
-  static const _completedPrefix = 'review_prompt_completed_';
+  static const _attemptedAtPrefix = 'review_prompt_attempted_at_';
 
-  String _dismissedAtKey(String pubkey) => '$_dismissedAtPrefix$pubkey';
-  String _completedKey(String pubkey) => '$_completedPrefix$pubkey';
+  String _attemptedAtKey(String pubkey) => '$_attemptedAtPrefix$pubkey';
+
+  /// Returns `true` when the local, cheap criteria pass.
+  ///
+  /// Profile stats are fetched only after this succeeds so the app root does
+  /// not keep a Drift watch open for users who are clearly ineligible.
+  bool shouldLoadProfileStats(
+    ReviewLocalEligibilityInputs inputs, {
+    DateTime? now,
+  }) {
+    if (!_isStoreInstall(inputs.installSource)) return false;
+    if (!_hasSustainedUse(
+      sessionCount: inputs.sessionCount,
+      daysSinceFirstLaunch: inputs.daysSinceFirstLaunch,
+    )) {
+      return false;
+    }
+    return !_isInCooldown(inputs.pubkey, now: now);
+  }
 
   /// Returns `true` only when every eligibility condition is met and the
   /// per-user cooldown has elapsed.
@@ -104,31 +144,21 @@ class AppReviewPromptService {
   bool shouldShow(ReviewEligibilityInputs inputs, {DateTime? now}) {
     final referenceNow = now ?? _now();
 
-    // (1) Store installs only — TestFlight/Zapstore/sideload can't review.
-    if (inputs.installSource != InstallSource.playStore &&
-        inputs.installSource != InstallSource.appStore) {
-      return false;
-    }
+    if (!_isStoreInstall(inputs.installSource)) return false;
 
     // (2) Genuinely invested creator.
     if (inputs.videoCount <= minimumVideoCount) return false;
 
     // (3) Sustained use — either enough sessions or enough days on the install.
-    final sustainedUse =
-        inputs.sessionCount >= minimumSessionCount ||
-        inputs.daysSinceFirstLaunch >= minimumDaysSinceFirstLaunch;
-    if (!sustainedUse) return false;
-
-    // (4) Safety hatch: a future review API may report completion. Until then
-    //     the native card stays opaque and this flag is never set.
-    if (_prefs.getBool(_completedKey(inputs.pubkey)) ?? false) return false;
-
-    // (5) Per-user cooldown after the most recent prompt attempt.
-    final dismissedMillis = _prefs.getInt(_dismissedAtKey(inputs.pubkey));
-    if (dismissedMillis != null) {
-      final dismissedAt = DateTime.fromMillisecondsSinceEpoch(dismissedMillis);
-      if (referenceNow.difference(dismissedAt) < cooldown) return false;
+    if (!_hasSustainedUse(
+      sessionCount: inputs.sessionCount,
+      daysSinceFirstLaunch: inputs.daysSinceFirstLaunch,
+    )) {
+      return false;
     }
+
+    // (4) Per-user cooldown after the most recent prompt attempt.
+    if (_isInCooldown(inputs.pubkey, now: referenceNow)) return false;
 
     return true;
   }
@@ -138,20 +168,26 @@ class AppReviewPromptService {
   /// after every call to `InAppReview.requestReview()`, regardless of outcome.
   Future<void> recordShown(String pubkey, {DateTime? now}) async {
     final at = (now ?? _now()).millisecondsSinceEpoch;
-    await _prefs.setInt(_dismissedAtKey(pubkey), at);
+    await _prefs.setInt(_attemptedAtKey(pubkey), at);
   }
 
-  /// Marks a pubkey as having completed a review. Currently unused by the
-  /// coordinator (the native API is opaque); retained so a future,
-  /// observable review surface can flip it without changing this service's API.
-  Future<void> recordCompleted(String pubkey) async {
-    await _prefs.setBool(_completedKey(pubkey), true);
+  bool _isStoreInstall(InstallSource installSource) {
+    return installSource == InstallSource.playStore ||
+        installSource == InstallSource.appStore;
   }
 
-  /// Resets all review-prompt state for [pubkey]. Test-helper / future
-  /// debug-screen affordance; not called from production paths today.
-  Future<void> reset(String pubkey) async {
-    await _prefs.remove(_dismissedAtKey(pubkey));
-    await _prefs.remove(_completedKey(pubkey));
+  bool _hasSustainedUse({
+    required int sessionCount,
+    required int daysSinceFirstLaunch,
+  }) {
+    return sessionCount >= minimumSessionCount ||
+        daysSinceFirstLaunch >= minimumDaysSinceFirstLaunch;
+  }
+
+  bool _isInCooldown(String pubkey, {DateTime? now}) {
+    final attemptedMillis = _prefs.getInt(_attemptedAtKey(pubkey));
+    if (attemptedMillis == null) return false;
+    final attemptedAt = DateTime.fromMillisecondsSinceEpoch(attemptedMillis);
+    return (now ?? _now()).difference(attemptedAt) < cooldown;
   }
 }

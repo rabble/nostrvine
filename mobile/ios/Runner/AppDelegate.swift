@@ -213,12 +213,11 @@ extension FlutterError: @retroactive Error {}
       switch call.method {
       case "isSandboxReceipt":
         // The receipt URL is nil in simulator/debug runs without a store
-        // receipt; treat that as "not sandbox" so debug builds don't get
-        // classified as TestFlight. Production App Store builds always have a
-        // receipt URL whose lastPathComponent is "receipt".
+        // receipt. Return nil so Dart fails closed to sideload instead of
+        // pretending an unknown receipt environment is the App Store.
         guard let receiptURL = Bundle.main.appStoreReceiptURL else {
-          NSLog("📦 InstallSource: no receipt URL — defaulting to App Store")
-          result(false)
+          NSLog("📦 InstallSource: no receipt URL — returning unknown")
+          result(nil)
           return
         }
         let isSandbox = receiptURL.lastPathComponent == "sandboxReceipt"
