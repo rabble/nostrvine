@@ -21,13 +21,43 @@ enum _C2paMissingChoice { regenerate, skip }
 /// expiration settings.
 class VideoMetadataScreen extends ConsumerStatefulWidget {
   /// Creates a video metadata editing screen.
-  const VideoMetadataScreen({super.key});
+  const VideoMetadataScreen({this.draftMode, super.key});
 
   /// Route name for this screen.
   static const routeName = 'video-metadata';
 
   /// Path for this route.
   static const path = '/video-metadata';
+
+  /// Query parameter carrying the composition mode from the draft editor.
+  static const draftModeQueryParameter = 'mode';
+
+  /// Builds the metadata location for a draft editor composition.
+  ///
+  /// Drafts always use the capture metadata flow. Stop-motion drafts retain
+  /// their distinct mode so future mode-specific behavior can branch without
+  /// consulting the unrelated last-used recorder preference.
+  static String pathForDraft({required bool isStopMotion}) {
+    final mode = isStopMotion
+        ? VideoRecorderMode.stopMotion
+        : VideoRecorderMode.capture;
+    return Uri(
+      path: path,
+      queryParameters: {draftModeQueryParameter: mode.name},
+    ).toString();
+  }
+
+  /// Parses the only recorder modes valid for an editor draft.
+  static VideoRecorderMode? draftModeFromName(String? name) => switch (name) {
+    'capture' => VideoRecorderMode.capture,
+    'stopMotion' => VideoRecorderMode.stopMotion,
+    _ => null,
+  };
+
+  /// Mode derived from the draft composition by the video editor.
+  ///
+  /// When absent, direct recorder flows retain the persisted recorder mode.
+  final VideoRecorderMode? draftMode;
 
   @override
   ConsumerState<VideoMetadataScreen> createState() =>
@@ -120,11 +150,13 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 
     // The recorder bloc is screen-scoped and this screen is a separate route,
     // so read the mode the recorder persisted rather than the (absent) bloc.
-    final recorderMode = VideoRecorderMode.fromName(
-      ref
-          .watch(sharedPreferencesProvider)
-          .getString(VideoRecorderMode.persistenceKey),
-    );
+    final recorderMode =
+        widget.draftMode ??
+        VideoRecorderMode.fromName(
+          ref
+              .watch(sharedPreferencesProvider)
+              .getString(VideoRecorderMode.persistenceKey),
+        );
 
     // Cancel video render when user navigates back
     return PopScope(
@@ -137,15 +169,14 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         child: switch (recorderMode) {
           // Lip-sync shares capture's editor + metadata flow. Stop-motion
           // produces a normal video clip, so it shares the same capture-mode
-          // metadata UI.
+          // metadata UI. Upload cannot navigate here directly; treating it as
+          // capture is a safe fallback for restored legacy draft routes that
+          // do not carry the draft mode query parameter.
           .capture ||
           .stopMotion ||
-          .lipSync => const VideoMetadataCaptureStack(),
+          .lipSync ||
+          .upload => const VideoMetadataCaptureStack(),
           .classic => const VideoMetadataClassicStack(),
-          // Deliberately unreachable: upload mode has no record button, so no
-          // clips can be created and the user cannot navigate to the metadata
-          // screen while in this mode. Required only for switch exhaustiveness.
-          .upload => const SizedBox.shrink(),
         },
       ),
     );

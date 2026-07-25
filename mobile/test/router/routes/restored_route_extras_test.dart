@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/router/routes/profile_routes.dart';
 import 'package:openvine/router/routes/video_routes.dart';
 import 'package:openvine/router/widgets/other_profile_screen_router.dart';
@@ -11,6 +12,7 @@ import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 
 class _FakeGoRouterState extends Fake implements GoRouterState {
   _FakeGoRouterState({
@@ -171,6 +173,53 @@ void main() {
       expect(draft.draftId, 'draft-1');
       expect(draft.fromLibrary, isTrue);
       expect(malformed.fromLibrary, isFalse);
+    });
+
+    testWidgets('video metadata route restores draft recorder modes', (
+      tester,
+    ) async {
+      final route = _routeNamed(videoRoutes(), VideoMetadataScreen.routeName);
+      late VideoMetadataScreen capture;
+      late VideoMetadataScreen stopMotion;
+      late VideoMetadataScreen unsupported;
+
+      await _buildWithContext(tester, (context) {
+        capture =
+            route.builder!(
+                  context,
+                  _FakeGoRouterState(
+                    location: VideoMetadataScreen.pathForDraft(
+                      isStopMotion: false,
+                    ),
+                    pathParameters: const {},
+                  ),
+                )
+                as VideoMetadataScreen;
+        stopMotion =
+            route.builder!(
+                  context,
+                  _FakeGoRouterState(
+                    location: VideoMetadataScreen.pathForDraft(
+                      isStopMotion: true,
+                    ),
+                    pathParameters: const {},
+                  ),
+                )
+                as VideoMetadataScreen;
+        unsupported =
+            route.builder!(
+                  context,
+                  _FakeGoRouterState(
+                    location: '${VideoMetadataScreen.path}?mode=upload',
+                    pathParameters: const {},
+                  ),
+                )
+                as VideoMetadataScreen;
+      });
+
+      expect(capture.draftMode, VideoRecorderMode.capture);
+      expect(stopMotion.draftMode, VideoRecorderMode.stopMotion);
+      expect(unsupported.draftMode, isNull);
     });
 
     testWidgets('video edit routes tolerate decoded maps and no extra', (

@@ -1899,7 +1899,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     final awaitCover = VideoEditorScope.of(context).awaitPushCoverTransition;
     final gate = _decoderReleaseGate = Completer<void>();
     _isMetadataRouteActive = true;
-    final navigation = context.push(VideoMetadataScreen.path);
+    final navigation = context.push(
+      VideoMetadataScreen.pathForDraft(
+        isStopMotion: _isStopMotionComposition,
+      ),
+    );
     try {
       await (awaitCover?.call() ??
           awaitPushTransition(

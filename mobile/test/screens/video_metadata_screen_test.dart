@@ -53,7 +53,7 @@ void main() {
     // it without any BlocProvider on purpose: a regression to reading the bloc
     // would throw a ProviderNotFoundException and fail here (the crash hm21
     // hit in classic mode).
-    Widget buildScreen() {
+    Widget buildScreen({VideoRecorderMode? draftMode}) {
       return ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
@@ -66,10 +66,10 @@ void main() {
             ),
           ),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: VideoMetadataScreen(),
+          home: VideoMetadataScreen(draftMode: draftMode),
         ),
       );
     }
@@ -446,6 +446,38 @@ void main() {
     });
 
     group('recorder mode switch', () {
+      testWidgets('persisted upload mode falls back to capture metadata', (
+        tester,
+      ) async {
+        await prefs.setString(
+          VideoRecorderMode.persistenceKey,
+          VideoRecorderMode.upload.name,
+        );
+
+        await tester.pumpWidget(buildScreen());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoMetadataCaptureStack), findsOneWidget);
+        expect(find.text('Post details'), findsOneWidget);
+      });
+
+      testWidgets('draft stop-motion mode overrides a persisted classic mode', (
+        tester,
+      ) async {
+        await prefs.setString(
+          VideoRecorderMode.persistenceKey,
+          VideoRecorderMode.classic.name,
+        );
+
+        await tester.pumpWidget(
+          buildScreen(draftMode: VideoRecorderMode.stopMotion),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(VideoMetadataCaptureStack), findsOneWidget);
+        expect(find.byType(VideoMetadataClassicStack), findsNothing);
+      });
+
       testWidgets('renders $VideoMetadataCaptureStack when mode is capture', (
         tester,
       ) async {
