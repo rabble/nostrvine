@@ -9,14 +9,10 @@ import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
-  Future<List<FeedTuningDirection>> pumpOverlay(
-    WidgetTester tester, {
-    TargetPlatform? platform,
-  }) async {
+  Future<List<FeedTuningDirection>> pumpOverlay(WidgetTester tester) async {
     final tuned = <FeedTuningDirection>[];
     await tester.pumpWidget(
       MaterialApp(
-        theme: platform == null ? null : ThemeData(platform: platform),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(

@@ -143,15 +143,9 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
     final committed =
         _dragIntent == _DragIntent.horizontal &&
         _passedThreshold &&
-        direction != null &&
-        !_isRouteTransitionInProgress;
+        direction != null;
     _reset();
     if (committed) widget.onTuned(direction);
-  }
-
-  bool get _isRouteTransitionInProgress {
-    final animation = ModalRoute.of(context)?.animation;
-    return animation != null && animation.status != AnimationStatus.completed;
   }
 
   bool _isPlatformBackGestureStart(Offset globalPosition) {
