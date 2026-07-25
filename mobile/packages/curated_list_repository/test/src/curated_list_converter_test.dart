@@ -451,6 +451,59 @@ void main() {
         expect(tags, contains(equals(['e', 'video-1'])));
         expect(tags, contains(equals(['e', 'video-2'])));
       });
+
+      test('includes a-tags for addressable video references', () {
+        final list = CuratedList(
+          id: 'my-list',
+          name: 'Test',
+          videoEventIds: const [
+            '34235:pubkey123:horizontal-video',
+            '34236:pubkey456:vertical-video',
+            '34237:pubkey789:live-video',
+          ],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        final tags = CuratedListConverter.toEventTags(list);
+
+        expect(
+          tags,
+          contains(equals(['a', '34235:pubkey123:horizontal-video'])),
+        );
+        expect(tags, contains(equals(['a', '34236:pubkey456:vertical-video'])));
+        expect(tags, contains(equals(['a', '34237:pubkey789:live-video'])));
+        expect(
+          tags.where((tag) => tag.first == 'e').map((tag) => tag[1]),
+          isNot(
+            containsAll([
+              '34235:pubkey123:horizontal-video',
+              '34236:pubkey456:vertical-video',
+              '34237:pubkey789:live-video',
+            ]),
+          ),
+        );
+      });
+
+      test('keeps non-video addressable references as e-tags', () {
+        final list = CuratedList(
+          id: 'my-list',
+          name: 'Test',
+          videoEventIds: const [
+            '30023:pubkey123:some-article',
+            '34236::missing-pubkey',
+            '34236:pubkey456:',
+          ],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        final tags = CuratedListConverter.toEventTags(list);
+
+        expect(tags, contains(equals(['e', '30023:pubkey123:some-article'])));
+        expect(tags, contains(equals(['e', '34236::missing-pubkey'])));
+        expect(tags, contains(equals(['e', '34236:pubkey456:'])));
+      });
     });
 
     group('extractDTag', () {

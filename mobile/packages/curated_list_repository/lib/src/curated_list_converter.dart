@@ -54,11 +54,8 @@ abstract final class CuratedListConverter {
           case 'e':
             if (tag.length > 1) videoEventIds.add(tag[1]);
           case 'a':
-            if (tag.length > 1) {
-              final parts = tag[1].split(':');
-              if (parts.length >= 3 && _nip71VideoKinds.contains(parts[0])) {
-                videoEventIds.add(tag[1]);
-              }
+            if (tag.length > 1 && _isAddressableVideoReference(tag[1])) {
+              videoEventIds.add(tag[1]);
             }
           case 'collaborative':
             if (tag.length > 1 && tag[1] == 'true') {
@@ -137,8 +134,12 @@ abstract final class CuratedListConverter {
 
     tags.add(['playorder', list.playOrder.value]);
 
-    for (final videoEventId in list.videoEventIds) {
-      tags.add(['e', videoEventId]);
+    for (final videoReference in list.videoEventIds) {
+      if (_isAddressableVideoReference(videoReference)) {
+        tags.add(['a', videoReference]);
+      } else {
+        tags.add(['e', videoReference]);
+      }
     }
 
     return tags;
@@ -155,5 +156,13 @@ abstract final class CuratedListConverter {
       }
     }
     return null;
+  }
+
+  static bool _isAddressableVideoReference(String value) {
+    final parts = value.split(':');
+    return parts.length >= 3 &&
+        _nip71VideoKinds.contains(parts[0]) &&
+        parts[1].isNotEmpty &&
+        parts[2].isNotEmpty;
   }
 }

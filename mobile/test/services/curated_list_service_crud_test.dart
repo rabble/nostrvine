@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -13,8 +14,6 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/utils/curated_list_ext.dart';
-import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -177,7 +176,10 @@ void main() {
 
         when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) {
           final event = invocation.positionalArguments[0] as Event;
-          lists.add(event.toCuratedList());
+          final list = CuratedListConverter.fromEvent(event);
+          if (list != null) {
+            lists.add(list);
+          }
           return Future.value(PublishSuccess(event: event));
         });
 
@@ -192,7 +194,7 @@ void main() {
               if (filter.authors?.contains(_ownerPubkey) ?? false) {
                 return Stream.fromIterable(
                   lists.map((l) {
-                    final tags = l.getEventTags();
+                    final tags = CuratedListConverter.toEventTags(l);
                     final description =
                         l.description ?? 'Curated video list: ${l.name}';
 

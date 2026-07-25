@@ -14,6 +14,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
@@ -21,8 +22,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/curated_list_ext.dart';
-import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -1045,7 +1044,7 @@ class CuratedListService extends ChangeNotifier {
       }
 
       final content = list.description ?? 'Curated video list: ${list.name}';
-      final tags = list.getEventTags();
+      final tags = CuratedListConverter.toEventTags(list);
 
       final event = await _authService.createAndSignEvent(
         kind: 30005, // NIP-51 curated list
@@ -1783,7 +1782,15 @@ class CuratedListService extends ChangeNotifier {
         return;
       }
 
-      final curatedList = event.toCuratedList();
+      final curatedList = CuratedListConverter.fromEvent(event);
+      if (curatedList == null) {
+        Log.warning(
+          'Failed to parse list event: ${event.id}',
+          name: 'CuratedListService',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Check if we already have this list locally
       final existingListIndex = _lists.indexWhere((list) => list.id == dTag);
