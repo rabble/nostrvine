@@ -351,49 +351,7 @@ class _MessagesContent extends ConsumerWidget {
       },
       child: Stack(
         children: [
-          Column(
-            children: [
-              // Pinned Divine Moderation support row (#6283).
-              //
-              // Deliberately ABOVE the status switch inside
-              // _ConversationListContent: that switch replaces the entire list
-              // subtree with a spinner while the bloc loads, and returns early
-              // to InboxEmptyState for a user with no conversations — so a row
-              // rendered inside the list would be invisible in five of the six
-              // branches, including for the brand-new user who most needs it.
-              // Placed above FollowingBar so its position does not shift when
-              // the following strip resolves from empty to 128px.
-              _PinnedSupportRow(currentUserPubkey: currentPubkey),
-              // Following users horizontal bar
-              FollowingBar(
-                onUserTapped: (pubkey) {
-                  Log.info(
-                    '👤 User tapped in following bar: $pubkey',
-                    name: 'InboxView',
-                    category: LogCategory.ui,
-                  );
-                  context.read<ConversationListBloc>().add(
-                    ConversationListNavigateToUser(pubkey),
-                  );
-                },
-              ),
-              // Thin restore progress bar while the one-time reinstall
-              // history recovery is still running (#5202).
-              const _RestoringHistoryIndicator(),
-              // Static banner while the recovery gate is still hiding
-              // would-be message requests. Mounted here, as a sibling of the
-              // content, so it covers every branch below — empty inbox,
-              // requests-only, filtered, and populated — without threading a
-              // flag through each one or shifting the sliver banner offsets.
-              const _RestorePausedBannerGate(),
-              // Conversation list or empty state
-              Expanded(
-                child: _ConversationListContent(
-                  currentUserPubkey: currentPubkey,
-                ),
-              ),
-            ],
-          ),
+          _MessagesScrollView(currentUserPubkey: currentPubkey),
           // FAB positioned bottom-right
           PositionedDirectional(
             end: _kFabInset,
@@ -490,15 +448,29 @@ class _RestorePausedBannerGate extends StatelessWidget {
   }
 }
 
-/// Pinned "Divine Moderation" support row at the top of the Messages tab.
+/// "Divine Moderation" support tile, always rendered as the first row of the
+/// conversation list (#6283).
 ///
-/// Renders nothing unless [ConversationListState.pinnedConversation] is set —
-/// the bloc composes that inside the same pipeline that applies the blocklist
-/// filter and the protected-minor gate, so a user who blocked the moderation
-/// account, or a restricted minor whose approval was revoked, gets no row
-/// rather than one the conversation route guard would bounce.
+/// It sits *inside* the scroll view rather than above it: as fixed chrome it
+/// cost ~92px of a viewport the keyboard already halves on a small phone, and
+/// it read as the screen's headline rather than as one chat among many.
+/// Ordering is not left to the list's recency sort — a synthetic row carries
+/// no timestamp and would sink out of reach.
+///
+/// The caller only builds this when
+/// [ConversationListState.pinnedConversation] is non-null: the bloc composes
+/// that inside the same pipeline that applies the blocklist filter and the
+/// protected-minor gate, so a user who blocked the moderation account, or a
+/// restricted minor whose approval was revoked, gets no row rather than one
+/// the conversation route guard would bounce.
 class _PinnedSupportRow extends StatelessWidget {
-  const _PinnedSupportRow({required this.currentUserPubkey});
+  const _PinnedSupportRow({
+    required this.conversation,
+    required this.currentUserPubkey,
+  });
+
+  /// The adopted real moderation thread, or the synthetic stand-in.
+  final DmConversation conversation;
 
   /// Signed-in pubkey. Passed in rather than derived from the conversation's
   /// participant list — that list is sorted, so its first entry is not
@@ -508,10 +480,7 @@ class _PinnedSupportRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pinned = context.select<ConversationListBloc, DmConversation?>(
-      (bloc) => bloc.state.pinnedConversation,
-    );
-    if (pinned == null) return const SizedBox.shrink();
+    final pinned = conversation;
 
     return ConversationTile(
       conversation: pinned,
@@ -540,48 +509,41 @@ class _PinnedSupportRow extends StatelessWidget {
   }
 }
 
-/// Switches between loading, error, empty, and conversation list states.
-class _ConversationListContent extends StatelessWidget {
-  const _ConversationListContent({required this.currentUserPubkey});
+/// Exact height of [UnreadFilterChips]: 8px of vertical padding either side of
+/// a [DivineButtonSize.tiny] chip, whose 32px box is deliberately immune to
+/// text scaling. A pinned sliver has to declare its extent up front, and an
+/// under-declared one clips the chips, so this is pinned by a widget test
+/// rather than trusted.
+const double _kFilterChipsExtent = 48;
+
+/// The whole Messages pane as a single scroll view.
+///
+/// Every piece of chrome — following bar, search field, filter chips — used to
+/// be a fixed-height child of a [Column] wrapping the list, which on a small
+/// Android phone left the list roughly one row tall once the keyboard opened,
+/// and overflowed outright (#6388 review, items 4 and 5). Only the filter
+/// chips stay pinned now; everything above them scrolls away, handing the
+/// viewport back on every device rather than only below some height
+/// threshold. The keyboard, not the screen, is what collapses the viewport —
+/// a threshold would have missed the tall-phone case entirely.
+class _MessagesScrollView extends ConsumerStatefulWidget {
+  const _MessagesScrollView({required this.currentUserPubkey});
 
   final String currentUserPubkey;
 
   @override
-  Widget build(BuildContext context) {
-    final status = context.select<ConversationListBloc, ConversationListStatus>(
-      (bloc) => bloc.state.status,
-    );
-
-    return switch (status) {
-      ConversationListStatus.initial ||
-      ConversationListStatus.loading => const Center(
-        child: CircularProgressIndicator(color: VineTheme.primary),
-      ),
-      ConversationListStatus.error => InboxErrorState(
-        onRetry: () => context.read<ConversationListBloc>().add(
-          const ConversationListStarted(),
-        ),
-      ),
-      ConversationListStatus.loaded => _ConversationList(
-        currentUserPubkey: currentUserPubkey,
-      ),
-    };
-  }
+  ConsumerState<_MessagesScrollView> createState() => _ConversationListState();
 }
 
-class _ConversationList extends ConsumerStatefulWidget {
-  const _ConversationList({required this.currentUserPubkey});
-
-  final String currentUserPubkey;
-
-  @override
-  ConsumerState<_ConversationList> createState() => _ConversationListState();
-}
-
-class _ConversationListState extends ConsumerState<_ConversationList>
+class _ConversationListState extends ConsumerState<_MessagesScrollView>
     with ScrollPaginationMixin {
   final ScrollController _scrollController = ScrollController();
   late final TextEditingController _searchController;
+  final FocusNode _searchFocusNode = FocusNode();
+
+  /// Whether the search field holds focus, i.e. the keyboard is up and the
+  /// viewport is roughly halved.
+  bool _searchFocused = false;
 
   /// ID of the conversation whose long-press action sheet is currently open.
   /// Drives the [ConversationTile] highlight so the user can see which row
@@ -606,28 +568,113 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   @override
   void initState() {
     super.initState();
-    // Seed from the bloc rather than starting empty. This State is recreated
-    // whenever the status leaves `loaded` (a stream error and its retry) or a
-    // keyed BlocProvider above re-inflates the view, while the bloc — and so
-    // state.searchQuery — survives. A fresh empty controller would leave the
-    // list filtered by an invisible query: the search empty state over a blank
-    // field, with pagination silently suspended.
+    // Seed from the bloc rather than starting empty. This State survives a
+    // status change now that it owns every branch, but a keyed BlocProvider
+    // above still re-inflates it while the bloc — and so state.searchQuery —
+    // survives. A fresh empty controller would leave the list filtered by an
+    // invisible query: the search empty state over a blank field, with
+    // pagination silently suspended.
     _searchController = TextEditingController(
       text: context.read<ConversationListBloc>().state.searchQuery,
     );
+    _searchFocusNode.addListener(_onSearchFocusChanged);
     initPagination();
+  }
+
+  void _onSearchFocusChanged() {
+    if (_searchFocusNode.hasFocus == _searchFocused) return;
+    setState(() => _searchFocused = _searchFocusNode.hasFocus);
   }
 
   @override
   void dispose() {
     disposePagination();
     _scrollController.dispose();
+    _searchFocusNode
+      ..removeListener(_onSearchFocusChanged)
+      ..dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final status = context.select<ConversationListBloc, ConversationListStatus>(
+      (bloc) => bloc.state.status,
+    );
+
+    return CustomScrollView(
+      controller: _scrollController,
+      slivers: [
+        // Collapses while the search field holds focus (#6388 review, item 5).
+        //
+        // Keyed off focus rather than off a non-empty query on purpose: the
+        // keyboard is what halves the viewport, and `state.searchQuery` stays
+        // empty below `minSearchQueryLength` (2) — so a query-driven collapse
+        // would still be showing 128px of faces after the first keystroke,
+        // which is exactly the moment the list has the least room.
+        SliverToBoxAdapter(
+          child: AnimatedSize(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: _searchFocused
+                ? const SizedBox(width: double.infinity)
+                : FollowingBar(
+                    onUserTapped: (pubkey) {
+                      Log.info(
+                        '👤 User tapped in following bar: $pubkey',
+                        name: 'InboxView',
+                        category: LogCategory.ui,
+                      );
+                      context.read<ConversationListBloc>().add(
+                        ConversationListNavigateToUser(pubkey),
+                      );
+                    },
+                  ),
+          ),
+        ),
+        // Thin restore progress bar while the one-time reinstall history
+        // recovery is still running (#5202).
+        const SliverToBoxAdapter(child: _RestoringHistoryIndicator()),
+        // Static banner while the recovery gate is still hiding would-be
+        // message requests (#6431). Emitted OUTSIDE the status switch, which
+        // is what its Column placement bought before this pane became a single
+        // scroll view: it still covers every branch below — empty inbox,
+        // requests-only, filtered, and populated — without threading a flag
+        // through each one. It gates itself on the loaded status, so the
+        // loading spinner and InboxErrorState branches are unaffected.
+        const SliverToBoxAdapter(child: _RestorePausedBannerGate()),
+        ...switch (status) {
+          ConversationListStatus.initial ||
+          ConversationListStatus.loading => const [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: CircularProgressIndicator(color: VineTheme.primary),
+              ),
+            ),
+          ],
+          ConversationListStatus.error => [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: InboxErrorState(
+                onRetry: () => context.read<ConversationListBloc>().add(
+                  const ConversationListStarted(),
+                ),
+              ),
+            ),
+          ],
+          ConversationListStatus.loaded => _loadedSlivers(context),
+        },
+      ],
+    );
+  }
+
+  /// Slivers for the `loaded` status, in render order.
+  List<Widget> _loadedSlivers(BuildContext context) {
     final conversations = context
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
@@ -654,35 +701,48 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     final isFiltering = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.isFiltering,
     );
+    final pinned = context.select<ConversationListBloc, DmConversation?>(
+      (bloc) => bloc.state.pinnedConversation,
+    );
 
-    if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
+    final supportRow = pinned == null
+        ? null
+        : _PinnedSupportRow(
+            conversation: pinned,
+            currentUserPubkey: widget.currentUserPubkey,
+          );
 
-    // Only requests, no followed conversations — show banner + empty state
-    if (conversations.isEmpty && hasRequests) {
-      return Column(
-        children: [
-          MessageRequestsBanner(
-            requestCount: requestUnreadCount,
-            onTap: () => _openMessageRequests(context),
-          ),
-          const Expanded(child: InboxEmptyState()),
-        ],
-      );
+    // Nothing but the support row to show. Keep the empty-state copy — a
+    // brand-new user still needs to be told the inbox is empty — but render
+    // the row above it rather than dropping it, and skip the search field and
+    // filter chips, which have nothing to act on.
+    if (conversations.isEmpty && !hasRequests) {
+      return [
+        if (supportRow != null) SliverToBoxAdapter(child: supportRow),
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: InboxEmptyState(),
+        ),
+      ];
     }
 
-    return Column(
-      children: [
-        Padding(
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: DivineSearchBar(
             controller: _searchController,
+            focusNode: _searchFocusNode,
             hintText: context.l10n.inboxSearchHint,
             onChanged: (value) => context.read<ConversationListBloc>().add(
               ConversationListSearchQueryChanged(value),
             ),
           ),
         ),
-        UnreadFilterChips(
+      ),
+      SliverPersistentHeader(
+        pinned: true,
+        delegate: _FilterChipsHeaderDelegate(
           unreadOnly: unreadOnly,
           onUnreadOnlyChanged: (value) {
             if (value == unreadOnly) return;
@@ -691,39 +751,105 @@ class _ConversationListState extends ConsumerState<_ConversationList>
             );
           },
         ),
-        Expanded(
-          child: visibleConversations.isEmpty
-              ? _FilteredEmptyContent(
-                  title: searchQuery.isNotEmpty
-                      ? context.l10n.inboxSearchEmptyTitle
-                      : context.l10n.inboxUnreadEmptyTitle,
-                  subtitle: searchQuery.isNotEmpty
-                      ? context.l10n.inboxSearchEmptySubtitle
-                      : context.l10n.inboxUnreadEmptySubtitle,
-                  hasRequests: hasRequests,
-                  requestUnreadCount: requestUnreadCount,
-                  onOpenRequests: () => _openMessageRequests(context),
-                )
-              : _ConversationListView(
-                  scrollController: _scrollController,
-                  conversations: visibleConversations,
-                  hasRequests: hasRequests,
-                  requestUnreadCount: requestUnreadCount,
-                  // Suppress the load-more affordance while a filter/search
-                  // narrows the list: the filtered result is already complete,
-                  // and a short one can't scroll to trigger a load — leaving a
-                  // spinner that never resolves.
-                  hasMore: hasMore && !isFiltering,
-                  highlightedConversationId: _highlightedConversationId,
-                  currentUserPubkey: widget.currentUserPubkey,
-                  onOpenRequests: () => _openMessageRequests(context),
-                  onConversationTapped: (conversation) =>
-                      _onConversationTapped(context, conversation),
-                  onConversationLongPressed: (conversation) =>
-                      _onConversationLongPressed(context, ref, conversation),
+      ),
+      // First tile of the list, ahead of the requests banner and every real
+      // conversation — but only when it would survive the active filter. A
+      // row that matches neither the query nor the Unread chip, sitting atop
+      // a filtered result set, reads as a search hit that isn't one.
+      if (supportRow != null &&
+          _supportRowSurvivesFilter(
+            context,
+            pinned: pinned!,
+            unreadOnly: unreadOnly,
+            query: searchQuery,
+          ))
+        SliverToBoxAdapter(child: supportRow),
+      if (visibleConversations.isEmpty) ...[
+        if (hasRequests)
+          SliverToBoxAdapter(
+            child: MessageRequestsBanner(
+              requestCount: requestUnreadCount,
+              onTap: () => _openMessageRequests(context),
+            ),
+          ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _FilteredEmptyContent(
+            title: searchQuery.isNotEmpty
+                ? context.l10n.inboxSearchEmptyTitle
+                : context.l10n.inboxUnreadEmptyTitle,
+            subtitle: searchQuery.isNotEmpty
+                ? context.l10n.inboxSearchEmptySubtitle
+                : context.l10n.inboxUnreadEmptySubtitle,
+          ),
+        ),
+      ] else ...[
+        if (hasRequests)
+          SliverToBoxAdapter(
+            child: MessageRequestsBanner(
+              requestCount: requestUnreadCount,
+              onTap: () => _openMessageRequests(context),
+            ),
+          ),
+        SliverList.builder(
+          itemCount: visibleConversations.length,
+          itemBuilder: (context, index) {
+            final conversation = visibleConversations[index];
+            return ConversationTile(
+              conversation: conversation,
+              currentUserPubkey: widget.currentUserPubkey,
+              highlighted: conversation.id == _highlightedConversationId,
+              onTap: () => _onConversationTapped(context, conversation),
+              onLongPress: () =>
+                  _onConversationLongPressed(context, ref, conversation),
+            );
+          },
+        ),
+        // Suppress the load-more affordance while a filter/search narrows the
+        // list: the filtered result is already complete, and a short one
+        // can't scroll to trigger a load — leaving a spinner that never
+        // resolves.
+        if (hasMore && !isFiltering)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: VineTheme.primary,
+                    strokeWidth: 2,
+                  ),
                 ),
+              ),
+            ),
+          ),
+        // Clears the compose FAB so it never covers the last tile.
+        const SliverToBoxAdapter(
+          child: SizedBox(height: _kConversationListBottomInset),
         ),
       ],
+    ];
+  }
+
+  /// Whether the support row should still render under the active filter.
+  ///
+  /// It is pinned against the *sort*, not against the user's filters: hiding
+  /// it here is what makes it behave like any other chat once a query or the
+  /// Unread chip is on. [query] arrives already thresholded by the bloc — it
+  /// is `''` below `minSearchQueryLength` — so an empty string reliably means
+  /// "no search active".
+  bool _supportRowSurvivesFilter(
+    BuildContext context, {
+    required DmConversation pinned,
+    required bool unreadOnly,
+    required String query,
+  }) {
+    if (unreadOnly && pinned.isRead) return false;
+    if (query.isEmpty) return true;
+    return context.l10n.inboxSupportRowTitle.toLowerCase().contains(
+      query.toLowerCase(),
     );
   }
 
@@ -880,134 +1006,76 @@ class _ConversationListState extends ConsumerState<_ConversationList>
   }
 }
 
-/// Scrolling conversation list: optional requests banner, conversation
-/// tiles for [conversations], and a trailing load-more spinner.
-class _ConversationListView extends StatelessWidget {
-  const _ConversationListView({
-    required this.scrollController,
-    required this.conversations,
-    required this.hasRequests,
-    required this.requestUnreadCount,
-    required this.hasMore,
-    required this.highlightedConversationId,
-    required this.currentUserPubkey,
-    required this.onOpenRequests,
-    required this.onConversationTapped,
-    required this.onConversationLongPressed,
-  });
+/// Shown when an active filter (Unread chip or search) leaves nothing to
+/// list, confirming the list is not empty by accident.
+///
+/// The requests banner is emitted as its own sliver above this, so it stays
+/// reachable without this widget having to lay it out.
+class _FilteredEmptyContent extends StatelessWidget {
+  const _FilteredEmptyContent({required this.title, required this.subtitle});
 
-  final ScrollController scrollController;
-  final List<DmConversation> conversations;
-  final bool hasRequests;
-  final int requestUnreadCount;
-  final bool hasMore;
-  final String? highlightedConversationId;
-  final String currentUserPubkey;
-  final VoidCallback onOpenRequests;
-  final ValueChanged<DmConversation> onConversationTapped;
-  final ValueChanged<DmConversation> onConversationLongPressed;
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    final bannerOffset = hasRequests ? 1 : 0;
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.only(bottom: _kConversationListBottomInset),
-      itemCount: conversations.length + bannerOffset + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (hasRequests && index == 0) {
-          return MessageRequestsBanner(
-            requestCount: requestUnreadCount,
-            onTap: onOpenRequests,
-          );
-        }
-
-        final conversationIndex = index - bannerOffset;
-
-        if (conversationIndex == conversations.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: VineTheme.primary,
-                  strokeWidth: 2,
-                ),
-              ),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 8,
+          children: [
+            Text(
+              title,
+              style: VineTheme.titleMediumFont(color: VineTheme.onSurfaceMuted),
+              textAlign: TextAlign.center,
             ),
-          );
-        }
-
-        final conversation = conversations[conversationIndex];
-        return ConversationTile(
-          conversation: conversation,
-          currentUserPubkey: currentUserPubkey,
-          highlighted: conversation.id == highlightedConversationId,
-          onTap: () => onConversationTapped(conversation),
-          onLongPress: () => onConversationLongPressed(conversation),
-        );
-      },
+            Text(
+              subtitle,
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-/// Shown when an active filter (Unread chip or search) leaves nothing to
-/// list: keeps the requests banner reachable and confirms the list is not
-/// empty by accident.
-class _FilteredEmptyContent extends StatelessWidget {
-  const _FilteredEmptyContent({
-    required this.title,
-    required this.subtitle,
-    required this.hasRequests,
-    required this.requestUnreadCount,
-    required this.onOpenRequests,
+/// Pinned header carrying [UnreadFilterChips].
+///
+/// Pinned rather than scrolled away so the user can always drop back to All
+/// after narrowing to Unread without hunting for the chip. Opaque, because the
+/// conversation list scrolls underneath it.
+class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _FilterChipsHeaderDelegate({
+    required this.unreadOnly,
+    required this.onUnreadOnlyChanged,
   });
 
-  final String title;
-  final String subtitle;
-  final bool hasRequests;
-  final int requestUnreadCount;
-  final VoidCallback onOpenRequests;
+  final bool unreadOnly;
+  final ValueChanged<bool> onUnreadOnlyChanged;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (hasRequests)
-          MessageRequestsBanner(
-            requestCount: requestUnreadCount,
-            onTap: onOpenRequests,
-          ),
-        Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                spacing: 8,
-                children: [
-                  Text(
-                    title,
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    subtitle,
-                    style: VineTheme.bodyMediumFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+  double get minExtent => _kFilterChipsExtent;
+
+  @override
+  double get maxExtent => _kFilterChipsExtent;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
+    return ColoredBox(
+      color: VineTheme.surfaceContainerHigh,
+      child: UnreadFilterChips(
+        unreadOnly: unreadOnly,
+        onUnreadOnlyChanged: onUnreadOnlyChanged,
+      ),
     );
   }
+
+  @override
+  bool shouldRebuild(_FilterChipsHeaderDelegate oldDelegate) =>
+      oldDelegate.unreadOnly != unreadOnly ||
+      oldDelegate.onUnreadOnlyChanged != onUnreadOnlyChanged;
 }

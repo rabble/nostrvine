@@ -2857,8 +2857,10 @@ void main() {
         (s) => s.searchQuery == 'zzzz',
       );
 
-      // The row is a persistent affordance, not a search result: it is
-      // rendered outside the filtered list, so a query must not drop it.
+      // The bloc keeps composing the pin through a search so it is ready the
+      // moment the query clears — no refetch, no flash of an empty row. The
+      // decision to *render* it under an active filter belongs to the view,
+      // which drops it from searches its title does not match.
       expect(searched.pinnedConversation, isNotNull);
     });
   });
