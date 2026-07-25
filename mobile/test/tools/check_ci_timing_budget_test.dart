@@ -12,8 +12,8 @@ import 'package:path/path.dart' as p;
 ///
 /// The guard exists to stop measured CI wins eroding, so the properties that
 /// matter are that it actually fails when a job blows its budget, and that it
-/// never reports success when it could not really check (bad budget file, no
-/// job data, a budgeted job missing from the run).
+/// never reports success when it could not really check (bad budget file or no
+/// job data), while surfacing budgeted jobs that are absent from the run.
 void main() {
   group('check_ci_timing_budget.py', () {
     late Directory sandbox;
@@ -45,16 +45,23 @@ void main() {
     }
 
     /// A job that started at 00:00:00Z and ran for [seconds].
-    Map<String, Object?> job(String name, int seconds, {String? conclusion}) {
+    Map<String, Object?> job(
+      String name,
+      int seconds, {
+      String? conclusion,
+      String? startedAt,
+      String? completedAt,
+    }) {
       final minutes = seconds ~/ 60;
       final remainder = seconds % 60;
       return {
         'name': name,
         'conclusion': conclusion ?? 'success',
-        'started_at': '2026-07-25T00:00:00Z',
+        'started_at': startedAt ?? '2026-07-25T00:00:00Z',
         'completed_at':
+            completedAt ??
             '2026-07-25T00:${minutes.toString().padLeft(2, '0')}:'
-            '${remainder.toString().padLeft(2, '0')}Z',
+                '${remainder.toString().padLeft(2, '0')}Z',
       };
     }
 
@@ -99,6 +106,23 @@ void main() {
       expect(result.exitCode, 1);
       expect(result.stdout, contains('::error'));
       expect(result.stdout, contains('250s'));
+    });
+
+    test('handles GitHub timestamp offsets', () {
+      final result = run(
+        budgets: oneBudget,
+        jobs: [
+          job(
+            'Tests',
+            90,
+            startedAt: '2026-07-25T00:00:00-07:00',
+            completedAt: '2026-07-25T00:01:30-07:00',
+          ),
+        ],
+      );
+
+      expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+      expect(result.stdout, contains('90'));
     });
 
     test('one budget key covers every leg of a matrix job', () {
@@ -161,6 +185,37 @@ void main() {
       expect(result.stdout, contains('cannot run'));
     });
 
+    test('exits 2 when a budget threshold is not numeric', () {
+      final result = run(
+        budgets: {
+          'jobs': {
+            'Tests': {'warn': '100', 'fail': 200},
+          },
+        },
+        jobs: [job('Tests', 50)],
+      );
+
+      expect(result.exitCode, 2);
+      expect(result.stdout, contains('cannot run'));
+    });
+
+    test('exits 2 when a successful job has no completed duration', () {
+      final result = run(
+        budgets: oneBudget,
+        jobs: [
+          {
+            'name': 'Tests',
+            'conclusion': 'success',
+            'started_at': '2026-07-25T00:00:00Z',
+            'completed_at': null,
+          },
+        ],
+      );
+
+      expect(result.exitCode, 2);
+      expect(result.stdout, contains('cannot run'));
+    });
+
     test('exits 2 when the budget file has no jobs', () {
       final result = run(
         budgets: {'jobs': <String, Object>{}},
@@ -182,20 +237,15 @@ void main() {
         );
         expect(committed.existsSync(), isTrue);
 
-        final decoded =
-            jsonDecode(committed.readAsStringSync()) as Map<String, dynamic>;
-        final jobs = decoded['jobs'] as Map<String, dynamic>;
+        final decoded = jsonDecode(committed.readAsStringSync());
+        expect(decoded, isA<Map<String, dynamic>>());
+        final jobs = (decoded as Map<String, dynamic>)['jobs'];
+        expect(jobs, isA<Map<String, dynamic>>());
 
-        // The jobs the mobile-ci gate depends on must all carry a budget,
-        // otherwise a regression in one of them is invisible to the guard.
-        for (final name in const [
-          'Detect App CI Scope',
-          'Tests',
-          'Generated Files',
-          'Analyze',
-          'Format',
-          'VGV Tag Gate',
-        ]) {
+        final gateJobs = mobileCiGateJobNames();
+        expect(gateJobs, isNotEmpty);
+
+        for (final name in gateJobs) {
           expect(jobs, contains(name), reason: '$name has no timing budget');
           final entry = jobs[name] as Map<String, dynamic>;
           expect(
@@ -206,5 +256,70 @@ void main() {
         }
       },
     );
+
+    test('budget file edits require app CI', () {
+      final workflow = File(
+        p.join(
+          Directory.current.parent.path,
+          '.github',
+          'workflows',
+          'mobile_ci.yaml',
+        ),
+      ).readAsStringSync();
+
+      expect(workflow, contains('.github/ci-timing-budgets.json)'));
+    });
   });
+}
+
+List<String> mobileCiGateJobNames() {
+  final workflow = File(
+    p.join(
+      Directory.current.parent.path,
+      '.github',
+      'workflows',
+      'mobile_ci.yaml',
+    ),
+  ).readAsLinesSync();
+  final jobNamesById = <String, String>{};
+  String? currentJobId;
+  for (final line in workflow) {
+    final jobMatch = RegExp(r'^  ([a-z0-9-]+):$').firstMatch(line);
+    if (jobMatch != null) {
+      currentJobId = jobMatch.group(1);
+      continue;
+    }
+    final nameMatch = RegExp(r'^    name: (.+)$').firstMatch(line);
+    if (currentJobId != null && nameMatch != null) {
+      jobNamesById[currentJobId] = nameMatch.group(1)!;
+    }
+  }
+
+  final needs = <String>[];
+  var inMobileCi = false;
+  var inNeeds = false;
+  for (final line in workflow) {
+    if (line == '  mobile-ci:') {
+      inMobileCi = true;
+      continue;
+    }
+    if (inMobileCi && RegExp(r'^  [a-z0-9-]+:$').hasMatch(line)) {
+      break;
+    }
+    if (inMobileCi && line == '    needs:') {
+      inNeeds = true;
+      continue;
+    }
+    if (inNeeds) {
+      final needMatch = RegExp(r'^      - ([a-z0-9-]+)$').firstMatch(line);
+      if (needMatch == null) {
+        break;
+      }
+      needs.add(needMatch.group(1)!);
+    }
+  }
+
+  return [
+    for (final need in needs) jobNamesById[need] ?? need,
+  ];
 }

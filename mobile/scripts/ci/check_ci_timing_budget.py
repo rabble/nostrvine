@@ -19,9 +19,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import sys
 from pathlib import Path
+from typing import Any
+
+from ci_github import GhApiError, duration_seconds as elapsed_seconds
+from ci_github import gh_json_pages, parse_timestamp
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,15 +44,24 @@ def load_budgets(path: Path) -> dict[str, dict[str, float]]:
         raw = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError) as error:
         fail_to_run(f"could not read budgets at {path}: {error}")
+    if not isinstance(raw, dict):
+        fail_to_run(f"{path} must contain a JSON object")
     budgets = raw.get("jobs")
     if not isinstance(budgets, dict) or not budgets:
         fail_to_run(f"{path} has no non-empty 'jobs' object")
+    parsed: dict[str, dict[str, float]] = {}
     for name, entry in budgets.items():
+        if not isinstance(name, str):
+            fail_to_run("budget names must be strings")
         if not isinstance(entry, dict) or "warn" not in entry or "fail" not in entry:
             fail_to_run(f"budget for {name!r} needs both 'warn' and 'fail'")
-        if entry["warn"] > entry["fail"]:
-            fail_to_run(f"budget for {name!r} has warn ({entry['warn']}) above fail ({entry['fail']})")
-    return budgets
+        warn, fail = entry["warn"], entry["fail"]
+        if not is_number(warn) or not is_number(fail):
+            fail_to_run(f"budget for {name!r} needs numeric 'warn' and 'fail'")
+        if warn > fail:
+            fail_to_run(f"budget for {name!r} has warn ({warn}) above fail ({fail})")
+        parsed[name] = {"warn": float(warn), "fail": float(fail)}
+    return parsed
 
 
 def load_jobs(args: argparse.Namespace) -> list[dict]:
@@ -58,24 +70,34 @@ def load_jobs(args: argparse.Namespace) -> list[dict]:
             payload = json.loads(Path(args.jobs_json).read_text())
         except (OSError, json.JSONDecodeError) as error:
             fail_to_run(f"could not read jobs payload: {error}")
+        if not isinstance(payload, dict):
+            fail_to_run("job payload must contain a JSON object")
+        jobs = payload.get("jobs")
     else:
         if not args.repo or not args.run_id:
             fail_to_run("--repo and --run-id are required without --jobs-json")
-        command = [
-            "gh",
-            "api",
-            "--paginate",
-            f"/repos/{args.repo}/actions/runs/{args.run_id}/jobs?per_page=100",
-        ]
         try:
-            completed = subprocess.run(command, capture_output=True, text=True, check=True)
-        except (OSError, subprocess.CalledProcessError) as error:
+            pages = gh_json_pages(
+                f"/repos/{args.repo}/actions/runs/{args.run_id}/jobs?per_page=100",
+            )
+        except GhApiError as error:
             fail_to_run(f"gh api failed: {error}")
-        payload = json.loads(completed.stdout)
-    jobs = payload.get("jobs")
+        jobs = []
+        for page in pages:
+            page_jobs = page.get("jobs")
+            if not isinstance(page_jobs, list):
+                fail_to_run("job payload contained a page with no jobs list")
+            jobs.extend(page_jobs)
     if not isinstance(jobs, list) or not jobs:
         fail_to_run("job payload contained no jobs")
+    for job in jobs:
+        if not isinstance(job, dict):
+            fail_to_run("job payload contained a non-object job")
     return jobs
+
+
+def is_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 def fail_to_run(message: str) -> None:
@@ -85,13 +107,17 @@ def fail_to_run(message: str) -> None:
 
 
 def duration_seconds(job: dict) -> float | None:
-    from datetime import datetime
-
     started, completed = job.get("started_at"), job.get("completed_at")
     if not started or not completed:
         return None
-    fmt = "%Y-%m-%dT%H:%M:%SZ"
-    return (datetime.strptime(completed, fmt) - datetime.strptime(started, fmt)).total_seconds()
+    if not isinstance(started, str) or not isinstance(completed, str):
+        fail_to_run(f"job {job.get('name', '<unknown>')!r} has non-string timestamps")
+    try:
+        parse_timestamp(started)
+        parse_timestamp(completed)
+    except ValueError as error:
+        fail_to_run(f"job {job.get('name', '<unknown>')!r} has an invalid timestamp: {error}")
+    return elapsed_seconds(started, completed)
 
 
 def matches(job_name: str, budget_name: str) -> bool:
@@ -125,7 +151,7 @@ def main() -> int:
         for job in matched:
             seconds = duration_seconds(job)
             if seconds is None:
-                continue
+                fail_to_run(f"job {job.get('name', '<unknown>')!r} has no completed duration")
             name = job["name"]
             if seconds > thresholds["fail"]:
                 verdict = "OVER FAIL"
