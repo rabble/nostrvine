@@ -249,7 +249,7 @@ class Notifications extends Table {
   TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {id, ownerPubkey};
 
   List<Index> get indexes => [
     Index(

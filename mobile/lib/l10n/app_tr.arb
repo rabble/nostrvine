@@ -86,6 +86,7 @@
     "settingsInvites": "Davetler",
     "settingsSwitchAccount": "Hesap değiştir",
     "settingsAddAnotherAccount": "Başka hesap ekle",
+  "settingsAccountSwitchFailed": "Hesaplar değiştirilemedi. Lütfen tekrar dene.",
     "settingsUnsavedDraftsTitle": "Kaydedilmemiş Taslaklar",
     "settingsUnsavedDraftsMessage": "{count} kaydedilmemiş taslağınız var. Hesap değiştirmek taslağınızı saklayacaktır, ancak önce yayınlamak veya gözden geçirmek isteyebilirsiniz.",
     "@settingsUnsavedDraftsMessage": {

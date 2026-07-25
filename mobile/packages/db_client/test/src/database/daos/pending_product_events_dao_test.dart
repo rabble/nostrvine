@@ -155,7 +155,7 @@ void main() {
         expect((await dao.getById('a'))!.ownerPubkey, equals(ownerA));
       });
 
-      test('getRetryable returns only the owner and legacy rows', () async {
+      test('getRetryable returns only the requested owner rows', () async {
         await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
         await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
         await dao.enqueue(makeEvent(id: 'legacy'));
@@ -167,24 +167,25 @@ void main() {
           ownerPubkey: ownerA,
         );
 
-        expect(
-          retryable.map((event) => event.id).toSet(),
-          equals({'for-a', 'legacy'}),
-        );
+        expect(retryable.map((event) => event.id).toSet(), equals({'for-a'}));
       });
 
-      test('getRetryable without an owner returns every row', () async {
-        await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
-        await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
+      test(
+        'getRetryable without an owner returns only ownerless rows',
+        () async {
+          await dao.enqueue(makeEvent(id: 'for-a', ownerPubkey: ownerA));
+          await dao.enqueue(makeEvent(id: 'for-b', ownerPubkey: ownerB));
+          await dao.enqueue(makeEvent(id: 'legacy'));
 
-        final retryable = await dao.getRetryable(
-          now: DateTime.utc(2026, 7, 2),
-          maxAttempts: 5,
-          limit: 10,
-        );
+          final retryable = await dao.getRetryable(
+            now: DateTime.utc(2026, 7, 2),
+            maxAttempts: 5,
+            limit: 10,
+          );
 
-        expect(retryable.map((event) => event.id).toSet(), {'for-a', 'for-b'});
-      });
+          expect(retryable.map((event) => event.id).toSet(), {'legacy'});
+        },
+      );
     });
 
     test('markDeadLetter stops exhausted events from retrying', () async {

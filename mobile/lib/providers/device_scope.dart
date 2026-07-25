@@ -45,6 +45,7 @@ class DeviceScope {
     required this.switchController,
     this.dbCipherKey,
     this.databaseCorruptionService,
+    this.accountOverrides = const [],
   });
 
   /// The single open database connection, shared across every container.
@@ -70,6 +71,12 @@ class DeviceScope {
   /// uninstrumented (no cipher key).
   final DatabaseCorruptionService? databaseCorruptionService;
 
+  /// Extra overrides applied to every account container.
+  ///
+  /// Production leaves this empty. Tests use it for container-wide fakes that
+  /// must be visible to the initial and swapped-in account containers.
+  final List<Override> accountOverrides;
+
   /// The provider overrides that pin every container to these shared
   /// instances. Spread into `ProviderContainer(overrides: [...])`.
   List<Override> get overrides => [
@@ -80,6 +87,7 @@ class DeviceScope {
       databaseCorruptionService,
     ),
     deviceScopeProvider.overrideWithValue(this),
+    ...accountOverrides,
   ];
 }
 

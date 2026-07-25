@@ -116,7 +116,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+      'Não foi possível trocar de conta. Tente novamente.';
 
   @override
   String get settingsUnsavedDraftsTitle => 'Rascunhos não salvos';

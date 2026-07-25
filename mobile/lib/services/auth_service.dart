@@ -305,6 +305,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   bool _storageErrorOccurred = false;
   bool _hasExpiredOAuthSession = false;
   bool _isRpcUpgradeInProgress = false;
+  bool _registeredWithBackgroundActivity = false;
   KeycastRpc? _keycastSigner;
 
   // RPC capability state — separate from AuthState so the router doesn't
@@ -1173,13 +1174,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     // Set checking state immediately - we're starting the auth check now
     _setAuthState(AuthState.checking);
 
-    // Register with BackgroundActivityManager for lifecycle callbacks
-    _backgroundActivityManager.registerService(this);
+    await _prepareRuntime();
 
     try {
-      // Initialize secure key storage
-      await _keyStorage.initialize();
-
       // Decide restore path based on persisted authentication source
       final authSource = await _loadAuthSource();
       Log.info(
@@ -1295,6 +1292,30 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       // Set state synchronously to prevent loading screen deadlock
       _setAuthState(AuthState.unauthenticated);
     }
+  }
+
+  /// Prepares this service for an explicit account switch.
+  ///
+  /// Unlike [initialize], this does not restore whichever identity is currently
+  /// in PRIMARY. The target account is selected immediately afterwards by
+  /// [signInForAccount], so restoring first would mutate the new container to
+  /// the leaving account and run legacy-row claiming under the wrong boundary.
+  Future<void> initializeForAccountSwitch() async {
+    Log.debug(
+      'Preparing SecureAuthService for account switch',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    await _prepareRuntime();
+    _setAuthState(AuthState.unauthenticated);
+  }
+
+  Future<void> _prepareRuntime() async {
+    if (!_registeredWithBackgroundActivity) {
+      _backgroundActivityManager.registerService(this);
+      _registeredWithBackgroundActivity = true;
+    }
+    await _keyStorage.initialize();
   }
 
   /// Create a new Nostr identity
@@ -1546,8 +1567,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// [authSource], then calls the appropriate sign-in path.
   Future<void> signInForAccount(
     String pubkeyHex,
-    AuthenticationSource authSource,
-  ) async {
+    AuthenticationSource authSource, {
+    bool claimLegacyRows = true,
+  }) async {
     Log.info(
       'signInForAccount: pubkey=$pubkeyHex, source=${authSource.name}',
       name: 'AuthService',
@@ -1687,7 +1709,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             );
             _hasExpiredOAuthSession = true;
             _setRpcCapability(AuthRpcCapability.upgrading);
-            await _setupUserSession(localKey, AuthenticationSource.divineOAuth);
+            await _setupUserSession(
+              localKey,
+              AuthenticationSource.divineOAuth,
+              claimLegacyRows: claimLegacyRows,
+            );
             unawaited(
               _upgradeDivineRpcInBackground(
                 session,
@@ -1723,7 +1749,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             category: LogCategory.auth,
           );
           await _keyStorage.switchToIdentity(npub);
-          await _setupUserSession(container, authSource);
+          await _setupUserSession(
+            container,
+            authSource,
+            claimLegacyRows: claimLegacyRows,
+          );
         } else {
           // Fall back to current PRIMARY keys only when they belong to the
           // requested account. `_checkExistingAuth` intentionally restores
@@ -1756,7 +1786,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
               name: 'AuthService',
               category: LogCategory.auth,
             );
-            await _setupUserSession(primary!, authSource);
+            await _setupUserSession(
+              primary!,
+              authSource,
+              claimLegacyRows: claimLegacyRows,
+            );
           } else {
             Log.warning(
               'signInForAccount: no restorable local keys for $pubkeyHex '
@@ -3843,11 +3877,23 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
   }
 
+  /// Claims legacy ownerless rows for the active session.
+  ///
+  /// Explicit account switching calls this only after the new container is
+  /// committed, so a failed switch cannot permanently reassign shared legacy
+  /// database rows to the target account.
+  Future<void> claimLegacyRowsForCurrentUser() async {
+    final pubkeyHex = _currentKeyContainer?.publicKeyHex;
+    if (pubkeyHex == null || pubkeyHex.isEmpty) return;
+    await _userDataCleanupService.claimLegacyRows(pubkeyHex);
+  }
+
   /// Set up user session after successful authentication
   Future<void> _setupUserSession(
     SecureKeyContainer keyContainer,
     AuthenticationSource source, {
     bool allowPubkeyOnlyIdentity = false,
+    bool claimLegacyRows = true,
   }) async {
     Log.info(
       '_setupUserSession: starting — '
@@ -3964,10 +4010,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         keyContainer.publicKeyHex,
       );
 
-      // Claim legacy database rows (NULL ownerPubkey) for this user so
-      // pre-multi-account drafts/clips are attributed and no longer
-      // visible to other accounts.
-      await _userDataCleanupService.claimLegacyRows(keyContainer.publicKeyHex);
+      if (claimLegacyRows) {
+        await claimLegacyRowsForCurrentUser();
+      }
 
       await prefs.setString(kAuthenticationSourceKey, source.code);
 
@@ -4335,7 +4380,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     );
 
     // Unregister from BackgroundActivityManager
-    _backgroundActivityManager.unregisterService(this);
+    if (_registeredWithBackgroundActivity) {
+      _backgroundActivityManager.unregisterService(this);
+      _registeredWithBackgroundActivity = false;
+    }
 
     // Close bunker signer if active
     _bunkerSigner?.close();

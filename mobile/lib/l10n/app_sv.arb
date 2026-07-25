@@ -86,6 +86,7 @@
     "settingsInvites": "Inbjudningar",
     "settingsSwitchAccount": "Byt konto",
     "settingsAddAnotherAccount": "Lägg till ett till konto",
+  "settingsAccountSwitchFailed": "Det gick inte att byta konto. Försök igen.",
     "settingsUnsavedDraftsTitle": "Osparade utkast",
     "settingsUnsavedDraftsMessage": "Du har {count} osparade {count, plural, one{utkast} other{utkast}}. Att byta konto behåller dina utkast, men du kanske vill publicera eller granska dem först.",
     "@settingsUnsavedDraftsMessage": {

@@ -33,20 +33,40 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
     String? content,
     bool isRead = false,
     String? ownerPubkey,
-  }) {
-    return into(notifications).insertOnConflictUpdate(
-      NotificationsCompanion.insert(
-        id: id,
-        type: type,
-        fromPubkey: fromPubkey,
-        timestamp: timestamp,
-        targetEventId: Value(targetEventId),
-        targetPubkey: Value(targetPubkey),
-        content: Value(content),
-        isRead: Value(isRead),
-        cachedAt: DateTime.now(),
-        ownerPubkey: Value(ownerPubkey),
-      ),
+  }) async {
+    final cachedAt = DateTime.now();
+    final companion = NotificationsCompanion.insert(
+      id: id,
+      type: type,
+      fromPubkey: fromPubkey,
+      timestamp: timestamp,
+      targetEventId: Value(targetEventId),
+      targetPubkey: Value(targetPubkey),
+      content: Value(content),
+      isRead: Value(isRead),
+      cachedAt: cachedAt,
+      ownerPubkey: Value(ownerPubkey),
+    );
+    if (ownerPubkey == null) {
+      final updated =
+          await (update(
+            notifications,
+          )..where((t) => t.id.equals(id) & t.ownerPubkey.isNull())).write(
+            NotificationsCompanion(
+              type: Value(type),
+              fromPubkey: Value(fromPubkey),
+              targetEventId: Value(targetEventId),
+              targetPubkey: Value(targetPubkey),
+              content: Value(content),
+              timestamp: Value(timestamp),
+              isRead: Value(isRead),
+              cachedAt: Value(cachedAt),
+            ),
+          );
+      if (updated > 0) return;
+    }
+    await into(notifications).insertOnConflictUpdate(
+      companion,
     );
   }
 
@@ -69,20 +89,18 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   /// Get unread notifications count
   Future<int> getUnreadCount({String? ownerPubkey}) async {
     final query = selectOnly(notifications)
-      ..where(
-        notifications.isRead.equals(false) & _ownedOrLegacy(ownerPubkey),
-      )
+      ..where(notifications.isRead.equals(false) & _ownedOrLegacy(ownerPubkey))
       ..addColumns([notifications.id.count()]);
     final result = await query.getSingle();
     return result.read(notifications.id.count()) ?? 0;
   }
 
   /// Mark notification as read
-  Future<bool> markAsRead(String id) async {
+  Future<bool> markAsRead(String id, {String? ownerPubkey}) async {
     final rowsAffected =
-        await (update(notifications)..where((t) => t.id.equals(id))).write(
-          const NotificationsCompanion(isRead: Value(true)),
-        );
+        await (update(notifications)
+              ..where((t) => t.id.equals(id) & _ownedOrLegacy(ownerPubkey)))
+            .write(const NotificationsCompanion(isRead: Value(true)));
     return rowsAffected > 0;
   }
 
@@ -93,8 +111,10 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Delete notification by ID
-  Future<int> deleteNotification(String id) {
-    return (delete(notifications)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteNotification(String id, {String? ownerPubkey}) {
+    return (delete(
+      notifications,
+    )..where((t) => t.id.equals(id) & _ownedOrLegacy(ownerPubkey))).go();
   }
 
   /// Deletes cache rows last written before [cutoff].
@@ -130,9 +150,7 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
   /// Watch unread count (reactive stream)
   Stream<int> watchUnreadCount({String? ownerPubkey}) {
     final query = selectOnly(notifications)
-      ..where(
-        notifications.isRead.equals(false) & _ownedOrLegacy(ownerPubkey),
-      )
+      ..where(notifications.isRead.equals(false) & _ownedOrLegacy(ownerPubkey))
       ..addColumns([notifications.id.count()]);
     return query.watchSingle().map(
       (row) => row.read(notifications.id.count()) ?? 0,

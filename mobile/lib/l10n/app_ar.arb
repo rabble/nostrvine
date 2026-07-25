@@ -86,6 +86,7 @@
     "settingsInvites": "الدعوات",
     "settingsSwitchAccount": "تبديل الحساب",
     "settingsAddAnotherAccount": "إضافة حساب آخر",
+  "settingsAccountSwitchFailed": "تعذر تبديل الحسابات. يُرجى المحاولة مرة أخرى.",
     "settingsUnsavedDraftsTitle": "مسودات غير محفوظة",
     "settingsUnsavedDraftsMessage": "لديك {count, plural, zero{مسودات غير محفوظة} one{مسودة واحدة غير محفوظة} two{مسودتان غير محفوظتين} few{{count} مسودات غير محفوظة} many{{count} مسودة غير محفوظة} other{{count} مسودة غير محفوظة}}. تبديل الحسابات سيحتفظ بها، لكن قد ترغب في نشرها أو مراجعتها أولاً.",
     "@settingsUnsavedDraftsMessage": {

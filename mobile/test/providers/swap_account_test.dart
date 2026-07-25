@@ -6,8 +6,10 @@ import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -32,6 +34,7 @@ void main() {
   late AppDatabase database;
   late DeviceScope deviceScope;
   late AccountSwitchController controller;
+  late _FakeSecureKeyStorage keyStorage;
 
   final account = KnownAccount(
     pubkeyHex:
@@ -46,10 +49,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     controller = AccountSwitchController();
+    keyStorage = _FakeSecureKeyStorage();
     deviceScope = DeviceScope(
       database: database,
       sharedPreferences: prefs,
       switchController: controller,
+      accountOverrides: [
+        secureKeyStorageProvider.overrideWithValue(keyStorage),
+      ],
     );
   });
 
@@ -93,6 +100,11 @@ void main() {
   testWidgets('rolls back when sign-in fails', (tester) async {
     final initial = await pumpHost(tester);
     ProviderContainer? attempted;
+    keyStorage.primary = _FakeSecureKeyContainer(
+      npub: 'npub_previous',
+      publicKeyHex:
+          '2222222222222222222222222222222222222222222222222222222222222222',
+    );
 
     await expectLater(
       swapAccount(
@@ -112,5 +124,41 @@ void main() {
     expect(attempted, isNotNull);
     expect(_isDisposed(attempted!), isTrue);
     expect(_isDisposed(initial), isFalse);
+    expect(keyStorage.restoredPrimary, same(keyStorage.primary));
   });
+}
+
+class _FakeSecureKeyStorage extends SecureKeyStorage {
+  SecureKeyContainer? primary;
+  SecureKeyContainer? restoredPrimary;
+
+  @override
+  Future<SecureKeyContainer?> getKeyContainer({String? biometricPrompt}) async {
+    return primary;
+  }
+
+  @override
+  Future<void> restorePrimaryKeyContainer(
+    SecureKeyContainer? keyContainer, {
+    String? biometricPrompt,
+  }) async {
+    restoredPrimary = keyContainer;
+    primary = keyContainer;
+  }
+}
+
+class _FakeSecureKeyContainer implements SecureKeyContainer {
+  _FakeSecureKeyContainer({required this.npub, required this.publicKeyHex});
+
+  @override
+  final String npub;
+
+  @override
+  final String publicKeyHex;
+
+  @override
+  void dispose() {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

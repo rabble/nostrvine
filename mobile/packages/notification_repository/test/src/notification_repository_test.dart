@@ -2542,7 +2542,10 @@ void main() {
             (_) async => const MarkReadResponse(success: true, markedCount: 1),
           );
           when(
-            () => notificationsDao.markAsRead(any()),
+            () => notificationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => true);
 
           final hydrated = NotificationRepository(
@@ -3136,7 +3139,10 @@ void main() {
           (_) async => const MarkReadResponse(success: true, markedCount: 2),
         );
         when(
-          () => notificationsDao.markAsRead(any()),
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
 
         await repository.markAsRead(['n1', 'n2']);
@@ -3148,8 +3154,12 @@ void main() {
             authHeaders: any(named: 'authHeaders'),
           ),
         ).called(1);
-        verify(() => notificationsDao.markAsRead('n1')).called(1);
-        verify(() => notificationsDao.markAsRead('n2')).called(1);
+        verify(
+          () => notificationsDao.markAsRead('n1', ownerPubkey: userPubkey),
+        ).called(1);
+        verify(
+          () => notificationsDao.markAsRead('n2', ownerPubkey: userPubkey),
+        ).called(1);
       });
 
       test('does nothing for empty id list', () async {
@@ -3176,7 +3186,10 @@ void main() {
           (_) async => const MarkReadResponse(success: true, markedCount: 2),
         );
         when(
-          () => notificationsDao.markAsRead(any()),
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
@@ -3212,10 +3225,16 @@ void main() {
           ),
         ).called(1);
         verify(
-          () => notificationsDao.markAsRead('newer_server_notification'),
+          () => notificationsDao.markAsRead(
+            'newer_server_notification',
+            ownerPubkey: userPubkey,
+          ),
         ).called(1);
         verify(
-          () => notificationsDao.markAsRead('older_server_notification'),
+          () => notificationsDao.markAsRead(
+            'older_server_notification',
+            ownerPubkey: userPubkey,
+          ),
         ).called(1);
       });
 
@@ -3310,7 +3329,12 @@ void main() {
                 'roll back the optimistic flip so the snapshot matches '
                 'server truth.',
           );
-          verifyNever(() => notificationsDao.markAsRead(any()));
+          verifyNever(
+            () => notificationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
         },
       );
     });
@@ -3553,7 +3577,10 @@ void main() {
             (_) async => const MarkReadResponse(success: true, markedCount: 1),
           );
           when(
-            () => notificationsDao.markAsRead(any()),
+            () => notificationsDao.markAsRead(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
           ).thenAnswer((_) async => true);
 
           final authRepo = NotificationRepository(
@@ -3639,7 +3666,10 @@ void main() {
           (_) async => const MarkReadResponse(success: true, markedCount: 1),
         );
         when(
-          () => notificationsDao.markAsRead(any()),
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer((_) async => true);
         when(
           () => notificationsDao.markAllAsRead(

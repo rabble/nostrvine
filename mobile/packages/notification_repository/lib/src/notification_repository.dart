@@ -797,7 +797,7 @@ class NotificationRepository {
       );
 
       for (final id in notificationIds) {
-        await _notificationsDao.markAsRead(id);
+        await _notificationsDao.markAsRead(id, ownerPubkey: _userPubkey);
       }
     } catch (_) {
       _pagesLoaded = pagesLoadedBefore;

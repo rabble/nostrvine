@@ -2,12 +2,14 @@
 // ABOUTME: in as the target account, then swap; roll back on failure.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/router/app_router.dart';
 
 /// Signs [container]'s fresh [AuthService] in as [account].
 ///
@@ -32,9 +34,26 @@ Future<void> _defaultSignIn(
   await container
       .read(environmentServiceProvider)
       .initialize(sharedPreferences: container.read(sharedPreferencesProvider));
+  await container.read(authServiceProvider).initializeForAccountSwitch();
   await container
       .read(authServiceProvider)
-      .signInForAccount(account.pubkeyHex, account.authSource);
+      .signInForAccount(
+        account.pubkeyHex,
+        account.authSource,
+        claimLegacyRows: false,
+      );
+}
+
+String? _currentRouterLocation(AccountSwitchController controller) {
+  final current = controller.currentContainer;
+  if (current == null) return null;
+  if (!current.exists(goRouterProvider)) return null;
+  return current
+      .read(goRouterProvider)
+      .routerDelegate
+      .currentConfiguration
+      .uri
+      .toString();
 }
 
 /// Switches the live app to [account] in place: builds a new container on the
@@ -53,12 +72,30 @@ Future<void> swapAccount({
   required KnownAccount account,
   AccountSignIn signIn = _defaultSignIn,
 }) async {
-  final container = buildAccountContainer(deviceScope);
-  try {
-    await signIn(container, account);
-  } catch (_) {
-    container.dispose();
-    rethrow;
-  }
-  await controller.swapTo(container);
+  await controller.runExclusive(() async {
+    final currentLocation = _currentRouterLocation(controller);
+    final container = buildAccountContainer(
+      deviceScope,
+      accountOverrides: [
+        if (currentLocation != null)
+          routerInitialLocationProvider.overrideWithValue(currentLocation),
+      ],
+    );
+    final keyStorage = container.read(secureKeyStorageProvider);
+    SecureKeyContainer? previousPrimary;
+    try {
+      previousPrimary = await keyStorage.getKeyContainer();
+      await signIn(container, account);
+      await controller.swapTo(container);
+      await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
+    } catch (_) {
+      try {
+        await keyStorage.restorePrimaryKeyContainer(previousPrimary);
+      } finally {
+        container.dispose();
+      }
+      rethrow;
+    }
+    previousPrimary?.dispose();
+  });
 }

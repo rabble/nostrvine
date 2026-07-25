@@ -86,6 +86,7 @@
     "settingsInvites": "Zaproszenia",
     "settingsSwitchAccount": "Przełącz konto",
     "settingsAddAnotherAccount": "Dodaj kolejne konto",
+  "settingsAccountSwitchFailed": "Nie udało się przełączyć kont. Spróbuj ponownie.",
     "settingsUnsavedDraftsTitle": "Niezapisane wersje robocze",
     "settingsUnsavedDraftsMessage": "Masz {count} niezapisanych {count, plural, =1{wersji roboczej} other{wersji roboczych}}. Przełączenie kont zachowa {count, plural, =1{ją} other{je}}, ale możesz chcieć je najpierw opublikować lub przejrzeć.",
     "@settingsUnsavedDraftsMessage": {

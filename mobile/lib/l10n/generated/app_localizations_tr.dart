@@ -117,7 +117,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+      'Hesaplar değiştirilemedi. Lütfen tekrar dene.';
 
   @override
   String get settingsUnsavedDraftsTitle => 'Kaydedilmemiş Taslaklar';

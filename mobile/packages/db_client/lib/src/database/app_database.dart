@@ -299,6 +299,7 @@ class AppDatabase extends _$AppDatabase {
     // so every signed-in account read one shared inbox. Existing rows stay
     // NULL and are claimed by the next session setup, matching drafts/clips.
     await _addColumnIfMissing('notifications', 'owner_pubkey', 'TEXT');
+    await _ensureNotificationsCompositePrimaryKey();
     await customStatement('''
       CREATE INDEX IF NOT EXISTS idx_notification_owner_timestamp
       ON notifications (owner_pubkey, timestamp DESC)
@@ -867,6 +868,74 @@ class AppDatabase extends _$AppDatabase {
     if (!exists) {
       await customStatement('ALTER TABLE $table ADD COLUMN $column $type');
     }
+  }
+
+  /// Rebuilds old `notifications` tables that were keyed only by `id`.
+  Future<void> _ensureNotificationsCompositePrimaryKey() async {
+    final columns = await customSelect(
+      'PRAGMA table_info(notifications)',
+    ).get();
+    if (columns.isEmpty) return;
+
+    int? ownerPk;
+    for (final row in columns) {
+      if (row.read<String>('name') == 'owner_pubkey') {
+        ownerPk = row.read<int>('pk');
+        break;
+      }
+    }
+    if (ownerPk != null && ownerPk > 0) return;
+
+    await customStatement('DROP INDEX IF EXISTS idx_notification_timestamp');
+    await customStatement('DROP INDEX IF EXISTS idx_notification_is_read');
+    await customStatement(
+      'DROP INDEX IF EXISTS idx_notification_owner_timestamp',
+    );
+    await customStatement(
+      'ALTER TABLE notifications RENAME TO notifications_old_pk',
+    );
+    await customStatement('''
+      CREATE TABLE notifications (
+        id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        from_pubkey TEXT NOT NULL,
+        target_event_id TEXT NULL,
+        target_pubkey TEXT NULL,
+        content TEXT NULL,
+        timestamp INTEGER NOT NULL,
+        is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
+        cached_at INTEGER NOT NULL,
+        owner_pubkey TEXT NULL,
+        PRIMARY KEY (id, owner_pubkey)
+      )
+    ''');
+    await customStatement('''
+      INSERT OR IGNORE INTO notifications (
+        id,
+        type,
+        from_pubkey,
+        target_event_id,
+        target_pubkey,
+        content,
+        timestamp,
+        is_read,
+        cached_at,
+        owner_pubkey
+      )
+      SELECT
+        id,
+        type,
+        from_pubkey,
+        target_event_id,
+        target_pubkey,
+        content,
+        timestamp,
+        is_read,
+        cached_at,
+        owner_pubkey
+      FROM notifications_old_pk
+    ''');
+    await customStatement('DROP TABLE notifications_old_pk');
   }
 
   /// Populates file_path / thumbnail_path columns from JSON data blobs

@@ -86,6 +86,7 @@
     "settingsInvites": "Покани",
     "settingsSwitchAccount": "Смени акаунта",
     "settingsAddAnotherAccount": "Добави друг акаунт",
+  "settingsAccountSwitchFailed": "Не можахме да превключим акаунтите. Опитайте отново.",
     "settingsUnsavedDraftsTitle": "Незапазени чернови",
     "settingsUnsavedDraftsMessage": "Имаш {count} незапазен{count, plural, =1{а чернова} other{и чернови}}. При смяна на акаунта {count, plural, =1{тя ще се запази} other{те ще се запазят}}, но може първо да {count, plural, =1{я публикуваш или прегледаш} other{ги публикуваш или прегледаш}}.",
     "@settingsUnsavedDraftsMessage": {

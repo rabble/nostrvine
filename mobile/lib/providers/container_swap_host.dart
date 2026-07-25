@@ -14,9 +14,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// account.
 class AccountSwitchController {
   Future<void> Function(ProviderContainer next)? _onSwap;
+  ProviderContainer? _currentContainer;
+  bool _switchInProgress = false;
 
   /// Whether a [ContainerSwapHost] is mounted and ready to swap.
   bool get isReady => _onSwap != null;
+
+  /// The currently mounted account container, when a host is active.
+  ProviderContainer? get currentContainer => _currentContainer;
+
+  /// Runs [body] while rejecting overlapping switch attempts.
+  Future<T> runExclusive<T>(Future<T> Function() body) async {
+    if (_switchInProgress) {
+      throw StateError('Account switch already in progress');
+    }
+    _switchInProgress = true;
+    try {
+      return await body();
+    } finally {
+      _switchInProgress = false;
+    }
+  }
 
   /// Requests the host swap the live container to [next].
   ///
@@ -59,11 +77,13 @@ class ContainerSwapHost extends StatefulWidget {
 
 class _ContainerSwapHostState extends State<ContainerSwapHost> {
   late ProviderContainer _container;
+  int _generation = 0;
 
   @override
   void initState() {
     super.initState();
     _container = widget.initialContainer;
+    widget.controller._currentContainer = _container;
     widget.controller._onSwap = _swap;
   }
 
@@ -76,7 +96,11 @@ class _ContainerSwapHostState extends State<ContainerSwapHost> {
     if (identical(next, _container)) return;
 
     final previous = _container;
-    setState(() => _container = next);
+    setState(() {
+      _container = next;
+      _generation += 1;
+      widget.controller._currentContainer = next;
+    });
 
     // Dispose the leaving container only after this frame commits, so widgets
     // still reading it during the unmount don't hit a disposed container.
@@ -89,6 +113,7 @@ class _ContainerSwapHostState extends State<ContainerSwapHost> {
     // so use == to avoid detaching a controller a newer host has claimed.
     if (widget.controller._onSwap == _swap) {
       widget.controller._onSwap = null;
+      widget.controller._currentContainer = null;
     }
     _container.dispose();
     super.dispose();
@@ -98,7 +123,7 @@ class _ContainerSwapHostState extends State<ContainerSwapHost> {
   Widget build(BuildContext context) {
     return UncontrolledProviderScope(
       container: _container,
-      child: widget.child,
+      child: KeyedSubtree(key: ValueKey(_generation), child: widget.child),
     );
   }
 }

@@ -489,6 +489,52 @@ class SecureKeyStorage {
     _log.info('All keys deleted');
   }
 
+  /// Restores the PRIMARY key slot to [keyContainer].
+  ///
+  /// Account switching snapshots PRIMARY before probing the target account. If
+  /// the probe fails after `switchToIdentity` has already committed, callers
+  /// use this method to put cold-launch identity back where it was.
+  Future<void> restorePrimaryKeyContainer(
+    SecureKeyContainer? keyContainer, {
+    String? biometricPrompt,
+  }) async {
+    await _ensureInitialized();
+
+    _cachedKeyContainer?.dispose();
+    _clearCache();
+
+    if (keyContainer == null) {
+      final success = await _platformStorage.deleteKey(
+        keyId: _primaryKeyId,
+        biometricPrompt: biometricPrompt,
+      );
+      if (!success) {
+        throw const SecureKeyStorageException(
+          'Platform primary key deletion failed during restore',
+          code: 'platform_deletion_failed',
+        );
+      }
+      _log.info('Restored empty PRIMARY identity');
+      return;
+    }
+
+    final result = await _platformStorage.storeKey(
+      keyId: _primaryKeyId,
+      keyContainer: keyContainer,
+      requireBiometrics: _securityConfig.requireBiometrics,
+      requireHardwareBacked: _securityConfig.requireHardwareBacked,
+    );
+
+    if (!result.success) {
+      throw SecureKeyStorageException(
+        'Failed to restore PRIMARY identity: ${result.error}',
+      );
+    }
+
+    _updateCache(keyContainer);
+    _log.info('Restored PRIMARY identity: ${_maskKey(keyContainer.npub)}');
+  }
+
   // =========================================================================
   // Backup Key Management
   // =========================================================================

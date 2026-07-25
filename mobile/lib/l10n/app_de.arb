@@ -86,6 +86,7 @@
     "settingsInvites": "Einladungen",
     "settingsSwitchAccount": "Konto wechseln",
     "settingsAddAnotherAccount": "Weiteres Konto hinzufügen",
+  "settingsAccountSwitchFailed": "Konten konnten nicht gewechselt werden. Bitte versuch es erneut.",
     "settingsUnsavedDraftsTitle": "Ungespeicherte Entwürfe",
     "settingsUnsavedDraftsMessage": "Du hast {count} ungespeicherte {count, plural, one{Entwurf} other{Entwürfe}}. Beim Kontowechsel bleiben deine {count, plural, one{Entwurf} other{Entwürfe}} erhalten, aber du solltest {count, plural, one{ihn} other{sie}} vorher vielleicht veröffentlichen oder durchgehen.",
     "@settingsUnsavedDraftsMessage": {

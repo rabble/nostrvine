@@ -59,6 +59,13 @@ part 'app_router_redirect.dart';
 /// when a new route is pushed on top of the feed).
 final routeObserver = RouteObserver<ModalRoute<dynamic>>();
 
+/// Optional first route for a newly-built account container.
+///
+/// Account switches use this to seed the target container's router with the
+/// route the user was already viewing. Cold launch leaves it null so the normal
+/// welcome-entry redirect flow remains unchanged.
+final routerInitialLocationProvider = Provider<String?>((_) => null);
+
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   final authService = ref.read(authServiceProvider);
@@ -83,7 +90,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     navigatorKey: NavigatorKeys.root,
     // Start at /welcome - redirect logic will navigate to appropriate route.
-    initialLocation: WelcomeScreen.path,
+    initialLocation:
+        ref.read(routerInitialLocationProvider) ?? WelcomeScreen.path,
     observers: _buildRouterObservers(),
     // Refresh router when auth or account-review state changes
     refreshListenable: refreshListenable,

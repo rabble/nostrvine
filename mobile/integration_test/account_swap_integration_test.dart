@@ -130,7 +130,14 @@ void main() {
               .initialize(sharedPreferences: prefs);
           await container
               .read(authServiceProvider)
-              .signInForAccount(account.pubkeyHex, account.authSource);
+              .initializeForAccountSwitch();
+          await container
+              .read(authServiceProvider)
+              .signInForAccount(
+                account.pubkeyHex,
+                account.authSource,
+                claimLegacyRows: false,
+              );
         },
       ),
     );

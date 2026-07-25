@@ -109,8 +109,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsAddAnotherAccount => '別のアカウントを追加';
 
   @override
-  String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+  String get settingsAccountSwitchFailed => 'アカウントを切り替えられませんでした。もう一度お試しください。';
 
   @override
   String get settingsUnsavedDraftsTitle => '未保存の下書きがあるよ';

@@ -86,6 +86,7 @@
     "settingsInvites": "Convites",
     "settingsSwitchAccount": "Trocar de conta",
     "settingsAddAnotherAccount": "Adicionar outra conta",
+  "settingsAccountSwitchFailed": "Não foi possível trocar de conta. Tente novamente.",
     "settingsUnsavedDraftsTitle": "Rascunhos não salvos",
     "settingsUnsavedDraftsMessage": "Você tem {count} {count, plural, =1{rascunho não salvo} other{rascunhos não salvos}}. Trocar de conta vai manter {count, plural, =1{seu rascunho} other{seus rascunhos}}, mas talvez você queira publicar ou revisar {count, plural, =1{ele} other{eles}} antes.",
     "@settingsUnsavedDraftsMessage": {

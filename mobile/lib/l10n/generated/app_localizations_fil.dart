@@ -116,7 +116,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+      'Hindi mailipat ang mga account. Pakisubukan ulit.';
 
   @override
   String get settingsUnsavedDraftsTitle => 'Mga Hindi Naka-save na Draft';

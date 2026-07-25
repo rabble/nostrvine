@@ -60,6 +60,9 @@ class ProductEventQueue {
   bool _isFlushing = false;
 
   Future<void> enqueue(ProductAnalyticsEvent event) async {
+    final ownerPubkey = event.userPubkey.isNotEmpty
+        ? event.userPubkey
+        : _currentOwnerPubkey?.call();
     await _dao.enqueue(
       PendingProductEvent(
         id: event.eventId,
@@ -67,7 +70,7 @@ class ProductEventQueue {
         payloadJson: event.toPayloadJson(),
         status: PendingProductEventStatus.pending,
         createdAt: event.occurredAt,
-        ownerPubkey: event.userPubkey.isEmpty ? null : event.userPubkey,
+        ownerPubkey: ownerPubkey?.isEmpty ?? true ? null : ownerPubkey,
       ),
     );
   }

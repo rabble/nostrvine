@@ -124,7 +124,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+      'Nu s-a putut schimba contul. Încearcă din nou.';
 
   @override
   String get settingsUnsavedDraftsTitle => 'Ciorne nesalvate';

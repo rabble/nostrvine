@@ -124,7 +124,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+      'Nie udało się przełączyć kont. Spróbuj ponownie.';
 
   @override
   String get settingsUnsavedDraftsTitle => 'Niezapisane wersje robocze';

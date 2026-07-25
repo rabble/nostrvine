@@ -86,6 +86,7 @@
     "settingsInvites": "Undangan",
     "settingsSwitchAccount": "Ganti akun",
     "settingsAddAnotherAccount": "Tambah akun lain",
+  "settingsAccountSwitchFailed": "Tidak dapat beralih akun. Coba lagi.",
     "settingsUnsavedDraftsTitle": "Draf Belum Tersimpan",
     "settingsUnsavedDraftsMessage": "Kamu punya {count} draf yang belum disimpan. Mengganti akun akan tetap menyimpan drafmu, tapi mungkin kamu ingin mempublikasikan atau meninjaunya dulu.",
     "@settingsUnsavedDraftsMessage": {

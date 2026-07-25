@@ -7,12 +7,7 @@ import 'package:meta/meta.dart';
 
 part 'pending_product_events_dao.g.dart';
 
-enum PendingProductEventStatus {
-  pending,
-  publishing,
-  failed,
-  deadLetter,
-}
+enum PendingProductEventStatus { pending, publishing, failed, deadLetter }
 
 class UnknownPendingProductEventStatusException implements Exception {
   const UnknownPendingProductEventStatusException(this.rawValue);
@@ -99,10 +94,9 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> enqueue(PendingProductEvent event) async {
-    await into(pendingProductEvents).insert(
-      _modelToCompanion(event),
-      mode: InsertMode.insertOrIgnore,
-    );
+    await into(
+      pendingProductEvents,
+    ).insert(_modelToCompanion(event), mode: InsertMode.insertOrIgnore);
   }
 
   Future<PendingProductEvent?> getById(String id) async {
@@ -112,9 +106,11 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
     return row == null ? null : _rowToModel(row);
   }
 
-  /// Returns retryable events for [ownerPubkey] (plus legacy rows with no
-  /// owner). A null [ownerPubkey] returns rows for every account, preserving
-  /// the pre-owner-scoping behaviour.
+  /// Returns retryable events for [ownerPubkey].
+  ///
+  /// A null [ownerPubkey] returns only ownerless rows. Signed flushes must not
+  /// pick those up because they would be published under whichever account is
+  /// active rather than the account that produced the event.
   Future<List<PendingProductEvent>> getRetryable({
     required DateTime now,
     required int maxAttempts,
@@ -129,7 +125,7 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
                 table.status.equals(PendingProductEventStatus.failed.name)) &
             (table.nextAttemptAt.isNull() |
                 table.nextAttemptAt.isSmallerOrEqualValue(now)) &
-            _ownedOrLegacy(table.ownerPubkey, ownerPubkey),
+            _ownedBy(table.ownerPubkey, ownerPubkey),
       )
       ..orderBy([(table) => OrderingTerm(expression: table.createdAt)])
       ..limit(limit);
@@ -137,12 +133,12 @@ class PendingProductEventsDao extends DatabaseAccessor<AppDatabase>
     return rows.map(_rowToModel).toList();
   }
 
-  Expression<bool> _ownedOrLegacy(
+  Expression<bool> _ownedBy(
     GeneratedColumn<String> column,
     String? ownerPubkey,
   ) {
-    if (ownerPubkey == null) return const Constant(true);
-    return column.equals(ownerPubkey) | column.isNull();
+    if (ownerPubkey == null) return column.isNull();
+    return column.equals(ownerPubkey);
   }
 
   Future<bool> markPublishing(String id) async {

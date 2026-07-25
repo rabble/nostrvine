@@ -60,6 +60,25 @@ void main() {
       },
     );
 
+    test('enqueue scopes anonymous payloads to the current account', () async {
+      const owner =
+          '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
+      final scopedQueue = ProductEventQueue(
+        dao: dao,
+        ingestClient: client,
+        currentOwnerPubkey: () => owner,
+      );
+      when(() => dao.enqueue(any())).thenAnswer((_) async {});
+      final event = _event('event-anon', userPubkey: '');
+
+      await scopedQueue.enqueue(event);
+
+      final captured =
+          verify(() => dao.enqueue(captureAny())).captured.single
+              as PendingProductEvent;
+      expect(captured.ownerPubkey, owner);
+    });
+
     test('flush filters retryable events to the current account', () async {
       const owner =
           '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd';
@@ -208,12 +227,13 @@ void main() {
   });
 }
 
-ProductAnalyticsEvent _event(String id) {
+ProductAnalyticsEvent _event(String id, {String? userPubkey}) {
   return ProductAnalyticsEvent(
     eventId: id,
     eventName: 'screen_time',
     occurredAt: DateTime.utc(2026, 7, 7, 12),
     userPubkey:
+        userPubkey ??
         '385c3a6ec0b9d57a4330dbd6284989be5bd00e41c535f9ca39b6ae7c521b81cd',
     anonymousId: '018ff7d7-2ef5-7000-8000-000000000001',
     sessionId: '018ff7d7-2ef5-7000-8000-000000000002',

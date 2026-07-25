@@ -113,7 +113,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get settingsAccountSwitchFailed =>
-      'Couldn\'t switch accounts. Please try again.';
+      'መለያዎችን መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get settingsUnsavedDraftsTitle => 'ያልተቀመጡ ረቂቆች';
