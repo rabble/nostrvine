@@ -168,11 +168,16 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
             }
             "dispose" -> {
                 val id = call.argument<Int>("id")!!
+                // Release the native player first, then log — the log then
+                // truthfully marks codec-release completion. Emitting it before
+                // release makes teardown look finished while the hardware codec
+                // is still held, which misreads export encoder-init races on
+                // codec-limited devices (the #5522 decoder-release gate).
+                PlayerRegistry.remove(id)?.dispose()
                 DivineVideoPlayerLog.info(
                     "Player $id disposed",
                     name = "DivineVideoPlayer.Lifecycle",
                 )
-                PlayerRegistry.remove(id)?.dispose()
                 result.success(null)
             }
             "preload" -> {

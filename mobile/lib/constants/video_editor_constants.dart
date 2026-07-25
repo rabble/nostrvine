@@ -191,6 +191,26 @@ class VideoEditorConstants {
   /// Video quality for recording and editing
   static const DivineVideoQuality quality = DivineVideoQuality.fhd;
 
+  /// Fallback export quality used after the device rejects the primary
+  /// [quality] with a `RenderEncoderException`.
+  ///
+  /// A 720p canvas needs far fewer encoder resources than 1080p, so a
+  /// codec-limited device that cannot allocate an [quality] encoder can still
+  /// finish the export at this reduced tier instead of losing the edit.
+  static const DivineVideoQuality encoderFallbackQuality =
+      DivineVideoQuality.hd;
+
+  /// Settle delay between export encoder attempts after a
+  /// `RenderEncoderException`.
+  ///
+  /// Encoder-init failures on codec-limited devices are usually transient
+  /// contention: the preview decoder the editor just released (the #5522
+  /// decoder-release gate) — or another app codec — has not been reclaimed by
+  /// the OS media server yet. The plugin's own in-process fallback chain runs
+  /// every attempt within a few hundred ms, so it cannot outlast that window;
+  /// waiting before the Dart-level retry lets the codec free up.
+  static const encoderRetrySettleDelay = Duration(milliseconds: 800);
+
   /// Hero animation tag for the back button in the video editor.
   static const heroBackButtonId = 'Video-Editor-Back-Button';
 
