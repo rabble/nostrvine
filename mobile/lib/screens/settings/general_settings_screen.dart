@@ -52,7 +52,8 @@ class GeneralSettingsScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              _SectionHeader(context.l10n.generalSettingsSectionIntegrations),
+              if (showBluesky || showCrossposting)
+                _SectionHeader(context.l10n.generalSettingsSectionIntegrations),
               if (showBluesky)
                 ListTile(
                   leading: const Icon(
