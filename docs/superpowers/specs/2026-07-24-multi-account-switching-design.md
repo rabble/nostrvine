@@ -884,6 +884,64 @@ off), so nothing regresses in the meantime.
   `nostr_client_provider.dart` and `auth_providers.dart`.
 - Full §10.2 test matrix.
 
+#### Course correction — `activate()` is OFF the critical path (product requirement)
+
+**Product requirement, stated bluntly by Rabble:** users are logged into
+several accounts and will switch *hundreds of times a day*. The current switch
+routes through the welcome screen (sign-out → `WelcomeBloc` auto-signs-in the
+pending pubkey → home). That bounce is unacceptable UX for high-frequency
+switching, independent of the data-loss bugs. **The switch must be in-place: no
+sign-out, no welcome, same screen, near-instant.**
+
+The in-place swap does **not** require the side-effect-free `activate()` /
+`buildAndProveSession` refactor after all. Key facts verified in code:
+
+- `authServiceProvider` is `@Riverpod(keepAlive: true)` with **no static
+  singleton** — every `ProviderContainer` gets its *own* `AuthService`
+  instance and its own mutable session state.
+- `main.dart:1467` already mounts the app via `UncontrolledProviderScope`
+  around a `ProviderContainer` built at `main.dart:1418`.
+
+So the in-place switch is: build a **new container** seeded to sign in as B,
+let *its* fresh `AuthService` run the **existing** `signInForAccount` (the
+mutation lands on the new instance, not the live one), swap the container into
+the scope, dispose A's container. The scary part of `activate()` — making
+sign-in side-effect-free so it can roll back on the shared singleton — is moot,
+because there is no shared singleton: A's `AuthService` is simply thrown away
+with its container. Atomic rollback (R4) is demoted from blocker to a later
+robustness improvement (build B's container, only swap once B's signer proves
+live; on failure drop B's container, A's was never touched).
+
+**The actual hard constraint is the DB, not the auth.** `databaseProvider`
+(`@Riverpod(keepAlive: true)`) constructs `AppDatabase(openConnection())` per
+container, so two containers = two SQLite connections to the same encrypted
+file — corruption / lock contention. Therefore the **`DeviceScope` hoist is
+mandatory before any swap**: `AppDatabase`, `SecureStorage`,
+`SharedPreferences`, `BackgroundUploader`, `VideoPlayerPool`, `MediaCache`,
+`CrashReportingService` must be constructed once (in `main()`), and every
+container — the initial one and each swapped-in one — must receive them as
+provider overrides so they are shared, not rebuilt.
+
+**Revised build order for working in-place switching (no `activate()` needed):**
+
+1. **`DeviceScope`** — hoist the device singletons in `main()`; pass them as
+   overrides into the initial container. Behaviour-identical for a single
+   account; pure refactor, testable by asserting the same instances are read.
+2. **Container-swap holder** — a `StatefulWidget` above
+   `UncontrolledProviderScope` that owns the current container and can rebuild
+   with a new one (`setState`), disposing the old after the frame.
+3. **`swapAccount(pubkeyHex)`** — build a new container with the `DeviceScope`
+   overrides + a seed that makes its `AuthService` `signInForAccount` on init;
+   await the signer coming up; swap; dispose old. Reuses existing sign-in.
+4. **Prefs/cleanup isolation** (moved from Phase 1) rides here — with per-account
+   containers each service is constructed account-scoped, so prefs prefixing is
+   clean (no reactive plumbing), exactly as argued in the Phase 1 reorder.
+5. Later: atomic prove-then-commit rollback + delete the reactive-rewiring
+   apparatus + the `buildAndProveSession` extraction. Robustness, not blocker.
+
+The `activate()` blocker note below is retained for the *eventual* atomic
+version, but it no longer gates a first working in-place switch.
+
 #### Implementation note — the `activate()` blocker (found during Phase 3)
 
 `AccountStore.activate(pubkeyHex)` (§8.1) is specified as side-effect-free:
