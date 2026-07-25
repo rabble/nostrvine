@@ -75,7 +75,15 @@ void main() {
           thumbnailUrl: 'https://media.divine.video/test-video-id-thumb.jpg',
         ),
       );
-      uploadManager = UploadManager(blossomService: mockBlossomService);
+      uploadManager = UploadManager(
+        blossomService: mockBlossomService,
+        // The default config sleeps 2+4+8+16+32s of real time before giving
+        // up, so each failure-path test below burned ~62s. Only the retry
+        // *count* matters here — the backoff arithmetic itself is covered by
+        // upload_retry_policy_test.dart. maxRetries stays at the production
+        // default so exhaustion still takes the same number of attempts.
+        retryConfig: const UploadRetryConfig(initialDelay: Duration.zero),
+      );
       await uploadManager.initialize();
     });
 
