@@ -9,10 +9,14 @@ import 'package:openvine/widgets/feed_tuning/feed_tuning_swipe_overlay.dart';
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
-  Future<List<FeedTuningDirection>> pumpOverlay(WidgetTester tester) async {
+  Future<List<FeedTuningDirection>> pumpOverlay(
+    WidgetTester tester, {
+    TargetPlatform? platform,
+  }) async {
     final tuned = <FeedTuningDirection>[];
     await tester.pumpWidget(
       MaterialApp(
+        theme: platform == null ? null : ThemeData(platform: platform),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -164,6 +168,67 @@ void main() {
         containsAll(<int>[moreId, lessId]),
       );
       handle.dispose();
+    });
+  });
+
+  group('platform back gesture', () {
+    testWidgets('iOS back swipe pops without tuning', (tester) async {
+      final tuned = await pumpPushedOverlay(tester);
+
+      await tester.dragFrom(const Offset(5, 300), const Offset(500, 0));
+      await tester.pumpAndSettle();
+
+      expect(tuned, isEmpty);
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('iOS center swipe still tunes more on pushed route', (
+      tester,
+    ) async {
+      final tuned = await pumpPushedOverlay(tester);
+
+      await tester.dragFrom(const Offset(200, 300), const Offset(220, 0));
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.more]);
+      expect(find.byType(FeedTuningSwipeOverlay), findsOneWidget);
+    });
+
+    testWidgets('iOS RTL back swipe pops without tuning', (tester) async {
+      final tuned = await pumpPushedOverlay(
+        tester,
+        textDirection: TextDirection.rtl,
+      );
+
+      await tester.dragFrom(const Offset(795, 300), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      expect(tuned, isEmpty);
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('iOS root-route edge swipe can still tune', (tester) async {
+      final tuned = await pumpFullscreenRootOverlay(tester);
+
+      await tester.dragFrom(const Offset(5, 300), const Offset(220, 0));
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.more]);
+    });
+
+    testWidgets('non-iOS pushed route edge swipe can still tune', (
+      tester,
+    ) async {
+      final tuned = await pumpPushedOverlay(
+        tester,
+        platform: TargetPlatform.android,
+      );
+
+      await tester.dragFrom(const Offset(5, 300), const Offset(220, 0));
+      await tester.pumpAndSettle();
+
+      expect(tuned, [FeedTuningDirection.more]);
+      expect(find.byType(FeedTuningSwipeOverlay), findsOneWidget);
     });
   });
 
@@ -328,3 +393,76 @@ void main() {
 }
 
 void _noop(FeedTuningDirection _) {}
+
+Future<List<FeedTuningDirection>> pumpFullscreenRootOverlay(
+  WidgetTester tester, {
+  TargetPlatform platform = TargetPlatform.iOS,
+}) async {
+  final tuned = <FeedTuningDirection>[];
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: ThemeData(platform: platform),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: FeedTuningSwipeOverlay(
+          onTuned: tuned.add,
+          child: const SizedBox.expand(),
+        ),
+      ),
+    ),
+  );
+  return tuned;
+}
+
+Future<List<FeedTuningDirection>> pumpPushedOverlay(
+  WidgetTester tester, {
+  TargetPlatform platform = TargetPlatform.iOS,
+  TextDirection textDirection = TextDirection.ltr,
+}) async {
+  final tuned = <FeedTuningDirection>[];
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: ThemeData(platform: platform),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        return Directionality(
+          textDirection: textDirection,
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+      home: Builder(
+        builder: (context) {
+          return Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) {
+                        return Scaffold(
+                          body: FeedTuningSwipeOverlay(
+                            onTuned: tuned.add,
+                            child: const SizedBox.expand(),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: const Text('home'),
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+  );
+
+  await tester.tap(find.text('home'));
+  await tester.pumpAndSettle();
+  expect(find.byType(FeedTuningSwipeOverlay), findsOneWidget);
+
+  return tuned;
+}

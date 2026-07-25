@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
@@ -7,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:openvine/l10n/l10n.dart';
+
+// Mirrors Flutter's private _kBackGestureWidth in cupertino/route.dart.
+const double _platformBackGestureWidth = 20;
 
 /// Horizontal-swipe detector over the fullscreen feed that lets the user tune
 /// recommendations: swipe right = "more like this", swipe left = "less like
@@ -68,6 +72,7 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
 
   void _onPointerDown(PointerDownEvent event) {
     if (_activeDragPointer != null) return;
+    if (_isPlatformBackGestureStart(event.position)) return;
     _activeDragPointer = event.pointer;
     _dragOffset = Offset.zero;
     _dragIntent = _DragIntent.undecided;
@@ -90,6 +95,7 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
 
   void _onPointerPanZoomStart(PointerPanZoomStartEvent event) {
     if (_activeDragPointer != null) return;
+    if (_isPlatformBackGestureStart(event.position)) return;
     _activeDragPointer = event.pointer;
     _dragOffset = Offset.zero;
     _dragIntent = _DragIntent.undecided;
@@ -137,9 +143,41 @@ class _FeedTuningSwipeOverlayState extends State<FeedTuningSwipeOverlay> {
     final committed =
         _dragIntent == _DragIntent.horizontal &&
         _passedThreshold &&
-        direction != null;
+        direction != null &&
+        !_isRouteTransitionInProgress;
     _reset();
     if (committed) widget.onTuned(direction);
+  }
+
+  bool get _isRouteTransitionInProgress {
+    final animation = ModalRoute.of(context)?.animation;
+    return animation != null && animation.status != AnimationStatus.completed;
+  }
+
+  bool _isPlatformBackGestureStart(Offset globalPosition) {
+    if (Theme.of(context).platform != TargetPlatform.iOS) return false;
+
+    final route = ModalRoute.of(context);
+    if (route is! PageRoute<dynamic> || !route.popGestureEnabled) return false;
+
+    final renderObject = context.findRenderObject();
+    if (renderObject is! RenderBox) return false;
+
+    final localPosition = renderObject.globalToLocal(globalPosition);
+    final textDirection = Directionality.of(context);
+    final padding = MediaQuery.paddingOf(context);
+    final backGestureWidth = switch (textDirection) {
+      TextDirection.ltr => math.max(padding.left, _platformBackGestureWidth),
+      TextDirection.rtl => math.max(padding.right, _platformBackGestureWidth),
+    };
+
+    return switch (textDirection) {
+      TextDirection.ltr =>
+        localPosition.dx >= 0 && localPosition.dx <= backGestureWidth,
+      TextDirection.rtl =>
+        localPosition.dx >= renderObject.size.width - backGestureWidth &&
+            localPosition.dx <= renderObject.size.width,
+    };
   }
 
   void _onPointerSignal(PointerSignalEvent event) {
