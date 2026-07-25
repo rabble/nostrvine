@@ -6,7 +6,7 @@ import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event;
 
 /// NIP-71 addressable video kind numbers accepted in `a` tags.
-const _nip71AddressableVideoKinds = {
+const Set<int> _nip71AddressableVideoKinds = {
   NIP71VideoKinds.addressableNormalVideo,
   NIP71VideoKinds.addressableShortVideo,
 };
