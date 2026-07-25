@@ -54,6 +54,20 @@ void main() {
         expect(list.playOrder, equals(PlayOrder.chronological));
       });
 
+      test('normalizes Nostr timestamps to UTC', () {
+        final event = _makeEvent(
+          tags: [
+            ['d', 'my-list'],
+          ],
+          createdAt: 1718400000,
+        );
+
+        final list = CuratedListConverter.fromEvent(event)!;
+
+        expect(list.createdAt.isUtc, isTrue);
+        expect(list.updatedAt.isUtc, isTrue);
+      });
+
       test('uses title tag for name', () {
         final event = _makeEvent(
           tags: [
@@ -135,19 +149,17 @@ void main() {
             ['d', 'my-list'],
             ['a', '34235:pubkey123:horizontal-video'],
             ['a', '34236:pubkey456:vertical-video'],
-            ['a', '34237:pubkey789:live-video'],
           ],
         );
 
         final list = CuratedListConverter.fromEvent(event)!;
 
-        expect(list.videoEventIds, hasLength(3));
+        expect(list.videoEventIds, hasLength(2));
         expect(
           list.videoEventIds,
           contains('34235:pubkey123:horizontal-video'),
         );
         expect(list.videoEventIds, contains('34236:pubkey456:vertical-video'));
-        expect(list.videoEventIds, contains('34237:pubkey789:live-video'));
       });
 
       test('ignores a-tags with non-video kinds', () {
@@ -156,6 +168,7 @@ void main() {
             ['d', 'my-list'],
             ['a', '30023:pubkey123:some-article'],
             ['a', '34236:pubkey456:actual-video'],
+            ['a', '34237:pubkey789:not-a-nip71-video'],
             ['a', '1:pubkey789:text-note'],
           ],
         );
@@ -450,6 +463,61 @@ void main() {
 
         expect(tags, contains(equals(['e', 'video-1'])));
         expect(tags, contains(equals(['e', 'video-2'])));
+      });
+
+      test('includes a-tags for addressable video references', () {
+        final list = CuratedList(
+          id: 'my-list',
+          name: 'Test',
+          videoEventIds: const [
+            '34235:pubkey123:horizontal-video',
+            '34236:pubkey456:vertical-video',
+          ],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        final tags = CuratedListConverter.toEventTags(list);
+
+        expect(
+          tags,
+          contains(equals(['a', '34235:pubkey123:horizontal-video'])),
+        );
+        expect(tags, contains(equals(['a', '34236:pubkey456:vertical-video'])));
+        expect(
+          tags.where((tag) => tag.first == 'e').map((tag) => tag[1]),
+          isNot(
+            containsAll([
+              '34235:pubkey123:horizontal-video',
+              '34236:pubkey456:vertical-video',
+            ]),
+          ),
+        );
+      });
+
+      test('keeps non-video addressable references as e-tags', () {
+        final list = CuratedList(
+          id: 'my-list',
+          name: 'Test',
+          videoEventIds: const [
+            '30023:pubkey123:some-article',
+            '34237:pubkey789:not-a-nip71-video',
+            '34236::missing-pubkey',
+            '34236:pubkey456:',
+          ],
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        final tags = CuratedListConverter.toEventTags(list);
+
+        expect(tags, contains(equals(['e', '30023:pubkey123:some-article'])));
+        expect(
+          tags,
+          contains(equals(['e', '34237:pubkey789:not-a-nip71-video'])),
+        );
+        expect(tags, contains(equals(['e', '34236::missing-pubkey'])));
+        expect(tags, contains(equals(['e', '34236:pubkey456:'])));
       });
     });
 

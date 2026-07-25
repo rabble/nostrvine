@@ -14,6 +14,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
@@ -21,8 +22,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/curated_list_ext.dart';
-import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -1045,7 +1044,7 @@ class CuratedListService extends ChangeNotifier {
       }
 
       final content = list.description ?? 'Curated video list: ${list.name}';
-      final tags = list.getEventTags();
+      final tags = CuratedListConverter.toEventTags(list);
 
       final event = await _authService.createAndSignEvent(
         kind: 30005, // NIP-51 curated list
@@ -1538,7 +1537,7 @@ class CuratedListService extends ChangeNotifier {
         final eventsByDTag = <String, Event>{};
 
         for (final event in receivedEvents) {
-          final dTag = _extractDTag(event);
+          final dTag = CuratedListConverter.extractDTag(event);
           if (dTag != null) {
             final existingEvent = eventsByDTag[dTag];
             if (existingEvent == null ||
@@ -1602,7 +1601,7 @@ class CuratedListService extends ChangeNotifier {
     return _nostrService
         .subscribe([filter])
         .map((event) {
-          final dTag = _extractDTag(event);
+          final dTag = CuratedListConverter.extractDTag(event);
           if (dTag == null) return null;
 
           // Check if we've seen a newer version of this list
@@ -1621,110 +1620,26 @@ class CuratedListService extends ChangeNotifier {
   /// Convert a Nostr event to a CuratedList object
   /// Returns null if event is invalid or cannot be parsed
   CuratedList? _eventToCuratedList(Event event) {
-    try {
-      final dTag = _extractDTag(event);
-      if (dTag == null) {
-        Log.warning(
-          'List event missing d tag: ${event.id}',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-        return null;
-      }
-
-      // Extract list metadata from tags (same logic as _processListEvent)
-      String? title;
-      String? description;
-      String? imageUrl;
-      String? thumbnailEventId;
-      String? playOrderStr;
-      final tags = <String>[];
-      final videoEventIds = <String>[];
-      bool isCollaborative = false;
-      final allowedCollaborators = <String>[];
-
-      for (final tag in event.tags) {
-        if (tag.isEmpty) continue;
-
-        switch (tag[0]) {
-          case 'title':
-            if (tag.length > 1) title = tag[1];
-          case 'description':
-            if (tag.length > 1) description = tag[1];
-          case 'image':
-            if (tag.length > 1) imageUrl = tag[1];
-          case 'thumbnail':
-            if (tag.length > 1) thumbnailEventId = tag[1];
-          case 'playorder':
-            if (tag.length > 1) playOrderStr = tag[1];
-          case 't':
-            if (tag.length > 1) tags.add(tag[1]);
-          case 'e':
-            if (tag.length > 1) videoEventIds.add(tag[1]);
-          case 'a':
-            // Handle 'a' tags for addressable events (format: kind:pubkey:d-tag)
-            // NIP-71 video kinds: 34235 (horizontal), 34236 (vertical), 34237 (live)
-            if (tag.length > 1) {
-              final aTagValue = tag[1];
-              // Parse the coordinate to extract video reference
-              // Format: <kind>:<pubkey>:<d-tag>
-              final parts = aTagValue.split(':');
-              if (parts.length >= 3) {
-                final kind = parts[0];
-                // Accept all NIP-71 video kinds
-                if (kind == '34235' || kind == '34236' || kind == '34237') {
-                  videoEventIds.add(aTagValue);
-                }
-              }
-            }
-          case 'collaborative':
-            if (tag.length > 1 && tag[1] == 'true') isCollaborative = true;
-          case 'collaborator':
-            if (tag.length > 1) allowedCollaborators.add(tag[1]);
-        }
-      }
-
-      // Only log lists that have videos (avoid spam from empty lists)
-      if (videoEventIds.isNotEmpty) {
-        Log.debug(
-          '📋 Found list "$dTag" with ${videoEventIds.length} videos',
-          name: 'CuratedListService',
-          category: LogCategory.system,
-        );
-      }
-
-      // Use title or fall back to content or default
-      final contentFirstLine = event.content.split('\n').first;
-      final name =
-          title ??
-          (contentFirstLine.isNotEmpty ? contentFirstLine : 'Untitled List');
-
-      return CuratedList(
-        id: dTag,
-        name: name,
-        pubkey: event.pubkey, // Creator's pubkey for attribution
-        description: description ?? event.content,
-        imageUrl: imageUrl,
-        videoEventIds: videoEventIds,
-        createdAt: event.createdAtDateTime,
-        updatedAt: event.createdAtDateTime,
-        nostrEventId: event.id,
-        tags: tags,
-        isCollaborative: isCollaborative,
-        allowedCollaborators: allowedCollaborators,
-        thumbnailEventId: thumbnailEventId,
-        playOrder: playOrderStr != null
-            ? PlayOrderExtension.fromString(playOrderStr)
-            : PlayOrder.chronological,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to convert event ${event.id} to CuratedList: $e',
+    final curatedList = CuratedListConverter.fromEvent(event);
+    if (curatedList == null) {
+      Log.warning(
+        'Failed to parse list event: ${event.id}',
         name: 'CuratedListService',
         category: LogCategory.system,
       );
       return null;
     }
+
+    if (curatedList.videoEventIds.isNotEmpty) {
+      Log.debug(
+        '📋 Found list "${curatedList.id}" with '
+        '${curatedList.videoEventIds.length} videos',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+    }
+
+    return curatedList;
   }
 
   /// Process list events received from relays
@@ -1733,7 +1648,7 @@ class CuratedListService extends ChangeNotifier {
     final eventsByDTag = <String, Event>{};
 
     for (final event in events) {
-      final dTag = _extractDTag(event);
+      final dTag = CuratedListConverter.extractDTag(event);
       if (dTag != null) {
         // Keep only the latest event for each 'd' tag
         final existingEvent = eventsByDTag[dTag];
@@ -1759,31 +1674,19 @@ class CuratedListService extends ChangeNotifier {
     await _saveLists();
   }
 
-  /// Extract 'd' tag value from event
-  String? _extractDTag(Event event) {
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'd' && tag.length > 1) {
-        return tag[1];
-      }
-    }
-    return null;
-  }
-
   /// Process a single list event from Nostr
   Future<void> _processListEvent(Event event) async {
     try {
-      final dTag = _extractDTag(event);
-
-      if (dTag == null) {
+      final curatedList = CuratedListConverter.fromEvent(event);
+      if (curatedList == null) {
         Log.warning(
-          'List event missing d tag: ${event.id}',
+          'Failed to parse list event: ${event.id}',
           name: 'CuratedListService',
           category: LogCategory.system,
         );
         return;
       }
-
-      final curatedList = event.toCuratedList();
+      final dTag = curatedList.id;
 
       // Check if we already have this list locally
       final existingListIndex = _lists.indexWhere((list) => list.id == dTag);

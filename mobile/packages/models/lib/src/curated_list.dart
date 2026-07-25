@@ -60,7 +60,7 @@ extension PlayOrderExtension on PlayOrder {
 /// Video references in [videoEventIds] are mixed:
 /// - **Event IDs**: 64-character hex strings
 /// - **Addressable coordinates**: `kind:pubkey:d-tag` format
-///   (NIP-71 kinds 34235, 34236, 34237)
+///   (NIP-71 kinds 34235 and 34236)
 ///
 /// WARNING: Lists with [isPublic] set to `false` are stored locally only
 /// (SharedPreferences). They are ephemeral and will be lost if the user
