@@ -821,8 +821,37 @@ half-open feature flag, independent of the rest.
 - Decide and handle the legacy null-`userPubkey` OAuth cohort.
 - Delete `archive` / `restoreActiveKeys` / `switchToIdentity` mutation paths.
 
-**Ships value alone:** makes even the *existing* sign-out-and-back-in switch
-non-corrupting.
+**Correction — Phase 2 is NOT independently shippable before Phase 3/4.**
+An attempt to land the write-once-at-sign-in piece in isolation was made and
+reverted after two empirical findings falsified the plan's assumptions:
+
+1. **There is no single finalization chokepoint at sign-in.** Fresh sign-in
+   runs through `_setupUserSession`, but the reconnect/restore paths
+   (`_reconnectAmber` `auth_service.dart:2199`, `_reconnectBunker`,
+   `_reconnectNip07`) finalize *inline* and never call it. Worse, even on the
+   fresh OAuth path the active credential slots are **not guaranteed populated**
+   when `_setupUserSession` runs (verified: `persistForAccount` fired but read
+   `oauth=false` on the local-signing sub-path). So "write the addressed key at
+   sign-in" cannot be done with one hook — it needs the single
+   `buildAndProveSession` chokepoint the Phase 4 `activate()` refactor creates.
+
+2. **The null-`userPubkey` OAuth cohort cannot be safely auto-archived —
+   not even at switch-away.** Attempting it (allow-null archive at the
+   `_archiveSignerInfo` call) breaks the existing, intentional Bug-2 corruption
+   guard (`auth_service_multi_account_test.dart`: "refuses to archive OAuth
+   session with null userPubkey (legacy)"). Even at switch-away the active slot
+   can hold a diverged/different session (the whole Bug-2 premise), so a null
+   session is unverifiable there too. This confirms §12 Q2's recommendation:
+   the null cohort's fix is **force re-auth (option a)**, a switcher-UX/restore
+   flow change (Phase 4/5), NOT a storage rewrite.
+
+**Consequence:** the write-once addressed-credential model (§8.4) lands *with*
+the `buildAndProveSession` refactor (single finalize point) and the null-cohort
+re-auth UX — i.e., folded into Phase 4, not before it. The value it delivers
+(non-corrupting switch, no stranded credentials) is real but is not separable
+from the finalization refactor. The current `archive`/`restoreActiveKeys`
+mutation stays until then; it is dormant in production (`FF_ACCOUNT_SWITCHING`
+off), so nothing regresses in the meantime.
 
 ### Phase 3 — `AccountSession` + `DeviceScope`
 *Introduces the model without yet changing how switching works.*
