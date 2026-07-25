@@ -17,31 +17,48 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       app: ${{ steps.scope.outputs.app }}
+      native: ${{ steps.scope.outputs.native }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      # No checkout: the changed-file list comes from the REST API. A
+      # `fetch-depth: 0` clone cost ~23s of this workflow's critical path
+      # (every other job `needs: changes`) to produce a list the API already
+      # has.
       - name: Detect whether app CI is required
         id: scope
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
             echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "native=true" >> "$GITHUB_OUTPUT"
             echo "Non-PR event; running full app CI."
             exit 0
           fi
 
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/mobile-ci-changed-files.txt
+          # The files endpoint caps at 3000 entries. A PR that large is not a
+          # scoped change, so fall open to the full matrix rather than
+          # under-running CI on a truncated list.
+          changed_total=$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.changed_files')
+          if [ "$changed_total" -gt 3000 ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "PR touches $changed_total files (> 3000 API cap); running full app CI."
+            exit 0
+          fi
+
+          gh api --paginate "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename' > /tmp/mobile-ci-changed-files.txt
           echo "Changed files:"
           cat /tmp/mobile-ci-changed-files.txt
 
           app=false
+          native=false
           while IFS= read -r path; do
             case "$path" in
               .github/workflows/*)
                 app=true
+                native=true
                 ;;
               *.md|docs/*|brand-guidelines/*|mobile/docs/*)
                 # Docs-only changes do not need the full app test matrix.
@@ -59,14 +76,26 @@ jobs:
                 app=true
                 ;;
             esac
+            # The transport-security guard reads one Android XML plus three
+            # Info.plists and nothing else, so its verdict cannot change
+            # unless a native config or the guard itself changed. Matched at
+            # directory level (a superset of the guard's inputs) so the gate
+            # can't silently drift when the guard gains a fourth plist.
+            case "$path" in
+              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh)
+                native=true
+                ;;
+            esac
           done < /tmp/mobile-ci-changed-files.txt
 
           echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "native=$native" >> "$GITHUB_OUTPUT"
           if [ "$app" = "true" ]; then
             echo "App CI required."
           else
             echo "Package-only/docs-only change; app CI jobs may be skipped."
           fi
+          echo "Native transport-security inputs changed: $native"
 
   generated-files:
     name: Generated Files
@@ -92,6 +121,13 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: 🔒 Verify native transport security
+        # Skipped when no native config changed. The guard's only inputs are
+        # mobile/android/**, mobile/ios/**, mobile/macos/** and its own
+        # script; if none of those moved, its verdict is identical to the one
+        # main already recorded. Gating it also skips the apt install of
+        # libxml2-utils (~42s, of which `apt-get update` alone is ~28s), which
+        # is the single most expensive step in this job after codegen.
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.native == 'true' }}
         run: |
           if ! command -v xmllint >/dev/null 2>&1; then
             sudo apt-get update -qq
@@ -237,8 +273,8 @@ jobs:
           flutter-version: "3.44.0"
           channel: "stable"
           cache: true
-      - name: 📦 Install dependencies
-        run: flutter pub get
+      # No `flutter pub get`: `dart format` is purely syntactic and never
+      # resolves package imports, so the ~10s resolve was dead weight.
       - name: ✨ Check formatting
         run: dart format --output=none --set-exit-if-changed lib test integration_test
   analyze:
