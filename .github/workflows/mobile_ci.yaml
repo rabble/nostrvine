@@ -262,7 +262,7 @@ jobs:
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
   tests:
-    name: Tests (shard ${{ matrix.shard }}/4)
+    name: Tests (shard ${{ strategy.job-index }}/${{ strategy.job-total }})
     needs: changes
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
@@ -298,7 +298,7 @@ jobs:
         # vCPUs of four machines on the problem instead of one core of one.
         # The script is a pure partition of test/**/*_test.dart — see
         # test/tools/select_test_shard_test.dart.
-        run: bash scripts/ci/select_test_shard.sh --total 4 --index ${{ matrix.shard }}
+        run: bash scripts/ci/select_test_shard.sh --total ${{ strategy.job-total }} --index ${{ strategy.job-index }}
       - name: 🚀 Run Flutter tests
         # concurrency=4 matches the ubuntu runner's 4 vCPUs. The merged runner
         # alongside the tagged files runs race-free at 4 (verified locally at 4

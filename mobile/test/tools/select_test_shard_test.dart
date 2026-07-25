@@ -41,7 +41,6 @@ void main() {
       File(scriptPath)
         ..parent.createSync(recursive: true)
         ..writeAsStringSync(realScript.readAsStringSync());
-      Process.runSync('chmod', ['+x', scriptPath]);
 
       for (final relative in [...testFiles, ...otherFiles]) {
         File(p.join(sandbox.path, relative))

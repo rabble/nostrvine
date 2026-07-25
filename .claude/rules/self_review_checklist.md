@@ -183,7 +183,8 @@ Then:
 - [ ] Screenshots or screen recordings attached for UI changes.
 - [ ] Manual test plan covers both own-profile and other-profile paths
   (or equivalent primary vs secondary code paths) where relevant.
-- [ ] CI: `build / build` (divine_ui coverage), `Analyze`, `Tests`,
+- [ ] CI: `build / build` (divine_ui coverage), `Analyze`,
+  `Tests (shard N/total)` for every shard, aggregate `Mobile CI`,
   `Format`, `Generated Files` all green before requesting review.
 
 ## Responding to review
