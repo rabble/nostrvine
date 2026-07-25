@@ -2663,7 +2663,6 @@ void main() {
     ]);
 
     ConversationListBloc createSupportBloc({
-      bool enabled = true,
       ContentBlocklistRepository? blocklist,
       ProtectedMinorInboxGate? gate,
     }) => ConversationListBloc(
@@ -2672,7 +2671,6 @@ void main() {
       contentBlocklistRepository: blocklist,
       protectedMinorInboxGate: gate,
       recomputeDebounce: Duration.zero,
-      supportRowEnabled: enabled,
       supportRowPubkey: moderationPubkey,
       supportRowLegacyPubkeys: const [legacyModerationPubkey],
     );
@@ -2686,9 +2684,16 @@ void main() {
       );
     }
 
-    test('is null when the feature flag is off', () async {
+    test('is null when no moderation pubkey is injected', () async {
+      // Every construction site outside the inbox omits supportRowPubkey;
+      // the pin must stay off for them rather than synthesizing a row
+      // pointing at an empty counterparty.
       _stubStreams(mockDmRepository);
-      final bloc = createSupportBloc(enabled: false);
+      final bloc = ConversationListBloc(
+        dmRepository: mockDmRepository,
+        followRepository: mockFollowRepository,
+        recomputeDebounce: Duration.zero,
+      );
       addTearDown(bloc.close);
 
       final state = await loadedState(bloc);

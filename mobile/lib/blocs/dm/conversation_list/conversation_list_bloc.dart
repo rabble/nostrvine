@@ -31,7 +31,6 @@ class ConversationListBloc
     Duration recomputeDebounce = _defaultRecomputeDebounce,
     String? supportRowPubkey,
     List<String> supportRowLegacyPubkeys = const [],
-    bool supportRowEnabled = false,
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
@@ -40,7 +39,6 @@ class ConversationListBloc
        _recomputeDebounce = recomputeDebounce,
        _supportRowPubkey = supportRowPubkey,
        _supportRowLegacyPubkeys = supportRowLegacyPubkeys,
-       _supportRowEnabled = supportRowEnabled,
        super(const ConversationListState()) {
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
@@ -87,8 +85,6 @@ class ConversationListBloc
   /// still holds that thread, and without this it would render beside the
   /// pinned row as a second "Divine Moderation" entry.
   final List<String> _supportRowLegacyPubkeys;
-
-  final bool _supportRowEnabled;
 
   /// Window over which bursty conversation writes are coalesced before the
   /// list is re-composed. The combined stream re-runs `classifyPotentialRequests`
@@ -498,10 +494,7 @@ class ConversationListBloc
     required List<DmConversation> requests,
   }) {
     final supportPubkey = _supportRowPubkey;
-    if (!_supportRowEnabled ||
-        supportPubkey == null ||
-        supportPubkey.isEmpty ||
-        userPubkey.isEmpty) {
+    if (supportPubkey == null || supportPubkey.isEmpty || userPubkey.isEmpty) {
       return (pinned: null, inbox: inbox, requests: requests);
     }
 
