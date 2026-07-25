@@ -6,6 +6,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -81,7 +82,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
   final router = GoRouter(
     navigatorKey: NavigatorKeys.root,
-    // Start at /welcome - redirect logic will navigate to appropriate route
+    // Start at /welcome - redirect logic will navigate to appropriate route.
     initialLocation: WelcomeScreen.path,
     observers: _buildRouterObservers(),
     // Refresh router when auth or account-review state changes
@@ -121,10 +122,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 });
 
 List<NavigatorObserver> _buildRouterObservers() {
-  final observers = <NavigatorObserver>[
-    routeObserver,
-    PageLoadObserver(),
-  ];
+  final observers = <NavigatorObserver>[routeObserver, PageLoadObserver()];
 
   return observers;
 }

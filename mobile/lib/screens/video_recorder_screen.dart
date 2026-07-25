@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
@@ -148,6 +149,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
 
   /// Shows the "Why six seconds?" prompt only once per user.
   Future<void> _maybeShowWhySixSeconds() async {
+    // Screenshot capture must show a clean recorder, not the first-run
+    // education sheet.
+    if (ScreenshotMode.enabled) return;
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_kWhySixSecondsShownKey) ?? false) return;
     await prefs.setBool(_kWhySixSecondsShownKey, true);

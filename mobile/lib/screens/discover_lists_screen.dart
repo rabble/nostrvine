@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -512,7 +513,10 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             );
           }
           final list = discoveredLists[index];
-          return _buildListCard(list);
+          return Semantics(
+            identifier: SemanticIds.listCard(index),
+            child: _buildListCard(list),
+          );
         },
       ),
     );

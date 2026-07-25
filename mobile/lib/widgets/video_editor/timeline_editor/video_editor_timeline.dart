@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
@@ -393,7 +394,7 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     return BlocListener<ClipEditorBloc, ClipEditorState>(
       listenWhen: _shouldAutoZoomForStopMotion,
       listener: _autoZoomForFirstStopMotion,
-      child: body,
+      child: Semantics(identifier: SemanticIds.editorTimeline, child: body),
     );
   }
 

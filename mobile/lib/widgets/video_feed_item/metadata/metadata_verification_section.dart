@@ -5,6 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 
@@ -21,29 +22,32 @@ class MetadataVerificationSection extends StatelessWidget {
     if (!video.hasProofMode) return const SizedBox.shrink();
 
     final l10n = context.l10n;
-    return MetadataSection(
-      label: l10n.metadataVerificationLabel,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 4,
-        children: [
-          _VerificationCheckItem(
-            label: l10n.metadataDeviceAttestation,
-            passed: video.hasProofModeDeviceAttestation,
-          ),
-          _VerificationCheckItem(
-            label: l10n.metadataPgpSignature,
-            passed: video.hasProofModePgpFingerprint,
-          ),
-          _VerificationCheckItem(
-            label: l10n.metadataC2paCredentials,
-            passed: video.hasProofModeC2paManifestId,
-          ),
-          _VerificationCheckItem(
-            label: l10n.metadataProofManifest,
-            passed: video.hasProofModeManifest,
-          ),
-        ],
+    return Semantics(
+      identifier: SemanticIds.verificationSection,
+      child: MetadataSection(
+        label: l10n.metadataVerificationLabel,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 4,
+          children: [
+            _VerificationCheckItem(
+              label: l10n.metadataDeviceAttestation,
+              passed: video.hasProofModeDeviceAttestation,
+            ),
+            _VerificationCheckItem(
+              label: l10n.metadataPgpSignature,
+              passed: video.hasProofModePgpFingerprint,
+            ),
+            _VerificationCheckItem(
+              label: l10n.metadataC2paCredentials,
+              passed: video.hasProofModeC2paManifestId,
+            ),
+            _VerificationCheckItem(
+              label: l10n.metadataProofManifest,
+              passed: video.hasProofModeManifest,
+            ),
+          ],
+        ),
       ),
     );
   }

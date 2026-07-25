@@ -1,0 +1,122 @@
+require "base64"
+require "fileutils"
+
+# Fastfile — App Store screenshot pipeline for Divine.
+# Run from mobile/ios: `bundle exec fastlane screenshots`
+# See fastlane/README_SCREENSHOTS.md for the full guide.
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Capture all App Store screenshots and frame them with captions"
+  lane :screenshots do
+    preflight_build_hygiene
+    bump_xcodebuild_settings_timeout
+    ensure_flutter_config
+    snapshot
+    frame_marketing_images
+  end
+
+  desc "Capture only (no framing) — useful while iterating on the UI test"
+  lane :capture do
+    preflight_build_hygiene
+    bump_xcodebuild_settings_timeout
+    ensure_flutter_config
+    snapshot
+  end
+
+  desc "Frame only — re-runs caption compositing on existing captures"
+  lane :frame do
+    frame_marketing_images
+  end
+
+  desc "Composite brand canvas + caption + rounded screenshot (Pillow)"
+  private_lane :frame_marketing_images do
+    # frameit's title layout is finicky and needs ImageMagick; a small
+    # Pillow script (self-bootstrapping venv) gives full control over the
+    # caption band and reads the same keyword.strings / title.strings.
+    sh("bash", File.join(__dir__, "frame.sh"))
+  end
+
+  desc "Upload framed screenshots to App Store Connect (DISABLED by default)"
+  lane :upload_screenshots do
+    # Deliberately disabled: this pipeline must never push to App Store
+    # Connect without an explicit human decision. To enable, replace this
+    # guard with a reviewed deliver configuration and provide an App Store
+    # Connect API key via the APP_STORE_CONNECT_API_KEY_* environment
+    # variables.
+    UI.user_error!(
+      "Uploading is intentionally disabled. " \
+      "Edit the upload_screenshots lane in fastlane/Fastfile to enable it."
+    )
+  end
+
+  desc "Guard against concurrent builds and stale test-result staging"
+  private_lane :preflight_build_hygiene do
+    derived_data = File.expand_path("DerivedData", __dir__)
+
+    # Another xcodebuild (stale retry, second agent session, Xcode itself)
+    # holding this DerivedData's build.db fails the whole run with
+    # "database is locked ... two concurrent builds". Detect the holder via
+    # lsof on the db file and stop before wasting a build cycle.
+    build_db = File.join(
+      derived_data, "Build", "Intermediates.noindex", "XCBuildData", "build.db"
+    )
+    if File.exist?(build_db)
+      pids = `lsof -t -- #{build_db.shellescape} 2>/dev/null`.split.uniq
+      unless pids.empty?
+        holders = `ps -o pid=,comm= -p #{pids.join(',')}`.strip
+        UI.user_error!(
+          "DerivedData build database is in use by another process:\n" \
+          "#{holders}\n" \
+          "Close Xcode / wait for the other build to finish (or kill it), " \
+          "then re-run."
+        )
+      end
+    end
+
+    # A crashed test runner leaves a half-written .xcresult staging dir; the
+    # next run then fails result-bundle saving with
+    # "mkstemp: No such file or directory" and reports TEST FAILED even when
+    # every test passed — which used to trigger a full pointless re-run.
+    # These are local logs only; the screenshots live elsewhere.
+    FileUtils.rm_rf(File.join(derived_data, "Logs", "Test"))
+  end
+
+  desc "Give xcodebuild -showBuildSettings room for slow SPM resolution"
+  private_lane :bump_xcodebuild_settings_timeout do
+    # Default base timeout is 3s; SPM dependency resolution on this project
+    # takes far longer, so snapshot's showBuildSettings probe times out.
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT"] = "180"
+    ENV["FASTLANE_XCODEBUILD_SETTINGS_RETRIES"] = "5"
+    # snapshot overrides the status bar immediately after booting the sim
+    # (default wait is 0s); on a cold boot that raced the springboard and
+    # crashed the test runner on its first attempt. Give boot up to 30s.
+    ENV["SNAPSHOT_SIMULATOR_WAIT_FOR_BOOT_TIMEOUT"] = "30"
+  end
+
+  desc "Verify the Flutter Xcode config was generated with SCREENSHOT_MODE"
+  private_lane :ensure_flutter_config do
+    # snapshot's `xcodebuild build test` reuses ios/Flutter/Generated.xcconfig,
+    # which must carry the SCREENSHOT_MODE dart-define. Running `flutter build`
+    # from inside fastlane is unreliable (its env breaks SPM resolution, a
+    # scrubbed env hangs), so generate the config in a normal shell first:
+    #
+    #   cd mobile && flutter build ios --simulator --debug --config-only \
+    #     --dart-define=SCREENSHOT_MODE=true
+    #
+    # This lane just checks the marker is present and fails fast otherwise.
+    config = File.expand_path("../Flutter/Generated.xcconfig", __dir__)
+    defines = File.read(config)[/DART_DEFINES=(.*)/, 1].to_s
+    ok = defines.split(",").any? do |b64|
+      Base64.decode64(b64) == "SCREENSHOT_MODE=true"
+    end
+    unless ok
+      UI.user_error!(
+        "Generated.xcconfig is missing SCREENSHOT_MODE. Run first:\n" \
+        "  cd mobile && flutter build ios --simulator --debug " \
+        "--config-only --dart-define=SCREENSHOT_MODE=true"
+      )
+    end
+  end
+end

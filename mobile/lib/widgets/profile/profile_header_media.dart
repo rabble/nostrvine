@@ -275,13 +275,16 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
       enabled: isLoading && !_timeoutExpired,
       enableSwitchAnimation: true,
       effect: vineSkeletonEffect,
-      child: Row(
-        children: [
-          for (int i = 0; i < columns.length; i++) ...[
-            if (i > 0) const _StatDivider(),
-            Expanded(child: columns[i]),
+      child: Semantics(
+        identifier: SemanticIds.profileStatsRow,
+        child: Row(
+          children: [
+            for (int i = 0; i < columns.length; i++) ...[
+              if (i > 0) const _StatDivider(),
+              Expanded(child: columns[i]),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

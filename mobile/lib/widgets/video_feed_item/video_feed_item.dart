@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -262,9 +263,7 @@ class VideoOverlayActions extends ConsumerWidget {
                 video.contentWarningLabels,
                 isActive,
               ),
-              child: _ContentWarningBadge(
-                labels: video.contentWarningLabels,
-              ),
+              child: _ContentWarningBadge(labels: video.contentWarningLabels),
             ),
           ),
         // Author info and video description overlay at bottom left.
@@ -288,9 +287,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   if (video != null &&
                       video.isRepost &&
                       video.reposterPubkey != null) ...[
-                    VideoRepostHeader(
-                      reposterPubkey: video.reposterPubkey!,
-                    ),
+                    VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
                     const SizedBox(height: 8),
                   ],
                   // Author avatar and info row
@@ -322,9 +319,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         );
                         final npub = normalizeToNpub(authorPubkey);
                         if (npub != null) {
-                          context.push(
-                            OtherProfileScreen.pathForNpub(npub),
-                          );
+                          context.push(OtherProfileScreen.pathForNpub(npub));
                         }
                       }
 
@@ -469,7 +464,7 @@ class VideoOverlayActions extends ConsumerWidget {
                     // Title (when present)
                     if (titleText != null)
                       Semantics(
-                        identifier: 'video_title',
+                        identifier: SemanticIds.videoTitle,
                         container: true,
                         explicitChildNodes: true,
                         button: true,
@@ -480,10 +475,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               ? null
                               : () {
                                   onInteracted?.call();
-                                  MetadataExpandedSheet.show(
-                                    context,
-                                    video,
-                                  );
+                                  MetadataExpandedSheet.show(context, video);
                                 },
                           child: Text(
                             titleText,
@@ -516,10 +508,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               ? null
                               : () {
                                   onInteracted?.call();
-                                  MetadataExpandedSheet.show(
-                                    context,
-                                    video,
-                                  );
+                                  MetadataExpandedSheet.show(context, video);
                                 },
                           child: LinkifiedText(
                             text: descriptionText,
@@ -582,9 +571,7 @@ class VideoOverlayActions extends ConsumerWidget {
               child: IgnorePointer(
                 ignoring: false, // Action buttons SHOULD receive taps
                 child: video == null
-                    ? _PreviewOverlayActionColumn(
-                        onInteracted: onInteracted,
-                      )
+                    ? _PreviewOverlayActionColumn(onInteracted: onInteracted)
                     : VideoOverlayActionColumn(
                         video: video,
                         isFullscreen: isFullscreen,
@@ -626,7 +613,7 @@ class _PreviewOverlayActionColumn extends StatelessWidget {
         RepostActionButton.preview(onInteracted: onInteracted),
         VideoActionButton(
           icon: .shareFatDuo,
-          semanticIdentifier: 'share_button',
+          semanticIdentifier: SemanticIds.shareButton,
           semanticLabel: context.l10n.shareVideoLabel,
           labelWhenZero: context.l10n.videoActionShareLabel,
           onPressed: onInteracted,

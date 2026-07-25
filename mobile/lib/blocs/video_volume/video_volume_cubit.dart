@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:volume_controller/volume_controller.dart';
 
@@ -63,9 +64,14 @@ class VideoVolumeCubit extends Cubit<VideoVolumeState> {
   }) : _prefs = sharedPreferences,
        super(
          VideoVolumeState(
-           volume: sharedPreferences.getDouble(_prefsKey) ?? 1.0,
+           // Screenshot capture runs must stay silent.
+           volume: ScreenshotMode.enabled
+               ? 0.0
+               : sharedPreferences.getDouble(_prefsKey) ?? 1.0,
          ),
        ) {
+    // Screenshot mode ignores system-volume changes to guarantee silence.
+    if (ScreenshotMode.enabled) return;
     // volume_controller has no web platform — skip to avoid
     // MissingPluginException in crash reporting.
     if (!kIsWeb || systemVolumeListener != null) {

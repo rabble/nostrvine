@@ -38,65 +38,71 @@ class _ShareWithSection extends StatelessWidget {
     // avatar + name layout it will dissolve into.
     final displayContacts = contactsLoaded ? contacts : _skeletonContacts;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        spacing: 12,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              context.l10n.shareWithTitle,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+    return Semantics(
+      identifier: SemanticIds.shareWithSection,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          spacing: 12,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                context.l10n.shareWithTitle,
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-          SizedBox(
-            height: _rowHeight,
-            // Skeleton contacts shimmer, then dissolve into the real list when
-            // it loads (enableSwitchAnimation), instead of a spinner that pops.
-            child: IdentitySkeletonizer(
-              isLoading: !contactsLoaded,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                // +1 for the always-present "Find people" entry.
-                itemCount: displayContacts.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    // Keep "Find people" solid + tappable during the shimmer.
-                    return Skeleton.keep(
-                      child: _FindPeopleItem(onTap: onFindPeople),
-                    );
-                  }
+            SizedBox(
+              height: _rowHeight,
+              // Skeleton contacts shimmer, then dissolve into the real list when
+              // it loads (enableSwitchAnimation), instead of a spinner that pops.
+              child: IdentitySkeletonizer(
+                isLoading: !contactsLoaded,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  // +1 for the always-present "Find people" entry.
+                  itemCount: displayContacts.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // Keep "Find people" solid + tappable during the shimmer.
+                      return Skeleton.keep(
+                        child: _FindPeopleItem(onTap: onFindPeople),
+                      );
+                    }
 
-                  final contact = displayContacts[index - 1];
-                  if (!contactsLoaded) {
-                    // Placeholder bone — not interactive, excluded from a11y.
-                    return ExcludeSemantics(
+                    final contact = displayContacts[index - 1];
+                    if (!contactsLoaded) {
+                      // Placeholder bone — not interactive, excluded from a11y.
+                      return ExcludeSemantics(
+                        child: _ContactItem(
+                          user: contact,
+                          isSelected: false,
+                          onTap: () {},
+                        ),
+                      );
+                    }
+
+                    return Semantics(
+                      identifier: SemanticIds.shareContact(index - 1),
                       child: _ContactItem(
                         user: contact,
-                        isSelected: false,
-                        onTap: () {},
+                        isSelected: selectedPubkeys.contains(contact.pubkey),
+                        onTap: () => onContactTapped(contact),
                       ),
                     );
-                  }
-
-                  return _ContactItem(
-                    user: contact,
-                    isSelected: selectedPubkeys.contains(contact.pubkey),
-                    onTap: () => onContactTapped(contact),
-                  );
-                },
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
