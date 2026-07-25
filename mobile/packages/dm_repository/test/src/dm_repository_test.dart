@@ -10373,6 +10373,211 @@ void main() {
       });
     });
 
+    group('extractPinnedSupport', () {
+      // The support account and a key it rotated away from. Kept as literals:
+      // this package cannot import the app's official-accounts config, and the
+      // partition is keyed on whatever the caller injects anyway.
+      const support = _validPubkeyB;
+      const retired = _validPubkeyC;
+
+      final currentId = DmRepository.computeConversationId([
+        _validPubkeyA,
+        support,
+      ]);
+      final retiredId = DmRepository.computeConversationId([
+        _validPubkeyA,
+        retired,
+      ]);
+
+      DmConversation makeConversation({
+        required String id,
+        required List<String> participantPubkeys,
+        bool isGroup = false,
+      }) => DmConversation(
+        id: id,
+        participantPubkeys: participantPubkeys,
+        isGroup: isGroup,
+        createdAt: 1700000000,
+      );
+
+      ({
+        DmConversation? pinned,
+        String? supportConversationId,
+        List<DmConversation> inbox,
+        List<DmConversation> requests,
+      })
+      extract({
+        List<DmConversation> inbox = const [],
+        List<DmConversation> requests = const [],
+        String userPubkey = _validPubkeyA,
+        String? supportPubkey = support,
+      }) => DmRepository.extractPinnedSupport(
+        userPubkey: userPubkey,
+        supportPubkey: supportPubkey,
+        legacyPubkeys: const [retired],
+        inbox: inbox,
+        requests: requests,
+      );
+
+      test('adopts the current-key thread and removes it from the inbox', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(inbox: [thread]);
+
+        expect(result.pinned, equals(thread));
+        expect(result.inbox, isEmpty);
+        expect(result.supportConversationId, equals(currentId));
+      });
+
+      test('adopts an inbound-only thread out of the requests bucket', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(requests: [thread]);
+
+        expect(result.pinned, equals(thread));
+        expect(result.requests, isEmpty);
+      });
+
+      test('removes a retired-key thread WITHOUT adopting it', () {
+        final thread = makeConversation(
+          id: retiredId,
+          participantPubkeys: const [_validPubkeyA, retired],
+        );
+
+        final result = extract(inbox: [thread]);
+
+        // Nothing remaps the recipient downstream, so returning this as the
+        // pin would address replies to a key the account rotated away from.
+        expect(result.pinned, isNull);
+        expect(result.inbox, isEmpty);
+        expect(result.supportConversationId, equals(currentId));
+      });
+
+      test('removes every known thread, not just the first match', () {
+        final retiredThread = makeConversation(
+          id: retiredId,
+          participantPubkeys: const [_validPubkeyA, retired],
+        );
+        final currentThread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(inbox: [retiredThread, currentThread]);
+
+        expect(result.pinned, equals(currentThread));
+        expect(result.inbox, isEmpty);
+      });
+
+      test('prefers the inbox copy when the thread is in both buckets', () {
+        final accepted = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+        final request = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+          isGroup: true,
+        );
+
+        final result = extract(inbox: [accepted], requests: [request]);
+
+        expect(result.pinned, same(accepted));
+        expect(result.inbox, isEmpty);
+        expect(result.requests, isEmpty);
+      });
+
+      test('leaves unrelated conversations untouched', () {
+        final other = makeConversation(
+          id: 'other',
+          participantPubkeys: const [_validPubkeyA, _validPubkeyC],
+        );
+
+        final result = extract(inbox: [other]);
+
+        expect(result.inbox, equals([other]));
+        expect(result.pinned, isNull);
+      });
+
+      test('leaves a group containing the support account in the list', () {
+        final group = makeConversation(
+          id: 'group',
+          participantPubkeys: const [_validPubkeyA, support, _validPubkeyC],
+          isGroup: true,
+        );
+
+        final result = extract(inbox: [group]);
+
+        // The id hashes ALL sorted participants, so a group can never collide
+        // with the 1:1 support thread.
+        expect(result.inbox, equals([group]));
+        expect(result.pinned, isNull);
+      });
+
+      test('is inert when no support pubkey is injected', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(inbox: [thread], supportPubkey: null);
+
+        expect(result.pinned, isNull);
+        expect(result.supportConversationId, isNull);
+        expect(result.inbox, equals([thread]));
+      });
+
+      test('is inert for an empty support pubkey', () {
+        final result = extract(supportPubkey: '');
+
+        expect(result.supportConversationId, isNull);
+      });
+
+      test('is inert before an identity is known', () {
+        final result = extract(userPubkey: '');
+
+        expect(result.supportConversationId, isNull);
+      });
+
+      test('is inert when the user IS the support account', () {
+        final selfThread = makeConversation(
+          id: DmRepository.computeConversationId([support, support]),
+          participantPubkeys: const [support, support],
+        );
+
+        final result = extract(inbox: [selfThread], userPubkey: support);
+
+        // A self-keyed pin routes with an empty counterparty list, and the
+        // maintenance pass deletes self-conversations out from under it.
+        expect(result.pinned, isNull);
+        expect(result.supportConversationId, isNull);
+        expect(result.inbox, equals([selfThread]));
+      });
+
+      test('ignores an empty entry in the retired list', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = DmRepository.extractPinnedSupport(
+          userPubkey: _validPubkeyA,
+          supportPubkey: support,
+          legacyPubkeys: const [''],
+          inbox: [thread],
+          requests: const [],
+        );
+
+        expect(result.pinned, equals(thread));
+      });
+    });
+
     group('getConversations', () {
       test('returns mapped $DmConversation list from DAO', () async {
         final participants = [_validPubkeyA, _validPubkeyB]..sort();

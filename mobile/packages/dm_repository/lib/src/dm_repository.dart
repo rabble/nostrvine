@@ -5016,6 +5016,86 @@ class DmRepository {
     });
   }
 
+  /// Lifts the Divine Moderation support thread out of the inbox and request
+  /// lists so it renders once, as the pinned row (#6283).
+  ///
+  /// Every conversation keyed on the moderation account — [supportPubkey] or
+  /// any of [legacyPubkeys] — is removed from both lists. Only a thread on
+  /// [supportPubkey] comes back as `pinned`: the row routes on the returned
+  /// conversation's own participants and nothing remaps the recipient between
+  /// there and [sendMessage], so adopting a pre-rotation thread would send
+  /// support replies to a retired key. Retired keys de-duplicate, never adopt.
+  ///
+  /// Shared with the unread badge rather than reimplemented there, so the
+  /// count cannot drift from the rows the list actually renders (#4976).
+  ///
+  /// `supportConversationId` is the id the pinned row must open: non-null
+  /// whenever a pin is possible at all, so a caller that wants to synthesize a
+  /// stand-in row has both the go/no-go answer and the id without re-deriving
+  /// either. It is null — along with `pinned` — when there is no identity to
+  /// key on, or when the signed-in user *is* the moderation account, in which
+  /// case both lists come back untouched.
+  static ({
+    DmConversation? pinned,
+    String? supportConversationId,
+    List<DmConversation> inbox,
+    List<DmConversation> requests,
+  })
+  extractPinnedSupport({
+    required String userPubkey,
+    required String? supportPubkey,
+    required List<String> legacyPubkeys,
+    required List<DmConversation> inbox,
+    required List<DmConversation> requests,
+  }) {
+    if (userPubkey.isEmpty ||
+        supportPubkey == null ||
+        supportPubkey.isEmpty ||
+        userPubkey == supportPubkey) {
+      return (
+        pinned: null,
+        supportConversationId: null,
+        inbox: inbox,
+        requests: requests,
+      );
+    }
+
+    final currentId = computeConversationId([userPubkey, supportPubkey]);
+    final knownIds = <String>{
+      currentId,
+      for (final pubkey in legacyPubkeys)
+        if (pubkey.isNotEmpty) computeConversationId([userPubkey, pubkey]),
+    };
+
+    DmConversation? pinned;
+    final remainingInbox = <DmConversation>[];
+    for (final conversation in inbox) {
+      if (!knownIds.contains(conversation.id)) {
+        remainingInbox.add(conversation);
+      } else if (conversation.id == currentId) {
+        pinned ??= conversation;
+      }
+    }
+
+    // An inbound-only moderation DM (the team wrote first) has
+    // currentUserHasSent == false and lands in requests, not the inbox.
+    final remainingRequests = <DmConversation>[];
+    for (final conversation in requests) {
+      if (!knownIds.contains(conversation.id)) {
+        remainingRequests.add(conversation);
+      } else if (conversation.id == currentId) {
+        pinned ??= conversation;
+      }
+    }
+
+    return (
+      pinned: pinned,
+      supportConversationId: currentId,
+      inbox: remainingInbox,
+      requests: remainingRequests,
+    );
+  }
+
   /// Watch unread conversation count (all conversations).
   Stream<int> watchUnreadCount() {
     return _conversationsDao.watchUnreadCount(ownerPubkey: _ownerPubkey);

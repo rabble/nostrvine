@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -1743,7 +1744,7 @@ void main() {
         false, // requestsWithheld
         ConversationListState.pageSize,
         null, // navigationTarget
-        null, // pinnedConversation
+        null, // pinnedSupport
       ]);
     });
   });
@@ -2646,12 +2647,10 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    // Real moderation pin from kPinnedOfficialAccounts.
-    const moderationPubkey =
-        '8fd5eb6d8f362163bc00a5ab6b4a3167dbf32d00ec4efdbcf43b3c9514433b7e';
-    // Retired in #2321; a thread opened before the rotation is keyed on it.
-    const legacyModerationPubkey =
-        '121b915baba659cbe59626a8afaf83b01dc42354dfecaad9d465d51bb5715d72';
+    // The shipped moderation pin, and a key retired in #2321 — a thread opened
+    // before that rotation is still keyed on it.
+    const moderationPubkey = kModerationPubkeyHex;
+    final legacyModerationPubkey = kLegacyModerationPubkeys.first;
 
     final supportId = DmRepository.computeConversationId([
       _testPubkey1,
@@ -2672,7 +2671,7 @@ void main() {
       protectedMinorInboxGate: gate,
       recomputeDebounce: Duration.zero,
       supportRowPubkey: moderationPubkey,
-      supportRowLegacyPubkeys: const [legacyModerationPubkey],
+      supportRowLegacyPubkeys: [legacyModerationPubkey],
     );
 
     Future<ConversationListState> loadedState(
@@ -2698,7 +2697,7 @@ void main() {
 
       final state = await loadedState(bloc);
 
-      expect(state.pinnedConversation, isNull);
+      expect(state.pinnedSupport, isNull);
     });
 
     test('synthesizes a pin when no moderation thread exists', () async {
@@ -2708,16 +2707,16 @@ void main() {
 
       final state = await loadedState(bloc);
 
-      expect(state.pinnedConversation, isNotNull);
-      expect(state.pinnedConversation!.id, equals(supportId));
+      expect(state.pinnedSupport, isNotNull);
+      expect(state.pinnedSupport!.conversation.id, equals(supportId));
       expect(
-        state.pinnedConversation!.participantPubkeys,
+        state.pinnedSupport!.conversation.participantPubkeys,
         containsAll([_testPubkey1, moderationPubkey]),
       );
       // Nothing to preview and nothing unread until the team replies —
       // this is what keeps the row visually matching divine-web.
-      expect(state.pinnedConversation!.lastMessageContent, isNull);
-      expect(state.pinnedConversation!.isRead, isTrue);
+      expect(state.pinnedSupport!.conversation.lastMessageContent, isNull);
+      expect(state.pinnedSupport!.conversation.isRead, isTrue);
     });
 
     test(
@@ -2741,12 +2740,12 @@ void main() {
 
         final state = await loadedState(bloc);
 
-        expect(state.pinnedConversation?.id, equals(supportId));
+        expect(state.pinnedSupport?.conversation.id, equals(supportId));
         // The pin carries the real unread state, so the Messages badge
         // still corresponds to something the user can see.
-        expect(state.pinnedConversation!.isRead, isFalse);
+        expect(state.pinnedSupport!.conversation.isRead, isFalse);
         expect(
-          state.pinnedConversation!.lastMessageContent,
+          state.pinnedSupport!.conversation.lastMessageContent,
           equals('We looked into your report.'),
         );
         expect(
@@ -2778,7 +2777,7 @@ void main() {
 
         final state = await loadedState(bloc);
 
-        expect(state.pinnedConversation?.id, equals(supportId));
+        expect(state.pinnedSupport?.conversation.id, equals(supportId));
         expect(
           state.requestConversations.map((c) => c.id),
           isNot(contains(supportId)),
@@ -2786,21 +2785,212 @@ void main() {
       },
     );
 
-    test('de-duplicates a pre-rotation legacy moderation thread', () async {
-      final legacyThread = _createConversation(
+    test(
+      'drops a pre-rotation legacy thread and pins the CURRENT key, so a '
+      'reply can never reach the retired pubkey',
+      () async {
+        final legacyThread = _createConversation(
+          id: legacySupportId,
+          currentUserHasSent: true,
+          participantPubkeys: [_testPubkey1, legacyModerationPubkey],
+        );
+        _stubStreams(mockDmRepository, accepted: [legacyThread]);
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        // Nothing remaps the recipient between the row's `extra` and
+        // sendMessage, so adopting the legacy thread would silently address
+        // support replies to a key the team retired in #2321.
+        expect(state.pinnedSupport?.conversation.id, equals(supportId));
+        expect(
+          state.pinnedSupport?.conversation.participantPubkeys,
+          isNot(contains(legacyModerationPubkey)),
+        );
+        // Synthetic, not adopted — the legacy thread's history does not
+        // travel with the pin.
+        expect(state.pinnedSupport?.isPersisted, isFalse);
+        expect(state.conversations, isEmpty);
+      },
+    );
+
+    test(
+      'keeps one pin when BOTH a legacy and a current thread exist, leaving '
+      'no duplicate ordinary row',
+      () async {
+        final legacyThread = _createConversation(
+          id: legacySupportId,
+          currentUserHasSent: true,
+          participantPubkeys: [_testPubkey1, legacyModerationPubkey],
+        );
+        final currentThread = _createConversation(
+          id: supportId,
+          currentUserHasSent: true,
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        _stubStreams(
+          mockDmRepository,
+          accepted: [legacyThread, currentThread],
+        );
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        expect(state.pinnedSupport?.conversation.id, equals(supportId));
+        expect(state.pinnedSupport?.isPersisted, isTrue);
+        // Extracting only the FIRST match left the loser in the list — the
+        // second "Divine Moderation" row the de-dup exists to prevent.
+        expect(state.conversations, isEmpty);
+      },
+    );
+
+    test('strips a legacy thread out of message requests too', () async {
+      final legacyInbound = _createConversation(
         id: legacySupportId,
-        currentUserHasSent: true,
-        participantPubkeys: const [_testPubkey1, legacyModerationPubkey],
+        participantPubkeys: [_testPubkey1, legacyModerationPubkey],
       );
-      _stubStreams(mockDmRepository, accepted: [legacyThread]);
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+      _stubStreams(mockDmRepository, potentialRequests: [legacyInbound]);
       final bloc = createSupportBloc();
       addTearDown(bloc.close);
 
       final state = await loadedState(bloc);
 
-      expect(state.pinnedConversation?.id, equals(legacySupportId));
-      expect(state.conversations, isEmpty);
+      expect(state.requestConversations, isEmpty);
+      expect(state.pinnedSupport?.conversation.id, equals(supportId));
     });
+
+    test(
+      'emits no pin when the signed-in user IS the moderation account',
+      () async {
+        _stubStreams(mockDmRepository);
+        // After _stubStreams, which seeds userPubkey itself.
+        when(() => mockDmRepository.userPubkey).thenReturn(moderationPubkey);
+        final bloc = ConversationListBloc(
+          dmRepository: mockDmRepository,
+          followRepository: mockFollowRepository,
+          recomputeDebounce: Duration.zero,
+          supportRowPubkey: moderationPubkey,
+          supportRowLegacyPubkeys: [legacyModerationPubkey],
+        );
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        // A self-keyed pin routes with an empty counterparty list, and the
+        // maintenance pass deletes self-conversations out from under it.
+        expect(state.pinnedSupport, isNull);
+      },
+    );
+
+    test(
+      'leaves a group conversation containing moderation in the list',
+      () async {
+        final group = _createConversation(
+          id: 'group-with-moderation',
+          currentUserHasSent: true,
+          participantPubkeys: const [
+            _testPubkey1,
+            moderationPubkey,
+            _testPubkey2,
+          ],
+          isGroup: true,
+        );
+        _stubStreams(mockDmRepository, accepted: [group]);
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        // The id is a hash over ALL sorted participants, so a group can never
+        // collide with the 1:1 support thread.
+        expect(state.conversations, contains(group));
+        expect(state.pinnedSupport?.isPersisted, isFalse);
+      },
+    );
+
+    test(
+      'keeps an unread inbound moderation thread pinned during history '
+      'recovery, while the requests list stays held back',
+      () async {
+        final inbound = _createConversation(
+          id: supportId,
+          isRead: false,
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        final stranger = _createConversation(
+          id: 'stranger-request',
+          isRead: false,
+          participantPubkeys: const [_testPubkey1, _testPubkey2],
+        );
+        when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+        _stubStreams(
+          mockDmRepository,
+          potentialRequests: [inbound, stranger],
+          recoveryComplete: false,
+        );
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        // The pin is extracted ahead of the #5304 hold-back: it never lands in
+        // a bucket, so it cannot flash between two, and blanking its unread
+        // dot for the length of the drain would just hide a real reply.
+        expect(state.pinnedSupport?.isPersisted, isTrue);
+        expect(state.pinnedSupport?.conversation.isRead, isFalse);
+        expect(state.requestConversations, isEmpty);
+      },
+    );
+
+    test(
+      'does not leave the pin in message requests once recovery completes',
+      () async {
+        final inbound = _createConversation(
+          id: supportId,
+          isRead: false,
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+        _stubStreams(mockDmRepository, potentialRequests: [inbound]);
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        expect(state.requestConversations, isEmpty);
+        expect(state.pinnedSupport?.isPersisted, isTrue);
+      },
+    );
+
+    test(
+      'withholds a recovery-window pin the protected-minor gate rejects',
+      () async {
+        final inbound = _createConversation(
+          id: supportId,
+          isRead: false,
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+        _stubStreams(
+          mockDmRepository,
+          potentialRequests: [inbound],
+          recoveryComplete: false,
+        );
+        final bloc = createSupportBloc(
+          gate: _FakeInboxGate(approved: const {}),
+        );
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        // Extracting ahead of the hold-back must not also mean extracting
+        // ahead of the filters — the route guard would bounce this row.
+        expect(state.pinnedSupport, isNull);
+      },
+    );
 
     test(
       'is null for a restricted minor whose approval was revoked, so the '
@@ -2814,7 +3004,7 @@ void main() {
 
         final state = await loadedState(bloc);
 
-        expect(state.pinnedConversation, isNull);
+        expect(state.pinnedSupport, isNull);
       },
     );
 
@@ -2842,7 +3032,7 @@ void main() {
 
         final state = await loadedState(bloc);
 
-        expect(state.pinnedConversation, isNull);
+        expect(state.pinnedSupport, isNull);
       },
     );
 
@@ -2861,7 +3051,7 @@ void main() {
       // moment the query clears — no refetch, no flash of an empty row. The
       // decision to *render* it under an active filter belongs to the view,
       // which drops it from searches its title does not match.
-      expect(searched.pinnedConversation, isNotNull);
+      expect(searched.pinnedSupport, isNotNull);
     });
   });
 }

@@ -200,26 +200,10 @@ class ConversationListBloc
           isFollowing: _followRepository.isFollowing,
         );
 
-        // While the one-time history-recovery drain is still running
-        // (post-reinstall window), HOLD BACK the conversations that would
-        // classify as requests. Until the drain re-ingests the user's own
-        // message for a chat, a previously-accepted conversation is
-        // indistinguishable from a genuine request — both have
-        // currentUserHasSent=false and an unfollowed peer. Showing them as
-        // requests is the original #5304 bug; showing them in the inbox makes
-        // real requests flash there and then jump to the Requests tab once
-        // recovery completes. So during recovery we surface only the
-        // unambiguous chats (accepted + followed), backed by the restore
-        // indicator, and let the ambiguous ones settle into their correct
-        // bucket as soon as recovery completes. See #5304.
-        final recoveryComplete = _dmRepository.isHistoryRecoveryComplete;
         final inboxConversations = DmRepository.mergeAndSort(
           data.accepted,
           split.followed,
         );
-        final requests = recoveryComplete
-            ? split.requests
-            : const <DmConversation>[];
 
         final blocklistedInbox =
             _blocklistRepository?.filterBlockedConversations(
@@ -227,12 +211,15 @@ class ConversationListBloc
               userPubkey: userPubkey,
             ) ??
             inboxConversations;
+        // Filters the FULL request set, not the recovery-held-back one, so the
+        // pin below is extracted from — and inherits the filters of — every
+        // request regardless of the drain. The hold-back is applied after.
         final blocklistedRequests =
             _blocklistRepository?.filterBlockedConversations(
-              requests,
+              split.requests,
               userPubkey: userPubkey,
             ) ??
-            requests;
+            split.requests;
 
         // Protected-minor inbound filter (#176): hide conversations whose
         // counterparty (all non-self participants) is not an approved official
@@ -260,6 +247,29 @@ class ConversationListBloc
           requests: visibleRequests,
         );
 
+        // While the one-time history-recovery drain is still running
+        // (post-reinstall window), HOLD BACK the conversations that would
+        // classify as requests. Until the drain re-ingests the user's own
+        // message for a chat, a previously-accepted conversation is
+        // indistinguishable from a genuine request — both have
+        // currentUserHasSent=false and an unfollowed peer. Showing them as
+        // requests is the original #5304 bug; showing them in the inbox makes
+        // real requests flash there and then jump to the Requests tab once
+        // recovery completes. So during recovery we surface only the
+        // unambiguous chats (accepted + followed), backed by the restore
+        // indicator, and let the ambiguous ones settle into their correct
+        // bucket as soon as recovery completes. See #5304.
+        //
+        // The pin is deliberately extracted ABOVE this line. It is a fixed
+        // identity in a fixed position, not something the user has to triage
+        // into a bucket, so it cannot produce the flash the hold-back exists
+        // to prevent — withholding it would only blank its unread dot for the
+        // duration of the drain, and the badge counts it either way (#4976).
+        final recoveryComplete = _dmRepository.isHistoryRecoveryComplete;
+        final requestConversations = recoveryComplete
+            ? pin.requests
+            : const <DmConversation>[];
+
         // A conversation can stream in while a name search is active whose
         // counterparty was not resolved when the search fired; it would fall
         // back to the generated name and drop out of the results until the
@@ -285,8 +295,15 @@ class ConversationListBloc
           status: ConversationListStatus.loaded,
           conversations: pin.inbox,
           // Only true when the gate is actually costing the user something —
-          // a closed gate with nothing to hold back needs no banner.
-          requestsWithheld: !recoveryComplete && split.requests.isNotEmpty,
+          // a closed gate with nothing to hold back needs no banner. Reads the
+          // post-filter, post-pin set rather than the raw `split.requests`
+          // #6431 emitted: that reflected main's ordering, where the hold-back
+          // ran before both filters, so a filtered list simply did not exist
+          // while the gate was shut. Here it does, and a request the blocklist,
+          // the #176 gate, or the pin itself already removed is not something
+          // the gate is costing the user — least of all the moderation thread,
+          // which is on screen as the pin the whole time.
+          requestsWithheld: !recoveryComplete && pin.requests.isNotEmpty,
           visibleConversations: _computeVisible(
             pin.inbox,
             unreadOnly: state.unreadOnly,
@@ -295,12 +312,12 @@ class ConversationListBloc
             userPubkey: userPubkey,
             limit: state.currentLimit,
           ),
-          requestConversations: pin.requests,
+          requestConversations: requestConversations,
           potentialRequests: data.potentialRequests,
           hasMore: pin.inbox.length > state.currentLimit,
           isRestoringHistory: data.isRestoring,
-          pinnedConversation: pin.pinned,
-          clearPinnedConversation: pin.pinned == null,
+          pinnedSupport: pin.pinned,
+          clearPinnedSupport: pin.pinned == null,
         );
       },
       onError: (error, stackTrace) {
@@ -473,8 +490,8 @@ class ConversationListBloc
   /// the pin renders no timestamp and is not sorted with the list.
   static const _pinnedSupportEpoch = 0;
 
-  /// Extract the pinned Divine Moderation conversation and remove it from the
-  /// lists it would otherwise render in (#6283).
+  /// Extract the pinned Divine Moderation row and remove every conversation it
+  /// stands in for from the lists they would otherwise render in (#6283).
   ///
   /// Called with lists that have ALREADY passed the blocklist filter and the
   /// protected-minor gate, so an existing moderation thread that those filters
@@ -484,7 +501,7 @@ class ConversationListBloc
   /// — would get a row that `ConversationPage`'s route guard bounces straight
   /// back to the inbox.
   ({
-    DmConversation? pinned,
+    PinnedSupport? pinned,
     List<DmConversation> inbox,
     List<DmConversation> requests,
   })
@@ -494,50 +511,32 @@ class ConversationListBloc
     required List<DmConversation> requests,
   }) {
     final supportPubkey = _supportRowPubkey;
-    if (supportPubkey == null || supportPubkey.isEmpty || userPubkey.isEmpty) {
-      return (pinned: null, inbox: inbox, requests: requests);
-    }
+    final split = DmRepository.extractPinnedSupport(
+      userPubkey: userPubkey,
+      supportPubkey: supportPubkey,
+      legacyPubkeys: _supportRowLegacyPubkeys,
+      inbox: inbox,
+      requests: requests,
+    );
 
-    // Every key the support thread may live under: the current moderation
-    // pubkey plus any it has rotated away from.
-    final knownIds = <String>{
-      for (final pk in [supportPubkey, ..._supportRowLegacyPubkeys])
-        if (pk.isNotEmpty) DmRepository.computeConversationId([userPubkey, pk]),
-    };
-
-    DmConversation? real;
-    final remainingInbox = <DmConversation>[];
-    for (final c in inbox) {
-      if (real == null && knownIds.contains(c.id)) {
-        real = c;
-      } else {
-        remainingInbox.add(c);
-      }
-    }
-
-    // An inbound-only moderation DM (the team wrote first) has
-    // currentUserHasSent == false and lands in requests, not the inbox.
-    // Without this the same thread would be reachable from both the pinned row
-    // and the Requests page with independent unread accounting.
-    final remainingRequests = <DmConversation>[];
-    for (final c in requests) {
-      if (real == null && knownIds.contains(c.id)) {
-        real = c;
-      } else {
-        remainingRequests.add(c);
-      }
-    }
-
-    if (real != null) {
+    final adopted = split.pinned;
+    if (adopted != null) {
       return (
-        pinned: real,
-        inbox: remainingInbox,
-        requests: remainingRequests,
+        pinned: PinnedSupport(conversation: adopted, isPersisted: true),
+        inbox: split.inbox,
+        requests: split.requests,
       );
     }
 
+    // Null means no pin is possible at all — no identity to key on, or the
+    // signed-in user IS the moderation account. Nothing to synthesize against.
+    final supportConversationId = split.supportConversationId;
+    if (supportConversationId == null || supportPubkey == null) {
+      return (pinned: null, inbox: split.inbox, requests: split.requests);
+    }
+
     final synthetic = DmConversation(
-      id: DmRepository.computeConversationId([userPubkey, supportPubkey]),
+      id: supportConversationId,
       participantPubkeys: [userPubkey, supportPubkey],
       isGroup: false,
       createdAt: _pinnedSupportEpoch,
@@ -553,9 +552,11 @@ class ConversationListBloc
         allowed;
 
     return (
-      pinned: visible.isEmpty ? null : visible.first,
-      inbox: remainingInbox,
-      requests: remainingRequests,
+      pinned: visible.isEmpty
+          ? null
+          : PinnedSupport(conversation: visible.first, isPersisted: false),
+      inbox: split.inbox,
+      requests: split.requests,
     );
   }
 

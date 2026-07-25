@@ -20,6 +20,29 @@ class ConversationNavigationTarget extends Equatable {
   List<Object?> get props => [conversationId, participantPubkeys];
 }
 
+/// The pinned Divine Moderation support row (#6283).
+///
+/// Composed inside the same pipeline that applies the blocklist filter and the
+/// protected-minor inbound gate, so a user who blocked the moderation account —
+/// or a restricted minor whose approval was revoked — gets no pin at all rather
+/// than a row the conversation route guard would bounce.
+class PinnedSupport extends Equatable {
+  const PinnedSupport({required this.conversation, required this.isPersisted});
+
+  /// Either the adopted moderation thread — carrying its real unread state and
+  /// last message — or a synthetic stand-in on the same conversation id.
+  final DmConversation conversation;
+
+  /// Whether [conversation] is a row that actually exists in the database.
+  ///
+  /// Gates the row's long-press actions: muting or removing a thread that has
+  /// never been written is a no-op the confirmation snackbar would misreport.
+  final bool isPersisted;
+
+  @override
+  List<Object?> get props => [conversation, isPersisted];
+}
+
 class ConversationListState extends Equatable {
   const ConversationListState({
     this.status = ConversationListStatus.initial,
@@ -35,7 +58,7 @@ class ConversationListState extends Equatable {
     this.requestsWithheld = false,
     this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
-    this.pinnedConversation,
+    this.pinnedSupport,
   });
 
   /// Number of conversations loaded per page.
@@ -112,19 +135,10 @@ class ConversationListState extends Equatable {
   /// Consumed and cleared by the UI after navigating.
   final ConversationNavigationTarget? navigationTarget;
 
-  /// The pinned Divine Moderation support conversation, or null when the
-  /// support row should not render (#6283).
-  ///
-  /// Composed inside the same pipeline that applies the blocklist filter and
-  /// the protected-minor inbound gate, so a user who blocked the moderation
-  /// account — or a restricted minor whose approval was revoked — gets null
-  /// rather than a row that the conversation route guard would bounce.
-  ///
-  /// When a real moderation thread exists this holds *that* conversation
-  /// (carrying its unread state and last message) and it is removed from
-  /// [conversations] so the inbox never shows it twice. Otherwise it is a
-  /// synthetic, non-persisted conversation with no unread state.
-  final DmConversation? pinnedConversation;
+  /// The pinned Divine Moderation support row, or null when it should not
+  /// render (#6283). An adopted thread is removed from [conversations] and
+  /// [requestConversations], so the inbox never shows moderation twice.
+  final PinnedSupport? pinnedSupport;
 
   /// Number of unread message requests.
   int get requestUnreadCount =>
@@ -154,8 +168,8 @@ class ConversationListState extends Equatable {
     int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
     bool clearNavigationTarget = false,
-    DmConversation? pinnedConversation,
-    bool clearPinnedConversation = false,
+    PinnedSupport? pinnedSupport,
+    bool clearPinnedSupport = false,
   }) {
     return ConversationListState(
       status: status ?? this.status,
@@ -173,9 +187,9 @@ class ConversationListState extends Equatable {
       navigationTarget: clearNavigationTarget
           ? null
           : navigationTarget ?? this.navigationTarget,
-      pinnedConversation: clearPinnedConversation
+      pinnedSupport: clearPinnedSupport
           ? null
-          : pinnedConversation ?? this.pinnedConversation,
+          : pinnedSupport ?? this.pinnedSupport,
     );
   }
 
@@ -194,6 +208,6 @@ class ConversationListState extends Equatable {
     requestsWithheld,
     currentLimit,
     navigationTarget,
-    pinnedConversation,
+    pinnedSupport,
   ];
 }
