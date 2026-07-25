@@ -232,8 +232,16 @@ blanks yourself and hope review will sort it out later.
 cd mobile
 flutter pub get
 flutter analyze
-flutter test
+flutter test test/path/to/foo_test.dart     # one file or directory
+mise run test           # whole suite, the way CI runs it
 ```
+
+Use `flutter test test/path/to/foo_test.dart` while iterating on a specific
+file, and `mise run test` for the full suite. `mise run test` wraps `very_good test
+--optimization`, which is what Mobile CI runs: it bundles the untagged test
+files into a single isolate instead of compiling and spinning one per file.
+Measured on an identical 31-file / 277-test subset, same machine, back to
+back: **60s for `flutter test`, 17s for the optimized run**.
 
 Useful app entry paths from `mobile/`:
 
@@ -269,7 +277,8 @@ Core checks:
 ```bash
 cd mobile
 flutter analyze
-flutter test
+flutter test test/path/to/foo_test.dart     # while iterating
+mise run test           # before pushing — whole suite, as CI runs it
 ```
 
 Additional expectations:
