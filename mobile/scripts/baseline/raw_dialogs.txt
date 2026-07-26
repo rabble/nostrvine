@@ -28,6 +28,7 @@ lib/screens/settings/account_content_labels_tile.dart	1
 lib/screens/settings/content_preferences_screen.dart	2
 lib/screens/settings/general_settings_screen.dart	1
 lib/screens/settings/nip05_settings_screen.dart	1
+lib/screens/settings/nostr_settings_screen.dart	2
 lib/screens/settings/support_center_screen.dart	2
 lib/screens/user_list_people_screen.dart	2
 lib/utils/external_link_launcher.dart	1

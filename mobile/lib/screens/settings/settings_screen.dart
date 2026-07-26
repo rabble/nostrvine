@@ -43,7 +43,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:unified_logger/unified_logger.dart';

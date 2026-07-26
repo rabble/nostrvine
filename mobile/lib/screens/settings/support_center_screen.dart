@@ -7,11 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
-import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 
