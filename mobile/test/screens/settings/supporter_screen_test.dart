@@ -34,6 +34,14 @@ class _FakeRepository extends Fake implements SupporterRepository {
   Stream<SupporterEntitlement> get changes => _controller.stream;
 
   @override
+  Future<SupporterEntitlement> purchase(String productId) =>
+      validator.purchase(productId);
+
+  @override
+  Future<SupporterEntitlement> restorePurchases() =>
+      validator.restorePurchases();
+
+  @override
   EntitlementValidator get validator => _EmptyValidator();
 }
 
@@ -48,12 +56,17 @@ class _EmptyValidator extends Fake implements EntitlementValidator {
   Future<List<SupporterTier>> fetchProducts() async => const [];
 
   @override
-  Future<SupporterEntitlement> purchase(String productId) async =>
-      SupporterEntitlement.inactive;
+  Future<SupporterEntitlement> purchase(
+    String productId, {
+    String? capturedPubkey,
+    String? attemptId,
+  }) async => SupporterEntitlement.inactive;
 
   @override
-  Future<SupporterEntitlement> restorePurchases() async =>
-      SupporterEntitlement.inactive;
+  Future<SupporterEntitlement> restorePurchases({
+    String? capturedPubkey,
+    String? attemptId,
+  }) async => SupporterEntitlement.inactive;
 
   @override
   Stream<SupporterEntitlement> get entitlementChanges =>
@@ -61,6 +74,13 @@ class _EmptyValidator extends Fake implements EntitlementValidator {
 
   @override
   Stream<EntitlementLifecycle> get lifecycleChanges => const Stream.empty();
+
+  @override
+  Stream<SupporterPurchaseProof> get purchaseProofChanges =>
+      const Stream.empty();
+
+  @override
+  Future<void> completePurchase(SupporterPurchaseProof proof) async {}
 }
 
 void main() {

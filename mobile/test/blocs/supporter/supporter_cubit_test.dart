@@ -27,6 +27,14 @@ class _FakeRepository extends Fake implements SupporterRepository {
 
   @override
   Stream<SupporterEntitlement> get changes => _controller.stream;
+
+  @override
+  Future<SupporterEntitlement> purchase(String productId) =>
+      validator.purchase(productId);
+
+  @override
+  Future<SupporterEntitlement> restorePurchases() =>
+      validator.restorePurchases();
 }
 
 class _FakeValidator extends Fake implements EntitlementValidator {
@@ -52,16 +60,30 @@ class _FakeValidator extends Fake implements EntitlementValidator {
   }
 
   @override
-  Future<SupporterEntitlement> purchase(String productId) async {
+  Future<SupporterEntitlement> purchase(
+    String productId, {
+    String? capturedPubkey,
+    String? attemptId,
+  }) async {
     if (purchaseError != null) throw purchaseError!;
     return purchaseResult;
   }
 
   @override
-  Future<SupporterEntitlement> restorePurchases() async {
+  Future<SupporterEntitlement> restorePurchases({
+    String? capturedPubkey,
+    String? attemptId,
+  }) async {
     if (restoreError != null) throw restoreError!;
     return SupporterEntitlement.inactive;
   }
+
+  @override
+  Stream<SupporterPurchaseProof> get purchaseProofChanges =>
+      const Stream.empty();
+
+  @override
+  Future<void> completePurchase(SupporterPurchaseProof proof) async {}
 }
 
 void main() {

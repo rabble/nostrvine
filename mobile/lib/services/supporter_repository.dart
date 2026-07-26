@@ -30,6 +30,7 @@ class SupporterRepository {
     required SharedPreferences prefs,
     SupporterApiClient? apiClient,
   }) : _apiClient = apiClient,
+       _pubkey = pubkey,
        _validator = validator,
        _prefs = prefs,
        _cacheKey = '$_cacheKeyPrefix$pubkey' {
@@ -41,10 +42,15 @@ class SupporterRepository {
       _handleChange,
       onError: _handleValidatorError,
     );
+    _proofSubscription = _validator.purchaseProofChanges.listen(
+      (proof) => unawaited(_confirmPurchase(proof)),
+      onError: _handleValidatorError,
+    );
   }
 
   final EntitlementValidator _validator;
   final SupporterApiClient? _apiClient;
+  final String _pubkey;
   final SharedPreferences _prefs;
 
   static const String _cacheKeyPrefix = 'divine_supporter_entitlement:';
@@ -52,6 +58,7 @@ class SupporterRepository {
 
   late SupporterEntitlement _current;
   StreamSubscription<SupporterEntitlement>? _subscription;
+  StreamSubscription<SupporterPurchaseProof>? _proofSubscription;
   final StreamController<SupporterEntitlement> _controller =
       StreamController<SupporterEntitlement>.broadcast();
 
@@ -69,6 +76,24 @@ class SupporterRepository {
   /// The underlying validator, exposed so the UI/cubit can drive purchases and
   /// restores through the same store connection this repository owns.
   EntitlementValidator get validator => _validator;
+
+  /// Starts a purchase with the current full pubkey captured in the attempt.
+  /// The store result is proof only; it cannot activate support.
+  Future<SupporterEntitlement> purchase(String productId) {
+    return _validator.purchase(
+      productId,
+      capturedPubkey: _pubkey,
+      attemptId: 'supporter-${DateTime.now().microsecondsSinceEpoch}',
+    );
+  }
+
+  /// Restores purchases for this exact signed-in account.
+  Future<SupporterEntitlement> restorePurchases() {
+    return _validator.restorePurchases(
+      capturedPubkey: _pubkey,
+      attemptId: 'supporter-restore-${DateTime.now().microsecondsSinceEpoch}',
+    );
+  }
 
   /// Whether canonical Worker requests are configured for this build.
   bool get hasServerClient => _apiClient != null;
@@ -160,6 +185,41 @@ class SupporterRepository {
     if (!_controller.isClosed) _controller.addError(error, stackTrace);
   }
 
+  Future<void> _confirmPurchase(SupporterPurchaseProof proof) async {
+    // Never send a store result under a different account after an account
+    // switch. A device-scope durable queue will retain this case once wired.
+    if (proof.capturedPubkey != _pubkey) return;
+
+    final client = _apiClient;
+    if (client == null) {
+      _handleValidatorError(
+        const SupporterApiException(
+          SupporterApiFailureKind.unavailable,
+          'Supporter verification is not configured.',
+        ),
+        StackTrace.current,
+      );
+      return;
+    }
+
+    try {
+      final snapshot = await client.claimPurchase(
+        SupporterPurchaseClaim(
+          store: proof.store,
+          productId: proof.productId,
+          idempotencyKey: proof.attemptId,
+          proof: proof.toJson(),
+        ),
+      );
+      _handleChange(snapshot.entitlement);
+      await _validator.completePurchase(proof);
+    } on Object catch (error, stackTrace) {
+      _handleValidatorError(error, stackTrace);
+      // Keep the purchase unacknowledged so the store can redeliver it after
+      // the Worker or signer becomes available.
+    }
+  }
+
   /// Mark the entitlement inactive locally (e.g. after a confirmed expiry or
   /// cancellation detected out-of-band). The validator stream is the source of
   /// truth; this is a cache reset.
@@ -177,6 +237,8 @@ class SupporterRepository {
   void dispose() {
     _subscription?.cancel();
     _subscription = null;
+    _proofSubscription?.cancel();
+    _proofSubscription = null;
     _controller.close();
   }
 }

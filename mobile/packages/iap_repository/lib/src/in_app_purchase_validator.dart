@@ -42,12 +42,14 @@ class InAppPurchaseValidator implements EntitlementValidator {
       StreamController<SupporterEntitlement>.broadcast();
   final StreamController<EntitlementLifecycle> _lifecycleController =
       StreamController<EntitlementLifecycle>.broadcast();
-
-  SupporterEntitlement _lastEntitlement = SupporterEntitlement.inactive;
+  final StreamController<SupporterPurchaseProof> _proofController =
+      StreamController<SupporterPurchaseProof>.broadcast();
 
   /// Pending purchase listeners keyed by product id, awaiting the matching
   /// result on the purchase stream.
-  final Map<String, Completer<SupporterEntitlement>> _pendingPurchases = {};
+  final Map<String, _PendingPurchase> _pendingPurchases = {};
+  final Map<String, PurchaseDetails> _unacknowledgedPurchases = {};
+  _RestoreContext? _restoreContext;
 
   bool _listening = false;
 
@@ -68,9 +70,9 @@ class InAppPurchaseValidator implements EntitlementValidator {
       null,
       'The store purchase stream failed. Please try again.',
     );
-    for (final completer in _pendingPurchases.values) {
-      if (!completer.isCompleted) {
-        completer.completeError(exception, stackTrace);
+    for (final pending in _pendingPurchases.values) {
+      if (pending.completer != null && !pending.completer!.isCompleted) {
+        pending.completer!.completeError(exception, stackTrace);
       }
     }
     _pendingPurchases.clear();
@@ -82,65 +84,63 @@ class InAppPurchaseValidator implements EntitlementValidator {
   }
 
   Future<void> _processPurchase(PurchaseDetails purchase) async {
-    final completer = _pendingPurchases.remove(purchase.productID);
+    final pending = _pendingPurchases.remove(purchase.productID);
     switch (purchase.status) {
       case PurchaseStatus.purchased:
       case PurchaseStatus.restored:
         _lifecycleController.add(EntitlementLifecycle.confirming);
-        final entitlement = _entitlementFromPurchase(purchase);
-        _lastEntitlement = entitlement;
-        _entitlementController.add(entitlement);
-        await _completeSafely(purchase);
-        completer?.complete(entitlement);
+        final context = pending == null && _restoreContext != null
+            ? _PurchaseContext(
+                capturedPubkey: _restoreContext!.capturedPubkey,
+                attemptId: _restoreContext!.attemptId,
+              )
+            : pending;
+        final proof = _proofFromPurchase(purchase, context);
+        _unacknowledgedPurchases[proof.attemptId] = purchase;
+        _proofController.add(proof);
+        // A store result is not a Divine entitlement. The repository will
+        // emit the canonical response after Worker verification.
+        pending?.completer?.complete(SupporterEntitlement.inactive);
       case PurchaseStatus.error:
         final exception = PurchaseFailedException(
           purchase.error?.code,
           purchase.error?.message ?? 'Purchase failed.',
         );
-        completer?.completeError(exception);
+        pending?.completer?.completeError(exception);
         _entitlementController.addError(exception);
       case PurchaseStatus.canceled:
         const exception = PurchaseFailedException(
           null,
           'Purchase was cancelled.',
         );
-        completer?.completeError(exception);
+        pending?.completer?.completeError(exception);
       case PurchaseStatus.pending:
         // Still pending parental approval / payment settlement; keep waiting
         // for the same completer on the next stream event.
-        if (completer != null) {
-          _pendingPurchases[purchase.productID] = completer;
+        if (pending != null) {
+          _pendingPurchases[purchase.productID] = pending;
         }
         _lifecycleController.add(EntitlementLifecycle.pending);
-        // A pending store event is not a canonical loss of entitlement. In
-        // particular, a renewal may be pending while the previous verified
-        // entitlement is still active.
-        if (!_lastEntitlement.isSupporter) return;
     }
   }
 
-  Future<void> _completeSafely(PurchaseDetails purchase) async {
-    if (!purchase.pendingCompletePurchase) return;
-    try {
-      await _store.completePurchase(purchase);
-    } on Object {
-      // Swallow: completing the purchase is best-effort; the store will
-      // continue to deliver it until acknowledged.
-    }
-  }
-
-  SupporterEntitlement _entitlementFromPurchase(PurchaseDetails purchase) {
-    final now = DateTime.now();
-    return SupporterEntitlement(
+  SupporterPurchaseProof _proofFromPurchase(
+    PurchaseDetails purchase,
+    _PurchaseContext? context,
+  ) {
+    final transactionId = purchase.purchaseID;
+    final contextId = context?.attemptId ?? 'store-${purchase.productID}';
+    final attemptId = transactionId == null || transactionId.isEmpty
+        ? contextId
+        : '$contextId:$transactionId';
+    return SupporterPurchaseProof(
+      attemptId: attemptId,
+      store: defaultTargetPlatform == TargetPlatform.iOS ? 'apple' : 'google',
       productId: purchase.productID,
-      source: defaultTargetPlatform == TargetPlatform.iOS
-          ? EntitlementSource.appStore
-          : EntitlementSource.playStore,
-      purchaseDate: now,
-      // The plugin does not expose renewal/expiry dates uniformly across
-      // stores; the server-side validator (later) will supply authoritative
-      // expiry. We leave it null and treat active support as session-scoped
-      // for the client-first MVP.
+      serverVerificationData: purchase.verificationData.serverVerificationData,
+      localVerificationData: purchase.verificationData.localVerificationData,
+      transactionId: transactionId,
+      capturedPubkey: context?.capturedPubkey,
     );
   }
 
@@ -166,14 +166,22 @@ class InAppPurchaseValidator implements EntitlementValidator {
   );
 
   @override
-  Future<SupporterEntitlement> purchase(String productId) async {
+  Future<SupporterEntitlement> purchase(
+    String productId, {
+    String? capturedPubkey,
+    String? attemptId,
+  }) async {
     if (!await _store.isAvailable()) {
       throw const StoreUnavailableException();
     }
     _ensureListening();
 
     final completer = Completer<SupporterEntitlement>();
-    _pendingPurchases[productId] = completer;
+    _pendingPurchases[productId] = _PendingPurchase(
+      completer: completer,
+      capturedPubkey: capturedPubkey,
+      attemptId: attemptId ?? 'store-${DateTime.now().microsecondsSinceEpoch}',
+    );
 
     final productDetails = await _store.queryProductDetails({productId});
     final product = productDetails.productDetails.isEmpty
@@ -210,11 +218,19 @@ class InAppPurchaseValidator implements EntitlementValidator {
   }
 
   @override
-  Future<SupporterEntitlement> restorePurchases() async {
+  Future<SupporterEntitlement> restorePurchases({
+    String? capturedPubkey,
+    String? attemptId,
+  }) async {
     if (!await _store.isAvailable()) {
       throw const StoreUnavailableException();
     }
     _ensureListening();
+    _restoreContext = _RestoreContext(
+      capturedPubkey: capturedPubkey,
+      attemptId:
+          attemptId ?? 'restore-${DateTime.now().microsecondsSinceEpoch}',
+    );
     await _store.restorePurchases();
 
     // Restored purchases are delivered on the purchase stream. We resolve to
@@ -228,6 +244,18 @@ class InAppPurchaseValidator implements EntitlementValidator {
       _entitlementController.stream;
 
   @override
+  Stream<SupporterPurchaseProof> get purchaseProofChanges =>
+      _proofController.stream;
+
+  @override
+  Future<void> completePurchase(SupporterPurchaseProof proof) async {
+    final purchase = _unacknowledgedPurchases[proof.attemptId];
+    if (purchase == null || !purchase.pendingCompletePurchase) return;
+    await _store.completePurchase(purchase);
+    _unacknowledgedPurchases.remove(proof.attemptId);
+  }
+
+  @override
   Stream<EntitlementLifecycle> get lifecycleChanges =>
       _lifecycleController.stream;
 
@@ -238,5 +266,30 @@ class InAppPurchaseValidator implements EntitlementValidator {
     _listening = false;
     unawaited(_entitlementController.close());
     unawaited(_lifecycleController.close());
+    unawaited(_proofController.close());
   }
+}
+
+class _PurchaseContext {
+  const _PurchaseContext({
+    required this.capturedPubkey,
+    required this.attemptId,
+    this.completer,
+  });
+
+  final Completer<SupporterEntitlement>? completer;
+  final String? capturedPubkey;
+  final String attemptId;
+}
+
+typedef _PendingPurchase = _PurchaseContext;
+
+class _RestoreContext {
+  const _RestoreContext({
+    required this.capturedPubkey,
+    required this.attemptId,
+  });
+
+  final String? capturedPubkey;
+  final String attemptId;
 }

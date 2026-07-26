@@ -88,12 +88,14 @@ class SupporterCubit extends Cubit<SupporterState> {
     );
     _trackEvent('supporter_subscribe_tapped');
     try {
-      final entitlement = await _repository.validator.purchase(productId);
+      final entitlement = await _repository.purchase(productId);
       if (isClosed) return;
       _emit(
         state.copyWith(
           entitlement: entitlement,
-          status: SupporterStatus.active,
+          status: entitlement.isSupporter
+              ? SupporterStatus.active
+              : SupporterStatus.confirming,
           clearFailure: true,
         ),
       );
@@ -117,7 +119,7 @@ class SupporterCubit extends Cubit<SupporterState> {
     );
     _trackEvent('supporter_restore_tapped');
     try {
-      await _repository.validator.restorePurchases();
+      await _repository.restorePurchases();
       // The restored entitlement arrives on the repository stream; reset to idle
       // and let the stream listener surface the active status.
       if (isClosed) return;

@@ -181,13 +181,15 @@ void main() {
       }
 
       test(
-        'startListening receives purchases before a purchase call',
+        'startListening exposes proof without granting entitlement',
         () async {
           validator.startListening();
-          final emitted = validator.entitlementChanges.first;
+          final emitted = validator.purchaseProofChanges.first;
           streamController.add([_purchase('divine.supporter.monthly')]);
 
-          expect((await emitted).isSupporter, isTrue);
+          final proof = await emitted;
+          expect(proof.productId, 'divine.supporter.monthly');
+          expect(proof.capturedPubkey, isNull);
         },
       );
 
@@ -202,27 +204,25 @@ void main() {
         },
       );
 
-      test(
-        'purchased status resolves active entitlement and completes purchase',
-        () async {
-          final future = validator.purchase('divine.supporter.monthly');
-          await pumpMicrotasks();
-          streamController.add([
-            _purchase(
-              'divine.supporter.monthly',
-              status: PurchaseStatus.purchased,
-              pendingComplete: true,
-            ),
-          ]);
-          final result = await future.timeout(const Duration(seconds: 1));
-          expect(result.isActive, isTrue);
-          expect(result.productId, 'divine.supporter.monthly');
-          expect(result.isSupporter, isTrue);
-          verify(() => store.completePurchase(any())).called(1);
-        },
-      );
+      test('purchased status resolves proof-only result', () async {
+        final future = validator.purchase('divine.supporter.monthly');
+        final proofFuture = validator.purchaseProofChanges.first;
+        await pumpMicrotasks();
+        streamController.add([
+          _purchase(
+            'divine.supporter.monthly',
+            status: PurchaseStatus.purchased,
+            pendingComplete: true,
+          ),
+        ]);
+        final result = await future.timeout(const Duration(seconds: 1));
+        expect(result, SupporterEntitlement.inactive);
+        final proof = await proofFuture;
+        await validator.completePurchase(proof);
+        verify(() => store.completePurchase(any())).called(1);
+      });
 
-      test('restored status resolves active entitlement', () async {
+      test('restored status resolves proof-only result', () async {
         final future = validator.purchase('divine.supporter.monthly');
         await pumpMicrotasks();
         streamController.add([
@@ -232,7 +232,7 @@ void main() {
           ),
         ]);
         final result = await future.timeout(const Duration(seconds: 1));
-        expect(result.isActive, isTrue);
+        expect(result, SupporterEntitlement.inactive);
       });
 
       test('error status rejects with PurchaseFailedException', () async {
@@ -276,11 +276,11 @@ void main() {
             ),
           ]);
           final result = await future.timeout(const Duration(seconds: 1));
-          expect(result.isSupporter, isTrue);
+          expect(result, SupporterEntitlement.inactive);
         },
       );
 
-      test('pending does not clear an active entitlement', () async {
+      test('store events do not emit an unverified entitlement', () async {
         final emitted = <SupporterEntitlement>[];
         validator.entitlementChanges.listen(emitted.add);
 
@@ -299,7 +299,7 @@ void main() {
         ]);
         await pumpMicrotasks();
 
-        expect(emitted.last.isSupporter, isTrue);
+        expect(emitted, isEmpty);
       });
 
       test('emits pending and confirming lifecycle states', () async {
@@ -329,9 +329,9 @@ void main() {
         );
       });
 
-      test('entitlementChanges emits on purchase', () async {
-        final emitted = <SupporterEntitlement>[];
-        validator.entitlementChanges.listen(emitted.add);
+      test('purchaseProofChanges emits on purchase', () async {
+        final emitted = <SupporterPurchaseProof>[];
+        validator.purchaseProofChanges.listen(emitted.add);
         final future = validator.purchase('divine.supporter.monthly');
         await pumpMicrotasks();
         streamController.add([
@@ -341,8 +341,8 @@ void main() {
           ),
         ]);
         await future.timeout(const Duration(seconds: 1));
-        expect(emitted, isNotEmpty);
-        expect(emitted.last.isSupporter, isTrue);
+        expect(emitted, hasLength(1));
+        expect(emitted.single.productId, 'divine.supporter.monthly');
       });
     });
 

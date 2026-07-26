@@ -15,6 +15,8 @@ class _FakeValidator implements EntitlementValidator {
   _FakeValidator(this._controller);
 
   final StreamController<SupporterEntitlement> _controller;
+  final StreamController<SupporterPurchaseProof> proofController =
+      StreamController<SupporterPurchaseProof>.broadcast();
   List<SupporterTier> products = const [];
   SupporterEntitlement purchaseResult = SupporterEntitlement.inactive;
 
@@ -28,17 +30,30 @@ class _FakeValidator implements EntitlementValidator {
   Future<List<SupporterTier>> fetchProducts() async => products;
 
   @override
-  Future<SupporterEntitlement> purchase(String productId) async =>
-      purchaseResult;
+  Future<SupporterEntitlement> purchase(
+    String productId, {
+    String? capturedPubkey,
+    String? attemptId,
+  }) async => purchaseResult;
 
   @override
-  Future<SupporterEntitlement> restorePurchases() async => purchaseResult;
+  Future<SupporterEntitlement> restorePurchases({
+    String? capturedPubkey,
+    String? attemptId,
+  }) async => purchaseResult;
 
   @override
   Stream<SupporterEntitlement> get entitlementChanges => _controller.stream;
 
   @override
   Stream<EntitlementLifecycle> get lifecycleChanges => const Stream.empty();
+
+  @override
+  Stream<SupporterPurchaseProof> get purchaseProofChanges =>
+      proofController.stream;
+
+  @override
+  Future<void> completePurchase(SupporterPurchaseProof proof) async {}
 
   void emit(SupporterEntitlement e) => _controller.add(e);
 
@@ -49,7 +64,9 @@ class _FakeValidator implements EntitlementValidator {
       );
 
   @override
-  void dispose() {}
+  void dispose() {
+    unawaited(proofController.close());
+  }
 }
 
 void main() {

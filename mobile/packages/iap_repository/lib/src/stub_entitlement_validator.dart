@@ -26,18 +26,30 @@ class StubEntitlementValidator implements EntitlementValidator {
       Future.value(const <SupporterTier>[]);
 
   @override
-  Future<SupporterEntitlement> purchase(String productId) =>
-      Future.error(const StoreUnavailableException());
+  Future<SupporterEntitlement> purchase(
+    String productId, {
+    String? capturedPubkey,
+    String? attemptId,
+  }) => Future.error(const StoreUnavailableException());
 
   @override
-  Future<SupporterEntitlement> restorePurchases() =>
-      Future.value(SupporterEntitlement.inactive);
+  Future<SupporterEntitlement> restorePurchases({
+    String? capturedPubkey,
+    String? attemptId,
+  }) => Future.value(SupporterEntitlement.inactive);
 
   @override
   Stream<SupporterEntitlement> get entitlementChanges => _controller.stream;
 
   @override
   Stream<EntitlementLifecycle> get lifecycleChanges => const Stream.empty();
+
+  @override
+  Stream<SupporterPurchaseProof> get purchaseProofChanges =>
+      const Stream.empty();
+
+  @override
+  Future<void> completePurchase(SupporterPurchaseProof proof) async {}
 
   @override
   void dispose() {
