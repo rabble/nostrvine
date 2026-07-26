@@ -343,8 +343,6 @@ class BadgeRepository {
   }
 
   Future<Nip58ProfileBadges?> _latestProfileBadges(String pubkey) async {
-    // Both kinds are queried concurrently; the current kind keeps
-    // precedence and legacy is consulted only when it parses to nothing.
     final results = await Future.wait([
       _nostrClient.queryEvents([
         Filter(authors: [pubkey], kinds: [EventKind.profileBadges], limit: 10),
@@ -358,8 +356,7 @@ class BadgeRepository {
         ),
       ]),
     ]);
-    return _newestParsedProfileBadges(results[0]) ??
-        _newestParsedProfileBadges(results[1]);
+    return _newestParsedProfileBadges([...results[0], ...results[1]]);
   }
 
   Future<Nip58BadgeDefinition?> _loadDefinition(String coordinate) async {
@@ -418,9 +415,11 @@ class BadgeRepository {
       throw StateError('Could not sign profile badges event');
     }
 
-    final published = await _nostrClient.publishEvent(event);
-    if (published is! PublishSuccess) {
-      throw StateError('Could not publish profile badges event');
+    final outcome = await _nostrClient.publishEventAwaitOk(event);
+    if (outcome.failed) {
+      throw StateError(
+        'Could not publish profile badges event: ${outcome.summary}',
+      );
     }
   }
 
