@@ -27,13 +27,16 @@ class _MockVideoPublishNotifier extends VideoPublishNotifier {
   VideoPublishProviderState build() => _initialState;
 }
 
-DivineVideoClip _createTestClip({String id = 'test-clip'}) {
+DivineVideoClip _createTestClip({
+  String id = 'test-clip',
+  models.AspectRatio targetAspectRatio = models.AspectRatio.square,
+}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('test.mp4'),
     duration: const Duration(seconds: 10),
     recordedAt: DateTime.now(),
-    targetAspectRatio: models.AspectRatio.square,
+    targetAspectRatio: targetAspectRatio,
     originalAspectRatio: 9 / 16,
   );
 }
@@ -119,6 +122,53 @@ void main() {
         ),
       );
     }
+
+    group('aspect ratio', () {
+      // No test asserted the rendered AspectRatio, so hardcoding this screen
+      // square left all 17 of its tests green — the exact defect users
+      // reported (#6200). Geometry rather than a golden: golden.sh renders
+      // with fonts CI does not provide.
+      Future<double> pumpAndReadAspectRatio(
+        WidgetTester tester,
+        models.AspectRatio target,
+      ) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player/player_0'),
+              (call) async => null,
+            );
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(
+                const MethodChannel('divine_video_player/player_0'),
+                null,
+              );
+        });
+
+        await tester.pumpWidget(
+          buildTestWidget(clip: _createTestClip(targetAspectRatio: target)),
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        return tester
+            .widget<AspectRatio>(find.byType(AspectRatio).first)
+            .aspectRatio;
+      }
+
+      testWidgets('previews a vertical clip at 9:16', (tester) async {
+        expect(
+          await pumpAndReadAspectRatio(tester, models.AspectRatio.vertical),
+          equals(9 / 16),
+        );
+      });
+
+      testWidgets('previews a square clip at 1:1', (tester) async {
+        expect(
+          await pumpAndReadAspectRatio(tester, models.AspectRatio.square),
+          equals(1.0),
+        );
+      });
+    });
 
     test('can be instantiated', () {
       expect(

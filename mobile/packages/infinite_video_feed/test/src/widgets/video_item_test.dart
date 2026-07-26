@@ -115,6 +115,55 @@ void main() {
       expect(fittedBox.fit, equals(BoxFit.cover));
     });
 
+    testWidgets('uses BoxFit.cover for a portrait ratio when portrait expand', (
+      tester,
+    ) async {
+      // The suite had square and landscape fixtures but no portrait one, so
+      // letterboxing every portrait video left all 229 tests green. Portrait
+      // is the app's dominant shape — it needs the explicit case (#6200).
+      final controller = FakeController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: VideoItemWidget(controller: controller),
+        ),
+      );
+
+      controller.pushState(
+        const DivineVideoPlayerState(videoWidth: 1080, videoHeight: 1920),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+      expect(fittedBox.fit, equals(BoxFit.cover));
+    });
+
+    testWidgets('a near-square ratio still covers', (tester) async {
+      // The square branch keys off exact equality with 1.0, so pin the
+      // boundary: one pixel off square must still cover, not letterbox.
+      final controller = FakeController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: VideoItemWidget(controller: controller),
+        ),
+      );
+
+      controller.pushState(
+        const DivineVideoPlayerState(videoWidth: 1079, videoHeight: 1080),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+      expect(fittedBox.fit, equals(BoxFit.cover));
+    });
+
     testWidgets('uses BoxFit.contain when shouldPortraitExpand is false', (
       tester,
     ) async {
