@@ -12,27 +12,39 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Persists and surfaces the current [SupporterEntitlement].
 ///
 /// Wraps an [EntitlementValidator] (StoreKit/Play Billing in production) and
-/// keeps the last known entitlement in [SharedPreferences] so it survives
-/// relaunches and is available offline. The repository is the single read-side
-/// surface the UI consults; the validator is the write side.
+/// keeps the last known entitlement in an account-scoped [SharedPreferences]
+/// entry so it survives relaunches and is available offline. The cache is a
+/// display and retry aid, never canonical entitlement authority. The repository
+/// is the single read-side surface the UI consults; the validator is the write
+/// side.
 class SupporterRepository {
   /// Creates a [SupporterRepository].
   ///
-  /// [validator] is the store-backed validator. [prefs] is the canonical
+  /// [pubkey] scopes the local cache to the active Divine account.
+  /// [validator] is the store-backed validator. [prefs] is the
   /// [SharedPreferences] from [sharedPreferencesProvider].
   SupporterRepository({
+    required String pubkey,
     required EntitlementValidator validator,
     required SharedPreferences prefs,
   }) : _validator = validator,
-       _prefs = prefs {
+       _prefs = prefs,
+       _cacheKey = '$_cacheKeyPrefix$pubkey' {
+    if (pubkey.isEmpty) {
+      throw ArgumentError.value(pubkey, 'pubkey', 'must not be empty');
+    }
     _current = _loadCached();
-    _subscription = _validator.entitlementChanges.listen(_handleChange);
+    _subscription = _validator.entitlementChanges.listen(
+      _handleChange,
+      onError: _handleValidatorError,
+    );
   }
 
   final EntitlementValidator _validator;
   final SharedPreferences _prefs;
 
-  static const String _cacheKey = 'divine_supporter_entitlement';
+  static const String _cacheKeyPrefix = 'divine_supporter_entitlement:';
+  final String _cacheKey;
 
   late SupporterEntitlement _current;
   StreamSubscription<SupporterEntitlement>? _subscription;
@@ -81,8 +93,12 @@ class SupporterRepository {
   void _handleChange(SupporterEntitlement entitlement) {
     if (entitlement == _current) return;
     _current = entitlement;
-    _controller.add(entitlement);
+    if (!_controller.isClosed) _controller.add(entitlement);
     _persist(entitlement);
+  }
+
+  void _handleValidatorError(Object error, StackTrace stackTrace) {
+    if (!_controller.isClosed) _controller.addError(error, stackTrace);
   }
 
   /// Mark the entitlement inactive locally (e.g. after a confirmed expiry or

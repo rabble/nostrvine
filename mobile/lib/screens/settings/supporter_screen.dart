@@ -63,11 +63,17 @@ class _SupporterScreenViewState extends State<SupporterScreenView> {
                 children: [
                   _Hero(state: state),
                   const SizedBox(height: 24),
+                  if (state.status == SupporterStatus.pending ||
+                      state.status == SupporterStatus.confirming)
+                    _PurchaseStatusNote(status: state.status),
                   if (state.isSupporter)
                     const _ActiveBadge()
-                  else if (state.hasTiers)
+                  else if (state.status != SupporterStatus.pending &&
+                      state.status != SupporterStatus.confirming &&
+                      state.hasTiers)
                     _TierList(state: state)
-                  else
+                  else if (state.status != SupporterStatus.pending &&
+                      state.status != SupporterStatus.confirming)
                     _UnavailableNote(loading: state.isBusy),
                   const SizedBox(height: 16),
                   if (!state.isSupporter) _RestoreButton(state: state),
@@ -101,7 +107,11 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const Icon(Icons.favorite, color: VineTheme.accentOrange, size: 48),
+        const DivineIcon(
+          icon: DivineIconName.heart,
+          color: VineTheme.accentOrange,
+          size: 48,
+        ),
         const SizedBox(height: 12),
         Text(
           'Keep Divine running',
@@ -134,7 +144,10 @@ class _ActiveBadge extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.favorite, color: VineTheme.accentOrange),
+          const DivineIcon(
+            icon: DivineIconName.heart,
+            color: VineTheme.accentOrange,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -144,6 +157,23 @@ class _ActiveBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PurchaseStatusNote extends StatelessWidget {
+  const _PurchaseStatusNote({required this.status});
+
+  final SupporterStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      status == SupporterStatus.pending
+          ? 'Your purchase is pending approval.'
+          : 'Confirming your support…',
+      style: Theme.of(context).textTheme.bodyLarge,
+      textAlign: TextAlign.center,
     );
   }
 }
@@ -198,11 +228,12 @@ class _RestoreButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
+    return DivineButton(
+      type: DivineButtonType.link,
       onPressed: state.isBusy
           ? null
           : () => context.read<SupporterCubit>().restore(),
-      child: const Text('Restore purchases'),
+      label: 'Restore purchases',
     );
   }
 }
@@ -217,10 +248,18 @@ class _FailureBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.error_outline, color: VineTheme.accentOrange),
+        const DivineIcon(
+          icon: DivineIconName.warning,
+          color: VineTheme.accentOrange,
+        ),
         const SizedBox(width: 8),
         Expanded(child: Text(_message(failure))),
-        IconButton(icon: const Icon(Icons.close), onPressed: onDismiss),
+        DivineIconButton(
+          icon: DivineIconName.x,
+          type: DivineIconButtonType.ghostSecondary,
+          onPressed: onDismiss,
+          semanticLabel: 'Dismiss error',
+        ),
       ],
     );
   }
@@ -245,8 +284,8 @@ class _Disclaimer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Supporter status is verified on your device for now. Cross-device sync '
-      'will arrive when server validation lands.',
+      'Divine confirms supporter status after the store verifies your purchase. '
+      'Recognition is optional, and the halo is not verification.',
       style: Theme.of(context).textTheme.bodySmall,
       textAlign: TextAlign.center,
     );

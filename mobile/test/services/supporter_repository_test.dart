@@ -19,6 +19,9 @@ class _FakeValidator implements EntitlementValidator {
   SupporterEntitlement purchaseResult = SupporterEntitlement.inactive;
 
   @override
+  void startListening() {}
+
+  @override
   Future<bool> get isAvailable async => true;
 
   @override
@@ -34,13 +37,26 @@ class _FakeValidator implements EntitlementValidator {
   @override
   Stream<SupporterEntitlement> get entitlementChanges => _controller.stream;
 
+  @override
+  Stream<EntitlementLifecycle> get lifecycleChanges => const Stream.empty();
+
   void emit(SupporterEntitlement e) => _controller.add(e);
+
+  void emitError(Object error, [StackTrace? stackTrace]) =>
+      _controller.addError(
+        error,
+        stackTrace,
+      );
 
   @override
   void dispose() {}
 }
 
 void main() {
+  const pubkeyA =
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const pubkeyB =
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
   SharedPreferences.setMockInitialValues({});
 
   group(SupporterRepository, () {
@@ -62,7 +78,11 @@ void main() {
 
     test('loads inactive when no cache present', () async {
       final prefs = await SharedPreferences.getInstance();
-      final repo = SupporterRepository(validator: validator, prefs: prefs);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
       addTearDown(repo.dispose);
       expect(repo.current, equals(SupporterEntitlement.inactive));
       expect(repo.isSupporter, isFalse);
@@ -75,10 +95,14 @@ void main() {
         purchaseDate: DateTime.utc(2030),
       ).toJson();
       SharedPreferences.setMockInitialValues({
-        'divine_supporter_entitlement': jsonEncode(cached),
+        'divine_supporter_entitlement:$pubkeyA': jsonEncode(cached),
       });
       final prefs = await SharedPreferences.getInstance();
-      final repo = SupporterRepository(validator: validator, prefs: prefs);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
       addTearDown(repo.dispose);
       expect(repo.current.productId, 'divine.supporter.monthly');
       expect(repo.isSupporter, isTrue);
@@ -92,17 +116,25 @@ void main() {
         expirationDate: DateTime.utc(2000, 2),
       ).toJson();
       SharedPreferences.setMockInitialValues({
-        'divine_supporter_entitlement': jsonEncode(cached),
+        'divine_supporter_entitlement:$pubkeyA': jsonEncode(cached),
       });
       final prefs = await SharedPreferences.getInstance();
-      final repo = SupporterRepository(validator: validator, prefs: prefs);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
       addTearDown(repo.dispose);
       expect(repo.isSupporter, isFalse);
     });
 
     test('updates current and persists when validator emits', () async {
       final prefs = await SharedPreferences.getInstance();
-      final repo = SupporterRepository(validator: validator, prefs: prefs);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
       addTearDown(repo.dispose);
 
       final emitted = <SupporterEntitlement>[];
@@ -121,14 +153,18 @@ void main() {
       expect(repo.isSupporter, isTrue);
       expect(emitted.last.isSupporter, isTrue);
 
-      final stored = prefs.getString('divine_supporter_entitlement');
+      final stored = prefs.getString('divine_supporter_entitlement:$pubkeyA');
       expect(stored, isNotNull);
       expect(stored, contains('divine.supporter.monthly'));
     });
 
     test('ignores duplicate emissions', () async {
       final prefs = await SharedPreferences.getInstance();
-      final repo = SupporterRepository(validator: validator, prefs: prefs);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
       addTearDown(repo.dispose);
 
       var emissions = 0;
@@ -141,10 +177,29 @@ void main() {
       expect(emissions, 0);
     });
 
+    test('forwards validator stream errors to repository listeners', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
+      addTearDown(repo.dispose);
+
+      const error = StoreUnavailableException();
+      final errorFuture = expectLater(
+        repo.changes,
+        emitsError(isA<StoreUnavailableException>()),
+      );
+      validator.emitError(error);
+
+      await errorFuture;
+    });
+
     test('clearLocalEntitlement sets inactive and removes cache', () async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
-        'divine_supporter_entitlement',
+        'divine_supporter_entitlement:$pubkeyA',
         jsonEncode(
           SupporterEntitlement(
             productId: 'p',
@@ -153,12 +208,39 @@ void main() {
           ).toJson(),
         ),
       );
-      final repo = SupporterRepository(validator: validator, prefs: prefs);
+      final repo = SupporterRepository(
+        pubkey: pubkeyA,
+        validator: validator,
+        prefs: prefs,
+      );
       addTearDown(repo.dispose);
 
       await repo.clearLocalEntitlement();
       expect(repo.isSupporter, isFalse);
-      expect(prefs.getString('divine_supporter_entitlement'), isNull);
+      expect(prefs.getString('divine_supporter_entitlement:$pubkeyA'), isNull);
+    });
+
+    test('loads only the cache belonging to the active pubkey', () async {
+      final active = SupporterEntitlement(
+        productId: 'divine.supporter.monthly',
+        source: EntitlementSource.appStore,
+        purchaseDate: DateTime.utc(2030),
+      );
+      SharedPreferences.setMockInitialValues({
+        'divine_supporter_entitlement:$pubkeyA': jsonEncode(active.toJson()),
+        'divine_supporter_entitlement:$pubkeyB': jsonEncode(
+          SupporterEntitlement.inactive.toJson(),
+        ),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final repo = SupporterRepository(
+        pubkey: pubkeyB,
+        validator: validator,
+        prefs: prefs,
+      );
+      addTearDown(repo.dispose);
+
+      expect(repo.isSupporter, isFalse);
     });
   });
 }

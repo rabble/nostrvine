@@ -36,6 +36,9 @@ class _FakeRepository extends Fake implements SupporterRepository {
 
 class _EmptyValidator extends Fake implements EntitlementValidator {
   @override
+  void startListening() {}
+
+  @override
   Future<bool> get isAvailable async => false;
 
   @override
@@ -52,6 +55,9 @@ class _EmptyValidator extends Fake implements EntitlementValidator {
   @override
   Stream<SupporterEntitlement> get entitlementChanges =>
       const Stream<SupporterEntitlement>.empty();
+
+  @override
+  Stream<EntitlementLifecycle> get lifecycleChanges => const Stream.empty();
 }
 
 void main() {

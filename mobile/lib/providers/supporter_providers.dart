@@ -1,9 +1,10 @@
 // ABOUTME: Riverpod providers wiring the supporter feature.
 // ABOUTME: Selects the store-backed EntitlementValidator on iOS/Android and a
-// ABOUTME: stub elsewhere, owned by a keepAlive SupporterRepository.
+// ABOUTME: stub elsewhere, owned by an account-scoped SupporterRepository.
 
 import 'package:flutter/foundation.dart';
 import 'package:iap_repository/iap_repository.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/supporter_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -30,14 +31,18 @@ EntitlementValidator entitlementValidator(Ref ref) {
     return StubEntitlementValidator();
   }
   final validator = InAppPurchaseValidator();
+  validator.startListening();
   ref.onDispose(validator.dispose);
   return validator;
 }
 
-/// The keepAlive [SupporterRepository] that owns the cached entitlement.
-@Riverpod(keepAlive: true)
+/// The account-scoped [SupporterRepository] that owns the cached entitlement.
+@riverpod
 SupporterRepository supporterRepository(Ref ref) {
+  ref.watch(currentAuthStateProvider);
+  final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   final repository = SupporterRepository(
+    pubkey: pubkey ?? 'unauthenticated',
     validator: ref.watch(entitlementValidatorProvider),
     prefs: ref.watch(sharedPreferencesProvider),
   );

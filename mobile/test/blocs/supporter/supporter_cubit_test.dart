@@ -28,14 +28,23 @@ class _FakeRepository extends Fake implements SupporterRepository {
 
 class _FakeValidator extends Fake implements EntitlementValidator {
   List<SupporterTier> products = const [];
+  Completer<List<SupporterTier>>? fetchCompleter;
   Object? fetchError;
   Object? purchaseError;
   SupporterEntitlement purchaseResult = SupporterEntitlement.inactive;
   Object? restoreError;
+  Stream<EntitlementLifecycle> lifecycleStream = const Stream.empty();
+
+  @override
+  void startListening() {}
+
+  @override
+  Stream<EntitlementLifecycle> get lifecycleChanges => lifecycleStream;
 
   @override
   Future<List<SupporterTier>> fetchProducts() async {
     if (fetchError != null) throw fetchError!;
+    if (fetchCompleter != null) return fetchCompleter!.future;
     return products;
   }
 
@@ -209,5 +218,37 @@ void main() {
       SupporterFailure.fromMessage('something unexpected'),
       SupporterFailure.unknown,
     );
+  });
+
+  test('does not emit after close when tier loading completes late', () async {
+    final repo = _FakeRepository(controller);
+    final completer = Completer<List<SupporterTier>>();
+    repo.validator.fetchCompleter = completer;
+    final cubit = SupporterCubit(repository: repo);
+
+    final load = cubit.loadTiers();
+    await Future<void>.delayed(Duration.zero);
+    await cubit.close();
+    completer.complete(const <SupporterTier>[]);
+
+    await expectLater(load, completes);
+  });
+
+  test('surfaces pending and confirming purchase lifecycle', () async {
+    final lifecycle = StreamController<EntitlementLifecycle>.broadcast();
+    addTearDown(lifecycle.close);
+    final repo = _FakeRepository(controller);
+    repo.validator.lifecycleStream = lifecycle.stream;
+    final cubit = SupporterCubit(repository: repo);
+    addTearDown(cubit.close);
+
+    cubit.start();
+    lifecycle.add(EntitlementLifecycle.pending);
+    await Future<void>.delayed(Duration.zero);
+    expect(cubit.state.status, SupporterStatus.pending);
+
+    lifecycle.add(EntitlementLifecycle.confirming);
+    await Future<void>.delayed(Duration.zero);
+    expect(cubit.state.status, SupporterStatus.confirming);
   });
 }

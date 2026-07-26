@@ -71,14 +71,14 @@ final class EntitlementValidatorProvider
 }
 
 String _$entitlementValidatorHash() =>
-    r'0e3e4f5e3b811340e2ec5adf8882f66c7fe012cc';
+    r'8e01226ddfb565538f6d0e1512371490b1ce85ac';
 
-/// The keepAlive [SupporterRepository] that owns the cached entitlement.
+/// The account-scoped [SupporterRepository] that owns the cached entitlement.
 
 @ProviderFor(supporterRepository)
 final supporterRepositoryProvider = SupporterRepositoryProvider._();
 
-/// The keepAlive [SupporterRepository] that owns the cached entitlement.
+/// The account-scoped [SupporterRepository] that owns the cached entitlement.
 
 final class SupporterRepositoryProvider
     extends
@@ -88,14 +88,14 @@ final class SupporterRepositoryProvider
           SupporterRepository
         >
     with $Provider<SupporterRepository> {
-  /// The keepAlive [SupporterRepository] that owns the cached entitlement.
+  /// The account-scoped [SupporterRepository] that owns the cached entitlement.
   SupporterRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'supporterRepositoryProvider',
-        isAutoDispose: false,
+        isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -124,4 +124,4 @@ final class SupporterRepositoryProvider
 }
 
 String _$supporterRepositoryHash() =>
-    r'20dfa7e54c802d785870a13f3cc92dba83d00de8';
+    r'b8c8d677541eade01937f416ea7c558cf6147700';

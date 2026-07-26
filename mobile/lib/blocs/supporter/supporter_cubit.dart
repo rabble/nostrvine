@@ -28,33 +28,48 @@ class SupporterCubit extends Cubit<SupporterState> {
   final SupporterAnalyticsSink _trackEvent;
 
   StreamSubscription<SupporterEntitlement>? _entitlementSub;
+  StreamSubscription<EntitlementLifecycle>? _lifecycleSub;
 
   /// Begin listening to the repository's entitlement stream. Call from the
   /// screen's `initState` so external purchase updates (renewals, restores)
   /// reflect in the UI.
   void start() {
-    _entitlementSub ??= _repository.changes.listen((entitlement) {
-      emit(
+    _entitlementSub ??= _repository.changes.listen(
+      (entitlement) {
+        _emit(
+          state.copyWith(
+            entitlement: entitlement,
+            status: entitlement.isSupporter
+                ? SupporterStatus.active
+                : state.status,
+            clearFailure: entitlement.isSupporter,
+          ),
+        );
+      },
+      onError: _handleEntitlementError,
+    );
+    _lifecycleSub ??= _repository.validator.lifecycleChanges.listen(
+      (lifecycle) => _emit(
         state.copyWith(
-          entitlement: entitlement,
-          status: entitlement.isSupporter
-              ? SupporterStatus.active
-              : state.status,
-          clearFailure: entitlement.isSupporter,
+          status: lifecycle == EntitlementLifecycle.pending
+              ? SupporterStatus.pending
+              : SupporterStatus.confirming,
+          clearFailure: true,
         ),
-      );
-    });
+      ),
+    );
     loadTiers();
   }
 
   /// Fetch the available supporter tiers from the store.
   Future<void> loadTiers() async {
-    emit(state.copyWith(status: SupporterStatus.loading, clearFailure: true));
+    _emit(state.copyWith(status: SupporterStatus.loading, clearFailure: true));
     try {
       final tiers = await _repository.validator.fetchProducts();
-      emit(state.copyWith(tiers: tiers, status: SupporterStatus.idle));
+      if (isClosed) return;
+      _emit(state.copyWith(tiers: tiers, status: SupporterStatus.idle));
     } on EntitlementException catch (e) {
-      emit(
+      _emit(
         state.copyWith(
           status: SupporterStatus.error,
           failure: SupporterFailure.fromMessage(e.message),
@@ -66,13 +81,14 @@ class SupporterCubit extends Cubit<SupporterState> {
   /// Begin a purchase for [productId].
   Future<void> subscribe(String productId) async {
     if (state.isBusy) return;
-    emit(
+    _emit(
       state.copyWith(status: SupporterStatus.purchasing, clearFailure: true),
     );
     _trackEvent('supporter_subscribe_tapped');
     try {
       final entitlement = await _repository.validator.purchase(productId);
-      emit(
+      if (isClosed) return;
+      _emit(
         state.copyWith(
           entitlement: entitlement,
           status: SupporterStatus.active,
@@ -81,7 +97,7 @@ class SupporterCubit extends Cubit<SupporterState> {
       );
       _trackEvent('supporter_subscribe_succeeded');
     } on EntitlementException catch (e) {
-      emit(
+      _emit(
         state.copyWith(
           status: SupporterStatus.idle,
           failure: SupporterFailure.fromMessage(e.message),
@@ -94,16 +110,19 @@ class SupporterCubit extends Cubit<SupporterState> {
   /// Restore previous purchases tied to the store account.
   Future<void> restore() async {
     if (state.isBusy) return;
-    emit(state.copyWith(status: SupporterStatus.restoring, clearFailure: true));
+    _emit(
+      state.copyWith(status: SupporterStatus.restoring, clearFailure: true),
+    );
     _trackEvent('supporter_restore_tapped');
     try {
       await _repository.validator.restorePurchases();
       // The restored entitlement arrives on the repository stream; reset to idle
       // and let the stream listener surface the active status.
-      emit(state.copyWith(status: SupporterStatus.idle));
+      if (isClosed) return;
+      _emit(state.copyWith(status: SupporterStatus.idle));
       _trackEvent('supporter_restore_completed');
     } on EntitlementException catch (e) {
-      emit(
+      _emit(
         state.copyWith(
           status: SupporterStatus.idle,
           failure: SupporterFailure.fromMessage(e.message),
@@ -115,12 +134,27 @@ class SupporterCubit extends Cubit<SupporterState> {
 
   /// Dismiss the current failure banner.
   void dismissError() {
-    emit(state.copyWith(clearFailure: true));
+    _emit(state.copyWith(clearFailure: true));
+  }
+
+  void _emit(SupporterState nextState) {
+    if (!isClosed) emit(nextState);
+  }
+
+  void _handleEntitlementError(Object error, StackTrace stackTrace) {
+    if (isClosed || error is! EntitlementException) return;
+    _emit(
+      state.copyWith(
+        status: SupporterStatus.error,
+        failure: SupporterFailure.fromMessage(error.message),
+      ),
+    );
   }
 
   @override
   Future<void> close() {
     _entitlementSub?.cancel();
+    _lifecycleSub?.cancel();
     return super.close();
   }
 

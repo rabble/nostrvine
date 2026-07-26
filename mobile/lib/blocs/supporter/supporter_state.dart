@@ -4,7 +4,16 @@
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 
-enum SupporterStatus { idle, loading, purchasing, restoring, active, error }
+enum SupporterStatus {
+  idle,
+  loading,
+  purchasing,
+  pending,
+  confirming,
+  restoring,
+  active,
+  error,
+}
 
 /// Typed reason for a supporter-screen failure, mapped from validator
 /// exceptions so the UI can show specific copy.
@@ -47,6 +56,8 @@ class SupporterState extends Equatable {
   bool get isSupporter => entitlement.isSupporter;
   bool get isBusy =>
       status == SupporterStatus.purchasing ||
+      status == SupporterStatus.pending ||
+      status == SupporterStatus.confirming ||
       status == SupporterStatus.restoring ||
       status == SupporterStatus.loading;
   bool get hasTiers => tiers.isNotEmpty;

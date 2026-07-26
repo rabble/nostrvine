@@ -40,6 +40,10 @@ class InAppPurchaseValidator implements EntitlementValidator {
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   final StreamController<SupporterEntitlement> _entitlementController =
       StreamController<SupporterEntitlement>.broadcast();
+  final StreamController<EntitlementLifecycle> _lifecycleController =
+      StreamController<EntitlementLifecycle>.broadcast();
+
+  SupporterEntitlement _lastEntitlement = SupporterEntitlement.inactive;
 
   /// Pending purchase listeners keyed by product id, awaiting the matching
   /// result on the purchase stream.
@@ -47,13 +51,30 @@ class InAppPurchaseValidator implements EntitlementValidator {
 
   bool _listening = false;
 
+  @override
+  void startListening() => _ensureListening();
+
   void _ensureListening() {
     if (_listening) return;
     _listening = true;
     _subscription = _store.purchaseStream.listen(
       _handlePurchaseStream,
-      onError: _entitlementController.addError,
+      onError: _handleStreamError,
     );
+  }
+
+  void _handleStreamError(Object _, StackTrace stackTrace) {
+    const exception = PurchaseFailedException(
+      null,
+      'The store purchase stream failed. Please try again.',
+    );
+    for (final completer in _pendingPurchases.values) {
+      if (!completer.isCompleted) {
+        completer.completeError(exception, stackTrace);
+      }
+    }
+    _pendingPurchases.clear();
+    _entitlementController.addError(exception, stackTrace);
   }
 
   void _handlePurchaseStream(List<PurchaseDetails> purchases) {
@@ -65,7 +86,9 @@ class InAppPurchaseValidator implements EntitlementValidator {
     switch (purchase.status) {
       case PurchaseStatus.purchased:
       case PurchaseStatus.restored:
+        _lifecycleController.add(EntitlementLifecycle.confirming);
         final entitlement = _entitlementFromPurchase(purchase);
+        _lastEntitlement = entitlement;
         _entitlementController.add(entitlement);
         await _completeSafely(purchase);
         completer?.complete(entitlement);
@@ -88,7 +111,11 @@ class InAppPurchaseValidator implements EntitlementValidator {
         if (completer != null) {
           _pendingPurchases[purchase.productID] = completer;
         }
-        _entitlementController.add(SupporterEntitlement.inactive);
+        _lifecycleController.add(EntitlementLifecycle.pending);
+        // A pending store event is not a canonical loss of entitlement. In
+        // particular, a renewal may be pending while the previous verified
+        // entitlement is still active.
+        if (!_lastEntitlement.isSupporter) return;
     }
   }
 
@@ -201,10 +228,15 @@ class InAppPurchaseValidator implements EntitlementValidator {
       _entitlementController.stream;
 
   @override
+  Stream<EntitlementLifecycle> get lifecycleChanges =>
+      _lifecycleController.stream;
+
+  @override
   void dispose() {
     unawaited(_subscription?.cancel());
     _subscription = null;
     _listening = false;
     unawaited(_entitlementController.close());
+    unawaited(_lifecycleController.close());
   }
 }

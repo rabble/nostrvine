@@ -16,6 +16,9 @@ class StubEntitlementValidator implements EntitlementValidator {
       StreamController<SupporterEntitlement>.broadcast();
 
   @override
+  void startListening() {}
+
+  @override
   Future<bool> get isAvailable async => false;
 
   @override
@@ -32,6 +35,9 @@ class StubEntitlementValidator implements EntitlementValidator {
 
   @override
   Stream<SupporterEntitlement> get entitlementChanges => _controller.stream;
+
+  @override
+  Stream<EntitlementLifecycle> get lifecycleChanges => const Stream.empty();
 
   @override
   void dispose() {
