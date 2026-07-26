@@ -1376,11 +1376,18 @@ class VideoEventPublisher {
       }
 
       // Handle audio reuse: extract audio, upload, publish Kind 1063 event
-      // Then add e tag linking video to audio event
-      // Skip if we already referenced a selected audio event above
+      // Then add e tag linking video to audio event.
+      //
+      // Skip only when the selected audio was actually referenced above. A
+      // selection that yielded no Nostr reference (bundled sound,
+      // external-provider sound) is the user's own audio to offer — the same
+      // rule [VideoEditorProviderState.reusesExternalAudio] uses to keep the
+      // "Publish this sound" toggle visible — so gating on the raw selection
+      // instead silently dropped both this event and the `allow_audio_reuse`
+      // marker, leaving the video with no audio metadata at all (#6185).
       String? audioEventId;
       if (allowAudioReuse &&
-          !hasSelectedAudioEventId &&
+          reusableSelectedAudioEventId == null &&
           upload.localVideoPath.isNotEmpty) {
         tags.add(['allow_audio_reuse', 'true']);
         Log.info(

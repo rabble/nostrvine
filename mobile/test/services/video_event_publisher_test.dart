@@ -553,10 +553,10 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    PendingUpload createUpload() {
+    PendingUpload createUpload({String localVideoPath = ''}) {
       return PendingUpload(
         id: 'upload-id',
-        localVideoPath: '',
+        localVideoPath: localVideoPath,
         nostrPubkey: testPubkey,
         status: UploadStatus.readyToPublish,
         createdAt: DateTime.now(),
@@ -688,6 +688,62 @@ void main() {
               'wss://relay.divine.video',
               'audio',
             ]),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'does not re-publish the video audio when a source is referenced',
+        () async {
+          stubSignAndPublish();
+
+          final reusedSound = AudioEvent(
+            id: 'video_$sourceVideoId',
+            pubkey: sourceCreator,
+            createdAt: 1700000000,
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+            allowAudioReuse: true,
+            selectedAudio: reusedSound,
+            selectedAudioEventId: reusedSound.id,
+          );
+
+          expect(result, isTrue);
+          expect(
+            _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
+            isFalse,
+          );
+        },
+      );
+
+      test(
+        'honors audio reuse when the selection is not referenceable',
+        () async {
+          stubSignAndPublish();
+
+          // A bundled sound has no Nostr event to reference, so the video's own
+          // audio is the user's to offer and "Publish this sound" must still
+          // take effect instead of being silently dropped (#6185).
+          const bundledSound = AudioEvent(
+            id: '${AudioEvent.bundledMarker}_oh_no_no_no_crowd',
+            pubkey: AudioEvent.bundledMarker,
+            createdAt: 0,
+            url: 'asset://assets/sounds/oh-no-no-no-crowd.mp3',
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+            allowAudioReuse: true,
+            selectedAudio: bundledSound,
+            selectedAudioEventId: bundledSound.id,
+          );
+
+          expect(result, isTrue);
+          expect(
+            _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
             isTrue,
           );
         },
