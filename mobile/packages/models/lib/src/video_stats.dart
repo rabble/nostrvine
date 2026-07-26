@@ -238,9 +238,10 @@ class VideoStats {
             // wild:
             //   - space-separated: ['imeta', 'blurhash <hash>', ...]
             //   - positional:      ['imeta', 'blurhash', '<hash>', ...]
-            // divine and funnelcake only ever emit `dim` inside imeta — there
-            // is no top-level `dim` tag on any REST endpoint — so missing this
-            // leaves every REST-hydrated video without width/height (#3882).
+            // Every funnelcake endpoint the app calls carries `dim` inside
+            // imeta and none emits a top-level `dim` tag, so without this
+            // every REST-hydrated video lost its width/height (#3882). The
+            // top-level branch below stays as a fallback for relay events.
             for (var i = 1; i < tag.length; i++) {
               final element = tag[i].toString();
               final spaceIndex = element.indexOf(' ');

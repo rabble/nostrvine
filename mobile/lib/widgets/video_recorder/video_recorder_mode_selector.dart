@@ -132,12 +132,11 @@ class _VideoRecorderModeSelectorWheelState
     // Both end slots are hazards: `upload` renders a blank metadata screen and
     // `classic` pins capture to square, and the choice is persisted (#6200).
     // Tap-to-select does not come through here, so it can still jump anywhere.
-    final lowerBound = _selectedIndex > 0 ? _selectedIndex - 1 : 0;
     final lastIndex = _snapOffsets.length - 1;
-    final upperBound = _selectedIndex < lastIndex
-        ? _selectedIndex + 1
-        : lastIndex;
-    targetIndex = targetIndex.clamp(lowerBound, upperBound);
+    targetIndex = targetIndex.clamp(
+      (_selectedIndex - 1).clamp(0, lastIndex),
+      (_selectedIndex + 1).clamp(0, lastIndex),
+    );
     _lastScrollDelta = 0;
     // Defer to the next frame — animateTo called directly inside a scroll
     // notification callback is silently ignored by Flutter's scroll system.
