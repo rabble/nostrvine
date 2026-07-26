@@ -39,7 +39,6 @@ lib/widgets/delete_account_dialog.dart	3
 lib/widgets/find_people_sheet.dart	1
 lib/widgets/for_you_tab.dart	1
 lib/widgets/library/drafts_tab.dart	1
-lib/widgets/modal_progress_overlay.dart	2
 lib/widgets/owner_video_delete_confirmation_dialog.dart	1
 lib/widgets/profile_editor/username_status_indicator.dart	1
 lib/widgets/save_original_progress_sheet.dart	1

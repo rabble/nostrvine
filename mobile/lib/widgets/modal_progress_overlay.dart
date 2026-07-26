@@ -1,45 +1,48 @@
-// ABOUTME: A modal spinner route that is dismissed by route identity, not by popping.
-// ABOUTME: Safe to use around awaits where other routes may appear or disappear.
+// ABOUTME: A blocking spinner shown as an OverlayEntry, removed by identity.
+// ABOUTME: Deliberately not a dialog route, so it cannot be popped mid-await.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
-/// A blocking spinner pushed as its own route.
+/// A blocking spinner inserted into the root [Overlay].
 ///
-/// [dismiss] removes *this* route by identity rather than popping whatever
-/// happens to be on top, so an unrelated dialog or a router redirect appearing
-/// during the awaited work cannot be closed by mistake. It is also idempotent
-/// and safe to call after the navigator is gone.
+/// Intentionally an [OverlayEntry] rather than a dialog route. A dialog route
+/// can be dismissed by the Android back button even with
+/// `barrierDismissible: false`, which would let the user walk away from an
+/// in-flight await and leave the caller believing its spinner is still up. An
+/// overlay entry has no route to pop, so [dismiss] is the only way it goes away.
+///
+/// [dismiss] is idempotent and safe to call after the entry is gone.
 class ModalProgressOverlay {
-  ModalProgressOverlay._(
-    this._navigator, {
-    required this.route,
-    required this.closed,
-  });
+  ModalProgressOverlay._(this._entry);
 
-  final NavigatorState _navigator;
-  final Route<void> route;
-  final Future<void> closed;
+  final OverlayEntry _entry;
   bool _dismissed = false;
 
   static ModalProgressOverlay show(BuildContext context) {
-    final navigator = Navigator.of(context, rootNavigator: true);
-    late final DialogRoute<void> route;
-    route = DialogRoute<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      ),
-    );
-
-    final closed = navigator.push(route);
-    return ModalProgressOverlay._(navigator, route: route, closed: closed);
+    final entry = OverlayEntry(builder: (_) => const _BlockingSpinner());
+    Overlay.of(context, rootOverlay: true).insert(entry);
+    return ModalProgressOverlay._(entry);
   }
 
   void dismiss() {
-    if (_dismissed || !_navigator.mounted || !route.isActive) return;
+    if (_dismissed || !_entry.mounted) return;
     _dismissed = true;
-    _navigator.removeRoute(route);
+    _entry.remove();
+  }
+}
+
+class _BlockingSpinner extends StatelessWidget {
+  const _BlockingSpinner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AbsorbPointer(
+      child: SizedBox.expand(
+        child: Center(
+          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+        ),
+      ),
+    );
   }
 }

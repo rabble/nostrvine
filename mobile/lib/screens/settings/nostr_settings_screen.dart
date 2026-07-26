@@ -152,8 +152,6 @@ class _RemoveKeysTile extends StatelessWidget {
 
         final progressOverlay = ModalProgressOverlay.show(context);
 
-        unawaited(progressOverlay.closed);
-
         try {
           await authService.signOut(
             deleteKeys: true,
