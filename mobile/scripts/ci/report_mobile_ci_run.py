@@ -9,12 +9,11 @@ Examples:
 from __future__ import annotations
 
 import argparse
-import json
-import subprocess
 import sys
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
+
+from ci_github import GhApiError, duration_seconds, gh_json
 
 
 DEFAULT_REPO = "divinevideo/divine-mobile"
@@ -68,29 +67,6 @@ def parse_args() -> argparse.Namespace:
   parser.add_argument("--run-id", type=int)
   parser.add_argument("--event", choices=["push", "pull_request"])
   return parser.parse_args()
-
-
-def gh_json(*args: str) -> dict[str, Any]:
-  command = ["gh", "api", *args]
-  result = subprocess.run(command, capture_output=True, text=True, check=False)
-  if result.returncode != 0:
-    print(result.stderr.strip(), file=sys.stderr)
-    raise SystemExit(result.returncode)
-  return json.loads(result.stdout)
-
-
-def parse_timestamp(value: str | None) -> datetime | None:
-  if value is None:
-    return None
-  return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-
-def duration_seconds(started_at: str | None, completed_at: str | None) -> float:
-  start = parse_timestamp(started_at)
-  end = parse_timestamp(completed_at)
-  if start is None or end is None:
-    return 0.0
-  return (end - start).total_seconds()
 
 
 def format_seconds(seconds: float) -> str:
@@ -157,9 +133,13 @@ def main() -> int:
     print("Pass either --pr or --run-id.", file=sys.stderr)
     return 2
 
-  branch = get_branch_for_pr(args.repo, args.pr) if args.pr is not None else None
-  run = get_run(args.repo, args.workflow_id, args.run_id, branch, args.event)
-  jobs = get_jobs(args.repo, run["id"])
+  try:
+    branch = get_branch_for_pr(args.repo, args.pr) if args.pr is not None else None
+    run = get_run(args.repo, args.workflow_id, args.run_id, branch, args.event)
+    jobs = get_jobs(args.repo, run["id"])
+  except GhApiError as error:
+    print(str(error), file=sys.stderr)
+    return 1
 
   print(f"Workflow: {run['name']}")
   print(f"Run ID: {run['id']}")

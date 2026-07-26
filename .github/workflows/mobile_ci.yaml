@@ -40,6 +40,9 @@ jobs:
           app=false
           while IFS= read -r path; do
             case "$path" in
+              .github/ci-timing-budgets.json)
+                app=true
+                ;;
               .github/workflows/*)
                 app=true
                 ;;
@@ -431,3 +434,25 @@ jobs:
             echo "Could not determine Mobile CI scope."
             exit 1
           fi
+      - name: Checkout timing budget inputs
+        uses: actions/checkout@v4
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        with:
+          sparse-checkout: |
+            .github/ci-timing-budgets.json
+            mobile/scripts/ci
+          sparse-checkout-cone-mode: false
+      - name: ⏱️ Check CI timing budget
+        # This job only starts once every other job has finished, so the run's
+        # job durations are final here. Budgets live in
+        # .github/ci-timing-budgets.json; over-warn annotates the PR, over-fail
+        # fails this gate. Guards the wins recorded in PERF_BASELINE.md from
+        # eroding silently.
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 mobile/scripts/ci/check_ci_timing_budget.py \
+            --budgets .github/ci-timing-budgets.json \
+            --repo "${GITHUB_REPOSITORY}" \
+            --run-id "${GITHUB_RUN_ID}"
