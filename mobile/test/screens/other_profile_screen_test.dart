@@ -168,6 +168,9 @@ void main() {
     when(
       () => videoEventService.isVideoEventLocallyDeleted(any()),
     ).thenReturn(false);
+    when(
+      () => videoEventService.isVideoEventKnownDeleted(any()),
+    ).thenReturn(false);
     when(() => videoEventService.addListener(any())).thenReturn(null);
     when(() => videoEventService.removeListener(any())).thenReturn(null);
     when(

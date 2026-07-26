@@ -52,8 +52,6 @@ void main() {
     uploadManager = UploadManager(blossomService: mockBlossomService);
 
     mockConnectivity('wifi');
-
-    await uploadManager.initialize();
   });
 
   tearDown(() async {

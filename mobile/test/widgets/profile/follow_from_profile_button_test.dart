@@ -1,6 +1,8 @@
 // ABOUTME: Tests for FollowFromProfileButton widget using MyFollowingBloc
 // ABOUTME: Validates follow/unfollow button state, tap behavior, and visibility logic
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -245,6 +247,34 @@ void main() {
         await tester.pumpAndSettle();
 
         verifyNever(() => mockMyFollowingBloc.add(any()));
+      });
+
+      testWidgets('shows localized snackbar when follow toggle fails', (
+        tester,
+      ) async {
+        final otherPubkey = validPubkey('other');
+        final states = StreamController<MyFollowingState>();
+        addTearDown(states.close);
+        whenListen(
+          mockMyFollowingBloc,
+          states.stream,
+          initialState: const MyFollowingState(
+            status: MyFollowingStatus.success,
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+        await tester.pump();
+
+        states.add(
+          const MyFollowingState(status: MyFollowingStatus.toggleFailure),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.followersUpdateFollowFailed), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
       });
     });
 
