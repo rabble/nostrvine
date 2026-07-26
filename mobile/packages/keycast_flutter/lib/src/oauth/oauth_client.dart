@@ -986,21 +986,7 @@ class KeycastOAuth {
   /// This is a destructive action that cannot be undone.
   ///
   /// Returns [DeleteAccountResult] with success status.
-  ///
-  /// [nip98Proof] carries a NIP-98 (kind 27235) `Nostr <base64>` credential
-  /// proving control of the account's key.
-  ///
-  /// It is sent as an additional `X-Nostr-Authorization` header rather than
-  /// replacing `Authorization`, because the bearer UCAN is still required by
-  /// servers that do not understand the proof. A server that ignores the header
-  /// behaves exactly as before, so sending it is safe against any deployment.
-  ///
-  /// Server-side acceptance is tracked in divinevideo/keycast#323; the header
-  /// name is this client's proposal and is trivial to change once that lands.
-  Future<DeleteAccountResult> deleteAccount(
-    String token, {
-    String? nip98Proof,
-  }) async {
+  Future<DeleteAccountResult> deleteAccount(String token) async {
     try {
       final response = await _client
           .delete(
@@ -1008,7 +994,6 @@ class KeycastOAuth {
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
-              'X-Nostr-Authorization': ?nip98Proof,
             },
           )
           .timeout(requestTimeout);

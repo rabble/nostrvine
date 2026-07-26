@@ -12096,8 +12096,14 @@ abstract class AppLocalizations {
   /// No description provided for @deleteAccountServerDeletionFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not delete your account from the server. Please check your connection and try again.'**
+  /// **'We could not delete your account on the server. Sign in again and retry.'**
   String get deleteAccountServerDeletionFailed;
+
+  /// Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to delete your account. Nothing has been deleted yet.'**
+  String get deleteAccountReauthRequired;
 
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///

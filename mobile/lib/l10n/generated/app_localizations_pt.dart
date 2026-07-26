@@ -6995,7 +6995,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Não foi possível excluir sua conta do servidor. Verifique sua conexão e tente novamente.';
+      'Não conseguimos excluir sua conta no servidor. Entre novamente e tente de novo.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Entre novamente para excluir sua conta. Nada foi excluído ainda.';
 
   @override
   String get deleteAccountSuccess =>

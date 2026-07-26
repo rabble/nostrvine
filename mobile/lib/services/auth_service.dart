@@ -72,6 +72,22 @@ enum AuthState {
   authenticating,
 }
 
+/// Whether the account-deletion flow may start.
+///
+/// Deletion publishes irreversible events before it can attempt the reversible
+/// server-side step, so this is checked *before* anything is published. See
+/// [AuthService.checkAccountDeletionReadiness].
+enum AccountDeletionReadiness {
+  /// Nothing blocks the flow. Either there is no server-side account to delete,
+  /// or the current session can authorize deleting it.
+  ready,
+
+  /// The session cannot authorize the server-side deletion, so starting would
+  /// destroy the user's content and leave their account alive. A fresh sign-in
+  /// resolves it. Nothing has been published.
+  requiresReauthentication,
+}
+
 /// Thrown by [AuthService.signInForAccount] when a returning-user sign-in
 /// does not restore the requested account — for example when an
 /// `importedKeys`/`automatic` account's identity keys are missing from secure
@@ -2863,6 +2879,59 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// - OAuth client is not configured (local-only auth)
   ///
   /// Returns (false, errorMessage) if deletion failed.
+  /// Whether account deletion can start without destroying content it may then
+  /// be unable to finish deleting.
+  ///
+  /// The deletion flow publishes an irreversible NIP-62 request to vanish and a
+  /// kind-5 sweep *before* it can attempt the server-side account deletion, and
+  /// the server-side step is only authorized while the access token still
+  /// carries the first-party fact it was minted with. Refreshing the token drops
+  /// that fact, so a returning user is refused — after their content has already
+  /// been broadcast for deletion. See #6335 / #4881.
+  ///
+  /// Because [KeycastOAuth.getSession] returns null once the session has
+  /// expired, and [KeycastOAuth.getSessionOrRefresh] then refreshes, "the stored
+  /// session is gone or expired" is exactly "the next call will refresh and lose
+  /// authorization". That makes this a reliable pre-flight without decoding the
+  /// token.
+  ///
+  /// Only divineOAuth accounts are gated. Anonymous, imported-nsec, amber and
+  /// bunker users have no Keycast account to delete, so gating them would block
+  /// them from deleting their own content for no reason.
+  Future<AccountDeletionReadiness> checkAccountDeletionReadiness() async {
+    if (!isRegistered) {
+      return AccountDeletionReadiness.ready;
+    }
+
+    final client = _oauthClient;
+    if (client == null) {
+      return AccountDeletionReadiness.ready;
+    }
+
+    try {
+      final session = await client.getSession();
+      if (session == null || !session.hasRpcAccess) {
+        Log.warning(
+          'Account deletion blocked before publishing: Keycast session cannot '
+          'authorize deletion, re-authentication required',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return AccountDeletionReadiness.requiresReauthentication;
+      }
+      return AccountDeletionReadiness.ready;
+    } catch (e) {
+      // Fail closed: a readiness check we cannot complete must not green-light
+      // publishing irreversible events.
+      Log.error(
+        'Account deletion readiness check failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return AccountDeletionReadiness.requiresReauthentication;
+    }
+  }
+
   Future<(bool success, String? error)> deleteKeycastAccount() async {
     Log.debug(
       '🗑️ Attempting to delete Keycast account',

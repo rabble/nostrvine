@@ -6811,7 +6811,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+      'መለያዎን በአገልጋዩ ላይ መሰረዝ አልቻልንም። እንደገና ይግቡና ደግመው ይሞክሩ።';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'መለያዎን ለመሰረዝ እንደገና ይግቡ። እስካሁን ምንም አልተሰረዘም።';
 
   @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';

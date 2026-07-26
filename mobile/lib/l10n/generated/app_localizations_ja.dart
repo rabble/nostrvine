@@ -6667,7 +6667,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'サーバーからアカウントを削除できなかったよ。接続を確認してもう一回試してね。';
+      'サーバー上でアカウントを削除できませんでした。もう一度サインインしてやり直してください。';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'アカウントを削除するには、もう一度サインインしてください。まだ何も削除されていません。';
 
   @override
   String get deleteAccountSuccess => '削除リクエストを送信したよ。このデバイスからサインアウトしたよ。';

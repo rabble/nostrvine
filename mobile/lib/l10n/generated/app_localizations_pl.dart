@@ -7108,7 +7108,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Nie udało się usunąć twojego konta z serwera. Sprawdź połączenie i spróbuj ponownie.';
+      'Nie udało się usunąć konta na serwerze. Zaloguj się ponownie i spróbuj jeszcze raz.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Zaloguj się ponownie, aby usunąć konto. Nic nie zostało jeszcze usunięte.';
 
   @override
   String get deleteAccountSuccess =>

@@ -6920,7 +6920,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Tidak bisa menghapus akunmu dari server. Silakan periksa koneksimu dan coba lagi.';
+      'Kami tidak bisa menghapus akunmu di server. Masuk lagi lalu coba sekali lagi.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Masuk lagi untuk menghapus akunmu. Belum ada yang dihapus.';
 
   @override
   String get deleteAccountSuccess =>

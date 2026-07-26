@@ -7018,7 +7018,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Не успяхме да изтрием акаунта ти от сървъра. Провери връзката си и опитай пак.';
+      'Не успяхме да изтрием акаунта ти на сървъра. Влез отново и опитай пак.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Влез отново, за да изтриеш акаунта си. Още нищо не е изтрито.';
 
   @override
   String get deleteAccountSuccess =>

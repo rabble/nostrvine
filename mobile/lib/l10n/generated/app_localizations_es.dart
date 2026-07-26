@@ -7012,7 +7012,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'No se pudo eliminar tu cuenta del servidor. Revisá tu conexión e intentá de nuevo.';
+      'No pudimos eliminar tu cuenta en el servidor. Vuelve a iniciar sesión e inténtalo de nuevo.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Vuelve a iniciar sesión para eliminar tu cuenta. Todavía no se ha eliminado nada.';
 
   @override
   String get deleteAccountSuccess =>

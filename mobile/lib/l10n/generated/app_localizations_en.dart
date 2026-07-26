@@ -6940,7 +6940,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Could not delete your account from the server. Please check your connection and try again.';
+      'We could not delete your account on the server. Sign in again and retry.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
   String get deleteAccountSuccess =>

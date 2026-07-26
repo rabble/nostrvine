@@ -6924,7 +6924,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountServerDeletionFailed =>
-      'Hesabın sunucudan silinemedi. Lütfen bağlantını kontrol et ve tekrar dene.';
+      'Hesabını sunucuda silemedik. Tekrar giriş yapıp yeniden dene.';
+
+  @override
+  String get deleteAccountReauthRequired =>
+      'Hesabını silmek için tekrar giriş yap. Henüz hiçbir şey silinmedi.';
 
   @override
   String get deleteAccountSuccess =>

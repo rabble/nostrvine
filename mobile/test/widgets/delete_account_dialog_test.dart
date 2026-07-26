@@ -431,6 +431,11 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       when(
         () => deletionService.deleteAccount(
           onProgress: any(named: 'onProgress'),
@@ -480,6 +485,11 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       final profileRepository = _MockProfileRepository();
       when(
         () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -526,6 +536,11 @@ void main() {
     testWidgets('opted-in burn success proceeds with deletion', (tester) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       final profileRepository = _MockProfileRepository();
       when(
         () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -579,6 +594,11 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       final profileRepository = _MockProfileRepository();
       when(
         () => deletionService.deleteAccount(
@@ -624,6 +644,11 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
 
       late BuildContext capturedContext;
       await tester.pumpWidget(
@@ -669,6 +694,11 @@ void main() {
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
+        // The pre-flight gate runs on every path; default it to ready so
+        // these tests exercise the behaviour under test, not the gate.
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
         final profileRepository = _MockProfileRepository();
         when(
           () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -717,6 +747,11 @@ void main() {
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
+        // The pre-flight gate runs on every path; default it to ready so
+        // these tests exercise the behaviour under test, not the gate.
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
         final profileRepository = _MockProfileRepository();
         when(
           () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -771,6 +806,11 @@ void main() {
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
+        // The pre-flight gate runs on every path; default it to ready so
+        // these tests exercise the behaviour under test, not the gate.
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
         final profileRepository = _MockProfileRepository();
         when(
           () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -825,6 +865,11 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       final profileRepository = _MockProfileRepository();
       when(
         () => profileRepository.releaseUsername(name: any(named: 'name')),
@@ -879,6 +924,11 @@ void main() {
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       final profileRepository = _MockProfileRepository();
 
       late BuildContext capturedContext;
@@ -918,6 +968,11 @@ void main() {
     testWidgets('aborts before burn when the account changed', (tester) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       final profileRepository = _MockProfileRepository();
       when(
         () => authService.currentPublicKeyHex,
@@ -1000,6 +1055,11 @@ void main() {
       (tester) async {
         final deletionService = _MockAccountDeletionService();
         final authService = _MockAuthService();
+        // The pre-flight gate runs on every path; default it to ready so
+        // these tests exercise the behaviour under test, not the gate.
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
         // UI pre-check passes (signer still matches), but the service reports a
         // mid-flight switch — the UI must localize, not surface the raw string.
         when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
@@ -1045,11 +1105,75 @@ void main() {
       },
     );
 
+    // THE regression test for #6335. Production published the irreversible
+    // NIP-62 vanish and the kind-5 sweep, and only then asked Keycast to delete
+    // the account — which refused with 403 for any user whose token had been
+    // refreshed. 275 denials across 57 users in 30 days, 48 of whom never
+    // completed: content broadcast for deletion, account still alive, still
+    // signed in. Nothing destructive may run before the gate clears.
+    testWidgets(
+      'publishes nothing when the session cannot authorize deletion',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(authService.checkAccountDeletionReadiness).thenAnswer(
+          (_) async => AccountDeletionReadiness.requiresReauthentication,
+        );
+        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+          confirmedPubkey: _pubkeyHex,
+        );
+        await tester.pumpAndSettle();
+
+        // Nothing irreversible was attempted.
+        verifyNever(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        );
+        verifyNever(authService.deleteKeycastAccount);
+        verifyNever(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        );
+
+        // The user is told to sign in again, not that their network is at fault.
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.deleteAccountReauthRequired), findsOneWidget);
+        expect(
+          find.text(l10n.deleteAccountServerDeletionFailed),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('proceeds when confirmedPubkey matches the current account', (
       tester,
     ) async {
       final deletionService = _MockAccountDeletionService();
       final authService = _MockAuthService();
+      // The pre-flight gate runs on every path; default it to ready so
+      // these tests exercise the behaviour under test, not the gate.
+      when(
+        authService.checkAccountDeletionReadiness,
+      ).thenAnswer((_) async => AccountDeletionReadiness.ready);
       when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
       when(
         () => deletionService.deleteAccount(

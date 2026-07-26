@@ -511,6 +511,35 @@ Future<void> executeAccountDeletion({
       return;
     }
 
+    // Pre-flight before ANY destructive step. The server-side account deletion
+    // can only be authorized while the access token still carries the
+    // first-party fact it was minted with, but it runs *after* the irreversible
+    // NIP-62 vanish and kind-5 sweep. Without this gate a returning user has
+    // their content broadcast for deletion and is then refused, leaving them
+    // signed in with a live account and no way back. See #6335 / #4881.
+    //
+    // Refusing here costs the user a sign-in. Not refusing costs them their
+    // content, permanently.
+    final readiness = await authService.checkAccountDeletionReadiness();
+    if (readiness == AccountDeletionReadiness.requiresReauthentication) {
+      Log.warning(
+        'Deletion blocked before publishing: session cannot authorize '
+        'server-side account deletion',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+      dismissDialog();
+      if (context.mounted) {
+        final text = context.l10n.deleteAccountReauthRequired;
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(text, error: true),
+        );
+        announceOutcome(text);
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
     // Burn-first hard-block: release the username before any destructive step,
     // so a failed burn leaves everything intact. Needs a working signer, which
     // exists before deleteKeycastAccount() below.
