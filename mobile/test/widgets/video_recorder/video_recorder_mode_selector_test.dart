@@ -127,6 +127,77 @@ void main() {
         expect(modeChanges, isNot(contains(VideoRecorderMode.classic)));
       });
 
+      testWidgets('a hard fling forward does not jump to the last mode', (
+        tester,
+      ) async {
+        // The -60px drag guard above does not exercise a fling. An over-fling
+        // matches no snap offset, so floorIndex/ceilIndex kept their initial
+        // values (0 and the last index) and the wheel selected a mode the user
+        // never scrolled onto. Both end slots are hazards: the first renders a
+        // blank post screen and the last pins capture to square (#6200).
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null);
+        });
+
+        await pumpSelector(tester, mode: VideoRecorderMode.capture);
+
+        await tester.fling(
+          find.byType(ListView),
+          const Offset(-600, 0),
+          6000,
+        );
+        await tester.pumpAndSettle();
+
+        expect(modeChanges, isNot(contains(VideoRecorderMode.values.last)));
+
+        // The user-visible harm: an over-fling must never silently switch the
+        // capture shape. Classic is the only mode that imposes one, and it is
+        // more than one slot from Capture.
+        expect(
+          modeChanges.where((m) => m.constrainsAspectRatio),
+          isEmpty,
+          reason: 'a single fling must not reach a shape-imposing mode',
+        );
+      });
+
+      testWidgets('a hard fling backward does not jump to the first mode', (
+        tester,
+      ) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              return null;
+            });
+        addTearDown(() {
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null);
+        });
+
+        await pumpSelector(tester, mode: VideoRecorderMode.values.last);
+
+        await tester.fling(find.byType(ListView), const Offset(600, 0), 6000);
+        await tester.pumpAndSettle();
+
+        expect(modeChanges, isNot(contains(VideoRecorderMode.values.first)));
+      });
+
+      testWidgets('tapping a distant mode still selects it directly', (
+        tester,
+      ) async {
+        // The fling bound must not restrict tap-to-select, which does not go
+        // through the snap path.
+        await pumpSelector(tester, mode: VideoRecorderMode.values.first);
+
+        await tester.tap(find.text(VideoRecorderMode.values.last.label));
+        await tester.pumpAndSettle();
+
+        expect(modeChanges, contains(VideoRecorderMode.values.last));
+      });
+
       testWidgets('uses ShaderMask for fade-out edges', (tester) async {
         await pumpSelector(tester);
 
