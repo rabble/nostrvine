@@ -913,6 +913,7 @@ void main() {
       await pumpEventQueue();
 
       expect(cubit.state.videos.map((v) => v.id), ['b']);
+      expect((await readSnapshot())?.videos.map((v) => v.id), ['b']);
     });
 
     test(

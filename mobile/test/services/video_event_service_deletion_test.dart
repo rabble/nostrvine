@@ -103,6 +103,15 @@ void main() {
       await sub.cancel();
     });
 
+    test('notifies listeners when the video was not in any active feed', () {
+      var notifyCount = 0;
+      service.addListener(() => notifyCount++);
+
+      service.removeVideoCompletely('phantom');
+
+      expect(notifyCount, 1);
+    });
+
     test('emits one event per call, in dispatch order', () async {
       final emitted = <String>[];
       final sub = service.removedVideoIds.listen(emitted.add);
