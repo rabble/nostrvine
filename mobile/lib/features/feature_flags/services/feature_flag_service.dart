@@ -34,21 +34,20 @@ class FeatureFlagService extends ChangeNotifier {
   }
 
   /// Initialize the service by loading persisted flag values
+  ///
+  /// A persisted override for an internal flag is ignored, not deleted, while
+  /// internal access is off — so the user's choice is honoured again if the
+  /// flag is later promoted back to [FeatureFlagAudience.user] or internal
+  /// access is restored.
   Future<void> initialize() async {
     final flags = <FeatureFlag, bool>{};
 
     for (final flag in FeatureFlag.values) {
-      final key = _getPreferenceKey(flag);
-      final savedValue = _prefs.getBool(key);
+      final savedValue = _prefs.getBool(_getPreferenceKey(flag));
 
-      if (_canUsePersistedOverride(flag, savedValue)) {
-        flags[flag] = savedValue!;
-      } else {
-        if (savedValue != null) {
-          await _removeInternalOverride(key, flag);
-        }
-        flags[flag] = _buildConfig.getDefault(flag);
-      }
+      flags[flag] = _canUsePersistedOverride(flag, savedValue)
+          ? savedValue!
+          : _buildConfig.getDefault(flag);
     }
 
     _currentState = FeatureFlagState(flags);
@@ -61,11 +60,11 @@ class FeatureFlagService extends ChangeNotifier {
   }
 
   /// Set a feature flag value and persist it
+  ///
+  /// Internal flags are read-only without internal access: the flag resolves
+  /// back to its build default and nothing is written or removed.
   Future<void> setFlag(FeatureFlag flag, bool value) async {
-    final key = _getPreferenceKey(flag);
-
     if (!_canOverrideFlag(flag)) {
-      await _removeInternalOverride(key, flag);
       _currentState = _currentState.copyWith(
         flag,
         _buildConfig.getDefault(flag),
@@ -73,6 +72,8 @@ class FeatureFlagService extends ChangeNotifier {
       notifyListeners();
       return;
     }
+
+    final key = _getPreferenceKey(flag);
 
     try {
       await _prefs.setBool(key, value);
@@ -140,6 +141,9 @@ class FeatureFlagService extends ChangeNotifier {
   }
 
   /// Check if a flag has a user override (is different from build default)
+  ///
+  /// Always false for an internal flag without internal access: any persisted
+  /// value is retained on disk but not applied.
   bool hasUserOverride(FeatureFlag flag) {
     if (!_canOverrideFlag(flag)) return false;
 
@@ -172,19 +176,5 @@ class FeatureFlagService extends ChangeNotifier {
 
   bool _canOverrideFlag(FeatureFlag flag) {
     return !flag.isInternal || _canOverrideInternalFlags();
-  }
-
-  Future<void> _removeInternalOverride(String key, FeatureFlag flag) async {
-    if (!flag.isInternal) return;
-
-    try {
-      await _prefs.remove(key);
-    } catch (e) {
-      Log.warning(
-        'Failed to remove internal feature flag override $flag: $e',
-        name: 'FeatureFlagService',
-        category: LogCategory.system,
-      );
-    }
   }
 }

@@ -64,7 +64,7 @@ void main() {
       });
 
       test(
-        'drops persisted internal flag overrides when internal access is off',
+        'ignores persisted internal flag overrides when internal access is off',
         () async {
           when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
           when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
@@ -73,7 +73,9 @@ void main() {
 
           expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
           expect(service.hasUserOverride(FeatureFlag.lightMode), isFalse);
-          verify(() => mockPrefs.remove('ff_lightMode')).called(1);
+          // Ignored, not deleted — the choice is honoured again if the flag is
+          // promoted back to a user audience or internal access is restored.
+          verifyNever(() => mockPrefs.remove('ff_lightMode'));
         },
       );
 
@@ -131,7 +133,7 @@ void main() {
           await service.setFlag(FeatureFlag.lightMode, true);
 
           verifyNever(() => mockPrefs.setBool('ff_lightMode', true));
-          verify(() => mockPrefs.remove('ff_lightMode')).called(1);
+          verifyNever(() => mockPrefs.remove('ff_lightMode'));
           expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
         },
       );
