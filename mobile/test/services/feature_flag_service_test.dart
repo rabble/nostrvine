@@ -62,6 +62,60 @@ void main() {
 
         expect(service.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
       });
+
+      test(
+        'drops persisted internal flag overrides when internal access is off',
+        () async {
+          when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
+          when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
+
+          await service.initialize();
+
+          expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
+          expect(service.hasUserOverride(FeatureFlag.lightMode), isFalse);
+          verify(() => mockPrefs.remove('ff_lightMode')).called(1);
+        },
+      );
+
+      test(
+        'preserves internal flag overrides when internal access is on',
+        () async {
+          service = FeatureFlagService(
+            mockPrefs,
+            const BuildConfiguration(),
+            canOverrideInternalFlags: () => true,
+          );
+          when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
+          when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
+
+          await service.initialize();
+
+          expect(service.isEnabled(FeatureFlag.lightMode), isTrue);
+          expect(service.hasUserOverride(FeatureFlag.lightMode), isTrue);
+          verifyNever(() => mockPrefs.remove('ff_lightMode'));
+        },
+      );
+
+      test(
+        'keeps user-facing flag overrides when internal access is off',
+        () async {
+          when(
+            () => mockPrefs.getBool('ff_enhancedAnalytics'),
+          ).thenReturn(true);
+          when(
+            () => mockPrefs.containsKey('ff_enhancedAnalytics'),
+          ).thenReturn(true);
+
+          await service.initialize();
+
+          expect(service.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
+          expect(
+            service.hasUserOverride(FeatureFlag.enhancedAnalytics),
+            isTrue,
+          );
+          verifyNever(() => mockPrefs.remove('ff_enhancedAnalytics'));
+        },
+      );
     });
 
     group('flag management', () {
@@ -70,6 +124,33 @@ void main() {
 
         verify(() => mockPrefs.setBool('ff_enhancedAnalytics', true)).called(1);
       });
+
+      test(
+        'should not persist internal flags when internal access is off',
+        () async {
+          await service.setFlag(FeatureFlag.lightMode, true);
+
+          verifyNever(() => mockPrefs.setBool('ff_lightMode', true));
+          verify(() => mockPrefs.remove('ff_lightMode')).called(1);
+          expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
+        },
+      );
+
+      test(
+        'should persist internal flags when internal access is on',
+        () async {
+          service = FeatureFlagService(
+            mockPrefs,
+            const BuildConfiguration(),
+            canOverrideInternalFlags: () => true,
+          );
+
+          await service.setFlag(FeatureFlag.lightMode, true);
+
+          verify(() => mockPrefs.setBool('ff_lightMode', true)).called(1);
+          expect(service.isEnabled(FeatureFlag.lightMode), isTrue);
+        },
+      );
 
       test('should notify listeners on flag change', () async {
         // SKIP: Service refactored to use Riverpod instead of ChangeNotifier
@@ -128,10 +209,7 @@ void main() {
         ).thenReturn(true);
 
         expect(service.hasUserOverride(FeatureFlag.enhancedAnalytics), isTrue);
-        expect(
-          service.hasUserOverride(FeatureFlag.accountSwitching),
-          isFalse,
-        );
+        expect(service.hasUserOverride(FeatureFlag.accountSwitching), isFalse);
       });
 
       test('should provide flag metadata', () {

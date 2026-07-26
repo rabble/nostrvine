@@ -9,6 +9,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,9 +35,12 @@ void main() {
       }
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({bool isDeveloperMode = false}) {
       return ProviderScope(
-        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(mockPrefs),
+          isDeveloperModeEnabledProvider.overrideWithValue(isDeveloperMode),
+        ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -67,6 +71,50 @@ void main() {
 
       final listViewWidth = tester.getSize(find.byType(ListView).first).width;
       expect(listViewWidth, moreOrLessEquals(600));
+    });
+
+    testWidgets('hides internal flags when developer mode is off', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildSubject());
+      await initializeFeatureFlags(tester);
+
+      expect(
+        find.text(FeatureFlag.enhancedAnalytics.displayName),
+        findsOneWidget,
+      );
+      expect(find.text(FeatureFlag.lightMode.displayName), findsNothing);
+      expect(
+        find.text(FeatureFlag.publishDmRelayList.displayName),
+        findsNothing,
+      );
+    });
+
+    testWidgets('shows internal flags when developer mode is on', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildSubject(isDeveloperMode: true));
+      await initializeFeatureFlags(tester);
+
+      expect(
+        find.text(FeatureFlag.enhancedAnalytics.displayName),
+        findsOneWidget,
+      );
+      expect(find.text(FeatureFlag.lightMode.displayName), findsOneWidget);
+      expect(
+        find.text(FeatureFlag.publishDmRelayList.displayName),
+        findsOneWidget,
+      );
     });
 
     testWidgets('should display all flags', (tester) async {

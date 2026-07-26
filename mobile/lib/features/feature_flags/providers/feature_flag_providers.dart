@@ -4,6 +4,7 @@
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -20,8 +21,13 @@ BuildConfiguration buildConfiguration(Ref ref) {
 FeatureFlagService featureFlagService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final buildConfig = ref.watch(buildConfigurationProvider);
+  final canOverrideInternalFlags = ref.watch(isDeveloperModeEnabledProvider);
 
-  final service = FeatureFlagService(prefs, buildConfig);
+  final service = FeatureFlagService(
+    prefs,
+    buildConfig,
+    canOverrideInternalFlags: () => canOverrideInternalFlags,
+  );
   // Load persisted overrides from SharedPreferences
   service.initialize();
   return service;

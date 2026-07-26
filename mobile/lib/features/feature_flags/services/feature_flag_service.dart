@@ -9,13 +9,20 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Service managing feature flag state with change notifications for Riverpod reactivity
 class FeatureFlagService extends ChangeNotifier {
-  FeatureFlagService(this._prefs, this._buildConfig) {
+  FeatureFlagService(
+    this._prefs,
+    this._buildConfig, {
+    bool Function()? canOverrideInternalFlags,
+  }) : _canOverrideInternalFlags = canOverrideInternalFlags ?? _denyInternal {
     _initializeWithDefaults();
   }
 
   final SharedPreferences _prefs;
   final BuildConfiguration _buildConfig;
+  final bool Function() _canOverrideInternalFlags;
   late FeatureFlagState _currentState;
+
+  static bool _denyInternal() => false;
 
   /// Initialize with build defaults (called in constructor)
   void _initializeWithDefaults() {
@@ -34,9 +41,12 @@ class FeatureFlagService extends ChangeNotifier {
       final key = _getPreferenceKey(flag);
       final savedValue = _prefs.getBool(key);
 
-      if (savedValue != null) {
-        flags[flag] = savedValue;
+      if (_canUsePersistedOverride(flag, savedValue)) {
+        flags[flag] = savedValue!;
       } else {
+        if (savedValue != null) {
+          await _removeInternalOverride(key, flag);
+        }
         flags[flag] = _buildConfig.getDefault(flag);
       }
     }
@@ -53,6 +63,16 @@ class FeatureFlagService extends ChangeNotifier {
   /// Set a feature flag value and persist it
   Future<void> setFlag(FeatureFlag flag, bool value) async {
     final key = _getPreferenceKey(flag);
+
+    if (!_canOverrideFlag(flag)) {
+      await _removeInternalOverride(key, flag);
+      _currentState = _currentState.copyWith(
+        flag,
+        _buildConfig.getDefault(flag),
+      );
+      notifyListeners();
+      return;
+    }
 
     try {
       await _prefs.setBool(key, value);
@@ -121,6 +141,8 @@ class FeatureFlagService extends ChangeNotifier {
 
   /// Check if a flag has a user override (is different from build default)
   bool hasUserOverride(FeatureFlag flag) {
+    if (!_canOverrideFlag(flag)) return false;
+
     final key = _getPreferenceKey(flag);
     return _prefs.containsKey(key);
   }
@@ -141,5 +163,28 @@ class FeatureFlagService extends ChangeNotifier {
   /// Generate preference key for a flag
   String _getPreferenceKey(FeatureFlag flag) {
     return 'ff_${flag.name}';
+  }
+
+  bool _canUsePersistedOverride(FeatureFlag flag, bool? savedValue) {
+    if (savedValue == null) return false;
+    return _canOverrideFlag(flag);
+  }
+
+  bool _canOverrideFlag(FeatureFlag flag) {
+    return !flag.isInternal || _canOverrideInternalFlags();
+  }
+
+  Future<void> _removeInternalOverride(String key, FeatureFlag flag) async {
+    if (!flag.isInternal) return;
+
+    try {
+      await _prefs.remove(key);
+    } catch (e) {
+      Log.warning(
+        'Failed to remove internal feature flag override $flag: $e',
+        name: 'FeatureFlagService',
+        category: LogCategory.system,
+      );
+    }
   }
 }
