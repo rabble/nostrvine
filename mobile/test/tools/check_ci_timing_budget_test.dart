@@ -17,12 +17,15 @@ import 'package:path/path.dart' as p;
 void main() {
   group('check_ci_timing_budget.py', () {
     late Directory sandbox;
+    late String repoRoot;
     late String scriptPath;
 
     setUp(() {
       sandbox = Directory.systemTemp.createTempSync('ci_timing_budget_');
+      repoRoot = repositoryRoot();
       scriptPath = p.join(
-        Directory.current.path,
+        repoRoot,
+        'mobile',
         'scripts',
         'ci',
         'check_ci_timing_budget.py',
@@ -229,11 +232,7 @@ void main() {
       'the committed budget file is well formed and covers the gate jobs',
       () {
         final committed = File(
-          p.join(
-            Directory.current.parent.path,
-            '.github',
-            'ci-timing-budgets.json',
-          ),
+          p.join(repoRoot, '.github', 'ci-timing-budgets.json'),
         );
         expect(committed.existsSync(), isTrue);
 
@@ -273,11 +272,7 @@ void main() {
       // exactly — but silently drops every shard out of enforcement at run
       // time, so the well-formedness test above cannot see it.
       final committed = File(
-        p.join(
-          Directory.current.parent.path,
-          '.github',
-          'ci-timing-budgets.json',
-        ),
+        p.join(repoRoot, '.github', 'ci-timing-budgets.json'),
       ).readAsStringSync();
 
       final result = Process.runSync('python3', [
@@ -296,12 +291,7 @@ void main() {
 
     test('budget file edits require app CI', () {
       final workflow = File(
-        p.join(
-          Directory.current.parent.path,
-          '.github',
-          'workflows',
-          'mobile_ci.yaml',
-        ),
+        p.join(repoRoot, '.github', 'workflows', 'mobile_ci.yaml'),
       ).readAsStringSync();
 
       expect(workflow, contains('.github/ci-timing-budgets.json)'));
@@ -309,10 +299,19 @@ void main() {
   });
 }
 
+String repositoryRoot() {
+  final result = Process.runSync('git', [
+    'rev-parse',
+    '--show-toplevel',
+  ], workingDirectory: Directory.current.path);
+  expect(result.exitCode, 0, reason: '${result.stdout}${result.stderr}');
+  return (result.stdout as String).trim();
+}
+
 List<String> mobileCiGateJobNames() {
   final workflow = File(
     p.join(
-      Directory.current.parent.path,
+      repositoryRoot(),
       '.github',
       'workflows',
       'mobile_ci.yaml',
