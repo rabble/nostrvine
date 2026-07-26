@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -140,6 +141,45 @@ void main() {
       expect(newEnabled, isTrue);
 
       container.dispose();
+    });
+
+    test('gates internal flag overrides on developer mode', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        'ff_lightMode': true,
+        'ff_enhancedAnalytics': true,
+      });
+      final prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+
+      final environment = container.read(environmentServiceProvider);
+      await environment.initialize(sharedPreferences: prefs);
+
+      final service = container.read(featureFlagServiceProvider);
+      await service.initialize();
+
+      expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
+      expect(service.isEnabled(FeatureFlag.enhancedAnalytics), isTrue);
+      expect(prefs.getBool('ff_lightMode'), isTrue);
+
+      await environment.enableDeveloperMode();
+      await pumpEventQueue();
+
+      expect(
+        identical(container.read(featureFlagServiceProvider), service),
+        isTrue,
+        reason: 'a new instance would strand every ref.read capture',
+      );
+      expect(service.isEnabled(FeatureFlag.lightMode), isTrue);
+
+      await environment.disableDeveloperMode();
+      await pumpEventQueue();
+
+      expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
+      expect(prefs.getBool('ff_lightMode'), isTrue);
     });
   });
 }

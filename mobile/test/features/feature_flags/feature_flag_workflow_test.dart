@@ -309,9 +309,14 @@ void main() {
       await tester.tap(resetButton);
       await tester.pumpAndSettle();
 
-      // Verify all flags were reset
+      // Verify visible/user-facing flags were reset without deleting hidden
+      // internal overrides.
       for (final flag in FeatureFlag.values) {
-        verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
+        if (flag.isInternal) {
+          verifyNever(() => mockPrefs.remove('ff_${flag.name}'));
+        } else {
+          verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
+        }
       }
 
       // Simulate SharedPreferences after reset

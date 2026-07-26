@@ -906,7 +906,11 @@ void main() {
           'ff_communityContentWarnings': true,
         });
         final prefs = await SharedPreferences.getInstance();
-        final flags = FeatureFlagService(prefs, const BuildConfiguration());
+        final flags = FeatureFlagService(
+          prefs,
+          const BuildConfiguration(),
+          canOverrideInternalFlags: () => true,
+        );
         await flags.initialize();
         addTearDown(flags.dispose);
 
@@ -969,7 +973,11 @@ void main() {
           'ff_communityContentWarnings': false,
         });
         final prefs = await SharedPreferences.getInstance();
-        final flags = FeatureFlagService(prefs, const BuildConfiguration());
+        final flags = FeatureFlagService(
+          prefs,
+          const BuildConfiguration(),
+          canOverrideInternalFlags: () => true,
+        );
         await flags.initialize();
         addTearDown(flags.dispose);
 

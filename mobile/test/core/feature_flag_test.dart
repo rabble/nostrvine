@@ -47,5 +47,32 @@ void main() {
         );
       }
     });
+
+    test('should classify staged rollout flags as internal', () {
+      expect(FeatureFlag.lightMode.audience, FeatureFlagAudience.internal);
+      expect(
+        FeatureFlag.adaptiveMediaChrome.audience,
+        FeatureFlagAudience.internal,
+      );
+      expect(
+        FeatureFlag.publishDmRelayList.audience,
+        FeatureFlagAudience.internal,
+      );
+      expect(
+        FeatureFlag.communityContentWarnings.audience,
+        FeatureFlagAudience.internal,
+      );
+      expect(
+        FeatureFlag.emailVerificationPinFallback.audience,
+        FeatureFlagAudience.internal,
+      );
+    });
+
+    test('should leave user-facing flags visible to users', () {
+      expect(FeatureFlag.curatedLists.audience, FeatureFlagAudience.user);
+      expect(FeatureFlag.blueskyPublishing.audience, FeatureFlagAudience.user);
+      expect(FeatureFlag.videoReplies.audience, FeatureFlagAudience.user);
+      expect(FeatureFlag.feedTuning.audience, FeatureFlagAudience.user);
+    });
   });
 }
