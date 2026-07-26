@@ -4,6 +4,31 @@ The app test suite is large enough that fixed startup costs and hidden waits
 matter. Use `scripts/test_timing_baseline.sh` before and after test-speed
 changes so improvements are measured instead of guessed.
 
+## Running the suite locally
+
+Use `mise run test` from `mobile/` for a full local run. It wraps the same
+`very_good test --optimization --concurrency=4` command Mobile CI uses, so a
+local pass means the same thing a CI pass does.
+
+Plain `flutter test` compiles and spins a fresh isolate **per file**; the
+optimizer bundles the untagged files into one. Measured head-to-head on an
+identical subset (31 files / 277 tests, selected round-robin so it spans
+directories, same machine, back to back):
+
+| Command | Wall | Tests |
+|---|---:|---:|
+| `flutter test --concurrency=4` | 60s | 277 |
+| `very_good test --optimization --concurrency=4` | 17s | 277 |
+
+About 1.4s per file of isolate and compile overhead that the optimizer
+amortises away. Keep using `flutter test <path>` while iterating on one
+file — the optimizer has no subset flag, so it is all-or-nothing.
+
+Note the optimized full suite can expose pre-existing seed- and load-sensitive
+failures on a developer machine; #6372 tracks that cleanup. If a red run is not
+obviously tied to your diff, capture the failing seed and rerun once before
+root-causing against the merged-isolate state below.
+
 ## Baseline Commands
 
 Run from `mobile/`:

@@ -88,3 +88,38 @@ run = "bash ../local_stack/emulator.sh --headless"
 [tasks.emulator_wipe]
 description = "Launch Android emulator with -wipe-data (nuclear option for storage issues)"
 run = "bash ../local_stack/emulator.sh --wipe"
+
+[tasks.test]
+description = "Run the full app test suite the way CI does (merged-isolate optimizer)"
+run = """
+set -eu
+# Plain `flutter test` compiles and spins a fresh isolate per file; the VGV
+# optimizer bundles the untagged files into one. Measured on an identical
+# 31-file / 277-test subset: 60s plain vs 17s optimized.
+VERY_GOOD_CLI_VERSION=1.3.0
+PUB_CACHE_BIN="${PUB_CACHE:-$HOME/.pub-cache}/bin"
+VERY_GOOD_BIN=""
+if command -v very_good >/dev/null 2>&1; then
+  VERY_GOOD_BIN="$(command -v very_good)"
+elif [ -x "$PUB_CACHE_BIN/very_good" ]; then
+  VERY_GOOD_BIN="$PUB_CACHE_BIN/very_good"
+fi
+
+VERY_GOOD_CURRENT_VERSION=""
+if [ -n "$VERY_GOOD_BIN" ]; then
+  VERY_GOOD_CURRENT_VERSION="$("$VERY_GOOD_BIN" --version | awk 'NR == 1 { print $1 }')"
+fi
+
+if [ "$VERY_GOOD_CURRENT_VERSION" != "$VERY_GOOD_CLI_VERSION" ]; then
+  echo "Installing very_good_cli $VERY_GOOD_CLI_VERSION (pinned to match Mobile CI)..."
+  dart pub global activate very_good_cli "$VERY_GOOD_CLI_VERSION"
+  VERY_GOOD_BIN="$PUB_CACHE_BIN/very_good"
+fi
+
+flutter pub get
+PATH="$PUB_CACHE_BIN:$PATH" "$VERY_GOOD_BIN" test \
+  --optimization \
+  --concurrency=4 \
+  --exclude-tags integration \
+  --test-randomize-ordering-seed random
+"""
