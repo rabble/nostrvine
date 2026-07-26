@@ -42,10 +42,27 @@ class BlueskySettingsScreen extends ConsumerWidget {
     }
 
     final apiClient = ref.watch(crosspostApiClientProvider);
+    final profileRepository = ref.watch(profileRepositoryProvider);
+    if (profileRepository == null) {
+      return Scaffold(
+        appBar: DiVineAppBar(
+          title: context.l10n.settingsBlueskyPublishing,
+          showBackButton: true,
+          onBackPressed: context.pop,
+        ),
+        backgroundColor: VineTheme.backgroundColor,
+        body: const Center(
+          child: CircularProgressIndicator(color: VineTheme.vineGreen),
+        ),
+      );
+    }
 
     return BlocProvider(
-      create: (_) =>
-          CrosspostSettingsCubit(apiClient: apiClient, pubkey: pubkey),
+      create: (_) => CrosspostSettingsCubit(
+        apiClient: apiClient,
+        profileRepository: profileRepository,
+        pubkey: pubkey,
+      ),
       child: const _BlueskySettingsView(),
     );
   }
@@ -79,7 +96,11 @@ class _BlueskySettingsView extends StatelessWidget {
               return ListView(
                 children: [
                   const SizedBox(height: 16),
-                  if (!state.usernameClaimed) const _UsernameRequiredNotice(),
+                  if (state.usernameClaimStatus ==
+                      UsernameClaimStatus.notClaimed)
+                    const _UsernameRequiredNotice(),
+                  if (state.usernameClaimStatus == UsernameClaimStatus.unknown)
+                    const _UsernameLookupUnavailableNotice(),
                   _CrosspostToggle(state: state),
                   if (state.handle != null) _HandleInfo(handle: state.handle!),
                   _ProvisioningStatus(state: state),
@@ -119,6 +140,13 @@ class _BlueskySettingsView extends StatelessWidget {
             backgroundColor: VineTheme.error,
           ),
         );
+      case CrosspostSettingsError.usernameNotSynced:
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.blueskyUsernameSyncPending),
+            backgroundColor: VineTheme.error,
+          ),
+        );
       case CrosspostSettingsError.generic:
       case null:
         messenger.showSnackBar(
@@ -128,6 +156,30 @@ class _BlueskySettingsView extends StatelessWidget {
           ),
         );
     }
+  }
+}
+
+class _UsernameLookupUnavailableNotice extends StatelessWidget {
+  const _UsernameLookupUnavailableNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const DivineIcon(
+        icon: DivineIconName.info,
+        color: VineTheme.accentOrange,
+      ),
+      title: Text(
+        context.l10n.blueskyStatusUnavailableRetry,
+        style: VineTheme.titleMediumFont(),
+      ),
+      trailing: DivineButton(
+        label: context.l10n.commonRetry,
+        onPressed: () => context.read<CrosspostSettingsCubit>().loadStatus(),
+        type: DivineButtonType.link,
+        size: DivineButtonSize.small,
+      ),
+    );
   }
 }
 

@@ -4197,6 +4197,8 @@
   "blueskyStatusNotLinked": "No Bluesky account linked",
   "blueskyUsernameRequired": "Set up a divine.video handle before publishing to Bluesky",
   "blueskyUsernameRequiredSubtitle": "Bluesky publishing needs a claimed username.divine.video handle.",
+  "blueskyUsernameSyncPending": "Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.",
+  "blueskyStatusUnavailableRetry": "We could not check your Divine handle. Try again.",
   "blueskySetUpHandle": "Set up",
   "blueskyTemporarilyUnavailable": "Bluesky publishing is temporarily unavailable. Please try again.",
   "invitesTitle": "Invite Friends",

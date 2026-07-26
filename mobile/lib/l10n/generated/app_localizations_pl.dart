@@ -7658,6 +7658,14 @@ class AppLocalizationsPl extends AppLocalizations {
       'Bluesky publishing needs a claimed username.divine.video handle.';
 
   @override
+  String get blueskyUsernameSyncPending =>
+      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+
+  @override
+  String get blueskyStatusUnavailableRetry =>
+      'We could not check your Divine handle. Try again.';
+
+  @override
   String get blueskySetUpHandle => 'Set up';
 
   @override

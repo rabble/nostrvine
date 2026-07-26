@@ -244,7 +244,7 @@ void main() {
         );
       });
 
-      for (final status in const [400, 404]) {
+      for (final status in const [400]) {
         test('maps $status to usernameNotClaimed', () async {
           when(
             () => httpClient.put(
@@ -266,6 +266,27 @@ void main() {
           );
         });
       }
+
+      test('maps 404 to generic because keycast has no user row', () async {
+        when(
+          () => httpClient.put(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('nope', 404));
+
+        await expectLater(
+          () => client.setCrosspost(pubkey: pubkey, enabled: true),
+          throwsA(
+            isA<CrosspostApiException>().having(
+              (e) => e.kind,
+              'kind',
+              CrosspostApiErrorKind.generic,
+            ),
+          ),
+        );
+      });
 
       test('maps 503 to unavailable', () async {
         when(

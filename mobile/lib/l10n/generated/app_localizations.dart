@@ -12972,6 +12972,18 @@ abstract class AppLocalizations {
   /// **'Bluesky publishing needs a claimed username.divine.video handle.'**
   String get blueskyUsernameRequiredSubtitle;
 
+  /// No description provided for @blueskyUsernameSyncPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.'**
+  String get blueskyUsernameSyncPending;
+
+  /// No description provided for @blueskyStatusUnavailableRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not check your Divine handle. Try again.'**
+  String get blueskyStatusUnavailableRetry;
+
   /// No description provided for @blueskySetUpHandle.
   ///
   /// In en, this message translates to:
