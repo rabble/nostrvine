@@ -2957,8 +2957,12 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 
         if (succeededCount > 0) {
           if (authService.isAuthenticated) {
-            // Show immediately — user is still in-app.
-            _showPublishSuccessSnackbar(succeededCount);
+            // Show immediately — user is still in-app. If the root navigator
+            // context is unavailable the snackbar would be silently dropped,
+            // so buffer it and replay once the context is ready.
+            if (!_showPublishSuccessSnackbar(succeededCount)) {
+              _pendingSuccessCount += succeededCount;
+            }
           } else {
             // Buffer for when auth is restored after re-auth redirect.
             _pendingSuccessCount += succeededCount;

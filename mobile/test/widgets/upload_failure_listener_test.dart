@@ -227,6 +227,45 @@ void main() {
     });
 
     testWidgets(
+      'buffers success shown while authenticated when root navigator is '
+      'unavailable, then replays it once the context appears',
+      (tester) async {
+        stubPublishBloc(const BackgroundPublishState());
+        when(() => authService.isAuthenticated).thenReturn(true);
+
+        await tester.pumpWidget(
+          _buildHarness(
+            publishBloc: publishBloc,
+            authService: authService,
+            wireRootNavigatorKey: false,
+          ),
+        );
+
+        // Success arrives while authenticated, but the root navigator
+        // context is unavailable — the snackbar cannot be shown yet.
+        publishStream.add(_succeededState('draft-authed-no-root'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+
+        // Root navigator context appears; the buffered success replays on
+        // the next state emission.
+        await tester.pumpWidget(
+          _buildHarness(publishBloc: publishBloc, authService: authService),
+        );
+        publishStream.add(const BackgroundPublishState());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'does not throw or show snackbar when root navigator is unavailable',
       (tester) async {
         stubPublishBloc(const BackgroundPublishState());
