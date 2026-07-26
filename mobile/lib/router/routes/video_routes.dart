@@ -130,7 +130,11 @@ List<RouteBase> videoRoutes() {
     GoRoute(
       path: VideoMetadataScreen.path,
       name: VideoMetadataScreen.routeName,
-      builder: (_, st) => const VideoMetadataScreen(),
+      builder: (_, st) => VideoMetadataScreen(
+        draftMode: VideoMetadataScreen.draftModeFromName(
+          st.uri.queryParameters[VideoMetadataScreen.draftModeQueryParameter],
+        ),
+      ),
     ),
     GoRoute(
       path: '${VideoMetadataEditScreen.path}/:videoId',
