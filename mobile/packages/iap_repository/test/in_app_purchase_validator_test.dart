@@ -33,7 +33,7 @@ PurchaseDetails _purchase(
 }
 
 /// A minimal fake [ProductDetails] for tests.
-ProductDetails _product(String id, {String price = '\$4.99'}) {
+ProductDetails _product(String id, {String price = r'$4.99'}) {
   return ProductDetails(
     id: id,
     title: 'Divine Supporter',
@@ -95,7 +95,7 @@ void main() {
         expect(tiers, hasLength(1));
         expect(tiers.single.productId, 'divine.supporter.monthly');
         expect(tiers.single.title, 'Divine Supporter');
-        expect(tiers.single.price, '\$4.99');
+        expect(tiers.single.price, r'$4.99');
         expect(tiers.single.currencyCode, 'USD');
       });
 
@@ -150,7 +150,8 @@ void main() {
       late StreamController<List<PurchaseDetails>> streamController;
 
       setUp(() {
-        // Broadcast so the validator's subscription and the test can both listen.
+        // Broadcast so the validator's subscription and the test can both
+        // listen.
         streamController = StreamController<List<PurchaseDetails>>.broadcast();
         when(store.isAvailable).thenAnswer((_) async => true);
         when(
@@ -173,7 +174,8 @@ void main() {
       tearDown(() => streamController.close());
 
       // Flushes pending microtasks so purchase() finishes its internal awaits
-      // (queryProductDetails + buyNonConsumable) before we inject a stream event.
+      // (queryProductDetails + buyNonConsumable) before we inject a stream
+      // event.
       Future<void> pumpMicrotasks({int iterations = 5}) async {
         for (var i = 0; i < iterations; i++) {
           await Future<void>.delayed(Duration.zero);
@@ -211,7 +213,6 @@ void main() {
         streamController.add([
           _purchase(
             'divine.supporter.monthly',
-            status: PurchaseStatus.purchased,
             pendingComplete: true,
           ),
         ]);
@@ -270,10 +271,7 @@ void main() {
           await pumpMicrotasks();
           // Then resolve with a purchased event.
           streamController.add([
-            _purchase(
-              'divine.supporter.monthly',
-              status: PurchaseStatus.purchased,
-            ),
+            _purchase('divine.supporter.monthly'),
           ]);
           final result = await future.timeout(const Duration(seconds: 1));
           expect(result, SupporterEntitlement.inactive);
@@ -335,10 +333,7 @@ void main() {
         final future = validator.purchase('divine.supporter.monthly');
         await pumpMicrotasks();
         streamController.add([
-          _purchase(
-            'divine.supporter.monthly',
-            status: PurchaseStatus.purchased,
-          ),
+          _purchase('divine.supporter.monthly'),
         ]);
         await future.timeout(const Duration(seconds: 1));
         expect(emitted, hasLength(1));

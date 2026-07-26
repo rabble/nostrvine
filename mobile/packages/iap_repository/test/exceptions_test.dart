@@ -1,4 +1,5 @@
-// ABOUTME: Tests for the EntitlementException hierarchy and StubEntitlementValidator.
+// ABOUTME: Tests for the EntitlementException hierarchy and
+// ABOUTME: StubEntitlementValidator.
 
 import 'dart:async';
 
