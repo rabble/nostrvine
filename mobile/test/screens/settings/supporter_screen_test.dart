@@ -28,6 +28,9 @@ class _FakeRepository extends Fake implements SupporterRepository {
   SupporterEntitlement get current => initial;
 
   @override
+  bool get hasServerClient => false;
+
+  @override
   Stream<SupporterEntitlement> get changes => _controller.stream;
 
   @override

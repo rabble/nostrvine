@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:iap_repository/iap_repository.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/supporter/supporter_state.dart';
+import 'package:openvine/services/supporter_api_client.dart';
 import 'package:openvine/services/supporter_repository.dart';
 
 typedef SupporterAnalyticsSink = void Function(String event);
@@ -59,6 +60,7 @@ class SupporterCubit extends Cubit<SupporterState> {
       ),
     );
     loadTiers();
+    if (_repository.hasServerClient) unawaited(_refreshFromServer());
   }
 
   /// Fetch the available supporter tiers from the store.
@@ -149,6 +151,34 @@ class SupporterCubit extends Cubit<SupporterState> {
         failure: SupporterFailure.fromMessage(error.message),
       ),
     );
+  }
+
+  Future<void> _refreshFromServer() async {
+    try {
+      final snapshot = await _repository.refreshFromServer();
+      if (isClosed) return;
+      _emit(
+        state.copyWith(
+          entitlement: snapshot.entitlement,
+          status: snapshot.entitlement.isSupporter
+              ? SupporterStatus.active
+              : SupporterStatus.idle,
+          clearFailure: true,
+        ),
+      );
+    } on SupporterApiException catch (error) {
+      if (isClosed) return;
+      final failure = switch (error.kind) {
+        SupporterApiFailureKind.ownershipConflict =>
+          SupporterFailure.ownershipConflict,
+        SupporterApiFailureKind.unavailable =>
+          SupporterFailure.verificationUnavailable,
+        _ => SupporterFailure.unknown,
+      };
+      _emit(
+        state.copyWith(status: SupporterStatus.error, failure: failure),
+      );
+    }
   }
 
   @override

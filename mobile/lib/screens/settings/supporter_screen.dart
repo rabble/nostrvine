@@ -274,6 +274,10 @@ class _FailureBanner extends StatelessWidget {
         return 'Your purchase is pending approval.';
       case SupporterFailure.restoreFailed:
         return 'No supporter subscription was found to restore.';
+      case SupporterFailure.ownershipConflict:
+        return 'This purchase belongs to another Divine account.';
+      case SupporterFailure.verificationUnavailable:
+        return 'Divine could not confirm supporter status right now.';
       case SupporterFailure.unknown:
         return 'Something went wrong. Please try again.';
     }

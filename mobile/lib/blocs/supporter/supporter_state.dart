@@ -22,6 +22,8 @@ enum SupporterFailure {
   purchaseFailed,
   purchasePending,
   restoreFailed,
+  ownershipConflict,
+  verificationUnavailable,
   unknown;
 
   static SupporterFailure fromMessage(String message) {

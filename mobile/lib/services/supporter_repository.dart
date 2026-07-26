@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:iap_repository/iap_repository.dart';
 import 'package:models/models.dart';
+import 'package:openvine/services/supporter_api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persists and surfaces the current [SupporterEntitlement].
@@ -27,7 +28,9 @@ class SupporterRepository {
     required String pubkey,
     required EntitlementValidator validator,
     required SharedPreferences prefs,
-  }) : _validator = validator,
+    SupporterApiClient? apiClient,
+  }) : _apiClient = apiClient,
+       _validator = validator,
        _prefs = prefs,
        _cacheKey = '$_cacheKeyPrefix$pubkey' {
     if (pubkey.isEmpty) {
@@ -41,6 +44,7 @@ class SupporterRepository {
   }
 
   final EntitlementValidator _validator;
+  final SupporterApiClient? _apiClient;
   final SharedPreferences _prefs;
 
   static const String _cacheKeyPrefix = 'divine_supporter_entitlement:';
@@ -65,6 +69,61 @@ class SupporterRepository {
   /// The underlying validator, exposed so the UI/cubit can drive purchases and
   /// restores through the same store connection this repository owns.
   EntitlementValidator get validator => _validator;
+
+  /// Whether canonical Worker requests are configured for this build.
+  bool get hasServerClient => _apiClient != null;
+
+  /// Refreshes the account from canonical Worker state when configured.
+  Future<SupporterAccountSnapshot> refreshFromServer() async {
+    final client = _apiClient;
+    if (client == null) {
+      throw const SupporterApiException(
+        SupporterApiFailureKind.unavailable,
+        'Supporter verification is not configured.',
+      );
+    }
+    final snapshot = await client.fetchMe();
+    _handleChange(snapshot.entitlement);
+    return snapshot;
+  }
+
+  /// Claims a verified store proof for this repository's signed-in account.
+  Future<SupporterAccountSnapshot> claimPurchase(
+    SupporterPurchaseClaim claim,
+  ) async {
+    final client = _apiClient;
+    if (client == null) {
+      throw const SupporterApiException(
+        SupporterApiFailureKind.unavailable,
+        'Supporter verification is not configured.',
+      );
+    }
+    final snapshot = await client.claimPurchase(claim);
+    _handleChange(snapshot.entitlement);
+    return snapshot;
+  }
+
+  /// Updates recognition preferences without mutating payment state.
+  Future<SupporterAccountSnapshot> updateRecognition({
+    required bool haloVisible,
+    required bool discoveryVisible,
+    required bool foundingHistoryVisible,
+  }) async {
+    final client = _apiClient;
+    if (client == null) {
+      throw const SupporterApiException(
+        SupporterApiFailureKind.unavailable,
+        'Supporter verification is not configured.',
+      );
+    }
+    final snapshot = await client.updateRecognition(
+      haloVisible: haloVisible,
+      discoveryVisible: discoveryVisible,
+      foundingHistoryVisible: foundingHistoryVisible,
+    );
+    _handleChange(snapshot.entitlement);
+    return snapshot;
+  }
 
   SupporterEntitlement _loadCached() {
     final raw = _prefs.getString(_cacheKey);

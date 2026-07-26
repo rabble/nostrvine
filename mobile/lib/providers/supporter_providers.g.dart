@@ -8,6 +8,59 @@ part of 'supporter_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// The NIP-98 authenticated supporter Worker client, when configured.
+
+@ProviderFor(supporterApiClient)
+final supporterApiClientProvider = SupporterApiClientProvider._();
+
+/// The NIP-98 authenticated supporter Worker client, when configured.
+
+final class SupporterApiClientProvider
+    extends
+        $FunctionalProvider<
+          SupporterApiClient?,
+          SupporterApiClient?,
+          SupporterApiClient?
+        >
+    with $Provider<SupporterApiClient?> {
+  /// The NIP-98 authenticated supporter Worker client, when configured.
+  SupporterApiClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'supporterApiClientProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$supporterApiClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<SupporterApiClient?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SupporterApiClient? create(Ref ref) {
+    return supporterApiClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SupporterApiClient? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SupporterApiClient?>(value),
+    );
+  }
+}
+
+String _$supporterApiClientHash() =>
+    r'd57bf39319ce0f97bd63fcd9e2706a26deb2c8e0';
+
 /// The store-backed [EntitlementValidator] for the current platform.
 ///
 /// Returns an [InAppPurchaseValidator] on iOS/Android and a
@@ -124,4 +177,4 @@ final class SupporterRepositoryProvider
 }
 
 String _$supporterRepositoryHash() =>
-    r'b8c8d677541eade01937f416ea7c558cf6147700';
+    r'5064f725ec5fa201ef693a5eee13a95602360834';

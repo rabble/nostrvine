@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:iap_repository/iap_repository.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/supporter_api_client.dart';
 import 'package:openvine/services/supporter_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -19,6 +20,35 @@ bool get hasInAppPurchaseStore =>
     defaultTargetPlatform != TargetPlatform.linux &&
     defaultTargetPlatform != TargetPlatform.windows &&
     defaultTargetPlatform != TargetPlatform.macOS;
+
+/// Optional Worker URL supplied by the build once divine-supporters exists.
+///
+/// Keeping this empty by default prevents the flag-gated client foundation
+/// from sending requests to an invented or undeployed endpoint.
+const supporterApiBaseUrl = String.fromEnvironment(
+  'SUPPORTERS_API_BASE_URL',
+);
+
+/// The NIP-98 authenticated supporter Worker client, when configured.
+@riverpod
+SupporterApiClient? supporterApiClient(Ref ref) {
+  if (supporterApiBaseUrl.isEmpty) return null;
+
+  final authService = ref.watch(nip98AuthServiceProvider);
+  final client = SupporterApiClient(
+    baseUri: Uri.parse(supporterApiBaseUrl),
+    authHeaderProvider: ({required url, required method, payload}) async {
+      final token = await authService.createAuthToken(
+        url: url,
+        method: method,
+        payload: payload,
+      );
+      return token?.authorizationHeader;
+    },
+  );
+  ref.onDispose(client.dispose);
+  return client;
+}
 
 /// The store-backed [EntitlementValidator] for the current platform.
 ///
@@ -43,6 +73,7 @@ SupporterRepository supporterRepository(Ref ref) {
   final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
   final repository = SupporterRepository(
     pubkey: pubkey ?? 'unauthenticated',
+    apiClient: ref.watch(supporterApiClientProvider),
     validator: ref.watch(entitlementValidatorProvider),
     prefs: ref.watch(sharedPreferencesProvider),
   );
