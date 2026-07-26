@@ -229,6 +229,87 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
   return changed ? result : audioTracks;
 }
 
+/// Total wall-clock duration [clips] occupy on the timeline.
+Duration compositionDuration(List<DivineVideoClip> clips) =>
+    clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
+
+/// Granularity an audio window survives a history/draft round-trip at.
+///
+/// [AudioEvent] serializes its window in whole milliseconds while a stop-motion
+/// composition is microsecond-accurate (a 1/24s hold is 41667µs), so a window
+/// restored from history sits up to a millisecond short of the composition end
+/// it was clamped to. Comparisons against the composition end carry that slack.
+const _audioWindowResolution = Duration(milliseconds: 1);
+
+/// Stretches audio windows that ran to the end of the composition so they keep
+/// covering it after an edit made the composition longer.
+///
+/// A sound is added with its window clamped to the composition end (see
+/// `_openMusicLibrary`). Growing the composition afterwards used to leave that
+/// window frozen at the old, shorter end — a stop-motion hold change that
+/// stretches nine stills from 0.375s to 6.375s published a 6.375s video muxed
+/// with a 0.375s audio track (#6401).
+///
+/// Only tracks that reached [previousDuration] follow the new end; a window the
+/// user deliberately trimmed shorter keeps its length. The new end is bounded
+/// by the audio the track still has left after its [AudioEvent.startOffset] and
+/// by [maxDuration], matching the ceiling the track would have been given had
+/// the sound been added at the new composition length. Windows are never
+/// shortened here — a composition that shrank is clamped for display by the
+/// timeline and for output by the render.
+///
+/// Returns the original list instance when nothing moved.
+List<AudioEvent> growAudioToCompositionEnd(
+  List<AudioEvent> audioTracks, {
+  required Duration previousDuration,
+  required Duration duration,
+  required Duration maxDuration,
+}) {
+  if (audioTracks.isEmpty || duration <= previousDuration) return audioTracks;
+
+  final ceiling = duration < maxDuration ? duration : maxDuration;
+  var changed = false;
+  final result = <AudioEvent>[];
+  for (final track in audioTracks) {
+    final endTime = track.endTime;
+    // No window: the track already plays to its own end, and the render clamps
+    // that to the video.
+    if (endTime == null ||
+        endTime + _audioWindowResolution < previousDuration) {
+      result.add(track);
+      continue;
+    }
+
+    final sourceEnd = _audioSourceEnd(track);
+    final newEnd = sourceEnd != null && sourceEnd < ceiling
+        ? sourceEnd
+        : ceiling;
+    if (newEnd <= endTime) {
+      result.add(track);
+      continue;
+    }
+    changed = true;
+    result.add(track.copyWith(endTime: newEnd));
+  }
+
+  return changed ? result : audioTracks;
+}
+
+/// Timeline position at which [track] runs out of source audio, or `null` when
+/// its source length is unknown.
+///
+/// A non-positive duration counts as unknown, matching the sound timeline item
+/// and the duration-heal path, so a persisted-but-zero duration cannot collapse
+/// a window instead of leaving it uncapped.
+Duration? _audioSourceEnd(AudioEvent track) {
+  final duration = track.duration;
+  if (duration == null || duration <= 0) return null;
+  final remaining =
+      Duration(milliseconds: (duration * 1000).round()) - track.startOffset;
+  if (remaining <= Duration.zero) return null;
+  return track.startTime + remaining;
+}
+
 _TimelineMarkerAnchor? _timelineMarkerAnchorForPosition(
   List<DivineVideoClip> clips,
   Duration marker,

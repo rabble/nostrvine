@@ -6,7 +6,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -16,9 +18,10 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 /// Commits a new stop-motion frame list for the single stop-motion clip
 /// [clipId].
 ///
-/// Updates the [ClipEditorBloc], rebases timeline markers, and writes the change
-/// to editor history (undo/redo) — mirroring the clip-level edit commit in
-/// `TimelineClipControls` (`_deleteClip` / `_setPlaybackSpeed`). A no-op edit
+/// Updates the [ClipEditorBloc], rebases timeline markers, stretches audio that
+/// ran to the end of the composition onto the new (longer) end, and writes the
+/// change to editor history (undo/redo) — mirroring the clip-level edit commit
+/// in `TimelineClipControls` (`_deleteClip` / `_setPlaybackSpeed`). A no-op edit
 /// (the frame-ops helpers return the source list unchanged) is skipped so it
 /// never records an empty history entry.
 ///
@@ -53,9 +56,27 @@ void commitStopMotionFrames(
     markers: overlayBloc.state.timelineMarkers,
   );
 
+  // A hold change restretches the whole composition, so a sound that covered it
+  // has to grow with it (#6401).
+  final currentTracks = editor.stateManager.audioTracks;
+  final grownTracks = growAudioToCompositionEnd(
+    rebaseAnchoredAudioForClipState(newClips, currentTracks),
+    previousDuration: compositionDuration(state.clips),
+    duration: compositionDuration(newClips),
+    maxDuration: VideoEditorConstants.maxDuration,
+  );
+
   bloc.add(ClipEditorClipUpdated(clipId: clipId, clip: updated));
   overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-  editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
+  if (identical(grownTracks, currentTracks)) {
+    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
+  } else {
+    editor.setClipAndAudioState(
+      clips: newClips,
+      audioTracks: grownTracks,
+      timelineMarkers: rebasedMarkers,
+    );
+  }
 }
 
 List<StopMotionClipFrame>? _stopMotionFrames(

@@ -1791,7 +1791,7 @@ class VideoRecorderBloc
       frames: frames,
       originalAspectRatio: state.aspectRatio.value,
       targetAspectRatio: state.aspectRatio,
-      duration: _stopMotionPerFrame * frames.length,
+      duration: StopMotionFrameOps.totalDuration(frames),
       thumbnailPath: frames.first.path,
       lensMetadata: _cameraService.currentLensMetadata,
     );
@@ -1864,7 +1864,7 @@ class VideoRecorderBloc
       frames: frames,
       originalAspectRatio: state.aspectRatio.value,
       targetAspectRatio: state.aspectRatio,
-      duration: _stopMotionPerFrame * frames.length,
+      duration: StopMotionFrameOps.totalDuration(frames),
       thumbnailPath: frames.first.path,
       lensMetadata: _cameraService.currentLensMetadata,
     );
