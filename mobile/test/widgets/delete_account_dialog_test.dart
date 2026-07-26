@@ -742,6 +742,152 @@ void main() {
       },
     );
 
+    // These two pin a deliberate design decision, not an implementation
+    // detail. From review on #6335: "the current behavior intentionally blocks
+    // sign-out for registered users if Keycast account deletion fails."
+    //
+    // The reason it matters: if a divineOAuth user is signed out locally while
+    // their Keycast account survives, they can log straight back into an
+    // account they believe they deleted. Blocking sign-out keeps them in a
+    // state that is at least honest about having failed.
+    //
+    // Until now that behaviour was guarded by nothing. The only assertion of it
+    // lived in a `skip: true` group in account_deletion_flow_test.dart, and as
+    // written (`signOut(deleteKeys: true)`) it did not match the call shape
+    // production uses, so it could not have failed even if revived.
+    //
+    // The guard is `!keycastSuccess && authService.isRegistered`. Both halves
+    // are load-bearing, so both are pinned: the first test proves registered
+    // users are held back, the second proves everyone else is not. Dropping the
+    // `&& isRegistered` conjunct would permanently stop every anonymous,
+    // imported-nsec, amber and bunker user from deleting their own content —
+    // `oauthClientProvider` is non-nullable, so they all reach
+    // `getSessionOrRefresh()`, have no refresh token, and get `(false, …)` too.
+    testWidgets(
+      'does not sign out a registered user when keycast deletion fails',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+        // Content deletion succeeded; the server-side account deletion did not.
+        when(
+          authService.deleteKeycastAccount,
+        ).thenAnswer((_) async => (false, 'server refused'));
+        when(() => authService.isRegistered).thenReturn(true);
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {});
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pumpAndSettle();
+
+        // The invariant. Asserted with the exact call shape production uses —
+        // a looser matcher would pass vacuously.
+        verifyNever(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountServerDeletionFailed),
+          findsOneWidget,
+        );
+        // Not the success message, and not the pre-flight message — this
+        // failure happened after publishing, so the gate is not involved.
+        expect(find.text(l10n.deleteAccountSuccess), findsNothing);
+        expect(find.text(l10n.deleteAccountReauthRequired), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'still signs out a non-registered user when keycast deletion fails',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+        // Every non-OAuth user reaches this call and fails it: there is no
+        // Keycast session to use, so a failure here is expected and benign.
+        when(
+          authService.deleteKeycastAccount,
+        ).thenAnswer((_) async => (false, 'no keycast session'));
+        when(() => authService.isRegistered).thenReturn(false);
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {});
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pumpAndSettle();
+
+        // They are not held back — they have no server-side account to strand.
+        verify(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).called(1);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
+        expect(
+          find.text(l10n.deleteAccountServerDeletionFailed),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets(
       'discloses the release when keycast deletion fails after burn',
       (tester) async {
