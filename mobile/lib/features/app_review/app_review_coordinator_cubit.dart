@@ -83,29 +83,31 @@ class AppReviewCoordinatorCubit extends Cubit<bool> {
 
   Future<void> evaluate({
     required ReviewEligibilityInputs inputs,
-    required bool Function() isMounted,
+    required bool Function() isActive,
   }) async {
-    if (state) return;
+    if (isClosed || state) return;
     emit(true);
     try {
-      await _evaluate(inputs: inputs, isMounted: isMounted);
+      await _evaluate(inputs: inputs, isActive: isActive);
     } finally {
-      emit(false);
+      if (!isClosed) emit(false);
     }
   }
 
   Future<void> _evaluate({
     required ReviewEligibilityInputs inputs,
-    required bool Function() isMounted,
+    required bool Function() isActive,
   }) async {
+    bool canContinue() => !isClosed && isActive();
+
     if (!_service.shouldShow(inputs)) return;
-    if (!isMounted()) return;
+    if (!canContinue()) return;
     if (!await _frameScheduler.waitForStableFrame()) return;
-    if (!isMounted()) return;
+    if (!canContinue()) return;
 
     try {
       if (!await _reviewPlatform.isAvailable()) return;
-      if (!isMounted()) return;
+      if (!canContinue()) return;
 
       trackInAppReviewEligible(
         analytics: _analytics,
@@ -119,6 +121,7 @@ class AppReviewCoordinatorCubit extends Cubit<bool> {
       // tight re-prompt loop if the OS call crashes while not burning cooldown
       // for unavailable platforms or an unmounted app.
       await _service.recordShown(inputs.pubkey);
+      if (!canContinue()) return;
       await _reviewPlatform.requestReview();
       trackInAppReviewPrompted(analytics: _analytics);
     } catch (error) {

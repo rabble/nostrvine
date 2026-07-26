@@ -31,6 +31,8 @@ class _RecordingSink implements AnalyticsEventSink {
 
 class _FakeReviewPlatform implements AppReviewPlatform {
   bool available = true;
+  Completer<bool>? availabilityCompleter;
+  Completer<void>? availabilityStarted;
   Object? requestError;
   int availabilityChecks = 0;
   int requests = 0;
@@ -39,6 +41,9 @@ class _FakeReviewPlatform implements AppReviewPlatform {
   @override
   Future<bool> isAvailable() async {
     availabilityChecks++;
+    availabilityStarted?.complete();
+    final pendingAvailability = availabilityCompleter;
+    if (pendingAvailability != null) return pendingAvailability.future;
     return available;
   }
 
@@ -118,7 +123,7 @@ void main() {
 
       final evaluation = cubit.evaluate(
         inputs: inputs(),
-        isMounted: () => true,
+        isActive: () => true,
       );
       frameScheduler.complete();
       await evaluation;
@@ -132,7 +137,7 @@ void main() {
     test('does not burn cooldown when the frame wait fails', () async {
       final evaluation = cubit.evaluate(
         inputs: inputs(),
-        isMounted: () => true,
+        isActive: () => true,
       );
       frameScheduler.complete(false);
       await evaluation;
@@ -148,7 +153,7 @@ void main() {
 
       final evaluation = cubit.evaluate(
         inputs: inputs(),
-        isMounted: () {
+        isActive: () {
           mountChecks++;
           if (mountChecks > 1) mounted = false;
           return mounted;
@@ -162,6 +167,32 @@ void main() {
       expect(prefs.getInt('review_prompt_attempted_at_$pubkey'), isNull);
     });
 
+    test(
+      'does not burn cooldown when account changes during availability check',
+      () async {
+        final availabilityCompleter = Completer<bool>();
+        final availabilityStarted = Completer<void>();
+        platform.availabilityCompleter = availabilityCompleter;
+        platform.availabilityStarted = availabilityStarted;
+        var isActive = true;
+
+        final evaluation = cubit.evaluate(
+          inputs: inputs(),
+          isActive: () => isActive,
+        );
+        frameScheduler.complete();
+        await availabilityStarted.future;
+
+        isActive = false;
+        availabilityCompleter.complete(true);
+        await evaluation;
+
+        expect(platform.requests, 0);
+        expect(prefs.getInt('review_prompt_attempted_at_$pubkey'), isNull);
+        expect(analytics.events, isEmpty);
+      },
+    );
+
     test('records cooldown immediately before requesting review', () async {
       final order = <String>[];
       platform.onRequest = () {
@@ -171,7 +202,7 @@ void main() {
 
       final evaluation = cubit.evaluate(
         inputs: inputs(),
-        isMounted: () => true,
+        isActive: () => true,
       );
       frameScheduler.complete();
       await evaluation;
@@ -191,7 +222,7 @@ void main() {
 
         final evaluation = cubit.evaluate(
           inputs: inputs(),
-          isMounted: () => true,
+          isActive: () => true,
         );
         frameScheduler.complete();
         await evaluation;
@@ -206,14 +237,29 @@ void main() {
     );
 
     test('ignores a second evaluation while one is in flight', () async {
-      final first = cubit.evaluate(inputs: inputs(), isMounted: () => true);
-      await cubit.evaluate(inputs: inputs(), isMounted: () => true);
+      final first = cubit.evaluate(inputs: inputs(), isActive: () => true);
+      await cubit.evaluate(inputs: inputs(), isActive: () => true);
 
       expect(frameScheduler.waits, 1);
       frameScheduler.complete();
       await first;
 
       expect(platform.requests, 1);
+    });
+
+    test('stops cleanly when closed during frame wait', () async {
+      final evaluation = cubit.evaluate(
+        inputs: inputs(),
+        isActive: () => true,
+      );
+
+      await cubit.close();
+      frameScheduler.complete();
+
+      await expectLater(evaluation, completes);
+      expect(platform.availabilityChecks, 0);
+      expect(platform.requests, 0);
+      expect(prefs.getInt('review_prompt_attempted_at_$pubkey'), isNull);
     });
   });
 }

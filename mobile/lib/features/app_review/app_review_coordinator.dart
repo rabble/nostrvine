@@ -1,12 +1,11 @@
 // ABOUTME: Mounts once in the widget tree to evaluate the in-app review
 // ABOUTME: gate on auth settle, profile-stats load, and app foreground.
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/app_review/app_review_coordinator_cubit.dart';
+import 'package:openvine/features/app_review/app_review_profile_stats_loader.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -72,6 +71,8 @@ class AppReviewCoordinator extends ConsumerStatefulWidget {
 }
 
 class _AppReviewCoordinatorState extends ConsumerState<AppReviewCoordinator> {
+  static const _profileStatsLoader = AppReviewProfileStatsLoader();
+
   bool? _wasForeground;
 
   @override
@@ -107,7 +108,7 @@ class _AppReviewCoordinatorState extends ConsumerState<AppReviewCoordinator> {
     if (!service.shouldLoadProfileStats(localInputs)) return;
 
     final stats = await _loadProfileStats(pubkey);
-    if (!mounted) return;
+    if (!_isActiveFor(pubkey)) return;
     await ref
         .read(appReviewCoordinatorCubitProvider)
         .evaluate(
@@ -118,27 +119,25 @@ class _AppReviewCoordinatorState extends ConsumerState<AppReviewCoordinator> {
             sessionCount: localInputs.sessionCount,
             daysSinceFirstLaunch: localInputs.daysSinceFirstLaunch,
           ),
-          isMounted: () => mounted,
+          isActive: () => _isActiveFor(pubkey),
         );
+  }
+
+  bool _isActiveFor(String pubkey) {
+    if (!mounted || !ref.read(appForegroundProvider)) return false;
+    final authService = ref.read(authServiceProvider);
+    return authService.authState == AuthState.authenticated &&
+        authService.currentPublicKeyHex == pubkey;
   }
 
   Future<ProfileStats?> _loadProfileStats(String pubkey) async {
     final repository = ref.read(profileStatsRepositoryProvider);
     if (repository == null) return null;
-    unawaited(
-      repository
-          .fetchFreshProfile(pubkey: pubkey)
-          .catchError((Object _, StackTrace _) => null),
+    return _profileStatsLoader.load(
+      refresh: () async {
+        await repository.fetchFreshProfile(pubkey: pubkey);
+      },
+      watch: () => repository.watchProfileStats(pubkey: pubkey),
     );
-    try {
-      return await repository
-          .watchProfileStats(pubkey: pubkey)
-          .where((stats) => stats != null)
-          .cast<ProfileStats>()
-          .first
-          .timeout(const Duration(seconds: 3));
-    } on TimeoutException {
-      return null;
-    }
   }
 }
