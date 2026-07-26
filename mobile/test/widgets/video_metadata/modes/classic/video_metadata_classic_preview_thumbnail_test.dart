@@ -152,6 +152,62 @@ void main() {
       });
     });
 
+    group('aspect ratio', () {
+      // Geometry, not goldens: golden.sh renders with real fonts that CI does
+      // not provide, so matchesGoldenFile is guaranteed-red here.
+      Future<double> pumpAndReadAspectRatio(
+        WidgetTester tester,
+        models.AspectRatio target,
+      ) async {
+        final clip = DivineVideoClip(
+          id: 'test-clip',
+          video: EditorVideo.file('test.mp4'),
+          duration: const Duration(seconds: 10),
+          recordedAt: DateTime.now(),
+          thumbnailPath: 'test_thumbnail.jpg',
+          targetAspectRatio: target,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([clip]),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataClassicPreviewThumbnail()),
+            ),
+          ),
+        );
+
+        return tester
+            .widget<AspectRatio>(find.byType(AspectRatio).first)
+            .aspectRatio;
+      }
+
+      testWidgets('sizes a vertical clip 9:16, not square', (tester) async {
+        // The stack is chosen by the persisted recorder mode, which can
+        // disagree with the clip being posted. A hardcoded 1:1 box previewed
+        // a portrait recording as a square (#6200).
+        expect(
+          await pumpAndReadAspectRatio(tester, models.AspectRatio.vertical),
+          equals(9 / 16),
+        );
+      });
+
+      testWidgets('sizes a square clip 1:1', (tester) async {
+        expect(
+          await pumpAndReadAspectRatio(tester, models.AspectRatio.square),
+          equals(1.0),
+        );
+      });
+    });
+
     group('player initialization', () {
       testWidgets(
         'initializes player when finalRenderedClip becomes non-null',

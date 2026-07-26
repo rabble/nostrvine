@@ -103,8 +103,12 @@ class _VideoMetadataClassicPreviewThumbnailState
       ),
     );
 
+    // Size from the clip, not from the mode. This stack is selected by the
+    // persisted recorder mode, which can disagree with the clip that is
+    // actually being posted — a hardcoded 1:1 box then previews a portrait
+    // recording as a square (#6200).
     return AspectRatio(
-      aspectRatio: 1,
+      aspectRatio: clip.targetAspectRatio.value,
       child: clip.thumbnailPath == null
           ? const Center(
               child: DivineIcon(
