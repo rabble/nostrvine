@@ -264,9 +264,13 @@ void main() {
       await tester.tap(resetButton);
       await tester.pumpAndSettle();
 
-      // Verify that remove was called for all flags
+      // Verify that only visible/user-facing flags were reset.
       for (final flag in FeatureFlag.values) {
-        verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
+        if (flag.isInternal) {
+          verifyNever(() => mockPrefs.remove('ff_${flag.name}'));
+        } else {
+          verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
+        }
       }
     });
 

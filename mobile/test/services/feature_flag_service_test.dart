@@ -187,9 +187,28 @@ void main() {
         await service.resetAllFlags();
 
         for (final flag in FeatureFlag.values) {
-          verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
+          if (flag.isInternal) {
+            verifyNever(() => mockPrefs.remove('ff_${flag.name}'));
+          } else {
+            verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
+          }
         }
       });
+
+      test(
+        'preserves internal flag overrides when resetting all without access',
+        () async {
+          when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
+          when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
+
+          await service.initialize();
+          await service.resetAllFlags();
+
+          verifyNever(() => mockPrefs.remove('ff_lightMode'));
+          expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
+          expect(service.hasUserOverride(FeatureFlag.lightMode), isFalse);
+        },
+      );
     });
 
     group('state queries', () {

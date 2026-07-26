@@ -122,16 +122,18 @@ class FeatureFlagService extends ChangeNotifier {
     final flags = <FeatureFlag, bool>{};
 
     for (final flag in FeatureFlag.values) {
-      final key = _getPreferenceKey(flag);
-      try {
-        await _prefs.remove(key);
-      } catch (e) {
-        // Handle storage errors gracefully - log and continue
-        Log.warning(
-          'Failed to reset feature flag $flag: $e',
-          name: 'FeatureFlagService',
-          category: LogCategory.system,
-        );
+      if (_canOverrideFlag(flag)) {
+        final key = _getPreferenceKey(flag);
+        try {
+          await _prefs.remove(key);
+        } catch (e) {
+          // Handle storage errors gracefully - log and continue
+          Log.warning(
+            'Failed to reset feature flag $flag: $e',
+            name: 'FeatureFlagService',
+            category: LogCategory.system,
+          );
+        }
       }
       flags[flag] = _buildConfig.getDefault(flag);
     }
