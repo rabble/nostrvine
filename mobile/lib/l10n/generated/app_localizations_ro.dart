@@ -7119,6 +7119,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Conectează-te din nou pentru a-ți șterge contul. Nu s-a șters încă nimic.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Ștergerea contului a fost solicitată. Nu am putut contacta releele pentru a lista postările tale existente, deci nu s-a cerut ștergerea lor individuală.';
+
+  @override
   String get deleteAccountSuccess =>
       'Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.';
 

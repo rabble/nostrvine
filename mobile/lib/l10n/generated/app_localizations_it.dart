@@ -7019,6 +7019,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Accedi di nuovo per eliminare il tuo account. Non è stato ancora eliminato nulla.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Eliminazione dell’account richiesta. Non siamo riusciti a raggiungere i relay per elencare i tuoi post esistenti, quindi non ne è stata richiesta l’eliminazione singola.';
+
+  @override
   String get deleteAccountSuccess =>
       'Richieste di eliminazione inviate. Sei disconnesso su questo dispositivo.';
 

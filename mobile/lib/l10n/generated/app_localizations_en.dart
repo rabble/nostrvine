@@ -6947,6 +6947,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. We couldn\'t reach the relays to list your existing posts, so those were not individually requested for deletion.';
+
+  @override
   String get deleteAccountSuccess =>
       'Deletion requests sent. You\'re signed out on this device.';
 

@@ -668,10 +668,16 @@ Future<void> executeAccountDeletion({
       // Router will automatically redirect to /welcome after sign out
       dismissDialog();
       if (context.mounted) {
+        // When the relay query that enumerates existing content failed, no
+        // per-item deletion request was sent for anything the user had already
+        // posted — only the account-wide vanish. Saying "deletion requests
+        // sent" would overstate what happened.
         final snackbarText =
             keyDeletionWarning ??
             localDataDeletionFailure ??
-            context.l10n.deleteAccountSuccess;
+            (result.contentQueryFailed
+                ? context.l10n.deleteAccountSuccessContentUnverified
+                : context.l10n.deleteAccountSuccess);
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
             snackbarText,

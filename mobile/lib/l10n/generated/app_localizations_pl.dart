@@ -7115,6 +7115,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zaloguj się ponownie, aby usunąć konto. Nic nie zostało jeszcze usunięte.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Zażądano usunięcia konta. Nie udało się połączyć z relayami, aby pobrać listę twoich istniejących postów, więc nie zażądano ich pojedynczego usunięcia.';
+
+  @override
   String get deleteAccountSuccess =>
       'Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.';
 

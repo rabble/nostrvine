@@ -6914,6 +6914,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'سجّل الدخول مرة أخرى لحذف حسابك. لم يُحذف أي شيء بعد.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'تم طلب حذف الحساب. لم نتمكن من الوصول إلى المُرحّلات لسرد منشوراتك الحالية، لذلك لم يُطلب حذفها بشكل فردي.';
+
+  @override
   String get deleteAccountSuccess =>
       'تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.';
 

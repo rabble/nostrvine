@@ -7025,6 +7025,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Влез отново, за да изтриеш акаунта си. Още нищо не е изтрито.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Заявено е изтриване на акаунта. Не успяхме да се свържем с релетата, за да изброим съществуващите ти публикации, така че тяхното изтриване не беше заявено поединично.';
+
+  @override
   String get deleteAccountSuccess =>
       'Заявките за изтриване са изпратени. Отписан си на това устройство.';
 

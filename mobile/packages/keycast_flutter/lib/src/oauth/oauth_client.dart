@@ -1017,8 +1017,8 @@ class KeycastOAuth {
         // The credential is valid but not authorized to delete — currently
         // because a refreshed access token no longer carries the server's
         // first-party fact. Re-authenticating fixes it, so this must never be
-        // surfaced as a connectivity problem or retried unchanged.
-        return DeleteAccountResult.reauthenticationRequired(
+        // reported as a connectivity problem or retried unchanged.
+        return DeleteAccountResult.error(
           _errorMessageFrom(response) ??
               'Account deletion requires signing in again',
         );

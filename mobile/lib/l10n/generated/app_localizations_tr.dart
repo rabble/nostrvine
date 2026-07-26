@@ -6931,6 +6931,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Hesabını silmek için tekrar giriş yap. Henüz hiçbir şey silinmedi.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Hesap silme isteği gönderildi. Mevcut gönderilerini listelemek için rölelere ulaşamadık, bu yüzden onlar tek tek silinmek üzere istenmedi.';
+
+  @override
   String get deleteAccountSuccess =>
       'Silme istekleri gönderildi. Bu cihazda oturumun kapatıldı.';
 

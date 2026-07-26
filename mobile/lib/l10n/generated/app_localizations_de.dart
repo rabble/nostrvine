@@ -7037,6 +7037,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Melde dich erneut an, um dein Konto zu löschen. Es wurde noch nichts gelöscht.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Kontolöschung angefordert. Wir konnten die Relays nicht erreichen, um deine vorhandenen Beiträge aufzulisten, daher wurde für diese keine einzelne Löschung angefordert.';
+
+  @override
   String get deleteAccountSuccess =>
       'Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.';
 

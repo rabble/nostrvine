@@ -2960,6 +2960,7 @@
     "deleteAccountRemoveKeysTitle": "Alisin ang account na ito sa device na ito?",
     "deleteAccountServerDeletionFailed": "Hindi namin natanggal ang account mo sa server. Mag-sign in muli at subukan ulit.",
     "deleteAccountReauthRequired": "Mag-sign in muli para tanggalin ang account mo. Wala pang natanggal.",
+    "deleteAccountSuccessContentUnverified": "Nakahiling na ng pagtanggal ng account. Hindi namin naabot ang mga relay para ilista ang mga dati mong post, kaya hindi isa-isang hiniling na tanggalin ang mga iyon.",
     "deleteAccountSuccess": "Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.",
     "deleteAccountWarningBody": "Nagpapadala ito ng mga deletion request para sa account at content mo, binubura ang Divine account mo kapag posible, at nila-log out ka sa device na ito. Ang ilang relay, client, at search index ay maaaring may kopya pa rin. Ang iba pang naka-log in na device ay mananatiling aktibo hanggang alisin mo ang mga key doon.",
     "exportProgressStageApplyingTextOverlay": "Nagdaragdag ng text overlay...",

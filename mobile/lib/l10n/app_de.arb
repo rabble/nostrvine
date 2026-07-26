@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysTitle": "Dieses Konto von diesem Gerät entfernen?",
     "deleteAccountServerDeletionFailed": "Wir konnten dein Konto auf dem Server nicht löschen. Melde dich erneut an und versuche es noch einmal.",
     "deleteAccountReauthRequired": "Melde dich erneut an, um dein Konto zu löschen. Es wurde noch nichts gelöscht.",
+    "deleteAccountSuccessContentUnverified": "Kontolöschung angefordert. Wir konnten die Relays nicht erreichen, um deine vorhandenen Beiträge aufzulisten, daher wurde für diese keine einzelne Löschung angefordert.",
     "deleteAccountSuccess": "Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.",
     "deleteAccountWarningBody": "Das sendet Löschanfragen für dein Konto und deine Inhalte, löscht dein Divine-Konto wenn möglich und meldet dich auf diesem Gerät ab. Einige Relays, Clients und Suchindizes behalten möglicherweise Kopien. Andere angemeldete Geräte bleiben aktiv, bis du dort die Schlüssel entfernst.",
     "exportProgressStageApplyingTextOverlay": "Text-Overlay wird hinzugefügt …",

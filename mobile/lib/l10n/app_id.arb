@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysTitle": "Hapus akun ini dari perangkat ini?",
     "deleteAccountServerDeletionFailed": "Kami tidak bisa menghapus akunmu di server. Masuk lagi lalu coba sekali lagi.",
     "deleteAccountReauthRequired": "Masuk lagi untuk menghapus akunmu. Belum ada yang dihapus.",
+    "deleteAccountSuccessContentUnverified": "Penghapusan akun diminta. Kami tidak bisa menjangkau relay untuk mendaftar postinganmu yang ada, jadi penghapusannya tidak diminta satu per satu.",
     "deleteAccountSuccess": "Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.",
     "deleteAccountWarningBody": "Ini mengirim permintaan penghapusan untuk akun dan kontenmu, menghapus akun Divine-mu jika memungkinkan, dan mengeluarkanmu dari akun di perangkat ini. Beberapa relay, klien, dan indeks pencarian mungkin menyimpan salinan. Perangkat lain yang masih masuk tetap aktif sampai kamu menghapus kuncinya di sana.",
     "exportProgressStageApplyingTextOverlay": "Menambahkan overlay teks...",

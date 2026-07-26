@@ -6986,6 +6986,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Meld je opnieuw aan om je account te verwijderen. Er is nog niets verwijderd.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Accountverwijdering aangevraagd. We konden de relays niet bereiken om je bestaande berichten op te halen, dus daarvoor is geen aparte verwijdering aangevraagd.';
+
+  @override
   String get deleteAccountSuccess =>
       'Verwijderverzoeken verstuurd. Je bent op dit apparaat afgemeld.';
 

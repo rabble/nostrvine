@@ -3708,6 +3708,7 @@
     "deleteAccountRemoveKeysTitle": "이 기기에서 이 계정을 제거할까요?",
     "deleteAccountServerDeletionFailed": "서버에서 계정을 삭제할 수 없었습니다. 다시 로그인한 후 재시도하세요.",
     "deleteAccountReauthRequired": "계정을 삭제하려면 다시 로그인하세요. 아직 아무것도 삭제되지 않았습니다.",
+    "deleteAccountSuccessContentUnverified": "계정 삭제를 요청했습니다. 릴레이에 연결할 수 없어 기존 게시물을 확인하지 못했으므로 개별 삭제는 요청되지 않았습니다.",
     "deleteAccountSuccess": "삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.",
     "deleteAccountWarningBody": "이건 계정과 콘텐츠의 삭제 요청을 보내고, 가능하면 Divine 계정을 삭제하고, 이 기기에서 로그아웃해요. 일부 릴레이, 클라이언트, 검색 색인에는 사본이 남을 수 있어요. 로그인된 다른 기기는 거기서 키를 제거할 때까지 계속 활성 상태예요.",
     "exportProgressStageApplyingTextOverlay": "텍스트 오버레이 추가 중...",

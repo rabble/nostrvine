@@ -7043,6 +7043,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Reconnecte-toi pour supprimer ton compte. Rien n’a encore été supprimé.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Suppression du compte demandée. Nous n’avons pas pu joindre les relais pour lister tes publications existantes, leur suppression individuelle n’a donc pas été demandée.';
+
+  @override
   String get deleteAccountSuccess =>
       'Demandes de suppression envoyées. Tu es déconnecté sur cet appareil.';
 

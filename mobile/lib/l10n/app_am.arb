@@ -4509,6 +4509,7 @@
     "deleteAccountRemoveKeysTitle": "ይህን መለያ ከዚህ መሣሪያ ማስወገድ?",
     "deleteAccountServerDeletionFailed": "መለያዎን በአገልጋዩ ላይ መሰረዝ አልቻልንም። እንደገና ይግቡና ደግመው ይሞክሩ።",
     "deleteAccountReauthRequired": "መለያዎን ለመሰረዝ እንደገና ይግቡ። እስካሁን ምንም አልተሰረዘም።",
+    "deleteAccountSuccessContentUnverified": "የመለያ ስረዛ ተጠይቋል። ያሉዎትን ልጥፎች ለመዘርዘር ወደ ሪሌዎቹ መድረስ አልቻልንም፣ ስለዚህ እነሱ በተናጠል እንዲሰረዙ አልተጠየቀም።",
     "deleteAccountSuccess": "የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።",
     "deleteAccountWarningBody": "ይህ ለመለያዎ እና ለይዘትዎ የመሰረዝ ጥያቄዎችን ይልካል፣ የሚቻል ከሆነ የDivine መለያዎን ይሰርዛል እና ከዚህ መሣሪያ ያስወጣዎታል። አንዳንድ ቅብብሎሾች፣ ደንበኞች እና የፍለጋ ማውጫዎች ቅጂዎችን ሊይዙ ይችላሉ። ሌሎች የገቡ መሣሪያዎች እዚያ ቁልፎችን እስኪያስወግዱ ድረስ ንቁ ሆነው ይቆያሉ።",
     "exportProgressStageApplyingTextOverlay": "የጽሑፍ ሽፋን በመጨመር ላይ...",

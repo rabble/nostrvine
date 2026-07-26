@@ -6927,6 +6927,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Masuk lagi untuk menghapus akunmu. Belum ada yang dihapus.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Penghapusan akun diminta. Kami tidak bisa menjangkau relay untuk mendaftar postinganmu yang ada, jadi penghapusannya tidak diminta satu per satu.';
+
+  @override
   String get deleteAccountSuccess =>
       'Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.';
 

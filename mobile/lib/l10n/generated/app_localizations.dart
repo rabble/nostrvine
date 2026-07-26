@@ -12105,6 +12105,12 @@ abstract class AppLocalizations {
   /// **'Sign in again to delete your account. Nothing has been deleted yet.'**
   String get deleteAccountReauthRequired;
 
+  /// Snackbar when the account-wide vanish request was published but the relay query that enumerates the user's existing posts failed, so no per-item deletion request was sent for them. Must not imply those posts were requested for deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion requested. We couldn\'t reach the relays to list your existing posts, so those were not individually requested for deletion.'**
+  String get deleteAccountSuccessContentUnverified;
+
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///
   /// In en, this message translates to:

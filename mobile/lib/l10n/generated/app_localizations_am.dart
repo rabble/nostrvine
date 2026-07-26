@@ -6818,6 +6818,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'መለያዎን ለመሰረዝ እንደገና ይግቡ። እስካሁን ምንም አልተሰረዘም።';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'የመለያ ስረዛ ተጠይቋል። ያሉዎትን ልጥፎች ለመዘርዘር ወደ ሪሌዎቹ መድረስ አልቻልንም፣ ስለዚህ እነሱ በተናጠል እንዲሰረዙ አልተጠየቀም።';
+
+  @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
 
   @override

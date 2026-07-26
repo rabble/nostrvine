@@ -6700,6 +6700,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '계정을 삭제하려면 다시 로그인하세요. 아직 아무것도 삭제되지 않았습니다.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      '계정 삭제를 요청했습니다. 릴레이에 연결할 수 없어 기존 게시물을 확인하지 못했으므로 개별 삭제는 요청되지 않았습니다.';
+
+  @override
   String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';
 
   @override

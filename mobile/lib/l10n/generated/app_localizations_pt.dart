@@ -7002,6 +7002,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Entre novamente para excluir sua conta. Nada foi excluído ainda.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Exclusão de conta solicitada. Não conseguimos acessar os relays para listar suas publicações existentes, então a exclusão individual delas não foi solicitada.';
+
+  @override
   String get deleteAccountSuccess =>
       'Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.';
 

@@ -6674,6 +6674,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'アカウントを削除するには、もう一度サインインしてください。まだ何も削除されていません。';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'アカウントの削除をリクエストしました。リレーに接続できず既存の投稿を一覧できなかったため、それらの個別の削除はリクエストされていません。';
+
+  @override
   String get deleteAccountSuccess => '削除リクエストを送信したよ。このデバイスからサインアウトしたよ。';
 
   @override

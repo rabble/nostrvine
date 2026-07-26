@@ -7019,6 +7019,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Vuelve a iniciar sesión para eliminar tu cuenta. Todavía no se ha eliminado nada.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Eliminación de cuenta solicitada. No pudimos contactar con los relays para listar tus publicaciones existentes, así que no se solicitó su eliminación individual.';
+
+  @override
   String get deleteAccountSuccess =>
       'Solicitudes de eliminación enviadas. Se cerró tu sesión en este dispositivo.';
 

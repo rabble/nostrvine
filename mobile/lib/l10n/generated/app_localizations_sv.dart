@@ -6952,6 +6952,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Logga in igen för att ta bort ditt konto. Inget har tagits bort än.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Kontoborttagning begärd. Vi kunde inte nå reläerna för att lista dina befintliga inlägg, så de begärdes inte bort var för sig.';
+
+  @override
   String get deleteAccountSuccess =>
       'Raderingsförfrågningar skickade. Du är utloggad på den här enheten.';
 

@@ -7034,6 +7034,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Mag-sign in muli para tanggalin ang account mo. Wala pang natanggal.';
 
   @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Nakahiling na ng pagtanggal ng account. Hindi namin naabot ang mga relay para ilista ang mga dati mong post, kaya hindi isa-isang hiniling na tanggalin ang mga iyon.';
+
+  @override
   String get deleteAccountSuccess =>
       'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
 

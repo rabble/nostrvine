@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysTitle": "Ta bort det här kontot från den här enheten?",
     "deleteAccountServerDeletionFailed": "Vi kunde inte ta bort ditt konto på servern. Logga in igen och försök på nytt.",
     "deleteAccountReauthRequired": "Logga in igen för att ta bort ditt konto. Inget har tagits bort än.",
+    "deleteAccountSuccessContentUnverified": "Kontoborttagning begärd. Vi kunde inte nå reläerna för att lista dina befintliga inlägg, så de begärdes inte bort var för sig.",
     "deleteAccountSuccess": "Raderingsförfrågningar skickade. Du är utloggad på den här enheten.",
     "deleteAccountWarningBody": "Det här skickar raderingsförfrågningar för ditt konto och innehåll, tar bort ditt Divine-konto när det går och loggar ut dig på den här enheten. Vissa reläer, klienter och sökindex kan behålla kopior. Andra inloggade enheter förblir aktiva tills du tar bort nycklarna där.",
     "exportProgressStageApplyingTextOverlay": "Lägger till textöverlägg...",
