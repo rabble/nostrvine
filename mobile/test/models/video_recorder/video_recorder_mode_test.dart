@@ -146,5 +146,65 @@ void main() {
         expect(VideoRecorderMode.upload.capturesStills, isFalse);
       });
     });
+
+    group('constrainsAspectRatio', () {
+      test('is true only for classic', () {
+        // Classic is the 1:1 Vine format by definition. Every other mode must
+        // leave the shape to the user's toggle, so switching between them
+        // cannot silently rewrite it (#6200).
+        expect(VideoRecorderMode.classic.constrainsAspectRatio, isTrue);
+        expect(VideoRecorderMode.capture.constrainsAspectRatio, isFalse);
+        expect(VideoRecorderMode.lipSync.constrainsAspectRatio, isFalse);
+        expect(VideoRecorderMode.stopMotion.constrainsAspectRatio, isFalse);
+        expect(VideoRecorderMode.upload.constrainsAspectRatio, isFalse);
+      });
+
+      test('every mode that constrains the shape declares its own default', () {
+        for (final mode in VideoRecorderMode.values) {
+          if (!mode.constrainsAspectRatio) continue;
+          expect(
+            mode.defaultAspectRatio,
+            equals(model.AspectRatio.square),
+            reason:
+                '${mode.name} constrains the aspect ratio, so its default must '
+                'be the shape it enforces',
+          );
+        }
+      });
+    });
+
+    group('shape-constraining modes', () {
+      // The mode wheel renders VideoRecorderMode.values verbatim, and its end
+      // entries are where an over-fling lands. Reordering the enum silently
+      // moved `classic` (square) into the last slot in 1.0.16, which is how
+      // #6200 shipped — nothing in the suite noticed.
+      //
+      // The guarantee is NOT that a square mode never sits at an end (the
+      // wheel's order is a product decision). It is that reaching such a mode
+      // always takes a deliberate gesture, which is pinned in
+      // video_recorder_mode_selector_test.dart. What belongs here is the
+      // narrower invariant: exactly one mode may impose a shape, so a reorder
+      // cannot quietly add another square trap.
+      test('classic is the only mode allowed to impose a shape', () {
+        final constraining = VideoRecorderMode.values
+            .where((m) => m.constrainsAspectRatio)
+            .toList();
+
+        expect(constraining, equals([VideoRecorderMode.classic]));
+      });
+
+      test('every non-constraining mode defaults to vertical', () {
+        for (final mode in VideoRecorderMode.values) {
+          if (mode.constrainsAspectRatio) continue;
+          expect(
+            mode.defaultAspectRatio,
+            equals(model.AspectRatio.vertical),
+            reason:
+                '${mode.name} does not impose a shape, so its default must be '
+                'the portrait capture default',
+          );
+        }
+      });
+    });
   });
 }

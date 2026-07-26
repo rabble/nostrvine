@@ -2041,6 +2041,50 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'keeps the chosen shape when moving between unconstrained modes',
+        // Only Classic dictates a shape. Stamping mode.defaultAspectRatio on
+        // every switch discarded the user's own choice — and, because the mode
+        // is replayed from prefs on each cold start, re-imposed it forever
+        // (#6200).
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              aspectRatio: model.AspectRatio.square,
+            ),
+          ),
+        act: (bloc) => bloc.add(
+          const VideoRecorderRecorderModeSet(VideoRecorderMode.lipSync),
+        ),
+        expect: () => const [
+          VideoRecorderBlocState(
+            recorderMode: VideoRecorderMode.lipSync,
+            aspectRatio: model.AspectRatio.square,
+          ),
+        ],
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'leaving classic restores the incoming mode default',
+        build: () => buildBloc()
+          ..emit(
+            const VideoRecorderBlocState(
+              recorderMode: VideoRecorderMode.classic,
+              aspectRatio: model.AspectRatio.square,
+              showGridLines: true,
+            ),
+          ),
+        act: (bloc) => bloc.add(
+          const VideoRecorderRecorderModeSet(VideoRecorderMode.capture),
+        ),
+        expect: () => const [VideoRecorderBlocState()],
+        verify: (bloc) {
+          // Spelled out because vertical is the state default, so the
+          // expectation above would otherwise read as asserting nothing.
+          expect(bloc.state.aspectRatio, equals(model.AspectRatio.vertical));
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'transitions involving upload preserve clips and editor',
         build: buildBloc,
         act: (bloc) => bloc.add(

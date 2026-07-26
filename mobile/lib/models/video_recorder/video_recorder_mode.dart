@@ -74,6 +74,15 @@ enum VideoRecorderMode {
     .classic => .square,
   };
 
+  /// Whether the mode itself dictates the capture shape, overriding whatever
+  /// the user last chose.
+  ///
+  /// Only Classic does: it is the 1:1 Vine format by definition. Every other
+  /// mode leaves the shape to the user's aspect-ratio toggle, so switching
+  /// between them must not silently rewrite it — that is what turned an
+  /// accidental Classic selection into a permanently square capture (#6200).
+  bool get constrainsAspectRatio => this == classic;
+
   /// Whether this mode captures still photos (stop-motion) instead of
   /// recording video. Drives the shutter behavior and capture UI.
   bool get capturesStills => this == stopMotion;

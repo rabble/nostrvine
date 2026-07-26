@@ -1519,10 +1519,19 @@ class VideoRecorderBloc
 
     final previousMode = state.recorderMode;
     final previousFrames = state.stopMotionFrames;
+    // Only a mode that dictates its own shape may rewrite the aspect ratio —
+    // and leaving such a mode restores the incoming mode's default. Between two
+    // unconstrained modes the user's own choice is preserved. Stamping it
+    // unconditionally meant every mode change (including the saved-mode replay
+    // on each cold start) re-imposed the mode's aspect (#6200).
+    final nextAspectRatio =
+        mode.constrainsAspectRatio || previousMode.constrainsAspectRatio
+        ? mode.defaultAspectRatio
+        : state.aspectRatio;
     emit(
       state.copyWith(
         recorderMode: mode,
-        aspectRatio: mode.defaultAspectRatio,
+        aspectRatio: nextAspectRatio,
         showGridLines: _gridLinesEnabledFor(mode),
         timerDuration: mode.supportsCountdownTimer
             ? state.timerDuration
