@@ -11,16 +11,23 @@ profile/feed consumers
 
 ## 1. Summary
 
-Divine will offer one optional monthly supporter subscription through Apple
-StoreKit and Google Play Billing. A supporter funds Divine and, while their
-subscription is paid or in billing grace, may receive:
+Divine will offer one optional supporter membership through Apple StoreKit and
+Google Play Billing. The launch storefront products are standard monthly,
+standard annual, and a bounded founding annual offer. All three grant the same
+entitlement. A supporter funds Divine and, while their subscription is paid or
+in billing grace, may receive:
 
 - a warm-gold halo over their avatar throughout Divine;
 - placement in a fairly rotating supporter directory on Explore; and
-- eligibility for an engagement-ranked Supporters video feed.
+- eligibility to submit videos for consideration in bounded, clearly labelled
+  Supporter Showcases;
+- early access to selected experimental features;
+- visibility into what supporter funding pays for; and
+- founding-supporter recognition where applicable.
 
 The subscription does not unlock content or ordinary app functionality. It does
-not boost For You, Popular, search, or any other general ranking system.
+not boost For You, Popular, search, or any other general ranking system. Draft
+and saved-clip sync is a future initiative, not a launch benefit or dependency.
 
 Supporter status is bound to the Divine pubkey active when the purchase is made.
 It is verified server-side by a new Cloudflare Worker in a new
@@ -38,18 +45,22 @@ The following decisions were made during product review:
 
 | Area | Decision |
 |---|---|
-| Initial offering | One monthly supporter tier |
-| Price | Configured in App Store Connect and Play Console before launch; the app displays store-localized price metadata |
+| Initial offering | One supporter entitlement with monthly, annual, and bounded founding annual products |
+| Price | US$6.99 monthly, US$69.99 annual, and US$59.99 founding annual; storefronts own localized display prices |
+| Annual discount | The UI may describe the standard annual product as saving about 17% when supported by localized metadata |
+| Founding offer | A predeclared bounded cohort or date window; same benefits as standard membership |
 | Account ownership | Bound to the Divine pubkey active at purchase |
-| Public recognition | On by default after verification |
-| Privacy control | One control hides both the halo and Supporters discovery placement without cancelling payment |
+| Public recognition | Optional and separately modelled for halo, discovery, and founding history |
+| Privacy control | Recognition can be disabled without cancelling payment or changing private entitlement |
 | Expiry | Recognition remains through paid-through and billing grace, then disappears |
 | Avatar treatment | Warm-gold halo at roughly 10–11 o'clock, slightly overlapping the avatar |
-| Explore structure | Classics-style rotating supporter directory followed by a supporter video grid/feed |
+| Explore structure | Fairly rotating supporter directory plus bounded, labelled Supporter Showcases |
 | Directory order | Fair rotation among active, visible supporters |
-| Video order | Engagement-ranked within the active, visible supporter cohort |
-| General ranking | No paid boost outside the explicitly labeled Supporters surface |
+| Showcase selection | Published editorial and eligibility criteria; payment creates eligibility, not guaranteed placement |
+| General ranking | Supporter state is unavailable to ordinary ranking systems |
+| Sync | Explicitly deferred; no draft or saved-clip storage is part of launch |
 | Canonical status | Server-verified entitlement, not local store state and not NIP-58 |
+| Impact reporting | Authoritative aggregate counts and broad funding-use reporting; no invented per-user claims |
 | Server ownership | New `divine-supporters` GitHub repository and Cloudflare Worker |
 
 ## 3. Goals
@@ -57,27 +68,33 @@ The following decisions were made during product review:
 1. Let people fund Divine with a clear, recurring native-store subscription.
 2. Celebrate active supporters without creating a paywall or a wealth-tier
    hierarchy.
-3. Give supporters a transparent discovery surface without altering organic
-   ranking elsewhere.
+3. Give supporters optional, transparent recognition and bounded discovery
+   surfaces without altering organic ranking elsewhere.
 4. Bind purchases safely to one Divine identity across devices.
 5. Handle renewals, grace periods, refunds, revocations, restores, and account
    switching without relying on the app process.
 6. Keep store evidence and financial metadata private.
 7. Make the public status consumable by mobile, web, and future Divine clients
    through ordinary profile/feed APIs.
+8. Explain what supporter funding pays for using reliable aggregate reporting.
 
 ## 4. Non-goals
 
 - Multiple supporter tiers at launch.
-- Paid access to content, posting, messaging, storage, ranking, or moderation
-  privileges.
+- Paid access to content, posting, messaging, storage, ranking, verification,
+  or moderation privileges.
+- Draft and saved-clip sync, storage quotas, export, or retention changes at
+  launch. Those belong to a separately approved future initiative.
 - Boosting supporter posts in For You, Popular, search, lists, or hashtag
   results.
+- An engagement-ranked feed consisting only of paying authors.
+- Guaranteed placement in a Supporter Showcase.
 - Transfer of a subscription between Divine pubkeys.
 - Publishing purchase evidence or billing state to Nostr.
 - Using NIP-58 as the canonical recurring entitlement.
 - Permanent alumni or lifetime-supporter recognition after payment ends.
 - External checkout inside the native supporter flow.
+- Making supporter membership a general-purpose cloud-storage product.
 - Replacing creator-controlled profile tip and subscription links delivered by
   `divine-mobile` PR
   [#5665](https://github.com/divinevideo/divine-mobile/pull/5665).
@@ -90,15 +107,25 @@ Behind `FeatureFlag.divineSupporters`, Settings includes a **Support Divine**
 entry. The screen uses direct Divine voice:
 
 - heading: **Support Divine**
-- primary message: **Keep Divine weird.**
-- supporting copy explains that monthly support helps keep human creativity
-  independent and alive;
-- the store-localized price is shown on the native purchase button;
+- primary message: **Help keep human creativity independent, weird, and alive.**
+- supporting copy explains that supporter funding helps pay for video hosting
+  and delivery, trust and safety, human-made authenticity systems, independent
+  product development, preservation of internet culture, and open and
+  decentralized infrastructure;
+- the screen says the ordinary Divine experience remains available without
+  payment;
+- store-localized monthly, annual, and founding prices are shown when
+  available;
+- the annual saving is shown only when supported by localized store metadata;
+- the screen explains that recognition is optional, the halo is not
+  verification, and Showcase inclusion is never guaranteed;
 - Restore Purchases, Terms, Privacy, and native subscription-management links
-  remain accessible.
+  remain accessible; and
+- supporter-impact information is available from the screen.
 
-The screen must clearly state that the halo and Supporters discovery are
-recognition benefits. It must not imply that payment improves general ranking.
+The screen must clearly state that the halo, directory, and Showcase eligibility
+are recognition/discovery benefits. It must not imply that payment improves
+general ranking, moderation, verification, or ordinary access.
 
 ### 5.2 Active state
 
@@ -107,17 +134,27 @@ After the Worker verifies the purchase for the current pubkey, the screen shows:
 - active paid-through or billing-grace state;
 - the account that owns the subscription;
 - the halo preview;
+- public-recognition controls;
+- founding-supporter history controls where applicable;
+- supporter-impact information; and
 - native subscription-management action; and
-- a default-on control:
+- a clearly presented recognition control before or immediately after purchase:
 
-> **Show that I'm a supporter and include me in Supporters discovery.**
+> **Show that I'm a supporter.**
 
-Turning this control off:
+The data model permits separate controls for halo visibility, directory and
+Showcase discovery, and founding-history visibility. A combined v1 control is
+acceptable only when the screen explains all of its effects.
+
+Turning recognition off:
 
 - hides the halo on every public surface;
 - removes the account from the supporter directory;
-- removes its videos from the Supporters feed;
+- removes the account from future Supporter Showcase consideration;
 - does not cancel, pause, refund, transfer, or otherwise mutate payment.
+
+Recognition must not default to public exposure before the purchase flow has
+presented these effects to the user.
 
 ### 5.3 Pending and confirmation
 
@@ -132,8 +169,11 @@ entitlement with an inactive state.
 
 - Cancellation keeps benefits through the paid-through date.
 - Store billing grace keeps benefits while the store reports grace.
-- Expiry removes the halo and discovery eligibility.
+- Expiry removes the active halo, directory eligibility, Showcase eligibility,
+  and early-access eligibility.
 - Refund or revocation removes benefits according to the canonical store state.
+- A permanent, optional founding-supporter history entry may remain after
+  expiry, but it must not imply active support or preserve active benefits.
 - If more than one valid store transaction exists for the same pubkey, the
   account remains active while any one entitlement remains valid.
 
@@ -191,25 +231,36 @@ Explore gains a flag-gated **Supporters** tab. Its structure parallels the
 existing Classics tab in `mobile/lib/widgets/classic_vines_tab.dart`:
 
 1. a horizontally scrollable supporter directory/slider; and
-2. a masonry video grid that opens the standard fullscreen feed.
+2. bounded, clearly labelled Supporter Showcase collections that open the
+   standard fullscreen feed.
 
 The directory rotates fairly among active, publicly visible supporters.
 Rotation must be deterministic for a bounded period so it does not jump on
 every rebuild, while changing often enough to expose smaller and newer
 supporters.
 
-The video grid uses the existing engagement-ranking signals, restricted to:
+Showcase collections are selected from active, publicly visible supporters who
+opted into consideration. They are restricted to:
 
 - indexed, playable, moderation-eligible videos;
 - authors with an active public supporter projection;
 - videos allowed by the current viewer's block, mute, age, and content-safety
   rules; and
-- the same recency/availability constraints used by the corresponding Explore
-  ranking implementation.
+- published Showcase criteria and cadence; and
+- diversity and repeated-exposure limits across creators and content.
 
 Recent eligible videos published before the author subscribed may appear while
-the author is active. When the author expires, is refunded, or opts out, their
-videos leave this surface. Support amount and tenure are not ranking inputs.
+the author is active. Payment creates eligibility to submit or opt into
+consideration; it does not guarantee placement. Selection must not use support
+amount, price, billing period, founding status, tenure, or payment as an
+engagement multiplier. When the author expires, is refunded, revoked, or opts
+out, their videos leave future Showcase selection according to the published
+refresh and safety policy.
+
+The Supporters tab must not become an infinite engagement-ranked feed whose only
+distinguishing criterion is payment. Existing engagement signals may be used
+only as one bounded quality or abuse-resistance input after editorial and
+eligibility constraints, never as the definition of the surface.
 
 The tab is viewable by supporters and non-supporters. Empty, loading, error,
 pagination, and pull-to-refresh behavior must match current Explore patterns.
@@ -225,13 +276,15 @@ divine-supporters Cloudflare Worker  <--- Apple / Google lifecycle notifications
           |
           +--- private D1 billing + entitlement state
           |
+          +--- private aggregate supporter-impact data
+          |
           +--- signed sanitized projection changes
                          |
                          v
                     Funnelcake
                          |
                          +--- supporter directory
-                         +--- supporter video feed
+                         +--- Supporter Showcases
                          +--- profile/feed is_supporter presentation field
                                       |
                                       v
@@ -257,10 +310,12 @@ Owns:
 - NIP-98-authenticated pubkey binding;
 - store lifecycle notification verification and processing;
 - canonical entitlement calculation;
-- public-visibility preference;
+- recognition preferences;
+- founding cohort eligibility and historical recognition;
 - idempotency, audit history, and reconciliation;
 - sanitized projection outbox;
-- private account entitlement API; and
+- private account entitlement API;
+- supporter-count and funding-use aggregates; and
 - operational health and metrics.
 
 It does not rank or serve videos and does not issue Nostr badges.
@@ -273,7 +328,7 @@ Owns:
 - idempotent application of Worker projection changes;
 - periodic snapshot reconciliation;
 - fair supporter-directory rotation;
-- engagement-ranked supporter video discovery;
+- bounded Supporter Showcase retrieval and eligibility filtering;
 - viewer-specific moderation/block/mute filtering; and
 - presentation-only supporter fields in profile/feed responses.
 
@@ -290,7 +345,7 @@ Owns:
 - account-bound repository and Cubit state;
 - purchase, restore, management, visibility, and error UI;
 - shared halo avatar decoration;
-- Supporters Explore tab; and
+- Supporters Explore tab with directory and bounded Showcase collections; and
 - analytics that contain no purchase proof, transaction ID, pubkey, or price.
 
 The current draft supporter PR
@@ -314,13 +369,17 @@ are fixed.
 One row per Divine pubkey:
 
 - `pubkey` — full 64-character hex key, primary key;
-- `public_visibility` — boolean, default true;
+- `halo_visible` — boolean;
+- `discovery_visible` — boolean;
+- `founding_history_visible` — boolean;
+- `recognition_choice_recorded_at`;
 - `created_at`;
 - `updated_at`; and
 - `visibility_version` — monotonic version for projection ordering.
 
 This table does not claim the account is active. Activity is derived from
-verified store transactions.
+verified store transactions. Recognition fields must not expose a purchaser
+before the purchase UI has clearly presented the recognition controls.
 
 ### 8.2 `store_transactions`
 
@@ -335,6 +394,7 @@ One row per original store subscription transaction:
   renewable store token or artifact required for later canonical verification;
 - `pubkey` — immutable owner after first successful binding;
 - `product_id`;
+- `plan_kind` — monthly, annual, or founding annual;
 - `environment` — sandbox/test or production;
 - `status` — canonical normalized state;
 - `paid_through_at`;
@@ -374,13 +434,14 @@ Transactional outbox for Funnelcake:
 - monotonic sequence;
 - pubkey;
 - `active_public` boolean;
+- `founding_history_public` boolean where applicable;
 - canonical effective time;
 - reason code;
 - created time; and
 - delivery/retry state.
 
-The public projection contains no store, product, price, transaction, or
-billing fields.
+The public projection contains no store, product, price, transaction, billing,
+or contribution fields.
 
 ## 9. Entitlement state machine
 
@@ -397,9 +458,9 @@ Normalized states:
 - `unknown` — verification temporarily unavailable; never used to overwrite a
   newer active/grace result.
 
-Public entitlement is true when at least one transaction for the pubkey is
-`active`, or `grace` within its verified grace window, and public visibility is
-true.
+Private entitlement is true when at least one transaction for the pubkey is
+`active`, or `grace` within its verified grace window. The public projection is
+derived from that entitlement plus the account's recognition preferences.
 
 Cancellation is metadata about future renewal, not immediate inactivity.
 
@@ -427,13 +488,16 @@ All version-one JSON APIs live under `/v1`.
 
 - NIP-98 authentication is required.
 - Returns normalized private entitlement state, paid/grace timing suitable for
-  UI, public-visibility preference, and typed management/repair status.
+  UI, recognition preferences, founding history, supporter-impact data, and
+  typed management/repair status.
 - Does not echo store proofs or transaction identifiers.
 
-`PATCH /v1/me/visibility`
+`PATCH /v1/me/recognition`
 
 - NIP-98 authentication is required.
-- Accepts one boolean controlling halo and Supporters discovery together.
+- Accepts the supported recognition preferences. A combined boolean may be
+  used by the v1 UI, but the API and data model must allow halo, discovery, and
+  founding-history visibility to separate later.
 - Emits an outbox change only when effective public state changes.
 
 ### 10.2 Store endpoints
@@ -509,7 +573,7 @@ Required read surfaces:
 
 - supporter presentation field on relevant profile/author response models;
 - paginated supporter directory;
-- paginated engagement-ranked supporter videos; and
+- paginated, bounded Supporter Showcase collections; and
 - enough projection freshness metadata for operational diagnosis.
 
 Fair directory rotation must:
@@ -520,9 +584,12 @@ Fair directory rotation must:
 - remain stable within a browsing session or bounded rotation period; and
 - apply ordinary moderation and viewer filters.
 
-Supporter video ranking must reuse existing engagement signals and eligibility
-rules. It adds one cohort filter; it does not create a second opaque ranking
-system.
+Supporter state must not be passed to ordinary For You, Popular, search,
+hashtag, list, notification, or ordinary Explore ranking services. The
+Supporter Showcase service applies published criteria, diversity limits,
+moderation eligibility, and bounded exposure. Engagement may be used only as a
+bounded quality or abuse-resistance input after those constraints; it must not
+turn the Showcase into a paid-only version of Popular.
 
 ## 13. Mobile architecture
 
@@ -550,7 +617,8 @@ The account container supplies the immutable active pubkey. The repository:
 - reads canonical entitlement from the Worker;
 - starts purchase attempts through the device coordinator;
 - claims/restores only for its pubkey;
-- updates public visibility;
+- updates recognition preferences;
+- updates recognition preferences independently of payment;
 - maps typed API/store failures; and
 - may cache the last verified private response for offline display, clearly
   timestamped and never used to grant public status.
@@ -584,9 +652,10 @@ loading placeholders, missing profile images, and avatar tap targets.
 ### 13.5 Explore integration
 
 Add a dynamically available `supporters` tab to the existing Explore tab model,
-routes, localized labels, tab bar, grid/feed state, analytics, and route-title
-mapping. The tab uses the same grid-to-fullscreen-feed navigation behavior as
-Classics.
+routes, localized labels, tab bar, directory and Showcase collection state,
+analytics, and route-title mapping. Showcase playback uses the same
+grid-to-fullscreen-feed navigation behavior as Classics, but the tab does not
+expose an engagement-ranked paid cohort feed.
 
 ## 14. Security and privacy
 
@@ -606,15 +675,45 @@ Classics.
   `SharedPreferences`; durable retries use OS-backed secure storage and delete
   proof material once it is no longer required.
 - Full Nostr IDs are used internally and never truncated in logs or tests.
-- Public APIs reveal only the boolean status the supporter explicitly leaves
+- Public APIs reveal only recognition state the supporter explicitly leaves
   enabled.
-- Visibility defaults on, but purchase UI explains it before confirmation and
-  the control is available immediately afterward.
+- Recognition defaults to private until the purchase UI has presented the
+  controls and the supporter has made a choice.
 - Deleting a Divine account removes public projection and visibility state while
   retaining only financial records required for fraud prevention, reconciliation,
   or legal obligations under a documented retention policy.
 
-## 15. Observability
+## 15. Supporter impact and transparency
+
+The Support Divine screen includes an impact section backed by authoritative
+aggregate data. It may show:
+
+- total active supporters;
+- founding-supporter count;
+- broad monthly funding goals;
+- broad categories of supporter-funded work; and
+- reliable, qualified coverage percentages where accounting supports them.
+
+Permitted categories include video hosting and bandwidth, moderation and trust
+and safety, human-made authenticity systems, independent app development,
+preservation of recovered internet culture, open-source work, and decentralized
+infrastructure.
+
+The service must not invent direct per-user impact calculations. It must not
+claim that one subscription pays for a precise quantity of storage, moderation,
+or video delivery unless the calculation is current, reproducible, and
+appropriately qualified.
+
+Public supporter counts include active paid and grace entitlements, exclude
+complimentary testing entitlements, count each annual subscriber as one
+supporter, and are updated on a documented cadence. Identity is never exposed
+without recognition opt-in. Counts may be withheld until they are large enough
+to avoid misleading scarcity signals.
+
+Impact copy may come from an authenticated configuration source, but counts and
+funding coverage must come from authoritative aggregate data.
+
+## 16. Observability
 
 Operational metrics use counts and typed reasons, never purchase evidence:
 
@@ -624,7 +723,8 @@ Operational metrics use counts and typed reasons, never purchase evidence:
 - unbound transaction count;
 - projection delivery lag and reconciliation repairs;
 - claim retry age;
-- ownership conflicts; and
+- ownership conflicts;
+- active supporter and founding-supporter aggregate refresh age; and
 - Store-to-Worker and Worker-to-Funnelcake availability.
 
 Alert on:
@@ -636,9 +736,9 @@ Alert on:
 - sudden entitlement drops; and
 - repeated store API authentication failures.
 
-## 16. Testing strategy
+## 17. Testing strategy
 
-### 16.1 `divine-supporters`
+### 17.1 `divine-supporters`
 
 - D1 migration tests.
 - NIP-98 request-authentication and replay tests.
@@ -649,23 +749,26 @@ Alert on:
 - Grace, refund, revoke, and recovery tests.
 - Multiple transactions for one pubkey.
 - Visibility changes independent of payment.
+- Founding cohort boundary and founding-history visibility tests.
+- Supporter-impact aggregate counting and complimentary-entitlement exclusion.
 - Transactional outbox and retry tests.
 - Snapshot/delta reconciliation tests.
 - Secret/log redaction tests.
 - Sandbox versus production isolation.
 
-### 16.2 Funnelcake
+### 17.2 Funnelcake
 
 - Idempotent projection application.
 - Snapshot drift repair.
 - Fair directory coverage and session stability.
-- Engagement ranking restricted to active public supporters.
+- Bounded Showcase eligibility, criteria, diversity, and exposure limits.
 - Expired/refunded/opted-out removal.
+- Ordinary ranking outputs are unchanged when supporter projections are enabled.
 - Block, mute, moderation, age, and content-safety filtering.
 - Profile and feed presentation-field serialization.
 - Pagination and empty/error behavior.
 
-### 16.3 Mobile
+### 17.3 Mobile
 
 - Store listener starts at device scope.
 - Purchase result survives route disposal.
@@ -676,13 +779,17 @@ Alert on:
 - Cubit close/dispose regression coverage.
 - Typed failure mapping.
 - Visibility toggle semantics.
+- Impact screen uses authoritative aggregate data and does not invent per-user
+  claims.
 - Full localization and ARB consistency.
 - Shared halo widget tests at every supported avatar size.
 - Golden tests for purchase, active, pending, grace, error, and Explore states.
 - Explore directory/grid/feed navigation tests.
+- Showcase collections are labelled and do not behave as an engagement-ranked
+  paid cohort feed.
 - Feature flag off/on tests.
 
-### 16.4 End-to-end
+### 17.4 End-to-end
 
 Before enabling the feature:
 
@@ -698,26 +805,30 @@ Before enabling the feature:
 - opt-out and opt-in propagation; and
 - moderation/block filtering in Supporters Explore.
 
-## 17. Store and policy requirements
+## 18. Store and policy requirements
 
 Before release:
 
-- create the monthly product in App Store Connect and Google Play Console;
-- choose the launch price and localized availability;
+- create standard monthly, standard annual, and bounded founding annual
+  products in App Store Connect and Google Play Console;
+- configure US$6.99 monthly, US$69.99 annual, and US$59.99 founding annual
+  reference prices, with localized storefront prices owned by each store;
+- declare the founding cohort boundary and renewal behavior before launch;
 - add the iOS In-App Purchase capability and refresh signing profiles;
 - configure App Store Server Notifications;
 - configure Google Real-time Developer Notifications and API credentials;
 - provide subscription terms, privacy links, restore, and management;
 - explain the business model and recognition/discovery benefits in review notes;
 - ensure store listing metadata discloses in-app purchases as required; and
-- verify the subscription provides ongoing value across the user's devices.
+- verify the membership provides ongoing supporter value without promising
+  storage, sync, ranking, verification, or ordinary functionality.
 
 References:
 
 - [Apple App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
 - [Google Play Payments policy](https://support.google.com/googleplay/android-developer/answer/9858738)
 
-## 18. Rollout
+## 19. Rollout
 
 1. Create `divinevideo/divine-supporters` and establish CI, preview/prod
    environments, D1 migrations, secrets policy, and threat model.
@@ -730,32 +841,41 @@ References:
    outstanding money-path review findings.
 6. Add shared halo decoration and Supporters Explore behind
    `FF_DIVINE_SUPPORTERS`.
-7. Configure store products and native capabilities.
-8. Complete sandbox end-to-end verification.
-9. Enable for internal accounts and verify metrics/reconciliation.
-10. Roll out through the existing feature-flag process.
+7. Add supporter-impact aggregates and the labelled Showcase presentation.
+8. Configure store products and native capabilities.
+9. Complete sandbox end-to-end verification.
+10. Enable for internal accounts and verify metrics/reconciliation.
+11. Roll out through the existing feature-flag process.
 
 Rollback disables purchase entry and the Supporters Explore tab while leaving
 the Worker processing renewals, refunds, store notifications, and subscription
 management. An app rollback must never stop server-side lifecycle processing
 for people who already paid.
 
-## 19. Acceptance criteria
+## 20. Acceptance criteria
 
 The initiative is ready to enable only when:
 
 - a purchase binds exactly one original store transaction to the intended
   Divine pubkey;
+- monthly, annual, and founding annual products map to one equal-benefit
+  entitlement;
 - verified status restores on another device for that same pubkey;
 - another pubkey cannot claim the transaction;
 - renewals, grace, cancellation, expiry, refund, and revoke update entitlement
   without the app running;
-- public visibility defaults on and can be disabled without cancelling;
-- halo and discovery disappear after effective expiry/refund or opt-out;
+- recognition remains private until explicitly chosen and can be disabled
+  without cancelling;
+- halo, directory eligibility, and Showcase eligibility disappear after
+  effective expiry/refund or opt-out;
 - halo placement matches the approved warm-gold perched design across shared
   avatar surfaces;
 - the directory rotates fairly;
-- supporter videos are engagement-ranked only inside Supporters Explore;
+- Supporter Showcases are bounded, labelled, criteria-driven, and do not
+  guarantee placement;
+- supporter amount, plan, founding status, and tenure do not affect selection;
+- impact counts exclude complimentary access and do not make invented per-user
+  claims;
 - general ranking is unchanged;
 - no billing evidence appears in public APIs, Nostr, analytics, or logs;
 - Worker and Funnelcake reconcile after dropped projection events;
@@ -763,16 +883,19 @@ The initiative is ready to enable only when:
   ratchets, and goldens pass; and
 - Apple and Google sandbox lifecycle matrices pass on real builds.
 
-## 20. Implementation decomposition
+## 21. Implementation decomposition
 
 This is one product initiative but not one cross-repository patch. Implementation
 plans must preserve these boundaries:
 
-1. **`divine-supporters` foundation and canonical entitlement**
-2. **Funnelcake projection and Supporters discovery**
+1. **`divine-supporters` foundation, canonical entitlement, and impact aggregates**
+2. **Funnelcake projection, fair directory, and bounded Supporter Showcases**
 3. **Mobile store lifecycle and server-backed entitlement**
-4. **Mobile halo and Explore presentation**
+4. **Mobile halo, recognition controls, and Explore presentation**
 5. **Store configuration and end-to-end rollout**
+
+Draft and saved-clip sync is intentionally absent from every launch slice. It
+requires a separate product and architecture design before implementation.
 
 Each repository uses a focused branch and PR targeting its own `main`. Mobile
 work continues from or deliberately supersedes PR #6378 only after takeover
