@@ -1119,21 +1119,15 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
     }
 
-    if (removedCount > 0) {
-      Log.info(
-        'Removed video $logIdentity from $removedCount location(s) across all feeds',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-      // Notify listeners to update UI immediately (optimistic update)
-      notifyListeners();
-    } else {
-      Log.info(
-        'Video $logIdentity marked as deleted (was not in any active feeds)',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-    }
+    Log.info(
+      removedCount > 0
+          ? 'Removed video $logIdentity from $removedCount location(s) across all feeds'
+          : 'Video $logIdentity marked as deleted (was not in any active feeds)',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+    // Notify listeners to update UI immediately (optimistic update).
+    notifyListeners();
   }
 
   /// Remove a video from an author's cached list (optimistic deletion)
