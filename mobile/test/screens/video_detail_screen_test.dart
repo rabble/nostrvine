@@ -88,7 +88,7 @@ void main() {
         () => mockVideoEventService.shouldHideVideo(any()),
       ).thenReturn(false);
       when(
-        () => mockVideoEventService.isVideoEventLocallyDeleted(any()),
+        () => mockVideoEventService.isVideoEventKnownDeleted(any()),
       ).thenReturn(false);
     });
 
@@ -630,7 +630,7 @@ void main() {
           ),
         ).thenAnswer((_) async => video);
         when(
-          () => mockVideoEventService.isVideoEventLocallyDeleted(video),
+          () => mockVideoEventService.isVideoEventKnownDeleted(video),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'deleted_video_id'));
