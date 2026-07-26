@@ -2022,9 +2022,14 @@ void main() {
         final item = page.items.single as VideoNotification;
         expect(item.id, equals('new-row'));
         expect(item.type, equals(NotificationKind.mention));
-        expect(item.totalCount, equals(2));
+        expect(item.actors.map((a) => a.pubkey), equals(['source_author']));
+        expect(item.totalCount, equals(1));
         expect(item.videoEventId, equals('source_video_evt_new'));
         expect(item.videoAddressableId, equals(rootAddressableId));
+        expect(item.sourceEventIds, [
+          'source_video_evt_new',
+          'source_video_evt_old',
+        ]);
       });
 
       test(
@@ -2247,7 +2252,10 @@ void main() {
 
           final captured =
               verify(
-                    () => notificationsDao.replaceAll(captureAny()),
+                    () => notificationsDao.replaceAll(
+                      captureAny(),
+                      ownerPubkey: any(named: 'ownerPubkey'),
+                    ),
                   ).captured.single
                   as List<NotificationCacheRow>;
           final row = captured.singleWhere((r) => r.type != 'seen_marker');
@@ -3037,8 +3045,10 @@ void main() {
             '${NIP71VideoKinds.addressableShortVideo}:'
             'source_author:video-d-tag';
         when(
-          () =>
-              notificationsDao.getAllNotifications(limit: any(named: 'limit')),
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
         ).thenAnswer(
           (_) async => [
             NotificationRow(
@@ -3076,6 +3086,65 @@ void main() {
           ),
         );
       });
+
+      test(
+        'cached "videoMention" row restores source coordinate from metadata',
+        () async {
+          const expectedAddressableId =
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              'source_author:source-video-d-tag';
+          when(
+            () => notificationsDao.getAllNotifications(
+              limit: any(named: 'limit'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              NotificationRow(
+                id: 'cached_video_mention_1',
+                type: 'videoMention',
+                fromPubkey: 'source_author',
+                timestamp: 1700000000,
+                targetEventId: 'source_video_evt',
+                hasCommentTarget: false,
+                isRead: false,
+                cachedAt: DateTime(2026),
+              ),
+            ],
+          );
+          stubVideoStats(
+            'source_video_evt',
+            makeVideoStats(
+              id: 'source_video_evt',
+              pubkey: 'source_author',
+              dTag: 'source-video-d-tag',
+            ),
+          );
+
+          final hydrated = NotificationRepository(
+            funnelcakeApiClient: funnelcakeApiClient,
+            profileRepository: profileRepository,
+            notificationsDao: notificationsDao,
+            userPubkey: userPubkey,
+          );
+          addTearDown(hydrated.close);
+
+          final page = await hydrated
+              .watchSnapshot()
+              .firstWhere((p) {
+                if (p.items.length != 1) return false;
+                final item = p.items.first;
+                return item is VideoNotification &&
+                    item.type == NotificationKind.mention &&
+                    item.videoAddressableId == expectedAddressableId;
+              })
+              .timeout(const Duration(seconds: 1));
+
+          final item = page.items.single as VideoNotification;
+          expect(item.videoEventId, equals('source_video_evt'));
+          expect(item.actors.single.pubkey, equals('source_author'));
+        },
+      );
 
       test(
         'cached "repost" row becomes $VideoNotification placeholder',
