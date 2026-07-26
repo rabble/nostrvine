@@ -247,36 +247,37 @@ void main() {
     );
 
     test(
-      'deletes terminal self-views and sub-second rows without publishing',
+      'publishes self-views but deletes sub-second rows without publishing',
       () async {
         await dao.enqueue(
-          makeEvent(
-            id: 'self-view',
-            eventVideoPubkey: userPubkey,
-          ),
+          makeEvent(id: 'self-view', eventVideoPubkey: userPubkey),
         );
-        await dao.enqueue(
-          makeEvent(
-            id: 'short-view',
-            watchDurationMs: 999,
-          ),
-        );
+        await dao.enqueue(makeEvent(id: 'short-view', watchDurationMs: 999));
         final service = makeService();
 
         await service.sweep();
 
         expect(await dao.getById('self-view'), isNull);
         expect(await dao.getById('short-view'), isNull);
-        verifyNever(
+        final captured = verify(
           () => publisher.publishViewEvent(
-            video: any(named: 'video'),
-            startSeconds: any(named: 'startSeconds'),
-            endSeconds: any(named: 'endSeconds'),
-            source: any(named: 'source'),
-            sourceDetail: any(named: 'sourceDetail'),
-            loopCount: any(named: 'loopCount'),
+            video: captureAny(named: 'video'),
+            startSeconds: captureAny(named: 'startSeconds'),
+            endSeconds: captureAny(named: 'endSeconds'),
+            source: captureAny(named: 'source'),
+            sourceDetail: captureAny(named: 'sourceDetail'),
+            loopCount: captureAny(named: 'loopCount'),
           ),
-        );
+        ).captured;
+        final video = captured[0] as VideoEvent;
+        expect(video.id, 'video-self-view');
+        expect(video.pubkey, userPubkey);
+        expect(video.vineId, 'vine-self-view');
+        expect(captured[1], 0);
+        expect(captured[2], 2);
+        expect(captured[3], ViewTrafficSource.home);
+        expect(captured[4], 'following');
+        expect(captured[5], 1);
       },
     );
 
