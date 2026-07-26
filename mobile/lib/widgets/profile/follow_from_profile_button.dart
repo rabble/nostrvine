@@ -147,16 +147,26 @@ class FollowFromProfileButtonView extends StatelessWidget {
       );
     }
 
-    return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
-      selector: (state) => state.isFollowing(pubkey),
-      builder: (context, isFollowing) {
-        if (isFollowing) {
-          return _FollowingButton(
-            onPressed: () => _showUnfollowConfirmation(context),
-          );
-        }
-        return _FollowButton(onPressed: () => _follow(context));
+    return BlocListener<MyFollowingBloc, MyFollowingState>(
+      listenWhen: (previous, current) =>
+          current.status == MyFollowingStatus.toggleFailure &&
+          previous.status != MyFollowingStatus.toggleFailure,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.followersUpdateFollowFailed)),
+        );
       },
+      child: BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
+        selector: (state) => state.isFollowing(pubkey),
+        builder: (context, isFollowing) {
+          if (isFollowing) {
+            return _FollowingButton(
+              onPressed: () => _showUnfollowConfirmation(context),
+            );
+          }
+          return _FollowButton(onPressed: () => _follow(context));
+        },
+      ),
     );
   }
 
