@@ -16,10 +16,13 @@ class _MockProImageEditorState extends Mock implements ProImageEditorState {
 
 class _MockStateManager extends Mock implements StateManager {}
 
-DivineVideoClip _clip(String id) => DivineVideoClip(
+DivineVideoClip _clip(
+  String id, {
+  Duration duration = const Duration(seconds: 3),
+}) => DivineVideoClip(
   id: id,
   video: EditorVideo.file('/tmp/$id.mp4'),
-  duration: const Duration(seconds: 3),
+  duration: duration,
   recordedAt: DateTime(2026),
   targetAspectRatio: .vertical,
   originalAspectRatio: 9 / 16,
@@ -106,6 +109,88 @@ void main() {
         meta[VideoEditorConstants.clipsStateHistoryKey],
         isA<List<dynamic>>().having((clips) => clips.length, 'length', 1),
       );
+    });
+
+    group('setLengthenedClipState', () {
+      // #6401 on the content-added path: a sound clamped to a 3s composition
+      // when it was added, then the user shoots more stills from the editor's
+      // camera (or merges a set in from the clips picker) and the composition
+      // becomes 6s. Without the grow, publish muxes a 6s video with 3s audio.
+      const covering = AudioEvent(
+        id: 'sound-1',
+        pubkey: 'bundled',
+        createdAt: 0,
+        url: 'asset://sounds/loop.mp3',
+        duration: 30,
+        endTime: Duration(seconds: 3),
+      );
+
+      List<AudioEvent> capturedAudio() {
+        final meta =
+            verify(
+                  () => editor.addHistory(meta: captureAny(named: 'meta')),
+                ).captured.single
+                as Map<String, dynamic>;
+        final raw =
+            meta[VideoEditorConstants.audioStateHistoryKey] as List<dynamic>;
+        return raw
+            .cast<Map<String, dynamic>>()
+            .map(AudioEvent.fromJson)
+            .toList();
+      }
+
+      test('grows a sound that covered the old end onto the added clip', () {
+        when(() => stateManager.activeMeta).thenReturn({
+          VideoEditorConstants.audioStateHistoryKey: [covering.toJson()],
+        });
+
+        editor.setLengthenedClipState(
+          previousClips: [_clip('clip-1')],
+          clips: [_clip('clip-1'), _clip('clip-2')],
+        );
+
+        expect(capturedAudio().single.endTime, const Duration(seconds: 6));
+      });
+
+      test('leaves a sound the user trimmed short of the old end', () {
+        const trimmed = AudioEvent(
+          id: 'sound-1',
+          pubkey: 'bundled',
+          createdAt: 0,
+          url: 'asset://sounds/loop.mp3',
+          duration: 30,
+          endTime: Duration(seconds: 1),
+        );
+        when(() => stateManager.activeMeta).thenReturn({
+          VideoEditorConstants.audioStateHistoryKey: [trimmed.toJson()],
+        });
+
+        editor.setLengthenedClipState(
+          previousClips: [_clip('clip-1')],
+          clips: [_clip('clip-1'), _clip('clip-2')],
+        );
+
+        expect(capturedAudio().single.endTime, const Duration(seconds: 1));
+      });
+
+      test('writes no audio key when the composition has no sound', () {
+        when(() => stateManager.activeMeta).thenReturn({});
+
+        editor.setLengthenedClipState(
+          previousClips: [_clip('clip-1')],
+          clips: [_clip('clip-1'), _clip('clip-2')],
+        );
+
+        final meta =
+            verify(
+                  () => editor.addHistory(meta: captureAny(named: 'meta')),
+                ).captured.single
+                as Map<String, dynamic>;
+        expect(
+          meta.containsKey(VideoEditorConstants.audioStateHistoryKey),
+          isFalse,
+        );
+      });
     });
 
     test('setClipState updates current markers when skipping history', () {

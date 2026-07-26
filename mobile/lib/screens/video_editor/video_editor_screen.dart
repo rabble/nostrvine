@@ -463,13 +463,27 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
   /// Syncs the current clip list from [clipManagerProvider] into the
   /// [ClipEditorBloc] and appends a history entry to the pro_image_editor.
+  ///
+  /// Both callers add content — stills shot from the editor's camera, a
+  /// stop-motion set merged in from the clips picker — so the composition can
+  /// end up longer than the one a sound was clamped to when it was added.
+  /// [VideoEditorExtensions.setLengthenedClipState] carries a window that ran
+  /// to the old end onto the new one (#6401); a window the user trimmed short
+  /// is left alone.
   void _syncClipsToEditor({required ClipEditorBloc clipEditorBloc}) {
+    // Read before the dispatch: this is the composition the audio windows were
+    // last clamped against.
+    final previousClips = clipEditorBloc.state.clips;
+
     // Sync the updated clip list into the editor BLoC.
     final updatedClips = ref.read(clipManagerProvider).clips;
     clipEditorBloc.add(ClipEditorInitialized(updatedClips));
 
     if (_editor != null) {
-      _editor!.setClipState(updatedClips);
+      _editor!.setLengthenedClipState(
+        previousClips: previousClips,
+        clips: updatedClips,
+      );
     }
   }
 

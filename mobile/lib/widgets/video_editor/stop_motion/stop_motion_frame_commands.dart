@@ -6,9 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_extensions.dart';
-import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -56,27 +54,15 @@ void commitStopMotionFrames(
     markers: overlayBloc.state.timelineMarkers,
   );
 
-  // A hold change restretches the whole composition, so a sound that covered it
-  // has to grow with it (#6401).
-  final currentTracks = editor.stateManager.audioTracks;
-  final grownTracks = growAudioToCompositionEnd(
-    rebaseAnchoredAudioForClipState(newClips, currentTracks),
-    previousDuration: compositionDuration(state.clips),
-    duration: compositionDuration(newClips),
-    maxDuration: VideoEditorConstants.maxDuration,
-  );
-
   bloc.add(ClipEditorClipUpdated(clipId: clipId, clip: updated));
   overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-  if (identical(grownTracks, currentTracks)) {
-    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
-  } else {
-    editor.setClipAndAudioState(
-      clips: newClips,
-      audioTracks: grownTracks,
-      timelineMarkers: rebasedMarkers,
-    );
-  }
+  // A hold change restretches the whole composition, so a sound that covered it
+  // has to grow with it (#6401).
+  editor.setLengthenedClipState(
+    previousClips: state.clips,
+    clips: newClips,
+    timelineMarkers: rebasedMarkers,
+  );
 }
 
 List<StopMotionClipFrame>? _stopMotionFrames(
