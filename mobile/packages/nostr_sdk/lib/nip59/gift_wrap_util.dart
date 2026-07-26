@@ -36,6 +36,28 @@ bool verifyGiftWrapPartJson(Map<String, dynamic> eventJson) {
 /// `getRumorEvent` verifies inline on the calling isolate, unchanged.
 typedef GiftWrapPartVerifier = Future<bool> Function(Event event);
 
+/// Rebuilds an unsigned NIP-59 rumor from its plaintext JSON using the
+/// authenticated seal pubkey as author.
+///
+/// NIP-59 leaves the inner rumor unsigned, so its claimed `id` and `pubkey`
+/// are not authenticated and may be absent. Read only the fields that define
+/// the canonical event body, and let [Event] derive the id from those fields.
+Event rebuildUnsignedRumorFromJson(
+  Map<String, dynamic> rumorJson, {
+  required String authenticatedPubkey,
+}) {
+  final tags = (rumorJson['tags'] as List<dynamic>)
+      .map((tag) => (tag as List<dynamic>).map((e) => e as String).toList())
+      .toList();
+  return Event(
+    authenticatedPubkey,
+    rumorJson['kind'] as int,
+    tags,
+    rumorJson['content'] as String,
+    createdAt: rumorJson['created_at'] as int,
+  );
+}
+
 class GiftWrapUtil {
   static final math.Random _secureRandom = math.Random.secure();
 
@@ -71,7 +93,7 @@ class GiftWrapUtil {
     GiftWrapPartVerifier? verifyPart,
   }) async {
     // C16/NIP-44: validate the outer gift wrap (kind 1059) signature before
-    // decrypting. Defense-in-depth — diVine relays already verify, but an
+    // decrypting. Defense-in-depth — Divine relays already verify, but an
     // untrusted relay or local cache could serve a forged/tampered wrap.
     final outerValid = verifyPart != null
         ? await verifyPart(e)
@@ -110,8 +132,8 @@ class GiftWrapUtil {
       return null;
     }
 
-    var jsonObj = jsonDecode(sourceText);
-    var innerEvent = Event.fromJson(jsonObj);
+    final jsonObj = jsonDecode(sourceText) as Map<String, dynamic>;
+    final claimedPubkey = jsonObj['pubkey'];
 
     // The inner rumor is intentionally NOT signature-checked: NIP-59 requires
     // it to be unsigned, and its claimed authorship is never trusted for
@@ -123,24 +145,30 @@ class GiftWrapUtil {
     // Some Nostr clients in the wild produce mismatched pubkeys. Rather than
     // rejecting the message entirely, we accept it but attribute it to the
     // seal's authenticated pubkey to prevent impersonation.
-    if (rumorEvent.pubkey != innerEvent.pubkey) {
+    if (claimedPubkey is String && rumorEvent.pubkey != claimedPubkey) {
       log(
         'GiftWrap sender pubkey mismatch: seal=${rumorEvent.pubkey} '
-        'rumor=${innerEvent.pubkey}. Using seal pubkey as authoritative sender.',
-      );
-      // C4: rebuild the rumor with the seal's authenticated pubkey so the
-      // event id is RECOMPUTED to match (Event.fromJson would otherwise carry
-      // over the spoofed id). The rebuilt rumor is unsigned, per NIP-59.
-      return Event(
-        rumorEvent.pubkey,
-        innerEvent.kind,
-        innerEvent.tags,
-        innerEvent.content,
-        createdAt: innerEvent.createdAt,
+        'rumor=$claimedPubkey. Using seal pubkey as authoritative sender.',
       );
     }
 
-    return innerEvent;
+    // Rebuild unconditionally through the Event constructor so BOTH
+    // unauthenticated fields are handled at one seam: the pubkey becomes the
+    // seal's (authenticated) one, and the id is DERIVED rather than trusted.
+    //
+    // Because the rumor is unsigned, nothing binds its claimed `id` to its
+    // body — yet that id becomes the `direct_messages` primary key and the
+    // reaction upsert key, so a sender who claims an id already in use can
+    // silently overwrite another user's row. The constructor recomputes the
+    // canonical NIP-01 id from the rumor's own fields; for a well-formed
+    // sender it equals the claimed id, so there is no observable divergence,
+    // and for a non-canonical one the recompute is the more correct choice.
+    // DmRepository._rumorFromSlot already builds rumors exactly this way.
+    // The rebuilt rumor is unsigned, per NIP-59.
+    return rebuildUnsignedRumorFromJson(
+      jsonObj,
+      authenticatedPubkey: rumorEvent.pubkey,
+    );
   }
 
   static Future<Event?> getGiftWrapEvent(
@@ -172,6 +200,19 @@ class GiftWrapUtil {
       createdAt: sealCreatedAt,
     );
     await nostr.signEvent(sealEvent);
+
+    // [Nostr.signEvent] is a no-op when the signer returns null, which is a
+    // reachable outcome for every remote signer: an Amber user dismissing the
+    // approval prompt, a NIP-46 bunker RPC timing out, a NIP-07 rejection.
+    // Without this check the seal ships with an empty `sig`, the wrap around
+    // it is signed with a valid ephemeral key so relays accept it, the send
+    // reports as delivered — and every recipient drops it at the seal
+    // signature check. Returning null routes the caller to a retryable
+    // failure that keeps its durable queue row instead.
+    if (sealEvent.sig.isEmpty) {
+      log('GiftWrap seal was not signed; refusing to publish an unsigned DM.');
+      return null;
+    }
 
     var randomPrivateKey = generatePrivateKey();
     var randomPubkey = getPublicKey(randomPrivateKey);
@@ -206,9 +247,8 @@ class GiftWrapUtil {
 /// The seal's pubkey is DERIVED from [senderPrivateKeyHex] rather than passed
 /// in: it must correspond to the signing key, or both the recipient's NIP-44
 /// ECDH (which keys on the seal pubkey) and the seal's Schnorr verification
-/// fail. [rumorJson] is the unsigned kind-14 rumor as [Event.toJson]; its `sig`
-/// is stripped before sealing and its id is preserved (receiver-side gift-wrap
-/// dedup keys on it).
+/// fail. [rumorJson] is the unsigned kind-14 rumor; its `sig` is stripped
+/// before sealing, and receivers derive the rumor id after unwrap.
 ///
 /// Returns the signed kind-1059 gift wrap. Pure (no I/O, no signer object),
 /// so it is safe to run inside an isolate — the same crypto primitives already
@@ -237,6 +277,10 @@ Future<Event?> buildGiftWrapFromHex({
     sealEventContent,
     createdAt: sealCreatedAt,
   );
+  // No unsigned-seal guard is needed here: [Event.sign] only no-ops when the
+  // key fails `keyIsValid`, and `getPublicKey` above rejects exactly those
+  // keys by throwing first. The throw propagates to the caller as a failed
+  // build, which is the same safe outcome. Pinned by a test.
   sealEvent.sign(senderPrivateKeyHex);
 
   final randomPrivateKey = generatePrivateKey();

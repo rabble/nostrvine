@@ -94,7 +94,7 @@ Future<DecryptedRumorResult> _decryptOne(
   }
 
   // C16/NIP-44: validate the outer gift wrap (kind 1059) signature before
-  // decrypting. Defense-in-depth — diVine relays verify on publish, but an
+  // decrypting. Defense-in-depth — Divine relays verify on publish, but an
   // untrusted relay or local cache could serve a forged/tampered wrap.
   if (!verifyGiftWrapPart(giftWrap)) {
     return DecryptedRumorResult.failure(
@@ -151,31 +151,19 @@ Future<DecryptedRumorResult> _decryptOne(
     );
   }
 
-  // NIP-17 sender verification: the rumor's claimed author is NOT
-  // cryptographically authenticated — the seal's pubkey IS (it signed
-  // the seal). When they differ, attribute the message to the seal's
-  // authenticated pubkey to prevent impersonation. This mirrors the
-  // logic in GiftWrapUtil.getRumorEvent.
-  final rumorPubkey = rumorJson['pubkey'];
-  final spoofedAuthor =
-      rumorPubkey is String && rumorPubkey != sealEvent.pubkey;
-
-  // Round-trip through Event to normalize shape and re-emit toJson so
-  // the main isolate receives exactly what Event.fromJson expects back.
+  // NIP-59 leaves the rumor unsigned, so NOTHING in it is authenticated —
+  // not its `pubkey` and not its `id`. The seal's pubkey IS authenticated
+  // (it signed the seal), so it is the authoritative author, and the id is
+  // derived rather than trusted: it becomes the `direct_messages` primary
+  // key and the reaction upsert key, so accepting a claimed one lets a
+  // sender overwrite another user's row. Parse only the authenticated/needed
+  // fields; claimed `id` and `pubkey` may be absent. Mirrors
+  // GiftWrapUtil.getRumorEvent and DmRepository._rumorFromSlot.
   try {
-    var rumor = Event.fromJson(rumorJson);
-    if (spoofedAuthor) {
-      // C4: rebuild with the seal's authenticated pubkey so the rumor id
-      // is RECOMPUTED to match (Event.fromJson would otherwise carry over
-      // the spoofed id). The rebuilt rumor is unsigned, per NIP-59.
-      rumor = Event(
-        sealEvent.pubkey,
-        rumor.kind,
-        rumor.tags,
-        rumor.content,
-        createdAt: rumor.createdAt,
-      );
-    }
+    final rumor = rebuildUnsignedRumorFromJson(
+      rumorJson,
+      authenticatedPubkey: sealEvent.pubkey,
+    );
     return DecryptedRumorResult.success(rumor.toJson());
   } on Object catch (e) {
     return DecryptedRumorResult.failure(

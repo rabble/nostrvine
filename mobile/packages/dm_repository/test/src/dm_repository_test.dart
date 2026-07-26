@@ -315,6 +315,7 @@ class _FakeDmSyncState implements DmSyncState {
   final List<String> markedCompletePubkeys = <String>[];
   final List<int> persistedDrainCursors = <int>[];
   final List<String> upgradedPubkeys = <String>[];
+  final List<String> repairedPubkeys = <String>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
 
@@ -349,6 +350,18 @@ class _FakeDmSyncState implements DmSyncState {
     drainCompleteOverride = false;
     drainCursorOverride = null;
     drainVersionOverride = DmSyncState.currentDrainVersion;
+  }
+
+  @override
+  Future<void> repairPoisonedBoundaries(String pubkey) async {
+    repairedPubkeys.add(pubkey);
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final newest = newestOverride;
+    if (newest != null && newest > nowSec + DmSyncState.maxFutureSkewSeconds) {
+      newestOverride = nowSec;
+      drainCompleteOverride = false;
+      drainCursorOverride = null;
+    }
   }
 
   @override
@@ -11046,6 +11059,172 @@ void main() {
 
           expect(decryptCount, 2);
           expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by
+      // whoever sent the wrap. Left unbounded, one such rumor advances the
+      // sync cursor past now and every later subscription returns nothing —
+      // the inbox is silently blackholed until reinstall.
+      Event futureDatedRumor() => Event.fromJson({
+        'id': _rumorEventId,
+        'pubkey': _validPubkeyB,
+        // Year 2100 — unconditionally beyond the local ordering clamp.
+        'created_at': 4102444800,
+        'kind': EventKind.privateDirectMessage,
+        'tags': [
+          ['p', _validPubkeyA],
+        ],
+        'content': 'blackhole',
+        'sig': '',
+      });
+
+      test(
+        'a future-dated rumor is persisted with a clamped timestamp and never '
+        'advances the sync cursor past now',
+        () async {
+          final syncState = _FakeDmSyncState();
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              tagsJson: any(named: 'tagsJson'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            syncState: syncState,
+            rumorDecryptor: (_, _) async => futureDatedRumor(),
+          );
+          await repository.startListening();
+
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final insertCall = verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: captureAny(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              tagsJson: any(named: 'tagsJson'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          )..called(1);
+          final insertedCreatedAt = insertCall.captured.single as int;
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          expect(insertedCreatedAt, closeTo(nowSec, 5));
+          expect(syncState.recorded.single.createdAt, closeTo(nowSec, 5));
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'the skew guard does not reject an honestly-dated rumor',
+        () async {
+          // Same wrap, same pipeline — only the rumor timestamp differs. The
+          // rumor must reach its kind handler instead of being short-circuited.
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final honest = Event.fromJson({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyB,
+            'created_at': nowSec - 60,
+            'kind': EventKind.reaction,
+            'tags': [
+              ['e', _giftWrapEventId2],
+              ['p', _validPubkeyA],
+            ],
+            'content': '❤️',
+            'sig': '',
+          });
+          when(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async => honest,
+          );
+          await repository.startListening();
+
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
 
           await controller.close();
           await repository.stopListening();

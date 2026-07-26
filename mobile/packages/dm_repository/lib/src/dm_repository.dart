@@ -755,44 +755,52 @@ class DmRepository {
     _reconnectTimer = null;
     if (_giftWrapSubscription != null || _subscribing || !isInitialized) return;
 
-    // Count-based windowing: first open fetches a bounded backlog
-    // (limit:50), later opens fetch only recent events via a `since:`
-    // filter. The 2-day overlap absorbs NIP-17 randomized created_at
-    // jitter (gift wraps tweak their outer created_at within a ~2 day
-    // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
-    final newest = _syncState?.newestSyncedAt(_userPubkey);
-    final isFirstOpen = newest == null;
-    final filter = nostr_filter.Filter(
-      kinds: [
-        EventKind.giftWrap,
-        EventKind.directMessage,
-        EventKind.eventDeletion,
-      ],
-      p: [_userPubkey],
-      limit: isFirstOpen ? 50 : null,
-      since: isFirstOpen ? null : (newest - 2 * 86400),
-    );
-
-    Log.info(
-      'Starting DM subscription for pubkey $_userPubkey '
-      '(connected relays: '
-      '${_nostrClient.connectedRelayCount}/'
-      '${_nostrClient.configuredRelayCount}, '
-      'filter: ${filter.toJson()})',
-      category: LogCategory.system,
-    );
-
-    // Resolve the user's OWN kind-10050 inbox relays and target the live
-    // subscription at them — as BOTH tempRelays (to add connections outside
-    // the default pool) AND targetRelays — so gift wraps a NIP-17 sender
-    // delivered to relays outside divine's default pool are read. A `null`
-    // result (no kind-10050 / resolve failure) preserves the prior
-    // default-pool behavior. Memoized per session, so the resolve (bounded by
-    // the queryEvents ~5s timeout) only delays the FIRST open. `_subscribing`
-    // guards the await window against a concurrent startListening opening a
-    // duplicate subscription. See #4974.
+    // Claim the subscribe slot BEFORE the first await. `_subscribing` is what
+    // stops a concurrent startListening() from opening a duplicate
+    // subscription, so every suspension point below must be inside it — the
+    // re-entrancy check above is only sound while the code between it and this
+    // assignment stays synchronous. The `finally` below always releases it.
     _subscribing = true;
     try {
+      // Heal boundaries a pre-guard build may have poisoned with an
+      // unauthenticated rumor timestamp before deriving `since:` from them —
+      // otherwise an already-affected install stays silently blackholed.
+      await _syncState?.repairPoisonedBoundaries(_userPubkey);
+
+      // Count-based windowing: first open fetches a bounded backlog
+      // (limit:50), later opens fetch only recent events via a `since:`
+      // filter. The 2-day overlap absorbs NIP-17 randomized created_at
+      // jitter (gift wraps tweak their outer created_at within a ~2 day
+      // window). See docs/plans/2026-04-05-dm-scaling-fix-design.md.
+      final newest = _syncState?.newestSyncedAt(_userPubkey);
+      final isFirstOpen = newest == null;
+      final filter = nostr_filter.Filter(
+        kinds: [
+          EventKind.giftWrap,
+          EventKind.directMessage,
+          EventKind.eventDeletion,
+        ],
+        p: [_userPubkey],
+        limit: isFirstOpen ? 50 : null,
+        since: isFirstOpen ? null : (newest - 2 * 86400),
+      );
+
+      Log.info(
+        'Starting DM subscription for pubkey $_userPubkey '
+        '(connected relays: '
+        '${_nostrClient.connectedRelayCount}/'
+        '${_nostrClient.configuredRelayCount}, '
+        'filter: ${filter.toJson()})',
+        category: LogCategory.system,
+      );
+
+      // Resolve the user's OWN kind-10050 inbox relays and target the live
+      // subscription at them — as BOTH tempRelays (to add connections outside
+      // the default pool) AND targetRelays — so gift wraps a NIP-17 sender
+      // delivered to relays outside divine's default pool are read. A `null`
+      // result (no kind-10050 / resolve failure) preserves the prior
+      // default-pool behavior. Memoized per session, so the resolve (bounded
+      // by the queryEvents ~5s timeout) only delays the FIRST open. See #4974.
       // Capture the session token before the await: `filter` was built with
       // the current `_userPubkey`, so if an account switch lands during the
       // resolve we must NOT open a subscription targeting the previous user.
@@ -1682,6 +1690,23 @@ class DmRepository {
       // runInTransaction closure below (a nullable parameter would not).
       final rumor = rumorEvent;
 
+      // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by the
+      // sender. Keep the message, but clamp the timestamp used for local
+      // ordering/cursors so a bad clock cannot blackhole future subscriptions
+      // or pin the thread above honest messages forever.
+      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final persistedCreatedAt = rumor.createdAt > nowSec
+          ? nowSec
+          : rumor.createdAt;
+      if (rumor.createdAt > nowSec + DmSyncState.maxFutureSkewSeconds) {
+        Log.warning(
+          'Clamped DM (kind ${rumor.kind}) from ${rumor.pubkey}: rumor '
+          'created_at ${rumor.createdAt} is beyond the expected skew of '
+          '${DmSyncState.maxFutureSkewSeconds}s (now $nowSec)',
+          category: LogCategory.system,
+        );
+      }
+
       // NIP-17 spec line 14 explicitly permits kind 7 reactions inside
       // the gift-wrap envelope. Reaction deletions are also wrapped by
       // this feature so the remove path preserves DM privacy. Route both
@@ -1796,7 +1821,7 @@ class DmRepository {
         conversationId: conversationId,
         senderPubkey: rumor.pubkey,
         content: rumor.content,
-        createdAt: rumor.createdAt,
+        createdAt: persistedCreatedAt,
         ownerPubkey: _userPubkey,
       );
       if (isDuplicate) {
@@ -1822,7 +1847,7 @@ class DmRepository {
           conversationId: conversationId,
           senderPubkey: rumor.pubkey,
           content: rumor.content,
-          createdAt: rumor.createdAt,
+          createdAt: persistedCreatedAt,
           giftWrapId: giftWrapEvent.id,
           messageKind: rumor.kind,
           replyToId: replyToId,
@@ -1851,9 +1876,9 @@ class DmRepository {
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: isGroup,
-          createdAt: existing?.createdAt ?? rumor.createdAt,
+          createdAt: existing?.createdAt ?? persistedCreatedAt,
           lastMessageContent: previewContent,
-          lastMessageTimestamp: rumor.createdAt,
+          lastMessageTimestamp: persistedCreatedAt,
           lastMessageSenderPubkey: rumor.pubkey,
           subject: subject,
           isRead: isSentByMe,
@@ -1864,10 +1889,10 @@ class DmRepository {
         );
       });
 
-      // Advance sync boundaries using the rumor's REAL created_at. The
-      // outer gift wrap randomizes its own created_at within a ~2 day
-      // window (NIP-17) so it must not be used for boundary tracking.
-      await _syncState?.recordSeen(_userPubkey, createdAt: rumor.createdAt);
+      // Advance sync boundaries from the bounded local timestamp. The outer
+      // gift wrap randomizes its own created_at within a ~2 day window
+      // (NIP-17) so it must not be used for boundary tracking.
+      await _syncState?.recordSeen(_userPubkey, createdAt: persistedCreatedAt);
 
       Log.debug(
         'Persisted DM (kind ${rumor.kind}) in conversation '
@@ -2186,9 +2211,9 @@ class DmRepository {
   ///
   /// The id is recomputed by the constructor from [GiftWrapUnwrapSlot.sender] —
   /// always the canonical NIP-01 id for the authenticated sender, the same
-  /// recompute [GiftWrapUtil.getRumorEvent] performs on its sender-mismatch
-  /// branch. For a well-formed sender (every diVine client embeds the canonical
-  /// id) it equals the claimed id, so there is no observable divergence; for a
+  /// unconditional recompute [GiftWrapUtil.getRumorEvent] performs locally.
+  /// For a well-formed sender (every Divine client embeds the canonical id) it
+  /// equals the claimed id, so there is no observable divergence; for a
   /// non-canonical claimed id the recompute is the more correct, interoperable
   /// choice (the DB primary key is the rumor id).
   Event? _rumorFromSlot(GiftWrapUnwrapSlot slot) {
