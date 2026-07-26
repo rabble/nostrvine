@@ -322,7 +322,12 @@ class ResetPasswordResult {
 
 /// Result from DELETE /api/user/account
 class DeleteAccountResult {
-  DeleteAccountResult({required this.success, this.message, this.error});
+  DeleteAccountResult({
+    required this.success,
+    this.message,
+    this.error,
+    this.requiresReauthentication = false,
+  });
 
   factory DeleteAccountResult.fromJson(Map<String, dynamic> json) {
     return DeleteAccountResult(
@@ -335,9 +340,28 @@ class DeleteAccountResult {
   factory DeleteAccountResult.error(String message) {
     return DeleteAccountResult(success: false, error: message);
   }
+
+  /// The server refused because the credential is not authorized to delete,
+  /// not because of a transport or availability problem (HTTP 403).
+  ///
+  /// This is a recoverable state: re-authenticating mints a credential that is
+  /// accepted. Callers must present it as "sign in again", never as a
+  /// connectivity error, and must not treat it as a reason to retry unchanged.
+  factory DeleteAccountResult.reauthenticationRequired(String message) {
+    return DeleteAccountResult(
+      success: false,
+      error: message,
+      requiresReauthentication: true,
+    );
+  }
+
   final bool success;
   final String? message;
   final String? error;
+
+  /// True when deletion was refused for authorization reasons that a fresh
+  /// sign-in resolves. See [DeleteAccountResult.reauthenticationRequired].
+  final bool requiresReauthentication;
 }
 
 /// Result from POST /api/auth/verify-email

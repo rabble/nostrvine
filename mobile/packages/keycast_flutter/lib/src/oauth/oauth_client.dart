@@ -969,21 +969,49 @@ class KeycastOAuth {
     }
   }
 
+  /// The server's own `message` (falling back to `error`) from a JSON error
+  /// body, or null when the body is absent or not JSON.
+  static String? _errorMessageFrom(http.Response response) {
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return json['message'] as String? ?? json['error'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Delete the user's account permanently from Keycast
   ///
   /// Requires an active bearer token from headless login/register flow.
   /// This is a destructive action that cannot be undone.
   ///
   /// Returns [DeleteAccountResult] with success status.
-  Future<DeleteAccountResult> deleteAccount(String token) async {
+  ///
+  /// [nip98Proof] carries a NIP-98 (kind 27235) `Nostr <base64>` credential
+  /// proving control of the account's key.
+  ///
+  /// It is sent as an additional `X-Nostr-Authorization` header rather than
+  /// replacing `Authorization`, because the bearer UCAN is still required by
+  /// servers that do not understand the proof. A server that ignores the header
+  /// behaves exactly as before, so sending it is safe against any deployment.
+  ///
+  /// Server-side acceptance is tracked in divinevideo/keycast#323; the header
+  /// name is this client's proposal and is trivial to change once that lands.
+  Future<DeleteAccountResult> deleteAccount(
+    String token, {
+    String? nip98Proof,
+  }) async {
     try {
-      final response = await _client.delete(
-        Uri.parse('${config.serverUrl}/api/user/account'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      final response = await _client
+          .delete(
+            Uri.parse('${config.serverUrl}/api/user/account'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+              'X-Nostr-Authorization': ?nip98Proof,
+            },
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -997,6 +1025,17 @@ class KeycastOAuth {
       if (response.statusCode == 401) {
         return DeleteAccountResult.error(
           'Unauthorized: invalid or expired token',
+        );
+      }
+
+      if (response.statusCode == 403) {
+        // The credential is valid but not authorized to delete — currently
+        // because a refreshed access token no longer carries the server's
+        // first-party fact. Re-authenticating fixes it, so this must never be
+        // surfaced as a connectivity problem or retried unchanged.
+        return DeleteAccountResult.reauthenticationRequired(
+          _errorMessageFrom(response) ??
+              'Account deletion requires signing in again',
         );
       }
 
