@@ -250,13 +250,20 @@ const _audioWindowResolution = Duration(milliseconds: 1);
 /// stretches nine stills from 0.375s to 6.375s published a 6.375s video muxed
 /// with a 0.375s audio track (#6401).
 ///
-/// Only tracks that reached [previousDuration] follow the new end; a window the
-/// user deliberately trimmed shorter keeps its length. The new end is bounded
-/// by the audio the track still has left after its [AudioEvent.startOffset] and
-/// by [maxDuration], matching the ceiling the track would have been given had
-/// the sound been added at the new composition length. Windows are never
-/// shortened here — a composition that shrank is clamped for display by the
-/// timeline and for output by the render.
+/// Only tracks whose window *ended at* [previousDuration] follow the new end.
+/// A window the user deliberately trimmed shorter keeps its length, and so does
+/// one that overhangs the old end — after a shrink-then-grow (lower the hold,
+/// raise it again) a trimmed window sits past the shorter composition, and a
+/// one-sided "did it reach the end" test would read that overhang as coverage
+/// and silently undo the trim. The cost of the symmetric test is that a window
+/// left overhanging a shrunken composition keeps its old end instead of being
+/// re-extended; the sound strip's trim handle is the affordance for that.
+///
+/// The new end is bounded by the audio the track still has left after its
+/// [AudioEvent.startOffset] and by [maxDuration], matching the ceiling the
+/// track would have been given had the sound been added at the new composition
+/// length. Windows are never shortened here — a composition that shrank is
+/// clamped for display by the timeline and for output by the render.
 ///
 /// Returns the original list instance when nothing moved.
 List<AudioEvent> growAudioToCompositionEnd(
@@ -273,9 +280,10 @@ List<AudioEvent> growAudioToCompositionEnd(
   for (final track in audioTracks) {
     final endTime = track.endTime;
     // No window: the track already plays to its own end, and the render clamps
-    // that to the video.
+    // that to the video. A window that ends anywhere but the old composition
+    // end — short of it or past it — was placed by the user, not by the clamp.
     if (endTime == null ||
-        endTime + _audioWindowResolution < previousDuration) {
+        (endTime - previousDuration).abs() > _audioWindowResolution) {
       result.add(track);
       continue;
     }

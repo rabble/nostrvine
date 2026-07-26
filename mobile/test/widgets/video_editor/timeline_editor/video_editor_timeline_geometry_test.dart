@@ -1363,6 +1363,77 @@ void main() {
         isTrue,
       );
     });
+
+    test('keeps a trimmed window after the composition shrank under it', () {
+      // Trim to 1.5s over a 3s composition, drop the hold so the composition
+      // is 1.125s (the window now overhangs, because nothing shortens it),
+      // then raise the hold to 4.5s. The overhang is not coverage — reading it
+      // as "reached the old end" would grow the window and eat the trim.
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: const Duration(milliseconds: 1500),
+        duration: 30,
+      );
+
+      final tracks = [track];
+      expect(
+        identical(
+          grow(
+            tracks,
+            previousDuration: const Duration(milliseconds: 1125),
+            duration: const Duration(milliseconds: 4500),
+          ),
+          tracks,
+        ),
+        isTrue,
+      );
+    });
+
+    test('stops where the source ends without clawing the window back', () {
+      // A 1s sound with 0.8s trimmed off its head runs out at 200ms — behind
+      // the window's 375ms end, e.g. after the duration-heal path corrected a
+      // too-long source length. Growing must not shorten the window to 200ms.
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: shortComposition,
+        startOffset: const Duration(milliseconds: 800),
+        duration: 1,
+      );
+
+      final tracks = [track];
+      expect(identical(grow(tracks), tracks), isTrue);
+    });
+
+    test('carries skipped tracks through in order while one grows', () {
+      final covering = _audio(
+        id: 'music',
+        startTime: Duration.zero,
+        endTime: shortComposition,
+        duration: 30,
+      );
+      final trimmed = _audio(
+        id: 'voice-over',
+        startTime: Duration.zero,
+        endTime: const Duration(milliseconds: 200),
+        duration: 30,
+      );
+      const unbounded = AudioEvent(
+        id: 'ambience',
+        pubkey: '',
+        createdAt: 0,
+        url: '/tmp/ambience.wav',
+        duration: 30,
+      );
+
+      final result = grow([covering, trimmed, unbounded]);
+
+      expect(result, hasLength(3));
+      expect(result[0].endTime, maxDuration);
+      expect(identical(result[1], trimmed), isTrue);
+      expect(identical(result[2], unbounded), isTrue);
+    });
   });
 
   group(stopMotionInitialPixelsPerSecond, () {
