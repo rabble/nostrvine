@@ -21,7 +21,7 @@ in billing grace, may receive:
 - placement in a fairly rotating supporter directory on Explore; and
 - eligibility to submit videos for consideration in bounded, clearly labelled
   Supporter Showcases;
-- early access to selected experimental features;
+- eligibility for selected experimental feature trials where separately enabled;
 - visibility into what supporter funding pays for; and
 - founding-supporter recognition where applicable.
 
@@ -60,6 +60,7 @@ The following decisions were made during product review:
 | General ranking | Supporter state is unavailable to ordinary ranking systems |
 | Sync | Explicitly deferred; no draft or saved-clip storage is part of launch |
 | Canonical status | Server-verified entitlement, not local store state and not NIP-58 |
+| Experimental access | Feature-specific, separately enabled, private, and never a gate on ordinary Divine functionality |
 | Impact reporting | Authoritative aggregate counts and broad funding-use reporting; no invented per-user claims |
 | Server ownership | New `divine-supporters` GitHub repository and Cloudflare Worker |
 
@@ -119,6 +120,8 @@ entry. The screen uses direct Divine voice:
 - the annual saving is shown only when supported by localized store metadata;
 - the screen explains that recognition is optional, the halo is not
   verification, and Showcase inclusion is never guaranteed;
+- any experimental access is described as a separate, limited trial and never
+  as a promise of a particular feature or release date;
 - Restore Purchases, Terms, Privacy, and native subscription-management links
   remain accessible; and
 - supporter-impact information is available from the screen.
@@ -136,7 +139,8 @@ After the Worker verifies the purchase for the current pubkey, the screen shows:
 - the halo preview;
 - public-recognition controls;
 - founding-supporter history controls where applicable;
-- supporter-impact information; and
+- supporter-impact information;
+- experimental-trial availability where separately enabled;
 - native subscription-management action; and
 - a clearly presented recognition control before or immediately after purchase:
 
@@ -170,7 +174,7 @@ entitlement with an inactive state.
 - Cancellation keeps benefits through the paid-through date.
 - Store billing grace keeps benefits while the store reports grace.
 - Expiry removes the active halo, directory eligibility, Showcase eligibility,
-  and early-access eligibility.
+  and any experimental-trial eligibility.
 - Refund or revocation removes benefits according to the canonical store state.
 - A permanent, optional founding-supporter history entry may remain after
   expiry, but it must not imply active support or preserve active benefits.
@@ -181,6 +185,13 @@ entitlement with an inactive state.
 
 The purchase attempt captures the active pubkey at initiation. An async store
 result cannot be attached to whichever account happens to be active later.
+
+If the captured pubkey is no longer the active authenticated account when a
+retry is needed, the attempt remains queued for that pubkey and is not retried
+with the current account. The user must sign back into the captured account (or
+the account's signer must otherwise become available) before the claim can be
+sent. A store result is never silently discarded or rebound because of an
+account switch.
 
 An original Apple or Google transaction can bind to only one Divine pubkey.
 Restore on another device succeeds only for that same signed-in Divine account.
@@ -392,7 +403,7 @@ One row per original store subscription transaction:
   the original identifier using a versioned Worker secret;
 - `verification_artifact_ciphertext` — application-layer encryption of any
   renewable store token or artifact required for later canonical verification;
-- `pubkey` — immutable owner after first successful binding;
+- `pubkey` — nullable until first successful binding, then immutable owner;
 - `product_id`;
 - `plan_kind` — monthly, annual, or founding annual;
 - `environment` — sandbox/test or production;
@@ -459,8 +470,12 @@ Normalized states:
   newer active/grace result.
 
 Private entitlement is true when at least one transaction for the pubkey is
-`active`, or `grace` within its verified grace window. The public projection is
-derived from that entitlement plus the account's recognition preferences.
+`active`, or `grace` within its verified grace window. `grace` retains the same
+public benefits as `active` until the verified grace window ends. The public
+projection is derived from that entitlement plus the account's recognition
+preferences. A transient `unknown` result preserves the newest known
+`active`/`grace` projection until canonical store verification establishes a
+newer state; it cannot remove benefits on its own.
 
 Cancellation is metadata about future renewal, not immediate inactivity.
 
@@ -480,6 +495,8 @@ All version-one JSON APIs live under `/v1`.
 - NIP-98 authentication is required.
 - Body identifies store and product and carries the minimum purchase proof
   required for server verification.
+- Body includes a client-generated idempotency key scoped to the captured
+  pubkey and store transaction attempt.
 - The authenticated pubkey is the requested owner.
 - The operation is idempotent.
 - Returns the canonical account entitlement, not an optimistic local state.
@@ -488,8 +505,8 @@ All version-one JSON APIs live under `/v1`.
 
 - NIP-98 authentication is required.
 - Returns normalized private entitlement state, paid/grace timing suitable for
-  UI, recognition preferences, founding history, supporter-impact data, and
-  typed management/repair status.
+  UI, recognition preferences, founding history, experimental-trial
+  eligibility, supporter-impact data, and typed management/repair status.
 - Does not echo store proofs or transaction identifiers.
 
 `PATCH /v1/me/recognition`
@@ -542,7 +559,8 @@ snapshot endpoint remains the repair path and source for reconciliation.
 4. Native StoreKit/Play Billing starts the transaction.
 5. The device-scope listener receives the store result regardless of route or
    account-container lifetime.
-6. Mobile durably records the proof needed for claim retry.
+6. Mobile durably records the proof needed for claim retry in OS-backed secure
+   storage, along with the captured pubkey and idempotency key.
 7. Mobile submits an NIP-98 claim for the captured pubkey.
 8. The Worker verifies the store evidence and immutable ownership rule.
 9. The Worker updates D1 and the projection outbox transactionally.
@@ -608,6 +626,13 @@ container swaps. It:
   identity; and
 - exposes account-neutral transaction progress.
 
+Each durable purchase attempt contains the captured full pubkey, store and
+product identifiers, an idempotency key, lifecycle status, and the minimum
+encrypted proof needed for retry. It is deleted after the Worker reaches a
+terminal claim result and the native store transaction has been safely
+completed. If the captured signer is unavailable after an account switch, the
+coordinator keeps the attempt pending without sending it as another identity.
+
 No Cubit or screen owns the native purchase-stream subscription.
 
 ### 13.2 Account-scoped supporter repository
@@ -619,6 +644,8 @@ The account container supplies the immutable active pubkey. The repository:
 - claims/restores only for its pubkey;
 - updates recognition preferences;
 - updates recognition preferences independently of payment;
+- reports feature-specific experimental-trial eligibility without exposing it
+  in public profile or discovery projections;
 - maps typed API/store failures; and
 - may cache the last verified private response for offline display, clearly
   timestamped and never used to grant public status.
@@ -774,11 +801,14 @@ Alert on:
 - Purchase result survives route disposal.
 - Purchase result survives account-container swap without rebinding.
 - Pending does not clear active entitlement.
+- Grace retains active recognition until the verified grace window ends.
 - Restore accepts the bound account and rejects another account.
 - Worker outage persists and retries confirmation.
 - Cubit close/dispose regression coverage.
 - Typed failure mapping.
 - Visibility toggle semantics.
+- Experimental-trial eligibility is private, feature-specific, and removed at
+  effective expiry or revocation.
 - Impact screen uses authoritative aggregate data and does not invent per-user
   claims.
 - Full localization and ARB consistency.
@@ -837,8 +867,11 @@ References:
 3. Implement store verification and lifecycle processing with sandbox
    credentials.
 4. Add Funnelcake projection and discovery behind server-side flags.
-5. Refactor and harden mobile PR #6378 against the server authority and its
-   outstanding money-path review findings.
+5. Refactor and harden mobile PR #6378 against the server authority. Resolve
+   its known money-path blockers before reuse: app-start store-listener
+   ownership, purchase-stream error handling, Cubit close/dispose behavior,
+   pending-entitlement preservation, localization/design-system violations,
+   and red Format, Generated Files, or `iap_repository` analyze checks.
 6. Add shared halo decoration and Supporters Explore behind
    `FF_DIVINE_SUPPORTERS`.
 7. Add supporter-impact aggregates and the labelled Showcase presentation.
@@ -864,6 +897,8 @@ The initiative is ready to enable only when:
 - another pubkey cannot claim the transaction;
 - renewals, grace, cancellation, expiry, refund, and revoke update entitlement
   without the app running;
+- grace preserves active recognition only through the verified grace window, and
+  experimental access is removed at effective expiry or revocation;
 - recognition remains private until explicitly chosen and can be disabled
   without cancelling;
 - halo, directory eligibility, and Showcase eligibility disappear after
