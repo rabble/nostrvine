@@ -266,6 +266,34 @@ void main() {
       },
     );
 
+    test('the committed budget still catches a slow rendered shard', () {
+      // The gate reads job names from the GitHub API, where a matrix name is
+      // already rendered ('Tests (shard 0/4)'). Keying the budget on the raw
+      // template instead is self-consistent — budgetNameForGateJob matches it
+      // exactly — but silently drops every shard out of enforcement at run
+      // time, so the well-formedness test above cannot see it.
+      final committed = File(
+        p.join(
+          Directory.current.parent.path,
+          '.github',
+          'ci-timing-budgets.json',
+        ),
+      ).readAsStringSync();
+
+      final result = Process.runSync('python3', [
+        scriptPath,
+        '--budgets',
+        writeJson('committed.json', jsonDecode(committed) as Object),
+        '--jobs-json',
+        writeJson('shards.json', {
+          'jobs': [job('Tests (shard 0/4)', 3000)],
+        }),
+      ]);
+
+      expect(result.exitCode, 1, reason: '${result.stdout}${result.stderr}');
+      expect(result.stdout, contains('Tests (shard 0/4)'));
+    });
+
     test('budget file edits require app CI', () {
       final workflow = File(
         p.join(
