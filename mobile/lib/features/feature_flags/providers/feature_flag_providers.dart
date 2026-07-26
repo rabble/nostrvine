@@ -21,15 +21,24 @@ BuildConfiguration buildConfiguration(Ref ref) {
 FeatureFlagService featureFlagService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final buildConfig = ref.watch(buildConfigurationProvider);
-  final canOverrideInternalFlags = ref.watch(isDeveloperModeEnabledProvider);
+  final environmentService = ref.watch(environmentServiceProvider);
 
   final service = FeatureFlagService(
     prefs,
     buildConfig,
-    canOverrideInternalFlags: () => canOverrideInternalFlags,
+    canOverrideInternalFlags: () => environmentService.isDeveloperModeEnabled,
   );
   // Load persisted overrides from SharedPreferences
   service.initialize();
+
+  // Re-resolve every flag when developer mode flips, rather than watching it
+  // and rebuilding: this provider's instance is captured by ref.read in
+  // SettingsScreen.initState, and a new identity here would strand that
+  // capture on an orphaned service.
+  void onEnvironmentChanged() => service.initialize();
+  environmentService.addListener(onEnvironmentChanged);
+  ref.onDispose(() => environmentService.removeListener(onEnvironmentChanged));
+
   return service;
 }
 
