@@ -19,6 +19,7 @@ import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/crosspost_api_client.dart';
+import 'package:openvine/services/crossposter_api_client.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -215,16 +216,16 @@ final uploadBackpressureActiveProvider = Provider<bool>((ref) {
 
 /// OS-backed background upload transport (URLSession on iOS/macOS, a
 /// foreground service on Android), adapted to the Blossom transport port.
-final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>(
-  (ref) {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    return _BackgroundUploadTransportAdapter(
-      BackgroundUploader.instance,
-      notificationTitle: () =>
-          currentAppL10n(prefs).backgroundUploadNotificationTitle,
-    );
-  },
-);
+final backgroundUploadTransportProvider = Provider<BlossomBackgroundTransport>((
+  ref,
+) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return _BackgroundUploadTransportAdapter(
+    BackgroundUploader.instance,
+    notificationTitle: () =>
+        currentAppL10n(prefs).backgroundUploadNotificationTitle,
+  );
+});
 
 /// Foreground session used by the background-publish bloc to keep the process
 /// network alive across the whole publish (upload + signing + relay), not just
@@ -307,6 +308,15 @@ CrosspostApiClient crosspostApiClient(Ref ref) {
     oauthClient: oauthClient,
     serverUrl: config.serverUrl,
   );
+}
+
+/// Crossposter service client for manual per-video crossposting
+@riverpod
+CrossposterApiClient crossposterApiClient(Ref ref) {
+  final oauthClient = ref.watch(oauthClientProvider);
+  final client = CrossposterApiClient(oauthClient: oauthClient);
+  ref.onDispose(client.close);
+  return client;
 }
 
 /// Audio playback service for sound playback during recording and preview

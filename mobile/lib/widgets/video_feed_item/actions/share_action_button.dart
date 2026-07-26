@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/owner_video_actions/owner_video_actions_cubit.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
+import 'package:openvine/blocs/video_crosspost/video_crosspost_cubit.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -29,6 +30,7 @@ import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
+import 'package:openvine/widgets/crosspost_sheet.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
@@ -140,10 +142,17 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
   late final ShareSheetBloc _shareSheetBloc;
   OwnerVideoActionsCubit? _ownerVideoActionsCubit;
+  VideoCrosspostCubit? _crosspostCubit;
 
   @override
   void initState() {
     super.initState();
+    if (_isUserOwnContent()) {
+      _crosspostCubit = VideoCrosspostCubit(
+        client: ref.read(crossposterApiClientProvider),
+        eventId: widget.video.id,
+      )..loadConnections();
+    }
     _shareSheetBloc = ShareSheetBloc(
       video: widget.video,
       relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
@@ -158,6 +167,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   void dispose() {
+    _crosspostCubit?.close();
     _ownerVideoActionsCubit?.close();
     _shareSheetBloc.close();
     _messageController.dispose();
@@ -183,6 +193,20 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     final isOwnContent = _isUserOwnContent();
     final canAddVideoToClips =
         (widget.video.isOriginalVine || isOwnContent) && !kIsWeb;
+
+    final sheetView = _UnifiedShareSheetView(
+      video: widget.video,
+      messageController: _messageController,
+      isOwnContent: isOwnContent,
+      onFindPeople: _handleFindPeople,
+      onAddToList: _handleAddToList,
+      onEditVideo: isOwnContent ? _handleEditVideo : null,
+      onDeleteVideo: isOwnContent ? _handleDeleteVideo : null,
+      onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
+      onSaveWithWatermark: _handleSaveWithWatermark,
+      onAddVideoToClips: canAddVideoToClips ? _handleAddVideoToClips : null,
+      onCrosspost: _crosspostCubit != null ? _handleCrosspost : null,
+    );
 
     return BlocProvider.value(
       value: _shareSheetBloc,
@@ -211,18 +235,13 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             },
           ),
         ],
-        child: _UnifiedShareSheetView(
-          video: widget.video,
-          messageController: _messageController,
-          isOwnContent: isOwnContent,
-          onFindPeople: _handleFindPeople,
-          onAddToList: _handleAddToList,
-          onEditVideo: isOwnContent ? _handleEditVideo : null,
-          onDeleteVideo: isOwnContent ? _handleDeleteVideo : null,
-          onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
-          onSaveWithWatermark: _handleSaveWithWatermark,
-          onAddVideoToClips: canAddVideoToClips ? _handleAddVideoToClips : null,
-        ),
+        child: switch (_crosspostCubit) {
+          null => sheetView,
+          final cubit => BlocProvider<VideoCrosspostCubit>.value(
+            value: cubit,
+            child: sheetView,
+          ),
+        },
       ),
     );
   }
@@ -445,6 +464,19 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     }
   }
 
+  Future<void> _handleCrosspost() async {
+    final connections = _crosspostCubit?.state.connectedConnections;
+    if (connections == null || connections.isEmpty) return;
+    await _presentAfterDismiss<void>((hostContext) {
+      return showCrosspostSheet(
+        context: hostContext,
+        ref: ref,
+        video: widget.video,
+        connections: connections,
+      );
+    });
+  }
+
   Future<void> _handleSaveOriginal() async {
     await _presentAfterDismiss<void>((hostContext) {
       return showSaveOriginalSheet(
@@ -613,6 +645,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
     this.onEditVideo,
     this.onDeleteVideo,
     this.onSaveOriginal,
+    this.onCrosspost,
   });
 
   final VideoEvent video;
@@ -625,6 +658,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
   final VoidCallback? onAddVideoToClips;
+  final Future<void> Function()? onCrosspost;
 
   @override
   Widget build(BuildContext context) {
@@ -691,6 +725,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                       _MoreActionsSection(
                         video: video,
                         isOwnContent: isOwnContent,
+                        onCrosspost: onCrosspost,
                         onSave: () => bloc.add(const ShareSheetSaveRequested()),
                         onSaveOriginal: onSaveOriginal,
                         onSaveWithWatermark: onSaveWithWatermark,

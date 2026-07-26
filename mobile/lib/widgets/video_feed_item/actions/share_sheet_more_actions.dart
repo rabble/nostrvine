@@ -19,6 +19,7 @@ class _MoreActionsSection extends ConsumerWidget {
     this.onDeleteVideo,
     this.onAddVideoToClips,
     this.onSaveOriginal,
+    this.onCrosspost,
   });
 
   final VideoEvent video;
@@ -34,6 +35,7 @@ class _MoreActionsSection extends ConsumerWidget {
   final VoidCallback? onEditVideo;
   final Future<void> Function()? onDeleteVideo;
   final VoidCallback? onAddVideoToClips;
+  final Future<void> Function()? onCrosspost;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +45,15 @@ class _MoreActionsSection extends ConsumerWidget {
     final showDebugTools = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.debugTools),
     );
+
+    // The crosspost action only appears once the connections fetch
+    // reports at least one connected platform.
+    var connectedCrosspostPlatforms = const <String>[];
+    if (onCrosspost != null) {
+      connectedCrosspostPlatforms = context.select(
+        (VideoCrosspostCubit cubit) => cubit.state.connectedPlatforms,
+      );
+    }
 
     final actions = <_ActionData>[
       if (onEditVideo != null)
@@ -80,6 +91,12 @@ class _MoreActionsSection extends ConsumerWidget {
           icon: DivineIconName.filmSlate,
           label: context.l10n.shareSheetAddToClips,
           onTap: onAddVideoToClips!,
+        ),
+      if (onCrosspost != null && connectedCrosspostPlatforms.isNotEmpty)
+        _ActionData(
+          icon: DivineIconName.arrowsClockwise,
+          label: context.l10n.shareSheetCrosspost,
+          onTap: () => onCrosspost!.call(),
         ),
       if (showCuratedLists)
         _ActionData(
