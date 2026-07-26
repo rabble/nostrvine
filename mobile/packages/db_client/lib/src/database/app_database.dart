@@ -820,6 +820,16 @@ class AppDatabase extends _$AppDatabase {
       ON personal_reactions (addressable_id)
     ''');
 
+    // Stable video route for cached notification placeholders. Video-sourced
+    // mention rows and edited NIP-33 videos should not jump row type or route
+    // through stale event ids while waiting for the first REST refresh.
+    await _addColumnIfMissing('notifications', 'video_addressable_id', 'TEXT');
+    await _addColumnIfMissing(
+      'notifications',
+      'has_comment_target',
+      'INTEGER NOT NULL DEFAULT 0',
+    );
+
     // Create the event indexes unconditionally. The `List<Index> get
     // indexes` getter on NostrEvents is not wired through
     // `@DriftDatabase(...)`, so Drift's m.createAll() never creates them —

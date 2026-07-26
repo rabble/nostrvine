@@ -241,13 +241,22 @@ void main() {
         expect(decoded, isA<Map<String, dynamic>>());
         final jobs = (decoded as Map<String, dynamic>)['jobs'];
         expect(jobs, isA<Map<String, dynamic>>());
+        final budgetJobs = jobs as Map<String, dynamic>;
 
         final gateJobs = mobileCiGateJobNames();
         expect(gateJobs, isNotEmpty);
 
         for (final name in gateJobs) {
-          expect(jobs, contains(name), reason: '$name has no timing budget');
-          final entry = jobs[name] as Map<String, dynamic>;
+          final budgetName = budgetNameForGateJob(
+            jobName: name,
+            budgetNames: budgetJobs.keys,
+          );
+          expect(
+            budgetName,
+            isNotNull,
+            reason: '$name has no timing budget',
+          );
+          final entry = budgetJobs[budgetName] as Map<String, dynamic>;
           expect(
             (entry['warn'] as num) < (entry['fail'] as num),
             isTrue,
@@ -322,4 +331,16 @@ List<String> mobileCiGateJobNames() {
   return [
     for (final need in needs) jobNamesById[need] ?? need,
   ];
+}
+
+String? budgetNameForGateJob({
+  required String jobName,
+  required Iterable<String> budgetNames,
+}) {
+  for (final budgetName in budgetNames) {
+    if (jobName == budgetName || jobName.startsWith('$budgetName (')) {
+      return budgetName;
+    }
+  }
+  return null;
 }

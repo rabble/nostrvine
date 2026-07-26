@@ -50,6 +50,16 @@ void main() {
       expect(spec.foreground, equals(VineTheme.accentViolet));
     });
 
+    test('video-sourced mention uses video camera on mention accent', () {
+      final spec = notificationTypeIconSpec(
+        NotificationKind.mention,
+        isVideoSourcedMention: true,
+      );
+      expect(spec.icon, equals(DivineIconName.videoCamera));
+      expect(spec.background, equals(VineTheme.accentVioletBackground));
+      expect(spec.foreground, equals(VineTheme.accentViolet));
+    });
+
     test('repost uses repeat on accentYellow', () {
       final spec = notificationTypeIconSpec(NotificationKind.repost);
       expect(spec.icon, equals(DivineIconName.repeat));

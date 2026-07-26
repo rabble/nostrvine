@@ -613,6 +613,25 @@ class Notifications extends Table with TableInfo {
     requiredDuringInsert: false,
     $customConstraints: 'NULL',
   );
+  late final GeneratedColumn<String> videoAddressableId =
+      GeneratedColumn<String>(
+        'video_addressable_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'NULL',
+      );
+  late final GeneratedColumn<int> hasCommentTarget = GeneratedColumn<int>(
+    'has_comment_target',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints:
+        'NOT NULL DEFAULT 0 CHECK (has_comment_target IN (0, 1))',
+    defaultValue: const CustomExpression('0'),
+  );
   late final GeneratedColumn<String> targetPubkey = GeneratedColumn<String>(
     'target_pubkey',
     aliasedName,
@@ -668,6 +687,8 @@ class Notifications extends Table with TableInfo {
     type,
     fromPubkey,
     targetEventId,
+    videoAddressableId,
+    hasCommentTarget,
     targetPubkey,
     content,
     timestamp,

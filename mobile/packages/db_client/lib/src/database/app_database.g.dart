@@ -2980,6 +2980,32 @@ class $NotificationsTable extends Notifications
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _videoAddressableIdMeta =
+      const VerificationMeta('videoAddressableId');
+  @override
+  late final GeneratedColumn<String> videoAddressableId =
+      GeneratedColumn<String>(
+        'video_addressable_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _hasCommentTargetMeta = const VerificationMeta(
+    'hasCommentTarget',
+  );
+  @override
+  late final GeneratedColumn<bool> hasCommentTarget = GeneratedColumn<bool>(
+    'has_comment_target',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("has_comment_target" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _targetPubkeyMeta = const VerificationMeta(
     'targetPubkey',
   );
@@ -3054,6 +3080,8 @@ class $NotificationsTable extends Notifications
     type,
     fromPubkey,
     targetEventId,
+    videoAddressableId,
+    hasCommentTarget,
     targetPubkey,
     content,
     timestamp,
@@ -3100,6 +3128,24 @@ class $NotificationsTable extends Notifications
         targetEventId.isAcceptableOrUnknown(
           data['target_event_id']!,
           _targetEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('video_addressable_id')) {
+      context.handle(
+        _videoAddressableIdMeta,
+        videoAddressableId.isAcceptableOrUnknown(
+          data['video_addressable_id']!,
+          _videoAddressableIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('has_comment_target')) {
+      context.handle(
+        _hasCommentTargetMeta,
+        hasCommentTarget.isAcceptableOrUnknown(
+          data['has_comment_target']!,
+          _hasCommentTargetMeta,
         ),
       );
     }
@@ -3174,6 +3220,14 @@ class $NotificationsTable extends Notifications
         DriftSqlType.string,
         data['${effectivePrefix}target_event_id'],
       ),
+      videoAddressableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}video_addressable_id'],
+      ),
+      hasCommentTarget: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}has_comment_target'],
+      )!,
       targetPubkey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}target_pubkey'],
@@ -3212,6 +3266,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
   final String type;
   final String fromPubkey;
   final String? targetEventId;
+  final String? videoAddressableId;
+  final bool hasCommentTarget;
   final String? targetPubkey;
   final String? content;
   final int timestamp;
@@ -3231,6 +3287,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     required this.type,
     required this.fromPubkey,
     this.targetEventId,
+    this.videoAddressableId,
+    required this.hasCommentTarget,
     this.targetPubkey,
     this.content,
     required this.timestamp,
@@ -3247,6 +3305,10 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     if (!nullToAbsent || targetEventId != null) {
       map['target_event_id'] = Variable<String>(targetEventId);
     }
+    if (!nullToAbsent || videoAddressableId != null) {
+      map['video_addressable_id'] = Variable<String>(videoAddressableId);
+    }
+    map['has_comment_target'] = Variable<bool>(hasCommentTarget);
     if (!nullToAbsent || targetPubkey != null) {
       map['target_pubkey'] = Variable<String>(targetPubkey);
     }
@@ -3270,6 +3332,10 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       targetEventId: targetEventId == null && nullToAbsent
           ? const Value.absent()
           : Value(targetEventId),
+      videoAddressableId: videoAddressableId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(videoAddressableId),
+      hasCommentTarget: Value(hasCommentTarget),
       targetPubkey: targetPubkey == null && nullToAbsent
           ? const Value.absent()
           : Value(targetPubkey),
@@ -3295,6 +3361,10 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       type: serializer.fromJson<String>(json['type']),
       fromPubkey: serializer.fromJson<String>(json['fromPubkey']),
       targetEventId: serializer.fromJson<String?>(json['targetEventId']),
+      videoAddressableId: serializer.fromJson<String?>(
+        json['videoAddressableId'],
+      ),
+      hasCommentTarget: serializer.fromJson<bool>(json['hasCommentTarget']),
       targetPubkey: serializer.fromJson<String?>(json['targetPubkey']),
       content: serializer.fromJson<String?>(json['content']),
       timestamp: serializer.fromJson<int>(json['timestamp']),
@@ -3311,6 +3381,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       'type': serializer.toJson<String>(type),
       'fromPubkey': serializer.toJson<String>(fromPubkey),
       'targetEventId': serializer.toJson<String?>(targetEventId),
+      'videoAddressableId': serializer.toJson<String?>(videoAddressableId),
+      'hasCommentTarget': serializer.toJson<bool>(hasCommentTarget),
       'targetPubkey': serializer.toJson<String?>(targetPubkey),
       'content': serializer.toJson<String?>(content),
       'timestamp': serializer.toJson<int>(timestamp),
@@ -3325,6 +3397,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     String? type,
     String? fromPubkey,
     Value<String?> targetEventId = const Value.absent(),
+    Value<String?> videoAddressableId = const Value.absent(),
+    bool? hasCommentTarget,
     Value<String?> targetPubkey = const Value.absent(),
     Value<String?> content = const Value.absent(),
     int? timestamp,
@@ -3338,6 +3412,10 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     targetEventId: targetEventId.present
         ? targetEventId.value
         : this.targetEventId,
+    videoAddressableId: videoAddressableId.present
+        ? videoAddressableId.value
+        : this.videoAddressableId,
+    hasCommentTarget: hasCommentTarget ?? this.hasCommentTarget,
     targetPubkey: targetPubkey.present ? targetPubkey.value : this.targetPubkey,
     content: content.present ? content.value : this.content,
     timestamp: timestamp ?? this.timestamp,
@@ -3355,6 +3433,12 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
       targetEventId: data.targetEventId.present
           ? data.targetEventId.value
           : this.targetEventId,
+      videoAddressableId: data.videoAddressableId.present
+          ? data.videoAddressableId.value
+          : this.videoAddressableId,
+      hasCommentTarget: data.hasCommentTarget.present
+          ? data.hasCommentTarget.value
+          : this.hasCommentTarget,
       targetPubkey: data.targetPubkey.present
           ? data.targetPubkey.value
           : this.targetPubkey,
@@ -3375,6 +3459,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
           ..write('type: $type, ')
           ..write('fromPubkey: $fromPubkey, ')
           ..write('targetEventId: $targetEventId, ')
+          ..write('videoAddressableId: $videoAddressableId, ')
+          ..write('hasCommentTarget: $hasCommentTarget, ')
           ..write('targetPubkey: $targetPubkey, ')
           ..write('content: $content, ')
           ..write('timestamp: $timestamp, ')
@@ -3391,6 +3477,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
     type,
     fromPubkey,
     targetEventId,
+    videoAddressableId,
+    hasCommentTarget,
     targetPubkey,
     content,
     timestamp,
@@ -3406,6 +3494,8 @@ class NotificationRow extends DataClass implements Insertable<NotificationRow> {
           other.type == this.type &&
           other.fromPubkey == this.fromPubkey &&
           other.targetEventId == this.targetEventId &&
+          other.videoAddressableId == this.videoAddressableId &&
+          other.hasCommentTarget == this.hasCommentTarget &&
           other.targetPubkey == this.targetPubkey &&
           other.content == this.content &&
           other.timestamp == this.timestamp &&
@@ -3419,6 +3509,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
   final Value<String> type;
   final Value<String> fromPubkey;
   final Value<String?> targetEventId;
+  final Value<String?> videoAddressableId;
+  final Value<bool> hasCommentTarget;
   final Value<String?> targetPubkey;
   final Value<String?> content;
   final Value<int> timestamp;
@@ -3431,6 +3523,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     this.type = const Value.absent(),
     this.fromPubkey = const Value.absent(),
     this.targetEventId = const Value.absent(),
+    this.videoAddressableId = const Value.absent(),
+    this.hasCommentTarget = const Value.absent(),
     this.targetPubkey = const Value.absent(),
     this.content = const Value.absent(),
     this.timestamp = const Value.absent(),
@@ -3444,6 +3538,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     required String type,
     required String fromPubkey,
     this.targetEventId = const Value.absent(),
+    this.videoAddressableId = const Value.absent(),
+    this.hasCommentTarget = const Value.absent(),
     this.targetPubkey = const Value.absent(),
     this.content = const Value.absent(),
     required int timestamp,
@@ -3461,6 +3557,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     Expression<String>? type,
     Expression<String>? fromPubkey,
     Expression<String>? targetEventId,
+    Expression<String>? videoAddressableId,
+    Expression<bool>? hasCommentTarget,
     Expression<String>? targetPubkey,
     Expression<String>? content,
     Expression<int>? timestamp,
@@ -3474,6 +3572,9 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
       if (type != null) 'type': type,
       if (fromPubkey != null) 'from_pubkey': fromPubkey,
       if (targetEventId != null) 'target_event_id': targetEventId,
+      if (videoAddressableId != null)
+        'video_addressable_id': videoAddressableId,
+      if (hasCommentTarget != null) 'has_comment_target': hasCommentTarget,
       if (targetPubkey != null) 'target_pubkey': targetPubkey,
       if (content != null) 'content': content,
       if (timestamp != null) 'timestamp': timestamp,
@@ -3489,6 +3590,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     Value<String>? type,
     Value<String>? fromPubkey,
     Value<String?>? targetEventId,
+    Value<String?>? videoAddressableId,
+    Value<bool>? hasCommentTarget,
     Value<String?>? targetPubkey,
     Value<String?>? content,
     Value<int>? timestamp,
@@ -3502,6 +3605,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
       type: type ?? this.type,
       fromPubkey: fromPubkey ?? this.fromPubkey,
       targetEventId: targetEventId ?? this.targetEventId,
+      videoAddressableId: videoAddressableId ?? this.videoAddressableId,
+      hasCommentTarget: hasCommentTarget ?? this.hasCommentTarget,
       targetPubkey: targetPubkey ?? this.targetPubkey,
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
@@ -3526,6 +3631,12 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
     }
     if (targetEventId.present) {
       map['target_event_id'] = Variable<String>(targetEventId.value);
+    }
+    if (videoAddressableId.present) {
+      map['video_addressable_id'] = Variable<String>(videoAddressableId.value);
+    }
+    if (hasCommentTarget.present) {
+      map['has_comment_target'] = Variable<bool>(hasCommentTarget.value);
     }
     if (targetPubkey.present) {
       map['target_pubkey'] = Variable<String>(targetPubkey.value);
@@ -3558,6 +3669,8 @@ class NotificationsCompanion extends UpdateCompanion<NotificationRow> {
           ..write('type: $type, ')
           ..write('fromPubkey: $fromPubkey, ')
           ..write('targetEventId: $targetEventId, ')
+          ..write('videoAddressableId: $videoAddressableId, ')
+          ..write('hasCommentTarget: $hasCommentTarget, ')
           ..write('targetPubkey: $targetPubkey, ')
           ..write('content: $content, ')
           ..write('timestamp: $timestamp, ')
@@ -17631,6 +17744,8 @@ typedef $$NotificationsTableCreateCompanionBuilder =
       required String type,
       required String fromPubkey,
       Value<String?> targetEventId,
+      Value<String?> videoAddressableId,
+      Value<bool> hasCommentTarget,
       Value<String?> targetPubkey,
       Value<String?> content,
       required int timestamp,
@@ -17645,6 +17760,8 @@ typedef $$NotificationsTableUpdateCompanionBuilder =
       Value<String> type,
       Value<String> fromPubkey,
       Value<String?> targetEventId,
+      Value<String?> videoAddressableId,
+      Value<bool> hasCommentTarget,
       Value<String?> targetPubkey,
       Value<String?> content,
       Value<int> timestamp,
@@ -17680,6 +17797,16 @@ class $$NotificationsTableFilterComposer
 
   ColumnFilters<String> get targetEventId => $composableBuilder(
     column: $table.targetEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get videoAddressableId => $composableBuilder(
+    column: $table.videoAddressableId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hasCommentTarget => $composableBuilder(
+    column: $table.hasCommentTarget,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17743,6 +17870,16 @@ class $$NotificationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get videoAddressableId => $composableBuilder(
+    column: $table.videoAddressableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hasCommentTarget => $composableBuilder(
+    column: $table.hasCommentTarget,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get targetPubkey => $composableBuilder(
     column: $table.targetPubkey,
     builder: (column) => ColumnOrderings(column),
@@ -17796,6 +17933,16 @@ class $$NotificationsTableAnnotationComposer
 
   GeneratedColumn<String> get targetEventId => $composableBuilder(
     column: $table.targetEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get videoAddressableId => $composableBuilder(
+    column: $table.videoAddressableId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get hasCommentTarget => $composableBuilder(
+    column: $table.hasCommentTarget,
     builder: (column) => column,
   );
 
@@ -17857,6 +18004,8 @@ class $$NotificationsTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<String> fromPubkey = const Value.absent(),
                 Value<String?> targetEventId = const Value.absent(),
+                Value<String?> videoAddressableId = const Value.absent(),
+                Value<bool> hasCommentTarget = const Value.absent(),
                 Value<String?> targetPubkey = const Value.absent(),
                 Value<String?> content = const Value.absent(),
                 Value<int> timestamp = const Value.absent(),
@@ -17869,6 +18018,8 @@ class $$NotificationsTableTableManager
                 type: type,
                 fromPubkey: fromPubkey,
                 targetEventId: targetEventId,
+                videoAddressableId: videoAddressableId,
+                hasCommentTarget: hasCommentTarget,
                 targetPubkey: targetPubkey,
                 content: content,
                 timestamp: timestamp,
@@ -17883,6 +18034,8 @@ class $$NotificationsTableTableManager
                 required String type,
                 required String fromPubkey,
                 Value<String?> targetEventId = const Value.absent(),
+                Value<String?> videoAddressableId = const Value.absent(),
+                Value<bool> hasCommentTarget = const Value.absent(),
                 Value<String?> targetPubkey = const Value.absent(),
                 Value<String?> content = const Value.absent(),
                 required int timestamp,
@@ -17895,6 +18048,8 @@ class $$NotificationsTableTableManager
                 type: type,
                 fromPubkey: fromPubkey,
                 targetEventId: targetEventId,
+                videoAddressableId: videoAddressableId,
+                hasCommentTarget: hasCommentTarget,
                 targetPubkey: targetPubkey,
                 content: content,
                 timestamp: timestamp,

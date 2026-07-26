@@ -87,6 +87,12 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           n.type == NotificationKind.likeComment) {
         return true;
       }
+      if (filter == NotificationKind.comment &&
+          n is ActorNotification &&
+          n.type == NotificationKind.mention &&
+          n.hasCommentTarget) {
+        return true;
+      }
       return false;
     }).toList();
   }
@@ -244,12 +250,14 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         :final type,
         :final targetEventId,
         :final videoAddressableId,
+        :final hasCommentTarget,
       ):
         final hasVideoTarget =
             targetEventId != null && targetEventId.isNotEmpty;
         final target = resolveNotificationTapTarget(
           kind: type,
           hasVideoTarget: hasVideoTarget,
+          hasCommentTarget: hasCommentTarget,
           actorPubkey: actor.pubkey,
         );
         switch (target) {
@@ -265,6 +273,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
               targetEventId!,
               videoAddressableId: videoAddressableId,
               notificationKind: type,
+              hasCommentTarget: hasCommentTarget,
+              resolveTargetToVideo: true,
             );
             if (!navigated && context.mounted) {
               Log.warning(
@@ -299,6 +309,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     String videoEventId, {
     String? videoAddressableId,
     NotificationKind? notificationKind,
+    bool hasCommentTarget = false,
+    bool resolveTargetToVideo = false,
   }) async {
     Log.info(
       'Navigating to video from notification: '
@@ -310,6 +322,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final videoEventService = ref.read(videoEventServiceProvider);
     final shouldAutoOpenComments = notificationKindOpensComments(
       notificationKind,
+      hasCommentTarget: hasCommentTarget,
     );
 
     // Resolve the navigation target.
@@ -326,8 +339,11 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       if (videoEventId.isNotEmpty && videoEventId != videoAddressableId) {
         fallbackVideoIds = [videoEventId];
       }
-    } else if (shouldAutoOpenComments) {
-      // Comment/mention path: walk E/e tags to find the root video event ID.
+    } else if (resolveTargetToVideo) {
+      // Actor notification path: walk E/e/A tags to find the root video event
+      // ID. Auto-opening comments is a separate presentation choice; plain
+      // mentions still need this resolution so unresolvable note mentions can
+      // fall back to the actor profile instead of routing to /video/<note-id>.
       routeId = await NotificationTargetResolver(
         videoEventService: videoEventService,
         nostrService: ref.read(nostrServiceProvider),

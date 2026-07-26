@@ -21,6 +21,7 @@ class ActorNotification extends NotificationItem {
     this.commentText,
     this.isFollowingBack = false,
     this.videoAddressableId,
+    this.hasCommentTarget = false,
   }) : assert(
          type == NotificationKind.follow ||
              type == NotificationKind.mention ||
@@ -50,6 +51,13 @@ class ActorNotification extends NotificationItem {
   /// Falls back to the resolver when null.
   final String? videoAddressableId;
 
+  /// Whether this actor row targets a concrete comment/reply thread.
+  ///
+  /// Mentions can be either a plain actor mention or a comment mention. The
+  /// tap router uses this explicit signal to decide whether a mention should
+  /// auto-open comments after resolving the video.
+  final bool hasCommentTarget;
+
   /// Returns a copy with the given fields replaced.
   ActorNotification copyWith({
     String? id,
@@ -63,6 +71,7 @@ class ActorNotification extends NotificationItem {
     List<String>? sourceEventIds,
     List<String>? notificationIds,
     String? videoAddressableId,
+    bool? hasCommentTarget,
   }) {
     return ActorNotification(
       id: id ?? this.id,
@@ -76,6 +85,7 @@ class ActorNotification extends NotificationItem {
       sourceEventIds: sourceEventIds ?? this.sourceEventIds,
       notificationIds: notificationIds ?? this.notificationIds,
       videoAddressableId: videoAddressableId ?? this.videoAddressableId,
+      hasCommentTarget: hasCommentTarget ?? this.hasCommentTarget,
     );
   }
 
@@ -92,5 +102,6 @@ class ActorNotification extends NotificationItem {
     sourceEventIds,
     notificationIds,
     videoAddressableId,
+    hasCommentTarget,
   ];
 }

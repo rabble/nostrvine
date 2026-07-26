@@ -531,7 +531,12 @@ class NotificationRepository {
               videoTitle: item.videoTitle ?? _nonEmpty(video?.title),
               videoAddressableId:
                   item.videoAddressableId ??
-                  _recipientScopedVideoAddressableId(dTag: null, video: video),
+                  (item.type == NotificationKind.mention
+                      ? _sourceVideoAddressableId(video: video)
+                      : _recipientScopedVideoAddressableId(
+                          dTag: null,
+                          video: video,
+                        )),
             );
           }(),
           ActorNotification(:final actor) => item.copyWith(
@@ -600,6 +605,7 @@ class NotificationRepository {
         id: row.id,
         type: videoKind,
         videoEventId: videoEventId,
+        videoAddressableId: _nonEmpty(row.videoAddressableId),
         actors: [actor],
         totalCount: 1,
         timestamp: timestamp,
@@ -625,6 +631,8 @@ class NotificationRepository {
       commentText: row.content,
       targetEventId: row.targetEventId,
       notificationIds: row.id.isNotEmpty ? [row.id] : const [],
+      videoAddressableId: _nonEmpty(row.videoAddressableId),
+      hasCommentTarget: row.hasCommentTarget,
     );
   }
 
@@ -636,6 +644,7 @@ class NotificationRepository {
       switch (type) {
         'like' => NotificationKind.like,
         'comment' => NotificationKind.comment,
+        'videoMention' => NotificationKind.mention,
         'repost' => NotificationKind.repost,
         _ => null,
       };
@@ -677,31 +686,52 @@ class NotificationRepository {
   /// Projects an enriched [NotificationItem] into the persistence record
   /// shape accepted by [NotificationsDao.replaceAll].
   static NotificationCacheRow _itemToCacheRow(NotificationItem item) {
-    final (fromPubkey, targetEventId, targetPubkey, content) = switch (item) {
+    final (
+      fromPubkey,
+      targetEventId,
+      videoAddressableId,
+      targetPubkey,
+      content,
+      hasCommentTarget,
+    ) = switch (item) {
       VideoNotification(
         :final actors,
         :final videoEventId,
+        :final videoAddressableId,
         :final commentText,
       ) =>
         (
           actors.isNotEmpty ? actors.first.pubkey : '',
           videoEventId,
+          videoAddressableId,
           null,
           commentText,
+          false,
         ),
       ActorNotification(
         :final actor,
         :final targetEventId,
+        :final videoAddressableId,
         :final commentText,
+        :final hasCommentTarget,
       ) =>
-        (actor.pubkey, targetEventId, actor.pubkey, commentText),
+        (
+          actor.pubkey,
+          targetEventId,
+          videoAddressableId,
+          actor.pubkey,
+          commentText,
+          hasCommentTarget,
+        ),
     };
     return (
       id: item.id,
-      type: _persistType(item.type),
+      type: _persistType(item),
       fromPubkey: fromPubkey,
       timestamp: item.timestamp.toUtc().millisecondsSinceEpoch ~/ 1000,
       targetEventId: targetEventId,
+      videoAddressableId: videoAddressableId,
+      hasCommentTarget: hasCommentTarget,
       targetPubkey: targetPubkey,
       content: content,
       isRead: item.isRead,
@@ -711,7 +741,12 @@ class NotificationRepository {
   /// String form persisted in the `type` column.
   ///
   /// Inverse of [_videoKindFromCachedType] plus [_actorKindFromCachedType].
-  static String _persistType(NotificationKind kind) => switch (kind) {
+  static String _persistType(NotificationItem item) => switch (item) {
+    VideoNotification(type: NotificationKind.mention) => 'videoMention',
+    NotificationItem(:final type) => _persistKind(type),
+  };
+
+  static String _persistKind(NotificationKind kind) => switch (kind) {
     NotificationKind.like => 'like',
     NotificationKind.comment => 'comment',
     NotificationKind.repost => 'repost',
@@ -932,12 +967,12 @@ class NotificationRepository {
   /// the snapshot. Semantics:
   ///
   /// - `sourceEventIds` = set union of both sides (preserves uniqueness).
-  /// - `totalCount` = size of the union (so the count reflects unique
-  ///   underlying logical events, not the sum of overlapping totals);
-  ///   floored at `mergedActors.length` so the constructor's
-  ///   `totalCount >= actors.length` invariant always holds even in the
-  ///   defensive edge case where both sides had empty `sourceEventIds`
-  ///   (server response missing `source_event_id`).
+  /// - `totalCount` = for mention rows, distinct actor count; otherwise size
+  ///   of the union (so the count reflects unique underlying logical events,
+  ///   not the sum of overlapping totals), floored at `mergedActors.length` so
+  ///   the constructor's `totalCount >= actors.length` invariant always holds
+  ///   even in the defensive edge case where both sides had empty
+  ///   `sourceEventIds` (server response missing `source_event_id`).
   /// - `actors` = the union of existing + incoming actors, then
   ///   re-ordered to keep an explicitly named actor in front and capped
   ///   at [_maxGroupActors].
@@ -978,9 +1013,11 @@ class NotificationRepository {
               ? (existing.commentText ?? incoming.commentText)
               : (incoming.commentText ?? existing.commentText))
         : null;
-    final mergedTotalCount = unionIds.length >= mergedActors.length
-        ? unionIds.length
-        : mergedActors.length;
+    final mergedTotalCount = existing.type == NotificationKind.mention
+        ? mergedActors.length
+        : (unionIds.length >= mergedActors.length
+              ? unionIds.length
+              : mergedActors.length);
     return existing.copyWith(
       sourceEventIds: unionIds,
       notificationIds: unionNotificationIds,
@@ -1166,7 +1203,7 @@ class NotificationRepository {
       }
 
       final kind = _mapNotificationKind(notification);
-      if (!_isVideoAnchoredKind(kind)) continue;
+      if (!_isVideoAnchoredNotification(kind, notification)) continue;
       final anchorEventId = _videoAnchorEventId(kind, notification);
       if (anchorEventId != null && anchorEventId.isNotEmpty) {
         eventIds.add(anchorEventId);
@@ -1196,16 +1233,24 @@ class NotificationRepository {
     final groups = <_VideoGroupKey, List<RelayNotification>>{};
     for (final n in raw) {
       final kind = _mapNotificationKind(n);
-      if (!_isVideoAnchoredKind(kind)) continue;
+      if (!_isVideoAnchoredNotification(kind, n)) continue;
       final eventId = _videoAnchorEventId(kind, n);
       if (eventId == null || eventId.isEmpty) continue;
-      if (_hasKnownReferencedVideoOwnerMismatch(
-        kind: kind,
-        referencedVideoEventId: eventId,
-        videosById: videosById,
-        videoNotFoundIds: videoNotFoundIds,
-        rootEventPubkey: n.rootEventPubkey,
-      )) {
+      // Video-sourced mentions are anchored to the sender's source video, not
+      // the recipient's, so the recipient-owner check does not apply. Their
+      // root coordinate is validated separately by
+      // _trustedSourceRootAddressableId: a kind 34236 published without a `d`
+      // tag makes Funnelcake derive the root from the event's `a`/`A` tag
+      // instead, which for an inspired-by or reply video is the *original*
+      // creator's coordinate — often the recipient's own.
+      if (kind != NotificationKind.mention &&
+          _hasKnownReferencedVideoOwnerMismatch(
+            kind: kind,
+            referencedVideoEventId: eventId,
+            videosById: videosById,
+            videoNotFoundIds: videoNotFoundIds,
+            rootEventPubkey: n.rootEventPubkey,
+          )) {
         _logReclassifiedOwnerMismatch(
           notificationId: n.dedupeKey,
           sourcePubkey: n.sourcePubkey,
@@ -1216,7 +1261,12 @@ class NotificationRepository {
         misattributed?.add(n);
         continue;
       }
-      final key = _VideoGroupKey(eventId, kind);
+      final video = videosById[eventId];
+      final key = _VideoGroupKey(
+        groupId: _videoGroupId(kind, n, eventId, video: video),
+        eventId: eventId,
+        kind: kind,
+      );
       (groups[key] ??= []).add(n);
     }
 
@@ -1224,33 +1274,58 @@ class NotificationRepository {
     for (final entry in groups.entries) {
       final group = entry.value
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final isVideoMention = entry.key.kind == NotificationKind.mention;
       final actorNotifications = _orderVideoGroupActorNotifications(
         group,
         profiles,
       );
+      final displayActorNotifications = isVideoMention
+          ? _distinctActorNotificationsBySourcePubkey(actorNotifications)
+          : actorNotifications;
       final actors = _orderVideoGroupActors(
-        actorNotifications
+        displayActorNotifications
             .take(_maxGroupActors)
             .map((n) => _buildActor(n.sourcePubkey, profiles))
             .toList(),
       );
+      final totalCount = isVideoMention
+          ? group.map((n) => n.sourcePubkey).toSet().length
+          : group.length;
       final video = videosById[entry.key.eventId];
+      // Funnelcake sets `referenced_d_tag` from `root_d_tag`, so both name the
+      // same coordinate (funnelcake `client.rs:12145`).
       final dTag = group
           .map((n) => n.referencedDTag)
           .firstWhere((d) => d != null, orElse: () => null);
-      final addressableId = _recipientScopedVideoAddressableId(
-        dTag: dTag,
-        video: video,
-      );
-      // Prefer thumbnail from the notification payload — it comes directly from
-      // the server and is stable even after a metadata update (unlike the stats
-      // lookup which uses the mutable event ID and may 404 post-edit).
+      final trustedRootAddressableId = isVideoMention
+          ? _trustedRootAddressableIdForGroup(group, video: video)
+          : null;
+      // `root_d_tag` and the `referenced_video` block are both keyed on the
+      // root coordinate, so rejecting that coordinate as untrusted invalidates
+      // them too — splicing either one back in would describe another
+      // creator's video under "mentioned you".
+      final trustsRootPayload =
+          !isVideoMention || trustedRootAddressableId != null;
+      final addressableId = isVideoMention
+          ? trustedRootAddressableId ?? _sourceVideoAddressableId(video: video)
+          : _recipientScopedVideoAddressableId(dTag: dTag, video: video);
+      // Normal video rows prefer payload media because it is stable after
+      // metadata updates. Video mentions prefer the resolved source video, and
+      // only accept payload media when the root coordinate was trusted.
       final thumbnailFromNotif = group
           .map((n) => n.referencedVideoThumbnail)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
       final titleFromNotif = group
           .map((n) => n.referencedVideoTitle)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
+      final thumbnailUrl = isVideoMention
+          ? _nonEmpty(video?.thumbnail) ??
+                (trustsRootPayload ? _nonEmpty(thumbnailFromNotif) : null)
+          : _nonEmpty(thumbnailFromNotif) ?? _nonEmpty(video?.thumbnail);
+      final videoTitle = isVideoMention
+          ? _nonEmpty(video?.title) ??
+                (trustsRootPayload ? _nonEmpty(titleFromNotif) : null)
+          : _nonEmpty(titleFromNotif) ?? _nonEmpty(video?.title);
       // Carry the lead actor's comment text so the quoted body stays in
       // sync with the bold first-actor span after named-actor reordering.
       // Only meaningful for `comment` kind — likes and reposts have no
@@ -1265,11 +1340,10 @@ class NotificationRepository {
           type: entry.key.kind,
           videoEventId: entry.key.eventId,
           videoAddressableId: addressableId,
-          videoThumbnailUrl:
-              _nonEmpty(thumbnailFromNotif) ?? _nonEmpty(video?.thumbnail),
-          videoTitle: _nonEmpty(titleFromNotif) ?? _nonEmpty(video?.title),
+          videoThumbnailUrl: thumbnailUrl,
+          videoTitle: videoTitle,
           actors: actors,
-          totalCount: group.length,
+          totalCount: totalCount,
           timestamp: group.first.createdAt,
           isRead: group.every((n) => n.read),
           commentText: commentTextForRow,
@@ -1292,6 +1366,11 @@ class NotificationRepository {
       kind == NotificationKind.comment ||
       kind == NotificationKind.repost;
 
+  static bool _isVideoAnchoredNotification(
+    NotificationKind kind,
+    RelayNotification notification,
+  ) => _isVideoAnchoredKind(kind) || _isVideoSourcedMention(notification);
+
   /// Builds [ActorNotification]s for follow/mention/system kinds.
   ///
   /// `reply` and other unmapped kinds are also routed here as
@@ -1307,7 +1386,8 @@ class NotificationRepository {
       // Skip kinds that became VideoNotifications.
       if (kind == NotificationKind.like ||
           kind == NotificationKind.comment ||
-          kind == NotificationKind.repost) {
+          kind == NotificationKind.repost ||
+          _isVideoSourcedMention(n)) {
         continue;
       }
       // ActorNotification supports follow/mention/system/likeComment/reply;
@@ -1393,8 +1473,18 @@ class NotificationRepository {
           ? [notification.dedupeKey]
           : const [],
       videoAddressableId: _actorVideoAddressableId(type, notification),
+      hasCommentTarget: _actorHasCommentTarget(type, notification),
     );
   }
+
+  static bool _actorHasCommentTarget(
+    NotificationKind type,
+    RelayNotification notification,
+  ) =>
+      type == NotificationKind.likeComment ||
+      type == NotificationKind.reply ||
+      (type == NotificationKind.mention &&
+          _nonEmpty(notification.targetCommentId) != null);
 
   static NotificationKind? _reclassifiedMisattributedKind(
     NotificationKind originalKind,
@@ -1421,6 +1511,16 @@ class NotificationRepository {
 
   /// Returns null if [s] is null or empty, otherwise [s].
   static String? _nonEmpty(String? s) => (s == null || s.isEmpty) ? null : s;
+
+  static ({int kind, String pubkey, String dTag})? _parseAddressableId(
+    String addressableId,
+  ) {
+    final parts = addressableId.split(':');
+    if (parts.length < 3) return null;
+    final kind = int.tryParse(parts[0]);
+    if (kind == null) return null;
+    return (kind: kind, pubkey: parts[1], dTag: parts.sublist(2).join(':'));
+  }
 
   /// Returns the `targetEventId` for an actor-anchored notification.
   ///
@@ -1489,6 +1589,49 @@ class NotificationRepository {
     if (resolvedDTag == null) return null;
     return '${NIP71VideoKinds.addressableShortVideo}'
         ':$_userPubkey:$resolvedDTag';
+  }
+
+  /// Returns the full source-video coordinate for video-sourced mention rows.
+  ///
+  /// Unlike likes/comments/reposts on the recipient's own video, a kind 34236
+  /// mention is anchored to the sender's source video. The authoritative
+  /// coordinate is the root coordinate from Funnelcake; this is the fallback
+  /// used only once [_trustedSourceRootAddressableId] has rejected it, so both
+  /// halves must come from the resolved [VideoStats]. Taking the d-tag from the
+  /// payload instead would splice the rejected coordinate's d-tag onto the
+  /// sender's pubkey and mint a route to a video that does not exist.
+  String? _sourceVideoAddressableId({required VideoStats? video}) {
+    final ownerPubkey = _nonEmpty(video?.pubkey);
+    final resolvedDTag = _nonEmpty(video?.dTag);
+    if (ownerPubkey == null || resolvedDTag == null) return null;
+    return '${NIP71VideoKinds.addressableShortVideo}'
+        ':$ownerPubkey:$resolvedDTag';
+  }
+
+  static String? _trustedRootAddressableIdForGroup(
+    List<RelayNotification> group, {
+    required VideoStats? video,
+  }) => group
+      .map((n) => _trustedSourceRootAddressableId(n, video: video))
+      .firstWhere((id) => id != null && id.isNotEmpty, orElse: () => null);
+
+  static String? _trustedSourceRootAddressableId(
+    RelayNotification notification, {
+    required VideoStats? video,
+  }) {
+    final addressableId = _nonEmpty(notification.rootAddressableId);
+    if (addressableId == null) return null;
+    final parsed = _parseAddressableId(addressableId);
+    if (parsed == null) return null;
+    final rootKind = notification.rootEventKind;
+    if (rootKind != null && parsed.kind != rootKind) return null;
+    if (!NIP71VideoKinds.isVideoKind(rootKind ?? parsed.kind)) return null;
+    if (parsed.pubkey.isEmpty || parsed.dTag.isEmpty) return null;
+    if (parsed.pubkey != notification.sourcePubkey) return null;
+
+    final resolvedOwner = _nonEmpty(video?.pubkey);
+    if (resolvedOwner != null && parsed.pubkey != resolvedOwner) return null;
+    return addressableId;
   }
 
   /// Returns the stable NIP-33 addressable ID for an actor-anchored
@@ -1629,6 +1772,16 @@ class NotificationRepository {
     return ordered;
   }
 
+  static List<RelayNotification> _distinctActorNotificationsBySourcePubkey(
+    List<RelayNotification> notifications,
+  ) {
+    final seen = <String>{};
+    return [
+      for (final notification in notifications)
+        if (seen.add(notification.sourcePubkey)) notification,
+    ];
+  }
+
   static bool _hasExplicitActorName(
     String pubkey,
     Map<String, UserProfile> profiles,
@@ -1749,6 +1902,22 @@ class NotificationRepository {
     };
   }
 
+  static bool _isVideoSourcedMention(RelayNotification n) =>
+      n.notificationType == 'mention' &&
+      NIP71VideoKinds.isVideoKind(n.sourceKind);
+
+  static String _videoGroupId(
+    NotificationKind kind,
+    RelayNotification n,
+    String eventId, {
+    required VideoStats? video,
+  }) {
+    if (kind == NotificationKind.mention && _isVideoSourcedMention(n)) {
+      return _trustedSourceRootAddressableId(n, video: video) ?? eventId;
+    }
+    return eventId;
+  }
+
   static bool _isNestedCommentReply(RelayNotification n) {
     if (n.notificationType != 'reply' && n.notificationType != 'comment') {
       return false;
@@ -1786,6 +1955,9 @@ class NotificationRepository {
     NotificationKind kind,
     RelayNotification n,
   ) {
+    if (kind == NotificationKind.mention && _isVideoSourcedMention(n)) {
+      return _nonEmpty(n.sourceEventId);
+    }
     if (kind == NotificationKind.comment) {
       if (n.isReferencedVideo &&
           n.referencedEventId != null &&
@@ -1858,14 +2030,19 @@ class NotificationRepository {
 
 @immutable
 class _VideoGroupKey {
-  const _VideoGroupKey(this.eventId, this.kind);
+  const _VideoGroupKey({
+    required this.groupId,
+    required this.eventId,
+    required this.kind,
+  });
+  final String groupId;
   final String eventId;
   final NotificationKind kind;
 
   @override
   bool operator ==(Object other) =>
-      other is _VideoGroupKey && other.eventId == eventId && other.kind == kind;
+      other is _VideoGroupKey && other.groupId == groupId && other.kind == kind;
 
   @override
-  int get hashCode => Object.hash(eventId, kind);
+  int get hashCode => Object.hash(groupId, kind);
 }

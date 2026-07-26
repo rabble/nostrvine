@@ -23,10 +23,7 @@ void main() {
         expect(notification.sourcePubkey, equals('aabbccdd' * 8));
         expect(notification.sourceEventId, equals('11223344' * 8));
         expect(notification.sourceKind, equals(7));
-        expect(
-          notification.referencedEventId,
-          equals('55667788' * 8),
-        );
+        expect(notification.referencedEventId, equals('55667788' * 8));
         expect(notification.notificationType, equals('reaction'));
         expect(notification.read, isFalse);
         expect(notification.content, equals('+'));
@@ -51,52 +48,46 @@ void main() {
         expect(notification.referencedVideoTitle, isNull);
       });
 
-      test(
-        'flags video target when referenced_video is populated',
-        () {
-          final json = {
-            'id': 'notif_123',
-            'source_pubkey': 'aabbccdd' * 8,
-            'source_event_id': '11223344' * 8,
-            'source_kind': 7,
-            'referenced_event_id': '55667788' * 8,
-            'referenced_video': {
-              'title': 'My funny vine',
-              'thumbnail': 'https://example.com/thumb.jpg',
-            },
-            'notification_type': 'reaction',
-            'created_at': 1712345678,
-            'read': false,
-          };
+      test('flags video target when referenced_video is populated', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_video': {
+            'title': 'My funny vine',
+            'thumbnail': 'https://example.com/thumb.jpg',
+          },
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
 
-          final notification = RelayNotification.fromJson(json);
+        final notification = RelayNotification.fromJson(json);
 
-          expect(notification.isReferencedVideo, isTrue);
-          expect(notification.referencedVideoTitle, equals('My funny vine'));
-        },
-      );
+        expect(notification.isReferencedVideo, isTrue);
+        expect(notification.referencedVideoTitle, equals('My funny vine'));
+      });
 
-      test(
-        'reports non-video target when referenced_video is absent (like '
-        'on a comment)',
-        () {
-          final json = {
-            'id': 'notif_123',
-            'source_pubkey': 'aabbccdd' * 8,
-            'source_event_id': '11223344' * 8,
-            'source_kind': 7,
-            'referenced_event_id': '55667788' * 8,
-            'notification_type': 'reaction',
-            'created_at': 1712345678,
-            'read': false,
-          };
+      test('reports non-video target when referenced_video is absent (like '
+          'on a comment)', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
 
-          final notification = RelayNotification.fromJson(json);
+        final notification = RelayNotification.fromJson(json);
 
-          expect(notification.isReferencedVideo, isFalse);
-          expect(notification.referencedVideoTitle, isNull);
-        },
-      );
+        expect(notification.isReferencedVideo, isFalse);
+        expect(notification.referencedVideoTitle, isNull);
+      });
 
       test(
         'falls back to referenced_event_title when referenced_video is null',
@@ -116,10 +107,7 @@ void main() {
           final notification = RelayNotification.fromJson(json);
 
           expect(notification.isReferencedVideo, isFalse);
-          expect(
-            notification.referencedVideoTitle,
-            equals('Top-level title'),
-          );
+          expect(notification.referencedVideoTitle, equals('Top-level title'));
         },
       );
 
@@ -149,28 +137,25 @@ void main() {
         );
       });
 
-      test(
-        'falls back to top-level referenced_d_tag when '
-        'referenced_video is absent',
-        () {
-          final json = {
-            'id': 'notif_123',
-            'source_pubkey': 'aabbccdd' * 8,
-            'source_event_id': '11223344' * 8,
-            'source_kind': 7,
-            'referenced_event_id': '55667788' * 8,
-            'referenced_d_tag': 'top-level-dtag',
-            'notification_type': 'reaction',
-            'created_at': 1712345678,
-            'read': false,
-          };
+      test('falls back to top-level referenced_d_tag when '
+          'referenced_video is absent', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_d_tag': 'top-level-dtag',
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
 
-          final notification = RelayNotification.fromJson(json);
+        final notification = RelayNotification.fromJson(json);
 
-          expect(notification.referencedDTag, equals('top-level-dtag'));
-          expect(notification.isReferencedVideo, isFalse);
-        },
-      );
+        expect(notification.referencedDTag, equals('top-level-dtag'));
+        expect(notification.isReferencedVideo, isFalse);
+      });
 
       test(
         'prefers referenced_video.d_tag over top-level referenced_d_tag',
@@ -181,10 +166,7 @@ void main() {
             'source_event_id': '11223344' * 8,
             'source_kind': 7,
             'referenced_event_id': '55667788' * 8,
-            'referenced_video': {
-              'title': 'My vine',
-              'd_tag': 'nested-dtag',
-            },
+            'referenced_video': {'title': 'My vine', 'd_tag': 'nested-dtag'},
             'referenced_d_tag': 'top-level-dtag',
             'notification_type': 'reaction',
             'created_at': 1712345678,
@@ -238,32 +220,28 @@ void main() {
         );
       });
 
-      test(
-        'falls back to referenced_event_thumbnail when '
-        'referenced_video is absent',
-        () {
-          final json = {
-            'id': 'notif_123',
-            'source_pubkey': 'aabbccdd' * 8,
-            'source_event_id': '11223344' * 8,
-            'source_kind': 7,
-            'referenced_event_id': '55667788' * 8,
-            'referenced_event_thumbnail':
-                'https://cdn.example.com/fallback.jpg',
-            'notification_type': 'reaction',
-            'created_at': 1712345678,
-            'read': false,
-          };
+      test('falls back to referenced_event_thumbnail when '
+          'referenced_video is absent', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_event_thumbnail': 'https://cdn.example.com/fallback.jpg',
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
 
-          final notification = RelayNotification.fromJson(json);
+        final notification = RelayNotification.fromJson(json);
 
-          expect(
-            notification.referencedVideoThumbnail,
-            equals('https://cdn.example.com/fallback.jpg'),
-          );
-          expect(notification.isReferencedVideo, isFalse);
-        },
-      );
+        expect(
+          notification.referencedVideoThumbnail,
+          equals('https://cdn.example.com/fallback.jpg'),
+        );
+        expect(notification.isReferencedVideo, isFalse);
+      });
 
       test('treats empty referenced_video.thumbnail as null thumbnail', () {
         final json = {
@@ -328,9 +306,7 @@ void main() {
 
         expect(
           notification.createdAt,
-          equals(
-            DateTime.fromMillisecondsSinceEpoch(1712345678 * 1000),
-          ),
+          equals(DateTime.fromMillisecondsSinceEpoch(1712345678 * 1000)),
         );
       });
 
@@ -350,9 +326,7 @@ void main() {
 
         expect(
           notification.createdAt,
-          equals(
-            DateTime.fromMillisecondsSinceEpoch(1712000000 * 1000),
-          ),
+          equals(DateTime.fromMillisecondsSinceEpoch(1712000000 * 1000)),
         );
       });
 
@@ -366,47 +340,49 @@ void main() {
           'created_at': 1712345678,
           'read': 0,
         };
-        final readJson = {
-          ...unreadJson,
-          'id': 'notif_read',
-          'read': 1,
-        };
+        final readJson = {...unreadJson, 'id': 'notif_read', 'read': 1};
 
         expect(RelayNotification.fromJson(unreadJson).read, isFalse);
         expect(RelayNotification.fromJson(readJson).read, isTrue);
       });
 
-      test(
-        'parses staging NIP-22 comment anchor fields',
-        () {
-          final json = {
-            'id': '',
-            'source_pubkey': 'aabbccdd' * 8,
-            'source_event_id': '11223344' * 8,
-            'source_kind': 1111,
-            'referenced_event_id': '',
-            'notification_type': 'mention',
-            'created_at': 1712345678,
-            'read': false,
-            'content': 'Fake staging comment from Codex',
-            'referenced_event_title': 'Codex staging comment notification test',
-            'target_comment_id': '11223344' * 8,
-            'root_event_id': '55667788' * 8,
-          };
+      test('parses staging NIP-22 comment anchor fields', () {
+        final json = {
+          'id': '',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 1111,
+          'referenced_event_id': '',
+          'notification_type': 'mention',
+          'created_at': 1712345678,
+          'read': false,
+          'content': 'Fake staging comment from Codex',
+          'referenced_event_title': 'Codex staging comment notification test',
+          'target_comment_id': '11223344' * 8,
+          'root_event_id': '55667788' * 8,
+          'root_event_kind': 34236,
+          'root_d_tag': 'root-d-tag',
+          'root_addressable_id': '34236:${'aabbccdd' * 8}:root-d-tag',
+        };
 
-          final notification = RelayNotification.fromJson(json);
+        final notification = RelayNotification.fromJson(json);
 
-          expect(notification.referencedEventId, equals(''));
-          expect(notification.rootEventId, equals('55667788' * 8));
-          expect(notification.targetCommentId, equals('11223344' * 8));
-          expect(
-            notification.referencedVideoTitle,
-            equals('Codex staging comment notification test'),
-          );
-        },
-      );
+        expect(notification.referencedEventId, equals(''));
+        expect(notification.rootEventId, equals('55667788' * 8));
+        expect(notification.rootEventKind, equals(34236));
+        expect(notification.rootDTag, equals('root-d-tag'));
+        expect(
+          notification.rootAddressableId,
+          equals('34236:${'aabbccdd' * 8}:root-d-tag'),
+        );
+        expect(notification.targetCommentId, equals('11223344' * 8));
+        expect(
+          notification.referencedVideoTitle,
+          equals('Codex staging comment notification test'),
+        );
+      });
 
-      test('treats empty root_event_id and target_comment_id as null', () {
+      test('treats empty root coordinate fields as null', () {
         final json = {
           'id': 'notif_123',
           'source_pubkey': 'aabbccdd' * 8,
@@ -416,12 +392,18 @@ void main() {
           'created_at': 1712345678,
           'read': false,
           'root_event_id': '',
+          'root_event_kind': '',
+          'root_d_tag': '',
+          'root_addressable_id': '',
           'target_comment_id': '',
         };
 
         final notification = RelayNotification.fromJson(json);
 
         expect(notification.rootEventId, isNull);
+        expect(notification.rootEventKind, isNull);
+        expect(notification.rootDTag, isNull);
+        expect(notification.rootAddressableId, isNull);
         expect(notification.targetCommentId, isNull);
       });
 

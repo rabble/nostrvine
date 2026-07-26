@@ -29,6 +29,8 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
     required String fromPubkey,
     required int timestamp,
     String? targetEventId,
+    String? videoAddressableId,
+    bool hasCommentTarget = false,
     String? targetPubkey,
     String? content,
     bool isRead = false,
@@ -41,6 +43,8 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
       fromPubkey: fromPubkey,
       timestamp: timestamp,
       targetEventId: Value(targetEventId),
+      videoAddressableId: Value(videoAddressableId),
+      hasCommentTarget: Value(hasCommentTarget),
       targetPubkey: Value(targetPubkey),
       content: Value(content),
       isRead: Value(isRead),
@@ -56,6 +60,8 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
               type: Value(type),
               fromPubkey: Value(fromPubkey),
               targetEventId: Value(targetEventId),
+              videoAddressableId: Value(videoAddressableId),
+              hasCommentTarget: Value(hasCommentTarget),
               targetPubkey: Value(targetPubkey),
               content: Value(content),
               timestamp: Value(timestamp),
@@ -65,9 +71,7 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
           );
       if (updated > 0) return;
     }
-    await into(notifications).insertOnConflictUpdate(
-      companion,
-    );
+    await into(notifications).insertOnConflictUpdate(companion);
   }
 
   /// Get all notifications sorted by timestamp (newest first)
@@ -200,6 +204,8 @@ class NotificationsDao extends DatabaseAccessor<AppDatabase>
             fromPubkey: r.fromPubkey,
             timestamp: r.timestamp,
             targetEventId: Value(r.targetEventId),
+            videoAddressableId: Value(r.videoAddressableId),
+            hasCommentTarget: Value(r.hasCommentTarget),
             targetPubkey: Value(r.targetPubkey),
             content: Value(r.content),
             isRead: Value(r.isRead),
@@ -228,6 +234,8 @@ typedef NotificationCacheRow = ({
   String fromPubkey,
   int timestamp,
   String? targetEventId,
+  String? videoAddressableId,
+  bool hasCommentTarget,
   String? targetPubkey,
   String? content,
   bool isRead,
