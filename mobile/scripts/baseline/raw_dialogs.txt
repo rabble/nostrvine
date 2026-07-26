@@ -28,7 +28,6 @@ lib/screens/settings/account_content_labels_tile.dart	1
 lib/screens/settings/content_preferences_screen.dart	2
 lib/screens/settings/general_settings_screen.dart	1
 lib/screens/settings/nip05_settings_screen.dart	1
-lib/screens/settings/nostr_settings_screen.dart	2
 lib/screens/settings/support_center_screen.dart	2
 lib/screens/user_list_people_screen.dart	2
 lib/utils/external_link_launcher.dart	1
@@ -40,6 +39,7 @@ lib/widgets/delete_account_dialog.dart	3
 lib/widgets/find_people_sheet.dart	1
 lib/widgets/for_you_tab.dart	1
 lib/widgets/library/drafts_tab.dart	1
+lib/widgets/modal_progress_overlay.dart	2
 lib/widgets/owner_video_delete_confirmation_dialog.dart	1
 lib/widgets/profile_editor/username_status_indicator.dart	1
 lib/widgets/save_original_progress_sheet.dart	1
