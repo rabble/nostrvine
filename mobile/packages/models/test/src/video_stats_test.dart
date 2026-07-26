@@ -377,14 +377,16 @@ void main() {
         expect(stats.loops, equals(5000));
       });
 
-      test('extracts dimensions from size tag when dim tag is absent', () {
+      test('does not treat a size tag as dimensions', () {
+        // NIP-92 `size` is a byte count, not WxH. Accepting it as dimensions
+        // fed a file size into width/height parsing.
         final json = {
           'id': 'test-id',
           'pubkey': 'test-pubkey',
           'created_at': 1700000000,
           'kind': 34236,
           'tags': [
-            ['size', '480x480'],
+            ['size', '6169367'],
           ],
           'thumbnail': 'https://example.com/thumb.jpg',
           'video_url': 'https://example.com/video.mp4',
@@ -396,7 +398,7 @@ void main() {
 
         final stats = VideoStats.fromJson(json);
 
-        expect(stats.dimensions, equals('480x480'));
+        expect(stats.dimensions, isNull);
       });
 
       test('parses dimensions from direct REST fields', () {
@@ -816,6 +818,101 @@ void main() {
 
         expect(stats.kind, equals(34236));
       });
+    });
+
+    group('dimensions from imeta tag', () {
+      Map<String, dynamic> jsonWithTags(List<List<dynamic>> tags) => {
+        'event': {
+          'id': 'event-id',
+          'pubkey': 'event-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'tags': tags,
+        },
+        'reactions': 0,
+        'comments': 0,
+        'reposts': 0,
+        'engagement_score': 0,
+      };
+
+      test('extracts dim from space-separated imeta format', () {
+        final stats = VideoStats.fromJson(
+          jsonWithTags([
+            [
+              'imeta',
+              'url https://example.com/video.mp4',
+              'dim 1080x1920',
+            ],
+          ]),
+        );
+
+        expect(stats.dimensions, equals('1080x1920'));
+      });
+
+      test('extracts dim from positional imeta format', () {
+        final stats = VideoStats.fromJson(
+          jsonWithTags([
+            [
+              'imeta',
+              'url',
+              'https://example.com/video.mp4',
+              'dim',
+              '1080x1920',
+            ],
+          ]),
+        );
+
+        expect(stats.dimensions, equals('1080x1920'));
+      });
+
+      test('imeta size does not populate dimensions', () {
+        final stats = VideoStats.fromJson(
+          jsonWithTags([
+            ['imeta', 'url https://example.com/video.mp4', 'size 6169367'],
+          ]),
+        );
+
+        expect(stats.dimensions, isNull);
+      });
+
+      test(
+        'production funnelcake payload yields a portrait VideoEvent',
+        () {
+          // Verbatim tag shape returned by
+          // GET /api/users/{pubkey}/recommendations — funnelcake emits `dim`
+          // ONLY inside imeta, with no top-level `dim` tag and no `dimensions`
+          // field. Missing this left every REST-hydrated video with
+          // width/height null, so isPortrait was always false (#3882).
+          final stats = VideoStats.fromJson(
+            jsonWithTags([
+              ['d', 'video-1'],
+              [
+                'imeta',
+                'url https://media.divine.video/abc',
+                'm video/mp4',
+                'image https://media.divine.video/thumb',
+                'dim 1080x1920',
+                'size 6169367',
+                'x abc',
+                'blurhash vHHoI6xu-;WB~qRjIUofM{ayM{fQt7of',
+              ],
+              ['duration', '6'],
+            ]),
+          );
+
+          expect(stats.dimensions, equals('1080x1920'));
+          expect(stats.blurhash, equals('vHHoI6xu-;WB~qRjIUofM{ayM{fQt7of'));
+
+          final video = stats.toVideoEvent();
+          expect(video.width, equals(1080));
+          expect(video.height, equals(1920));
+          expect(video.isPortrait, isTrue);
+        },
+      );
     });
 
     group('blurhash from imeta tag', () {

@@ -6,6 +6,11 @@ import 'package:meta/meta.dart';
 import 'package:models/src/engagement_count_parser.dart';
 import 'package:models/src/video_event.dart';
 
+/// imeta keys whose value may be encoded positionally
+/// (`['imeta', 'dim', '1080x1920']`) rather than space-separated
+/// (`['imeta', 'dim 1080x1920']`). Both encodings appear in the wild.
+const _positionalImetaKeys = {'blurhash', 'dim'};
+
 /// Video with engagement metrics from Funnelcake API.
 ///
 /// This model represents the combined event data and stats returned
@@ -229,9 +234,13 @@ class VideoStats {
             blurhashFromTag = tagValue;
           }
           if (tagName == 'imeta') {
-            // Extract blurhash from imeta. Two formats are seen in the wild:
+            // Extract blurhash and dim from imeta. Two formats are seen in the
+            // wild:
             //   - space-separated: ['imeta', 'blurhash <hash>', ...]
             //   - positional:      ['imeta', 'blurhash', '<hash>', ...]
+            // divine and funnelcake only ever emit `dim` inside imeta — there
+            // is no top-level `dim` tag on any REST endpoint — so missing this
+            // leaves every REST-hydrated video without width/height (#3882).
             for (var i = 1; i < tag.length; i++) {
               final element = tag[i].toString();
               final spaceIndex = element.indexOf(' ');
@@ -240,19 +249,23 @@ class VideoStats {
               if (spaceIndex > 0) {
                 key = element.substring(0, spaceIndex);
                 value = element.substring(spaceIndex + 1);
-              } else if (element == 'blurhash' && i + 1 < tag.length) {
+              } else if (_positionalImetaKeys.contains(element) &&
+                  i + 1 < tag.length) {
                 key = element;
                 value = tag[i + 1].toString();
               }
-              if (key == 'blurhash' &&
-                  blurhashFromTag == null &&
-                  value != null &&
-                  value.isNotEmpty) {
+              if (value == null || value.isEmpty) continue;
+              if (key == 'blurhash' && blurhashFromTag == null) {
                 blurhashFromTag = value;
+              }
+              if (key == 'dim' && dimensions == null) {
+                dimensions = value;
               }
             }
           }
-          if ((tagName == 'dim' || tagName == 'size') && dimensions == null) {
+          // `size` is a byte count, not a WxH string — it must never populate
+          // dimensions (divine-web keeps them separate too).
+          if (tagName == 'dim' && dimensions == null) {
             dimensions = tagValue;
           }
           if (tagName == 'summary' && summaryFromTag == null) {
