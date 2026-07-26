@@ -270,7 +270,7 @@ class TimelineOverlayBloc
       startTime: hasWindow ? track.startTime : .zero,
       // No valid window → span the whole video. [total] is guaranteed > 0 by
       // _onUpdateItems (transient-zero is substituted with maxDuration there).
-      endTime: hasWindow ? _clampEnd(endTime, total) : total,
+      endTime: _clampEnd(_soundWindowEnd(track, total), total),
       label: track.title ?? track.pubkey,
       maxDuration: sourceDuration != null
           ? sourceDuration - track.startOffset
@@ -627,6 +627,14 @@ class TimelineOverlayBloc
   /// Clamp every overlay item so its visible region fits within
   /// [0, totalDuration]. Items that end up with zero visible duration
   /// are removed.
+  ///
+  /// A sound bar is re-derived from its [AudioEvent] rather than only clamped,
+  /// because a clamp cannot undo itself. Undo/redo builds the bars against the
+  /// total that was current *before* the navigation — the restored clips only
+  /// reach [ClipEditorBloc] afterwards — so redoing an edit that lengthened the
+  /// composition hands this handler a bar already truncated to the old, shorter
+  /// end. Clamping it again would leave the sound playing short under a longer
+  /// video (#6401).
   void _onTotalDurationChanged(
     TimelineOverlayTotalDurationChanged event,
     Emitter<TimelineOverlayState> emit,
@@ -634,11 +642,19 @@ class TimelineOverlayBloc
     final totalDuration = event.totalDuration;
     if (totalDuration <= Duration.zero) return;
 
+    final tracksById = {for (final track in state.audioTracks) track.id: track};
+
     final updated = <TimelineOverlayItem>[];
     for (final item in state.items) {
       if (item.startTime >= totalDuration) continue;
 
-      final clampedEnd = _clampEnd(item.endTime, totalDuration);
+      final track = item.type == TimelineOverlayType.sound
+          ? tracksById[item.id]
+          : null;
+      final clampedEnd = _clampEnd(
+        track == null ? item.endTime : _soundWindowEnd(track, totalDuration),
+        totalDuration,
+      );
       if (clampedEnd <= item.startTime) continue;
 
       updated.add(
@@ -723,6 +739,14 @@ class TimelineOverlayBloc
   /// Returns [endTime] clamped to [totalDuration].
   static Duration _clampEnd(Duration endTime, Duration totalDuration) =>
       endTime > totalDuration ? totalDuration : endTime;
+
+  /// Unclamped end a sound bar for [track] should span to: the track's own
+  /// composition window, or the whole video when that window is missing or
+  /// inverted (see [_soundItem] for why a persisted track can carry one).
+  static Duration _soundWindowEnd(AudioEvent track, Duration total) {
+    final endTime = track.endTime;
+    return endTime != null && endTime > track.startTime ? endTime : total;
+  }
 
   void _onWaveformLoaded(
     TimelineOverlayWaveformLoaded event,

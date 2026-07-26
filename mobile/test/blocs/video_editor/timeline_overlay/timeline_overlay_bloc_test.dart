@@ -1538,6 +1538,72 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'restores a sound bar the redo reconcile clamped against a stale total',
+        build: TimelineOverlayBloc.new,
+        // Redo of a stop-motion hold change: the history entry carries the
+        // grown 4.5s window, but the reconcile reads the total off
+        // ClipEditorBloc *before* the restored clips land there, so the bar is
+        // built against the pre-redo 3s. The timeline then reports the real
+        // total — the bar has to follow it back out, or the sound plays 3s
+        // under a 4.5s video (#6401).
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(milliseconds: 4500),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 3),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(milliseconds: 4500),
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(milliseconds: 4500));
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not stretch a sound past the window the user trimmed it to',
+        build: TimelineOverlayBloc.new,
+        // Same growth, but this track's own window is 1.5s. Following the
+        // total must never invent coverage the AudioEvent does not have.
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(milliseconds: 1500),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 3),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(milliseconds: 4500),
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(milliseconds: 1500));
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'clamps markers to the provided total duration',
         build: TimelineOverlayBloc.new,
         seed: () => const TimelineOverlayState(
