@@ -93,7 +93,7 @@ final class UserProfileReactiveProvider
 }
 
 String _$userProfileReactiveHash() =>
-    r'b0df16fa99256495c86d9dc1980ac7312d71a6bd';
+    r'f0c15277edfd883bf7d28cb94b19822f01f94934';
 
 /// Reactive profile provider backed by Drift's watchProfile stream.
 ///
