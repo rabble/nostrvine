@@ -1456,7 +1456,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get audioAttributionOriginalSound => 'ኦሪጅናል ድምጽ';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'ድምጽ አይገኝም';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

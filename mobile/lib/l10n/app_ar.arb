@@ -559,7 +559,7 @@
     "videoFollowButtonFollowing": "متابع",
     "videoFollowButtonFollow": "متابعة",
     "audioAttributionOriginalSound": "صوت أصلي",
-    "audioAttributionUnavailableSound": "Sound unavailable",
+    "audioAttributionUnavailableSound": "الصوت غير متاح",
     "videoInspiredByAttribution": "مستوحى من @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {

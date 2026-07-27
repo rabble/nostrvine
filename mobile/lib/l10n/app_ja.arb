@@ -559,7 +559,7 @@
     "videoFollowButtonFollowing": "フォロー中",
     "videoFollowButtonFollow": "フォロー",
     "audioAttributionOriginalSound": "オリジナルサウンド",
-    "audioAttributionUnavailableSound": "Sound unavailable",
+    "audioAttributionUnavailableSound": "サウンドが見つからないよ",
     "videoInspiredByAttribution": "@{creatorName} にインスパイアされた",
     "@videoInspiredByAttribution": {
         "placeholders": {

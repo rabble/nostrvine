@@ -559,7 +559,7 @@
     "videoFollowButtonFollowing": "Följer",
     "videoFollowButtonFollow": "Följ",
     "audioAttributionOriginalSound": "Originalljud",
-    "audioAttributionUnavailableSound": "Sound unavailable",
+    "audioAttributionUnavailableSound": "Ljud otillgängligt",
     "videoInspiredByAttribution": "Inspirerad av @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {

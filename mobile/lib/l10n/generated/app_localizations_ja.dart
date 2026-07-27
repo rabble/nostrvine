@@ -1402,7 +1402,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get audioAttributionOriginalSound => 'オリジナルサウンド';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'サウンドが見つからないよ';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

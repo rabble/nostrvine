@@ -1475,7 +1475,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Orijinal ses';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'Ses kullanılamıyor';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

@@ -559,7 +559,7 @@
     "videoFollowButtonFollowing": "Gefolgt",
     "videoFollowButtonFollow": "Folgen",
     "audioAttributionOriginalSound": "Originalton",
-    "audioAttributionUnavailableSound": "Sound unavailable",
+    "audioAttributionUnavailableSound": "Ton nicht verfügbar",
     "videoInspiredByAttribution": "Inspiriert von @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {

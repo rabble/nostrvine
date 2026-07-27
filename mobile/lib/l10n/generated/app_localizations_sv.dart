@@ -1489,7 +1489,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Originalljud';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'Ljud otillgängligt';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

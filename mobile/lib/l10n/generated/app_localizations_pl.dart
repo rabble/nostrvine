@@ -1518,7 +1518,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Oryginalny dźwięk';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'Dźwięk niedostępny';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

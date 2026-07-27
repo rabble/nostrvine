@@ -1513,7 +1513,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Sonido original';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'Sonido no disponible';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

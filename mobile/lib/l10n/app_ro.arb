@@ -559,7 +559,7 @@
     "videoFollowButtonFollowing": "Urmărit",
     "videoFollowButtonFollow": "Urmărește",
     "audioAttributionOriginalSound": "Sunet original",
-    "audioAttributionUnavailableSound": "Sound unavailable",
+    "audioAttributionUnavailableSound": "Sunet indisponibil",
     "videoInspiredByAttribution": "Inspirat de @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {

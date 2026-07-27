@@ -1515,7 +1515,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Оригинален звук';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'Звукът е недостъпен';
 
   @override
   String videoInspiredByAttribution(String creatorName) {

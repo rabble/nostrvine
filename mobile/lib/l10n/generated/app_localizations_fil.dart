@@ -1520,7 +1520,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Original sound';
 
   @override
-  String get audioAttributionUnavailableSound => 'Sound unavailable';
+  String get audioAttributionUnavailableSound => 'Hindi available ang sound';
 
   @override
   String videoInspiredByAttribution(String creatorName) {
