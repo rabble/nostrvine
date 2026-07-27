@@ -112,6 +112,136 @@ void main() {
       expect(inputRect.bottom, lessThanOrEqualTo(800 - keyboardHeight));
     });
 
+    testWidgets(
+      'modal sheet keeps multiline bottomInput and its action buttons fully '
+      'above the keyboard',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(400, 800)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        addTearDown(tester.view.resetViewInsets);
+
+        const keyboardHeight = 300.0;
+        final draggableController = DraggableScrollableController();
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      // Mirror the comments sheet: draggable modal with snap
+                      // sizes and a multiline composer row (text field +
+                      // trailing action buttons) in the bottomInput slot.
+                      unawaited(
+                        VineBottomSheet.show<void>(
+                          context: context,
+                          snap: true,
+                          snapSizes: const [0.7, 0.93],
+                          initialChildSize: 0.7,
+                          minChildSize: 0.5,
+                          maxChildSize: 0.93,
+                          draggableController: draggableController,
+                          title: const Text('0 Comments'),
+                          bottomInput: Padding(
+                            key: const Key('composer-input'),
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    key: const Key('composer-field'),
+                                    focusNode: focusNode,
+                                    maxLines: 5,
+                                    minLines: 1,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const SizedBox(
+                                  key: Key('send-button'),
+                                  width: 40,
+                                  height: 40,
+                                ),
+                              ],
+                            ),
+                          ),
+                          buildScrollBody: (scrollController) => ListView(
+                            controller: scrollController,
+                            children: const [SizedBox(height: 400)],
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('open sheet'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open sheet'));
+        await tester.pumpAndSettle();
+
+        // Grow the composer to several lines like a long comment draft.
+        await tester.enterText(
+          find.byKey(const Key('composer-field')),
+          'line one\nline two\nline three\nline four\nline five',
+        );
+        await tester.pumpAndSettle();
+
+        // Keyboard opens.
+        tester.view.viewInsets = const FakeViewPadding(
+          bottom: keyboardHeight,
+        );
+        focusNode.requestFocus();
+        await tester.pumpAndSettle();
+
+        final inputRect = tester.getRect(
+          find.byKey(const Key('composer-input')),
+        );
+        final fieldRect = tester.getRect(
+          find.byKey(const Key('composer-field')),
+        );
+        final sendRect = tester.getRect(find.byKey(const Key('send-button')));
+        const keyboardTop = 800 - keyboardHeight;
+
+        // The composer must not sit flush against the keyboard: real devices
+        // show keyboard-height variance (predictive bar appearing, inset
+        // animation lag), and a flush composer puts its bottom-anchored
+        // action buttons under the keyboard. Require visible clearance.
+        const keyboardClearance = 12.0;
+        expect(
+          inputRect.bottom,
+          lessThanOrEqualTo(keyboardTop - keyboardClearance),
+          reason:
+              'composer bottom ${inputRect.bottom} sits flush at the keyboard '
+              'top $keyboardTop with less than ${keyboardClearance}px '
+              'clearance, so its action buttons can slip under the keyboard',
+        );
+        expect(
+          fieldRect.bottom,
+          lessThanOrEqualTo(keyboardTop),
+          reason:
+              'composer text field bottom ${fieldRect.bottom} dips under the '
+              'keyboard top $keyboardTop',
+        );
+        expect(
+          sendRect.bottom,
+          lessThanOrEqualTo(keyboardTop),
+          reason:
+              'send button bottom ${sendRect.bottom} dips under the keyboard '
+              'top $keyboardTop',
+        );
+      },
+    );
+
     testWidgets('content is scrollable when expanded', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
