@@ -6142,6 +6142,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonClose => 'Fermer';
 
   @override
+  String get commonLoading => 'Chargement';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Impossible de mettre à jour la couverture. Réessayez.';
 

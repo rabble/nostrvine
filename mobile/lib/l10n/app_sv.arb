@@ -3479,6 +3479,7 @@
     "curatedListVideoNotAvailable": "Video inte tillgänglig",
     "commonBack": "Tillbaka",
     "commonClose": "Stäng",
+    "commonLoading": "Läser in",
     "categoryGalleryNoVideosInCategory": "Inga videor i den här kategorin",
     "categoryGallerySortOptionsLabel": "Sorteringsalternativ för kategori",
     "categoryGallerySortHot": "Hett",

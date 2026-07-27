@@ -6033,6 +6033,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commonClose => 'إغلاق';
 
   @override
+  String get commonLoading => 'جارٍ التحميل';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'تعذر تحديث الغلاف. حاول مرة أخرى.';
 

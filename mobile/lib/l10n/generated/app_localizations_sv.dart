@@ -6067,6 +6067,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get commonClose => 'Stäng';
 
   @override
+  String get commonLoading => 'Läser in';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Det gick inte att uppdatera omslaget. Försök igen.';
 

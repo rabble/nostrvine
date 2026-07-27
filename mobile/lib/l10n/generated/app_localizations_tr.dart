@@ -6049,6 +6049,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get commonClose => 'Kapat';
 
   @override
+  String get commonLoading => 'Yükleniyor';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Kapak güncellenemedi. Tekrar dene.';
 

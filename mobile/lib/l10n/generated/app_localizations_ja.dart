@@ -5830,6 +5830,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get commonClose => '閉じる';
 
   @override
+  String get commonLoading => '読み込み中';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'カバーを更新できませんでした。もう一度お試しください。';
 

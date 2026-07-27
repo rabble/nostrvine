@@ -6117,6 +6117,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get commonClose => 'Cerrar';
 
   @override
+  String get commonLoading => 'Cargando';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'No se pudo actualizar la portada. Inténtalo de nuevo.';
 

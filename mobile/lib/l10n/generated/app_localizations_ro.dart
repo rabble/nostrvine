@@ -6222,6 +6222,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonClose => 'Închide';
 
   @override
+  String get commonLoading => 'Se încarcă';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Coperta nu a putut fi actualizată. Încearcă din nou.';
 

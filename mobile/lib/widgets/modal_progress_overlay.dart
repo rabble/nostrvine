@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// A blocking spinner the caller shows and hides explicitly.
 ///
@@ -44,10 +45,20 @@ class _ProgressBarrier extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.scrim50,
-      child: Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    // [BlockSemantics] is what makes this modal for assistive tech: an opaque
+    // ColoredBox stops pointers, but a screen reader activates a control by
+    // node id without hit-testing, so the screen underneath would stay
+    // reachable and tappable without it. Same shape Flutter's own
+    // [ModalBarrier] uses.
+    return BlockSemantics(
+      child: ColoredBox(
+        color: VineTheme.scrim50,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: VineTheme.vineGreen,
+            semanticsLabel: context.l10n.commonLoading,
+          ),
+        ),
       ),
     );
   }

@@ -3479,6 +3479,7 @@
     "curatedListVideoNotAvailable": "動画は利用できないよ",
     "commonBack": "戻る",
     "commonClose": "閉じる",
+    "commonLoading": "読み込み中",
     "categoryGalleryNoVideosInCategory": "このカテゴリーには動画がないよ",
     "categoryGallerySortOptionsLabel": "カテゴリーの並び替えオプション",
     "categoryGallerySortHot": "人気",

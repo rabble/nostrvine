@@ -2740,6 +2740,7 @@
     "commonCancel": "ሰርዝ",
     "commonBack": "ተመለስ",
     "commonClose": "ዝጋ",
+    "commonLoading": "በመጫን ላይ",
     "videoMetadataTags": "መለያዎች",
     "videoMetadataExpiration": "የማለቂያ ጊዜ",
     "videoMetadataExpirationNotExpire": "ጊዜው አያልቅም።",

@@ -6122,6 +6122,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get commonClose => 'Затвори';
 
   @override
+  String get commonLoading => 'Зарежда се';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Couldn\'t update the cover. Try again.';
 
