@@ -1155,10 +1155,30 @@ class DmRepository {
       // Drop wraps that exhausted the retry cap so the queue cannot grow
       // without bound — a permanently-undecryptable wrap or spammed kind-1059
       // events addressed to the user would otherwise linger forever. See #5202.
-      await dao.deleteExhausted(
+      final abandoned = await dao.deleteExhausted(
         ownerPubkey: pubkey,
         maxAttempts: DmHistoryDrainConfig.maxDecryptRetries,
       );
+      if (abandoned > 0) {
+        // These are inbound DMs the user will never see. The wrap carries no
+        // decryptable sender or conversation, so there is nothing to surface in
+        // the UI — but dropping it with no trace at all made permanent message
+        // loss invisible in triage.
+        Log.warning(
+          'Abandoned $abandoned undecryptable gift wrap(s) for $pubkey after '
+          '${DmHistoryDrainConfig.maxDecryptRetries} attempts; those inbound '
+          'messages are permanently unrecoverable',
+          category: LogCategory.system,
+        );
+        _errorReporter?.call(
+          StateError(
+            'Abandoned $abandoned undecryptable gift wrap(s) after '
+            '${DmHistoryDrainConfig.maxDecryptRetries} attempts',
+          ),
+          StackTrace.current,
+          site: DmRepositoryReportableSites.pendingDecryptExhausted,
+        );
+      }
       final pending = await dao.getRetryable(
         ownerPubkey: pubkey,
         maxAttempts: DmHistoryDrainConfig.maxDecryptRetries,
@@ -1185,9 +1205,23 @@ class DmRepository {
           giftWrapEvent = Event.fromJson(
             jsonDecode(row.rawJson) as Map<String, dynamic>,
           );
-        } on Object {
+        } on Object catch (e, stackTrace) {
           // Corrupt stored JSON — drop it so it cannot loop. We wrote this
-          // JSON ourselves, so a parse failure is a programming invariant.
+          // JSON ourselves, so a parse failure is a programming invariant and
+          // costs the user an inbound message; report it rather than dropping
+          // silently.
+          Log.error(
+            'Corrupt pending gift wrap ${row.giftWrapId} for $pubkey; '
+            'dropping an unrecoverable inbound message',
+            category: LogCategory.system,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          _errorReporter?.call(
+            e,
+            stackTrace,
+            site: DmRepositoryReportableSites.pendingDecryptCorruptPayload,
+          );
           await dao.deletePending(
             giftWrapId: row.giftWrapId,
             ownerPubkey: pubkey,
@@ -1646,6 +1680,14 @@ class DmRepository {
         error: e,
         stackTrace: stackTrace,
       );
+      // A THROWING decrypt must queue for retry exactly like a null return.
+      // Only the null path reached the queue, so a remote-signer (Keycast RPC)
+      // failure that raised — the very case #5202's queue exists for — dropped
+      // the wrap permanently with no retry. Skip when the session moved on:
+      // `recordFailedDecrypt` keys on `_userPubkey`, so queueing under a
+      // switched account would file the wrap against the wrong owner.
+      if (_disposed || _resetGeneration != gen) return;
+      await _persistDecryptedGiftWrap(giftWrapEvent, null);
       return;
     }
 

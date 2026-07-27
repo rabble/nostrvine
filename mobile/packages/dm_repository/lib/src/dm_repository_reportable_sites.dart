@@ -67,4 +67,17 @@ abstract class DmRepositoryReportableSites {
   /// invariant failure while paging or processing recovered events.
   static const String historyDrainUnexpectedFailure =
       'historyDrain.unexpectedFailure';
+
+  /// `retryPendingDecryptions`: gift wraps exhausted the decrypt retry cap
+  /// and were deleted. Each one is an inbound DM the user will never see,
+  /// and the wrap carries no decryptable sender or conversation, so there is
+  /// nothing to surface in the UI — this is the only signal that it happened.
+  static const String pendingDecryptExhausted =
+      'retryPendingDecryptions.exhausted';
+
+  /// `retryPendingDecryptions`: a queued gift wrap's stored JSON failed to
+  /// parse. We wrote that JSON ourselves, so this is an invariant violation,
+  /// and it costs the user an inbound message.
+  static const String pendingDecryptCorruptPayload =
+      'retryPendingDecryptions.corruptPayload';
 }
