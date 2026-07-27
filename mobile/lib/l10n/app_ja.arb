@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "デバイスから削除",
     "deleteAccountRemoveKeysTitle": "このアカウントをこのデバイスから削除する?",
     "deleteAccountServerDeletionFailed": "サーバーからアカウントを削除できなかったよ。接続を確認してもう一回試してね。",
+    "deleteAccountServerDeletionRequiresReauth": "投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。もう一度サインインして完了してね。",
     "deleteAccountSuccess": "削除リクエストを送信したよ。このデバイスからサインアウトしたよ。",
     "deleteAccountSuccessContentUnverified": "アカウントの削除をリクエストしたよ。既存の投稿の一部は、個別に削除を確認できなかったよ。",
     "deleteAccountWarningBody": "これはアカウントとコンテンツの削除リクエストを送信して、可能なら Divine アカウントを削除し、このデバイスからサインアウトするよ。一部のリレーやクライアント、検索インデックスにはコピーが残ることがあるよ。ほかのサインイン中のデバイスは、そこで鍵を削除するまで有効なままだよ。",

@@ -1013,6 +1013,7 @@ class KeycastOAuth {
       if (response.statusCode == 401) {
         return DeleteAccountResult.error(
           'Unauthorized: invalid or expired token',
+          requiresReauthentication: true,
         );
       }
 
@@ -1024,6 +1025,7 @@ class KeycastOAuth {
         return DeleteAccountResult.error(
           _errorMessageFrom(response) ??
               'Account deletion requires signing in again',
+          requiresReauthentication: true,
         );
       }
 

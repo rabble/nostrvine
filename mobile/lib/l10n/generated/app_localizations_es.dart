@@ -7019,6 +7019,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo eliminar tu cuenta del servidor. Revisá tu conexión e intentá de nuevo.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Se enviaron las solicitudes de eliminación de tus publicaciones, pero no pudimos terminar de eliminar tu cuenta. Iniciá sesión de nuevo para terminar.';
+
+  @override
   String get deleteAccountSuccess =>
       'Solicitudes de eliminación enviadas. Se cerró tu sesión en este dispositivo.';
 

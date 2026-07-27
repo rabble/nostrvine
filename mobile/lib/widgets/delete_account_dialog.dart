@@ -628,8 +628,9 @@ Future<void> executeAccountDeletion({
 
     if (result.success) {
       // Step 2: Delete Keycast account if one exists (invalidates signer)
-      final (keycastSuccess, keycastError) = await authService
-          .deleteKeycastAccount();
+      final keycast = await authService.deleteKeycastAccount();
+      final keycastSuccess = keycast.success;
+      final keycastError = keycast.error;
       if (!keycastSuccess && authService.isRegistered) {
         // divineOAuth users MUST have their Keycast account deleted to
         // prevent re-login. Show error and do NOT sign out.
@@ -641,10 +642,13 @@ Future<void> executeAccountDeletion({
         );
         dismissDialog();
         if (context.mounted) {
+          // The vanish and the kind-5 sweep have already been published and
+          // confirmed by a relay at this point, so neither message may claim
+          // that nothing was deleted.
           final text = (burnCommitted && burnReleasedText != null)
               ? burnReleasedText
-              : _keycastErrorRequiresSignIn(keycastError)
-              ? context.l10n.deleteAccountReauthRequired
+              : keycast.requiresReauthentication
+              ? context.l10n.deleteAccountServerDeletionRequiresReauth
               : context.l10n.deleteAccountServerDeletionFailed;
           ScaffoldMessenger.of(
             context,
@@ -740,14 +744,6 @@ Future<void> executeAccountDeletion({
     // Ensure dialog is dismissed even if an exception occurred
     dismissDialog();
   }
-}
-
-bool _keycastErrorRequiresSignIn(String? error) {
-  if (error == null) return false;
-  final normalized = error.toLowerCase();
-  return normalized.contains('requires signing in again') ||
-      normalized.contains('session expired') ||
-      normalized.contains('invalid or expired token');
 }
 
 /// Cubit for managing account deletion progress state.

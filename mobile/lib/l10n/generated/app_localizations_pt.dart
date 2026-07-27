@@ -7002,6 +7002,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível excluir sua conta do servidor. Verifique sua conexão e tente novamente.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Entre novamente para concluir.';
+
+  @override
   String get deleteAccountSuccess =>
       'Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.';
 

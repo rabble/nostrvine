@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Remover do dispositivo",
     "deleteAccountRemoveKeysTitle": "Remover esta conta deste dispositivo?",
     "deleteAccountServerDeletionFailed": "Não foi possível excluir sua conta do servidor. Verifique sua conexão e tente novamente.",
+    "deleteAccountServerDeletionRequiresReauth": "As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Entre novamente para concluir.",
     "deleteAccountSuccess": "Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.",
     "deleteAccountSuccessContentUnverified": "Exclusão da conta solicitada. Não foi possível confirmar individualmente a exclusão de algumas publicações existentes.",
     "deleteAccountWarningBody": "Isso envia solicitações de exclusão da sua conta e do seu conteúdo, exclui sua conta Divine quando possível e desconecta você neste dispositivo. Alguns relays, clientes e índices de busca podem manter cópias. Outros dispositivos conectados continuam ativos até você remover as chaves lá.",

@@ -7043,6 +7043,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de supprimer ton compte du serveur. Vérifie ta connexion et réessaie.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Les demandes de suppression de tes publications ont été envoyées, mais on n\'a pas pu terminer la suppression de ton compte. Reconnecte-toi pour terminer.';
+
+  @override
   String get deleteAccountSuccess =>
       'Demandes de suppression envoyées. Tu es déconnecté sur cet appareil.';
 

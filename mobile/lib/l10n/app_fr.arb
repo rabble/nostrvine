@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Retirer de l'appareil",
     "deleteAccountRemoveKeysTitle": "Retirer ce compte de cet appareil ?",
     "deleteAccountServerDeletionFailed": "Impossible de supprimer ton compte du serveur. Vérifie ta connexion et réessaie.",
+    "deleteAccountServerDeletionRequiresReauth": "Les demandes de suppression de tes publications ont été envoyées, mais on n'a pas pu terminer la suppression de ton compte. Reconnecte-toi pour terminer.",
     "deleteAccountSuccess": "Demandes de suppression envoyées. Tu es déconnecté sur cet appareil.",
     "deleteAccountSuccessContentUnverified": "Suppression du compte demandée. La suppression de certaines publications existantes n'a pas pu être confirmée individuellement.",
     "deleteAccountWarningBody": "Ça envoie des demandes de suppression pour ton compte et ton contenu, supprime ton compte Divine quand c'est possible et te déconnecte sur cet appareil. Certains relays, clients et index de recherche peuvent garder des copies. Les autres appareils connectés restent actifs jusqu'à ce que tu y retires les clés.",

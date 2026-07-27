@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Usuń z urządzenia",
     "deleteAccountRemoveKeysTitle": "Usunąć to konto z tego urządzenia?",
     "deleteAccountServerDeletionFailed": "Nie udało się usunąć twojego konta z serwera. Sprawdź połączenie i spróbuj ponownie.",
+    "deleteAccountServerDeletionRequiresReauth": "Prośby o usunięcie twoich postów zostały wysłane, ale nie udało się dokończyć usuwania twojego konta. Zaloguj się ponownie, aby dokończyć.",
     "deleteAccountSuccess": "Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.",
     "deleteAccountSuccessContentUnverified": "Wysłano żądanie usunięcia konta. Usunięcia niektórych istniejących postów nie udało się potwierdzić osobno.",
     "deleteAccountWarningBody": "To wysyła żądania usunięcia twojego konta i treści, usuwa twoje konto Divine, gdy to możliwe, i wylogowuje cię na tym urządzeniu. Niektóre przekaźniki, klienty i indeksy wyszukiwania mogą zachować kopie. Inne zalogowane urządzenia pozostają aktywne, dopóki nie usuniesz na nich kluczy.",

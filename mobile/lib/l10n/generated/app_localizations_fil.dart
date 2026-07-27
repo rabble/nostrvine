@@ -7034,6 +7034,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Mag-sign in ulit para tapusin.';
+
+  @override
   String get deleteAccountSuccess =>
       'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
 

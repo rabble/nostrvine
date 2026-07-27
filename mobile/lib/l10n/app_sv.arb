@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Ta bort från enheten",
     "deleteAccountRemoveKeysTitle": "Ta bort det här kontot från den här enheten?",
     "deleteAccountServerDeletionFailed": "Kunde inte ta bort ditt konto från servern. Kontrollera din anslutning och försök igen.",
+    "deleteAccountServerDeletionRequiresReauth": "Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Logga in igen för att slutföra.",
     "deleteAccountSuccess": "Raderingsförfrågningar skickade. Du är utloggad på den här enheten.",
     "deleteAccountSuccessContentUnverified": "Radering av kontot har begärts. Raderingen av vissa befintliga inlägg kunde inte bekräftas individuellt.",
     "deleteAccountWarningBody": "Det här skickar raderingsförfrågningar för ditt konto och innehåll, tar bort ditt Divine-konto när det går och loggar ut dig på den här enheten. Vissa reläer, klienter och sökindex kan behålla kopior. Andra inloggade enheter förblir aktiva tills du tar bort nycklarna där.",

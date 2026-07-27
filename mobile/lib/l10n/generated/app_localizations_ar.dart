@@ -6914,6 +6914,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر حذف حسابك من الخادم. يرجى التحقق من اتصالك والمحاولة مرّة أخرى.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. سجّل الدخول مرّة أخرى لإكمال العملية.';
+
+  @override
   String get deleteAccountSuccess =>
       'تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.';
 

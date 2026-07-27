@@ -2947,7 +2947,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
-  Future<(bool success, String? error)> deleteKeycastAccount() async {
+  /// Delete the server-side Keycast account for the signed-in user.
+  ///
+  /// `requiresReauthentication` is true when the failure can only be cleared by
+  /// a fresh sign-in — an expired or unauthorized credential — rather than by
+  /// retrying. Callers must branch on it instead of matching `error`, which
+  /// carries server prose that varies by deployment.
+  Future<({bool success, String? error, bool requiresReauthentication})>
+  deleteKeycastAccount() async {
     Log.debug(
       '🗑️ Attempting to delete Keycast account',
       name: 'AuthService',
@@ -2961,7 +2968,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      return (true, null);
+      return (success: true, error: null, requiresReauthentication: false);
     }
 
     try {
@@ -2975,7 +2982,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (false, 'Session expired and could not be refreshed');
+        return (
+          success: false,
+          error: 'Session expired and could not be refreshed',
+          requiresReauthentication: true,
+        );
       }
 
       final accessToken = session.accessToken!;
@@ -2989,14 +3000,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (true, null);
+        return (success: true, error: null, requiresReauthentication: false);
       } else {
         Log.warning(
           '⚠️ Keycast account deletion failed: ${result.error}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (false, result.error);
+        return (
+          success: false,
+          error: result.error,
+          requiresReauthentication: result.requiresReauthentication,
+        );
       }
     } catch (e) {
       Log.error(
@@ -3004,7 +3019,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      return (false, 'Failed to delete Keycast account: $e');
+      return (
+        success: false,
+        error: 'Failed to delete Keycast account: $e',
+        requiresReauthentication: false,
+      );
     }
   }
 

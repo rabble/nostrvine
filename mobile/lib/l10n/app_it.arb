@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Rimuovi dal dispositivo",
     "deleteAccountRemoveKeysTitle": "Rimuovere questo account da questo dispositivo?",
     "deleteAccountServerDeletionFailed": "Impossibile eliminare il tuo account dal server. Controlla la connessione e riprova.",
+    "deleteAccountServerDeletionRequiresReauth": "Le richieste di eliminazione dei tuoi post sono state inviate, ma non siamo riusciti a completare l'eliminazione del tuo account. Accedi di nuovo per completarla.",
     "deleteAccountSuccess": "Richieste di eliminazione inviate. Sei disconnesso su questo dispositivo.",
     "deleteAccountSuccessContentUnverified": "Eliminazione dell'account richiesta. Per alcuni post esistenti non è stato possibile confermare l'eliminazione singolarmente.",
     "deleteAccountWarningBody": "Questo invia richieste di eliminazione per il tuo account e i tuoi contenuti, elimina il tuo account Divine quando possibile e ti disconnette su questo dispositivo. Alcuni relay, client e indici di ricerca potrebbero conservare copie. Gli altri dispositivi con l'accesso effettuato restano attivi finché non rimuovi le chiavi lì.",

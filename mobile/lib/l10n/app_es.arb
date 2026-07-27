@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Quitar del dispositivo",
     "deleteAccountRemoveKeysTitle": "¿Quitar esta cuenta de este dispositivo?",
     "deleteAccountServerDeletionFailed": "No se pudo eliminar tu cuenta del servidor. Revisá tu conexión e intentá de nuevo.",
+    "deleteAccountServerDeletionRequiresReauth": "Se enviaron las solicitudes de eliminación de tus publicaciones, pero no pudimos terminar de eliminar tu cuenta. Iniciá sesión de nuevo para terminar.",
     "deleteAccountSuccess": "Solicitudes de eliminación enviadas. Se cerró tu sesión en este dispositivo.",
     "deleteAccountSuccessContentUnverified": "Eliminación de cuenta solicitada. No se pudo confirmar de forma individual la eliminación de algunas publicaciones existentes.",
     "deleteAccountWarningBody": "Esto envía solicitudes de eliminación de tu cuenta y contenido, elimina tu cuenta de Divine cuando es posible y cierra tu sesión en este dispositivo. Algunos relays, clientes e índices de búsqueda pueden conservar copias. Otros dispositivos con la sesión iniciada siguen activos hasta que quites las claves ahí.",

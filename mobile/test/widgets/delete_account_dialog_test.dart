@@ -444,7 +444,13 @@ void main() {
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
-      ).thenAnswer((_) async => (true, null));
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          error: null,
+          requiresReauthentication: false,
+        ),
+      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenThrow(
@@ -553,7 +559,13 @@ void main() {
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
-      ).thenAnswer((_) async => (true, null));
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          error: null,
+          requiresReauthentication: false,
+        ),
+      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -608,7 +620,13 @@ void main() {
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
-      ).thenAnswer((_) async => (true, null));
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          error: null,
+          requiresReauthentication: false,
+        ),
+      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});
@@ -782,7 +800,13 @@ void main() {
         // Content deletion succeeded; the server-side account deletion did not.
         when(
           authService.deleteKeycastAccount,
-        ).thenAnswer((_) async => (false, 'server refused'));
+        ).thenAnswer(
+          (_) async => (
+            success: false,
+            error: 'server refused',
+            requiresReauthentication: false,
+          ),
+        );
         when(() => authService.isRegistered).thenReturn(true);
         when(
           () =>
@@ -827,6 +851,88 @@ void main() {
       },
     );
 
+    // A credential refusal from keycast arrives *after* the vanish and the
+    // kind-5 sweep have been published and confirmed by a relay, so the copy
+    // may not repeat the pre-flight message — `deleteAccountReauthRequired`
+    // ends with "Nothing has been deleted yet", which is false here and cannot
+    // be walked back once a NIP-62 vanish is on third-party relays. It also may
+    // not blame the connection, because retrying the same credential fails
+    // identically.
+    //
+    // The failure is recognised from the typed flag, not the message: keycast
+    // answers this 403 with its own prose ("requires the Divine app or web
+    // login with your private key"), which shares no phrase with anything the
+    // client could match against.
+    testWidgets(
+      'tells a registered user to sign in again without claiming nothing '
+      'was deleted',
+      (tester) async {
+        final deletionService = _MockAccountDeletionService();
+        final authService = _MockAuthService();
+        when(
+          authService.checkAccountDeletionReadiness,
+        ).thenAnswer((_) async => AccountDeletionReadiness.ready);
+        when(
+          () => deletionService.deleteAccount(
+            onProgress: any(named: 'onProgress'),
+            expectedPubkey: any(named: 'expectedPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => DeleteAccountResult.createSuccess('event-id'),
+        );
+        when(authService.deleteKeycastAccount).thenAnswer(
+          (_) async => (
+            success: false,
+            error:
+                'Account deletion requires the Divine app or web login with '
+                'your private key',
+            requiresReauthentication: true,
+          ),
+        );
+        when(() => authService.isRegistered).thenReturn(true);
+        when(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        ).thenAnswer((_) async {});
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          _wrapWithRouter(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const Scaffold(body: SizedBox.shrink());
+              },
+            ),
+          ),
+        );
+
+        await executeAccountDeletion(
+          context: capturedContext,
+          deletionService: deletionService,
+          authService: authService,
+        );
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () =>
+              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+        );
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.deleteAccountServerDeletionRequiresReauth),
+          findsOneWidget,
+        );
+        // Not the connectivity copy, which would send the user into a retry
+        // loop that cannot succeed.
+        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
+        // Not the pre-flight copy, which claims nothing has been deleted.
+        expect(find.text(l10n.deleteAccountReauthRequired), findsNothing);
+        expect(find.text(l10n.deleteAccountSuccess), findsNothing);
+      },
+    );
+
     testWidgets(
       'still signs out a non-registered user when keycast deletion fails',
       (tester) async {
@@ -847,7 +953,13 @@ void main() {
         // Keycast session to use, so a failure here is expected and benign.
         when(
           authService.deleteKeycastAccount,
-        ).thenAnswer((_) async => (false, 'no keycast session'));
+        ).thenAnswer(
+          (_) async => (
+            success: false,
+            error: 'no keycast session',
+            requiresReauthentication: false,
+          ),
+        );
         when(() => authService.isRegistered).thenReturn(false);
         when(
           () =>
@@ -911,7 +1023,13 @@ void main() {
         );
         when(
           authService.deleteKeycastAccount,
-        ).thenAnswer((_) async => (false, 'fk error'));
+        ).thenAnswer(
+          (_) async => (
+            success: false,
+            error: 'fk error',
+            requiresReauthentication: false,
+          ),
+        );
         when(() => authService.isRegistered).thenReturn(true);
 
         late BuildContext capturedContext;
@@ -1329,7 +1447,13 @@ void main() {
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
       when(
         authService.deleteKeycastAccount,
-      ).thenAnswer((_) async => (true, null));
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          error: null,
+          requiresReauthentication: false,
+        ),
+      );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
       ).thenAnswer((_) async {});

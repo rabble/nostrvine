@@ -6700,6 +6700,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '서버에서 계정을 삭제하지 못했어요. 연결을 확인하고 다시 시도해주세요.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      '게시물 삭제 요청은 보냈지만 계정 삭제를 완료하지 못했어요. 다시 로그인해서 마무리해주세요.';
+
+  @override
   String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';
 
   @override

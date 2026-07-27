@@ -322,7 +322,12 @@ class ResetPasswordResult {
 
 /// Result from DELETE /api/user/account
 class DeleteAccountResult {
-  DeleteAccountResult({required this.success, this.message, this.error});
+  DeleteAccountResult({
+    required this.success,
+    this.message,
+    this.error,
+    this.requiresReauthentication = false,
+  });
 
   factory DeleteAccountResult.fromJson(Map<String, dynamic> json) {
     return DeleteAccountResult(
@@ -332,12 +337,27 @@ class DeleteAccountResult {
     );
   }
 
-  factory DeleteAccountResult.error(String message) {
-    return DeleteAccountResult(success: false, error: message);
+  factory DeleteAccountResult.error(
+    String message, {
+    bool requiresReauthentication = false,
+  }) {
+    return DeleteAccountResult(
+      success: false,
+      error: message,
+      requiresReauthentication: requiresReauthentication,
+    );
   }
   final bool success;
   final String? message;
   final String? error;
+
+  /// True when the credential could not authorize the deletion and only a
+  /// fresh sign-in can, rather than a retry.
+  ///
+  /// [error] carries the server's prose, which is written for humans and
+  /// varies by deployment — callers must branch on this flag instead of
+  /// matching that text.
+  final bool requiresReauthentication;
 }
 
 /// Result from POST /api/auth/verify-email

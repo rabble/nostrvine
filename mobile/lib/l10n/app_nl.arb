@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Van apparaat verwijderen",
     "deleteAccountRemoveKeysTitle": "Dit account van dit apparaat verwijderen?",
     "deleteAccountServerDeletionFailed": "Je account kon niet van de server worden verwijderd. Controleer je verbinding en probeer het opnieuw.",
+    "deleteAccountServerDeletionRequiresReauth": "Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Log opnieuw in om dit af te ronden.",
     "deleteAccountSuccess": "Verwijderverzoeken verstuurd. Je bent op dit apparaat afgemeld.",
     "deleteAccountSuccessContentUnverified": "Accountverwijdering aangevraagd. Voor sommige bestaande posts kon de verwijdering niet afzonderlijk worden bevestigd.",
     "deleteAccountWarningBody": "Dit stuurt verwijderverzoeken voor je account en content, verwijdert je Divine-account waar mogelijk en meldt je op dit apparaat af. Sommige relays, clients en zoekindexen kunnen kopieën bewaren. Andere aangemelde apparaten blijven actief totdat je daar de sleutels verwijdert.",

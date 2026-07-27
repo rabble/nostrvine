@@ -4384,6 +4384,7 @@
     "deleteAccountRemoveKeysConfirm": "Elimină de pe dispozitiv",
     "deleteAccountRemoveKeysTitle": "Elimini acest cont de pe acest dispozitiv?",
     "deleteAccountServerDeletionFailed": "Nu am putut șterge contul tău de pe server. Verifică-ți conexiunea și încearcă din nou.",
+    "deleteAccountServerDeletionRequiresReauth": "Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Conectează-te din nou pentru a finaliza.",
     "deleteAccountSuccess": "Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.",
     "deleteAccountSuccessContentUnverified": "Ștergerea contului a fost solicitată. Ștergerea unor postări existente nu a putut fi confirmată individual.",
     "deleteAccountWarningBody": "Aceasta trimite cereri de ștergere pentru contul și conținutul tău, șterge contul tău Divine când e posibil și te deconectează pe acest dispozitiv. Unele relay-uri, clienți și indexuri de căutare pot păstra copii. Alte dispozitive conectate rămân active până când elimini cheile de pe ele.",

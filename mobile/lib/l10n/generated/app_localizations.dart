@@ -12105,6 +12105,12 @@ abstract class AppLocalizations {
   /// **'Could not delete your account from the server. Please check your connection and try again.'**
   String get deleteAccountServerDeletionFailed;
 
+  /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Sign in again to finish.'**
+  String get deleteAccountServerDeletionRequiresReauth;
+
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///
   /// In en, this message translates to:
