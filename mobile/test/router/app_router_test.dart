@@ -508,6 +508,12 @@ void main() {
       when(
         () => mockDmRepository.getConversation(any()),
       ).thenAnswer((_) async => null);
+      // Consumed by DmRestoreStatusCubit, which qualifies the empty state.
+      when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+      when(() => mockDmRepository.isHistoryRecoveryComplete).thenReturn(true);
+      when(
+        () => mockDmRepository.historyRecoveryStream,
+      ).thenAnswer((_) => const Stream<bool>.empty());
 
       when(
         () => mockDmReactionsRepository.watchForConversation(any()),
