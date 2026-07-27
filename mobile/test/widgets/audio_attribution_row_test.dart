@@ -68,12 +68,14 @@ void main() {
       required VideoEvent video,
       AudioEvent? audioOverride,
       bool resolvesAudio = true,
+      Object? audioError,
       List<dynamic> additionalOverrides = const [],
     }) {
       return ProviderScope(
         overrides: [
           if (video.hasAudioReference)
             soundByIdProvider(testAudioEventId).overrideWith((ref) async {
+              if (audioError != null) throw audioError;
               return resolvesAudio ? audioOverride ?? testAudio : null;
             }),
           ...additionalOverrides,
@@ -197,22 +199,23 @@ void main() {
     // referenced event can't be fetched the credit must degrade rather than
     // vanish (#6185).
     group('Unresolvable audio reference', () {
-      testWidgets('credits the video author when the audio event is null', (
+      testWidgets('shows a neutral label when the audio event is null', (
         tester,
       ) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.pumpWidget(
-          buildTestWidget(
-            video: createVideoWithAudio(),
-            resolvesAudio: false,
-          ),
+          buildTestWidget(video: createVideoWithAudio(), resolvesAudio: false),
         );
         await tester.pumpAndSettle();
 
         expect(
-          find.textContaining(l10n.audioAttributionOriginalSound),
+          find.textContaining(l10n.audioAttributionUnavailableSound),
           findsOneWidget,
+        );
+        expect(
+          find.textContaining(l10n.audioAttributionOriginalSound),
+          findsNothing,
         );
       });
 
@@ -239,12 +242,35 @@ void main() {
         );
       });
 
-      testWidgets('is not a reuse entry point', (tester) async {
+      testWidgets('uses the same display-only fallback on provider errors', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
         await tester.pumpWidget(
           buildTestWidget(
             video: createVideoWithAudio(),
-            resolvesAudio: false,
+            audioError: StateError('relay unavailable'),
           ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(l10n.audioAttributionUnavailableSound),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(GestureDetector),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('is not a reuse entry point', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(video: createVideoWithAudio(), resolvesAudio: false),
         );
         await tester.pumpAndSettle();
 
@@ -271,10 +297,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildTestWidget(
-            video: createVideoWithAudio(),
-            resolvesAudio: false,
-          ),
+          buildTestWidget(video: createVideoWithAudio(), resolvesAudio: false),
         );
         await tester.pumpAndSettle();
 

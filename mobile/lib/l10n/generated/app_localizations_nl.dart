@@ -1503,6 +1503,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Origineel geluid';
 
   @override
+  String get audioAttributionUnavailableSound => 'Sound unavailable';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Geïnspireerd door @$creatorName';
   }

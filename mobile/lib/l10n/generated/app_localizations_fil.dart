@@ -1520,6 +1520,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Original sound';
 
   @override
+  String get audioAttributionUnavailableSound => 'Sound unavailable';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirasyon mula kay @$creatorName';
   }

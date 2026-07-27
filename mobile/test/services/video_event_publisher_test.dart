@@ -10,7 +10,8 @@ import 'package:crypto/crypto.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show AudioEvent, audioEventKind;
+import 'package:models/models.dart'
+    show AudioEvent, AudioExternalSource, AudioLicenseMetadata, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -18,6 +19,7 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -33,6 +35,9 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _MockAudioExtractionService extends Mock
+    implements AudioExtractionService {}
 
 class _MockSavedSoundsService extends Mock implements SavedSoundsService {}
 
@@ -720,9 +725,19 @@ void main() {
       );
 
       test(
-        'honors audio reuse when the selection is not referenceable',
+        'honors audio reuse for bundled sounds',
         () async {
-          stubSignAndPublish();
+          final blossomUploadService = _MockBlossomUploadService();
+          final audioExtractionService = _MockAudioExtractionService();
+          final signedEvents = <Event>[];
+          publisher = VideoEventPublisher(
+            uploadManager: uploadManager,
+            nostrService: nostrClient,
+            authService: authService,
+            videoEventService: videoEventService,
+            blossomUploadService: blossomUploadService,
+            audioExtractionService: audioExtractionService,
+          );
 
           // A bundled sound has no Nostr event to reference, so the video's own
           // audio is the user's to offer and "Publish this sound" must still
@@ -732,6 +747,67 @@ void main() {
             pubkey: AudioEvent.bundledMarker,
             createdAt: 0,
             url: 'asset://assets/sounds/oh-no-no-no-crowd.mp3',
+          );
+
+          const audioPath = '/tmp/divine-video-6185.m4a';
+          when(
+            () => audioExtractionService.extractAudio(
+              videoPath: '/tmp/divine-video-6185.mp4',
+            ),
+          ).thenAnswer(
+            (_) async => const AudioExtractionResult(
+              audioFilePath: audioPath,
+              duration: 6,
+              fileSize: 12345,
+              sha256Hash:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+              mimeType: 'audio/m4a',
+            ),
+          );
+          when(
+            () => audioExtractionService.cleanupAudioFile(audioPath),
+          ).thenAnswer((_) async {});
+          when(
+            () => blossomUploadService.uploadAudio(
+              audioFile: any(named: 'audioFile'),
+              mimeType: 'audio/m4a',
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: 'https://cdn.example.com/audio.m4a',
+              fallbackUrl: 'https://cdn.example.com/audio.m4a',
+              videoId:
+                  'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ),
+          );
+          when(
+            () => authService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((invocation) async {
+            final kind = invocation.namedArguments[#kind] as int;
+            final content = invocation.namedArguments[#content] as String;
+            final tags = invocation.namedArguments[#tags] as List<List<String>>;
+            final event = Event(testPubkey, kind, tags, content);
+            signedEvents.add(event);
+            capturedTags = tags;
+            return event;
+          });
+          when(
+            () => nostrClient.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (invocation) async => PublishOutcome(
+              eventId: (invocation.positionalArguments.first as Event).id,
+              acceptedBy: const ['wss://relay.divine.video'],
+              rejectedBy: const {},
+              noResponseFrom: const [],
+            ),
           );
 
           final result = await publisher.publishVideoEvent(
@@ -745,6 +821,69 @@ void main() {
           expect(
             _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
             isTrue,
+          );
+          final audioEvent = signedEvents.singleWhere(
+            (event) => event.kind == audioEventKind,
+          );
+          final videoEvent = signedEvents.singleWhere(
+            (event) => event.kind != audioEventKind,
+          );
+          expect(
+            _containsTag(audioEvent.tags, const [
+              'url',
+              'https://cdn.example.com/audio.m4a',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(videoEvent.tags, [
+              'e',
+              audioEvent.id,
+              'wss://relay.divine.video',
+              'audio',
+            ]),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'does not publish external-provider audio as reusable user audio',
+        () async {
+          stubSignAndPublish();
+
+          const externalProviderSound = AudioEvent(
+            id: 'freesound:12345',
+            pubkey: AudioEvent.externalProviderMarker,
+            createdAt: 0,
+            url: 'https://cdn.example.com/freesound-preview.mp3',
+            externalSource: AudioExternalSource(
+              provider: 'freesound',
+              providerSoundId: '12345',
+              providerName: 'Freesound',
+              creatorName: 'Catalog Artist',
+              license: AudioLicenseMetadata(
+                type: 'cc-by',
+                name: 'Creative Commons Attribution',
+                url: 'https://creativecommons.org/licenses/by/4.0/',
+                allowsCommercialUse: true,
+                allowsDerivatives: true,
+                requiresAttribution: true,
+              ),
+            ),
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+            allowAudioReuse: true,
+            selectedAudio: externalProviderSound,
+            selectedAudioEventId: externalProviderSound.id,
+          );
+
+          expect(result, isTrue);
+          expect(
+            _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
+            isFalse,
           );
         },
       );

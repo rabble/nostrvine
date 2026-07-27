@@ -1489,6 +1489,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Originalljud';
 
   @override
+  String get audioAttributionUnavailableSound => 'Sound unavailable';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirerad av @$creatorName';
   }

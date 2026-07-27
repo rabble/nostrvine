@@ -1513,6 +1513,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Sonido original';
 
   @override
+  String get audioAttributionUnavailableSound => 'Sound unavailable';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirado en @$creatorName';
   }

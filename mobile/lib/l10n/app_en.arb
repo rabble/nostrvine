@@ -739,6 +739,10 @@
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
   "audioAttributionOriginalSound": "Original sound",
+  "audioAttributionUnavailableSound": "Sound unavailable",
+  "@audioAttributionUnavailableSound": {
+    "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
+  },
   "videoInspiredByAttribution": "Inspired by @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {

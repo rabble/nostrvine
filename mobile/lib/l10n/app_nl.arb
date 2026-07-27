@@ -559,6 +559,7 @@
     "videoFollowButtonFollowing": "Volgend",
     "videoFollowButtonFollow": "Volgen",
     "audioAttributionOriginalSound": "Origineel geluid",
+    "audioAttributionUnavailableSound": "Sound unavailable",
     "videoInspiredByAttribution": "Geïnspireerd door @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {

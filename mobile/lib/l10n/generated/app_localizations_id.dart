@@ -1470,6 +1470,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Suara asli';
 
   @override
+  String get audioAttributionUnavailableSound => 'Sound unavailable';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Terinspirasi oleh @$creatorName';
   }

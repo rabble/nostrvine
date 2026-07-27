@@ -2668,6 +2668,12 @@ abstract class AppLocalizations {
   /// **'Original sound'**
   String get audioAttributionOriginalSound;
 
+  /// Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound unavailable'**
+  String get audioAttributionUnavailableSound;
+
   /// No description provided for @videoInspiredByAttribution.
   ///
   /// In en, this message translates to:

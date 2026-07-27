@@ -641,6 +641,7 @@
     "videoFollowButtonFollowing": "በመከተል ላይ",
     "videoFollowButtonFollow": "ተከተል",
     "audioAttributionOriginalSound": "ኦሪጅናል ድምጽ",
+    "audioAttributionUnavailableSound": "Sound unavailable",
     "videoInspiredByAttribution": "በ@{creatorName} የተነሳሳ",
     "@videoInspiredByAttribution": {
         "placeholders": {
