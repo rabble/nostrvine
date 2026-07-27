@@ -1038,7 +1038,8 @@ class NotificationRepository {
       }
     }
 
-    final appended = <NotificationItem>[];
+    // Appends land in `result` itself so the indices in `followIndex` stay
+    // valid for the `result[idx] = …` merges below.
     for (final item in incoming) {
       if (item is VideoNotification) {
         final idx = videoGroupIndex[(item.videoEventId, item.type)];
@@ -1070,14 +1071,14 @@ class NotificationRepository {
       // omitted source_event_id). Preserves the original by-id dedupe
       // contract.
       if (allIds.contains(item.id)) continue;
-      appended.add(item);
+      result.add(item);
       allSourceEventIds.addAll(item.sourceEventIds);
       allIds.add(item.id);
       if (item is ActorNotification && item.type == NotificationKind.follow) {
-        followIndex[item.actor.pubkey] = result.length + appended.length - 1;
+        followIndex[item.actor.pubkey] = result.length - 1;
       }
     }
-    return [...result, ...appended];
+    return result;
   }
 
   static ActorNotification _mergeAppendedFollow(
