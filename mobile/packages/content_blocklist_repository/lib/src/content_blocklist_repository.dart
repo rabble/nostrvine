@@ -120,6 +120,18 @@ class ContentBlocklistRepository {
   // Users who have blocked us (populated from kind 30000 events with d=block)
   final Set<String> _blockedByOthers = <String>{};
 
+  // Direct by-author watches on the lists of everyone who blocks or mutes
+  // us. The `#p = us` discovery filters cannot observe a block/mute being
+  // *lifted*; see [_AuthorListWatch] for why.
+  final _AuthorListWatch _blockAuthorWatch = _AuthorListWatch(
+    kind: 30000,
+    label: 'block-list',
+  );
+  final _AuthorListWatch _muteAuthorWatch = _AuthorListWatch(
+    kind: 10000,
+    label: 'mute-list',
+  );
+
   // Latest replaceable kind-30000 block-list event timestamp per author.
   // Prevent stale relay delivery order from resurrecting old block state.
   final Map<String, int> _latestBlockListEventCreatedAtByAuthor =
@@ -255,6 +267,9 @@ class ContentBlocklistRepository {
       _latestMuteListEventCreatedAtByAuthor.clear();
       _latestBlockListEventCreatedAtByAuthor.clear();
       _severedFollowers.clear();
+      // "Who blocks/mutes us" is meaningless for the incoming account.
+      _blockAuthorWatch.clear();
+      _muteAuthorWatch.clear();
       // Force fresh subscriptions filtered on the new pubkey. On a
       // same-client switch the old subscription's listener is
       // intentionally left in place (no handle is retained to cancel
@@ -1007,6 +1022,12 @@ class ContentBlocklistRepository {
     // Store references for Nostr publishing
     _nostrClient = nostrService;
 
+    // Any existing by-author watch was opened on the previous client.
+    _muteAuthorWatch.rebind(
+      client: nostrService,
+      onEvent: _handleMuteListEvent,
+    );
+
     Log.info(
       'Starting mutual mute list sync for pubkey: $ourPubkey',
       name: 'ContentBlocklistRepository',
@@ -1084,6 +1105,12 @@ class ContentBlocklistRepository {
 
     _signer = signer;
     _nostrClient = nostrService;
+
+    // Any existing by-author watch was opened on the previous client.
+    _blockAuthorWatch.rebind(
+      client: nostrService,
+      onEvent: _handleBlockListEvent,
+    );
 
     Log.info(
       'Starting block list sync for pubkey: $ourPubkey',
@@ -1295,6 +1322,13 @@ class ContentBlocklistRepository {
       // They muted us - add to blocklist
       if (!_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.add(muterPubkey);
+        // Watch this author directly; the #p filter that just delivered
+        // this event can never deliver the unmute that follows it.
+        _muteAuthorWatch.add(
+          muterPubkey,
+          client: _nostrClient,
+          onEvent: _handleMuteListEvent,
+        );
         _emitChange(
           BlocklistChange(pubkey: muterPubkey, op: BlocklistOp.muted),
         );
@@ -1495,6 +1529,13 @@ class ContentBlocklistRepository {
     if (stillBlocked) {
       if (!_blockedByOthers.contains(blockerPubkey)) {
         _blockedByOthers.add(blockerPubkey);
+        // Watch this author directly; the #p filter that just delivered
+        // this event can never deliver the unblock that follows it.
+        _blockAuthorWatch.add(
+          blockerPubkey,
+          client: _nostrClient,
+          onEvent: _handleBlockListEvent,
+        );
         _emitChange(
           BlocklistChange(pubkey: blockerPubkey, op: BlocklistOp.blockedUs),
         );
@@ -1527,7 +1568,121 @@ class ContentBlocklistRepository {
     _mutualMuteSyncStarted = false;
     _mutualMuteSubscriptionId = null;
     _blockListSyncStarted = false;
+    _blockAuthorWatch.clear();
+    _muteAuthorWatch.clear();
     unawaited(_stateController.close());
     unawaited(_changesController.close());
+  }
+}
+
+/// Watches specific authors' replaceable list events *by author id*.
+///
+/// The repository discovers that someone blocked or muted us with a
+/// `#p = <us>` filter. That filter can only ever match a list that still
+/// tags us, so it sees the entry being added but never the replacement that
+/// removes it — a lifted block simply stops matching, and no event is
+/// delivered. The "they unblocked us" branches in
+/// [ContentBlocklistRepository._handleOthersBlockListEvent] and
+/// [ContentBlocklistRepository._handleMuteListEvent] were therefore
+/// unreachable in production: the blockee kept hiding the other party's DM
+/// conversation and profile forever.
+///
+/// Once an author is known to block or mute us we additionally watch their
+/// list by author, which is the only filter their removal event can still
+/// match. Authors are kept watched after a lift so a later re-block is also
+/// observed immediately rather than waiting on discovery.
+class _AuthorListWatch {
+  _AuthorListWatch({required int kind, required String label})
+    : _kind = kind,
+      _label = label;
+
+  final int _kind;
+  final String _label;
+  final Set<String> _authors = <String>{};
+
+  NostrClient? _boundClient;
+  StreamSubscription<Event>? _subscription;
+  String? _subscriptionId;
+  int _generation = 0;
+
+  /// Starts watching [author]'s list.
+  ///
+  /// Returns `false` when [author] was already watched, in which case the
+  /// existing subscription is left untouched.
+  bool add(
+    String author, {
+    required NostrClient? client,
+    required void Function(Event) onEvent,
+  }) {
+    if (!_authors.add(author)) return false;
+    _open(client: client, onEvent: onEvent);
+    return true;
+  }
+
+  /// Re-opens the watch against [client].
+  ///
+  /// Needed when the [NostrClient] is recreated (the old subscription lives
+  /// on a disposed client), and when the client only became available after
+  /// the first author was already watched.
+  void rebind({
+    required NostrClient? client,
+    required void Function(Event) onEvent,
+  }) {
+    if (_authors.isEmpty) return;
+    _open(client: client, onEvent: onEvent);
+  }
+
+  /// Drops every watched author — e.g. on identity change, where "who
+  /// blocks us" is meaningless for the new account.
+  void clear() {
+    _authors.clear();
+    _close();
+  }
+
+  void _open({
+    required NostrClient? client,
+    required void Function(Event) onEvent,
+  }) {
+    if (client == null) return;
+    _close();
+
+    final id = '$_label-author-watch-${++_generation}';
+    try {
+      _boundClient = client;
+      _subscriptionId = id;
+      _subscription = client
+          .subscribe([
+            Filter(authors: _authors.toList(), kinds: [_kind]),
+          ], subscriptionId: id)
+          .listen(onEvent);
+
+      Log.info(
+        'Watching ${_authors.length} $_label author(s) by author id',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    } on Object catch (e) {
+      _boundClient = null;
+      _subscriptionId = null;
+      Log.error(
+        'Failed to open $_label author watch: $e',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  void _close() {
+    unawaited(_subscription?.cancel());
+    _subscription = null;
+
+    final id = _subscriptionId;
+    final client = _boundClient;
+    _subscriptionId = null;
+    _boundClient = null;
+
+    if (id != null && client != null) {
+      unawaited(client.unsubscribe(id));
+    }
   }
 }
