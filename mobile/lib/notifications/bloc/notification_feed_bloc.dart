@@ -28,8 +28,10 @@ class NotificationFeedBloc
   NotificationFeedBloc({
     required NotificationRepository notificationRepository,
     required FollowRepository followRepository,
+    NotificationKind? filter,
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
+       _filter = filter,
        super(const NotificationFeedState()) {
     on<_SnapshotChanged>(_onSnapshotChanged);
     on<NotificationFeedStarted>(_onStarted, transformer: droppable());
@@ -40,13 +42,14 @@ class NotificationFeedBloc
 
     // Project the repository's snapshot stream into BLoC state via a
     // private event so emit() stays inside an event handler.
-    _snapshotSubscription = _notificationRepository.watchSnapshot().listen(
-      (page) => add(_SnapshotChanged(page)),
-    );
+    _snapshotSubscription = _notificationRepository
+        .watchSnapshot(filter: _filter)
+        .listen((page) => add(_SnapshotChanged(page)));
   }
 
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
+  final NotificationKind? _filter;
   late final StreamSubscription<NotificationPage> _snapshotSubscription;
 
   /// Override [ActorNotification.isFollowingBack] for follow-type rows so the
@@ -104,14 +107,16 @@ class NotificationFeedBloc
     emit(state.copyWith(isRefreshing: true));
 
     try {
-      await _notificationRepository.refresh();
+      await _notificationRepository.refreshFeed(_filter);
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
           isRefreshing: false,
         ),
       );
-      await _markSeenOnOpen();
+      if (_filter == null) {
+        await _markSeenOnOpen();
+      }
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout; transient-retry
@@ -206,7 +211,7 @@ class NotificationFeedBloc
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      await _notificationRepository.loadNextPage();
+      await _notificationRepository.loadNextPageFor(_filter);
       emit(state.copyWith(isLoadingMore: false));
     } on Exception catch (e, s) {
       // `NotificationRepository.loadNextPage` (single-attempt
@@ -232,7 +237,7 @@ class NotificationFeedBloc
   ) async {
     emit(state.copyWith(isRefreshing: true));
     try {
-      await _notificationRepository.refresh();
+      await _notificationRepository.refreshFeed(_filter);
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
@@ -342,7 +347,9 @@ class NotificationFeedBloc
   @override
   Future<void> close() async {
     await _snapshotSubscription.cancel();
-    _notificationRepository.resetPaginationDepth();
+    if (_filter == null) {
+      _notificationRepository.resetPaginationDepth();
+    }
     return super.close();
   }
 }

@@ -100,6 +100,21 @@ class _VideoMetadataResult {
   final bool notFound;
 }
 
+class _NotificationFeed {
+  _NotificationFeed({required this.filter})
+    : snapshot = BehaviorSubject<NotificationPage>.seeded(
+        NotificationPage.empty,
+      );
+
+  final NotificationKind? filter;
+  final BehaviorSubject<NotificationPage> snapshot;
+
+  String? lastCursor;
+  String? lastCursorId;
+  int fetchGeneration = 0;
+  int pagesLoaded = 0;
+}
+
 /// Number of notifications loaded per page.
 ///
 /// Bounds both the cold-start cache hydration and the first-page REST
@@ -157,16 +172,14 @@ class NotificationRepository {
   final BlockedNotificationFilter? _blockFilter;
   final AuthHeadersProvider? _authHeadersProvider;
 
-  /// Last cursor returned by the API, used for pagination.
-  String? _lastCursor;
-  String? _lastCursorId;
+  final Map<NotificationKind?, _NotificationFeed> _feeds = {};
 
-  /// Monotonic token bumped by [refresh] so in-flight page fetches from a
-  /// replaced pagination stream skip their post-await writes.
-  int _fetchGeneration = 0;
+  _NotificationFeed _feedFor(NotificationKind? filter) =>
+      _feeds.putIfAbsent(filter, () => _NotificationFeed(filter: filter));
 
-  /// Count of page fetches applied since the last first-page emission.
-  int _pagesLoaded = 0;
+  _NotificationFeed get _allFeed => _feedFor(null);
+
+  Iterable<_NotificationFeed> get _liveFeeds => _feeds.values;
 
   /// Reactive snapshot of the enriched, grouped notification feed.
   ///
@@ -174,15 +187,15 @@ class NotificationRepository {
   /// badge cubit (badge count). Every mutation — [getNotifications],
   /// [refresh], [markAsRead], [markAllAsRead] — updates this subject so
   /// consumers can never diverge.
-  final BehaviorSubject<NotificationPage> _snapshot =
-      BehaviorSubject<NotificationPage>.seeded(NotificationPage.empty);
+  BehaviorSubject<NotificationPage> get _snapshot => _allFeed.snapshot;
 
   /// Stream of the latest [NotificationPage] snapshot.
   ///
   /// Use this for screen-level rendering. For badge counts, prefer
   /// [watchUnreadCount] — it is `.distinct()`-filtered so the badge
   /// only rebuilds on actual count changes.
-  Stream<NotificationPage> watchSnapshot() => _snapshot.stream;
+  Stream<NotificationPage> watchSnapshot({NotificationKind? filter}) =>
+      _feedFor(filter).snapshot.stream;
 
   /// Stream of the unread badge count derived from the consolidated
   /// visible list.
@@ -200,7 +213,11 @@ class NotificationRepository {
   ///
   /// Called when the repository is no longer needed (e.g. on auth flip
   /// when a new repository instance replaces this one).
-  Future<void> close() => _snapshot.close();
+  Future<void> close() async {
+    for (final feed in _liveFeeds) {
+      await feed.snapshot.close();
+    }
+  }
 
   /// Whether [close] has been called on this repository.
   ///
@@ -216,7 +233,7 @@ class NotificationRepository {
   /// user-visible paginated feed back to page 1. An explicit [refresh]
   /// (pull-to-refresh, page mount) still replaces the snapshot and resets
   /// this to `false`.
-  bool get hasPaginatedBeyondFirstPage => _pagesLoaded > 1;
+  bool get hasPaginatedBeyondFirstPage => _allFeed.pagesLoaded > 1;
 
   /// Releases the current page-depth guard after the feed UI is gone, and
   /// collapses any deep-scrolled accumulation back to the first page.
@@ -244,7 +261,7 @@ class NotificationRepository {
         current.copyWith(items: current.items.take(_pageSize).toList()),
       );
     }
-    _pagesLoaded = _snapshot.value.items.isEmpty ? 0 : 1;
+    _allFeed.pagesLoaded = _snapshot.value.items.isEmpty ? 0 : 1;
   }
 
   /// Fetches the next page of notifications.
@@ -269,18 +286,24 @@ class NotificationRepository {
   Future<NotificationPage> getNotifications({
     String? cursor,
     String? cursorId,
-  }) async =>
-      (await _getNotificationsResult(cursor: cursor, cursorId: cursorId)).page;
+    NotificationKind? filter,
+  }) async => (await _getNotificationsResult(
+    cursor: cursor,
+    cursorId: cursorId,
+    filter: filter,
+  )).page;
 
   Future<({NotificationPage page, bool applied})> _getNotificationsResult({
     String? cursor,
     String? cursorId,
+    NotificationKind? filter,
   }) async {
-    final generation = _fetchGeneration;
-    final effectiveCursor = cursor ?? _lastCursor;
+    final feed = _feedFor(filter);
+    final generation = feed.fetchGeneration;
+    final effectiveCursor = cursor ?? feed.lastCursor;
     final effectiveCursorId = cursor != null
         ? cursorId
-        : cursorId ?? _lastCursorId;
+        : cursorId ?? feed.lastCursorId;
     final isFirstPage = effectiveCursor == null;
 
     try {
@@ -288,21 +311,24 @@ class NotificationRepository {
           ? await _fetchWithRetry(
               cursor: effectiveCursor,
               cursorId: effectiveCursorId,
+              filter: filter,
             )
           : await _fetchOnce(
               cursor: effectiveCursor,
               cursorId: effectiveCursorId,
+              filter: filter,
             );
-      if (generation != _fetchGeneration) {
-        return (page: _snapshot.value, applied: false);
+      if (generation != feed.fetchGeneration) {
+        return (page: feed.snapshot.value, applied: false);
       }
 
-      _lastCursor = response.nextCursor;
-      _lastCursorId = response.nextCursorId;
+      feed
+        ..lastCursor = response.nextCursor
+        ..lastCursorId = response.nextCursorId;
 
       final items = await _enrichAndGroup(response.notifications);
-      if (generation != _fetchGeneration) {
-        return (page: _snapshot.value, applied: false);
+      if (generation != feed.fetchGeneration) {
+        return (page: feed.snapshot.value, applied: false);
       }
 
       final page = NotificationPage(
@@ -312,10 +338,10 @@ class NotificationRepository {
         nextCursorId: response.nextCursorId,
         hasMore: response.hasMore,
       );
-      _pagesLoaded = isFirstPage ? 1 : _pagesLoaded + 1;
-      _emitSnapshotForPage(page, isFirstPage: isFirstPage);
+      feed.pagesLoaded = isFirstPage ? 1 : feed.pagesLoaded + 1;
+      _emitSnapshotForPage(feed, page, isFirstPage: isFirstPage);
 
-      if (isFirstPage) {
+      if (isFirstPage && filter == null) {
         unawaited(_persistSnapshot(items));
       }
       return (page: page, applied: true);
@@ -327,8 +353,8 @@ class NotificationRepository {
         error: e,
         stackTrace: s,
       );
-      if (isFirstPage && generation == _fetchGeneration) {
-        _markRefreshError();
+      if (isFirstPage && generation == feed.fetchGeneration) {
+        _markRefreshError(feed);
       }
       rethrow;
     }
@@ -339,13 +365,16 @@ class NotificationRepository {
   Future<NotificationResponse> _fetchOnce({
     required String? cursor,
     required String? cursorId,
+    required NotificationKind? filter,
   }) async {
+    final types = _serverTypesForFilter(filter);
     final requestUrl = _funnelcakeApiClient
         .notificationsUri(
           pubkey: _userPubkey,
           limit: _pageSize,
           cursor: cursor,
           cursorId: cursorId,
+          types: types,
         )
         .toString();
     final authHeaders = _authHeadersProvider != null
@@ -356,6 +385,7 @@ class NotificationRepository {
       limit: _pageSize,
       cursor: cursor,
       cursorId: cursorId,
+      types: types,
       requestUri: Uri.parse(requestUrl),
       authHeaders: authHeaders,
     );
@@ -365,6 +395,7 @@ class NotificationRepository {
   Future<NotificationResponse> _fetchWithRetry({
     required String? cursor,
     required String? cursorId,
+    required NotificationKind? filter,
   }) async {
     Object? lastError;
     StackTrace? lastStack;
@@ -374,7 +405,11 @@ class NotificationRepository {
       attempt++
     ) {
       try {
-        return await _fetchOnce(cursor: cursor, cursorId: cursorId);
+        return await _fetchOnce(
+          cursor: cursor,
+          cursorId: cursorId,
+          filter: filter,
+        );
       } on Exception catch (e, s) {
         if (!_isTransient(e) ||
             attempt == _NotificationRetryConfig.maxAttempts - 1) {
@@ -433,10 +468,10 @@ class NotificationRepository {
 
   /// Stamps the snapshot with `lastRefreshError: true` so the UI can
   /// render an inline error affordance while keeping cached items.
-  void _markRefreshError() {
-    final current = _snapshot.value;
+  void _markRefreshError(_NotificationFeed feed) {
+    final current = feed.snapshot.value;
     if (current.lastRefreshError) return;
-    _snapshot.add(current.copyWith(lastRefreshError: true));
+    feed.snapshot.add(current.copyWith(lastRefreshError: true));
   }
 
   /// Best-effort load of cached rows into the snapshot on construction.
@@ -482,7 +517,7 @@ class NotificationRepository {
   Future<void> _enrichCachedPlaceholders(
     List<NotificationItem> placeholders,
   ) async {
-    final generation = _fetchGeneration;
+    final generation = _allFeed.fetchGeneration;
     try {
       final pubkeys = placeholders
           .map(
@@ -512,7 +547,7 @@ class NotificationRepository {
         videosFuture,
       ).wait;
 
-      if (generation != _fetchGeneration) return;
+      if (generation != _allFeed.fetchGeneration) return;
 
       final current = _snapshot.value;
       if (!_sameNotificationIds(current.items, placeholders)) return;
@@ -757,6 +792,19 @@ class NotificationRepository {
     NotificationKind.system => 'system',
   };
 
+  static List<String>? _serverTypesForFilter(NotificationKind? filter) =>
+      switch (filter) {
+        null => null,
+        NotificationKind.like => const ['reaction', 'zap'],
+        NotificationKind.comment => const ['comment', 'reply', 'mention'],
+        NotificationKind.repost => const ['repost'],
+        NotificationKind.follow => const ['follow'],
+        NotificationKind.mention => const ['mention'],
+        NotificationKind.likeComment => const ['reaction', 'zap'],
+        NotificationKind.reply => const ['reply'],
+        NotificationKind.system => null,
+      };
+
   static final math.Random _jitter = math.Random();
 
   /// Refreshes notifications from the beginning (no cursor).
@@ -778,10 +826,23 @@ class NotificationRepository {
   }
 
   Future<({NotificationPage page, bool applied})> _refreshResult() {
-    _fetchGeneration++;
-    _lastCursor = null;
-    _lastCursorId = null;
-    return _getNotificationsResult();
+    return _refreshResultFor(null);
+  }
+
+  Future<({NotificationPage page, bool applied})> _refreshResultFor(
+    NotificationKind? filter,
+  ) {
+    final feed = _feedFor(filter);
+    feed
+      ..fetchGeneration = feed.fetchGeneration + 1
+      ..lastCursor = null
+      ..lastCursorId = null;
+    return _getNotificationsResult(filter: filter);
+  }
+
+  /// Refreshes one filtered notification feed from the beginning.
+  Future<NotificationPage> refreshFeed(NotificationKind? filter) {
+    return _refreshResultFor(filter).then((result) => result.page);
   }
 
   /// Fetches the page after the last one applied to the snapshot.
@@ -791,8 +852,34 @@ class NotificationRepository {
   /// [refresh] reset the stream — so a racing load-more can never turn
   /// into a duplicate first-page fetch.
   Future<NotificationPage?> loadNextPage() async {
-    if (_lastCursor == null) return null;
-    return getNotifications();
+    return loadNextPageFor(null);
+  }
+
+  /// Fetches the page after the last one applied to [filter]'s snapshot.
+  Future<NotificationPage?> loadNextPageFor(NotificationKind? filter) async {
+    final feed = _feedFor(filter);
+    if (feed.lastCursor == null) return null;
+    return getNotifications(filter: filter);
+  }
+
+  Map<_NotificationFeed, NotificationPage> _snapshotValuesByFeed() => {
+    for (final feed in _liveFeeds) feed: feed.snapshot.value,
+  };
+
+  Map<_NotificationFeed, int> _pagesLoadedByFeed() => {
+    for (final feed in _liveFeeds) feed: feed.pagesLoaded,
+  };
+
+  void _restoreSnapshots(Map<_NotificationFeed, NotificationPage> values) {
+    for (final entry in values.entries) {
+      entry.key.snapshot.add(entry.value);
+    }
+  }
+
+  void _restorePagesLoaded(Map<_NotificationFeed, int> values) {
+    for (final entry in values.entries) {
+      entry.key.pagesLoaded = entry.value;
+    }
   }
 
   /// Marks specific notifications as read on the server and locally.
@@ -806,10 +893,16 @@ class NotificationRepository {
     if (ids.isEmpty) return;
 
     final idSet = ids.toSet();
-    final before = _snapshot.value;
-    final pagesLoadedBefore = _pagesLoaded;
-    _snapshot.add(before.copyWith(items: _flipIsRead(before.items, idSet)));
-    final notificationIds = _expandServerNotificationIds(before.items, idSet);
+    final before = _snapshotValuesByFeed();
+    final pagesLoadedBefore = _pagesLoadedByFeed();
+    for (final feed in _liveFeeds) {
+      final page = feed.snapshot.value;
+      feed.snapshot.add(page.copyWith(items: _flipIsRead(page.items, idSet)));
+    }
+    final notificationIds = _expandServerNotificationIds(
+      before.values.expand((page) => page.items),
+      idSet,
+    );
 
     try {
       // Sign the exact URL + body the request will use, otherwise the
@@ -835,8 +928,8 @@ class NotificationRepository {
         await _notificationsDao.markAsRead(id, ownerPubkey: _userPubkey);
       }
     } catch (_) {
-      _pagesLoaded = pagesLoadedBefore;
-      _snapshot.add(before);
+      _restorePagesLoaded(pagesLoadedBefore);
+      _restoreSnapshots(before);
       rethrow;
     }
   }
@@ -849,11 +942,16 @@ class NotificationRepository {
   /// introduced by PR #4034 at the repository layer so every consumer
   /// (badge cubit, feed bloc) recovers consistently.
   Future<void> markAllAsRead() async {
-    final before = _snapshot.value;
-    if (before.items.every((n) => n.isRead)) return;
-    final pagesLoadedBefore = _pagesLoaded;
+    final before = _snapshotValuesByFeed();
+    if (before.values.every((page) => page.items.every((n) => n.isRead))) {
+      return;
+    }
+    final pagesLoadedBefore = _pagesLoadedByFeed();
 
-    _snapshot.add(before.copyWith(items: _flipAllRead(before.items)));
+    for (final feed in _liveFeeds) {
+      final page = feed.snapshot.value;
+      feed.snapshot.add(page.copyWith(items: _flipAllRead(page.items)));
+    }
 
     try {
       final url = _funnelcakeApiClient
@@ -871,8 +969,8 @@ class NotificationRepository {
 
       await _notificationsDao.markAllAsRead(ownerPubkey: _userPubkey);
     } catch (_) {
-      _pagesLoaded = pagesLoadedBefore;
-      _snapshot.add(before);
+      _restorePagesLoaded(pagesLoadedBefore);
+      _restoreSnapshots(before);
       rethrow;
     }
   }
@@ -903,16 +1001,17 @@ class NotificationRepository {
   /// Together these keep a logical event that reappears on a later page
   /// from duplicating its existing row (#4264).
   void _emitSnapshotForPage(
+    _NotificationFeed feed,
     NotificationPage page, {
     required bool isFirstPage,
   }) {
     if (isFirstPage) {
-      _snapshot.add(page);
+      feed.snapshot.add(page);
       return;
     }
-    final current = _snapshot.value;
+    final current = feed.snapshot.value;
     final mergedItems = _mergeAppendedPage(current.items, page.items);
-    _snapshot.add(page.copyWith(items: mergedItems));
+    feed.snapshot.add(page.copyWith(items: mergedItems));
   }
 
   /// Returns the merged item list for a non-first-page emission.
@@ -928,10 +1027,14 @@ class NotificationRepository {
     };
     final allIds = <String>{for (final n in result) n.id};
     final videoGroupIndex = <(String, NotificationKind), int>{};
+    final followIndex = <String, int>{};
     for (var i = 0; i < result.length; i++) {
       final item = result[i];
       if (item is VideoNotification) {
         videoGroupIndex[(item.videoEventId, item.type)] = i;
+      } else if (item is ActorNotification &&
+          item.type == NotificationKind.follow) {
+        followIndex[item.actor.pubkey] = i;
       }
     }
 
@@ -949,6 +1052,18 @@ class NotificationRepository {
           continue;
         }
       }
+      if (item is ActorNotification && item.type == NotificationKind.follow) {
+        final idx = followIndex[item.actor.pubkey];
+        if (idx != null) {
+          result[idx] = _mergeAppendedFollow(
+            result[idx] as ActorNotification,
+            item,
+          );
+          allSourceEventIds.addAll(item.sourceEventIds);
+          allIds.add(item.id);
+          continue;
+        }
+      }
       final hasOverlap = item.sourceEventIds.any(allSourceEventIds.contains);
       if (hasOverlap) continue;
       // Fallback: catch same-id repeats when sourceEventIds is empty (server
@@ -958,8 +1073,30 @@ class NotificationRepository {
       appended.add(item);
       allSourceEventIds.addAll(item.sourceEventIds);
       allIds.add(item.id);
+      if (item is ActorNotification && item.type == NotificationKind.follow) {
+        followIndex[item.actor.pubkey] = result.length + appended.length - 1;
+      }
     }
     return [...result, ...appended];
+  }
+
+  static ActorNotification _mergeAppendedFollow(
+    ActorNotification existing,
+    ActorNotification incoming,
+  ) {
+    final existingIsNewer = !existing.timestamp.isBefore(incoming.timestamp);
+    final latest = existingIsNewer ? existing : incoming;
+    return latest.copyWith(
+      isRead: existing.isRead && incoming.isRead,
+      sourceEventIds: <String>{
+        ...existing.sourceEventIds,
+        ...incoming.sourceEventIds,
+      }.toList(),
+      notificationIds: <String>{
+        ...existing.notificationIds,
+        ...incoming.notificationIds,
+      }.toList(),
+    );
   }
 
   /// Merges [incoming] (from a REST pagination page) into [existing] (a
@@ -1055,7 +1192,7 @@ class NotificationRepository {
   /// those rows. Unknown ids pass through so callers can still mark a raw id
   /// that is not present in the current snapshot.
   static List<String> _expandServerNotificationIds(
-    List<NotificationItem> items,
+    Iterable<NotificationItem> items,
     Set<String> ids,
   ) {
     final expanded = <String>{};

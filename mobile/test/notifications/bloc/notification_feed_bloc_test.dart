@@ -84,13 +84,13 @@ void main() {
 
       when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
       when(
-        () => mockNotificationRepo.watchSnapshot(),
+        () => mockNotificationRepo.watchSnapshot(filter: any(named: 'filter')),
       ).thenAnswer((_) => snapshotController.stream);
       when(
-        () => mockNotificationRepo.refresh(),
+        () => mockNotificationRepo.refreshFeed(any()),
       ).thenAnswer((_) async => NotificationPage.empty);
       when(
-        () => mockNotificationRepo.loadNextPage(),
+        () => mockNotificationRepo.loadNextPageFor(any()),
       ).thenAnswer((_) async => NotificationPage.empty);
       when(
         () => mockNotificationRepo.markAsRead(any()),
@@ -108,12 +108,30 @@ void main() {
       followRepository: mockFollowRepo,
     );
 
+    NotificationFeedBloc createFollowBloc() => NotificationFeedBloc(
+      notificationRepository: mockNotificationRepo,
+      followRepository: mockFollowRepo,
+      filter: NotificationKind.follow,
+    );
+
     test('resets pagination depth when the feed closes', () async {
       final bloc = createBloc();
 
       await bloc.close();
 
       verify(() => mockNotificationRepo.resetPaginationDepth()).called(1);
+    });
+
+    test('subscribes to the filtered snapshot for tab feeds', () async {
+      final bloc = createFollowBloc();
+
+      await bloc.close();
+
+      verify(
+        () =>
+            mockNotificationRepo.watchSnapshot(filter: NotificationKind.follow),
+      ).called(1);
+      verifyNever(() => mockNotificationRepo.resetPaginationDepth());
     });
 
     group('snapshot projection', () {
@@ -199,7 +217,7 @@ void main() {
           // Seen-on-open advances the server watermark AFTER the refresh so
           // the badge clears and thereafter shows "new since last seen".
           verifyInOrder([
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
             () => mockNotificationRepo.markAllAsRead(),
           ]);
         },
@@ -221,7 +239,7 @@ void main() {
         ],
         errors: () => [isA<Exception>()],
         verify: (_) {
-          verify(() => mockNotificationRepo.refresh()).called(1);
+          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);
         },
       );
@@ -250,7 +268,7 @@ void main() {
               .having((r) => r.unwrap(), 'unwrap', isA<StateError>()),
         ],
         verify: (_) {
-          verify(() => mockNotificationRepo.refresh()).called(1);
+          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           verify(() => mockNotificationRepo.markAllAsRead()).called(1);
         },
       );
@@ -259,7 +277,7 @@ void main() {
         'emits failure with refreshError when refresh throws and cache is empty',
         setUp: () {
           when(
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
           ).thenThrow(Exception('boom'));
         },
         build: createBloc,
@@ -279,7 +297,7 @@ void main() {
         'items',
         setUp: () {
           when(
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
           ).thenThrow(Exception('boom'));
         },
         build: createBloc,
@@ -328,7 +346,7 @@ void main() {
         'failure with refreshError',
         setUp: () {
           when(
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
           ).thenThrow(StateError('invariant'));
         },
         build: createBloc,
@@ -361,7 +379,7 @@ void main() {
         act: (bloc) => bloc.add(NotificationFeedLoadMore()),
         expect: () => <NotificationFeedState>[],
         verify: (_) {
-          verifyNever(() => mockNotificationRepo.loadNextPage());
+          verifyNever(() => mockNotificationRepo.loadNextPageFor(null));
         },
       );
 
@@ -385,7 +403,7 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(() => mockNotificationRepo.loadNextPage()).called(1);
+          verify(() => mockNotificationRepo.loadNextPageFor(null)).called(1);
         },
       );
 
@@ -393,7 +411,7 @@ void main() {
         'recovers isLoadingMore on loadNextPage failure',
         setUp: () {
           when(
-            () => mockNotificationRepo.loadNextPage(),
+            () => mockNotificationRepo.loadNextPageFor(null),
           ).thenThrow(Exception('boom'));
         },
         build: createBloc,
@@ -421,7 +439,7 @@ void main() {
         'recovers isLoadingMore',
         setUp: () {
           when(
-            () => mockNotificationRepo.loadNextPage(),
+            () => mockNotificationRepo.loadNextPageFor(null),
           ).thenThrow(StateError('invariant'));
         },
         build: createBloc,
@@ -466,7 +484,7 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loaded),
         ],
         verify: (_) {
-          verify(() => mockNotificationRepo.refresh()).called(1);
+          verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
           // Pull-to-refresh shows current unread; only opening (Started)
           // advances the seen watermark (#4708).
           verifyNever(() => mockNotificationRepo.markAllAsRead());
@@ -478,7 +496,7 @@ void main() {
         'empty',
         setUp: () {
           when(
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
           ).thenThrow(Exception('boom'));
         },
         build: createBloc,
@@ -498,7 +516,7 @@ void main() {
         'items',
         setUp: () {
           when(
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
           ).thenThrow(Exception('boom'));
         },
         build: createBloc,
@@ -560,7 +578,7 @@ void main() {
         'failure with refreshError',
         setUp: () {
           when(
-            () => mockNotificationRepo.refresh(),
+            () => mockNotificationRepo.refreshFeed(null),
           ).thenThrow(StateError('invariant'));
         },
         build: createBloc,

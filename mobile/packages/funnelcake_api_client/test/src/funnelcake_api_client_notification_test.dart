@@ -111,6 +111,38 @@ void main() {
         expect(url.queryParameters['before'], equals('cursor_abc'));
       });
 
+      test('passes notification types as comma-separated query', () async {
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'notifications': <Map<String, dynamic>>[],
+              'unread_count': 0,
+              'has_more': false,
+            }),
+            200,
+          ),
+        );
+
+        await client.getNotifications(
+          pubkey: testPubkey,
+          types: const ['reaction', 'zap'],
+        );
+
+        final captured = verify(
+          () => mockHttpClient.get(
+            captureAny(),
+            headers: any(named: 'headers'),
+          ),
+        ).captured;
+        final url = captured.first as Uri;
+        expect(url.queryParameters['types'], equals('reaction,zap'));
+      });
+
       test('passes cursorId as before_id parameter', () async {
         when(
           () => mockHttpClient.get(
@@ -719,6 +751,15 @@ void main() {
           uri.queryParameters['before_id'],
           equals(stableCursorId),
         );
+      });
+
+      test('includes types when provided', () {
+        final uri = client.notificationsUri(
+          pubkey: testPubkey,
+          types: const ['follow'],
+        );
+
+        expect(uri.queryParameters['types'], equals('follow'));
       });
     });
   });

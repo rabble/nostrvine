@@ -27,15 +27,7 @@ import 'package:unified_logger/unified_logger.dart';
 @visibleForTesting
 class NotificationsView extends ConsumerStatefulWidget {
   /// Creates a [NotificationsView].
-  const NotificationsView({this.kindFilter, super.key});
-
-  /// When non-null, only notifications whose [NotificationItem.type] matches
-  /// the filter are rendered. Used by the inbox tabs scaffold.
-  ///
-  /// `like` matches both [VideoNotification]s of kind `like` and
-  /// [ActorNotification]s of kind `likeComment` so the Likes tab surfaces
-  /// reactions on both videos and comments.
-  final NotificationKind? kindFilter;
+  const NotificationsView({super.key});
 
   @override
   ConsumerState<NotificationsView> createState() => _NotificationsViewState();
@@ -43,6 +35,7 @@ class NotificationsView extends ConsumerStatefulWidget {
 
 class _NotificationsViewState extends ConsumerState<NotificationsView> {
   final ScrollController _scrollController = ScrollController();
+  bool _emptyLoadMoreQueued = false;
 
   /// Threshold (in pixels from bottom) to trigger load-more.
   static const _loadMoreThreshold = 200.0;
@@ -74,27 +67,20 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
-  /// Returns [items] filtered by [NotificationsView.kindFilter].
-  ///
-  /// `like` matches both video likes and comment likes so the Likes tab
-  /// surfaces reactions on either target.
-  List<NotificationItem> _applyFilter(List<NotificationItem> items) {
-    final filter = widget.kindFilter;
-    if (filter == null) return items;
-    return items.where((n) {
-      if (n.type == filter) return true;
-      if (filter == NotificationKind.like &&
-          n.type == NotificationKind.likeComment) {
-        return true;
-      }
-      if (filter == NotificationKind.comment &&
-          n is ActorNotification &&
-          n.type == NotificationKind.mention &&
-          n.hasCommentTarget) {
-        return true;
-      }
-      return false;
-    }).toList();
+  void _requestLoadMoreFromEmptyState(NotificationFeedState state) {
+    if (!state.hasMore ||
+        state.isLoadingMore ||
+        state.isRefreshing ||
+        _emptyLoadMoreQueued) {
+      return;
+    }
+    _emptyLoadMoreQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<NotificationFeedBloc>().add(
+        const NotificationFeedLoadMore(),
+      );
+    });
   }
 
   @override
@@ -103,7 +89,11 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       color: VineTheme.surfaceContainerHigh,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
-          final visible = _applyFilter(state.notifications);
+          if (state.notifications.isNotEmpty ||
+              state.isLoadingMore ||
+              !state.hasMore) {
+            _emptyLoadMoreQueued = false;
+          }
 
           // Hard failure path. The bloc gates `failure` on
           // `notifications.isEmpty`, so we only land here when the cache
@@ -122,7 +112,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           // background refresh never blanks the cached list. The inline
           // refresh-error banner handles the soft-failure affordance via
           // `state.refreshError`.
-          if (visible.isNotEmpty) {
+          if (state.notifications.isNotEmpty) {
             return Stack(
               children: [
                 RefreshIndicator(
@@ -134,7 +124,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                     );
                   },
                   child: _NotificationList(
-                    notifications: visible,
+                    notifications: state.notifications,
                     isLoadingMore: state.isLoadingMore,
                     hasMore: state.hasMore,
                     scrollController: _scrollController,
@@ -182,6 +172,12 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           // `onRefresh` returns.
           return Stack(
             children: [
+              Builder(
+                builder: (context) {
+                  _requestLoadMoreFromEmptyState(state);
+                  return const SizedBox.shrink();
+                },
+              ),
               RefreshIndicator(
                 color: VineTheme.onPrimary,
                 backgroundColor: VineTheme.vineGreen,
@@ -190,7 +186,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                     const NotificationFeedRefreshed(),
                   );
                 },
-                child: const _ScrollableEmptyState(),
+                child: _ScrollableEmptyState(controller: _scrollController),
               ),
               Positioned(
                 top: 0,
@@ -443,12 +439,15 @@ class _RevalidationBar extends StatelessWidget {
 }
 
 class _ScrollableEmptyState extends StatelessWidget {
-  const _ScrollableEmptyState();
+  const _ScrollableEmptyState({required this.controller});
+
+  final ScrollController controller;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
+        controller: controller,
         physics: const AlwaysScrollableScrollPhysics(),
         child: SizedBox(
           height: constraints.maxHeight,

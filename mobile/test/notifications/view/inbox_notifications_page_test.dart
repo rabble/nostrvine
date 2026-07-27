@@ -40,14 +40,12 @@ void main() {
       mockInviteCubit = _MockInviteStatusCubit();
 
       when(
-        () => mockNotificationRepo.watchSnapshot(),
+        () => mockNotificationRepo.watchSnapshot(filter: any(named: 'filter')),
       ).thenAnswer((_) => const Stream<NotificationPage>.empty());
       when(
-        () => mockNotificationRepo.refresh(),
+        () => mockNotificationRepo.refreshFeed(any()),
       ).thenAnswer((_) async => NotificationPage.empty);
-      when(
-        () => mockNotificationRepo.markAllAsRead(),
-      ).thenAnswer((_) async {});
+      when(() => mockNotificationRepo.markAllAsRead()).thenAnswer((_) async {});
       when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
       when(() => mockInviteCubit.state).thenReturn(InviteStatusState());
       when(mockInviteCubit.load).thenAnswer((_) async {});
@@ -77,7 +75,7 @@ void main() {
       // Opening the inbox refreshes and marks notifications seen (advances the
       // server read watermark) so the badge reflects "new since last seen"
       // (#4708).
-      verify(() => mockNotificationRepo.refresh()).called(1);
+      verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
       verify(() => mockNotificationRepo.markAllAsRead()).called(1);
     });
 
@@ -120,7 +118,7 @@ void main() {
         // Exactly one refresh and one mark-seen across the whole inbox-open
         // lifecycle, even after all five filter views have mounted — the
         // shared bloc opens once, not once per tab.
-        verify(() => mockNotificationRepo.refresh()).called(1);
+        verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
         verify(() => mockNotificationRepo.markAllAsRead()).called(1);
         // Confirm all five filter views actually mounted — guards
         // against the test silently passing because TabBarView never
@@ -162,9 +160,7 @@ void main() {
 
       testWidgets(
         'renders the singular label when exactly one invite is left',
-        (
-          tester,
-        ) async {
+        (tester) async {
           when(() => mockInviteCubit.state).thenReturn(
             const InviteStatusState(
               status: InviteStatusLoadingStatus.loaded,

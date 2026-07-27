@@ -55,18 +55,21 @@ void main() {
         limit: any(named: 'limit'),
         cursor: any(named: 'cursor'),
         cursorId: any(named: 'cursorId'),
+        types: any(named: 'types'),
       ),
     ).thenAnswer((invocation) {
       final pubkey = invocation.namedArguments[#pubkey] as String;
       final limit = invocation.namedArguments[#limit] as int? ?? 50;
       final cursor = invocation.namedArguments[#cursor] as String?;
       final cursorId = invocation.namedArguments[#cursorId] as String?;
+      final types = invocation.namedArguments[#types] as List<String>?;
       final effectiveBefore =
           cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
       final queryParameters = <String, String>{
         'limit': '$limit',
         'before': effectiveBefore,
         'before_id': ?cursorId,
+        if (types != null && types.isNotEmpty) 'types': types.join(','),
       };
       return Uri.parse(
         'https://api.example.com/api/users/$pubkey/notifications',
@@ -177,6 +180,7 @@ void main() {
         pubkey: any(named: 'pubkey'),
         cursor: any(named: 'cursor'),
         cursorId: any(named: 'cursorId'),
+        types: any(named: 'types'),
         requestUri: any(named: 'requestUri'),
         authHeaders: any(named: 'authHeaders'),
         limit: any(named: 'limit'),
@@ -344,6 +348,105 @@ void main() {
           );
         },
       );
+
+      test('signs filtered notifications URL with server types', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications(filter: NotificationKind.follow);
+
+        expect(
+          signedUrl,
+          startsWith(
+            'https://api.example.com/api/users/$userPubkey/notifications',
+          ),
+        );
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('follow'));
+      });
+
+      test('maps likes tab to reaction and zap server types', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications(filter: NotificationKind.like);
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('reaction,zap'));
+      });
+
+      test('keeps independent cursors for filtered feeds', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubProfiles({});
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: any(named: 'types'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((invocation) async {
+          final types = invocation.namedArguments[#types] as List<String>?;
+          final cursor = invocation.namedArguments[#cursor] as String?;
+          if (types?.contains('follow') ?? false) {
+            return NotificationResponse(
+              notifications: const [],
+              unreadCount: 0,
+              hasMore: cursor == null,
+              nextCursor: cursor == null ? 'follow_cursor' : null,
+            );
+          }
+          return NotificationResponse(
+            notifications: const [],
+            unreadCount: 0,
+            hasMore: cursor == null,
+            nextCursor: cursor == null ? 'like_cursor' : null,
+          );
+        });
+
+        await repository.getNotifications(filter: NotificationKind.follow);
+        await repository.getNotifications(filter: NotificationKind.like);
+        await repository.loadNextPageFor(NotificationKind.follow);
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('follow'));
+        expect(signedUri.queryParameters['before'], equals('follow_cursor'));
+      });
 
       test('explicit cursor override does not leak stored cursor id', () async {
         var signedUrl = '';
@@ -1285,6 +1388,76 @@ void main() {
         expect(follow.type, equals(NotificationKind.follow));
         expect(follow.actor.pubkey, equals('follower_pub'));
         expect(follow.timestamp, equals(fresh));
+      });
+
+      test('same follower is consolidated across appended pages', () async {
+        final stale = DateTime(2025);
+        final fresh = DateTime(2025, 1, 10);
+        var call = 0;
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: any(named: 'types'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async {
+          call++;
+          return call == 1
+              ? NotificationResponse(
+                  notifications: [
+                    makeNotification(
+                      id: 'follow_stale',
+                      sourceEventId: 'follow_evt_stale',
+                      sourcePubkey: 'follower_pub',
+                      notificationType: 'follow',
+                      sourceKind: 3,
+                      referencedEventId: null,
+                      createdAt: stale,
+                      read: true,
+                    ),
+                  ],
+                  unreadCount: 0,
+                  hasMore: true,
+                  nextCursor: 'cursor_1',
+                )
+              : NotificationResponse(
+                  notifications: [
+                    makeNotification(
+                      id: 'follow_fresh',
+                      sourceEventId: 'follow_evt_fresh',
+                      sourcePubkey: 'follower_pub',
+                      notificationType: 'follow',
+                      sourceKind: 3,
+                      referencedEventId: null,
+                      createdAt: fresh,
+                    ),
+                  ],
+                  unreadCount: 1,
+                  hasMore: false,
+                );
+        });
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+        });
+
+        await repository.getNotifications(filter: NotificationKind.follow);
+        await repository.loadNextPageFor(NotificationKind.follow);
+
+        final page = await repository
+            .watchSnapshot(filter: NotificationKind.follow)
+            .first;
+        expect(page.items, hasLength(1));
+        final follow = page.items.single as ActorNotification;
+        expect(follow.timestamp, equals(fresh));
+        expect(follow.isRead, isFalse);
+        expect(
+          follow.notificationIds,
+          containsAll(['follow_stale', 'follow_fresh']),
+        );
       });
     });
 
@@ -3694,6 +3867,52 @@ void main() {
             authHeaders: any(named: 'authHeaders'),
           ),
         );
+      });
+
+      test('updates matching rows in every live filtered snapshot', () async {
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            notificationIds: any(named: 'notificationIds'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer(
+          (_) async => const MarkReadResponse(success: true, markedCount: 1),
+        );
+        when(
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+        });
+        stubNotifications([
+          makeNotification(
+            id: 'follow_notification',
+            sourceEventId: 'follow_event',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+          ),
+        ], unreadCount: 1);
+
+        await repository.getNotifications();
+        await repository.getNotifications(filter: NotificationKind.follow);
+
+        await repository.markAsRead(['follow_notification']);
+
+        final allItem = (await repository.watchSnapshot().first).items.single;
+        final followItem =
+            (await repository
+                    .watchSnapshot(filter: NotificationKind.follow)
+                    .first)
+                .items
+                .single;
+        expect(allItem.isRead, isTrue);
+        expect(followItem.isRead, isTrue);
       });
 
       test('expands a grouped row to every raw notification id before '
