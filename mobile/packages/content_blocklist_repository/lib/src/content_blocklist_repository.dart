@@ -1599,8 +1599,8 @@ class ContentBlocklistRepository {
 ///
 /// Once an author is known to block or mute us we additionally watch their
 /// list by author, which is the only filter their removal event can still
-/// match. Authors are kept watched after a lift so a later re-block is also
-/// observed immediately rather than waiting on discovery.
+/// match. Authors are kept watched after a lift so later list changes from a
+/// known author do not require tearing down and rebuilding the watch again.
 class _AuthorListWatch {
   _AuthorListWatch({required int kind, required String label})
     : _kind = kind,

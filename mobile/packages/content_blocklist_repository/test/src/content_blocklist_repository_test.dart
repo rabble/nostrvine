@@ -3709,23 +3709,5 @@ class _FilterAwareRelay {
   }
 
   static bool _matchesAny(List<Filter> filters, Event event) =>
-      filters.any((filter) => _matches(filter, event));
-
-  static bool _matches(Filter filter, Event event) {
-    final kinds = filter.kinds;
-    if (kinds != null && !kinds.contains(event.kind)) return false;
-
-    final authors = filter.authors;
-    if (authors != null && !authors.contains(event.pubkey)) return false;
-
-    final p = filter.p;
-    if (p != null &&
-        !event.tags.any(
-          (tag) => tag.length >= 2 && tag[0] == 'p' && p.contains(tag[1]),
-        )) {
-      return false;
-    }
-
-    return true;
-  }
+      filters.any((filter) => filter.checkEvent(event));
 }
