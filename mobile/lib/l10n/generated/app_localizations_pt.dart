@@ -6995,7 +6995,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'Entre novamente para excluir sua conta. Nada foi excluído ainda.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -7007,7 +7007,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'Exclusão da conta solicitada. Não foi possível confirmar individualmente a exclusão de algumas publicações existentes.';
 
   @override
   String get deleteAccountWarningBody =>

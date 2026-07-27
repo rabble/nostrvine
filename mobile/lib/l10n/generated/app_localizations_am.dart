@@ -6811,7 +6811,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'መለያዎን ለመሰረዝ እንደገና ይግቡ። እስካሁን ምንም አልተሰረዘም።';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -6822,7 +6822,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'የመለያ ስረዛ ተጠይቋል። የአንዳንድ ነባር ልጥፎች ስረዛ በተናጠል ማረጋገጥ አልተቻለም።';
 
   @override
   String get deleteAccountWarningBody =>

@@ -6924,7 +6924,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'Hesabını silmek için tekrar giriş yap. Henüz hiçbir şey silinmedi.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -6936,7 +6936,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'Hesap silme isteği gönderildi. Mevcut bazı gönderilerin silinmesi tek tek doğrulanamadı.';
 
   @override
   String get deleteAccountWarningBody =>

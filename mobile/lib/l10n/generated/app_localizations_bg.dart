@@ -7018,7 +7018,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'Влез отново, за да изтриеш акаунта си. Още нищо не е изтрито.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -7030,7 +7030,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'Заявено е изтриване на акаунта. Изтриването на някои съществуващи публикации не можа да бъде потвърдено поотделно.';
 
   @override
   String get deleteAccountWarningBody =>

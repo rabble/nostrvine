@@ -7112,7 +7112,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'Conectează-te din nou ca să-ți ștergi contul. Nu a fost șters încă nimic.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -7124,7 +7124,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'Ștergerea contului a fost solicitată. Ștergerea unor postări existente nu a putut fi confirmată individual.';
 
   @override
   String get deleteAccountWarningBody =>

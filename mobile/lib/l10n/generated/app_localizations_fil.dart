@@ -7027,7 +7027,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'Mag-sign in ulit para i-delete ang account mo. Wala pang na-delete.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -7039,7 +7039,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'Na-request na ang pag-delete ng account. May ilang existing na post na hindi makumpirma nang isa-isa para sa pag-delete.';
 
   @override
   String get deleteAccountWarningBody =>

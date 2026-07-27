@@ -6945,7 +6945,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      'Logga in igen för att radera ditt konto. Inget har raderats än.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -6957,7 +6957,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      'Radering av kontot har begärts. Raderingen av vissa befintliga inlägg kunde inte bekräftas individuellt.';
 
   @override
   String get deleteAccountWarningBody =>

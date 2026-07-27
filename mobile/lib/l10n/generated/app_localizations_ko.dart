@@ -6693,7 +6693,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountReauthRequired =>
-      'Sign in again to delete your account. Nothing has been deleted yet.';
+      '계정을 삭제하려면 다시 로그인해 주세요. 아직 삭제된 건 없어요.';
 
   @override
   String get deleteAccountServerDeletionFailed =>
@@ -6704,7 +6704,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountSuccessContentUnverified =>
-      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
+      '계정 삭제를 요청했어요. 기존 게시물 중 일부는 개별적으로 삭제를 확인하지 못했어요.';
 
   @override
   String get deleteAccountWarningBody =>
