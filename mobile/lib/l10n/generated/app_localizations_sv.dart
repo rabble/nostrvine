@@ -6944,20 +6944,20 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här kontot från den här enheten?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Vi kunde inte ta bort ditt konto på servern. Logga in igen och försök på nytt.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Logga in igen för att ta bort ditt konto. Inget har tagits bort än.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Kontoborttagning begärd. Vi kunde inte nå reläerna för att lista dina befintliga inlägg, så de begärdes inte bort var för sig.';
+  String get deleteAccountServerDeletionFailed =>
+      'Kunde inte ta bort ditt konto från servern. Kontrollera din anslutning och försök igen.';
 
   @override
   String get deleteAccountSuccess =>
       'Raderingsförfrågningar skickade. Du är utloggad på den här enheten.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

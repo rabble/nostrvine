@@ -17,6 +17,7 @@ class DeleteAccountResult {
     this.deletedEventsCount = 0,
     this.accountChanged = false,
     this.contentQueryFailed = false,
+    this.contentDeletionIncomplete = false,
   });
 
   final bool success;
@@ -35,6 +36,10 @@ class DeleteAccountResult {
   /// deletion rather than reporting an unqualified success.
   final bool contentQueryFailed;
 
+  /// True when at least one queried event did not get an OK-confirmed kind-5
+  /// deletion request.
+  final bool contentDeletionIncomplete;
+
   /// True when the deletion aborted because the signed-in account no longer
   /// matches the account the user confirmed. Lets the UI localize the outcome
   /// rather than surfacing the raw abort string.
@@ -44,11 +49,13 @@ class DeleteAccountResult {
     String deleteEventId, {
     int deletedEventsCount = 0,
     bool contentQueryFailed = false,
+    bool contentDeletionIncomplete = false,
   }) => DeleteAccountResult(
     success: true,
     deleteEventId: deleteEventId,
     deletedEventsCount: deletedEventsCount,
     contentQueryFailed: contentQueryFailed,
+    contentDeletionIncomplete: contentDeletionIncomplete,
   );
 
   static DeleteAccountResult failure(
@@ -203,6 +210,8 @@ class AccountDeletionService {
         event.id,
         deletedEventsCount: deletedCount,
         contentQueryFailed: sweep.queryFailed,
+        contentDeletionIncomplete:
+            allUserEvents.isNotEmpty && deletedCount < allUserEvents.length,
       );
     } on AccountChangedDuringDeletion {
       Log.warning(
@@ -249,9 +258,20 @@ class AccountDeletionService {
   Future<({List<Event> events, bool queryFailed})> _fetchSweepTargets(
     String pubkey,
   ) async {
+    if (_nostrService.isDisposed) {
+      Log.error(
+        'Failed to fetch user events: Nostr client is disposed',
+        name: 'AccountDeletionService',
+        category: LogCategory.system,
+      );
+      return (events: const <Event>[], queryFailed: true);
+    }
+
     try {
       final filter = Filter(authors: [pubkey], limit: 10000);
-      final events = await _nostrService.queryEvents([filter]);
+      final query = await _nostrService.queryEventsDetailed([filter]);
+      final events = query.events;
+      final queryFailed = query.timedOut || query.noRelays;
 
       final targets = events
           .where((event) => !_kindsExcludedFromSweep.contains(event.kind))
@@ -265,7 +285,16 @@ class AccountDeletionService {
         category: LogCategory.system,
       );
 
-      return (events: targets, queryFailed: false);
+      if (queryFailed) {
+        Log.error(
+          'Relay query did not complete reliably for user $pubkey '
+          '(timedOut=${query.timedOut}, noRelays=${query.noRelays})',
+          name: 'AccountDeletionService',
+          category: LogCategory.system,
+        );
+      }
+
+      return (events: targets, queryFailed: queryFailed);
     } catch (e) {
       Log.error(
         'Failed to fetch user events: $e',

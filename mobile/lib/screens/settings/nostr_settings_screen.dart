@@ -242,13 +242,75 @@ class _DeleteAccountTile extends StatelessWidget {
       icon: Icons.delete_forever,
       title: context.l10n.nostrSettingsDeleteAccount,
       subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
-      onTap: () => startAccountDeletionFlow(
-        context: context,
-        ref: ref,
-        screenName: 'NostrSettingsScreen',
-      ),
+      onTap: () => _handleDeleteAllContent(context, ref),
       iconColor: VineTheme.error,
       titleColor: VineTheme.error,
+    );
+  }
+
+  Future<void> _handleDeleteAllContent(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final deletionService = ref.read(accountDeletionServiceProvider);
+    final authService = ref.read(authServiceProvider);
+    final profileRepository = ref.read(profileRepositoryProvider);
+    final pubkey = authService.currentPublicKeyHex;
+    if (pubkey == null || pubkey.isEmpty) return;
+
+    // Kick off the burnable-handle lookup but do not await it: the dialog opens
+    // immediately and reveals the opt-in burn toggle once this resolves, so a
+    // slow name-server call never blocks the tap.
+    final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
+
+    // Resolve the local profile up front so the identity + username gate are
+    // ready when the dialog opens. Cache-first (usually instant) with a bounded
+    // network fallback; a timeout or miss degrades to npub + DELETE, never
+    // hangs.
+    final overlay = _ProgressOverlay.show(context);
+    UserProfile? profile;
+    try {
+      profile = await ref
+          .read(fetchUserProfileProvider(pubkey).future)
+          .timeout(_profileResolveTimeout, onTimeout: () => null);
+    } catch (_) {
+      profile = null;
+    } finally {
+      overlay.dismiss();
+    }
+    if (!context.mounted) return;
+
+    // The gate anchors on the shown profile identity (displayNip05) to confirm
+    // *which account* is being erased — deliberately distinct from the burn
+    // target (the owned @divine.video handle, which the burn toggle names for
+    // itself). The two can differ for an external-NIP-05 user who also owns a
+    // divine username; that divergence is intended, not a mismatch to reconcile.
+    final confirmation = DeleteAccountConfirmation(
+      pubkeyHex: pubkey,
+      displayName:
+          profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
+      avatarUrl: profile?.picture,
+      handle: profile?.displayNip05,
+    );
+
+    await showDeleteAllContentWarningDialog(
+      context: context,
+      confirmation: confirmation,
+      ownedUsernameFuture: ownedUsernameFuture,
+      onConfirm:
+          ({
+            required bool burnUsername,
+            ({String name, String canonical})? ownedUsername,
+          }) => executeAccountDeletion(
+            context: context,
+            deletionService: deletionService,
+            authService: authService,
+            profileRepository: profileRepository,
+            burnUsername: burnUsername,
+            ownedUsername: ownedUsername,
+            confirmedPubkey: pubkey,
+            screenName: 'NostrSettingsScreen',
+          ),
     );
   }
 }
@@ -485,84 +547,4 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Open the account-deletion confirmation flow.
-///
-/// The single implementation shared by every surface that offers deletion —
-/// the Settings hub, Support Center, and the Danger Zone below — so the
-/// confirmation gate, the username-burn opt-in, and the irreversible-step
-/// ordering cannot drift between entry points. [screenName] is used for log
-/// attribution only.
-///
-/// Lives here rather than under `widgets/` because the progress overlay it uses
-/// is a dialog route, and the raw-dialog ratchet only permits those in files
-/// that already have them.
-///
-/// Does nothing when no account is signed in.
-Future<void> startAccountDeletionFlow({
-  required BuildContext context,
-  required WidgetRef ref,
-  required String screenName,
-}) async {
-  final deletionService = ref.read(accountDeletionServiceProvider);
-  final authService = ref.read(authServiceProvider);
-  final profileRepository = ref.read(profileRepositoryProvider);
-  final pubkey = authService.currentPublicKeyHex;
-  if (pubkey == null || pubkey.isEmpty) return;
-
-  // Kick off the burnable-handle lookup but do not await it: the dialog opens
-  // immediately and reveals the opt-in burn toggle once this resolves, so a
-  // slow name-server call never blocks the tap.
-  final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
-
-  // Resolve the local profile up front so the identity + username gate are
-  // ready when the dialog opens. Cache-first (usually instant) with a bounded
-  // network fallback; a timeout or miss degrades to npub + DELETE, never
-  // hangs.
-  final overlay = _ProgressOverlay.show(context);
-  UserProfile? profile;
-  try {
-    profile = await ref
-        .read(fetchUserProfileProvider(pubkey).future)
-        .timeout(_profileResolveTimeout, onTimeout: () => null);
-  } catch (_) {
-    profile = null;
-  } finally {
-    overlay.dismiss();
-  }
-  if (!context.mounted) return;
-
-  // The gate anchors on the shown profile identity (displayNip05) to confirm
-  // *which account* is being erased — deliberately distinct from the burn
-  // target (the owned @divine.video handle, which the burn toggle names for
-  // itself). The two can differ for an external-NIP-05 user who also owns a
-  // divine username; that divergence is intended, not a mismatch to reconcile.
-  final confirmation = DeleteAccountConfirmation(
-    pubkeyHex: pubkey,
-    displayName:
-        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
-    avatarUrl: profile?.picture,
-    handle: profile?.displayNip05,
-  );
-
-  await showDeleteAllContentWarningDialog(
-    context: context,
-    confirmation: confirmation,
-    ownedUsernameFuture: ownedUsernameFuture,
-    onConfirm:
-        ({
-          required bool burnUsername,
-          ({String name, String canonical})? ownedUsername,
-        }) => executeAccountDeletion(
-          context: context,
-          deletionService: deletionService,
-          authService: authService,
-          profileRepository: profileRepository,
-          burnUsername: burnUsername,
-          ownedUsername: ownedUsername,
-          confirmedPubkey: pubkey,
-          screenName: screenName,
-        ),
-  );
 }

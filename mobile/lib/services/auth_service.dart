@@ -54,6 +54,8 @@ const _kLastUsedNpubKey = 'last_used_npub';
 // _setupUserSession() once the user has explicitly signed back in.
 const _kSessionRecoveryAnchorKey = 'session_recovery_anchor_npub';
 
+const _accountDeletionSessionExpiryMargin = Duration(minutes: 10);
+
 /// Authentication state for the user
 enum AuthState {
   /// User is not authenticated (no keys stored)
@@ -2889,11 +2891,10 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// that fact, so a returning user is refused — after their content has already
   /// been broadcast for deletion. See #6335 / #4881.
   ///
-  /// Because [KeycastOAuth.getSession] returns null once the session has
-  /// expired, and [KeycastOAuth.getSessionOrRefresh] then refreshes, "the stored
-  /// session is gone or expired" is exactly "the next call will refresh and lose
-  /// authorization". That makes this a reliable pre-flight without decoding the
-  /// token.
+  /// Refresh-minted sessions are unexpired and can still sign Nostr RPCs, but
+  /// cannot authorize the server-side Keycast account deletion. Legacy sessions
+  /// with no grant marker are ambiguous, so this fails closed and asks the user
+  /// to sign in again before any irreversible publish.
   ///
   /// Only divineOAuth accounts are gated. Anonymous, imported-nsec, amber and
   /// bunker users have no Keycast account to delete, so gating them would block
@@ -2910,10 +2911,24 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     try {
       final session = await client.getSession();
-      if (session == null || !session.hasRpcAccess) {
+      final now = DateTime.now();
+      final expiresAt = session?.expiresAt;
+      final blockedReason = switch (session) {
+        null => 'no current session',
+        _ when !session.hasRpcAccess => 'no active RPC access',
+        _ when session.grantType != KeycastSession.authorizationCodeGrant =>
+          'session grant cannot authorize deletion',
+        _ when expiresAt == null => 'session has no expiry',
+        _
+            when expiresAt.difference(now) <
+                _accountDeletionSessionExpiryMargin =>
+          'session expires too soon',
+        _ => null,
+      };
+      if (blockedReason != null) {
         Log.warning(
-          'Account deletion blocked before publishing: Keycast session cannot '
-          'authorize deletion, re-authentication required',
+          'Account deletion blocked before publishing: $blockedReason, '
+          're-authentication required',
           name: 'AuthService',
           category: LogCategory.auth,
         );

@@ -7026,20 +7026,20 @@ class AppLocalizationsFil extends AppLocalizations {
       'Alisin ang account na ito sa device na ito?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Hindi namin natanggal ang account mo sa server. Mag-sign in muli at subukan ulit.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Mag-sign in muli para tanggalin ang account mo. Wala pang natanggal.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Nakahiling na ng pagtanggal ng account. Hindi namin naabot ang mga relay para ilista ang mga dati mong post, kaya hindi isa-isang hiniling na tanggalin ang mga iyon.';
+  String get deleteAccountServerDeletionFailed =>
+      'Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.';
 
   @override
   String get deleteAccountSuccess =>
       'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

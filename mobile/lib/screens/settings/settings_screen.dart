@@ -337,24 +337,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: () => context.push(DeveloperOptionsScreen.path),
                   ),
 
-                // Deletion is reachable from the Settings hub, not only from
-                // Nostr Settings — a name a user looking to delete their
-                // account has no reason to open. Shares the single deletion
-                // implementation in startAccountDeletionFlow.
-                if (isAuthenticated)
-                  _SettingsTile(
-                    divineIcon: DivineIconName.trash,
-                    title: context.l10n.nostrSettingsDeleteAccount,
-                    subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
-                    iconColor: VineTheme.error,
-                    titleColor: VineTheme.error,
-                    onTap: () => startAccountDeletionFlow(
-                      context: context,
-                      ref: ref,
-                      screenName: 'SettingsScreen',
-                    ),
-                  ),
-
                 const SizedBox(height: 24),
                 _VersionTile(appVersion: _appVersion),
               ],
@@ -645,7 +627,6 @@ class _SettingsTile extends StatelessWidget {
     this.divineIcon,
     this.icon,
     this.iconColor,
-    this.titleColor,
     this.subtitle,
   }) : assert(
          divineIcon != null || icon != null,
@@ -659,9 +640,6 @@ class _SettingsTile extends StatelessWidget {
   final VoidCallback onTap;
   final Color? iconColor;
 
-  /// Overrides the title colour, for destructive entries.
-  final Color? titleColor;
-
   @override
   Widget build(BuildContext context) {
     final Widget leadingWidget = divineIcon != null
@@ -674,12 +652,7 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       minTileHeight: 64,
       leading: leadingWidget,
-      title: Text(
-        title,
-        style: titleColor != null
-            ? VineTheme.titleMediumFont(color: titleColor!)
-            : VineTheme.titleMediumFont(),
-      ),
+      title: Text(title, style: VineTheme.titleMediumFont()),
       subtitle: subtitle != null
           ? Text(
               subtitle!,

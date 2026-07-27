@@ -6692,19 +6692,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountRemoveKeysTitle => '이 기기에서 이 계정을 제거할까요?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      '서버에서 계정을 삭제할 수 없었습니다. 다시 로그인한 후 재시도하세요.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      '계정을 삭제하려면 다시 로그인하세요. 아직 아무것도 삭제되지 않았습니다.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      '계정 삭제를 요청했습니다. 릴레이에 연결할 수 없어 기존 게시물을 확인하지 못했으므로 개별 삭제는 요청되지 않았습니다.';
+  String get deleteAccountServerDeletionFailed =>
+      '서버에서 계정을 삭제하지 못했어요. 연결을 확인하고 다시 시도해주세요.';
 
   @override
   String get deleteAccountSuccess => '삭제 요청을 보냈어요. 이 기기에서 로그아웃됐어요.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

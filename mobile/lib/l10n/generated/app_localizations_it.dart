@@ -7011,20 +7011,20 @@ class AppLocalizationsIt extends AppLocalizations {
       'Rimuovere questo account da questo dispositivo?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Non abbiamo potuto eliminare il tuo account sul server. Accedi di nuovo e riprova.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Accedi di nuovo per eliminare il tuo account. Non è stato ancora eliminato nulla.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Eliminazione dell’account richiesta. Non siamo riusciti a raggiungere i relay per elencare i tuoi post esistenti, quindi non ne è stata richiesta l’eliminazione singola.';
+  String get deleteAccountServerDeletionFailed =>
+      'Impossibile eliminare il tuo account dal server. Controlla la connessione e riprova.';
 
   @override
   String get deleteAccountSuccess =>
       'Richieste di eliminazione inviate. Sei disconnesso su questo dispositivo.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

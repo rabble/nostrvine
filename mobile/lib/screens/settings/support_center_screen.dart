@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
@@ -86,23 +85,6 @@ class SupportCenterScreen extends ConsumerWidget {
                   l10n.supportProofMode,
                 ),
               ),
-
-              // This report arrived from Support Center, so deletion has to be
-              // reachable from here too. Shares the single deletion
-              // implementation in startAccountDeletionFlow.
-              if (userPubkey != null && userPubkey.isNotEmpty)
-                _SupportTile(
-                  divineIcon: DivineIconName.trash,
-                  title: l10n.nostrSettingsDeleteAccount,
-                  subtitle: l10n.nostrSettingsDeleteAccountSubtitle,
-                  iconColor: VineTheme.error,
-                  titleColor: VineTheme.error,
-                  onTap: () => startAccountDeletionFlow(
-                    context: context,
-                    ref: ref,
-                    screenName: 'SupportCenterScreen',
-                  ),
-                ),
             ],
           ),
         ),
@@ -255,24 +237,13 @@ class SupportCenterScreen extends ConsumerWidget {
 
 class _SupportTile extends StatelessWidget {
   const _SupportTile({
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.icon,
-    this.divineIcon,
-    this.iconColor,
-    this.titleColor,
-  }) : assert(
-         icon != null || divineIcon != null,
-         '_SupportTile requires either icon or divineIcon',
-       );
+  });
 
-  final IconData? icon;
-  final DivineIconName? divineIcon;
-  final Color? iconColor;
-
-  /// Overrides the title colour, for destructive entries.
-  final Color? titleColor;
+  final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -280,16 +251,11 @@ class _SupportTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: divineIcon != null
-          ? DivineIcon(
-              icon: divineIcon!,
-              color: iconColor ?? VineTheme.vineGreen,
-            )
-          : Icon(icon, color: iconColor ?? VineTheme.vineGreen),
+      leading: Icon(icon, color: VineTheme.vineGreen),
       title: Text(
         title,
-        style: TextStyle(
-          color: titleColor ?? VineTheme.whiteText,
+        style: const TextStyle(
+          color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),

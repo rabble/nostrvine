@@ -7107,20 +7107,20 @@ class AppLocalizationsPl extends AppLocalizations {
       'Usunąć to konto z tego urządzenia?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Nie udało się usunąć konta na serwerze. Zaloguj się ponownie i spróbuj jeszcze raz.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Zaloguj się ponownie, aby usunąć konto. Nic nie zostało jeszcze usunięte.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Zażądano usunięcia konta. Nie udało się połączyć z relayami, aby pobrać listę twoich istniejących postów, więc nie zażądano ich pojedynczego usunięcia.';
+  String get deleteAccountServerDeletionFailed =>
+      'Nie udało się usunąć twojego konta z serwera. Sprawdź połączenie i spróbuj ponownie.';
 
   @override
   String get deleteAccountSuccess =>
       'Żądania usunięcia wysłane. Wylogowano cię na tym urządzeniu.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

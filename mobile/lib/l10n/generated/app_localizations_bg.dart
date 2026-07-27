@@ -7017,20 +7017,20 @@ class AppLocalizationsBg extends AppLocalizations {
       'Да премахнем този акаунт от това устройство?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Не успяхме да изтрием акаунта ти на сървъра. Влез отново и опитай пак.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Влез отново, за да изтриеш акаунта си. Още нищо не е изтрито.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Заявено е изтриване на акаунта. Не успяхме да се свържем с релетата, за да изброим съществуващите ти публикации, така че тяхното изтриване не беше заявено поединично.';
+  String get deleteAccountServerDeletionFailed =>
+      'Не успяхме да изтрием акаунта ти от сървъра. Провери връзката си и опитай пак.';
 
   @override
   String get deleteAccountSuccess =>
       'Заявките за изтриване са изпратени. Отписан си на това устройство.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

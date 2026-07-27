@@ -7029,20 +7029,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Konto von diesem Gerät entfernen?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Wir konnten dein Konto auf dem Server nicht löschen. Melde dich erneut an und versuche es noch einmal.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Melde dich erneut an, um dein Konto zu löschen. Es wurde noch nichts gelöscht.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Kontolöschung angefordert. Wir konnten die Relays nicht erreichen, um deine vorhandenen Beiträge aufzulisten, daher wurde für diese keine einzelne Löschung angefordert.';
+  String get deleteAccountServerDeletionFailed =>
+      'Dein Konto konnte nicht vom Server gelöscht werden. Bitte prüfe deine Verbindung und versuch es erneut.';
 
   @override
   String get deleteAccountSuccess =>
       'Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

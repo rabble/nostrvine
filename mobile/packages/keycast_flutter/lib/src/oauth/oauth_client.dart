@@ -180,7 +180,10 @@ class KeycastOAuth {
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final tokenResponse = TokenResponse.fromJson(json);
-      var session = KeycastSession.fromTokenResponse(tokenResponse);
+      var session = KeycastSession.fromTokenResponse(
+        tokenResponse,
+        grantType: KeycastSession.refreshTokenGrant,
+      );
       if (userPubkey != null && userPubkey.isNotEmpty) {
         session = session.copyWith(userPubkey: userPubkey);
       }

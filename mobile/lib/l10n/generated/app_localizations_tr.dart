@@ -6923,20 +6923,20 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu hesap bu cihazdan kaldırılsın mı?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Hesabını sunucuda silemedik. Tekrar giriş yapıp yeniden dene.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Hesabını silmek için tekrar giriş yap. Henüz hiçbir şey silinmedi.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Hesap silme isteği gönderildi. Mevcut gönderilerini listelemek için rölelere ulaşamadık, bu yüzden onlar tek tek silinmek üzere istenmedi.';
+  String get deleteAccountServerDeletionFailed =>
+      'Hesabın sunucudan silinemedi. Lütfen bağlantını kontrol et ve tekrar dene.';
 
   @override
   String get deleteAccountSuccess =>
       'Silme istekleri gönderildi. Bu cihazda oturumun kapatıldı.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

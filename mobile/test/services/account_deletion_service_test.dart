@@ -9,10 +9,31 @@ import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
+import 'package:nostr_sdk/relay/relay_type.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  @override
+  Future<({List<Event> events, bool timedOut, bool noRelays})>
+  queryEventsDetailed(
+    List<Filter> filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    bool sendAfterAuth = false,
+    bool useCache = true,
+    bool useQueryPool = true,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final events = await queryEvents(filters);
+    return (
+      events: events,
+      timedOut: lastQueryTimedOut,
+      noRelays: connectedRelays.isEmpty,
+    );
+  }
+}
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -90,6 +111,11 @@ void main() {
       when(
         () => mockNostrService.queryEvents(any()),
       ).thenAnswer((_) async => []);
+      when(() => mockNostrService.isDisposed).thenReturn(false);
+      when(() => mockNostrService.lastQueryTimedOut).thenReturn(false);
+      when(
+        () => mockNostrService.connectedRelays,
+      ).thenReturn(['wss://relay.example.com']);
     });
 
     test('createNip62Event should create kind 62 event', () async {
@@ -655,9 +681,9 @@ void main() {
           });
 
           var publishCallCount = 0;
-          when(
-            () => mockNostrService.publishEventAwaitOk(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrService.publishEventAwaitOk(any())).thenAnswer((
+            _,
+          ) async {
             publishCallCount++;
             // First publish is the batch kind-5; second is NIP-62.
             if (publishCallCount == 1) return _noRelayResponse;
@@ -671,6 +697,7 @@ void main() {
           // was unreachable for kind-5.
           expect(result.success, isTrue);
           expect(result.deletedEventsCount, equals(0));
+          expect(result.contentDeletionIncomplete, isTrue);
         },
       );
 
@@ -721,9 +748,9 @@ void main() {
           });
 
           var publishCallCount = 0;
-          when(
-            () => mockNostrService.publishEventAwaitOk(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrService.publishEventAwaitOk(any())).thenAnswer((
+            _,
+          ) async {
             publishCallCount++;
             // First publish is the batch kind-5; second is NIP-62.
             if (publishCallCount == 1) return _rejected;
@@ -781,9 +808,9 @@ void main() {
           id: 'kind62_1',
         );
 
-        when(() => mockNostrService.queryEvents(any())).thenAnswer(
-          (_) async => [note, priorDeletion, priorVanish],
-        );
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [note, priorDeletion, priorVanish]);
 
         final signedKinds = <int>[];
         when(
@@ -939,43 +966,40 @@ void main() {
       // Regression for #6335: a failed relay query was swallowed into an empty
       // list, so the entire kind-5 sweep was skipped while the irreversible
       // vanish was still published — and the caller reported plain success.
-      test(
-        'reports contentQueryFailed when the relay query throws',
-        () async {
-          when(() => mockAuthService.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthService.currentPublicKeyHex,
-          ).thenReturn(testPublicKey);
-          when(
-            () => mockNostrService.queryEvents(any()),
-          ).thenThrow(Exception('relay unreachable'));
-          when(
-            () => mockAuthService.createAndSignEvent(
-              kind: any(named: 'kind'),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
-          ).thenAnswer(
-            (_) async => createTestEvent(
-              pubkey: testPublicKey,
-              kind: 62,
-              tags: const [
-                ['relay', 'ALL_RELAYS'],
-              ],
-              content: 'deletion',
-            ),
-          );
-          when(
-            () => mockNostrService.publishEventAwaitOk(any()),
-          ).thenAnswer((_) async => _confirmed);
+      test('reports contentQueryFailed when the relay query throws', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(testPublicKey);
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenThrow(Exception('relay unreachable'));
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: const [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          ),
+        );
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
 
-          final result = await service.deleteAccount();
+        final result = await service.deleteAccount();
 
-          expect(result.success, isTrue);
-          expect(result.contentQueryFailed, isTrue);
-          expect(result.deletedEventsCount, equals(0));
-        },
-      );
+        expect(result.success, isTrue);
+        expect(result.contentQueryFailed, isTrue);
+        expect(result.deletedEventsCount, equals(0));
+      });
 
       test('contentQueryFailed is false on a healthy query', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -1010,6 +1034,69 @@ void main() {
         expect(result.success, isTrue);
         expect(result.contentQueryFailed, isFalse);
       });
+
+      test('reports contentQueryFailed when no relay is connected', () async {
+        when(
+          () => mockNostrService.connectedRelays,
+        ).thenReturn(const <String>[]);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: const [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          ),
+        );
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(result.contentQueryFailed, isTrue);
+        expect(result.deletedEventsCount, equals(0));
+      });
+
+      test(
+        'reports contentQueryFailed when the relay query times out',
+        () async {
+          when(() => mockNostrService.lastQueryTimedOut).thenReturn(true);
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 62,
+              tags: const [
+                ['relay', 'ALL_RELAYS'],
+              ],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _confirmed);
+
+          final result = await service.deleteAccount();
+
+          expect(result.success, isTrue);
+          expect(result.contentQueryFailed, isTrue);
+          expect(result.deletedEventsCount, equals(0));
+        },
+      );
     });
 
     group('expectedPubkey binding', () {

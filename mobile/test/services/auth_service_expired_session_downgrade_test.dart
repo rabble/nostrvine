@@ -195,6 +195,108 @@ void main() {
       };
     }
 
+    Future<AuthService> arrangeInitializedDivineOAuthService(
+      KeycastSession session,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
+      final privateKeyHex = generatePrivateKey();
+      final container = SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
+      final boundSession = session.copyWith(userPubkey: container.publicKeyHex);
+      secureStorage['keycast_session'] = jsonEncode(boundSession.toJson());
+      if (boundSession.refreshToken != null) {
+        secureStorage['keycast_refresh_token'] = boundSession.refreshToken!;
+      }
+      secureStorage['nostr_primary_key'] =
+          'privateKeyHex:$privateKeyHex'
+          '|publicKeyHex:${container.publicKeyHex}'
+          '|npub:${container.npub}';
+
+      when(
+        () => mockOAuthClient.getSession(),
+      ).thenAnswer((_) async => boundSession);
+      when(
+        () => mockOAuthClient.refreshSession(
+          userPubkey: any(named: 'userPubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final authService = createAuthService();
+      await runIgnoringMockedHttpErrors(authService.initialize);
+      return authService;
+    }
+
+    group('account deletion readiness', () {
+      test('allows a fresh authorization-code session', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          KeycastSession(
+            bunkerUrl: 'https://login.divine.video/api/nostr',
+            accessToken: 'fresh_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+            refreshToken: 'refresh_token_still_valid',
+            grantType: KeycastSession.authorizationCodeGrant,
+          ),
+        );
+
+        expect(
+          await authService.checkAccountDeletionReadiness(),
+          AccountDeletionReadiness.ready,
+        );
+      });
+
+      test('blocks a refresh-minted session', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          KeycastSession(
+            bunkerUrl: 'https://login.divine.video/api/nostr',
+            accessToken: 'refreshed_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+            refreshToken: 'next_refresh_token',
+            grantType: KeycastSession.refreshTokenGrant,
+          ),
+        );
+
+        expect(
+          await authService.checkAccountDeletionReadiness(),
+          AccountDeletionReadiness.requiresReauthentication,
+        );
+      });
+
+      test('blocks a legacy session with no grant marker', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          KeycastSession(
+            bunkerUrl: 'https://login.divine.video/api/nostr',
+            accessToken: 'legacy_token',
+            expiresAt: DateTime.now().add(const Duration(hours: 1)),
+            refreshToken: 'refresh_token_still_valid',
+          ),
+        );
+
+        expect(
+          await authService.checkAccountDeletionReadiness(),
+          AccountDeletionReadiness.requiresReauthentication,
+        );
+      });
+
+      test('blocks a session expiring inside the deletion window', () async {
+        final authService = await arrangeInitializedDivineOAuthService(
+          KeycastSession(
+            bunkerUrl: 'https://login.divine.video/api/nostr',
+            accessToken: 'nearly_expired_token',
+            expiresAt: DateTime.now().add(const Duration(minutes: 2)),
+            refreshToken: 'refresh_token_still_valid',
+            grantType: KeycastSession.authorizationCodeGrant,
+          ),
+        );
+
+        expect(
+          await authService.checkAccountDeletionReadiness(),
+          AccountDeletionReadiness.requiresReauthentication,
+        );
+      });
+    });
+
     test(
       'refresh fails + local keys exist → auth source stays divineOAuth',
       () async {

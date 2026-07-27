@@ -531,9 +531,9 @@ Future<void> executeAccountDeletion({
       dismissDialog();
       if (context.mounted) {
         final text = context.l10n.deleteAccountReauthRequired;
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(text, error: true),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
         announceOutcome(text);
       }
       return;
@@ -598,6 +598,28 @@ Future<void> executeAccountDeletion({
       }
     }
 
+    final finalReadiness = await authService.checkAccountDeletionReadiness();
+    if (finalReadiness == AccountDeletionReadiness.requiresReauthentication) {
+      Log.warning(
+        'Deletion blocked after username burn step: session cannot authorize '
+        'server-side account deletion',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+      dismissDialog();
+      if (context.mounted) {
+        final text = (burnCommitted && burnReleasedText != null)
+            ? burnReleasedText
+            : context.l10n.deleteAccountReauthRequired;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        announceOutcome(text);
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
     // Publish the NIP-62 deletion request (requires working signer).
     final result = await deletionService.deleteAccount(
       onProgress: cubit.updateProgress,
@@ -621,10 +643,12 @@ Future<void> executeAccountDeletion({
         if (context.mounted) {
           final text = (burnCommitted && burnReleasedText != null)
               ? burnReleasedText
+              : _keycastErrorRequiresSignIn(keycastError)
+              ? context.l10n.deleteAccountReauthRequired
               : context.l10n.deleteAccountServerDeletionFailed;
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(text, error: true),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
           announceOutcome(text);
         }
         return;
@@ -670,12 +694,13 @@ Future<void> executeAccountDeletion({
       if (context.mounted) {
         // When the relay query that enumerates existing content failed, no
         // per-item deletion request was sent for anything the user had already
-        // posted — only the account-wide vanish. Saying "deletion requests
-        // sent" would overstate what happened.
+        // posted. When a kind-5 batch was not confirmed, some per-item requests
+        // also did not land. Saying "deletion requests sent" would overstate
+        // either outcome.
         final snackbarText =
             keyDeletionWarning ??
             localDataDeletionFailure ??
-            (result.contentQueryFailed
+            (result.contentQueryFailed || result.contentDeletionIncomplete
                 ? context.l10n.deleteAccountSuccessContentUnverified
                 : context.l10n.deleteAccountSuccess);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -703,9 +728,9 @@ Future<void> executeAccountDeletion({
             : result.accountChanged
             ? accountChangedText
             : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(text, error: true),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
         announceOutcome(text);
       }
     }
@@ -715,6 +740,14 @@ Future<void> executeAccountDeletion({
     // Ensure dialog is dismissed even if an exception occurred
     dismissDialog();
   }
+}
+
+bool _keycastErrorRequiresSignIn(String? error) {
+  if (error == null) return false;
+  final normalized = error.toLowerCase();
+  return normalized.contains('requires signing in again') ||
+      normalized.contains('session expired') ||
+      normalized.contains('invalid or expired token');
 }
 
 /// Cubit for managing account deletion progress state.

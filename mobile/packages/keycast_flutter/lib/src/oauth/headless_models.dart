@@ -335,7 +335,6 @@ class DeleteAccountResult {
   factory DeleteAccountResult.error(String message) {
     return DeleteAccountResult(success: false, error: message);
   }
-
   final bool success;
   final String? message;
   final String? error;

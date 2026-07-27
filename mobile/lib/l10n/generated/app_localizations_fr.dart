@@ -7035,20 +7035,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Retirer ce compte de cet appareil ?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Nous n’avons pas pu supprimer ton compte sur le serveur. Reconnecte-toi et réessaie.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Reconnecte-toi pour supprimer ton compte. Rien n’a encore été supprimé.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Suppression du compte demandée. Nous n’avons pas pu joindre les relais pour lister tes publications existantes, leur suppression individuelle n’a donc pas été demandée.';
+  String get deleteAccountServerDeletionFailed =>
+      'Impossible de supprimer ton compte du serveur. Vérifie ta connexion et réessaie.';
 
   @override
   String get deleteAccountSuccess =>
       'Demandes de suppression envoyées. Tu es déconnecté sur cet appareil.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>

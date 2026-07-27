@@ -6919,20 +6919,20 @@ class AppLocalizationsId extends AppLocalizations {
       'Hapus akun ini dari perangkat ini?';
 
   @override
-  String get deleteAccountServerDeletionFailed =>
-      'Kami tidak bisa menghapus akunmu di server. Masuk lagi lalu coba sekali lagi.';
-
-  @override
   String get deleteAccountReauthRequired =>
-      'Masuk lagi untuk menghapus akunmu. Belum ada yang dihapus.';
+      'Sign in again to delete your account. Nothing has been deleted yet.';
 
   @override
-  String get deleteAccountSuccessContentUnverified =>
-      'Penghapusan akun diminta. Kami tidak bisa menjangkau relay untuk mendaftar postinganmu yang ada, jadi penghapusannya tidak diminta satu per satu.';
+  String get deleteAccountServerDeletionFailed =>
+      'Tidak bisa menghapus akunmu dari server. Silakan periksa koneksimu dan coba lagi.';
 
   @override
   String get deleteAccountSuccess =>
       'Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Account deletion requested. Some existing posts could not be individually confirmed for deletion.';
 
   @override
   String get deleteAccountWarningBody =>
