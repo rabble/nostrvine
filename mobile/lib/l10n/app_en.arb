@@ -3144,6 +3144,14 @@
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
   },
+  "inboxSupportRowTitle": "Divine Moderation",
+  "@inboxSupportRowTitle": {
+    "description": "Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale."
+  },
+  "inboxSupportRowSubtitle": "Bugs, moderation, account stuff — we're listening.",
+  "@inboxSupportRowSubtitle": {
+    "description": "One-line summary under the pinned Divine Moderation support row, describing what the moderation team can help with."
+  },
   "inboxSearchEmptyTitle": "No matches",
   "@inboxSearchEmptyTitle": {
     "description": "Shown in place of the conversation list when an inbox search matches nothing."

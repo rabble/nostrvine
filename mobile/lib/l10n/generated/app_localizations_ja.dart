@@ -5422,6 +5422,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxSearchHint => 'メッセージを検索';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle => '不具合、モデレーション、アカウントのこと — お聞きします。';
+
+  @override
   String get inboxSearchEmptyTitle => '一致なし';
 
   @override

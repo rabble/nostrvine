@@ -5629,6 +5629,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxSearchHint => 'Cari pesan';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Bug, moderasi, urusan akun — kami mendengarkan.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Tidak ada hasil';
 
   @override

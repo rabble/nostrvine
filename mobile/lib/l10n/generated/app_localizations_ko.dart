@@ -5442,6 +5442,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxSearchHint => '메시지 검색';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle => '버그, 모더레이션, 계정 문제 — 듣고 있어요.';
+
+  @override
   String get inboxSearchEmptyTitle => '일치하는 항목 없음';
 
   @override

@@ -13,6 +13,7 @@ import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart'
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
@@ -95,6 +96,11 @@ class InboxPage extends ConsumerWidget {
               contentBlocklistRepository: blocklistRepository,
               profileRepository: profileRepository,
               protectedMinorInboxGate: protectedMinorInboxGate,
+              // Pinned Divine Moderation support row (#6283). The identity is
+              // the release-pinned one — the same anchor the protected-minor
+              // gate resolves against — so the row can never point somewhere
+              // the gate would not approve.
+              supportRowPubkey: kModerationPubkeyHex,
             )..add(const ConversationListStarted()),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented

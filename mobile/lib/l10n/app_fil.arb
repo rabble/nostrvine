@@ -1476,6 +1476,8 @@
     "inboxUnreadEmptyTitle": "Nabasa mo na lahat",
     "inboxUnreadEmptySubtitle": "Walang hindi pa nababasang mensahe.",
     "inboxSearchHint": "Maghanap ng mga mensahe",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "Mga bug, moderation, usaping account — nakikinig kami.",
     "inboxSearchEmptyTitle": "Walang tugma",
     "inboxSearchEmptySubtitle": "Subukan ang ibang pangalan o salita.",
     "inboxActionMute": "I-mute ang conversation",

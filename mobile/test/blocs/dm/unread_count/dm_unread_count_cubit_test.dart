@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/protected_minor_inbox_gate.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
@@ -584,6 +585,149 @@ void main() {
       acceptedController.add(const []);
       potentialController.add(const []);
       await _settle();
+    });
+
+    group('pinned support row parity (#6283)', () {
+      const moderation = kModerationPubkeyHex;
+      final legacyModeration = kLegacyModerationPubkeys.first;
+      final supportId = DmRepository.computeConversationId([_me, moderation]);
+      final legacySupportId = DmRepository.computeConversationId([
+        _me,
+        legacyModeration,
+      ]);
+
+      DmUnreadCountCubit buildPinAwareCubit({
+        ProtectedMinorInboxGate? gate,
+      }) => DmUnreadCountCubit(
+        dmRepository: dmRepository,
+        followRepository: followRepository,
+        protectedMinorInboxGate: gate,
+        recomputeDebounce: Duration.zero,
+        supportRowPubkey: moderation,
+      );
+
+      test(
+        'counts an inbound-only unread moderation thread, which the inbox '
+        'renders as the pin rather than as a request',
+        () async {
+          final cubit = buildPinAwareCubit();
+          addTearDown(cubit.close);
+
+          // Nobody is followed, so both classify as requests. The moderation
+          // one becomes the pinned row (dot and all); the stranger stays in
+          // Requests, which this count has never included.
+          acceptedController.add(const []);
+          potentialController.add([
+            _convo(
+              supportId,
+              peer: moderation,
+              isRead: false,
+              currentUserHasSent: false,
+            ),
+            _convo(
+              'stranger',
+              peer: _bob,
+              isRead: false,
+              currentUserHasSent: false,
+            ),
+          ]);
+          await _settle();
+
+          expect(cubit.state, equals(1));
+        },
+      );
+
+      test(
+        'counts a retired-key moderation thread, matching the list that keeps '
+        'legacy history visible',
+        () async {
+          final cubit = buildPinAwareCubit();
+          addTearDown(cubit.close);
+
+          acceptedController.add([
+            _convo(
+              legacySupportId,
+              peer: legacyModeration,
+              isRead: false,
+              currentUserHasSent: true,
+            ),
+          ]);
+          potentialController.add(const []);
+          await _settle();
+
+          // The inbox keeps this legacy-history row visible until #6416 gives
+          // it an archived read-only presentation, so the badge can point at a
+          // row the user can still find.
+          expect(cubit.state, equals(1));
+        },
+      );
+
+      test('counts an adopted moderation thread exactly once', () async {
+        final cubit = buildPinAwareCubit();
+        addTearDown(cubit.close);
+
+        // The accepted and potential-request streams are independent, so a
+        // currentUserHasSent flip can be observed in one before the other.
+        final thread = _convo(
+          supportId,
+          peer: moderation,
+          isRead: false,
+          currentUserHasSent: true,
+        );
+        acceptedController.add([thread]);
+        potentialController.add([thread]);
+        await _settle();
+
+        expect(cubit.state, equals(1));
+      });
+
+      test(
+        'excludes a pinned thread the protected-minor gate rejects (#176)',
+        () async {
+          final cubit = buildPinAwareCubit(
+            gate: _FakeInboxGate(approved: const {}),
+          );
+          addTearDown(cubit.close);
+
+          acceptedController.add(const []);
+          potentialController.add([
+            _convo(
+              supportId,
+              peer: moderation,
+              isRead: false,
+              currentUserHasSent: false,
+            ),
+          ]);
+          await _settle();
+
+          // The pin is filtered out of the list for this user, so the badge
+          // must not leak its existence.
+          expect(cubit.state, equals(0));
+        },
+      );
+
+      test(
+        'counts exactly as before when no support pubkey is injected',
+        () async {
+          final cubit = buildCubit();
+          addTearDown(cubit.close);
+
+          acceptedController.add([
+            _convo(
+              supportId,
+              peer: moderation,
+              isRead: false,
+              currentUserHasSent: true,
+            ),
+          ]);
+          potentialController.add(const []);
+          await _settle();
+
+          // Degrades to the un-pinned behaviour rather than partitioning
+          // against an empty key.
+          expect(cubit.state, equals(1));
+        },
+      );
     });
   });
 }

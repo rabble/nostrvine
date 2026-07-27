@@ -5726,6 +5726,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxSearchHint => 'Rechercher des messages';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Bugs, modération, questions de compte — on vous écoute.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Aucun résultat';
 
   @override

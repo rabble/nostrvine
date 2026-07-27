@@ -2329,6 +2329,8 @@
     "inboxUnreadEmptyTitle": "すべて既読です",
     "inboxUnreadEmptySubtitle": "未読メッセージはありません。",
     "inboxSearchHint": "メッセージを検索",
+    "inboxSupportRowTitle": "Divine Moderation",
+    "inboxSupportRowSubtitle": "不具合、モデレーション、アカウントのこと — お聞きします。",
     "inboxSearchEmptyTitle": "一致なし",
     "inboxSearchEmptySubtitle": "別の名前や言葉で試してください。",
     "inboxRemoveConfirmBody": "{displayName}との会話が削除されます。この操作は取り消せません。",

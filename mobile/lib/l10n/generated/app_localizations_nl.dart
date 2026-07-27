@@ -5678,6 +5678,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxSearchHint => 'Berichten zoeken';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Bugs, moderatie, accountzaken — we luisteren.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Geen resultaten';
 
   @override

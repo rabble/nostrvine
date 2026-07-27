@@ -5722,6 +5722,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxSearchHint => 'Maghanap ng mga mensahe';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Mga bug, moderation, usaping account — nakikinig kami.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Walang tugma';
 
   @override

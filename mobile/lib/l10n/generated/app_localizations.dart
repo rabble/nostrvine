@@ -9936,6 +9936,18 @@ abstract class AppLocalizations {
   /// **'Search messages'**
   String get inboxSearchHint;
 
+  /// Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Moderation'**
+  String get inboxSupportRowTitle;
+
+  /// One-line summary under the pinned Divine Moderation support row, describing what the moderation team can help with.
+  ///
+  /// In en, this message translates to:
+  /// **'Bugs, moderation, account stuff — we\'re listening.'**
+  String get inboxSupportRowSubtitle;
+
   /// Shown in place of the conversation list when an inbox search matches nothing.
   ///
   /// In en, this message translates to:

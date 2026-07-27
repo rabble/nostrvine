@@ -9,11 +9,14 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_view.dart';
+import 'package:openvine/screens/inbox/message_requests/widgets/request_tile.dart';
 import 'package:openvine/services/auth_service.dart';
 
 import '../../../helpers/go_router.dart';
@@ -33,6 +36,8 @@ final _dmRepoSwap = StateProvider<int>((ref) => 0);
 void main() {
   const testPubkey =
       'aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd';
+  const strangerPubkey =
+      '1122334411223344112233441122334411223344112233441122334411223344';
 
   group(MessageRequestsPage, () {
     late _MockDmRepository mockDmRepository;
@@ -84,11 +89,19 @@ void main() {
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());
+      // Read by isDmRestrictedProvider once the protected-minor gate actually
+      // filters something — i.e. as soon as the request list is non-empty.
+      when(
+        () => mockAuthService.authenticationSource,
+      ).thenReturn(AuthenticationSource.importedKeys);
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
       when(
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream.empty());
+      // Nobody is followed, so an unreplied conversation classifies as a
+      // request — which is what this page renders.
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
     });
 
     test('has correct route constants', () {
@@ -113,6 +126,56 @@ void main() {
 
         expect(find.byType(MessageRequestsView), findsOneWidget);
       });
+
+      // This page builds its OWN ConversationListBloc. Without the support-row
+      // wiring the moderation thread stays here while the inbox lifts it into
+      // the pinned row — same thread on two surfaces, and the inbox's request
+      // banner counts one fewer than this page lists (#6388 review).
+      testWidgets(
+        'does not list the moderation thread among message requests',
+        (tester) async {
+          final supportId = DmRepository.computeConversationId([
+            testPubkey,
+            kModerationPubkeyHex,
+          ]);
+          when(mockDmRepository.watchPotentialRequests).thenAnswer(
+            (_) => Stream.value([
+              DmConversation(
+                id: supportId,
+                participantPubkeys: const [testPubkey, kModerationPubkeyHex],
+                isGroup: false,
+                createdAt: 1700000000,
+                lastMessageTimestamp: 1700000000,
+                isRead: false,
+              ),
+              DmConversation(
+                id: 'stranger-request',
+                participantPubkeys: const [testPubkey, strangerPubkey],
+                isGroup: false,
+                createdAt: 1700000100,
+                lastMessageTimestamp: 1700000100,
+                isRead: false,
+              ),
+            ]),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: const MessageRequestsPage(),
+              mockAuthService: mockAuthService,
+              mockFollowRepository: mockFollowRepository,
+              additionalOverrides: [
+                dmRepositoryProvider.overrideWithValue(mockDmRepository),
+                goRouterProvider.overrideWithValue(mockGoRouter),
+              ],
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(RequestTile), findsOneWidget);
+        },
+      );
     });
 
     // Same defect as InboxPage: the keepAlive `dmRepositoryProvider` rebuilds a

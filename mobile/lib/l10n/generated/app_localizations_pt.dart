@@ -5691,6 +5691,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxSearchHint => 'Pesquisar mensagens';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Bugs, moderação, questões de conta — estamos ouvindo.';
+
+  @override
   String get inboxSearchEmptyTitle => 'Sem resultados';
 
   @override

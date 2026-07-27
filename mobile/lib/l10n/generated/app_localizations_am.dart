@@ -5541,6 +5541,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxSearchHint => 'መልዕክቶችን ፈልግ';
 
   @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle => 'ሳንካዎች፣ ማጣራት፣ የመለያ ጉዳዮች — እያዳመጥን ነው።';
+
+  @override
   String get inboxSearchEmptyTitle => 'ምንም አልተገኘም';
 
   @override
