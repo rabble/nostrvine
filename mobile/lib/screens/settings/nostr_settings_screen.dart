@@ -161,6 +161,12 @@ class _RemoveKeysTile extends StatelessWidget {
       onConfirm: () async {
         if (!context.mounted) return;
 
+        // Resolved before the await: the spinner is an overlay entry, not a
+        // route, so a back press during sign-out pops this screen instead of
+        // the spinner. The app-level messenger outlives that pop; a
+        // post-await `ScaffoldMessenger.of(context)` would not, and the user
+        // would be left with no word on a key deletion that failed.
+        final messenger = ScaffoldMessenger.of(context);
         final progressOverlay = ModalProgressOverlay.show(context);
 
         try {
@@ -175,22 +181,17 @@ class _RemoveKeysTile extends StatelessWidget {
           progressOverlay.dismiss();
           // Platform key deletion failed — user stays signed in and can
           // retry without having to log back in.
-          if (!context.mounted) return;
-
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(
               couldNotRemoveKeysMessage,
               error: true,
             ),
           );
-          return;
         } catch (e) {
           progressOverlay.dismiss();
-          if (!context.mounted) return;
-
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(
               failedToRemoveKeysFn('$e'),
               error: true,
