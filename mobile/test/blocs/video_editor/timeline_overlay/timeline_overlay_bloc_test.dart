@@ -1569,6 +1569,66 @@ void main() {
         verify: (bloc) {
           final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
           expect(sound.endTime, const Duration(milliseconds: 4500));
+          // The bar alone is not enough: the preview player builds its window
+          // from the item and is only re-synced when this counter moves, so
+          // without the bump the sound keeps playing the truncated 3s.
+          expect(bloc.state.audioTracksPlayerRevision, 1);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not re-sync the player mid clip-trim drag',
+        build: TimelineOverlayBloc.new,
+        // The total changes every frame of the drag, so bumping here would
+        // tear down and reschedule native audio per frame. The bar still
+        // follows; only the player bump waits.
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(seconds: 6),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 6),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(seconds: 3),
+              isClipTrimDragging: true,
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(seconds: 3));
+          expect(bloc.state.audioTracksPlayerRevision, 0);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not re-sync the player when no sound window moved',
+        build: TimelineOverlayBloc.new,
+        // A layer clamp must not churn the native audio tracks.
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'layer-1',
+              type: TimelineOverlayType.layer,
+              start: const Duration(seconds: 2),
+              end: const Duration(seconds: 10),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 5)),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.audioTracksPlayerRevision, 0);
         },
       );
 

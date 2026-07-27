@@ -644,28 +644,45 @@ class TimelineOverlayBloc
 
     final tracksById = {for (final track in state.audioTracks) track.id: track};
 
+    // The preview player builds each sound's window from the overlay item, and
+    // only re-reads it when audioTracksPlayerRevision moves — the track list
+    // itself is untouched here, so Equatable would otherwise let the player
+    // keep the window it was handed before this re-clamp.
+    var soundWindowChanged = false;
     final updated = <TimelineOverlayItem>[];
     for (final item in state.items) {
-      if (item.startTime >= totalDuration) continue;
+      final isSound = item.type == TimelineOverlayType.sound;
+      if (item.startTime >= totalDuration) {
+        soundWindowChanged = soundWindowChanged || isSound;
+        continue;
+      }
 
-      final track = item.type == TimelineOverlayType.sound
-          ? tracksById[item.id]
-          : null;
+      final track = isSound ? tracksById[item.id] : null;
       final clampedEnd = _clampEnd(
         track == null ? item.endTime : _soundWindowEnd(track, totalDuration),
         totalDuration,
       );
-      if (clampedEnd <= item.startTime) continue;
+      if (clampedEnd <= item.startTime) {
+        soundWindowChanged = soundWindowChanged || isSound;
+        continue;
+      }
 
-      updated.add(
-        clampedEnd == item.endTime ? item : item.copyWith(endTime: clampedEnd),
-      );
+      if (clampedEnd == item.endTime) {
+        updated.add(item);
+        continue;
+      }
+      soundWindowChanged = soundWindowChanged || isSound;
+      updated.add(item.copyWith(endTime: clampedEnd));
     }
 
     emit(
       state.copyWith(
         items: _recalculateRows(updated),
         timelineMarkers: _clampMarkers(state.timelineMarkers, totalDuration),
+        audioTracksPlayerRevision:
+            soundWindowChanged && !event.isClipTrimDragging
+            ? state.audioTracksPlayerRevision + 1
+            : state.audioTracksPlayerRevision,
       ),
     );
   }

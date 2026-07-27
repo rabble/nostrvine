@@ -189,7 +189,10 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             // shortening while a trim gesture is active.
             final overlayBloc = context.read<TimelineOverlayBloc>();
             overlayBloc.add(
-              TimelineOverlayTotalDurationChanged(state.totalDuration),
+              TimelineOverlayTotalDurationChanged(
+                state.totalDuration,
+                isClipTrimDragging: state.isTrimDragging,
+              ),
             );
             final rebasedMarkers = _rebasedClipTrimMarkers(state.clips);
             if (rebasedMarkers != null) {
