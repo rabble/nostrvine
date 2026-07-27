@@ -5664,6 +5664,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversazione rimossa';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Alcune chat non sono state ripristinate del tutto';
+
+  @override
+  String get inboxRestoreRetryAction => 'Riprova';
+
+  @override
   String get inboxRestoringMessages => 'Ripristino dei messaggi…';
 
   @override

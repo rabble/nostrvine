@@ -5765,6 +5765,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversație eliminată';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Unele conversații nu s-au restaurat complet';
+
+  @override
+  String get inboxRestoreRetryAction => 'Reîncearcă';
+
+  @override
   String get inboxRestoringMessages => 'Se restaurează mesajele tale…';
 
   @override

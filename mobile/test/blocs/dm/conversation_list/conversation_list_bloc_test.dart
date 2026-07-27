@@ -1237,6 +1237,102 @@ void main() {
             // correctly classified as a request.
             expect(bloc.state.requestConversations, hasLength(1));
             expect(bloc.state.conversations, isEmpty);
+            // …and the gate is no longer costing the user anything.
+            expect(bloc.state.requestsWithheld, isFalse);
+          },
+        );
+
+        blocTest<ConversationListBloc, ConversationListState>(
+          'flags requestsWithheld while the gate hides would-be requests',
+          setUp: () {
+            when(
+              () => mockFollowRepository.isFollowing(any()),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+            _stubStreams(
+              mockDmRepository,
+              potentialRequests: [
+                _createConversation(id: _testConversationId2),
+              ],
+              recoveryComplete: false,
+            );
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            // The user has a real pending request that the gate is hiding.
+            // Before this flag the inbox looked complete: no rows, no banner,
+            // and — on every drain exit that is not a clean exhaustion — no
+            // progress bar either.
+            expect(bloc.state.requestConversations, isEmpty);
+            expect(bloc.state.requestsWithheld, isTrue);
+          },
+        );
+
+        blocTest<ConversationListBloc, ConversationListState>(
+          'does not flag requestsWithheld when the gate hides nothing',
+          setUp: () {
+            when(
+              () => mockFollowRepository.isFollowing(any()),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+            // Gate shut, but there is nothing behind it — no banner is owed.
+            _stubStreams(
+              mockDmRepository,
+              accepted: [
+                _createConversation(
+                  id: _testConversationId1,
+                  currentUserHasSent: true,
+                ),
+              ],
+              recoveryComplete: false,
+            );
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            expect(bloc.state.conversations, hasLength(1));
+            expect(bloc.state.requestsWithheld, isFalse);
+          },
+        );
+
+        blocTest<ConversationListBloc, ConversationListState>(
+          'restore retry re-arms both recovery passes and re-reads the gate',
+          setUp: () {
+            when(
+              () => mockFollowRepository.isFollowing(any()),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+            _stubStreams(
+              mockDmRepository,
+              potentialRequests: [
+                _createConversation(id: _testConversationId2),
+              ],
+              recoveryComplete: false,
+            );
+          },
+          build: createBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationListStarted());
+            await Future<void>.delayed(const Duration(milliseconds: 250));
+            // The drain succeeded this time.
+            when(
+              () => mockDmRepository.isHistoryRecoveryComplete,
+            ).thenReturn(true);
+            bloc.add(const ConversationListRestoreRetryRequested());
+          },
+          wait: const Duration(milliseconds: 400),
+          verify: (bloc) {
+            // Retry re-runs both recovery passes (once from the initial
+            // start, once from the retry) …
+            verify(() => mockDmRepository.backfillHistoryIfNeeded()).called(2);
+            verify(() => mockDmRepository.retryPendingDecryptions()).called(2);
+            // … and the re-read gate releases the held-back request, clearing
+            // the banner. Going through _onStarted matters: the drain returns
+            // without ever touching the recovery stream when it is already
+            // complete, so a stream-only path would leave the banner stuck.
+            expect(bloc.state.requestsWithheld, isFalse);
+            expect(bloc.state.requestConversations, hasLength(1));
           },
         );
       });
@@ -1644,6 +1740,7 @@ void main() {
         const <DmConversation>[],
         true,
         false, // isRestoringHistory
+        false, // requestsWithheld
         ConversationListState.pageSize,
         null,
       ]);

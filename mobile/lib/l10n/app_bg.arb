@@ -2438,6 +2438,8 @@
         }
     },
     "inboxRemovedConversation": "Премахнат разговор",
+    "inboxRestorePausedTitle": "Някои чатове не са възстановени докрай",
+    "inboxRestoreRetryAction": "Опитай пак",
     "inboxRestoringMessages": "Възстановяваме съобщенията ти…",
     "inboxEmptyTitle": "Все още няма съобщения",
     "inboxEmptySubtitle": "Този бутон + няма да ухапе.",

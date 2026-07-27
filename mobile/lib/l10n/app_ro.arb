@@ -2350,6 +2350,8 @@
     "inboxRemoveConfirmConfirm": "Elimină",
     "inboxRemoveConfirmTitle": "Elimini conversația?",
     "inboxRemovedConversation": "Conversație eliminată",
+    "inboxRestorePausedTitle": "Unele conversații nu s-au restaurat complet",
+    "inboxRestoreRetryAction": "Reîncearcă",
     "inboxRestoringMessages": "Se restaurează mesajele tale…",
     "inboxReportedUser": "{displayName} a fost raportat(ă)",
     "@inboxReportedUser": {

@@ -5596,6 +5596,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxRemovedConversation => 'Sohbet kaldırıldı';
 
   @override
+  String get inboxRestorePausedTitle => 'Bazı sohbetler tam geri yüklenmedi';
+
+  @override
+  String get inboxRestoreRetryAction => 'Yeniden dene';
+
+  @override
   String get inboxRestoringMessages => 'Mesajların geri yükleniyor…';
 
   @override

@@ -2350,6 +2350,8 @@
     "inboxRemoveConfirmConfirm": "Usuń",
     "inboxRemoveConfirmTitle": "Usunąć rozmowę?",
     "inboxRemovedConversation": "Usunięto rozmowę",
+    "inboxRestorePausedTitle": "Część czatów nie została w pełni odzyskana",
+    "inboxRestoreRetryAction": "Spróbuj ponownie",
     "inboxRestoringMessages": "Odzyskiwanie wiadomości…",
     "inboxReportedUser": "Zgłoszono {displayName}",
     "@inboxReportedUser": {

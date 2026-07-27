@@ -2349,6 +2349,8 @@
     "inboxRemoveConfirmConfirm": "Hapus",
     "inboxRemoveConfirmTitle": "Hapus percakapan?",
     "inboxRemovedConversation": "Percakapan dihapus",
+    "inboxRestorePausedTitle": "Sebagian chat belum selesai dipulihkan",
+    "inboxRestoreRetryAction": "Coba lagi",
     "inboxRestoringMessages": "Memulihkan pesan Anda…",
     "inboxReportedUser": "{displayName} dilaporkan",
     "@inboxReportedUser": {

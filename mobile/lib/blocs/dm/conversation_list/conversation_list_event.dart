@@ -82,6 +82,15 @@ class ConversationListProfileRepositoryChanged extends ConversationListEvent {
   List<Object?> get props => [profileRepository];
 }
 
+/// The user tapped Retry on the restore-paused banner.
+///
+/// Re-arms the one-time history drain and the failed-decrypt replay. Both are
+/// idempotent and share their in-flight future, so a stray tap during an active
+/// pass is a no-op rather than a second drain.
+class ConversationListRestoreRetryRequested extends ConversationListEvent {
+  const ConversationListRestoreRetryRequested();
+}
+
 /// Resolve names for newly streamed conversations without changing the query.
 class _ConversationListProfileResolutionRequested
     extends ConversationListEvent {

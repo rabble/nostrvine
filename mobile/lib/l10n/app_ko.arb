@@ -1673,6 +1673,8 @@
     "inboxRemoveConfirmConfirm": "삭제",
     "inboxRemoveConfirmTitle": "대화를 삭제할까요?",
     "inboxRemovedConversation": "대화를 삭제했어요",
+    "inboxRestorePausedTitle": "일부 대화를 아직 다 복구하지 못했어요",
+    "inboxRestoreRetryAction": "다시 시도",
     "inboxRestoringMessages": "메시지를 복구하는 중…",
     "inboxReportedUser": "{displayName}을(를) 신고했어요",
     "@inboxReportedUser": {

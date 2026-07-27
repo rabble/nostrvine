@@ -5578,6 +5578,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxRemovedConversation => 'تمت إزالة المحادثة';
 
   @override
+  String get inboxRestorePausedTitle => 'لم تكتمل استعادة بعض المحادثات';
+
+  @override
+  String get inboxRestoreRetryAction => 'إعادة المحاولة';
+
+  @override
   String get inboxRestoringMessages => 'جارٍ استعادة رسائلك…';
 
   @override

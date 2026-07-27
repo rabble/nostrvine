@@ -5403,6 +5403,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxRemovedConversation => '대화를 삭제했어요';
 
   @override
+  String get inboxRestorePausedTitle => '일부 대화를 아직 다 복구하지 못했어요';
+
+  @override
+  String get inboxRestoreRetryAction => '다시 시도';
+
+  @override
   String get inboxRestoringMessages => '메시지를 복구하는 중…';
 
   @override

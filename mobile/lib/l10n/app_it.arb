@@ -2350,6 +2350,8 @@
     "inboxRemoveConfirmConfirm": "Rimuovi",
     "inboxRemoveConfirmTitle": "Rimuovere la conversazione?",
     "inboxRemovedConversation": "Conversazione rimossa",
+    "inboxRestorePausedTitle": "Alcune chat non sono state ripristinate del tutto",
+    "inboxRestoreRetryAction": "Riprova",
     "inboxRestoringMessages": "Ripristino dei messaggi…",
     "inboxReportedUser": "{displayName} segnalato/a",
     "@inboxReportedUser": {

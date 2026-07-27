@@ -2342,6 +2342,8 @@
     "inboxRemoveConfirmConfirm": "إزالة",
     "inboxRemoveConfirmTitle": "إزالة المحادثة؟",
     "inboxRemovedConversation": "تمت إزالة المحادثة",
+    "inboxRestorePausedTitle": "لم تكتمل استعادة بعض المحادثات",
+    "inboxRestoreRetryAction": "إعادة المحاولة",
     "inboxRestoringMessages": "جارٍ استعادة رسائلك…",
     "inboxReportedUser": "تم الإبلاغ عن {displayName}",
     "@inboxReportedUser": {

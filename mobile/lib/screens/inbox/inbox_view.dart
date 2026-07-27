@@ -32,6 +32,7 @@ import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -368,6 +369,12 @@ class _MessagesContent extends ConsumerWidget {
               // Thin restore progress bar while the one-time reinstall
               // history recovery is still running (#5202).
               const _RestoringHistoryIndicator(),
+              // Static banner while the recovery gate is still hiding
+              // would-be message requests. Mounted here, as a sibling of the
+              // content, so it covers every branch below — empty inbox,
+              // requests-only, filtered, and populated — without threading a
+              // flag through each one or shifting the sliver banner offsets.
+              const _RestorePausedBannerGate(),
               // Conversation list or empty state
               Expanded(
                 child: _ConversationListContent(
@@ -442,6 +449,31 @@ class _RestoringHistoryIndicator extends StatelessWidget {
               semanticsLabel: context.l10n.inboxRestoringMessages,
             )
           : const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Renders [RestorePausedBanner] while the recovery gate is hiding would-be
+/// message requests.
+///
+/// Scoped to the loaded state on purpose: the loading branch already shows a
+/// spinner, and [InboxErrorState] carries its own retry, so surfacing a second
+/// one above it would be redundant.
+class _RestorePausedBannerGate extends StatelessWidget {
+  const _RestorePausedBannerGate();
+
+  @override
+  Widget build(BuildContext context) {
+    final withheld = context.select<ConversationListBloc, bool>(
+      (bloc) =>
+          bloc.state.requestsWithheld &&
+          bloc.state.status == ConversationListStatus.loaded,
+    );
+    if (!withheld) return const SizedBox.shrink();
+    return RestorePausedBanner(
+      onRetry: () => context.read<ConversationListBloc>().add(
+        const ConversationListRestoreRetryRequested(),
+      ),
     );
   }
 }

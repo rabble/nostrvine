@@ -2342,6 +2342,8 @@
     "inboxRemoveConfirmConfirm": "削除",
     "inboxRemoveConfirmTitle": "会話を削除する？",
     "inboxRemovedConversation": "会話を削除したよ",
+    "inboxRestorePausedTitle": "一部のチャットの復元が終わっていないよ",
+    "inboxRestoreRetryAction": "再試行",
     "inboxRestoringMessages": "メッセージを復元中…",
     "inboxReportedUser": "{displayName}を報告したよ",
     "@inboxReportedUser": {

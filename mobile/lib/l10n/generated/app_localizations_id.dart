@@ -5588,6 +5588,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxRemovedConversation => 'Percakapan dihapus';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Sebagian chat belum selesai dipulihkan';
+
+  @override
+  String get inboxRestoreRetryAction => 'Coba lagi';
+
+  @override
   String get inboxRestoringMessages => 'Memulihkan pesan Anda…';
 
   @override
