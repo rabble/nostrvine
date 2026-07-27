@@ -147,6 +147,25 @@ void main() {
           equals({'Authorization': 'Nostr token'}),
         );
       });
+
+      test('serializes trimToCommonTrackEnd only when opted in', () {
+        const plain = VideoClip(uri: 'test.mp4');
+        const trimmed = VideoClip(uri: 'test.mp4', trimToCommonTrackEnd: true);
+
+        expect(plain.toMap(), isNot(contains('trimToCommonTrackEnd')));
+        expect(trimmed.toMap()['trimToCommonTrackEnd'], isTrue);
+      });
+
+      test('carries trimToCommonTrackEnd through file and network', () {
+        const file = VideoClip.file('/a.mp4', trimToCommonTrackEnd: true);
+        const network = VideoClip.network(
+          'https://example.com/a.mp4',
+          trimToCommonTrackEnd: true,
+        );
+
+        expect(file.toMap()['trimToCommonTrackEnd'], isTrue);
+        expect(network.toMap()['trimToCommonTrackEnd'], isTrue);
+      });
     });
 
     group('asset', () {

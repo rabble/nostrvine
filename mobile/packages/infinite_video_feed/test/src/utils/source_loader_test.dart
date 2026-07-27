@@ -71,6 +71,26 @@ void main() {
       expect(clips.map((clip) => clip.end), equals([cap, cap]));
     });
 
+    test('opts every source into loop-seam trimming', () async {
+      final controller = FakeController();
+      addTearDown(controller.dispose);
+
+      await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: ['urlA'],
+        log: logs.add,
+      );
+
+      expect(
+        controller.lastSource?.trimToCommonTrackEnd,
+        isTrue,
+        reason:
+            'Feed playback loops, so a clip must end where both tracks still '
+            'have content rather than at the container duration.',
+      );
+    });
+
     test('passes headers for the selected source', () async {
       final controller = FakeController();
       addTearDown(controller.dispose);

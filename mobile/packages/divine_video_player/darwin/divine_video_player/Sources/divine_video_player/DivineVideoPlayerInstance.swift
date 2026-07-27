@@ -342,6 +342,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let clipVol = (clipMap["volume"] as? NSNumber)?.floatValue ?? 1.0
             let clipSpeed = (clipMap["playbackSpeed"] as? NSNumber)?.doubleValue ?? 1.0
             let httpHeaders = clipMap["httpHeaders"] as? [String: String]
+            let trimToCommonTrackEnd =
+                (clipMap["trimToCommonTrackEnd"] as? NSNumber)?.boolValue ?? false
 
             let url: URL
             if uri.hasPrefix("/") {
@@ -387,7 +389,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let standardizedTransform = transform.standardized(for: naturalSize)
 
             let startTime = CMTime(value: startMs, timescale: 1000)
-            let endTime: CMTime
+            var endTime: CMTime
             if let endMs {
                 // Clamp to the asset: insertTimeRange silently inserts only the
                 // media that exists, so an endMs past the source would leave
@@ -403,6 +405,18 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     : requestedEnd
             } else {
                 endTime = assetDuration
+            }
+            // The asset duration is the *longest* track, so ending there leaves
+            // a stretch where the shorter track has already run out — silence,
+            // or a frozen frame. On a looping player that stretch is the seam.
+            // Clamping may only ever shorten: an earlier explicit trim wins.
+            if trimToCommonTrackEnd, let sourceAudioTrack = assetAudioTracks.first {
+                let videoRange = try await sourceVideoTrack.load(.timeRange)
+                let audioRange = try await sourceAudioTrack.load(.timeRange)
+                let commonEnd = CMTimeMinimum(videoRange.end, audioRange.end)
+                if commonEnd.isNumeric, CMTimeCompare(commonEnd, startTime) > 0 {
+                    endTime = CMTimeMinimum(endTime, commonEnd)
+                }
             }
             let timeRange = CMTimeRange(start: startTime, end: endTime)
             let clipDuration = CMTimeSubtract(endTime, startTime)
