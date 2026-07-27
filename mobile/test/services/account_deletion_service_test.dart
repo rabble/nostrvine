@@ -14,6 +14,10 @@ import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {
+  /// Drives the `timedOut` field of the record synthesized below, so tests
+  /// keep stubbing the simpler [queryEvents] for the event list.
+  bool queryTimedOut = false;
+
   @override
   Future<({List<Event> events, bool timedOut, bool noRelays})>
   queryEventsDetailed(
@@ -29,7 +33,7 @@ class _MockNostrClient extends Mock implements NostrClient {
     final events = await queryEvents(filters);
     return (
       events: events,
-      timedOut: lastQueryTimedOut,
+      timedOut: queryTimedOut,
       noRelays: connectedRelays.isEmpty,
     );
   }
@@ -112,7 +116,6 @@ void main() {
         () => mockNostrService.queryEvents(any()),
       ).thenAnswer((_) async => []);
       when(() => mockNostrService.isDisposed).thenReturn(false);
-      when(() => mockNostrService.lastQueryTimedOut).thenReturn(false);
       when(
         () => mockNostrService.connectedRelays,
       ).thenReturn(['wss://relay.example.com']);
@@ -1069,7 +1072,7 @@ void main() {
       test(
         'reports contentQueryFailed when the relay query times out',
         () async {
-          when(() => mockNostrService.lastQueryTimedOut).thenReturn(true);
+          mockNostrService.queryTimedOut = true;
           when(
             () => mockAuthService.createAndSignEvent(
               kind: any(named: 'kind'),

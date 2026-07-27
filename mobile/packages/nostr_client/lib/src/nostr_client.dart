@@ -341,7 +341,6 @@ class NostrClient {
 
   /// Tracks whether dispose() has been called
   bool _isDisposed = false;
-  bool _lastQueryTimedOut = false;
 
   Future<void> _prepareEventForPublish(Event event) async {
     final changed = await Nip89ClientTag.applyToEvent(event);
@@ -389,9 +388,6 @@ class NostrClient {
   ///
   /// After disposal, the client should not be used
   bool get isDisposed => _isDisposed;
-
-  /// Whether the most recent WebSocket query timed out before relay EOSE.
-  bool get lastQueryTimedOut => _lastQueryTimedOut;
 
   /// Whether the client has keys configured
   ///
@@ -670,7 +666,6 @@ class NostrClient {
     // right before `withResource` (see below) closes the residual race
     // where dispose() runs during the awaits in between. See #5952.
     if (_isDisposed) {
-      _lastQueryTimedOut = false;
       return (events: <Event>[], timedOut: false, noRelays: true);
     }
 
@@ -728,7 +723,6 @@ class NostrClient {
           ? await _queryPool.withResource(runWebSocketQuery)
           : await runWebSocketQuery();
     }
-    _lastQueryTimedOut = websocketResult.timedOut;
     final websocketEvents = websocketResult.events;
 
     // Cache websocket results (fire-and-forget)
@@ -775,50 +769,17 @@ class NostrClient {
     bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    if (_isDisposed) return [];
-
-    final effectiveTempRelays = _allowedRelays(tempRelays);
-    final cacheResults = <Event>[];
-
-    final dao = _nostrEventsDao;
-    if (useCache && dao != null && filters.length == 1) {
-      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
-    }
-
-    if (_relayManager.connectedRelays.isEmpty &&
-        (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
-      await retryDisconnectedRelays();
-    }
-    final filtersJson = filters.map((f) => f.toJson()).toList();
-    Future<List<Event>> runWebSocketQuery() => _nostr.queryEvents(
-      filtersJson,
-      id: subscriptionId,
-      tempRelays: effectiveTempRelays,
+    final result = await queryEventsDetailed(
+      filters,
+      subscriptionId: subscriptionId,
+      tempRelays: tempRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      useCache: useCache,
+      useQueryPool: useQueryPool,
       timeout: timeout,
     );
-
-    final List<Event> websocketEvents;
-    if (_queryPool.isClosed) {
-      websocketEvents = [];
-    } else {
-      websocketEvents = useQueryPool
-          ? await _queryPool.withResource(runWebSocketQuery)
-          : await runWebSocketQuery();
-    }
-    _lastQueryTimedOut = false;
-
-    if (websocketEvents.isNotEmpty) {
-      try {
-        unawaited(_nostrEventsDao?.upsertEventsBatch(websocketEvents));
-      } on Object {
-        // Ignore cache errors
-      }
-    }
-
-    final limit = filters.length == 1 ? filters.first.limit : null;
-    return _mergeEvents(cacheResults, websocketEvents, limit: limit);
+    return result.events;
   }
 
   /// Counts events matching the given filters using NIP-45.

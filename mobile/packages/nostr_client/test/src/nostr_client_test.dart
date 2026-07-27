@@ -10,7 +10,35 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _MockNostr extends Mock implements Nostr {}
+class _MockNostr extends Mock implements Nostr {
+  /// Drives the `timedOut` field of the record synthesized below.
+  bool timedOut = false;
+
+  /// Mirror of the real [Nostr.queryEvents]/[Nostr.queryEventsDetailed]
+  /// relationship, inverted: the SDK delegates the list-returning method to
+  /// the detailed one, so this double delegates the detailed one back to the
+  /// list-returning method that tests stub. Tests that care about the timeout
+  /// signal set [timedOut] instead of stubbing a second method.
+  @override
+  Future<({List<Event> events, bool timedOut})> queryEventsDetailed(
+    List<Map<String, dynamic>> filters, {
+    String? id,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    bool sendAfterAuth = false,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final events = await queryEvents(
+      filters,
+      id: id,
+      tempRelays: tempRelays,
+      relayTypes: relayTypes,
+      sendAfterAuth: sendAfterAuth,
+      timeout: timeout,
+    );
+    return (events: events, timedOut: timedOut);
+  }
+}
 
 class _MockRelayManager extends Mock implements RelayManager {}
 
@@ -1305,6 +1333,86 @@ void main() {
               sendAfterAuth: any(named: 'sendAfterAuth'),
             ),
           );
+        },
+      );
+    });
+
+    // Callers that must not read an empty result as "this account has no
+    // content" — account deletion's relay sweep is the motivating one — need
+    // to tell an empty answer apart from an answer that never arrived.
+    group('queryEventsDetailed', () {
+      Filter textNoteFilter() => Filter(kinds: [EventKind.textNote], limit: 10);
+
+      void stubWebSocketEvents(List<Event> events) {
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => events);
+      }
+
+      test(
+        'reports a healthy query as neither timed out nor relayless',
+        () async {
+          final events = [_createTestEvent()];
+          stubWebSocketEvents(events);
+
+          final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+          expect(result.events, equals(events));
+          expect(result.timedOut, isFalse);
+          expect(result.noRelays, isFalse);
+        },
+      );
+
+      test('propagates the relay timeout alongside partial events', () async {
+        final events = [_createTestEvent()];
+        stubWebSocketEvents(events);
+        mockNostr.timedOut = true;
+
+        final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+        // Events that did arrive are still returned — the caller decides what
+        // a partial answer means.
+        expect(result.events, equals(events));
+        expect(result.timedOut, isTrue);
+      });
+
+      test('reports noRelays when nothing reconnected', () async {
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
+        stubWebSocketEvents([]);
+
+        final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+        expect(result.events, isEmpty);
+        expect(result.noRelays, isTrue);
+      });
+
+      test('reports noRelays on a disposed client', () async {
+        await client.dispose();
+
+        final result = await client.queryEventsDetailed([textNoteFilter()]);
+
+        expect(result.events, isEmpty);
+        expect(result.noRelays, isTrue);
+        expect(result.timedOut, isFalse);
+      });
+
+      test(
+        'queryEvents still returns partial events after a timeout',
+        () async {
+          final events = [_createTestEvent(), _createTestEvent()];
+          stubWebSocketEvents(events);
+          mockNostr.timedOut = true;
+
+          // The simple form drops the timeout signal, but must not drop the
+          // events that arrived before it.
+          expect(await client.queryEvents([textNoteFilter()]), equals(events));
         },
       );
     });
