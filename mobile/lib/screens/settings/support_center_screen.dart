@@ -42,32 +42,32 @@ class SupportCenterScreen extends ConsumerWidget {
           child: ListView(
             children: [
               _SupportTile(
-                icon: Icons.chat,
+                icon: DivineIconName.chat,
                 title: l10n.supportContactSupport,
                 subtitle: l10n.supportContactSupportSubtitle,
                 onTap: () => _viewSupportMessages(context),
               ),
               _SupportTile(
-                icon: Icons.bug_report,
+                icon: DivineIconName.warningCircle,
                 title: l10n.supportReportBug,
                 subtitle: l10n.supportReportBugSubtitle,
                 onTap: () =>
                     _showBugReport(context, bugReportService, userPubkey),
               ),
               _SupportTile(
-                icon: Icons.lightbulb,
+                icon: DivineIconName.sparkle,
                 title: l10n.supportRequestFeature,
                 subtitle: l10n.supportRequestFeatureSubtitle,
                 onTap: () => _showFeatureRequest(context, userPubkey),
               ),
               _SupportTile(
-                icon: Icons.save,
+                icon: DivineIconName.save,
                 title: l10n.supportSaveLogs,
                 subtitle: l10n.supportSaveLogsSubtitle,
                 onTap: () => _exportLogs(context, bugReportService, userPubkey),
               ),
               _SupportTile(
-                icon: Icons.help,
+                icon: DivineIconName.question,
                 title: l10n.supportFaq,
                 subtitle: l10n.supportFaqSubtitle,
                 onTap: () => _launchUrl(
@@ -77,7 +77,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 ),
               ),
               _SupportTile(
-                icon: Icons.verified_user,
+                icon: DivineIconName.shieldCheck,
                 title: l10n.supportProofMode,
                 subtitle: l10n.supportProofModeSubtitle,
                 onTap: () => _launchUrl(
@@ -91,7 +91,7 @@ class SupportCenterScreen extends ConsumerWidget {
               // deletion, so it has to be reachable from here too.
               if (userPubkey != null && userPubkey.isNotEmpty)
                 _SupportTile(
-                  divineIcon: DivineIconName.trash,
+                  icon: DivineIconName.trash,
                   title: l10n.nostrSettingsDeleteAccount,
                   subtitle: l10n.nostrSettingsDeleteAccountSubtitle,
                   iconColor: VineTheme.error,
@@ -254,20 +254,15 @@ class SupportCenterScreen extends ConsumerWidget {
 
 class _SupportTile extends StatelessWidget {
   const _SupportTile({
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.icon,
-    this.divineIcon,
     this.iconColor,
     this.titleColor,
-  }) : assert(
-         icon != null || divineIcon != null,
-         '_SupportTile requires either icon or divineIcon',
-       );
+  });
 
-  final IconData? icon;
-  final DivineIconName? divineIcon;
+  final DivineIconName icon;
   final Color? iconColor;
 
   /// Overrides the title colour, for destructive entries.
@@ -279,12 +274,7 @@ class _SupportTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: divineIcon != null
-          ? DivineIcon(
-              icon: divineIcon!,
-              color: iconColor ?? VineTheme.vineGreen,
-            )
-          : Icon(icon, color: iconColor ?? VineTheme.vineGreen),
+      leading: DivineIcon(icon: icon, color: iconColor ?? VineTheme.vineGreen),
       title: Text(
         title,
         style: TextStyle(

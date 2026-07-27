@@ -27,7 +27,6 @@ lib/screens/settings/legal_screen.dart	7
 lib/screens/settings/nip05_settings_screen.dart	2
 lib/screens/settings/nostr_settings_screen.dart	6
 lib/screens/settings/settings_screen.dart	6
-lib/screens/settings/support_center_screen.dart	6
 lib/screens/sound_detail_screen.dart	4
 lib/screens/user_list_people_screen.dart	3
 lib/widgets/auth/forgot_password_dialog.dart	1
