@@ -2,18 +2,23 @@
 // ABOUTME: Verifies visible actions and done-event dispatch.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 import 'package:pro_image_editor/features/main_editor/services/sizes_manager.dart'
@@ -547,6 +552,178 @@ void main() {
         expect(event.overlays, isNotNull);
       },
     );
+
+    // #6401 on the clip-edit paths: duplicate and speed-down lengthen the
+    // composition, and a sound clamped to the old end has to follow it.
+    group('sound follows composition growth', () {
+      late _MockProImageEditorState editor;
+      late _MockStateManager stateManager;
+      late _MockTimelineOverlayBloc overlayBloc;
+
+      const coveringSound = AudioEvent(
+        id: 'sound-1',
+        pubkey: 'bundled',
+        createdAt: 0,
+        url: 'asset://sounds/loop.mp3',
+        duration: 30,
+        endTime: Duration(seconds: 3),
+      );
+
+      setUp(() {
+        editor = _MockProImageEditorState();
+        stateManager = _MockStateManager();
+        overlayBloc = _MockTimelineOverlayBloc();
+
+        when(() => overlayBloc.state).thenReturn(const TimelineOverlayState());
+        when(
+          () => overlayBloc.stream,
+        ).thenAnswer((_) => const Stream<TimelineOverlayState>.empty());
+        when(() => editor.stateManager).thenReturn(stateManager);
+        when(() => stateManager.activeMeta).thenReturn({
+          VideoEditorConstants.audioStateHistoryKey: [coveringSound.toJson()],
+        });
+        when(
+          () => editor.addHistory(
+            layers: any(named: 'layers'),
+            filters: any(named: 'filters'),
+            meta: any(named: 'meta'),
+            newLayer: any(named: 'newLayer'),
+            transformConfigs: any(named: 'transformConfigs'),
+            tuneAdjustments: any(named: 'tuneAdjustments'),
+            blur: any(named: 'blur'),
+            heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
+            blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
+          ),
+        ).thenAnswer((_) {});
+        when(() => editor.setState(any())).thenAnswer((invocation) {
+          (invocation.positionalArguments.single as VoidCallback)();
+        });
+      });
+
+      Future<VideoEditorTimelineControls> pumpWithEditor(
+        WidgetTester tester, {
+        required ClipEditorState state,
+      }) async {
+        when(() => bloc.state).thenReturn(state);
+        // The speed sheet confirms via context.pop, so the harness needs a
+        // GoRouter rather than a plain MaterialApp.
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: GoRouter(
+                routes: [
+                  GoRoute(
+                    path: '/',
+                    builder: (context, state) => Scaffold(
+                      body: VideoEditorScope(
+                        editorKey: GlobalKey<ProImageEditorState>(),
+                        editorOverride: editor,
+                        removeAreaKey: GlobalKey(),
+                        originalClipAspectRatio: 9 / 16,
+                        bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                        zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+                        fromLibrary: false,
+                        onOpenCamera: () {},
+                        onOpenClipsEditor: () {},
+                        onAddStickers: () {},
+                        onOpenMusicLibrary: () {},
+                        onOpenVoiceOver: () {},
+                        onAddEditTextLayer: ([layer]) async => null,
+                        child: MultiBlocProvider(
+                          providers: [
+                            BlocProvider<ClipEditorBloc>.value(value: bloc),
+                            BlocProvider<TimelineOverlayBloc>.value(
+                              value: overlayBloc,
+                            ),
+                          ],
+                          child: TimelineClipControls(
+                            playheadPosition: ValueNotifier(Duration.zero),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        return tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+      }
+
+      List<AudioEvent> capturedAudio() {
+        final meta =
+            verify(
+                  () => editor.addHistory(
+                    layers: any(named: 'layers'),
+                    filters: any(named: 'filters'),
+                    meta: captureAny(named: 'meta'),
+                    newLayer: any(named: 'newLayer'),
+                    transformConfigs: any(named: 'transformConfigs'),
+                    tuneAdjustments: any(named: 'tuneAdjustments'),
+                    blur: any(named: 'blur'),
+                    heroScreenshotRequired: any(
+                      named: 'heroScreenshotRequired',
+                    ),
+                    blockCaptureScreenshot: any(
+                      named: 'blockCaptureScreenshot',
+                    ),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        final raw =
+            meta[VideoEditorConstants.audioStateHistoryKey] as List<dynamic>;
+        return raw
+            .cast<Map<String, dynamic>>()
+            .map(AudioEvent.fromJson)
+            .toList();
+      }
+
+      testWidgets('duplicate grows a sound that covered the composition onto '
+          'the appended copy', (tester) async {
+        final controls = await pumpWithEditor(
+          tester,
+          state: ClipEditorState(clips: [clip('clip-1')]),
+        );
+
+        controls.onDuplicated!();
+        await tester.pump();
+
+        expect(capturedAudio().single.endTime, const Duration(seconds: 6));
+      });
+
+      testWidgets('slowing a clip down grows a sound that covered the '
+          'composition onto the stretched end', (tester) async {
+        final controls = await pumpWithEditor(
+          tester,
+          state: ClipEditorState(clips: [clip('clip-1')]),
+        );
+
+        controls.onSpeed!();
+        await tester.pumpAndSettle();
+
+        // Drag the sheet's slider to half speed and confirm.
+        tester.widget<DivineSlider>(find.byType(DivineSlider)).onChanged!(0.5);
+        await tester.pump();
+        await tester.tap(
+          find.descendant(
+            of: find.byType(VideoEditorClipSpeedSheet),
+            matching: find.byWidgetPredicate(
+              (widget) =>
+                  widget is DivineIconButton &&
+                  widget.icon == DivineIconName.check,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(capturedAudio().single.endTime, const Duration(seconds: 6));
+      });
+    });
 
     testWidgets('Save shows a spinner while this clip is being saved', (
       tester,

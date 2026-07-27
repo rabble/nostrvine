@@ -167,11 +167,13 @@ extension VideoEditorExtensions on ProImageEditorState {
   /// edit over a soundless composition does not start writing an audio key
   /// into every history entry.
   ///
-  /// Use this from every commit that lengthens the composition by restretching
-  /// or adding stop-motion content — the frame-list commit and the
-  /// camera/clips-picker sync. Deliberately *not* folded into [setClipState]
-  /// itself: that is the generic clip writer, and duplicate/un-trim/speed edits
-  /// would then extend a sound one-way (nothing ever shortens it again), while
+  /// Use this from every commit that can lengthen the composition — the
+  /// stop-motion frame-list commit, the camera/clips-picker sync, duplicating
+  /// a clip, slowing a clip down, and dragging a trim handle back out. The
+  /// grow is one-way: a later shrink leaves the window overhanging, and the
+  /// sound strip's trim handle is the affordance for pulling it back.
+  /// Deliberately *not* folded into [setClipState] itself: that is the
+  /// generic clip writer with no previous-clip list to compare against, and
   /// the transition path measures its output with `TransitionTimelineMap`
   /// rather than a plain sum of playback durations.
   void setLengthenedClipState({
