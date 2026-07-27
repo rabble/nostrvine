@@ -54,6 +54,10 @@ class ConversationListBloc
     );
     on<ConversationListNavigationConsumed>(_onNavigationConsumed);
     on<ConversationListBlocklistChanged>(_onBlocklistChanged);
+    on<ConversationListRestoreRetryRequested>(
+      _onRestoreRetryRequested,
+      transformer: droppable(),
+    );
     on<ConversationListProfileRepositoryChanged>(_onProfileRepositoryChanged);
   }
 
@@ -257,6 +261,9 @@ class ConversationListBloc
         return state.copyWith(
           status: ConversationListStatus.loaded,
           conversations: visibleInbox,
+          // Only true when the gate is actually costing the user something —
+          // a closed gate with nothing to hold back needs no banner.
+          requestsWithheld: !recoveryComplete && split.requests.isNotEmpty,
           visibleConversations: _computeVisible(
             visibleInbox,
             unreadOnly: state.unreadOnly,
@@ -544,6 +551,21 @@ class ConversationListBloc
     ConversationListBlocklistChanged event,
     Emitter<ConversationListState> emit,
   ) {
+    add(const ConversationListStarted());
+  }
+
+  void _onRestoreRetryRequested(
+    ConversationListRestoreRetryRequested event,
+    Emitter<ConversationListState> emit,
+  ) {
+    // Same idiom as _onBlocklistChanged: re-entering _onStarted re-fires both
+    // recovery passes (idempotent, shared in-flight) and restarts the stream,
+    // so the gate is re-read and `requestsWithheld` recomputed. Going through
+    // the stream rather than awaiting the drain matters — the drain returns
+    // early without ever touching the recovery stream when it is uninitialized
+    // or already complete, so a listener-only retry could leave the banner up
+    // with nothing to clear it. The status switch in _onStarted keeps a loaded
+    // list from flashing a spinner.
     add(const ConversationListStarted());
   }
 

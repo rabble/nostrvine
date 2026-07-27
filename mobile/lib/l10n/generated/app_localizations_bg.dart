@@ -5666,6 +5666,17 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxRemovedConversation => 'Премахнат разговор';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Някои чатове не са възстановени докрай';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Този чат още не е възстановен докрай';
+
+  @override
+  String get inboxRestoreRetryAction => 'Опитай пак';
+
+  @override
   String get inboxRestoringMessages => 'Възстановяваме съобщенията ти…';
 
   @override

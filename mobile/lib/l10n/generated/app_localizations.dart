@@ -9858,6 +9858,24 @@ abstract class AppLocalizations {
   /// **'Removed conversation'**
   String get inboxRemovedConversation;
 
+  /// Title of the inbox banner shown when the one-time DM history recovery stopped before finishing, so conversations that would appear as message requests are still hidden. Paired with a Retry action.
+  ///
+  /// In en, this message translates to:
+  /// **'Some chats haven\'t finished restoring'**
+  String get inboxRestorePausedTitle;
+
+  /// Short note shown in a single empty DM conversation when history recovery has run but stopped before finishing, so this chat may still receive restored messages.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat hasn\'t finished restoring'**
+  String get conversationRestorePausedTitle;
+
+  /// Label of the action on the inbox restore-paused banner that re-runs the DM history recovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get inboxRestoreRetryAction;
+
   /// Accessibility label on the progress bar shown at the top of the Messages list while a one-time DM history recovery (after reinstall) is still running, so the user knows older chats are still being restored.
   ///
   /// In en, this message translates to:

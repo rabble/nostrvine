@@ -5383,6 +5383,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxRemovedConversation => '会話を削除したよ';
 
   @override
+  String get inboxRestorePausedTitle => '一部のチャットの復元が終わっていないよ';
+
+  @override
+  String get conversationRestorePausedTitle => 'このチャットの復元が終わっていないよ';
+
+  @override
+  String get inboxRestoreRetryAction => '再試行';
+
+  @override
   String get inboxRestoringMessages => 'メッセージを復元中…';
 
   @override

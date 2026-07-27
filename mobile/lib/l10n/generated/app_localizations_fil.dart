@@ -5681,6 +5681,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxRemovedConversation => 'Inalis ang conversation';
 
   @override
+  String get inboxRestorePausedTitle => 'May mga chat na hindi pa tapos ibalik';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Hindi pa tapos ibalik ang chat na ito';
+
+  @override
+  String get inboxRestoreRetryAction => 'Subukan ulit';
+
+  @override
   String get inboxRestoringMessages => 'Ibinabalik ang mga message mo…';
 
   @override

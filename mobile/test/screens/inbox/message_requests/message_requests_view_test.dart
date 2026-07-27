@@ -10,11 +10,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/message_requests/message_requests_view.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/request_tile.dart';
+import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 
 import '../../../helpers/go_router.dart';
@@ -125,6 +127,65 @@ void main() {
         await tester.pump();
 
         expect(find.text('No message requests'), findsOneWidget);
+      });
+
+      testWidgets(
+        'renders restore progress when requests are withheld during recovery',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                isRestoringHistory: true,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.text('No message requests'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'renders restore-paused banner when requests are withheld after recovery stops',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(RestorePausedBanner), findsOneWidget);
+          expect(find.text('No message requests'), findsNothing);
+        },
+      );
+
+      testWidgets('restore-paused Retry dispatches the retry event', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+              requestsWithheld: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxRestoreRetryAction));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(const ConversationListRestoreRetryRequested()),
+        ).called(1);
       });
 
       testWidgets('renders $RequestTile when loaded with requests', (

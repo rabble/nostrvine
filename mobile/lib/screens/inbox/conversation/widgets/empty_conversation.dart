@@ -18,6 +18,7 @@ class EmptyConversation extends StatelessWidget {
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
+    this.mayBeIncomplete = false,
     super.key,
   });
 
@@ -26,6 +27,15 @@ class EmptyConversation extends StatelessWidget {
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
+
+  /// Whether DM history recovery might still owe this thread messages.
+  ///
+  /// `watchMessages` is a local DB projection, so a thread whose gift wraps
+  /// have not arrived or decrypted yet reaches `loaded` with zero rows and is
+  /// indistinguishable from a genuinely new conversation. When recovery is in
+  /// flight — or stopped short of completing — this card adds a qualifying
+  /// line instead of silently asserting the conversation is empty.
+  final bool mayBeIncomplete;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +72,14 @@ class EmptyConversation extends StatelessWidget {
           const SizedBox(height: 16),
           // View profile button
           _ViewProfileButton(onTap: onViewProfile),
+          if (mayBeIncomplete) ...[
+            const SizedBox(height: 24),
+            Text(
+              context.l10n.conversationRestorePausedTitle,
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );

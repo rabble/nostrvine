@@ -2350,6 +2350,9 @@
     "inboxRemoveConfirmConfirm": "Supprimer",
     "inboxRemoveConfirmTitle": "Supprimer la conversation ?",
     "inboxRemovedConversation": "Conversation supprimée",
+    "inboxRestorePausedTitle": "Certaines conversations ne sont pas encore restaurées",
+    "conversationRestorePausedTitle": "Cette conversation n'est pas encore restaurée",
+    "inboxRestoreRetryAction": "Réessayer",
     "inboxRestoringMessages": "Restauration de vos messages…",
     "inboxReportedUser": "{displayName} signalé(e)",
     "@inboxReportedUser": {

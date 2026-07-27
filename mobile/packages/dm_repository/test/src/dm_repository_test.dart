@@ -2978,6 +2978,175 @@ void main() {
         },
       );
 
+      test(
+        'a gift wrap whose decrypt THROWS is queued for retry, not dropped',
+        () async {
+          // Regression: only a null return reached the retry queue. A
+          // decryptor that raised — a remote-signer (Keycast RPC) failure, the
+          // exact case #5202's queue exists for — was logged and dropped, so
+          // that inbound DM was lost permanently with no retry.
+          final giftWrap = createGiftWrapEvent();
+          final pendingDao = _MockPendingGiftWrapsDao();
+
+          when(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async =>
+                throw StateError('remote signer unavailable'),
+            pendingGiftWrapsDao: pendingDao,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+              rawJson: any(named: 'rawJson'),
+              createdAt: 1700000000,
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'reports once with an aggregate count when gift wraps are abandoned '
+        'at the decrypt retry cap',
+        () async {
+          // These are inbound DMs the user will never see, and the wrap
+          // carries no decryptable sender or conversation, so nothing can be
+          // surfaced in the UI. A local warning is invisible in triage, so
+          // this report is the only signal that permanent message loss
+          // happened. One report per drain pass, not per wrap, so a spam
+          // burst cannot flood the dashboard.
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 3);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => <PendingGiftWrap>[]);
+
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
+
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.pendingDecryptExhausted,
+          );
+          expect(reporterCalls.single.error.toString(), contains('3'));
+        },
+      );
+
+      test(
+        'does not report when nothing hit the decrypt retry cap',
+        () async {
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => <PendingGiftWrap>[]);
+
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
+
+          expect(reporterCalls, isEmpty);
+        },
+      );
+
+      test(
+        'reports and drops a pending wrap with corrupt stored JSON',
+        () async {
+          // We wrote that JSON ourselves, so a parse failure is an invariant
+          // violation — and it costs the user an inbound message.
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer(
+            (_) async => const [
+              PendingGiftWrap(
+                giftWrapId: _giftWrapEventId,
+                ownerPubkey: _validPubkeyA,
+                rawJson: 'not valid json {{{',
+                createdAt: 1700000000,
+                attempts: 1,
+              ),
+            ],
+          );
+          when(
+            () => pendingDao.deletePending(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
+
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.pendingDecryptCorruptPayload,
+          );
+          verify(
+            () => pendingDao.deletePending(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+        },
+      );
+
       test('skips events with wrong kind', () async {
         final giftWrap = createGiftWrapEvent();
         // kind 1 instead of kind 14
@@ -4548,6 +4717,41 @@ void main() {
         'isHistoryRecoveryComplete is true when no sync state is wired (#5304)',
         () {
           expect(createRepository().isHistoryRecoveryComplete, isTrue);
+        },
+      );
+
+      test(
+        'hasAttemptedHistoryRecovery distinguishes a fresh install from a '
+        'stopped-short drain',
+        () {
+          final fresh = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = 0;
+          expect(
+            createRepository(syncState: fresh).hasAttemptedHistoryRecovery,
+            isFalse,
+          );
+
+          final attempted = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          expect(
+            createRepository(syncState: attempted).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+
+          final complete = _FakeDmSyncState()..drainCompleteOverride = true;
+          expect(
+            createRepository(syncState: complete).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'hasAttemptedHistoryRecovery is true when no sync state is wired',
+        () {
+          expect(createRepository().hasAttemptedHistoryRecovery, isTrue);
         },
       );
 

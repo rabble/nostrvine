@@ -5502,6 +5502,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxRemovedConversation => 'ውይይት ተወግዷል';
 
   @override
+  String get inboxRestorePausedTitle => 'አንዳንድ ውይይቶች ወደነበሩበት መመለስ አላጠናቀቁም';
+
+  @override
+  String get conversationRestorePausedTitle => 'ይህ ውይይት ወደነበረበት መመለስ አላጠናቀቀም';
+
+  @override
+  String get inboxRestoreRetryAction => 'እንደገና ሞክር';
+
+  @override
   String get inboxRestoringMessages => 'መልዕክቶችዎን ወደነበሩበት በመመለስ ላይ…';
 
   @override

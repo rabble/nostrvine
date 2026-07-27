@@ -31,6 +31,7 @@ import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 
@@ -1069,6 +1070,97 @@ void main() {
           expect(find.byType(LinearProgressIndicator), findsNothing);
         },
       );
+
+      testWidgets(
+        'shows the restore-paused banner when requests are withheld',
+        (tester) async {
+          // The gate can stay shut with no drain running (page cap, exception,
+          // no connected relay), so isRestoringHistory alone left the user with
+          // an inbox that looked complete while requests were hidden.
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(RestorePausedBanner), findsOneWidget);
+          // Static, not a progress bar: nothing is actually running.
+          expect(find.byType(LinearProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides the restore-paused banner while recovery is actively running',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                isRestoringHistory: true,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(RestorePausedBanner), findsNothing);
+          expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets('hides the restore-paused banner when nothing is withheld', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RestorePausedBanner), findsNothing);
+      });
+
+      testWidgets('restore-paused banner Retry dispatches the retry event', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+              requestsWithheld: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxRestoreRetryAction));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(const ConversationListRestoreRetryRequested()),
+        ).called(1);
+      });
     });
 
     group('navigation', () {

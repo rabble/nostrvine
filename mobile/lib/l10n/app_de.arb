@@ -2350,6 +2350,9 @@
     "inboxRemoveConfirmConfirm": "Entfernen",
     "inboxRemoveConfirmTitle": "Unterhaltung entfernen?",
     "inboxRemovedConversation": "Unterhaltung entfernt",
+    "inboxRestorePausedTitle": "Einige Chats sind noch nicht wiederhergestellt",
+    "conversationRestorePausedTitle": "Dieser Chat ist noch nicht vollständig wiederhergestellt",
+    "inboxRestoreRetryAction": "Erneut versuchen",
     "inboxRestoringMessages": "Deine Nachrichten werden wiederhergestellt…",
     "inboxReportedUser": "{displayName} gemeldet",
     "@inboxReportedUser": {

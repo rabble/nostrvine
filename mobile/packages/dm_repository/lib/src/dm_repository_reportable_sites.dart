@@ -67,4 +67,23 @@ abstract class DmRepositoryReportableSites {
   /// invariant failure while paging or processing recovered events.
   static const String historyDrainUnexpectedFailure =
       'historyDrain.unexpectedFailure';
+
+  /// `retryPendingDecryptions`: a queued gift wrap's stored JSON failed to
+  /// parse. We wrote that JSON ourselves, so this is an invariant violation,
+  /// and it costs the user an inbound message.
+  static const String pendingDecryptCorruptPayload =
+      'retryPendingDecryptions.corruptPayload';
+
+  /// `retryPendingDecryptions`: gift wraps exhausted the decrypt retry cap
+  /// and were deleted. Each one is an inbound DM the user will never see,
+  /// and the wrap carries no decryptable sender or conversation, so there is
+  /// nothing to surface in the UI — this is the only signal that it happened.
+  ///
+  /// Reported once per drain pass with an aggregate count, never per wrap, so
+  /// a spam burst of undecryptable kind-1059 events costs one event rather
+  /// than one per wrap. After #5202 and the decrypt-retry fix on this branch,
+  /// reaching the cap at all should be exceptional — if this turns out to be
+  /// routine in the dashboard, that is the finding, not noise to suppress.
+  static const String pendingDecryptExhausted =
+      'retryPendingDecryptions.exhausted';
 }

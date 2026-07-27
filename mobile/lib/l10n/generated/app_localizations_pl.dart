@@ -5754,6 +5754,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxRemovedConversation => 'Usunięto rozmowę';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Część czatów nie została w pełni odzyskana';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Ten czat nie został jeszcze w pełni odzyskany';
+
+  @override
+  String get inboxRestoreRetryAction => 'Spróbuj ponownie';
+
+  @override
   String get inboxRestoringMessages => 'Odzyskiwanie wiadomości…';
 
   @override

@@ -5611,6 +5611,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxRemovedConversation => 'Konversation borttagen';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Vissa chattar har inte återställts klart';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Den här chatten har inte återställts klart';
+
+  @override
+  String get inboxRestoreRetryAction => 'Försök igen';
+
+  @override
   String get inboxRestoringMessages => 'Återställer dina meddelanden…';
 
   @override

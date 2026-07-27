@@ -32,6 +32,7 @@ class ConversationListState extends Equatable {
     this.potentialRequests = const [],
     this.hasMore = true,
     this.isRestoringHistory = false,
+    this.requestsWithheld = false,
     this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
   });
@@ -87,6 +88,19 @@ class ConversationListState extends Equatable {
   /// indicator at the top of the Messages list. See #5202.
   final bool isRestoringHistory;
 
+  /// Whether the #5304 recovery gate is currently hiding conversations that
+  /// would otherwise appear as message requests.
+  ///
+  /// Distinct from [isRestoringHistory] on purpose. That flag tracks whether a
+  /// drain is *actively running* (`_activeRecoveryOps > 0`), but the gate reads
+  /// the *persisted* `historyDrainComplete`, which only ever flips on a clean
+  /// exhaustion. A drain that stops at the page cap, hits an exception, or
+  /// finds no connected relay clears the running flag while leaving the gate
+  /// shut — so the progress bar vanished while requests stayed hidden, with no
+  /// banner, no badge and no spinner to show anything was missing. Drives the
+  /// restore-paused banner, which offers the retry that reopens the gate.
+  final bool requestsWithheld;
+
   /// Size of the render window over [conversations] — grows as the user pages.
   ///
   /// Not a fetch bound: the conversations are already loaded in full, so
@@ -121,6 +135,7 @@ class ConversationListState extends Equatable {
     List<DmConversation>? potentialRequests,
     bool? hasMore,
     bool? isRestoringHistory,
+    bool? requestsWithheld,
     int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
     bool clearNavigationTarget = false,
@@ -136,6 +151,7 @@ class ConversationListState extends Equatable {
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
       isRestoringHistory: isRestoringHistory ?? this.isRestoringHistory,
+      requestsWithheld: requestsWithheld ?? this.requestsWithheld,
       currentLimit: currentLimit ?? this.currentLimit,
       navigationTarget: clearNavigationTarget
           ? null
@@ -155,6 +171,7 @@ class ConversationListState extends Equatable {
     potentialRequests,
     hasMore,
     isRestoringHistory,
+    requestsWithheld,
     currentLimit,
     navigationTarget,
   ];

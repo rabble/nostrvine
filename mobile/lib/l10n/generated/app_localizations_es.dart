@@ -5658,6 +5658,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxRemovedConversation => 'Conversación eliminada';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Algunos chats no terminaron de restaurarse';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Este chat no terminó de restaurarse';
+
+  @override
+  String get inboxRestoreRetryAction => 'Reintentar';
+
+  @override
   String get inboxRestoringMessages => 'Restaurando tus mensajes…';
 
   @override

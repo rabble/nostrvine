@@ -5613,6 +5613,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxRemovedConversation => 'Removed conversation';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Some chats haven\'t finished restoring';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'This chat hasn\'t finished restoring';
+
+  @override
+  String get inboxRestoreRetryAction => 'Retry';
+
+  @override
   String get inboxRestoringMessages => 'Restoring your messages…';
 
   @override

@@ -5678,6 +5678,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inboxRemovedConversation => 'Unterhaltung entfernt';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Einige Chats sind noch nicht wiederhergestellt';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Dieser Chat ist noch nicht vollständig wiederhergestellt';
+
+  @override
+  String get inboxRestoreRetryAction => 'Erneut versuchen';
+
+  @override
   String get inboxRestoringMessages =>
       'Deine Nachrichten werden wiederhergestellt…';
 

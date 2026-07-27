@@ -2350,6 +2350,9 @@
     "inboxRemoveConfirmConfirm": "Ta bort",
     "inboxRemoveConfirmTitle": "Ta bort konversation?",
     "inboxRemovedConversation": "Konversation borttagen",
+    "inboxRestorePausedTitle": "Vissa chattar har inte återställts klart",
+    "conversationRestorePausedTitle": "Den här chatten har inte återställts klart",
+    "inboxRestoreRetryAction": "Försök igen",
     "inboxRestoringMessages": "Återställer dina meddelanden…",
     "inboxReportedUser": "{displayName} rapporterad",
     "@inboxReportedUser": {

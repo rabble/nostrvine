@@ -2586,6 +2586,9 @@
         }
     },
     "inboxRemovedConversation": "ውይይት ተወግዷል",
+    "inboxRestorePausedTitle": "አንዳንድ ውይይቶች ወደነበሩበት መመለስ አላጠናቀቁም",
+    "conversationRestorePausedTitle": "ይህ ውይይት ወደነበረበት መመለስ አላጠናቀቀም",
+    "inboxRestoreRetryAction": "እንደገና ሞክር",
     "inboxRestoringMessages": "መልዕክቶችዎን ወደነበሩበት በመመለስ ላይ…",
     "inboxEmptyTitle": "እስካሁን ምንም መልዕክቶች የሉም",
     "inboxEmptySubtitle": "ያ + ቁልፍ አይነክሰውም።",
