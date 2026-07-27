@@ -1731,6 +1731,40 @@ void main() {
         expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
       });
 
+      testWidgets('stays in a search whose query matches the subtitle blurb '
+          'it actually renders', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        // A synthetic pin renders inboxSupportRowSubtitle as its preview, so
+        // a query drawn from that text must keep it — hiding the row while
+        // the matched words are on screen reads as a broken search.
+        const query = 'bugs';
+        expect(
+          l10n.inboxSupportRowSubtitle.toLowerCase(),
+          contains(query),
+          reason: 'query must be drawn from the rendered subtitle',
+        );
+        expect(
+          l10n.inboxSupportRowTitle.toLowerCase(),
+          isNot(contains(query)),
+          reason: 'otherwise the title branch would carry the test',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [realConversation],
+              searchQuery: query,
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
       testWidgets('is hidden by the Unread chip once it has been read', (
         tester,
       ) async {

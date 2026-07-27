@@ -867,10 +867,13 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
   /// is `''` below `minSearchQueryLength` — so an empty string reliably means
   /// "no search active".
   ///
-  /// Matches title OR last message, mirroring the bloc's `_applyFilters`. Once
-  /// the team has replied the preview is a real message, and a query drawn
-  /// from it should surface this row for the same reason it surfaces any
-  /// other.
+  /// Matches title OR whatever the row renders as its preview, mirroring the
+  /// bloc's `_applyFilters`. Once the team has replied the preview is a real
+  /// message, and a query drawn from it should surface this row for the same
+  /// reason it surfaces any other. Before that it is the subtitle blurb — the
+  /// same string [_PinnedSupportRow] passes as `subtitleOverride`, and matching
+  /// it is what stops a search for a word the user can read on screen from
+  /// hiding the row that shows it.
   bool _supportRowSurvivesFilter(
     BuildContext context, {
     required DmConversation pinned,
@@ -880,8 +883,10 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     if (unreadOnly && pinned.isRead) return false;
     if (query.isEmpty) return true;
     final needle = query.toLowerCase();
+    final preview =
+        pinned.lastMessageContent ?? context.l10n.inboxSupportRowSubtitle;
     return context.l10n.inboxSupportRowTitle.toLowerCase().contains(needle) ||
-        (pinned.lastMessageContent?.toLowerCase().contains(needle) ?? false);
+        preview.toLowerCase().contains(needle);
   }
 
   void _openMessageRequests(BuildContext context) {
