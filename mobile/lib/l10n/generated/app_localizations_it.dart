@@ -9968,12 +9968,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'divine.space';
-
-  @override
-  String get profileCreatorSiteOwnLabel => 'il mio divine.space';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Modifica copertina';
 
   @override

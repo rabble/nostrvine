@@ -9986,12 +9986,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'divine.space';
-
-  @override
-  String get profileCreatorSiteOwnLabel => 'mein divine.space';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Cover bearbeiten';
 
   @override
