@@ -58,7 +58,6 @@ class MessageRequestsPage extends ConsumerWidget {
             // read" / "remove all" sweep a conversation the user is not
             // looking at.
             supportRowPubkey: kModerationPubkeyHex,
-            supportRowLegacyPubkeys: kLegacyModerationPubkeys,
           )..add(const ConversationListStarted()),
         ),
         BlocProvider(

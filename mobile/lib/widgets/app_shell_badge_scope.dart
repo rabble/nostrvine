@@ -58,7 +58,6 @@ class AppShellBadgeScope extends ConsumerWidget {
             // moderation thread out of the list exactly as the inbox does, so
             // the count stays equal to the rows that render an unread dot.
             supportRowPubkey: kModerationPubkeyHex,
-            supportRowLegacyPubkeys: kLegacyModerationPubkeys,
           ),
         ),
         // Keep the provider identity stable so repository readiness / account

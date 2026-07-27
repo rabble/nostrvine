@@ -30,7 +30,6 @@ class ConversationListBloc
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
     String? supportRowPubkey,
-    List<String> supportRowLegacyPubkeys = const [],
   }) : _dmRepository = dmRepository,
        _followRepository = followRepository,
        _blocklistRepository = contentBlocklistRepository,
@@ -38,7 +37,6 @@ class ConversationListBloc
        _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
        _supportRowPubkey = supportRowPubkey,
-       _supportRowLegacyPubkeys = supportRowLegacyPubkeys,
        super(const ConversationListState()) {
     on<ConversationListStarted>(_onStarted, transformer: restartable());
     on<ConversationListLoadMore>(_onLoadMore, transformer: droppable());
@@ -79,12 +77,6 @@ class ConversationListBloc
   /// Moderation pubkey the pinned support row targets, injected rather than
   /// imported so this bloc stays free of app-layer config (#6283).
   final String? _supportRowPubkey;
-
-  /// Historical moderation pubkeys. Used for de-duplication only, never as a
-  /// send target: a user who messaged moderation before the #2321 key rotation
-  /// still holds that thread, and without this it would render beside the
-  /// pinned row as a second "Divine Moderation" entry.
-  final List<String> _supportRowLegacyPubkeys;
 
   /// Window over which bursty conversation writes are coalesced before the
   /// list is re-composed. The combined stream re-runs `classifyPotentialRequests`
@@ -490,8 +482,13 @@ class ConversationListBloc
   /// the pin renders no timestamp and is not sorted with the list.
   static const _pinnedSupportEpoch = 0;
 
-  /// Extract the pinned Divine Moderation row and remove every conversation it
-  /// stands in for from the lists they would otherwise render in (#6283).
+  /// Extract the pinned Divine Moderation row, lifting the thread it adopts out
+  /// of the list it would otherwise render in (#6283).
+  ///
+  /// Only the thread on the CURRENT moderation key is lifted. A thread on a
+  /// key the account has rotated away from stays put and renders as an ordinary
+  /// row, so its enforcement history keeps an in-app entry point until #6416
+  /// gives it an archived read-only presentation.
   ///
   /// Called with lists that have ALREADY passed the blocklist filter and the
   /// protected-minor gate, so an existing moderation thread that those filters
@@ -514,7 +511,6 @@ class ConversationListBloc
     final split = DmRepository.extractPinnedSupport(
       userPubkey: userPubkey,
       supportPubkey: supportPubkey,
-      legacyPubkeys: _supportRowLegacyPubkeys,
       inbox: inbox,
       requests: requests,
     );

@@ -101,7 +101,6 @@ class InboxPage extends ConsumerWidget {
               // gate resolves against — so the row can never point somewhere
               // the gate would not approve.
               supportRowPubkey: kModerationPubkeyHex,
-              supportRowLegacyPubkeys: kLegacyModerationPubkeys,
             )..add(const ConversationListStarted()),
           ),
           // Inbox-scope NotificationBadgeCubit feeds the segmented

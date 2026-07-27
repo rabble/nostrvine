@@ -604,7 +604,6 @@ void main() {
         protectedMinorInboxGate: gate,
         recomputeDebounce: Duration.zero,
         supportRowPubkey: moderation,
-        supportRowLegacyPubkeys: [legacyModeration],
       );
 
       test(

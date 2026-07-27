@@ -10414,7 +10414,6 @@ void main() {
       }) => DmRepository.extractPinnedSupport(
         userPubkey: userPubkey,
         supportPubkey: supportPubkey,
-        legacyPubkeys: const [retired],
         inbox: inbox,
         requests: requests,
       );
@@ -10558,23 +10557,6 @@ void main() {
         expect(result.pinned, isNull);
         expect(result.supportConversationId, isNull);
         expect(result.inbox, equals([selfThread]));
-      });
-
-      test('ignores an empty entry in the retired list', () {
-        final thread = makeConversation(
-          id: currentId,
-          participantPubkeys: const [_validPubkeyA, support],
-        );
-
-        final result = DmRepository.extractPinnedSupport(
-          userPubkey: _validPubkeyA,
-          supportPubkey: support,
-          legacyPubkeys: const [''],
-          inbox: [thread],
-          requests: const [],
-        );
-
-        expect(result.pinned, equals(thread));
       });
     });
 

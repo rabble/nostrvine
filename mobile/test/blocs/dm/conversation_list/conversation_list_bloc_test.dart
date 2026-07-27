@@ -2671,7 +2671,6 @@ void main() {
       protectedMinorInboxGate: gate,
       recomputeDebounce: Duration.zero,
       supportRowPubkey: moderationPubkey,
-      supportRowLegacyPubkeys: [legacyModerationPubkey],
     );
 
     Future<ConversationListState> loadedState(
@@ -2871,7 +2870,6 @@ void main() {
           followRepository: mockFollowRepository,
           recomputeDebounce: Duration.zero,
           supportRowPubkey: moderationPubkey,
-          supportRowLegacyPubkeys: [legacyModerationPubkey],
         );
         addTearDown(bloc.close);
 

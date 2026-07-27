@@ -59,11 +59,9 @@ class DmUnreadCountCubit extends Cubit<int> {
     ProtectedMinorInboxGate? protectedMinorInboxGate,
     Duration recomputeDebounce = _defaultRecomputeDebounce,
     String? supportRowPubkey,
-    List<String> supportRowLegacyPubkeys = const [],
   }) : _protectedMinorInboxGate = protectedMinorInboxGate,
        _recomputeDebounce = recomputeDebounce,
        _supportRowPubkey = supportRowPubkey,
-       _supportRowLegacyPubkeys = supportRowLegacyPubkeys,
        super(0) {
     setRepositories(
       dmRepository: dmRepository,
@@ -89,12 +87,11 @@ class DmUnreadCountCubit extends Cubit<int> {
   final ProtectedMinorInboxGate? _protectedMinorInboxGate;
   final Duration _recomputeDebounce;
 
-  /// Moderation pubkey the inbox pins (#6283), and the keys it has rotated
-  /// away from. Injected exactly as `ConversationListBloc` takes them, and for
-  /// the same reason: the badge must partition the list the same way the list
-  /// does, or it counts rows the inbox does not render and misses one it does.
+  /// Moderation pubkey the inbox pins (#6283). Injected exactly as
+  /// `ConversationListBloc` takes it, and for the same reason: the badge must
+  /// partition the list the same way the list does, or it counts a row the
+  /// inbox does not render and misses one it does.
   final String? _supportRowPubkey;
-  final List<String> _supportRowLegacyPubkeys;
   DmRepository? _dmRepository;
   FollowRepository? _followRepository;
   ContentBlocklistRepository? _blocklistRepository;
@@ -228,17 +225,17 @@ class DmUnreadCountCubit extends Cubit<int> {
     final merged = DmRepository.mergeAndSort(accepted, split.followed);
 
     // Partition the pinned support row out exactly as the inbox does (#6283),
-    // then count it back in. Two things have to happen and neither is optional:
-    // a retired-key moderation thread must STOP being counted (the inbox drops
-    // it entirely), and a current-key one must START being counted even when it
-    // arrived as a request (the inbox renders it as the pin, unread dot and
-    // all). Counting `pin.inbox` alone would do the first and not the second.
-    // The bloc's synthetic stand-in is deliberately NOT reproduced here: it is
-    // always read, so it can only ever add zero and one more gate pass.
+    // then count it back in. Adding `adopted` back is the whole point: a
+    // current-key moderation thread must be counted even when it arrived as a
+    // request, because the inbox renders it as the pin, unread dot and all —
+    // and counting `pin.inbox` alone would silently drop it. A retired-key
+    // thread needs nothing special; the partition leaves it in `pin.inbox`,
+    // which is where the list renders it too. The bloc's synthetic stand-in is
+    // deliberately NOT reproduced here: it is always read, so it can only ever
+    // add zero and one more gate pass.
     final pin = DmRepository.extractPinnedSupport(
       userPubkey: userPubkey,
       supportPubkey: _supportRowPubkey,
-      legacyPubkeys: _supportRowLegacyPubkeys,
       inbox: merged,
       requests: split.requests,
     );

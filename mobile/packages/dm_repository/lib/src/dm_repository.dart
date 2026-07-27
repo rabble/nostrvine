@@ -5019,16 +5019,16 @@ class DmRepository {
   /// Lifts the Divine Moderation support thread out of the inbox and request
   /// lists so it renders once, as the pinned row (#6283).
   ///
-  /// Only a thread on [supportPubkey] is removed from the lists and returned as
-  /// `pinned`: the row routes on the returned conversation's own participants
-  /// and nothing remaps the recipient between there and [sendMessage], so
-  /// adopting a pre-rotation thread would send support replies to a retired
-  /// key.
+  /// Only a thread on [supportPubkey] is touched: the row routes on the
+  /// returned conversation's own participants and nothing remaps the recipient
+  /// between there and [sendMessage], so adopting a pre-rotation thread would
+  /// send support replies to a retired key.
   ///
-  /// [legacyPubkeys] is intentionally not removed here. Those rows carry
-  /// inbound moderation history that was visible before #6283; until the
-  /// archived read-only shape exists, keeping the original row is safer than
-  /// hiding the user's only in-app entry point to that history.
+  /// A thread on a *retired* moderation key is therefore left in whichever list
+  /// it arrived in, exactly like any other conversation. Those rows carry
+  /// inbound moderation history that was visible before #6283, and until the
+  /// archived read-only shape exists (#6416) keeping the original row is safer
+  /// than hiding the user's only in-app entry point to that history.
   ///
   /// Shared with the unread badge rather than reimplemented there, so the
   /// count cannot drift from the rows the list actually renders (#4976).
@@ -5048,7 +5048,6 @@ class DmRepository {
   extractPinnedSupport({
     required String userPubkey,
     required String? supportPubkey,
-    required List<String> legacyPubkeys,
     required List<DmConversation> inbox,
     required List<DmConversation> requests,
   }) {
@@ -5065,11 +5064,6 @@ class DmRepository {
     }
 
     final currentId = computeConversationId([userPubkey, supportPubkey]);
-    // Keep this parameter part of the shared contract even though legacy rows
-    // are preserved for now. Callers still pass the same moderation key set,
-    // and the archived read-only follow-up can reuse the API without
-    // re-threading it.
-    final _ = legacyPubkeys;
 
     DmConversation? pinned;
     final remainingInbox = <DmConversation>[];

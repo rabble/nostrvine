@@ -71,10 +71,16 @@ const List<OfficialAccount> kPinnedOfficialAccounts = [
 
 /// Moderation pubkeys the account has rotated away from.
 ///
-/// A DM thread opened before a rotation stays keyed on the old pubkey, so the
-/// pinned support row de-duplicates against these to avoid rendering beside an
-/// orphaned "Divine Moderation" conversation. Never a send target — messages
-/// always go to the current pin above.
+/// A DM thread opened before a rotation stays keyed on the old pubkey. Those
+/// threads are deliberately NOT folded into the pinned support row: the row
+/// routes on its own participants all the way to `sendMessage`, so adopting one
+/// would address replies to a key nobody reads. They stay where they are and
+/// render as ordinary rows, keeping their enforcement history reachable until
+/// #6416 gives it an archived read-only presentation.
+///
+/// Never a send target — messages always go to the current pin above. Used for
+/// recognising the account ([isModerationAccount], which drives the bundled
+/// avatar) and for the `ModerationLabelService` subscription migration.
 ///
 /// `121b915b…` was retired in #2321 (2026-03-20); `ModerationLabelService`
 /// carries the matching one-time migration for labeler subscriptions.
