@@ -109,7 +109,18 @@ class NostrSettingsScreen extends ConsumerWidget {
                 _SectionHeader(
                   title: context.l10n.nostrSettingsSectionDangerZone,
                 ),
-                _DeleteAccountTile(ref: ref),
+                _SettingsTile(
+                  divineIcon: DivineIconName.trash,
+                  title: context.l10n.nostrSettingsDeleteAccount,
+                  subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
+                  iconColor: VineTheme.error,
+                  titleColor: VineTheme.error,
+                  onTap: () => startAccountDeletionFlow(
+                    context: context,
+                    ref: ref,
+                    screenName: 'NostrSettingsScreen',
+                  ),
+                ),
               ],
             ],
           ),
@@ -187,28 +198,6 @@ class _RemoveKeysTile extends StatelessWidget {
           );
         }
       },
-    );
-  }
-}
-
-class _DeleteAccountTile extends StatelessWidget {
-  const _DeleteAccountTile({required this.ref});
-
-  final WidgetRef ref;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: Icons.delete_forever,
-      title: context.l10n.nostrSettingsDeleteAccount,
-      subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
-      onTap: () => startAccountDeletionFlow(
-        context: context,
-        ref: ref,
-        screenName: 'NostrSettingsScreen',
-      ),
-      iconColor: VineTheme.error,
-      titleColor: VineTheme.error,
     );
   }
 }
