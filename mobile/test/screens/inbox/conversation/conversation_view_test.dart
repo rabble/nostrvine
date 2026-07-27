@@ -18,6 +18,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
+import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -45,6 +46,9 @@ class _MockCollaboratorInviteActionsCubit
 class _MockConversationReactionsCubit
     extends MockBloc<ConversationReactionsEvent, ConversationReactionsState>
     implements ConversationReactionsCubit {}
+
+class _MockDmRestoreStatusCubit extends MockCubit<DmRestoreStatusState>
+    implements DmRestoreStatusCubit {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
@@ -85,6 +89,7 @@ void main() {
     late _MockConversationBloc mockBloc;
     late _MockCollaboratorInviteActionsCubit mockInviteActionsCubit;
     late _MockConversationReactionsCubit mockReactionsCubit;
+    late _MockDmRestoreStatusCubit mockRestoreStatusCubit;
     late _MockVideosRepository mockVideosRepository;
     late _MockWatermarkDownloadService mockWatermarkDownloadService;
     late MockNostrClient mockNostrClient;
@@ -123,6 +128,13 @@ void main() {
       when(() => mockBloc.isClosed).thenReturn(false);
       mockInviteActionsCubit = _MockCollaboratorInviteActionsCubit();
       mockReactionsCubit = _MockConversationReactionsCubit();
+      mockRestoreStatusCubit = _MockDmRestoreStatusCubit();
+      // Default: recovery finished, so the empty state stays unqualified.
+      whenListen(
+        mockRestoreStatusCubit,
+        const Stream<DmRestoreStatusState>.empty(),
+        initialState: const DmRestoreStatusState(),
+      );
       mockVideosRepository = _MockVideosRepository();
       mockWatermarkDownloadService = _MockWatermarkDownloadService();
       mockNostrClient = createMockNostrService();
@@ -162,8 +174,16 @@ void main() {
       ConversationState? state,
       UserProfile? otherProfile,
       MockGoRouter? goRouter,
+      DmRestoreStatusState? restoreStatus,
     }) {
       final effectiveState = state ?? const ConversationState();
+      if (restoreStatus != null) {
+        whenListen(
+          mockRestoreStatusCubit,
+          Stream<DmRestoreStatusState>.value(restoreStatus),
+          initialState: restoreStatus,
+        );
+      }
       whenListen(
         mockBloc,
         Stream<ConversationState>.value(effectiveState),
@@ -192,8 +212,11 @@ void main() {
             value: mockInviteActionsCubit,
             child: BlocProvider<ConversationReactionsCubit>.value(
               value: mockReactionsCubit,
-              child: const ConversationView(
-                participantPubkeys: [otherPubkey],
+              child: BlocProvider<DmRestoreStatusCubit>.value(
+                value: mockRestoreStatusCubit,
+                child: const ConversationView(
+                  participantPubkeys: [otherPubkey],
+                ),
               ),
             ),
           ),
@@ -375,6 +398,50 @@ void main() {
 
         expect(find.byType(EmptyConversation), findsOneWidget);
       });
+
+      testWidgets(
+        'empty conversation stays unqualified when recovery is complete',
+        (tester) async {
+          // The genuinely-new thread (FAB, following bar, profile Message) must
+          // keep reading as a clean profile card, not as a degraded state.
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationState(status: ConversationStatus.loaded),
+              restoreStatus: const DmRestoreStatusState(),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.byType(EmptyConversation), findsOneWidget);
+          expect(find.text(l10n.inboxRestorePausedTitle), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'empty conversation is qualified while history recovery is unfinished',
+        (tester) async {
+          // watchMessages is a local DB projection, so an unsynced thread hits
+          // `loaded` with zero rows and looks identical to a brand-new one.
+          // Recovery status is the only signal that distinguishes them.
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationState(status: ConversationStatus.loaded),
+              restoreStatus: const DmRestoreStatusState(isComplete: false),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.inboxRestorePausedTitle), findsOneWidget);
+          // The profile card survives intact alongside the qualifier.
+          expect(find.byType(EmptyConversation), findsOneWidget);
+          expect(
+            find.text(l10n.inboxConversationViewProfileButton),
+            findsOneWidget,
+          );
+        },
+      );
 
       testWidgets('renders $MessageBubble when loaded with messages', (
         tester,
@@ -900,8 +967,11 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
@@ -948,8 +1018,11 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
@@ -1012,8 +1085,11 @@ void main() {
                   value: mockInviteActionsCubit,
                   child: BlocProvider<ConversationReactionsCubit>.value(
                     value: mockReactionsCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
@@ -1156,8 +1232,11 @@ void main() {
                   value: mockInviteActionsCubit,
                   child: BlocProvider<ConversationReactionsCubit>.value(
                     value: mockReactionsCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
@@ -1274,8 +1353,11 @@ void main() {
                   value: mockInviteActionsCubit,
                   child: BlocProvider<ConversationReactionsCubit>.value(
                     value: mockReactionsCubit,
-                    child: const ConversationView(
-                      participantPubkeys: [otherPubkey],
+                    child: BlocProvider<DmRestoreStatusCubit>.value(
+                      value: mockRestoreStatusCubit,
+                      child: const ConversationView(
+                        participantPubkeys: [otherPubkey],
+                      ),
                     ),
                   ),
                 ),
@@ -1347,8 +1429,11 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),
@@ -1402,8 +1487,11 @@ void main() {
                 value: mockBloc,
                 child: BlocProvider<CollaboratorInviteActionsCubit>.value(
                   value: mockInviteActionsCubit,
-                  child: const ConversationView(
-                    participantPubkeys: [otherPubkey],
+                  child: BlocProvider<DmRestoreStatusCubit>.value(
+                    value: mockRestoreStatusCubit,
+                    child: const ConversationView(
+                      participantPubkeys: [otherPubkey],
+                    ),
                   ),
                 ),
               ),

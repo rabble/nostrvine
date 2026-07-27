@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
+import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/blocs/dm/shared_video_save/shared_video_save_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
@@ -454,6 +455,9 @@ class _ConversationContent extends StatelessWidget {
                     imageUrl: imageUrl,
                     nip05: nip05,
                     onViewProfile: onViewProfile,
+                    mayBeIncomplete: context.select<DmRestoreStatusCubit, bool>(
+                      (cubit) => cubit.state.mayBeIncomplete,
+                    ),
                   )
                 : _MessageList(
                     messages: selected.messages,

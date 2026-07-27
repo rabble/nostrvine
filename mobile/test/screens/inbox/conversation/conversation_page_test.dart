@@ -45,6 +45,14 @@ void main() {
       when(
         () => mockDmRepository.watchOutgoing(any()),
       ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+      // Consumed by DmRestoreStatusCubit, which qualifies the empty state.
+      when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+      when(
+        () => mockDmRepository.isHistoryRecoveryComplete,
+      ).thenReturn(true);
+      when(
+        () => mockDmRepository.historyRecoveryStream,
+      ).thenAnswer((_) => const Stream<bool>.empty());
 
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
