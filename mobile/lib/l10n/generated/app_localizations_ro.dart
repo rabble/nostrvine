@@ -1532,6 +1532,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Sunet original';
 
   @override
+  String get audioAttributionUnavailableSound => 'Sunet indisponibil';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirat de @$creatorName';
   }

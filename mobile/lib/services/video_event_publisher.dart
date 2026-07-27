@@ -1376,11 +1376,18 @@ class VideoEventPublisher {
       }
 
       // Handle audio reuse: extract audio, upload, publish Kind 1063 event
-      // Then add e tag linking video to audio event
-      // Skip if we already referenced a selected audio event above
+      // Then add e tag linking video to audio event.
+      //
+      // Skip when the selected audio was actually referenced above. Bundled
+      // sounds yield no Nostr reference, so opting into reuse should publish the
+      // rendered video audio as the user's reusable Kind 1063. External-provider
+      // catalog sounds are also not referenceable, but they carry their own
+      // provider/license metadata and must not be republished as the user's
+      // reusable sound.
       String? audioEventId;
       if (allowAudioReuse &&
-          !hasSelectedAudioEventId &&
+          reusableSelectedAudioEventId == null &&
+          selectedAudio?.isExternalProviderSound != true &&
           upload.localVideoPath.isNotEmpty) {
         tags.add(['allow_audio_reuse', 'true']);
         Log.info(

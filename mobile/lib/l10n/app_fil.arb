@@ -394,6 +394,7 @@
     "videoFollowButtonFollowing": "Sinusundan",
     "videoFollowButtonFollow": "Sundan",
     "audioAttributionOriginalSound": "Original sound",
+    "audioAttributionUnavailableSound": "Hindi available ang sound",
     "videoInspiredByAttribution": "Inspirasyon mula kay @{creatorName}",
     "videoCollaboratorWithOne": "kasama si @{name}",
     "videoCollaboratorWithMore": "kasama si @{name} +{count}",

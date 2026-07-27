@@ -364,6 +364,7 @@
     "videoFollowButtonFollowing": "팔로잉",
     "videoFollowButtonFollow": "팔로우",
     "audioAttributionOriginalSound": "오리지널 사운드",
+    "audioAttributionUnavailableSound": "사운드를 사용할 수 없어요",
     "videoInspiredByAttribution": "@{creatorName}님에게 영감받아",
     "videoCollaboratorWithOne": "@{name}님과 함께",
     "videoCollaboratorWithMore": "@{name}님 외 +{count}명과 함께",

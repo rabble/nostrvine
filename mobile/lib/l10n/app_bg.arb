@@ -588,6 +588,7 @@
     "videoFollowButtonFollowing": "Следване",
     "videoFollowButtonFollow": "Следвай",
     "audioAttributionOriginalSound": "Оригинален звук",
+    "audioAttributionUnavailableSound": "Звукът е недостъпен",
     "videoInspiredByAttribution": "Вдъхновен от @{creatorName}",
     "@videoInspiredByAttribution": {
         "placeholders": {

@@ -65,6 +65,7 @@ void main() {
     VideoEvent createVideoWithoutAudio({
       String? authorName,
       bool allowAudioReuse = false,
+      InspiredByInfo? inspiredBy,
     }) {
       final now = DateTime.now();
       return VideoEvent(
@@ -76,6 +77,7 @@ void main() {
         timestamp: now,
         title: 'Test Video',
         authorName: authorName,
+        inspiredByVideo: inspiredBy,
         rawTags: allowAudioReuse
             ? const {'allow_audio_reuse': 'true'}
             : const {},
@@ -167,6 +169,32 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Jake Lara'), findsOneWidget);
+      });
+
+      testWidgets('credits the author when inspired-by is not a reused sound', (
+        tester,
+      ) async {
+        // Inspired-by is a general credit, not a sound reference. With no
+        // audio reference the video has its own original sound, so the credit
+        // must stay with its author rather than the inspired-by creator.
+        const inspiredCreatorPubkey =
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+        final video = createVideoWithoutAudio(
+          authorName: 'Jake Lara',
+          inspiredBy: const InspiredByInfo(
+            addressableId: '34236:$inspiredCreatorPubkey:vine-xyz',
+          ),
+        );
+
+        await tester.pumpWidget(buildTestWidget(video: video));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Original sound'), findsOneWidget);
+        expect(find.text('Jake Lara'), findsOneWidget);
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(inspiredCreatorPubkey)),
+          findsNothing,
+        );
       });
 
       testWidgets('falls back to original sound when audio event is null', (

@@ -1411,6 +1411,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get audioAttributionOriginalSound => '오리지널 사운드';
 
   @override
+  String get audioAttributionUnavailableSound => '사운드를 사용할 수 없어요';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return '@$creatorName님에게 영감받아';
   }
