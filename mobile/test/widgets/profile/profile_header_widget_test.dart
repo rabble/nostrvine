@@ -32,7 +32,6 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
-import 'package:openvine/widgets/profile/profile_creator_site_button.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_website_row.dart';
@@ -856,86 +855,22 @@ void main() {
       },
     );
 
-    testWidgets('shows the creator site CTA on own and other profiles', (
+    testWidgets('shows the profile website row when the profile has one', (
       tester,
     ) async {
-      final profile = createTestProfile(
-        displayName: 'Creator',
-        about: 'Creator bio',
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: true,
-          suppliedProfile: profile,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      final linkFinder = find.byKey(const Key('profile-creator-site-button'));
-      expect(linkFinder, findsOneWidget);
-      expect(find.text(l10n.profileCreatorSiteOwnLabel), findsOneWidget);
-
       await tester.pumpWidget(
         buildTestWidget(
           userIdHex: testUserHex,
           isOwnProfile: false,
-          suppliedProfile: profile,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(linkFinder, findsOneWidget);
-      // "my divine.space" contains "divine.space", so assert the owner copy
-      // is gone rather than just that the visitor copy is present.
-      expect(find.text(l10n.profileCreatorSiteOwnLabel), findsNothing);
-      expect(find.text(l10n.profileCreatorSiteVisitLabel), findsOneWidget);
-    });
-
-    testWidgets('deduplicates only the matching generated profile website', (
-      tester,
-    ) async {
-      final profileUri = divineSpaceProfileUri(testUserHex)!;
-      final matchingProfile = createTestProfile(
-        displayName: 'Creator',
-        website: '$profileUri/',
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: false,
-          suppliedProfile: matchingProfile,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ProfileWebsiteRow), findsNothing);
-      expect(
-        find.byKey(const Key('profile-creator-site-button')),
-        findsOneWidget,
-      );
-
-      final differentWebsiteProfile = createTestProfile(
-        displayName: 'Creator',
-        website: 'https://creator.example/shop',
-      );
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: false,
-          suppliedProfile: differentWebsiteProfile,
+          suppliedProfile: createTestProfile(
+            displayName: 'Creator',
+            website: 'https://creator.example/shop',
+          ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.byType(ProfileWebsiteRow), findsOneWidget);
-      expect(
-        find.byKey(const Key('profile-creator-site-button')),
-        findsOneWidget,
-      );
     });
 
     testWidgets('shows support affordance for other profiles with links', (
@@ -967,37 +902,26 @@ void main() {
       await tester.pumpAndSettle();
 
       final supportButton = find.byKey(const Key('profile-support-button'));
-      final creatorSiteButton = find.byKey(
-        const Key('profile-creator-site-button'),
-      );
       expect(supportButton, findsOneWidget);
-      expect(creatorSiteButton, findsOneWidget);
       // Label-only support pill: a bolt glyph reads as Lightning-Network
       // payment, so the affordance carries copy and no icon.
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.profileSupportButtonLabel), findsOneWidget);
       expect(tester.widget<DivineButton>(supportButton).leadingIcon, isNull);
 
-      // Both affordances share one centered row in the identity block,
-      // between the bio and the stats.
-      final creatorRect = tester.getRect(creatorSiteButton);
+      // Centered in the identity block, between the bio and the stats.
       final supportRect = tester.getRect(supportButton);
-      expect(supportRect.left, greaterThanOrEqualTo(creatorRect.right));
-      expect(supportRect.center.dy, closeTo(creatorRect.center.dy, 1));
       expect(
-        creatorRect.top,
+        supportRect.top,
         greaterThan(tester.getBottomLeft(find.text('Creator bio')).dy),
       );
       expect(
         supportRect.top,
         lessThan(tester.getTopLeft(find.text('Likes')).dy),
       );
-
-      // The pair is centered as a unit, not left-aligned.
-      final rowRect = creatorRect.expandToInclude(supportRect);
       final screenWidth =
           tester.view.physicalSize.width / tester.view.devicePixelRatio;
-      expect(rowRect.center.dx, closeTo(screenWidth / 2, 1));
+      expect(supportRect.center.dx, closeTo(screenWidth / 2, 1));
     });
 
     testWidgets('shows the support button in the frame the links arrive', (
@@ -1049,212 +973,6 @@ void main() {
       // stranded this button at zero width.
       expect(supportButton, findsOneWidget);
       expect(tester.getRect(supportButton).width, greaterThan(0));
-    });
-
-    testWidgets(
-      'holds the creator-site pill until the relay Kind 0 resolves, then '
-      'reveals the Tip pill in the same frame',
-      (tester) async {
-        // Funnelcake's REST projection strips the custom monetization Kind 0
-        // field, so the link-stripped REST profile (rest- event id) lands
-        // first and the relay Kind 0 (with links) arrives a beat later.
-        final restProjection = createTestProfile(
-          displayName: 'Creator',
-          eventId: 'rest-improvising',
-        );
-        final relayKind0 = createTestProfile(
-          displayName: 'Creator',
-          eventId: 'kind0-improvising',
-          rawData: {
-            divineMonetizationLinksKey: [
-              const MonetizationLink(
-                provider: MonetizationLinkProvider.cashApp,
-                category: MonetizationLinkCategory.tip,
-                url: r'https://cash.app/$creator',
-                enabled: true,
-              ).toJson(),
-            ],
-          },
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: restProjection,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pump();
-
-        final creatorSiteButton = find.byKey(
-          const Key('profile-creator-site-button'),
-        );
-        final supportButton = find.byKey(const Key('profile-support-button'));
-
-        // Held while only the REST projection is known — no lone creator-site
-        // button ahead of the Tip pill.
-        expect(creatorSiteButton, findsNothing);
-        expect(supportButton, findsNothing);
-
-        // Relay Kind 0 lands carrying the links → both reveal together.
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: relayKind0,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pump();
-
-        expect(creatorSiteButton, findsOneWidget);
-        expect(supportButton, findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'reveals the creator-site pill alone after the resolve timeout when the '
-      'relay never upgrades the REST projection',
-      (tester) async {
-        final restProjection = createTestProfile(
-          displayName: 'Creator',
-          eventId: 'rest-improvising',
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: restProjection,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pump();
-
-        final creatorSiteButton = find.byKey(
-          const Key('profile-creator-site-button'),
-        );
-        final supportButton = find.byKey(const Key('profile-support-button'));
-
-        // Held while the REST projection is all we have.
-        expect(creatorSiteButton, findsNothing);
-
-        // Past the fallback timeout the creator-site pill reveals on its own so
-        // a dead relay can't strand the CTA; the REST projection carries no
-        // links, so no Tip pill appears.
-        await tester.pump(const Duration(seconds: 11));
-        await tester.pump();
-
-        expect(creatorSiteButton, findsOneWidget);
-        expect(supportButton, findsNothing);
-      },
-    );
-
-    testWidgets(
-      'shows the own-profile creator-site pill from a REST projection',
-      (tester) async {
-        final restProjection = createTestProfile(
-          displayName: 'Creator',
-          eventId: 'rest-improvising',
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            suppliedProfile: restProjection,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pump();
-
-        expect(
-          find.byKey(const Key('profile-creator-site-button')),
-          findsOneWidget,
-        );
-        expect(find.byKey(const Key('profile-support-button')), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'keeps the creator-site pill visible after timeout when REST refreshes',
-      (tester) async {
-        final restProjection = createTestProfile(
-          displayName: 'Creator',
-          eventId: 'rest-improvising',
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: restProjection,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pump();
-
-        final creatorSiteButton = find.byKey(
-          const Key('profile-creator-site-button'),
-        );
-        expect(creatorSiteButton, findsNothing);
-
-        await tester.pump(const Duration(seconds: 11));
-        await tester.pump();
-        expect(creatorSiteButton, findsOneWidget);
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: restProjection,
-            monetizationLinksEnabled: true,
-          ),
-        );
-        await tester.pump();
-
-        expect(creatorSiteButton, findsOneWidget);
-      },
-    );
-
-    testWidgets('keeps the standalone support button without a creator site', (
-      tester,
-    ) async {
-      // A short-but-hex pubkey renders an npub but cannot produce a Divine
-      // Space URL, so there is nothing to pair the support button with.
-      const shortHex = 'abc123';
-      final creatorProfile = createTestProfile(
-        displayName: 'Creator',
-        rawData: {
-          divineMonetizationLinksKey: [
-            const MonetizationLink(
-              provider: MonetizationLinkProvider.cashApp,
-              category: MonetizationLinkCategory.tip,
-              url: r'https://cash.app/$creator',
-              enabled: true,
-            ).toJson(),
-          ],
-        },
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: shortHex,
-          isOwnProfile: false,
-          suppliedProfile: creatorProfile,
-          monetizationLinksEnabled: true,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(const Key('profile-creator-site-button')),
-        findsNothing,
-      );
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.byKey(const Key('profile-support-button')), findsOneWidget);
-      expect(find.text(l10n.profileSupportButtonLabel), findsOneWidget);
     });
 
     testWidgets('hides support affordance when monetization flag is off', (
