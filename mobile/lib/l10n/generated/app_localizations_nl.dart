@@ -6994,12 +6994,24 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit account van dit apparaat verwijderen?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Log opnieuw in om je account te verwijderen. Er is nog niets verwijderd.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Je account kon niet van de server worden verwijderd. Controleer je verbinding en probeer het opnieuw.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Verwijderverzoeken voor je posts zijn verstuurd, maar we konden je account niet volledig verwijderen. Log opnieuw in om dit af te ronden.';
+
+  @override
   String get deleteAccountSuccess =>
       'Verwijderverzoeken verstuurd. Je bent op dit apparaat afgemeld.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Accountverwijdering aangevraagd. Voor sommige bestaande posts kon de verwijdering niet afzonderlijk worden bevestigd.';
 
   @override
   String get deleteAccountWarningBody =>

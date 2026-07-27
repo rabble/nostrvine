@@ -7012,12 +7012,24 @@ class AppLocalizationsPt extends AppLocalizations {
       'Remover esta conta deste dispositivo?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Entre novamente para excluir sua conta. Nada foi excluído ainda.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Não foi possível excluir sua conta do servidor. Verifique sua conexão e tente novamente.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'As solicitações de exclusão das suas publicações foram enviadas, mas não conseguimos concluir a exclusão da sua conta. Entre novamente para concluir.';
+
+  @override
   String get deleteAccountSuccess =>
       'Solicitações de exclusão enviadas. Você foi desconectado neste dispositivo.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Exclusão da conta solicitada. Não foi possível confirmar individualmente a exclusão de algumas publicações existentes.';
 
   @override
   String get deleteAccountWarningBody =>

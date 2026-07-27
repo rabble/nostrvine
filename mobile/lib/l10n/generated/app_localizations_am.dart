@@ -6825,11 +6825,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get deleteAccountRemoveKeysTitle => 'ይህን መለያ ከዚህ መሣሪያ ማስወገድ?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'መለያዎን ለመሰረዝ እንደገና ይግቡ። እስካሁን ምንም አልተሰረዘም።';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ እንደገና ይግቡ።';
+
+  @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'የመለያ ስረዛ ተጠይቋል። የአንዳንድ ነባር ልጥፎች ስረዛ በተናጠል ማረጋገጥ አልተቻለም።';
 
   @override
   String get deleteAccountWarningBody =>

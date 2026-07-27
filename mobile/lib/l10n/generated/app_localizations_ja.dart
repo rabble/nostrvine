@@ -6681,11 +6681,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deleteAccountRemoveKeysTitle => 'このアカウントをこのデバイスから削除する?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'アカウントを削除するには、もう一度サインインしてね。まだ何も削除されていないよ。';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'サーバーからアカウントを削除できなかったよ。接続を確認してもう一回試してね。';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      '投稿の削除リクエストは送ったけど、アカウントの削除を完了できなかったよ。もう一度サインインして完了してね。';
+
+  @override
   String get deleteAccountSuccess => '削除リクエストを送信したよ。このデバイスからサインアウトしたよ。';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'アカウントの削除をリクエストしたよ。既存の投稿の一部は、個別に削除を確認できなかったよ。';
 
   @override
   String get deleteAccountWarningBody =>

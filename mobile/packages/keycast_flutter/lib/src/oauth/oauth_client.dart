@@ -180,7 +180,10 @@ class KeycastOAuth {
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       final tokenResponse = TokenResponse.fromJson(json);
-      var session = KeycastSession.fromTokenResponse(tokenResponse);
+      var session = KeycastSession.fromTokenResponse(
+        tokenResponse,
+        grantType: KeycastSession.refreshTokenGrant,
+      );
       if (userPubkey != null && userPubkey.isNotEmpty) {
         session = session.copyWith(userPubkey: userPubkey);
       }
@@ -969,6 +972,17 @@ class KeycastOAuth {
     }
   }
 
+  /// The server's own `message` (falling back to `error`) from a JSON error
+  /// body, or null when the body is absent or not JSON.
+  static String? _errorMessageFrom(http.Response response) {
+    try {
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      return json['message'] as String? ?? json['error'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Delete the user's account permanently from Keycast
   ///
   /// Requires an active bearer token from headless login/register flow.
@@ -977,13 +991,15 @@ class KeycastOAuth {
   /// Returns [DeleteAccountResult] with success status.
   Future<DeleteAccountResult> deleteAccount(String token) async {
     try {
-      final response = await _client.delete(
-        Uri.parse('${config.serverUrl}/api/user/account'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      final response = await _client
+          .delete(
+            Uri.parse('${config.serverUrl}/api/user/account'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -997,6 +1013,19 @@ class KeycastOAuth {
       if (response.statusCode == 401) {
         return DeleteAccountResult.error(
           'Unauthorized: invalid or expired token',
+          requiresReauthentication: true,
+        );
+      }
+
+      if (response.statusCode == 403) {
+        // The credential is valid but not authorized to delete — currently
+        // because a refreshed access token no longer carries the server's
+        // first-party fact. Re-authenticating fixes it, so this must never be
+        // reported as a connectivity problem or retried unchanged.
+        return DeleteAccountResult.error(
+          _errorMessageFrom(response) ??
+              'Account deletion requires signing in again',
+          requiresReauthentication: true,
         );
       }
 

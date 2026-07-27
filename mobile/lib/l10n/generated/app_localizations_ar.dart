@@ -6922,12 +6922,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get deleteAccountRemoveKeysTitle => 'إزالة هذا الحساب من هذا الجهاز؟';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'سجّل الدخول مرة أخرى لحذف حسابك. لم يُحذف أي شيء بعد.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'تعذّر حذف حسابك من الخادم. يرجى التحقق من اتصالك والمحاولة مرّة أخرى.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'تم إرسال طلبات حذف منشوراتك، لكن لم نتمكّن من إكمال حذف حسابك. سجّل الدخول مرّة أخرى لإكمال العملية.';
+
+  @override
   String get deleteAccountSuccess =>
       'تم إرسال طلبات الحذف. تم تسجيل خروجك من هذا الجهاز.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'تم طلب حذف الحساب. تعذّر تأكيد حذف بعض المنشورات الحالية بشكل فردي.';
 
   @override
   String get deleteAccountWarningBody =>

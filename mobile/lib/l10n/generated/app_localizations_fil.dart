@@ -7043,12 +7043,24 @@ class AppLocalizationsFil extends AppLocalizations {
       'Alisin ang account na ito sa device na ito?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Mag-sign in ulit para i-delete ang account mo. Wala pang na-delete.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Mag-sign in ulit para tapusin.';
+
+  @override
   String get deleteAccountSuccess =>
       'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Na-request na ang pag-delete ng account. May ilang existing na post na hindi makumpirma nang isa-isa para sa pag-delete.';
 
   @override
   String get deleteAccountWarningBody =>

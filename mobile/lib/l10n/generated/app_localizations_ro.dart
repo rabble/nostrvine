@@ -7129,12 +7129,24 @@ class AppLocalizationsRo extends AppLocalizations {
       'Elimini acest cont de pe acest dispozitiv?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Conectează-te din nou ca să-ți ștergi contul. Nu a fost șters încă nimic.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Nu am putut șterge contul tău de pe server. Verifică-ți conexiunea și încearcă din nou.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Cererile de ștergere pentru postările tale au fost trimise, dar nu am putut finaliza ștergerea contului tău. Conectează-te din nou pentru a finaliza.';
+
+  @override
   String get deleteAccountSuccess =>
       'Cereri de ștergere trimise. Ai fost deconectat pe acest dispozitiv.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Ștergerea contului a fost solicitată. Ștergerea unor postări existente nu a putut fi confirmată individual.';
 
   @override
   String get deleteAccountWarningBody =>

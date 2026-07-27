@@ -8,14 +8,64 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
+import 'package:nostr_sdk/relay/relay_type.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 
-class _MockNostrClient extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {
+  /// Drives the `timedOut` field of the record synthesized below, so tests
+  /// keep stubbing the simpler [queryEvents] for the event list.
+  bool queryTimedOut = false;
+
+  @override
+  Future<({List<Event> events, bool timedOut, bool noRelays})>
+  queryEventsDetailed(
+    List<Filter> filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    bool sendAfterAuth = false,
+    bool useCache = true,
+    bool useQueryPool = true,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final events = await queryEvents(filters);
+    return (
+      events: events,
+      timedOut: queryTimedOut,
+      noRelays: connectedRelays.isEmpty,
+    );
+  }
+}
 
 class _MockAuthService extends Mock implements AuthService {}
 
 class _FakeEvent extends Fake implements Event {}
+
+/// A relay returned `OK true`.
+const _confirmed = PublishOutcome(
+  eventId: 'confirmed',
+  acceptedBy: ['wss://relay.example.com'],
+  rejectedBy: <String, String>{},
+  noResponseFrom: <String>[],
+);
+
+/// Every targeted relay returned `OK false`.
+const _rejected = PublishOutcome(
+  eventId: 'rejected',
+  acceptedBy: <String>[],
+  rejectedBy: {'wss://relay.example.com': 'blocked: test'},
+  noResponseFrom: <String>[],
+);
+
+/// No relay answered before the timeout.
+const _noRelayResponse = PublishOutcome(
+  eventId: 'unreachable',
+  acceptedBy: <String>[],
+  rejectedBy: <String, String>{},
+  noResponseFrom: <String>[],
+);
 
 void main() {
   setUpAll(() {
@@ -65,6 +115,10 @@ void main() {
       when(
         () => mockNostrService.queryEvents(any()),
       ).thenAnswer((_) async => []);
+      when(() => mockNostrService.isDisposed).thenReturn(false);
+      when(
+        () => mockNostrService.connectedRelays,
+      ).thenReturn(['wss://relay.example.com']);
     });
 
     test('createNip62Event should create kind 62 event', () async {
@@ -165,14 +219,14 @@ void main() {
       ).thenAnswer((_) async => expectedEvent);
 
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => PublishSuccess(event: expectedEvent));
+        () => mockNostrService.publishEventAwaitOk(any()),
+      ).thenAnswer((_) async => _confirmed);
 
       // Act
       await expectLater(service.deleteAccount(), completes);
 
       // Assert
-      verify(() => mockNostrService.publishEvent(any())).called(1);
+      verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
     });
 
     test(
@@ -197,8 +251,8 @@ void main() {
         ).thenAnswer((_) async => expectedEvent);
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: expectedEvent));
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
 
         // Act
         final result = await service.deleteAccount();
@@ -228,10 +282,10 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      // publishEvent returns PublishFailed on send failure
+      // publishEventAwaitOk reports every relay rejecting
       when(
-        () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => const PublishFailed());
+        () => mockNostrService.publishEventAwaitOk(any()),
+      ).thenAnswer((_) async => _rejected);
 
       // Act
       final result = await service.deleteAccount();
@@ -243,7 +297,7 @@ void main() {
     });
 
     test(
-      'deleteAccount returns generic publish-failure message when PublishNoRelays',
+      'deleteAccount returns generic publish-failure message when no relay responds',
       () async {
         // Arrange
         final expectedEvent = createTestEvent(
@@ -264,8 +318,8 @@ void main() {
         ).thenAnswer((_) async => expectedEvent);
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishNoRelays());
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _noRelayResponse);
 
         // Act
         final result = await service.deleteAccount();
@@ -288,7 +342,7 @@ void main() {
       expect(result.error, contains('Not authenticated'));
 
       // Verify publishEvent was NOT called
-      verifyNever(() => mockNostrService.publishEvent(any()));
+      verifyNever(() => mockNostrService.publishEventAwaitOk(any()));
     });
 
     test(
@@ -311,7 +365,7 @@ void main() {
         expect(result.error, contains('Failed to create deletion event'));
 
         // Verify publishEvent was NOT called
-        verifyNever(() => mockNostrService.publishEvent(any()));
+        verifyNever(() => mockNostrService.publishEventAwaitOk(any()));
       },
     );
 
@@ -338,8 +392,8 @@ void main() {
           ),
         ).thenAnswer((_) async => nip62Event);
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
 
         // Act
         await service.deleteAccount();
@@ -397,15 +451,15 @@ void main() {
           });
 
           when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _confirmed);
 
           // Act
           final result = await service.deleteAccount();
 
           // Assert
           expect(result.success, isTrue);
-          verify(() => mockNostrService.publishEvent(any())).called(2);
+          verify(() => mockNostrService.publishEventAwaitOk(any())).called(2);
         },
       );
 
@@ -480,8 +534,8 @@ void main() {
         });
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
 
         // Act
         final result = await service.deleteAccount();
@@ -489,7 +543,7 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(3));
-        verify(() => mockNostrService.publishEvent(any())).called(3);
+        verify(() => mockNostrService.publishEventAwaitOk(any())).called(3);
       });
 
       test('should return deletedEventsCount in result', () async {
@@ -538,8 +592,8 @@ void main() {
         });
 
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
 
         // Act
         final result = await service.deleteAccount();
@@ -571,8 +625,8 @@ void main() {
           ),
         ).thenAnswer((_) async => nip62Event);
         when(
-          () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
 
         // Act
         final result = await service.deleteAccount();
@@ -580,11 +634,11 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(0));
-        verify(() => mockNostrService.publishEvent(any())).called(1);
+        verify(() => mockNostrService.publishEventAwaitOk(any())).called(1);
       });
 
       test(
-        'batch deletion does not count events when PublishNoRelays',
+        'batch deletion does not count events when no relay responds',
         () async {
           // Arrange
           final userEvent = createTestEvent(
@@ -630,13 +684,13 @@ void main() {
           });
 
           var publishCallCount = 0;
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrService.publishEventAwaitOk(any())).thenAnswer((
+            _,
+          ) async {
             publishCallCount++;
             // First publish is the batch kind-5; second is NIP-62.
-            if (publishCallCount == 1) return const PublishNoRelays();
-            return PublishSuccess(event: nip62Event);
+            if (publishCallCount == 1) return _noRelayResponse;
+            return _confirmed;
           });
 
           // Act
@@ -646,11 +700,12 @@ void main() {
           // was unreachable for kind-5.
           expect(result.success, isTrue);
           expect(result.deletedEventsCount, equals(0));
+          expect(result.contentDeletionIncomplete, isTrue);
         },
       );
 
       test(
-        'batch deletion does not count events when PublishFailed',
+        'batch deletion does not count events when every relay rejects',
         () async {
           // Arrange
           final userEvent = createTestEvent(
@@ -696,13 +751,13 @@ void main() {
           });
 
           var publishCallCount = 0;
-          when(
-            () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async {
+          when(() => mockNostrService.publishEventAwaitOk(any())).thenAnswer((
+            _,
+          ) async {
             publishCallCount++;
             // First publish is the batch kind-5; second is NIP-62.
-            if (publishCallCount == 1) return const PublishFailed();
-            return PublishSuccess(event: nip62Event);
+            if (publishCallCount == 1) return _rejected;
+            return _confirmed;
           });
 
           // Act
@@ -711,6 +766,337 @@ void main() {
           // Assert — NIP-62 still succeeds; batch counted 0 because send
           // failed.
           expect(result.success, isTrue);
+          expect(result.deletedEventsCount, equals(0));
+        },
+      );
+    });
+
+    group('sweep target selection', () {
+      // Regression for #6335: the sweep had no kind filter, so on every retry
+      // it asked relays to delete its own prior kind-5 requests and the
+      // kind-62 vanish request itself, growing the e-tag list each time. Both
+      // are protocol no-ops (NIP-09: "Publishing a deletion request event
+      // against a deletion request has no effect"; NIP-62 says the same for a
+      // request to vanish), so this only ever wasted remote-signing
+      // round-trips and asked the network to retract a legal notice.
+      test("excludes the flow's own kind-5 and kind-62 events", () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(testPublicKey);
+
+        final note = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [],
+          content: 'note',
+          id: 'note_1',
+        );
+        final priorDeletion = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: const [
+            ['e', 'note_1'],
+          ],
+          content: 'prior sweep',
+          id: 'kind5_1',
+        );
+        final priorVanish = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: const [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'prior vanish',
+          id: 'kind62_1',
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [note, priorDeletion, priorVanish]);
+
+        final signedKinds = <int>[];
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final tags =
+              invocation.namedArguments[const Symbol('tags')]
+                  as List<List<String>>;
+          for (final tag in tags) {
+            if (tag.length >= 2 && tag[0] == 'k') {
+              signedKinds.add(int.parse(tag[1]));
+            }
+          }
+          return createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: const [],
+            content: 'deletion',
+          );
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
+
+        await service.deleteAccount();
+
+        // The kind-1 note is swept; the flow's own kind-5 and kind-62 are not.
+        expect(signedKinds, contains(1));
+        expect(signedKinds, isNot(contains(5)));
+        expect(signedKinds, isNot(contains(62)));
+      });
+
+      // Regression for #6335: the sweep emitted `e` tags only. NIP-09 says
+      // "When an `a` tag is used, relays SHOULD delete all versions of the
+      // replaceable event up to the `created_at`", so with `e` alone every
+      // prior version of an edited video survives on a relay that implements
+      // NIP-09 but not NIP-62 — exactly the relays this sweep exists for.
+      test(
+        'emits an a tag for addressable kinds alongside the e tag',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(testPublicKey);
+
+          final video = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 34236,
+            tags: const [
+              ['d', 'my-vine-id'],
+            ],
+            content: 'video',
+            id: 'video_1',
+          );
+
+          when(
+            () => mockNostrService.queryEvents(any()),
+          ).thenAnswer((_) async => [video]);
+
+          List<List<String>>? kind5Tags;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((invocation) async {
+            final tags =
+                invocation.namedArguments[const Symbol('tags')]
+                    as List<List<String>>;
+            if (tags.any((tag) => tag.isNotEmpty && tag[0] == 'e')) {
+              kind5Tags = tags;
+            }
+            return createTestEvent(
+              pubkey: testPublicKey,
+              kind: 5,
+              tags: const [],
+              content: 'deletion',
+            );
+          });
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _confirmed);
+
+          await service.deleteAccount();
+
+          expect(kind5Tags, isNotNull);
+          // `contains` compares with `==`, and Dart lists use identity
+          // equality, so each expected tag must be wrapped in `equals`.
+          expect(kind5Tags, contains(equals(['e', 'video_1'])));
+          expect(
+            kind5Tags,
+            contains(equals(['a', '34236:$testPublicKey:my-vine-id'])),
+          );
+        },
+      );
+
+      test('omits the a tag for non-addressable kinds', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(testPublicKey);
+
+        final note = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: const [
+            ['d', 'not-addressable'],
+          ],
+          content: 'note',
+          id: 'note_1',
+        );
+
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => [note]);
+
+        List<List<String>>? kind5Tags;
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          final tags =
+              invocation.namedArguments[const Symbol('tags')]
+                  as List<List<String>>;
+          if (tags.any((tag) => tag.isNotEmpty && tag[0] == 'e')) {
+            kind5Tags = tags;
+          }
+          return createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: const [],
+            content: 'deletion',
+          );
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
+
+        await service.deleteAccount();
+
+        expect(kind5Tags, isNotNull);
+        expect(kind5Tags!.any((tag) => tag[0] == 'a'), isFalse);
+      });
+
+      // Regression for #6335: a failed relay query was swallowed into an empty
+      // list, so the entire kind-5 sweep was skipped while the irreversible
+      // vanish was still published — and the caller reported plain success.
+      test('reports contentQueryFailed when the relay query throws', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(testPublicKey);
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenThrow(Exception('relay unreachable'));
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: const [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          ),
+        );
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(result.contentQueryFailed, isTrue);
+        expect(result.deletedEventsCount, equals(0));
+      });
+
+      test('contentQueryFailed is false on a healthy query', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenReturn(testPublicKey);
+        when(
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: const [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          ),
+        );
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(result.contentQueryFailed, isFalse);
+      });
+
+      test('reports contentQueryFailed when no relay is connected', () async {
+        when(
+          () => mockNostrService.connectedRelays,
+        ).thenReturn(const <String>[]);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: const [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          ),
+        );
+        when(
+          () => mockNostrService.publishEventAwaitOk(any()),
+        ).thenAnswer((_) async => _confirmed);
+
+        final result = await service.deleteAccount();
+
+        expect(result.success, isTrue);
+        expect(result.contentQueryFailed, isTrue);
+        expect(result.deletedEventsCount, equals(0));
+      });
+
+      test(
+        'reports contentQueryFailed when the relay query times out',
+        () async {
+          mockNostrService.queryTimedOut = true;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async => createTestEvent(
+              pubkey: testPublicKey,
+              kind: 62,
+              tags: const [
+                ['relay', 'ALL_RELAYS'],
+              ],
+              content: 'deletion',
+            ),
+          );
+          when(
+            () => mockNostrService.publishEventAwaitOk(any()),
+          ).thenAnswer((_) async => _confirmed);
+
+          final result = await service.deleteAccount();
+
+          expect(result.success, isTrue);
+          expect(result.contentQueryFailed, isTrue);
           expect(result.deletedEventsCount, equals(0));
         },
       );

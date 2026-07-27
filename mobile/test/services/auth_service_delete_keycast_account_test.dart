@@ -58,7 +58,9 @@ void main() {
       );
 
       // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+      final result = await authService.deleteKeycastAccount();
+      final success = result.success;
+      final error = result.error;
 
       // Assert
       expect(success, isTrue);
@@ -79,7 +81,9 @@ void main() {
       ).thenAnswer((_) async => null);
 
       // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+      final result = await authService.deleteKeycastAccount();
+      final success = result.success;
+      final error = result.error;
 
       // Assert — now correctly reports failure
       expect(success, isFalse);
@@ -108,7 +112,9 @@ void main() {
         ).thenAnswer((_) async => sessionWithoutToken);
 
         // Act
-        final (success, error) = await authService.deleteKeycastAccount();
+        final result = await authService.deleteKeycastAccount();
+        final success = result.success;
+        final error = result.error;
 
         // Assert — now correctly reports failure
         expect(success, isFalse);
@@ -146,7 +152,9 @@ void main() {
       );
 
       // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+      final result = await authService.deleteKeycastAccount();
+      final success = result.success;
+      final error = result.error;
 
       // Assert
       expect(success, isTrue);
@@ -181,7 +189,9 @@ void main() {
       ).thenAnswer((_) async => DeleteAccountResult.error(errorMessage));
 
       // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+      final result = await authService.deleteKeycastAccount();
+      final success = result.success;
+      final error = result.error;
 
       // Assert
       expect(success, isFalse);
@@ -189,6 +199,63 @@ void main() {
       verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
       verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
+
+    // The caller decides between "retry" and "sign in again" copy from this
+    // flag, and it must survive the hop out of the package: the server's own
+    // 403 prose is not matchable, and by the time this runs the NIP-62 vanish
+    // has already been published.
+    test(
+      'propagates requiresReauthentication from a refused deletion',
+      () async {
+        authService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          oauthClient: mockOAuthClient,
+        );
+
+        const testAccessToken = 'refreshed_access_token';
+        final validSession = KeycastSession(
+          bunkerUrl: 'https://bunker.example.com',
+          accessToken: testAccessToken,
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        );
+        when(
+          () => mockOAuthClient.getSessionOrRefresh(),
+        ).thenAnswer((_) async => validSession);
+        when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
+          (_) async => DeleteAccountResult.error(
+            'Account deletion requires the Divine app or web login with your '
+            'private key',
+            requiresReauthentication: true,
+          ),
+        );
+
+        final result = await authService.deleteKeycastAccount();
+
+        expect(result.success, isFalse);
+        expect(result.requiresReauthentication, isTrue);
+      },
+    );
+
+    test(
+      'flags an unrefreshable session as needing reauthentication',
+      () async {
+        authService = AuthService(
+          userDataCleanupService: mockCleanupService,
+          keyStorage: mockKeyStorage,
+          oauthClient: mockOAuthClient,
+        );
+
+        when(
+          () => mockOAuthClient.getSessionOrRefresh(),
+        ).thenAnswer((_) async => null);
+
+        final result = await authService.deleteKeycastAccount();
+
+        expect(result.success, isFalse);
+        expect(result.requiresReauthentication, isTrue);
+      },
+    );
 
     test('returns failure when exception is thrown', () async {
       // Create AuthService with OAuth client
@@ -215,7 +282,9 @@ void main() {
       ).thenThrow(Exception('Network error'));
 
       // Act
-      final (success, error) = await authService.deleteKeycastAccount();
+      final result = await authService.deleteKeycastAccount();
+      final success = result.success;
+      final error = result.error;
 
       // Assert
       expect(success, isFalse);

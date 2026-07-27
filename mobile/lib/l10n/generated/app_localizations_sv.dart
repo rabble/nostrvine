@@ -6962,12 +6962,24 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ta bort det här kontot från den här enheten?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Logga in igen för att radera ditt konto. Inget har raderats än.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Kunde inte ta bort ditt konto från servern. Kontrollera din anslutning och försök igen.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Raderingsförfrågningar för dina inlägg har skickats, men vi kunde inte slutföra raderingen av ditt konto. Logga in igen för att slutföra.';
+
+  @override
   String get deleteAccountSuccess =>
       'Raderingsförfrågningar skickade. Du är utloggad på den här enheten.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Radering av kontot har begärts. Raderingen av vissa befintliga inlägg kunde inte bekräftas individuellt.';
 
   @override
   String get deleteAccountWarningBody =>

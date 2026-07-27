@@ -12123,17 +12123,35 @@ abstract class AppLocalizations {
   /// **'Remove this account from this device?'**
   String get deleteAccountRemoveKeysTitle;
 
+  /// Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to delete your account. Nothing has been deleted yet.'**
+  String get deleteAccountReauthRequired;
+
   /// No description provided for @deleteAccountServerDeletionFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not delete your account from the server. Please check your connection and try again.'**
   String get deleteAccountServerDeletionFailed;
 
+  /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Sign in again to finish.'**
+  String get deleteAccountServerDeletionRequiresReauth;
+
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///
   /// In en, this message translates to:
   /// **'Deletion requests sent. You\'re signed out on this device.'**
   String get deleteAccountSuccess;
+
+  /// Snackbar when the account-wide vanish request was published but the relay query failed or at least one per-item deletion request was not confirmed. Must not imply every existing post was individually requested or confirmed for deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion requested. Some existing posts could not be individually confirmed for deletion.'**
+  String get deleteAccountSuccessContentUnverified;
 
   /// Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account.
   ///

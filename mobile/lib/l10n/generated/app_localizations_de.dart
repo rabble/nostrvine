@@ -7047,12 +7047,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dieses Konto von diesem Gerät entfernen?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Melde dich erneut an, um dein Konto zu löschen. Es wurde noch nichts gelöscht.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Dein Konto konnte nicht vom Server gelöscht werden. Bitte prüfe deine Verbindung und versuch es erneut.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Löschanfragen für deine Beiträge wurden gesendet, aber wir konnten dein Konto nicht vollständig löschen. Melde dich erneut an, um das abzuschließen.';
+
+  @override
   String get deleteAccountSuccess =>
       'Löschanfragen gesendet. Du bist auf diesem Gerät abgemeldet.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Kontolöschung angefragt. Für einige vorhandene Beiträge konnte die Löschung nicht einzeln bestätigt werden.';
 
   @override
   String get deleteAccountWarningBody =>

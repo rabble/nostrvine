@@ -318,7 +318,7 @@ class Nostr {
     _pool.unsubscribe(id);
   }
 
-  Future<List<Event>> queryEvents(
+  Future<({List<Event> events, bool timedOut})> queryEventsDetailed(
     List<Map<String, dynamic>> filters, {
     String? id,
     List<String>? tempRelays,
@@ -326,10 +326,11 @@ class Nostr {
     bool sendAfterAuth = false,
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    var eventBox = EventMemBox(sortAfterAdd: false);
-    var completer = Completer<void>();
+    final eventBox = EventMemBox(sortAfterAdd: false);
+    final completer = Completer<void>();
     final subscriptionId = id ?? StringUtil.rndNameStr(16);
     final deadline = DateTime.now().add(timeout);
+    var timedOut = false;
 
     Duration remainingTimeout() {
       final remaining = deadline.difference(DateTime.now());
@@ -357,10 +358,30 @@ class Nostr {
       ).timeout(remainingTimeout());
       await completer.future.timeout(remainingTimeout());
     } on TimeoutException {
+      timedOut = true;
       unsubscribe(subscriptionId);
     }
 
-    return eventBox.all();
+    return (events: eventBox.all(), timedOut: timedOut);
+  }
+
+  Future<List<Event>> queryEvents(
+    List<Map<String, dynamic>> filters, {
+    String? id,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    bool sendAfterAuth = false,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    final result = await queryEventsDetailed(
+      filters,
+      id: id,
+      tempRelays: tempRelays,
+      relayTypes: relayTypes,
+      sendAfterAuth: sendAfterAuth,
+      timeout: timeout,
+    );
+    return result.events;
   }
 
   /// Sends a COUNT request (NIP-45) to relays and returns the count.

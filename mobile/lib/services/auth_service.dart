@@ -54,6 +54,8 @@ const _kLastUsedNpubKey = 'last_used_npub';
 // _setupUserSession() once the user has explicitly signed back in.
 const _kSessionRecoveryAnchorKey = 'session_recovery_anchor_npub';
 
+const _accountDeletionSessionExpiryMargin = Duration(minutes: 10);
+
 /// Authentication state for the user
 enum AuthState {
   /// User is not authenticated (no keys stored)
@@ -70,6 +72,22 @@ enum AuthState {
 
   /// Authentication is in progress (generating/importing keys)
   authenticating,
+}
+
+/// Whether the account-deletion flow may start.
+///
+/// Deletion publishes irreversible events before it can attempt the reversible
+/// server-side step, so this is checked *before* anything is published. See
+/// [AuthService.checkAccountDeletionReadiness].
+enum AccountDeletionReadiness {
+  /// Nothing blocks the flow. Either there is no server-side account to delete,
+  /// or the current session can authorize deleting it.
+  ready,
+
+  /// The session cannot authorize the server-side deletion, so starting would
+  /// destroy the user's content and leave their account alive. A fresh sign-in
+  /// resolves it. Nothing has been published.
+  requiresReauthentication,
 }
 
 /// Thrown by [AuthService.signInForAccount] when a returning-user sign-in
@@ -2863,7 +2881,80 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// - OAuth client is not configured (local-only auth)
   ///
   /// Returns (false, errorMessage) if deletion failed.
-  Future<(bool success, String? error)> deleteKeycastAccount() async {
+  /// Whether account deletion can start without destroying content it may then
+  /// be unable to finish deleting.
+  ///
+  /// The deletion flow publishes an irreversible NIP-62 request to vanish and a
+  /// kind-5 sweep *before* it can attempt the server-side account deletion, and
+  /// the server-side step is only authorized while the access token still
+  /// carries the first-party fact it was minted with. Refreshing the token drops
+  /// that fact, so a returning user is refused — after their content has already
+  /// been broadcast for deletion. See #6335 / #4881.
+  ///
+  /// Refresh-minted sessions are unexpired and can still sign Nostr RPCs, but
+  /// cannot authorize the server-side Keycast account deletion. Legacy sessions
+  /// with no grant marker are ambiguous, so this fails closed and asks the user
+  /// to sign in again before any irreversible publish.
+  ///
+  /// Only divineOAuth accounts are gated. Anonymous, imported-nsec, amber and
+  /// bunker users have no Keycast account to delete, so gating them would block
+  /// them from deleting their own content for no reason.
+  Future<AccountDeletionReadiness> checkAccountDeletionReadiness() async {
+    if (!isRegistered) {
+      return AccountDeletionReadiness.ready;
+    }
+
+    final client = _oauthClient;
+    if (client == null) {
+      return AccountDeletionReadiness.ready;
+    }
+
+    try {
+      final session = await client.getSession();
+      final now = DateTime.now();
+      final expiresAt = session?.expiresAt;
+      final blockedReason = switch (session) {
+        null => 'no current session',
+        _ when !session.hasRpcAccess => 'no active RPC access',
+        _ when session.grantType != KeycastSession.authorizationCodeGrant =>
+          'session grant cannot authorize deletion',
+        _ when expiresAt == null => 'session has no expiry',
+        _
+            when expiresAt.difference(now) <
+                _accountDeletionSessionExpiryMargin =>
+          'session expires too soon',
+        _ => null,
+      };
+      if (blockedReason != null) {
+        Log.warning(
+          'Account deletion blocked before publishing: $blockedReason, '
+          're-authentication required',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return AccountDeletionReadiness.requiresReauthentication;
+      }
+      return AccountDeletionReadiness.ready;
+    } catch (e) {
+      // Fail closed: a readiness check we cannot complete must not green-light
+      // publishing irreversible events.
+      Log.error(
+        'Account deletion readiness check failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return AccountDeletionReadiness.requiresReauthentication;
+    }
+  }
+
+  /// Delete the server-side Keycast account for the signed-in user.
+  ///
+  /// `requiresReauthentication` is true when the failure can only be cleared by
+  /// a fresh sign-in — an expired or unauthorized credential — rather than by
+  /// retrying. Callers must branch on it instead of matching `error`, which
+  /// carries server prose that varies by deployment.
+  Future<({bool success, String? error, bool requiresReauthentication})>
+  deleteKeycastAccount() async {
     Log.debug(
       '🗑️ Attempting to delete Keycast account',
       name: 'AuthService',
@@ -2877,7 +2968,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      return (true, null);
+      return (success: true, error: null, requiresReauthentication: false);
     }
 
     try {
@@ -2891,7 +2982,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (false, 'Session expired and could not be refreshed');
+        return (
+          success: false,
+          error: 'Session expired and could not be refreshed',
+          requiresReauthentication: true,
+        );
       }
 
       final accessToken = session.accessToken!;
@@ -2905,14 +3000,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (true, null);
+        return (success: true, error: null, requiresReauthentication: false);
       } else {
         Log.warning(
           '⚠️ Keycast account deletion failed: ${result.error}',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        return (false, result.error);
+        return (
+          success: false,
+          error: result.error,
+          requiresReauthentication: result.requiresReauthentication,
+        );
       }
     } catch (e) {
       Log.error(
@@ -2920,7 +3019,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      return (false, 'Failed to delete Keycast account: $e');
+      return (
+        success: false,
+        error: 'Failed to delete Keycast account: $e',
+        requiresReauthentication: false,
+      );
     }
   }
 

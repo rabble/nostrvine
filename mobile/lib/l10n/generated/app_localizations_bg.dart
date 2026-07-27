@@ -7035,12 +7035,24 @@ class AppLocalizationsBg extends AppLocalizations {
       'Да премахнем този акаунт от това устройство?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Влез отново, за да изтриеш акаунта си. Още нищо не е изтрито.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Не успяхме да изтрием акаунта ти от сървъра. Провери връзката си и опитай пак.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Заявките за изтриване на публикациите ти са изпратени, но не успяхме да довършим изтриването на акаунта ти. Влез отново, за да завършиш.';
+
+  @override
   String get deleteAccountSuccess =>
       'Заявките за изтриване са изпратени. Отписан си на това устройство.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Заявено е изтриване на акаунта. Изтриването на някои съществуващи публикации не можа да бъде потвърдено поотделно.';
 
   @override
   String get deleteAccountWarningBody =>

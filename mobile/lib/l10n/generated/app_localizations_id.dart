@@ -6937,12 +6937,24 @@ class AppLocalizationsId extends AppLocalizations {
       'Hapus akun ini dari perangkat ini?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Masuk lagi untuk menghapus akunmu. Belum ada yang dihapus.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Tidak bisa menghapus akunmu dari server. Silakan periksa koneksimu dan coba lagi.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Permintaan penghapusan untuk postinganmu sudah dikirim, tapi kami belum bisa menyelesaikan penghapusan akunmu. Masuk lagi untuk menyelesaikannya.';
+
+  @override
   String get deleteAccountSuccess =>
       'Permintaan penghapusan terkirim. Kamu keluar dari akun di perangkat ini.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Penghapusan akun sudah diminta. Penghapusan beberapa postingan yang ada tidak bisa dikonfirmasi satu per satu.';
 
   @override
   String get deleteAccountWarningBody =>

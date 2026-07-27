@@ -511,6 +511,35 @@ Future<void> executeAccountDeletion({
       return;
     }
 
+    // Pre-flight before ANY destructive step. The server-side account deletion
+    // can only be authorized while the access token still carries the
+    // first-party fact it was minted with, but it runs *after* the irreversible
+    // NIP-62 vanish and kind-5 sweep. Without this gate a returning user has
+    // their content broadcast for deletion and is then refused, leaving them
+    // signed in with a live account and no way back. See #6335 / #4881.
+    //
+    // Refusing here costs the user a sign-in. Not refusing costs them their
+    // content, permanently.
+    final readiness = await authService.checkAccountDeletionReadiness();
+    if (readiness == AccountDeletionReadiness.requiresReauthentication) {
+      Log.warning(
+        'Deletion blocked before publishing: session cannot authorize '
+        'server-side account deletion',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+      dismissDialog();
+      if (context.mounted) {
+        final text = context.l10n.deleteAccountReauthRequired;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        announceOutcome(text);
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
     // Burn-first hard-block: release the username before any destructive step,
     // so a failed burn leaves everything intact. Needs a working signer, which
     // exists before deleteKeycastAccount() below.
@@ -569,6 +598,28 @@ Future<void> executeAccountDeletion({
       }
     }
 
+    final finalReadiness = await authService.checkAccountDeletionReadiness();
+    if (finalReadiness == AccountDeletionReadiness.requiresReauthentication) {
+      Log.warning(
+        'Deletion blocked after username burn step: session cannot authorize '
+        'server-side account deletion',
+        name: screenName,
+        category: LogCategory.auth,
+      );
+      dismissDialog();
+      if (context.mounted) {
+        final text = (burnCommitted && burnReleasedText != null)
+            ? burnReleasedText
+            : context.l10n.deleteAccountReauthRequired;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
+        announceOutcome(text);
+      }
+      return;
+    }
+    if (!context.mounted) return;
+
     // Publish the NIP-62 deletion request (requires working signer).
     final result = await deletionService.deleteAccount(
       onProgress: cubit.updateProgress,
@@ -577,8 +628,9 @@ Future<void> executeAccountDeletion({
 
     if (result.success) {
       // Step 2: Delete Keycast account if one exists (invalidates signer)
-      final (keycastSuccess, keycastError) = await authService
-          .deleteKeycastAccount();
+      final keycast = await authService.deleteKeycastAccount();
+      final keycastSuccess = keycast.success;
+      final keycastError = keycast.error;
       if (!keycastSuccess && authService.isRegistered) {
         // divineOAuth users MUST have their Keycast account deleted to
         // prevent re-login. Show error and do NOT sign out.
@@ -590,12 +642,17 @@ Future<void> executeAccountDeletion({
         );
         dismissDialog();
         if (context.mounted) {
+          // The vanish and the kind-5 sweep have already been published and
+          // confirmed by a relay at this point, so neither message may claim
+          // that nothing was deleted.
           final text = (burnCommitted && burnReleasedText != null)
               ? burnReleasedText
+              : keycast.requiresReauthentication
+              ? context.l10n.deleteAccountServerDeletionRequiresReauth
               : context.l10n.deleteAccountServerDeletionFailed;
-          ScaffoldMessenger.of(context).showSnackBar(
-            DivineSnackbarContainer.snackBar(text, error: true),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
           announceOutcome(text);
         }
         return;
@@ -639,10 +696,17 @@ Future<void> executeAccountDeletion({
       // Router will automatically redirect to /welcome after sign out
       dismissDialog();
       if (context.mounted) {
+        // When the relay query that enumerates existing content failed, no
+        // per-item deletion request was sent for anything the user had already
+        // posted. When a kind-5 batch was not confirmed, some per-item requests
+        // also did not land. Saying "deletion requests sent" would overstate
+        // either outcome.
         final snackbarText =
             keyDeletionWarning ??
             localDataDeletionFailure ??
-            context.l10n.deleteAccountSuccess;
+            (result.contentQueryFailed || result.contentDeletionIncomplete
+                ? context.l10n.deleteAccountSuccessContentUnverified
+                : context.l10n.deleteAccountSuccess);
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(
             snackbarText,
@@ -668,9 +732,9 @@ Future<void> executeAccountDeletion({
             : result.accountChanged
             ? accountChangedText
             : (result.error ?? context.l10n.deleteAccountContentDeletionFailed);
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(text, error: true),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(DivineSnackbarContainer.snackBar(text, error: true));
         announceOutcome(text);
       }
     }

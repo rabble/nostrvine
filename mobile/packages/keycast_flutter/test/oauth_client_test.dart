@@ -1449,6 +1449,43 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.error, contains('Unauthorized'));
+        expect(result.requiresReauthentication, isTrue);
+      });
+
+      test(
+        'flags reauthentication on 403 carrying the server message',
+        () async {
+          // Verbatim body from keycast's delete_account handler when the token
+          // is neither user-signed nor first-party. It does not contain any of
+          // the phrases a client might be tempted to match on, which is why the
+          // flag exists.
+          const serverMessage =
+              'Account deletion requires the Divine app or web login with your '
+              'private key';
+          final mockClient = MockClient((request) async {
+            return http.Response(jsonEncode({'error': serverMessage}), 403);
+          });
+
+          final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+          final result = await oauth.deleteAccount('refreshed_token');
+
+          expect(result.success, isFalse);
+          expect(result.error, serverMessage);
+          expect(result.requiresReauthentication, isTrue);
+        },
+      );
+
+      test('flags reauthentication on 403 with an unreadable body', () async {
+        final mockClient = MockClient((request) async {
+          return http.Response('Forbidden', 403);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        final result = await oauth.deleteAccount('refreshed_token');
+
+        expect(result.success, isFalse);
+        expect(result.error, contains('requires signing in again'));
+        expect(result.requiresReauthentication, isTrue);
       });
 
       test('returns error on 404 not found', () async {
@@ -1474,6 +1511,7 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, contains('Server error'));
         expect(result.error, contains('502'));
+        expect(result.requiresReauthentication, isFalse);
       });
 
       test('returns error with JSON error on other status', () async {
@@ -1516,6 +1554,7 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.error, contains('Cannot connect to server'));
+        expect(result.requiresReauthentication, isFalse);
       });
 
       test('returns error on other network errors', () async {
