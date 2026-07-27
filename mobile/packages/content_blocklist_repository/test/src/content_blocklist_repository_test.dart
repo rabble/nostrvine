@@ -3556,7 +3556,9 @@ void main() {
 /// This is the whole point of the group above. A stub that pipes every
 /// event into every listener cannot see the defect being guarded — the
 /// production filter is `#p = <us>`, and a lifted block publishes a list
-/// with no `p` tag, so the update stops matching and is never delivered.
+/// with no `p` tag, so the update stops matching. With [retainSuperseded]
+/// the stub goes further and reproduces what the deployed relay actually
+/// does: it keeps re-serving the last version that *did* carry the tag.
 class _FilterAwareRelay {
   /// [retainSuperseded] reproduces the behaviour observed on
   /// relay.divine.video: superseded versions of a replaceable/addressable
@@ -3593,7 +3595,9 @@ class _FilterAwareRelay {
   /// Stores [event] and fans it out to every matching subscription.
   ///
   /// Unless [retainSuperseded] is set, prior versions of the same
-  /// (author, kind) are dropped — the NIP-01 behaviour.
+  /// (author, kind) are dropped. Every test here uses a single `d` value
+  /// per kind, so that stands in for NIP-01's per-(author, kind, d)
+  /// replacement rule without needing the finer key.
   void publish(Event event) {
     if (!retainSuperseded) {
       _stored.removeWhere(
@@ -3624,11 +3628,14 @@ class _FilterAwareRelay {
   static List<Event> _newestPerCoordinate(Iterable<Event> events) {
     final newest = <String, Event>{};
     for (final event in events) {
-      final dTag = event.tags
-          .where((t) => t.length >= 2 && t[0] == 'd')
-          .map((t) => t[1])
-          .firstOrNull;
-      final coordinate = '${event.pubkey}:${event.kind}:${dTag ?? ''}';
+      var dTag = '';
+      for (final tag in event.tags) {
+        if (tag.length >= 2 && tag[0] == 'd') {
+          dTag = tag[1];
+          break;
+        }
+      }
+      final coordinate = '${event.pubkey}:${event.kind}:$dTag';
       final current = newest[coordinate];
       if (current == null || event.createdAt > current.createdAt) {
         newest[coordinate] = event;
