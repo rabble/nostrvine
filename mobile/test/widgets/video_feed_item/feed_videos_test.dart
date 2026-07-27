@@ -18,6 +18,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag_state.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -1162,6 +1163,35 @@ void main() {
         ).called(1);
       },
     );
+  });
+
+  group('playback length cap', () {
+    testWidgets('caps InfiniteVideoFeed playback at the feed cap', (
+      tester,
+    ) async {
+      final video = _makeVideo();
+
+      await _pumpFeedVideos(tester, videos: [video]);
+      await tester.pump();
+
+      final feed = tester.widget<InfiniteVideoFeed>(
+        find.byType(InfiniteVideoFeed),
+      );
+      expect(
+        feed.maxPlaybackDuration,
+        AppConstants.maxFeedPlaybackDuration,
+        reason:
+            'Without the cap a 60s file referenced by a foreign Nostr client '
+            'plays in full in the feed.',
+      );
+      expect(
+        feed.maxLoopDuration,
+        isNull,
+        reason:
+            'Length enforcement is a native clip end; a Dart seek back to zero '
+            'creates the audible loop seam #5544 reported.',
+      );
+    });
   });
 
   group('activity wiring', () {
