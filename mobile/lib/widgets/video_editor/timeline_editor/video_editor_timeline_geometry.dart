@@ -229,10 +229,6 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
   return changed ? result : audioTracks;
 }
 
-/// Total wall-clock duration [clips] occupy on the timeline.
-Duration compositionDuration(List<DivineVideoClip> clips) =>
-    clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
-
 /// Granularity an audio window survives a history/draft round-trip at.
 ///
 /// [AudioEvent] serializes its window in whole milliseconds while a stop-motion
@@ -313,7 +309,7 @@ Duration? _audioSourceEnd(AudioEvent track) {
   final duration = track.duration;
   if (duration == null || duration <= 0) return null;
   final remaining =
-      Duration(milliseconds: (duration * 1000).round()) - track.startOffset;
+      Duration(milliseconds: (duration * 1000).toInt()) - track.startOffset;
   if (remaining <= Duration.zero) return null;
   return track.startTime + remaining;
 }
