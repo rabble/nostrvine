@@ -3,11 +3,10 @@
     "Wall-clock budgets for Mobile CI jobs, in seconds. Enforced by the",
     "'Check CI timing budget' step in the mobile-ci gate job.",
     "",
-    "Keys must cover each mobile-ci gate job name exactly. Runtime matching",
-    "also treats a key as a matrix-job prefix, but the committed file stays",
-    "pinned to the workflow's declared names so job renames are reviewed.",
-    "A budgeted job that did not run (skipped, or renamed) is reported and",
-    "skipped, never inferred as a pass. A job with no budget entry is ignored.",
+    "Keys match a job name exactly, or as a prefix — 'Tests' covers both",
+    "'Tests' and a future 'Tests (shard N/4)'. A budgeted job that did not",
+    "run (skipped, or renamed) is reported and skipped, never inferred as a",
+    "pass. A job with no budget entry is ignored.",
     "",
     "warn  - exceeded => GitHub warning annotation on the PR. Set near the",
     "        job's observed p90 so ordinary drift surfaces early.",
@@ -24,10 +23,7 @@
   ],
   "jobs": {
     "Detect App CI Scope": { "warn": 40, "fail": 90 },
-    "Tests (shard ${{ strategy.job-index }}/${{ strategy.job-total }})": {
-      "warn": 600,
-      "fail": 780
-    },
+    "Tests": { "warn": 600, "fail": 780 },
     "Generated Files": { "warn": 260, "fail": 420 },
     "Analyze": { "warn": 150, "fail": 300 },
     "Format": { "warn": 90, "fail": 180 },
