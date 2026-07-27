@@ -3496,11 +3496,17 @@ void main() {
           id: 'block-event',
         ),
       );
-      await service.syncBlockListsInBackground(
-        mockNostrService,
-        mockSigner,
-        ourPubkey,
-      );
+      // Start both syncs the way blocklistSyncBridge does. Mute sync runs
+      // first and neither body awaits, so a per-path client check is the
+      // only thing that can still see the swap on the block side.
+      await Future.wait([
+        service.syncMuteListsInBackground(mockNostrService, ourPubkey),
+        service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        ),
+      ]);
       await pumpEventQueue();
       expect(service.hasBlockedUs(blockerPubkey), isTrue);
 
@@ -3521,11 +3527,10 @@ void main() {
       );
       when(() => newClient.unsubscribe(any())).thenAnswer((_) async {});
 
-      await service.syncBlockListsInBackground(
-        newClient,
-        mockSigner,
-        ourPubkey,
-      );
+      await Future.wait([
+        service.syncMuteListsInBackground(newClient, ourPubkey),
+        service.syncBlockListsInBackground(newClient, mockSigner, ourPubkey),
+      ]);
       await pumpEventQueue();
 
       // The watch on the old client is released rather than leaked.

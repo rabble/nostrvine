@@ -180,6 +180,14 @@ class ContentBlocklistRepository {
   BlockListSigner? _signer;
   NostrClient? _nostrClient;
 
+  // The client each background sync actually subscribed on. Tracked per
+  // sync path, not off the shared _nostrClient: the app starts both syncs
+  // in one turn (moderation_providers.dart), and neither body awaits, so
+  // whichever runs first would otherwise overwrite _nostrClient and hide
+  // the client swap from the other.
+  NostrClient? _mutualMuteSyncClient;
+  NostrClient? _blockListSyncClient;
+
   /// A synchronous snapshot of the current policy state.
   ContentPolicyState get currentState => _buildCurrentState();
 
@@ -1006,7 +1014,7 @@ class ContentBlocklistRepository {
 
     // If the NostrClient changed (e.g., account switch), the old subscription
     // was on a disposed client. Reset so we create a fresh subscription.
-    if (_mutualMuteSyncStarted && _nostrClient != nostrService) {
+    if (_mutualMuteSyncStarted && _mutualMuteSyncClient != nostrService) {
       _mutualMuteSyncStarted = false;
     }
 
@@ -1045,6 +1053,7 @@ class ContentBlocklistRepository {
       final subscription = nostrService.subscribe([mutualFilter, ownFilter]);
 
       _mutualMuteSyncStarted = true;
+      _mutualMuteSyncClient = nostrService;
       _mutualMuteSubscriptionId =
           'mutual-mute-${DateTime.now().millisecondsSinceEpoch}';
 
@@ -1090,7 +1099,7 @@ class ContentBlocklistRepository {
 
     // If the NostrClient changed (e.g., account switch), the old subscription
     // was on a disposed client. Reset so we create a fresh subscription.
-    if (_blockListSyncStarted && _nostrClient != nostrService) {
+    if (_blockListSyncStarted && _blockListSyncClient != nostrService) {
       _blockListSyncStarted = false;
     }
 
@@ -1132,6 +1141,7 @@ class ContentBlocklistRepository {
           .listen(_handleBlockListEvent);
 
       _blockListSyncStarted = true;
+      _blockListSyncClient = nostrService;
 
       // One-time migration (#4037): fold any legacy kind 30000 block list
       // into the standard kind 10000 mute list so pre-existing blocks
