@@ -16,10 +16,10 @@ void main() {
       );
       expect(
         source,
-        contains('CMTimeMinimum(videoRange.end, audioRange.end)'),
+        contains('boundedCommonTrackEnd('),
         reason:
-            'The clip must end where both tracks still have content, not at '
-            'the asset duration, which is the longest track.',
+            'The clip must end where both tracks still have content only when '
+            'the mismatch is small enough to be a seam, not a malformed asset.',
       );
       expect(
         source,
@@ -28,6 +28,27 @@ void main() {
             'Clamping may only ever shorten a clip — an explicit trim that '
             'ends earlier still wins.',
       );
+      expect(
+        source,
+        contains('catch {'),
+        reason:
+            'A failure to read optional track ranges must leave the clip '
+            'untrimmed rather than failing composition playback.',
+      );
+      expect(
+        source,
+        contains('maxCommonTrackEndTrimMs = 500.0'),
+        reason:
+            'The clamp must be bounded so stub audio tracks do not collapse a '
+            'normal-length video into a tiny loop.',
+      );
+      expect(
+        source,
+        contains('maxCommonTrackEndTrimRatio = 0.10'),
+        reason:
+            'The clamp must also be relative to playable duration so short '
+            'clips cannot lose an excessive fraction of content.',
+      );
     });
 
     test('Android clamps the clipping configuration, not just endMs', () {
@@ -35,7 +56,7 @@ void main() {
 
       expect(
         source,
-        contains('commonTrackEndMs'),
+        contains('boundedCommonTrackEndMs'),
         reason:
             'Android must resolve the point where both tracks still have '
             'content before building the clipping configuration.',
@@ -53,6 +74,20 @@ void main() {
         reason:
             'The clamped end must reach ExoPlayer; setting the raw endMs '
             'would leave the seam in place.',
+      );
+      expect(
+        source,
+        contains('MAX_COMMON_TRACK_END_TRIM_MS = 500L'),
+        reason:
+            'The clamp must be bounded so stub audio tracks do not collapse a '
+            'normal-length video into a tiny loop.',
+      );
+      expect(
+        source,
+        contains('MAX_COMMON_TRACK_END_TRIM_RATIO = 0.10'),
+        reason:
+            'The clamp must also be relative to playable duration so short '
+            'clips cannot lose an excessive fraction of content.',
       );
     });
 

@@ -424,7 +424,7 @@ internal class DivineVideoPlayerInstance(
             // the seam. Clamping may only ever shorten: an earlier explicit
             // trim still wins.
             val commonEndMs = if (trimToCommonTrackEnd) {
-                commonTrackEndMs(uri)?.takeIf { it > startMs }
+                boundedCommonTrackEndMs(uri, startMs, endMs)
             } else {
                 null
             }
@@ -552,7 +552,11 @@ internal class DivineVideoPlayerInstance(
      * network round trip on the platform thread before playback can start, so
      * remote clips keep the container duration — and the seam — instead.
      */
-    private fun commonTrackEndMs(uri: String): Long? {
+    private fun boundedCommonTrackEndMs(
+        uri: String,
+        startMs: Long,
+        requestedEndMs: Long?,
+    ): Long? {
         val path = when {
             uri.startsWith("/") -> uri
             uri.startsWith("file://") -> Uri.parse(uri).path
@@ -575,7 +579,16 @@ internal class DivineVideoPlayerInstance(
                 }
             }
             // A clip without both track types has no mismatch to trim.
-            if (videoUs <= 0 || audioUs <= 0) null else minOf(videoUs, audioUs) / 1000
+            if (videoUs <= 0 || audioUs <= 0) {
+                null
+            } else {
+                boundedCommonTrackEndMs(
+                    startMs = startMs,
+                    requestedEndMs = requestedEndMs,
+                    videoEndMs = videoUs / 1000,
+                    audioEndMs = audioUs / 1000,
+                )
+            }
         } catch (e: Exception) {
             DivineVideoPlayerLog.warning(
                 "Player $playerId could not read track durations: $e",
@@ -585,6 +598,26 @@ internal class DivineVideoPlayerInstance(
         } finally {
             extractor.release()
         }
+    }
+
+    private fun boundedCommonTrackEndMs(
+        startMs: Long,
+        requestedEndMs: Long?,
+        videoEndMs: Long,
+        audioEndMs: Long,
+    ): Long? {
+        val containerEndMs = maxOf(videoEndMs, audioEndMs)
+        val playbackEndMs = minOf(requestedEndMs ?: containerEndMs, containerEndMs)
+        val commonEndMs = minOf(videoEndMs, audioEndMs)
+        val trimMs = playbackEndMs - commonEndMs
+        if (commonEndMs <= startMs || trimMs <= 0) return null
+
+        val playableDurationMs = playbackEndMs - startMs
+        if (playableDurationMs <= 0) return null
+
+        val relativeLimitMs = (playableDurationMs * MAX_COMMON_TRACK_END_TRIM_RATIO).toLong()
+        val trimLimitMs = minOf(MAX_COMMON_TRACK_END_TRIM_MS, relativeLimitMs)
+        return commonEndMs.takeIf { trimMs <= trimLimitMs }
     }
 
     private fun handleSeekTo(call: MethodCall, result: MethodChannel.Result) {
@@ -1293,6 +1326,10 @@ internal class DivineVideoPlayerInstance(
          * sensible lower bound the editor UI exposes.
          */
         private const val MIN_PLAYBACK_SPEED = 0.001f
+
+        /** Maximum tail considered an encoder/export track-end mismatch. */
+        private const val MAX_COMMON_TRACK_END_TRIM_MS = 500L
+        private const val MAX_COMMON_TRACK_END_TRIM_RATIO = 0.10
 
         /**
          * How many times an editing/preview player re-prepares after a

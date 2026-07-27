@@ -138,11 +138,13 @@ class VideoClip {
   /// stretch where one track has already run out — silence, or a frozen last
   /// frame. On a looping player that stretch is the loop seam.
   ///
-  /// Set this for looping playback of a single clip. It shortens the clip by
-  /// the track mismatch (typically < 100 ms), so it is wrong for a clip in the
-  /// middle of a multi-clip timeline, where it would cut content rather than a
-  /// seam. Clamping only ever shortens: [end], when set, still wins if it is
-  /// earlier.
+  /// Set this for looping playback of a single clip. It shortens the clip only
+  /// when the track mismatch is small (currently at most 500 ms and at most
+  /// 10% of the playable duration), so obviously malformed assets keep their
+  /// container duration instead of collapsing into a tiny loop. It is wrong for
+  /// a clip in the middle of a multi-clip timeline, where it would cut content
+  /// rather than a seam. Clamping only ever shortens: [end], when set, still
+  /// wins if it is earlier.
   ///
   /// Support is per-platform: Apple always honours it, Android honours it for
   /// local files only (a remote source would need a blocking metadata read

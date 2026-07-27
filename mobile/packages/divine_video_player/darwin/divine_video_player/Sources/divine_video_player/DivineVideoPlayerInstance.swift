@@ -33,6 +33,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private static let setClipsTimeoutMs = 10_000
     private static let bufferingStallMs = 8_000
+    private static let maxCommonTrackEndTrimMs = 500.0
+    private static let maxCommonTrackEndTrimRatio = 0.10
 
     /// AVFoundation's asset-option key for per-asset HTTP request headers.
     ///
@@ -411,11 +413,23 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             // or a frozen frame. On a looping player that stretch is the seam.
             // Clamping may only ever shorten: an earlier explicit trim wins.
             if trimToCommonTrackEnd, let sourceAudioTrack = assetAudioTracks.first {
-                let videoRange = try await sourceVideoTrack.load(.timeRange)
-                let audioRange = try await sourceAudioTrack.load(.timeRange)
-                let commonEnd = CMTimeMinimum(videoRange.end, audioRange.end)
-                if commonEnd.isNumeric, CMTimeCompare(commonEnd, startTime) > 0 {
-                    endTime = CMTimeMinimum(endTime, commonEnd)
+                do {
+                    let videoRange = try await sourceVideoTrack.load(.timeRange)
+                    let audioRange = try await sourceAudioTrack.load(.timeRange)
+                    if let commonEnd = boundedCommonTrackEnd(
+                        startTime: startTime,
+                        requestedEnd: endTime,
+                        videoEnd: videoRange.end,
+                        audioEnd: audioRange.end
+                    ) {
+                        endTime = CMTimeMinimum(endTime, commonEnd)
+                    }
+                } catch {
+                    DivineVideoPlayerLog.shared.warning(
+                        "Player \(playerId) could not read track durations: "
+                            + "\(error.localizedDescription)",
+                        name: "DivineVideoPlayer.Load"
+                    )
                 }
             }
             let timeRange = CMTimeRange(start: startTime, end: endTime)
@@ -739,6 +753,39 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.audioOverlayManager.resumeActive(speed: self.speed)
             }
         }
+    }
+
+    private func boundedCommonTrackEnd(
+        startTime: CMTime,
+        requestedEnd: CMTime,
+        videoEnd: CMTime,
+        audioEnd: CMTime
+    ) -> CMTime? {
+        let containerEnd = CMTimeMaximum(videoEnd, audioEnd)
+        let playbackEnd = CMTimeMinimum(requestedEnd, containerEnd)
+        let commonEnd = CMTimeMinimum(videoEnd, audioEnd)
+        guard commonEnd.isNumeric,
+              playbackEnd.isNumeric,
+              CMTimeCompare(commonEnd, startTime) > 0,
+              CMTimeCompare(playbackEnd, commonEnd) > 0
+        else {
+            return nil
+        }
+
+        let trimMs = CMTimeSubtract(playbackEnd, commonEnd).seconds * 1000
+        let playableDurationMs = CMTimeSubtract(playbackEnd, startTime).seconds * 1000
+        guard trimMs.isFinite,
+              playableDurationMs.isFinite,
+              playableDurationMs > 0
+        else {
+            return nil
+        }
+
+        let trimLimitMs = min(
+            Self.maxCommonTrackEndTrimMs,
+            playableDurationMs * Self.maxCommonTrackEndTrimRatio
+        )
+        return trimMs <= trimLimitMs ? commonEnd : nil
     }
 
     /// Calls `AVPlayer.preroll(atRate:)` only when the player is ready;
