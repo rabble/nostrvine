@@ -8,12 +8,17 @@ class AudioAttributionCredit {
   const AudioAttributionCredit._();
 
   /// The reused sound's original creator, carried on the video via its
-  /// inspired-by source (reusing a sound auto-populates inspired-by from the
-  /// source video). Null when absent, so the video's own author is credited.
+  /// inspired-by source. Null when absent, so the video's own author is
+  /// credited.
   ///
   /// Only call this for a video that actually references a sound. Inspired-by
   /// is a general credit, so on a video with no audio reference it says
   /// nothing about who made the sound.
+  ///
+  /// Even then it is a best-effort credit rather than a guarantee:
+  /// `getActiveDraft` auto-populates inspired-by from the selected sound's
+  /// source video only when the draft has none set, so one set for an
+  /// unrelated reason is left in place and would be credited here.
   static String? reusedCreatorPubkeyFor(VideoEvent video) {
     final pubkey = video.inspiredByVideo?.creatorPubkey;
     return (pubkey != null && pubkey.isNotEmpty) ? pubkey : null;

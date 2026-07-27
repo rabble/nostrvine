@@ -134,8 +134,8 @@ class _UnresolvedAudioAttribution extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Only reached with an audio reference, so inspired-by (when present) is
-    // the reused sound's source rather than an unrelated credit.
+    // Only reached with an audio reference, so inspired-by is the best
+    // available credit for the sound here.
     final reusedCreatorPubkey = AudioAttributionCredit.reusedCreatorPubkeyFor(
       video,
     );
