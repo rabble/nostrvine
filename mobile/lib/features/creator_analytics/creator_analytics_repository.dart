@@ -20,6 +20,7 @@ class CreatorAnalyticsDiagnostics {
     required this.videosHydratedByViewsEndpoint,
     required this.sourcesUsed,
     required this.fetchedAt,
+    this.videoCatalogTruncated = false,
   });
 
   final int totalVideos;
@@ -29,6 +30,7 @@ class CreatorAnalyticsDiagnostics {
   final int videosHydratedByViewsEndpoint;
   final Set<AnalyticsDataSource> sourcesUsed;
   final DateTime fetchedAt;
+  final bool videoCatalogTruncated;
 
   bool get hasAnyViewData => videosWithAnyViews > 0;
 }
@@ -97,12 +99,12 @@ class FunnelcakeCreatorAnalyticsRepository
     final sourcesUsed = <AnalyticsDataSource>{};
 
     final socialFuture = _getSocialCounts(pubkey);
-    final authored = await _fetchAuthorVideos(pubkey);
-    if (authored.isNotEmpty) {
+    final authorResult = await _fetchAuthorVideos(pubkey);
+    if (authorResult.videos.isNotEmpty) {
       sourcesUsed.add(AnalyticsDataSource.authorVideos);
     }
 
-    final bulkResult = await _enrichVideosWithBulkStats(authored);
+    final bulkResult = await _enrichVideosWithBulkStats(authorResult.videos);
     var hydratedVideos = bulkResult.videos;
     if (bulkResult.hydratedCount > 0) {
       sourcesUsed.add(AnalyticsDataSource.bulkVideoStats);
@@ -136,17 +138,19 @@ class FunnelcakeCreatorAnalyticsRepository
         videosHydratedByViewsEndpoint: endpointResult.hydratedCount,
         sourcesUsed: sourcesUsed,
         fetchedAt: DateTime.now(),
+        videoCatalogTruncated: authorResult.truncated,
       ),
     );
   }
 
-  Future<List<VideoEvent>> _fetchAuthorVideos(
+  Future<_AuthorVideosResult> _fetchAuthorVideos(
     String pubkey, {
     int maxPages = 4,
     int pageSize = 100,
   }) async {
     final collected = <VideoEvent>[];
     int? before;
+    var truncated = false;
 
     for (var page = 0; page < maxPages; page++) {
       final result = await _client.getVideosByAuthor(
@@ -160,15 +164,15 @@ class FunnelcakeCreatorAnalyticsRepository
       final batch = videos.toVideoEvents();
       collected.addAll(batch);
 
-      if (batch.length < pageSize) break;
+      final hasMore = result.hasMore ?? videos.length >= pageSize;
+      if (!hasMore) break;
 
-      final oldestCreatedAt = batch.fold<int>(
-        1 << 31,
-        (oldest, video) => video.createdAt > 0 && video.createdAt < oldest
-            ? video.createdAt
-            : oldest,
-      );
+      final oldestCreatedAt = videos.fold<int>(1 << 31, (oldest, video) {
+        final createdAt = video.createdAt.millisecondsSinceEpoch ~/ 1000;
+        return createdAt > 0 && createdAt < oldest ? createdAt : oldest;
+      });
       if (oldestCreatedAt == (1 << 31)) break;
+      truncated = page == maxPages - 1;
       before = oldestCreatedAt - 1;
       if (before <= 0) break;
     }
@@ -177,9 +181,10 @@ class FunnelcakeCreatorAnalyticsRepository
     // p-tagged collaborator rather than the event author. Mirrors the profile
     // feed's getAuthorFeed filter. Edit siblings are collapsed later, after
     // hydration, by the caller.
-    return collected
+    final authored = collected
         .where((video) => !video.isRepost && video.pubkey == pubkey)
         .toList();
+    return _AuthorVideosResult(videos: authored, truncated: truncated);
   }
 
   Future<_HydrationResult> _enrichVideosWithBulkStats(
@@ -220,11 +225,22 @@ class FunnelcakeCreatorAnalyticsRepository
         mergedTags['views'] = stats.views!.toString();
         updated = true;
       }
+      if (video.nostrLikeCount != stats.reactions ||
+          video.nostrCommentCount != stats.comments ||
+          video.nostrRepostCount != stats.reposts) {
+        updated = true;
+      }
       if (updated) hydratedCount++;
 
       return video.copyWith(
         rawTags: mergedTags,
         originalLoops: stats.embeddedLoops ?? video.originalLoops,
+        originalLikes: video.originalLikes,
+        originalComments: video.originalComments,
+        originalReposts: video.originalReposts,
+        nostrLikeCount: stats.reactions,
+        nostrCommentCount: stats.comments,
+        nostrRepostCount: stats.reposts,
       );
     }).toList();
 
@@ -293,6 +309,13 @@ class _HydrationResult {
 
   final List<VideoEvent> videos;
   final int hydratedCount;
+}
+
+class _AuthorVideosResult {
+  const _AuthorVideosResult({required this.videos, required this.truncated});
+
+  final List<VideoEvent> videos;
+  final bool truncated;
 }
 
 /// Extracts view-like counts from known tags and fallbacks.

@@ -1,7 +1,7 @@
-// ABOUTME: Engagement count seed policy for feed action controls.
+// ABOUTME: Engagement count seed policy for user-visible video metrics.
 // ABOUTME: Preserves archival Vine baselines while adding live Divine counts.
 
-import 'package:models/models.dart';
+import 'package:models/src/video_event.dart';
 
 int? _sumNullableCounts(int? archivedCount, int? liveCount) {
   if (archivedCount == null && liveCount == null) return null;
@@ -14,15 +14,15 @@ int? _maxNullableCounts(int? firstCount, int? secondCount) {
   return firstCount > secondCount ? firstCount : secondCount;
 }
 
-/// Display reaction count suitable for seeding [VideoInteractionsBloc].
+/// Display reaction count preserving archival Vine metrics as the baseline.
 int? liveLikeCountSeed(VideoEvent video) =>
     _sumNullableCounts(video.originalLikes, video.nostrLikeCount);
 
-/// Display comment/reply count suitable for seeding [VideoInteractionsBloc].
+/// Display comment/reply count preserving archival Vine metrics as the baseline.
 int? liveCommentCountSeed(VideoEvent video) =>
     _sumNullableCounts(video.originalComments, video.nostrCommentCount);
 
-/// Display repost count suitable for seeding [VideoInteractionsBloc].
+/// Display repost count preserving archival Vine metrics as the baseline.
 int? liveRepostCountSeed(VideoEvent video) {
   final liveRepostCount = video.nostrRepostCount;
   final visibleReposterCount = video.reposterPubkeys?.isEmpty ?? true
