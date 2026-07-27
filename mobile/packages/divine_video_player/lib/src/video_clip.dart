@@ -106,7 +106,10 @@ class VideoClip {
 
   /// End position within the source video.
   ///
-  /// When `null`, the clip plays to the end of the source.
+  /// When `null`, the clip plays to the end of the source. On the Android and
+  /// Apple backends an [end] past the source duration is clamped to it, so a
+  /// caller capping playback without knowing the source length still gets the
+  /// natural end for shorter sources.
   final Duration? end;
 
   /// Audio volume for this clip (0.0 = muted, 1.0 = full volume).
