@@ -1436,9 +1436,71 @@ void main() {
         );
       });
 
-      testWidgets('filter chips ignore text scaling inside the pinned header', (
+      // A pinned SliverPersistentHeader lays its child out with a TIGHT height
+      // equal to maxExtent, so `getSize(...).height` only ever reports the
+      // extent the delegate declared — asserting it equals a constant measures
+      // that constant against itself and cannot catch an under-declared header.
+      // What can: the chips' own intrinsic height, which is computed from the
+      // content and is independent of the constraint it was laid out under. If
+      // the header declares less than that, the label is silently clipped
+      // (cross-axis overflow in a Row does not throw), which is the failure
+      // these two tests exist to catch.
+      Future<({double laidOut, double needed})> pumpChips(
+        WidgetTester tester, {
+        required TextScaler textScaler,
+      }) async {
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+            textScaler: textScaler,
+          ),
+        );
+        await openMessages(tester);
+
+        final box = tester.renderObject<RenderBox>(
+          find.byType(UnreadFilterChips),
+        );
+        return (
+          laidOut: box.size.height,
+          needed: box.getMaxIntrinsicHeight(box.size.width),
+        );
+      }
+
+      testWidgets('the pinned header fits the chips at the default text scale', (
         tester,
       ) async {
+        final size = await pumpChips(
+          tester,
+          textScaler: TextScaler.noScaling,
+        );
+
+        // 48 = 8px padding either side of a DivineButtonSize.tiny chip, which
+        // is itself 6 + a 20px line box + 6. Asserting the chips ASK for 48 is
+        // the half that can fail: if a divine_ui token moves, this breaks here
+        // rather than as a clipped chip on someone's phone.
+        expect(size.needed, equals(48));
+        expect(size.laidOut, equals(48));
+      });
+
+      testWidgets('the pinned header grows with the text scale rather than '
+          'clipping the chips', (tester) async {
+        final size = await pumpChips(
+          tester,
+          textScaler: const TextScaler.linear(2),
+        );
+
+        // Only the 20px line box scales; the two paddings do not. 16 + 12 + 40.
+        expect(size.needed, equals(68));
+        expect(size.laidOut, greaterThanOrEqualTo(size.needed));
+      });
+
+      testWidgets('filter chips honour the system text scale', (tester) async {
         final conversations = manyConversations();
         await tester.pumpWidget(
           buildSubject(
@@ -1453,14 +1515,12 @@ void main() {
         );
         await openMessages(tester);
 
+        // These are controls the user reads and taps, so they must not be
+        // frozen at 1.0 the way a fixed overlay badge is.
         final unreadTextContext = tester.element(find.text('Unread'));
         expect(
           MediaQuery.textScalerOf(unreadTextContext).scale(20),
-          equals(20),
-        );
-        expect(
-          tester.getSize(find.byType(UnreadFilterChips)).height,
-          equals(48),
+          equals(40),
         );
       });
 

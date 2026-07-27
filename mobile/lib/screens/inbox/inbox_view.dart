@@ -515,12 +515,28 @@ class _PinnedSupportRow extends StatelessWidget {
   }
 }
 
-/// Exact height of [UnreadFilterChips]: 8px of vertical padding either side of
-/// a [DivineButtonSize.tiny] chip, whose 32px box is deliberately immune to
-/// text scaling. A pinned sliver has to declare its extent up front, and an
-/// under-declared one clips the chips, so this is pinned by a widget test
-/// rather than trusted.
-const double _kFilterChipsExtent = 48;
+/// Vertical padding [UnreadFilterChips] puts above and below its chip row.
+const double _kFilterChipsVerticalPadding = 8;
+
+/// Inner vertical padding of a [DivineButtonSize.tiny] chip. Fixed per size.
+const double _kTinyChipVerticalPadding = 6;
+
+/// Line box of a tiny chip's `titleSmallFont` label (14/20) — the only part of
+/// the chip's height that grows with the text scaler.
+const double _kTinyChipLineHeight = 20;
+
+/// Height [UnreadFilterChips] needs at the current text scale.
+///
+/// A pinned sliver declares its extent before its child is laid out, so this
+/// reproduces the child's height rather than measuring it. Under-declaring
+/// silently clips the label — a Row overflowing on its cross axis does not
+/// throw. Duplicating the arithmetic is safe only because a widget test pins
+/// it against the chips' real intrinsic height at two scales, so a moved
+/// `divine_ui` token fails there instead of on a phone.
+double _filterChipsExtent(BuildContext context) =>
+    _kFilterChipsVerticalPadding * 2 +
+    _kTinyChipVerticalPadding * 2 +
+    MediaQuery.textScalerOf(context).scale(_kTinyChipLineHeight);
 
 /// The whole Messages pane as a single scroll view.
 ///
@@ -770,6 +786,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         pinned: true,
         delegate: _FilterChipsHeaderDelegate(
           unreadOnly: unreadOnly,
+          extent: _filterChipsExtent(context),
           onUnreadOnlyChanged: (value) {
             if (value == unreadOnly) return;
             context.read<ConversationListBloc>().add(
@@ -1098,16 +1115,24 @@ class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
   const _FilterChipsHeaderDelegate({
     required this.unreadOnly,
     required this.onUnreadOnlyChanged,
+    required this.extent,
   });
 
   final bool unreadOnly;
   final ValueChanged<bool> onUnreadOnlyChanged;
 
-  @override
-  double get minExtent => _kFilterChipsExtent;
+  /// Height the chips need at the caller's text scale. Passed in rather than
+  /// read here: [SliverPersistentHeaderDelegate]'s extent getters take no
+  /// [BuildContext], so the MediaQuery lookup has to happen in the widget
+  /// that builds the delegate. Same shape as the `topInset` pattern in
+  /// `.claude/rules/ui_theming.md`.
+  final double extent;
 
   @override
-  double get maxExtent => _kFilterChipsExtent;
+  double get minExtent => extent;
+
+  @override
+  double get maxExtent => extent;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
@@ -1123,5 +1148,6 @@ class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(_FilterChipsHeaderDelegate oldDelegate) =>
       oldDelegate.unreadOnly != unreadOnly ||
-      oldDelegate.onUnreadOnlyChanged != onUnreadOnlyChanged;
+      oldDelegate.onUnreadOnlyChanged != onUnreadOnlyChanged ||
+      oldDelegate.extent != extent;
 }
