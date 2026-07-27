@@ -5019,12 +5019,16 @@ class DmRepository {
   /// Lifts the Divine Moderation support thread out of the inbox and request
   /// lists so it renders once, as the pinned row (#6283).
   ///
-  /// Every conversation keyed on the moderation account — [supportPubkey] or
-  /// any of [legacyPubkeys] — is removed from both lists. Only a thread on
-  /// [supportPubkey] comes back as `pinned`: the row routes on the returned
-  /// conversation's own participants and nothing remaps the recipient between
-  /// there and [sendMessage], so adopting a pre-rotation thread would send
-  /// support replies to a retired key. Retired keys de-duplicate, never adopt.
+  /// Only a thread on [supportPubkey] is removed from the lists and returned as
+  /// `pinned`: the row routes on the returned conversation's own participants
+  /// and nothing remaps the recipient between there and [sendMessage], so
+  /// adopting a pre-rotation thread would send support replies to a retired
+  /// key.
+  ///
+  /// [legacyPubkeys] is intentionally not removed here. Those rows carry
+  /// inbound moderation history that was visible before #6283; until the
+  /// archived read-only shape exists, keeping the original row is safer than
+  /// hiding the user's only in-app entry point to that history.
   ///
   /// Shared with the unread badge rather than reimplemented there, so the
   /// count cannot drift from the rows the list actually renders (#4976).
@@ -5061,19 +5065,19 @@ class DmRepository {
     }
 
     final currentId = computeConversationId([userPubkey, supportPubkey]);
-    final knownIds = <String>{
-      currentId,
-      for (final pubkey in legacyPubkeys)
-        if (pubkey.isNotEmpty) computeConversationId([userPubkey, pubkey]),
-    };
+    // Keep this parameter part of the shared contract even though legacy rows
+    // are preserved for now. Callers still pass the same moderation key set,
+    // and the archived read-only follow-up can reuse the API without
+    // re-threading it.
+    final _ = legacyPubkeys;
 
     DmConversation? pinned;
     final remainingInbox = <DmConversation>[];
     for (final conversation in inbox) {
-      if (!knownIds.contains(conversation.id)) {
-        remainingInbox.add(conversation);
-      } else if (conversation.id == currentId) {
+      if (conversation.id == currentId) {
         pinned ??= conversation;
+      } else {
+        remainingInbox.add(conversation);
       }
     }
 
@@ -5081,10 +5085,10 @@ class DmRepository {
     // currentUserHasSent == false and lands in requests, not the inbox.
     final remainingRequests = <DmConversation>[];
     for (final conversation in requests) {
-      if (!knownIds.contains(conversation.id)) {
-        remainingRequests.add(conversation);
-      } else if (conversation.id == currentId) {
+      if (conversation.id == currentId) {
         pinned ??= conversation;
+      } else {
+        remainingRequests.add(conversation);
       }
     }
 

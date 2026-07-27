@@ -2786,8 +2786,8 @@ void main() {
     );
 
     test(
-      'drops a pre-rotation legacy thread and pins the CURRENT key, so a '
-      'reply can never reach the retired pubkey',
+      'keeps pre-rotation legacy history visible and pins the CURRENT key, '
+      'so a reply can never reach the retired pubkey',
       () async {
         final legacyThread = _createConversation(
           id: legacySupportId,
@@ -2811,13 +2811,13 @@ void main() {
         // Synthetic, not adopted — the legacy thread's history does not
         // travel with the pin.
         expect(state.pinnedSupport?.isPersisted, isFalse);
-        expect(state.conversations, isEmpty);
+        expect(state.conversations, equals([legacyThread]));
       },
     );
 
     test(
-      'keeps one pin when BOTH a legacy and a current thread exist, leaving '
-      'no duplicate ordinary row',
+      'dedupes the current thread when BOTH a legacy and a current thread '
+      'exist, while preserving legacy history',
       () async {
         final legacyThread = _createConversation(
           id: legacySupportId,
@@ -2840,13 +2840,11 @@ void main() {
 
         expect(state.pinnedSupport?.conversation.id, equals(supportId));
         expect(state.pinnedSupport?.isPersisted, isTrue);
-        // Extracting only the FIRST match left the loser in the list — the
-        // second "Divine Moderation" row the de-dup exists to prevent.
-        expect(state.conversations, isEmpty);
+        expect(state.conversations, equals([legacyThread]));
       },
     );
 
-    test('strips a legacy thread out of message requests too', () async {
+    test('keeps a legacy thread visible in message requests too', () async {
       final legacyInbound = _createConversation(
         id: legacySupportId,
         participantPubkeys: [_testPubkey1, legacyModerationPubkey],
@@ -2858,7 +2856,7 @@ void main() {
 
       final state = await loadedState(bloc);
 
-      expect(state.requestConversations, isEmpty);
+      expect(state.requestConversations, equals([legacyInbound]));
       expect(state.pinnedSupport?.conversation.id, equals(supportId));
     });
 

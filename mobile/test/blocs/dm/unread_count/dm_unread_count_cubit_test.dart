@@ -639,8 +639,8 @@ void main() {
       );
 
       test(
-        'excludes a retired-key moderation thread, matching the list that '
-        'drops it',
+        'counts a retired-key moderation thread, matching the list that keeps '
+        'legacy history visible',
         () async {
           final cubit = buildPinAwareCubit();
           addTearDown(cubit.close);
@@ -656,9 +656,10 @@ void main() {
           potentialController.add(const []);
           await _settle();
 
-          // The inbox renders no row for this thread, so a badge that counted
-          // it would point at something the user cannot find.
-          expect(cubit.state, equals(0));
+          // The inbox keeps this legacy-history row visible until #6416 gives
+          // it an archived read-only presentation, so the badge can point at a
+          // row the user can still find.
+          expect(cubit.state, equals(1));
         },
       );
 

@@ -112,6 +112,7 @@ void main() {
       int dmUnreadCount = 0,
       int notificationUnreadCount = 0,
       Stream<int>? notificationStream,
+      TextScaler? textScaler,
     }) {
       if (state != null) {
         whenListen(
@@ -166,6 +167,13 @@ void main() {
         initialState: const ConversationActionsState(),
       );
 
+      final inbox = textScaler == null
+          ? const InboxView()
+          : MediaQuery(
+              data: MediaQueryData(textScaler: textScaler),
+              child: const InboxView(),
+            );
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
@@ -190,7 +198,7 @@ void main() {
                 value: mockActionsCubit,
               ),
             ],
-            child: const InboxView(),
+            child: inbox,
           ),
         ),
       );
@@ -1020,6 +1028,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(MessageRequestsBanner), findsOneWidget);
+          expect(find.byType(InboxEmptyState), findsOneWidget);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.inboxUnreadEmptyTitle), findsNothing);
         },
       );
 
@@ -1425,7 +1436,7 @@ void main() {
         );
       });
 
-      testWidgets('filter chips measure exactly the pinned header extent', (
+      testWidgets('filter chips ignore text scaling inside the pinned header', (
         tester,
       ) async {
         final conversations = manyConversations();
@@ -1437,15 +1448,16 @@ void main() {
               visibleConversations: conversations,
               hasMore: false,
             ),
+            textScaler: const TextScaler.linear(2),
           ),
         );
         await openMessages(tester);
 
-        // A SliverPersistentHeader has to declare its extent up front, and an
-        // under-declared one silently clips the chips. 48 = 8px padding either
-        // side of a DivineButtonSize.tiny chip, whose 32px box does not scale
-        // with text size. If DivineButton's tiny height ever moves, this fails
-        // here rather than as a clipped chip on someone's phone.
+        final unreadTextContext = tester.element(find.text('Unread'));
+        expect(
+          MediaQuery.textScalerOf(unreadTextContext).scale(20),
+          equals(20),
+        );
         expect(
           tester.getSize(find.byType(UnreadFilterChips)).height,
           equals(48),

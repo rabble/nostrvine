@@ -735,9 +735,16 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     // brand-new user still needs to be told the inbox is empty — but render
     // the row above it rather than dropping it, and skip the search field and
     // filter chips, which have nothing to act on.
-    if (conversations.isEmpty && !hasRequests) {
+    if (conversations.isEmpty) {
       return [
         if (supportRow != null) SliverToBoxAdapter(child: supportRow),
+        if (hasRequests)
+          SliverToBoxAdapter(
+            child: MessageRequestsBanner(
+              requestCount: requestUnreadCount,
+              onTap: () => _openMessageRequests(context),
+            ),
+          ),
         const SliverFillRemaining(
           hasScrollBody: false,
           child: InboxEmptyState(),

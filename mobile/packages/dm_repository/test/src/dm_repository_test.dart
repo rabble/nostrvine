@@ -10444,7 +10444,7 @@ void main() {
         expect(result.requests, isEmpty);
       });
 
-      test('removes a retired-key thread WITHOUT adopting it', () {
+      test('preserves a retired-key thread WITHOUT adopting it', () {
         final thread = makeConversation(
           id: retiredId,
           participantPubkeys: const [_validPubkeyA, retired],
@@ -10455,11 +10455,11 @@ void main() {
         // Nothing remaps the recipient downstream, so returning this as the
         // pin would address replies to a key the account rotated away from.
         expect(result.pinned, isNull);
-        expect(result.inbox, isEmpty);
+        expect(result.inbox, equals([thread]));
         expect(result.supportConversationId, equals(currentId));
       });
 
-      test('removes every known thread, not just the first match', () {
+      test('removes the current-key thread and preserves retired history', () {
         final retiredThread = makeConversation(
           id: retiredId,
           participantPubkeys: const [_validPubkeyA, retired],
@@ -10472,7 +10472,7 @@ void main() {
         final result = extract(inbox: [retiredThread, currentThread]);
 
         expect(result.pinned, equals(currentThread));
-        expect(result.inbox, isEmpty);
+        expect(result.inbox, equals([retiredThread]));
       });
 
       test('prefers the inbox copy when the thread is in both buckets', () {
