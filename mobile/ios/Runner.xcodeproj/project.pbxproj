@@ -842,7 +842,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -852,7 +852,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -922,7 +922,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -933,7 +933,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -949,7 +949,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -960,7 +960,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1094,7 +1094,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -1104,7 +1104,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1125,7 +1125,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
@@ -1135,7 +1135,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1152,7 +1152,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1163,7 +1163,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1198,7 +1198,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1209,7 +1209,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.CameraQuickActionWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1227,7 +1227,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1238,7 +1238,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.CameraQuickActionWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1256,7 +1256,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CameraQuickActionWidget/CameraQuickActionWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 506;
+				CURRENT_PROJECT_VERSION = 507;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = GZCZBKH7MY;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -1267,7 +1267,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.17;
+				MARKETING_VERSION = 1.0.18;
 				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.CameraQuickActionWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
