@@ -1614,19 +1614,16 @@ class _AuthorListWatch {
   StreamSubscription<Event>? _subscription;
   String? _subscriptionId;
   int _generation = 0;
+  bool _openScheduled = false;
 
-  /// Starts watching [author]'s list.
-  ///
-  /// Returns `false` when [author] was already watched, in which case the
-  /// existing subscription is left untouched.
-  bool add(
+  /// Starts watching [author]'s list. A no-op when already watched.
+  void add(
     String author, {
     required NostrClient? client,
     required void Function(Event) onEvent,
   }) {
-    if (!_authors.add(author)) return false;
-    _open(client: client, onEvent: onEvent);
-    return true;
+    if (!_authors.add(author)) return;
+    _scheduleOpen(client: client, onEvent: onEvent);
   }
 
   /// Re-opens the watch against [client].
@@ -1647,6 +1644,26 @@ class _AuthorListWatch {
   void clear() {
     _authors.clear();
     _close();
+  }
+
+  /// Coalesces a burst of [add] calls into a single subscription.
+  ///
+  /// The initial relay replay hands us every author who blocks us in quick
+  /// succession; opening per author would cost a REQ/CLOSE pair each and
+  /// re-deliver the already-watched authors every time. Deferred by a full
+  /// event-loop turn rather than a microtask because stream events reach us
+  /// one microtask apart, which is exactly what needs collapsing.
+  void _scheduleOpen({
+    required NostrClient? client,
+    required void Function(Event) onEvent,
+  }) {
+    if (client == null || _openScheduled) return;
+    _openScheduled = true;
+    Timer.run(() {
+      // Cleared by a rebind or clear() that ran before this fired.
+      if (!_openScheduled) return;
+      _open(client: client, onEvent: onEvent);
+    });
   }
 
   void _open({
@@ -1683,6 +1700,7 @@ class _AuthorListWatch {
   }
 
   void _close() {
+    _openScheduled = false;
     unawaited(_subscription?.cancel());
     _subscription = null;
 

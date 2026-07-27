@@ -3213,7 +3213,8 @@ void main() {
       List<List<String>> tags, {
       required int createdAt,
       required String id,
-    }) => Event(blockerPubkey, kind, tags, '', createdAt: createdAt)
+      String author = blockerPubkey,
+    }) => Event(author, kind, tags, '', createdAt: createdAt)
       ..id = id
       ..sig = 'signature';
 
@@ -3551,6 +3552,64 @@ void main() {
       await pumpEventQueue();
 
       expect(service.hasBlockedUs(blockerPubkey), isFalse);
+    });
+
+    test('a burst of discovered blockers opens a single watch', () async {
+      const otherBlockerPubkey =
+          '7f2a4c6e8b0d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a';
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Both arrive in the same replay, as they do on a cold start.
+      for (final (author, id) in [
+        (blockerPubkey, 'block-event'),
+        (otherBlockerPubkey, 'other-block-event'),
+      ]) {
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: id,
+            author: author,
+          ),
+        );
+      }
+
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
+      await pumpEventQueue();
+
+      expect(service.hasBlockedUs(blockerPubkey), isTrue);
+      expect(service.hasBlockedUs(otherBlockerPubkey), isTrue);
+
+      // The discovery subscription passes two filters; the by-author watch
+      // is the single-filter one.
+      final watchRequests =
+          verify(
+                () => mockNostrService.subscribe(
+                  captureAny(),
+                  subscriptionId: any(named: 'subscriptionId'),
+                ),
+              ).captured
+              .cast<List<Filter>>()
+              .where((filters) => filters.length == 1)
+              .toList();
+
+      expect(
+        watchRequests,
+        hasLength(1),
+        reason: 'both blockers must land in one REQ, not one each',
+      );
+      expect(
+        watchRequests.single.single.authors,
+        containsAll([blockerPubkey, otherBlockerPubkey]),
+      );
     });
   });
 }
