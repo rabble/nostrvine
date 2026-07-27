@@ -86,5 +86,60 @@ void main() {
       validator.entitlementChanges.listen((_) {});
       validator.entitlementChanges.listen((_) {});
     });
+
+    test('startListening is a no-op', () {
+      validator.startListening();
+    });
+
+    test('lifecycleChanges is empty', () async {
+      expect(await validator.lifecycleChanges.isEmpty, isTrue);
+    });
+
+    test('purchaseProofChanges is empty', () async {
+      expect(await validator.purchaseProofChanges.isEmpty, isTrue);
+    });
+
+    test('completePurchase completes without error', () async {
+      await validator.completePurchase(
+        const SupporterPurchaseProof(
+          attemptId: 'attempt-1',
+          store: 'apple',
+          productId: 'p',
+          serverVerificationData: 'srv',
+          localVerificationData: '',
+        ),
+      );
+    });
+  });
+
+  group(SupporterPurchaseProof, () {
+    test('toJson includes only non-empty optional fields', () {
+      const proof = SupporterPurchaseProof(
+        attemptId: 'attempt-1',
+        store: 'apple',
+        productId: 'p',
+        serverVerificationData: 'srv',
+        localVerificationData: '',
+      );
+      expect(proof.toJson(), {
+        'server_verification_data': 'srv',
+      });
+    });
+
+    test('toJson includes local data and transaction id when set', () {
+      const proof = SupporterPurchaseProof(
+        attemptId: 'attempt-1',
+        store: 'apple',
+        productId: 'p',
+        serverVerificationData: 'srv',
+        localVerificationData: 'loc',
+        transactionId: 'tx-1',
+      );
+      expect(proof.toJson(), {
+        'server_verification_data': 'srv',
+        'local_verification_data': 'loc',
+        'transaction_id': 'tx-1',
+      });
+    });
   });
 }

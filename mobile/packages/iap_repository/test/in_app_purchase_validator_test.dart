@@ -19,9 +19,11 @@ PurchaseDetails _purchase(
   String productId, {
   PurchaseStatus status = PurchaseStatus.purchased,
   bool pendingComplete = false,
+  String? purchaseID,
 }) {
   return PurchaseDetails(
     productID: productId,
+    purchaseID: purchaseID,
     status: status,
     transactionDate: '0',
     verificationData: PurchaseVerificationData(
@@ -339,6 +341,74 @@ void main() {
         expect(emitted, hasLength(1));
         expect(emitted.single.productId, 'divine.supporter.monthly');
       });
+
+      test(
+        'proof attempt id includes the transaction id when present',
+        () async {
+          final proofFuture = validator.purchaseProofChanges.first;
+          final future = validator.purchase(
+            'divine.supporter.monthly',
+            attemptId: 'attempt-1',
+          );
+          await pumpMicrotasks();
+          streamController.add([
+            _purchase('divine.supporter.monthly', purchaseID: 'tx-1'),
+          ]);
+          await future.timeout(const Duration(seconds: 1));
+          final proof = await proofFuture;
+          expect(proof.attemptId, 'attempt-1:tx-1');
+        },
+      );
+
+      test(
+        'restored delivery after restore uses the restore context',
+        () async {
+          when(() => store.restorePurchases()).thenAnswer((_) async {});
+          final proofFuture = validator.purchaseProofChanges.first;
+          await validator.restorePurchases(
+            capturedPubkey: 'captured-pubkey',
+            attemptId: 'restore-1',
+          );
+          streamController.add([
+            _purchase(
+              'divine.supporter.monthly',
+              status: PurchaseStatus.restored,
+            ),
+          ]);
+          final proof = await proofFuture.timeout(
+            const Duration(seconds: 1),
+          );
+          expect(proof.attemptId, 'restore-1');
+          expect(proof.capturedPubkey, 'captured-pubkey');
+        },
+      );
+
+      test(
+        'purchase falls back to a placeholder product when the store '
+        'returns no details',
+        () async {
+          when(() => store.queryProductDetails(any())).thenAnswer(
+            (_) async => ProductDetailsResponse(
+              productDetails: const [],
+              notFoundIDs: ['divine.supporter.monthly'],
+            ),
+          );
+          final future = validator.purchase('divine.supporter.monthly');
+          await pumpMicrotasks();
+          streamController.add([
+            _purchase('divine.supporter.monthly'),
+          ]);
+          await future.timeout(const Duration(seconds: 1));
+          final captured = verify(
+            () => store.buyNonConsumable(
+              purchaseParam: captureAny(named: 'purchaseParam'),
+            ),
+          ).captured;
+          final param = captured.single as PurchaseParam;
+          expect(param.productDetails.id, 'divine.supporter.monthly');
+          expect(param.productDetails.price, isEmpty);
+        },
+      );
     });
 
     group('restorePurchases', () {
