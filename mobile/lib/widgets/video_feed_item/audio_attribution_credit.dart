@@ -1,52 +1,41 @@
-// ABOUTME: Shared helpers for unresolved audio attribution credit.
-// ABOUTME: Keeps feed-row and metadata-sheet fallback credit logic in sync.
+// ABOUTME: Shared helper for audio attribution creator credit.
+// ABOUTME: Keeps feed-row and metadata-sheet credit logic in sync.
 
 import 'package:models/models.dart';
 
-/// Resolved display credit for an audio attribution fallback.
+/// Shared creator-credit selection for the two visible sound surfaces.
 class AudioAttributionCredit {
-  const AudioAttributionCredit({
-    required this.creatorPubkey,
-    required this.creatorName,
-    required this.creditsReusedCreator,
-  });
+  const AudioAttributionCredit._();
 
-  final String creatorPubkey;
-  final String creatorName;
-  final bool creditsReusedCreator;
-}
-
-/// Shared credit selection for videos whose referenced sound cannot be fetched.
-class UnresolvedAudioAttributionCredit {
-  const UnresolvedAudioAttributionCredit._();
-
-  /// The reused sound's original creator, carried via inspired-by when a sound
-  /// selection auto-populated that field. Null means the best available credit
-  /// is the video's author.
+  /// The reused sound's original creator, carried on the video via its
+  /// inspired-by source (reusing a sound auto-populates inspired-by from the
+  /// source video). Null when absent, so the video's own author is credited.
+  ///
+  /// Only call this for a video that actually references a sound. Inspired-by
+  /// is a general credit, so on a video with no audio reference it says
+  /// nothing about who made the sound.
   static String? reusedCreatorPubkeyFor(VideoEvent video) {
     final pubkey = video.inspiredByVideo?.creatorPubkey;
     return (pubkey != null && pubkey.isNotEmpty) ? pubkey : null;
   }
 
-  static AudioAttributionCredit resolve({
+  /// The name to credit for [video]'s sound.
+  ///
+  /// [reusedCreatorPubkey] is the reused sound's creator, or null when the
+  /// video has no reused sound. Callers pass it explicitly — a null must stay
+  /// "no reused creator" so a video carrying inspired-by for an unrelated
+  /// reason still credits its own author.
+  ///
+  /// [creatorProfile] is the profile of whoever that resolves to, so the
+  /// generated-name fallbacks below are only reached before it loads.
+  static String creatorNameFor({
     required VideoEvent video,
     required UserProfile? creatorProfile,
-    String? reusedCreatorPubkey,
-  }) {
-    final resolvedReusedCreatorPubkey =
-        reusedCreatorPubkey ?? reusedCreatorPubkeyFor(video);
-    final creatorPubkey = resolvedReusedCreatorPubkey ?? video.pubkey;
-    final creatorName =
-        creatorProfile?.bestDisplayName ??
-        (resolvedReusedCreatorPubkey != null
-            ? UserProfile.defaultDisplayNameFor(creatorPubkey)
-            : video.displayAuthorName ??
-                  UserProfile.generatedNameFor(video.pubkey));
-
-    return AudioAttributionCredit(
-      creatorPubkey: creatorPubkey,
-      creatorName: creatorName,
-      creditsReusedCreator: resolvedReusedCreatorPubkey != null,
-    );
-  }
+    required String? reusedCreatorPubkey,
+  }) =>
+      creatorProfile?.bestDisplayName ??
+      (reusedCreatorPubkey != null
+          ? UserProfile.defaultDisplayNameFor(reusedCreatorPubkey)
+          : video.displayAuthorName ??
+                UserProfile.generatedNameFor(video.pubkey));
 }

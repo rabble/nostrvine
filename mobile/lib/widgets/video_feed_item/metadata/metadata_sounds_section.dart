@@ -58,8 +58,9 @@ class _SharedAudioSection extends ConsumerWidget {
           // reusing user.
           return _OriginalSoundSection(
             video: video,
-            reusedCreatorPubkey:
-                UnresolvedAudioAttributionCredit.reusedCreatorPubkeyFor(video),
+            reusedCreatorPubkey: AudioAttributionCredit.reusedCreatorPubkeyFor(
+              video,
+            ),
           );
         }
         return MetadataSection(
@@ -79,8 +80,9 @@ class _SharedAudioSection extends ConsumerWidget {
         );
         return _OriginalSoundSection(
           video: video,
-          reusedCreatorPubkey:
-              UnresolvedAudioAttributionCredit.reusedCreatorPubkeyFor(video),
+          reusedCreatorPubkey: AudioAttributionCredit.reusedCreatorPubkeyFor(
+            video,
+          ),
         );
       },
     );
@@ -110,7 +112,7 @@ class _OriginalSoundSection extends ConsumerWidget {
     final creatorProfile = ref
         .watch(userProfileReactiveProvider(creatorPubkey))
         .value;
-    final credit = UnresolvedAudioAttributionCredit.resolve(
+    final creatorName = AudioAttributionCredit.creatorNameFor(
       video: video,
       creatorProfile: creatorProfile,
       reusedCreatorPubkey: reusedCreatorPubkey,
@@ -119,9 +121,9 @@ class _OriginalSoundSection extends ConsumerWidget {
     return MetadataSection(
       label: context.l10n.metadataSoundsLabel,
       child: _OriginalSoundRow(
-        creatorName: credit.creatorName,
+        creatorName: creatorName,
         onTap: _canReuseSound(ref)
-            ? () => _navigateToSoundDetail(context, credit.creatorName)
+            ? () => _navigateToSoundDetail(context, creatorName)
             : null,
       ),
     );

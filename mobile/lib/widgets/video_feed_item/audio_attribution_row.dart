@@ -134,20 +134,23 @@ class _UnresolvedAudioAttribution extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final creatorPubkey =
-        UnresolvedAudioAttributionCredit.reusedCreatorPubkeyFor(video) ??
-        video.pubkey;
+    // Only reached with an audio reference, so inspired-by (when present) is
+    // the reused sound's source rather than an unrelated credit.
+    final reusedCreatorPubkey = AudioAttributionCredit.reusedCreatorPubkeyFor(
+      video,
+    );
+    final creatorPubkey = reusedCreatorPubkey ?? video.pubkey;
     final creatorProfile = ref
         .watch(userProfileReactiveProvider(creatorPubkey))
         .value;
-    final credit = UnresolvedAudioAttributionCredit.resolve(
-      video: video,
-      creatorProfile: creatorProfile,
-    );
 
     return _AudioAttributionPill(
       soundName: context.l10n.audioAttributionUnavailableSound,
-      creatorName: credit.creatorName,
+      creatorName: AudioAttributionCredit.creatorNameFor(
+        video: video,
+        creatorProfile: creatorProfile,
+        reusedCreatorPubkey: reusedCreatorPubkey,
+      ),
     );
   }
 }
