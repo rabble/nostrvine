@@ -1,6 +1,6 @@
 // ABOUTME: Widget tests for InboxNotificationsPage — verifies that opening
-// ABOUTME: the inbox refreshes once and marks notifications seen on open
-// ABOUTME: (advances the read watermark) without fanning out across tabs (#4708).
+// ABOUTME: the inbox marks notifications seen once (advances the read
+// ABOUTME: watermark, #4708) and that each tab opens its own filtered feed.
 
 // ignore_for_file: prefer_const_constructors
 
@@ -11,12 +11,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
-import 'package:openvine/notifications/view/notifications_view.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -101,29 +101,38 @@ void main() {
     );
 
     testWidgets(
-      'does not fan out refresh or mark-seen across the five filter tabs',
+      'opens each tab against its own server-filtered feed and marks seen '
+      'only on the All tab',
       (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        // Swipe through the four non-default tabs. Each visit mounts a
-        // fresh NotificationsView but they share one NotificationFeedBloc;
-        // the contract is that none of them triggers another refresh or an
-        // additional mark-seen.
-        for (var i = 1; i < 5; i++) {
-          await tester.tap(find.byType(Tab).at(i));
+        // Tab order is load-bearing: each index must open the feed its label
+        // promises, or a transposed entry silently shows e.g. reposts under
+        // Comments.
+        const tabFilters = <NotificationKind>[
+          NotificationKind.like,
+          NotificationKind.comment,
+          NotificationKind.follow,
+          NotificationKind.repost,
+        ];
+
+        verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+
+        for (var i = 0; i < tabFilters.length; i++) {
+          await tester.tap(find.byType(Tab).at(i + 1));
           await tester.pumpAndSettle();
+
+          // Asserted per tap, not as a set at the end — a set assertion
+          // passes even when two tabs are swapped.
+          verify(
+            () => mockNotificationRepo.refreshFeed(tabFilters[i]),
+          ).called(1);
         }
 
-        // Exactly one refresh and one mark-seen across the whole inbox-open
-        // lifecycle, even after all five filter views have mounted — the
-        // shared bloc opens once, not once per tab.
-        verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+        // The seen watermark advances on open only, and only for the
+        // unfiltered feed (#4708) — never once per filter tab.
         verify(() => mockNotificationRepo.markAllAsRead()).called(1);
-        // Confirm all five filter views actually mounted — guards
-        // against the test silently passing because TabBarView never
-        // built the off-default children.
-        expect(find.byType(NotificationsView), findsWidgets);
       },
     );
 
