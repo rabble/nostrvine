@@ -6217,6 +6217,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get commonClose => 'Zamknij';
 
   @override
+  String get commonLoading => 'Ładowanie';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Nie udało się zaktualizować okładki. Spróbuj ponownie.';
 

@@ -3480,6 +3480,7 @@
     "curatedListVideoNotAvailable": "Video mevcut değil",
     "commonBack": "Geri",
     "commonClose": "Kapat",
+    "commonLoading": "Yükleniyor",
     "categoryGalleryNoVideosInCategory": "Bu kategoride video yok",
     "categoryGallerySortOptionsLabel": "Kategori sıralama seçenekleri",
     "categoryGallerySortHot": "Popüler",

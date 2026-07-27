@@ -6047,6 +6047,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get commonClose => 'Tutup';
 
   @override
+  String get commonLoading => 'Memuat';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Tidak dapat memperbarui sampul. Coba lagi.';
 

@@ -6099,6 +6099,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get commonClose => 'Sluiten';
 
   @override
+  String get commonLoading => 'Laden';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Kan de cover niet bijwerken. Probeer het opnieuw.';
 

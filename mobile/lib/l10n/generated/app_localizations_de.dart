@@ -6146,6 +6146,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonClose => 'Schließen';
 
   @override
+  String get commonLoading => 'Wird geladen';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Cover konnte nicht aktualisiert werden. Versuche es erneut.';
 

@@ -3480,6 +3480,7 @@
     "curatedListVideoNotAvailable": "Vidéo indisponible",
     "commonBack": "Retour",
     "commonClose": "Fermer",
+    "commonLoading": "Chargement",
     "categoryGalleryNoVideosInCategory": "Aucune vidéo dans cette catégorie",
     "categoryGallerySortOptionsLabel": "Options de tri de la catégorie",
     "categoryGallerySortHot": "Tendance",

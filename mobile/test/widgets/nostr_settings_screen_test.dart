@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -116,6 +117,39 @@ void main() {
       expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
     });
 
+    // Deletion is the one irreversible row on this screen, so it has to read
+    // as destructive rather than as another settings entry.
+    testWidgets('renders the delete entry as destructive', (tester) async {
+      await pumpSubject(tester);
+
+      final tile = find.ancestor(
+        of: find.text(l10n.nostrSettingsDeleteAccount),
+        matching: find.byType(ListTile),
+      );
+      expect(tile, findsOneWidget);
+
+      final listTile = tester.widget<ListTile>(tile);
+      expect((listTile.title! as Text).style?.color, VineTheme.error);
+      expect((listTile.leading! as DivineIcon).color, VineTheme.error);
+      expect((listTile.leading! as DivineIcon).icon, DivineIconName.trash);
+
+      expect(
+        find.text(l10n.nostrSettingsDeleteAccountSubtitle),
+        findsOneWidget,
+      );
+
+      // Proves the row reads from l10n rather than a hardcoded English
+      // string: the same key in another locale must not be on screen.
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('de'),
+          ).nostrSettingsDeleteAccount,
+        ),
+        findsNothing,
+      );
+    });
+
     testWidgets('dismisses progress overlay after removing keys succeeds', (
       tester,
     ) async {
@@ -179,8 +213,12 @@ void main() {
       expect(find.byKey(const Key('welcome-screen')), findsOneWidget);
     });
 
+    // The spinner is an overlay entry rather than a route precisely so a back
+    // gesture cannot take it away while a destructive sign-out is still in
+    // flight — that would leave the user on an idle-looking screen with keys
+    // being deleted underneath them.
     testWidgets(
-      'does not crash when navigation closes progress overlay first',
+      'keeps the progress overlay through a back gesture',
       (
         tester,
       ) async {
@@ -201,16 +239,14 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        Navigator.of(
-          tester.element(find.byType(CircularProgressIndicator)),
-          rootNavigator: true,
-        ).pop();
-        await tester.pumpAndSettle();
-        expect(find.byType(CircularProgressIndicator), findsNothing);
+        await tester.binding.handlePopRoute();
+        await tester.pump();
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         signOut.complete();
         await tester.pumpAndSettle();
 
+        expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(tester.takeException(), isNull);
         verify(
           () => mockAuthService.signOut(
@@ -220,6 +256,38 @@ void main() {
         ).called(1);
       },
     );
+
+    // The previous shape of this guard popped the spinner's route; the entry
+    // can now outlive the screen instead, so the case worth pinning is a
+    // dismiss that lands after the tree holding the overlay is gone.
+    testWidgets('survives the screen being torn down mid-sign-out', (
+      tester,
+    ) async {
+      final signOut = Completer<void>();
+      when(
+        () => mockAuthService.signOut(
+          deleteKeys: true,
+          abortOnKeyDeletionFailure: true,
+        ),
+      ).thenAnswer((_) => signOut.future);
+
+      await pumpSubject(tester);
+
+      await tester.tap(find.text(l10n.nostrSettingsRemoveKeys));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+
+      signOut.complete();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('dismisses progress overlay when key deletion fails', (
       tester,

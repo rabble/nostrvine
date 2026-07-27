@@ -5953,6 +5953,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commonClose => 'ዝጋ';
 
   @override
+  String get commonLoading => 'በመጫን ላይ';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Couldn\'t update the cover. Try again.';
 

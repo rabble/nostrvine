@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart' show Nip89ClientTag;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
@@ -16,8 +15,6 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/owned_divine_username_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -26,8 +23,9 @@ import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
-import 'package:openvine/widgets/delete_account_confirmation.dart';
+import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
+import 'package:openvine/widgets/modal_progress_overlay.dart';
 
 class NostrSettingsScreen extends ConsumerWidget {
   static const routeName = 'nostr-settings';
@@ -111,7 +109,18 @@ class NostrSettingsScreen extends ConsumerWidget {
                 _SectionHeader(
                   title: context.l10n.nostrSettingsSectionDangerZone,
                 ),
-                _DeleteAccountTile(ref: ref),
+                _SettingsTile(
+                  divineIcon: DivineIconName.trash,
+                  title: context.l10n.nostrSettingsDeleteAccount,
+                  subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
+                  iconColor: VineTheme.error,
+                  titleColor: VineTheme.error,
+                  onTap: () => startAccountDeletionFlow(
+                    context: context,
+                    ref: ref,
+                    screenName: 'NostrSettingsScreen',
+                  ),
+                ),
               ],
             ],
           ),
@@ -152,9 +161,13 @@ class _RemoveKeysTile extends StatelessWidget {
       onConfirm: () async {
         if (!context.mounted) return;
 
-        final progressOverlay = _ProgressOverlay.show(context);
-
-        unawaited(progressOverlay.closed);
+        // Resolved before the await: the spinner is an overlay entry, not a
+        // route, so a back press during sign-out pops this screen instead of
+        // the spinner. The app-level messenger outlives that pop; a
+        // post-await `ScaffoldMessenger.of(context)` would not, and the user
+        // would be left with no word on a key deletion that failed.
+        final messenger = ScaffoldMessenger.of(context);
+        final progressOverlay = ModalProgressOverlay.show(context);
 
         try {
           await authService.signOut(
@@ -168,22 +181,17 @@ class _RemoveKeysTile extends StatelessWidget {
           progressOverlay.dismiss();
           // Platform key deletion failed — user stays signed in and can
           // retry without having to log back in.
-          if (!context.mounted) return;
-
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(
               couldNotRemoveKeysMessage,
               error: true,
             ),
           );
-          return;
         } catch (e) {
           progressOverlay.dismiss();
-          if (!context.mounted) return;
-
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
             DivineSnackbarContainer.snackBar(
               failedToRemoveKeysFn('$e'),
               error: true,
@@ -191,126 +199,6 @@ class _RemoveKeysTile extends StatelessWidget {
           );
         }
       },
-    );
-  }
-}
-
-class _ProgressOverlay {
-  _ProgressOverlay._(
-    this._navigator, {
-    required this.route,
-    required this.closed,
-  });
-
-  final NavigatorState _navigator;
-  final Route<void> route;
-  final Future<void> closed;
-  bool _dismissed = false;
-
-  static _ProgressOverlay show(BuildContext context) {
-    final navigator = Navigator.of(context, rootNavigator: true);
-    late final DialogRoute<void> route;
-    route = DialogRoute<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      ),
-    );
-
-    final closed = navigator.push(route);
-    return _ProgressOverlay._(navigator, route: route, closed: closed);
-  }
-
-  void dismiss() {
-    if (_dismissed || !_navigator.mounted || !route.isActive) return;
-    _dismissed = true;
-    _navigator.removeRoute(route);
-  }
-}
-
-const Duration _profileResolveTimeout = Duration(seconds: 3);
-
-class _DeleteAccountTile extends StatelessWidget {
-  const _DeleteAccountTile({required this.ref});
-
-  final WidgetRef ref;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: Icons.delete_forever,
-      title: context.l10n.nostrSettingsDeleteAccount,
-      subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
-      onTap: () => _handleDeleteAllContent(context, ref),
-      iconColor: VineTheme.error,
-      titleColor: VineTheme.error,
-    );
-  }
-
-  Future<void> _handleDeleteAllContent(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final deletionService = ref.read(accountDeletionServiceProvider);
-    final authService = ref.read(authServiceProvider);
-    final profileRepository = ref.read(profileRepositoryProvider);
-    final pubkey = authService.currentPublicKeyHex;
-    if (pubkey == null || pubkey.isEmpty) return;
-
-    // Kick off the burnable-handle lookup but do not await it: the dialog opens
-    // immediately and reveals the opt-in burn toggle once this resolves, so a
-    // slow name-server call never blocks the tap.
-    final ownedUsernameFuture = ref.read(ownedDivineUsernameProvider.future);
-
-    // Resolve the local profile up front so the identity + username gate are
-    // ready when the dialog opens. Cache-first (usually instant) with a bounded
-    // network fallback; a timeout or miss degrades to npub + DELETE, never
-    // hangs.
-    final overlay = _ProgressOverlay.show(context);
-    UserProfile? profile;
-    try {
-      profile = await ref
-          .read(fetchUserProfileProvider(pubkey).future)
-          .timeout(_profileResolveTimeout, onTimeout: () => null);
-    } catch (_) {
-      profile = null;
-    } finally {
-      overlay.dismiss();
-    }
-    if (!context.mounted) return;
-
-    // The gate anchors on the shown profile identity (displayNip05) to confirm
-    // *which account* is being erased — deliberately distinct from the burn
-    // target (the owned @divine.video handle, which the burn toggle names for
-    // itself). The two can differ for an external-NIP-05 user who also owns a
-    // divine username; that divergence is intended, not a mismatch to reconcile.
-    final confirmation = DeleteAccountConfirmation(
-      pubkeyHex: pubkey,
-      displayName:
-          profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
-      avatarUrl: profile?.picture,
-      handle: profile?.displayNip05,
-    );
-
-    await showDeleteAllContentWarningDialog(
-      context: context,
-      confirmation: confirmation,
-      ownedUsernameFuture: ownedUsernameFuture,
-      onConfirm:
-          ({
-            required bool burnUsername,
-            ({String name, String canonical})? ownedUsername,
-          }) => executeAccountDeletion(
-            context: context,
-            deletionService: deletionService,
-            authService: authService,
-            profileRepository: profileRepository,
-            burnUsername: burnUsername,
-            ownedUsername: ownedUsername,
-            confirmedPubkey: pubkey,
-            screenName: 'NostrSettingsScreen',
-          ),
     );
   }
 }

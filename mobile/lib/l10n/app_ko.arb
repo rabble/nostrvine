@@ -2811,6 +2811,7 @@
     "curatedListVideoNotAvailable": "영상을 사용할 수 없어요",
     "commonBack": "뒤로",
     "commonClose": "닫기",
+    "commonLoading": "불러오는 중",
     "categoryGalleryNoVideosInCategory": "이 카테고리에 영상이 없어요",
     "categoryGallerySortOptionsLabel": "카테고리 정렬 옵션",
     "categoryGallerySortHot": "인기",

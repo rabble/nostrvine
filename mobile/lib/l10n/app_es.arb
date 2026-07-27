@@ -3484,6 +3484,7 @@
     "curatedListVideoNotAvailable": "Video no disponible",
     "commonBack": "Volver",
     "commonClose": "Cerrar",
+    "commonLoading": "Cargando",
     "categoryGalleryNoVideosInCategory": "No hay videos en esta categoría",
     "categoryGallerySortOptionsLabel": "Opciones de orden de la categoría",
     "categoryGallerySortHot": "Populares",

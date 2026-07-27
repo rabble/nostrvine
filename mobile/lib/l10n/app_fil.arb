@@ -2047,6 +2047,7 @@
     "bugReportSuccessMessage": "Salamat! Natanggap namin ang report mo at gagamitin namin ito para mas gumanda ang Divine.",
     "commonBack": "Bumalik",
     "commonClose": "Isara",
+    "commonLoading": "Naglo-load",
     "contentWarningBlockUserTooltip": "I-block ang User",
     "contentWarningBlockedPolicy": "Na-block ang content na ito dahil sa policy violations.",
     "contentWarningBlockedTitle": "Naka-block ang Content",

@@ -10650,6 +10650,12 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonClose;
 
+  /// Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get commonLoading;
+
   /// Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again.
   ///
   /// In en, this message translates to:

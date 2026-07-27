@@ -6142,6 +6142,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get commonClose => 'Isara';
 
   @override
+  String get commonLoading => 'Naglo-load';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       'Couldn\'t update the cover. Try again.';
 

@@ -3611,6 +3611,7 @@
     "curatedListVideoNotAvailable": "Видеото не е налично",
     "commonBack": "Назад",
     "commonClose": "Затвори",
+    "commonLoading": "Зарежда се",
     "categoryGalleryNoVideosInCategory": "Няма видеа в тази категория",
     "categoryGallerySortOptionsLabel": "Опции за сортиране на категорията",
     "categoryGallerySortHot": "Горещо",

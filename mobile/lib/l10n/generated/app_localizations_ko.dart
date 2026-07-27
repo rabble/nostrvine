@@ -5854,6 +5854,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonClose => '닫기';
 
   @override
+  String get commonLoading => '불러오는 중';
+
+  @override
   String get videoMetadataEditCoverFailedSnackbar =>
       '커버를 업데이트하지 못했습니다. 다시 시도하세요.';
 
