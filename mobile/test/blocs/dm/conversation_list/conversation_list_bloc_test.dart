@@ -2938,6 +2938,38 @@ void main() {
         expect(state.pinnedSupport?.isPersisted, isTrue);
         expect(state.pinnedSupport?.conversation.isRead, isFalse);
         expect(state.requestConversations, isEmpty);
+        // The stranger IS hidden by the gate, so #6431's banner is owed.
+        expect(state.requestsWithheld, isTrue);
+      },
+    );
+
+    test(
+      'does not claim requests are withheld when the pin is the only one',
+      () async {
+        final inbound = _createConversation(
+          id: supportId,
+          isRead: false,
+          participantPubkeys: const [_testPubkey1, moderationPubkey],
+        );
+        when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+        _stubStreams(
+          mockDmRepository,
+          potentialRequests: [inbound],
+          recoveryComplete: false,
+        );
+        final bloc = createSupportBloc();
+        addTearDown(bloc.close);
+
+        final state = await loadedState(bloc);
+
+        // #6431's restore-paused banner reports that the recovery gate is
+        // hiding would-be requests. Here the only one is the moderation
+        // thread, which the gate is NOT hiding — it is on screen as the pin.
+        // Measuring the flag against the raw classification instead of the
+        // post-pin set would promise a Retry with nothing behind it.
+        expect(state.pinnedSupport?.isPersisted, isTrue);
+        expect(state.requestConversations, isEmpty);
+        expect(state.requestsWithheld, isFalse);
       },
     );
 
