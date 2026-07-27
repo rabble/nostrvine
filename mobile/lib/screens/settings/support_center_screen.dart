@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/share_position_origin.dart';
@@ -25,6 +26,8 @@ class SupportCenterScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.watch(authServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
+    final isAuthenticated =
+        ref.watch(currentAuthStateProvider) == AuthState.authenticated;
     final bugReportService = ref.read(bugReportServiceProvider);
 
     final l10n = context.l10n;
@@ -89,7 +92,7 @@ class SupportCenterScreen extends ConsumerWidget {
 
               // #6335 was filed from here by someone who could not find
               // deletion, so it has to be reachable from here too.
-              if (userPubkey != null && userPubkey.isNotEmpty)
+              if (isAuthenticated)
                 _SupportTile(
                   icon: DivineIconName.trash,
                   title: l10n.nostrSettingsDeleteAccount,
