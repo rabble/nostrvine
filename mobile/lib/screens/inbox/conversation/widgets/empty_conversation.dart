@@ -75,7 +75,7 @@ class EmptyConversation extends StatelessWidget {
           if (mayBeIncomplete) ...[
             const SizedBox(height: 24),
             Text(
-              context.l10n.inboxRestorePausedTitle,
+              context.l10n.conversationRestorePausedTitle,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),

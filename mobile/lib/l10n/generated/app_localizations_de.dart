@@ -5682,6 +5682,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Einige Chats sind noch nicht wiederhergestellt';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Dieser Chat ist noch nicht vollständig wiederhergestellt';
+
+  @override
   String get inboxRestoreRetryAction => 'Erneut versuchen';
 
   @override

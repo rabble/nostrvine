@@ -47,6 +47,7 @@ void main() {
       ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
       // Consumed by DmRestoreStatusCubit, which qualifies the empty state.
       when(() => mockDmRepository.isRecoveringHistory).thenReturn(false);
+      when(() => mockDmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
       when(
         () => mockDmRepository.isHistoryRecoveryComplete,
       ).thenReturn(true);

@@ -5581,6 +5581,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxRestorePausedTitle => 'لم تكتمل استعادة بعض المحادثات';
 
   @override
+  String get conversationRestorePausedTitle => 'لم تكتمل استعادة هذه المحادثة';
+
+  @override
   String get inboxRestoreRetryAction => 'إعادة المحاولة';
 
   @override

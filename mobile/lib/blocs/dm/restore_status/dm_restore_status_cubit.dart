@@ -12,11 +12,15 @@ import 'package:equatable/equatable.dart';
 class DmRestoreStatusState extends Equatable {
   const DmRestoreStatusState({
     this.isRestoring = false,
+    this.hasAttempted = false,
     this.isComplete = true,
   });
 
   /// A recovery pass (reinstall backfill or failed-decrypt replay) is running.
   final bool isRestoring;
+
+  /// History recovery has run, completed, or is running for this user.
+  final bool hasAttempted;
 
   /// The one-time history drain has completed cleanly for this user.
   ///
@@ -27,10 +31,10 @@ class DmRestoreStatusState extends Equatable {
   final bool isComplete;
 
   /// Whether an empty view might simply not have its messages yet.
-  bool get mayBeIncomplete => isRestoring || !isComplete;
+  bool get mayBeIncomplete => isRestoring || (hasAttempted && !isComplete);
 
   @override
-  List<Object?> get props => [isRestoring, isComplete];
+  List<Object?> get props => [isRestoring, hasAttempted, isComplete];
 }
 
 /// Publishes [DmRepository]'s app-scoped recovery signals as bloc state.
@@ -46,6 +50,7 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState> {
       super(
         DmRestoreStatusState(
           isRestoring: dmRepository.isRecoveringHistory,
+          hasAttempted: dmRepository.hasAttemptedHistoryRecovery,
           isComplete: dmRepository.isHistoryRecoveryComplete,
         ),
       ) {
@@ -58,6 +63,7 @@ class DmRestoreStatusCubit extends Cubit<DmRestoreStatusState> {
       emit(
         DmRestoreStatusState(
           isRestoring: isRestoring,
+          hasAttempted: _dmRepository.hasAttemptedHistoryRecovery,
           isComplete: _dmRepository.isHistoryRecoveryComplete,
         ),
       );

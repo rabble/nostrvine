@@ -467,6 +467,7 @@ class _RestorePausedBannerGate extends StatelessWidget {
     final withheld = context.select<ConversationListBloc, bool>(
       (bloc) =>
           bloc.state.requestsWithheld &&
+          !bloc.state.isRestoringHistory &&
           bloc.state.status == ConversationListStatus.loaded,
     );
     if (!withheld) return const SizedBox.shrink();

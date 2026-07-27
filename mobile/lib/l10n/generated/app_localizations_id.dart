@@ -5592,6 +5592,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Sebagian chat belum selesai dipulihkan';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Chat ini belum selesai dipulihkan';
+
+  @override
   String get inboxRestoreRetryAction => 'Coba lagi';
 
   @override

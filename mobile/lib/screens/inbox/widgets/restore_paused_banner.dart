@@ -39,15 +39,13 @@ class RestorePausedBanner extends StatelessWidget {
             Expanded(
               child: Text(
                 l10n.inboxRestorePausedTitle,
-                style: VineTheme.bodyMediumFont(
-                  color: VineTheme.secondaryText,
-                ),
+                style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
               ),
             ),
             DivineButton(
               label: l10n.inboxRestoreRetryAction,
               type: DivineButtonType.secondary,
-              size: DivineButtonSize.tiny,
+              size: DivineButtonSize.small,
               onPressed: onRetry,
             ),
           ],

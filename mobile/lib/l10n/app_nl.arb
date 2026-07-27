@@ -2351,6 +2351,7 @@
     "inboxRemoveConfirmTitle": "Gesprek verwijderen?",
     "inboxRemovedConversation": "Gesprek verwijderd",
     "inboxRestorePausedTitle": "Sommige chats zijn nog niet hersteld",
+    "conversationRestorePausedTitle": "Deze chat is nog niet hersteld",
     "inboxRestoreRetryAction": "Opnieuw proberen",
     "inboxRestoringMessages": "Je berichten worden hersteld…",
     "inboxReportedUser": "{displayName} gerapporteerd",

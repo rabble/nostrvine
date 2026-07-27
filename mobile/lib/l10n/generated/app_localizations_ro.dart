@@ -5769,6 +5769,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Unele conversații nu s-au restaurat complet';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Această conversație nu s-a restaurat complet';
+
+  @override
   String get inboxRestoreRetryAction => 'Reîncearcă';
 
   @override

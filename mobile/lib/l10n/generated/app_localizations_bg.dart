@@ -5670,6 +5670,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Някои чатове не са възстановени докрай';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Този чат още не е възстановен докрай';
+
+  @override
   String get inboxRestoreRetryAction => 'Опитай пак';
 
   @override

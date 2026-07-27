@@ -2355,6 +2355,7 @@
     "inboxRemoveConfirmTitle": "¿Eliminar conversación?",
     "inboxRemovedConversation": "Conversación eliminada",
     "inboxRestorePausedTitle": "Algunos chats no terminaron de restaurarse",
+    "conversationRestorePausedTitle": "Este chat no terminó de restaurarse",
     "inboxRestoreRetryAction": "Reintentar",
     "inboxRestoringMessages": "Restaurando tus mensajes…",
     "inboxReportedUser": "Reportaste a {displayName}",

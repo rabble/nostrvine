@@ -3108,9 +3108,13 @@
   },
   "inboxRemovedConversation": "Removed conversation",
   "inboxRestorePausedTitle": "Some chats haven't finished restoring",
+  "conversationRestorePausedTitle": "This chat hasn't finished restoring",
   "inboxRestoreRetryAction": "Retry",
   "@inboxRestorePausedTitle": {
     "description": "Title of the inbox banner shown when the one-time DM history recovery stopped before finishing, so conversations that would appear as message requests are still hidden. Paired with a Retry action."
+  },
+  "@conversationRestorePausedTitle": {
+    "description": "Short note shown in a single empty DM conversation when history recovery has run but stopped before finishing, so this chat may still receive restored messages."
   },
   "@inboxRestoreRetryAction": {
     "description": "Label of the action on the inbox restore-paused banner that re-runs the DM history recovery."

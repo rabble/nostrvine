@@ -5640,6 +5640,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxRestorePausedTitle => 'Sommige chats zijn nog niet hersteld';
 
   @override
+  String get conversationRestorePausedTitle => 'Deze chat is nog niet hersteld';
+
+  @override
   String get inboxRestoreRetryAction => 'Opnieuw proberen';
 
   @override

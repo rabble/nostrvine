@@ -5617,6 +5617,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Some chats haven\'t finished restoring';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'This chat hasn\'t finished restoring';
+
+  @override
   String get inboxRestoreRetryAction => 'Retry';
 
   @override

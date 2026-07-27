@@ -5652,6 +5652,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Algumas conversas não terminaram de restaurar';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Esta conversa ainda não terminou de restaurar';
+
+  @override
   String get inboxRestoreRetryAction => 'Tentar de novo';
 
   @override

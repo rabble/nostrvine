@@ -5599,6 +5599,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxRestorePausedTitle => 'Bazı sohbetler tam geri yüklenmedi';
 
   @override
+  String get conversationRestorePausedTitle => 'Bu sohbet tam geri yüklenmedi';
+
+  @override
   String get inboxRestoreRetryAction => 'Yeniden dene';
 
   @override

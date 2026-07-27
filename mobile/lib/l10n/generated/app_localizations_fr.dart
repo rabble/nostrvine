@@ -5689,6 +5689,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Certaines conversations ne sont pas encore restaurées';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Cette conversation n\'est pas encore restaurée';
+
+  @override
   String get inboxRestoreRetryAction => 'Réessayer';
 
   @override

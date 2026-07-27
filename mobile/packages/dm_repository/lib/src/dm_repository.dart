@@ -1072,6 +1072,23 @@ class DmRepository {
     return syncState.historyDrainComplete(_userPubkey);
   }
 
+  /// Whether history recovery has run, completed, or is currently running for
+  /// the current user.
+  ///
+  /// A fresh install starts with `historyDrainComplete == false`, but that does
+  /// not mean every brand-new empty conversation should be qualified as
+  /// incomplete before the user has ever opened Messages and armed the drain.
+  /// The drain stamps the current logic version before it does relay work, so
+  /// this distinguishes "not attempted yet" from "attempted but still not
+  /// complete" without inventing per-conversation sync state.
+  bool get hasAttemptedHistoryRecovery {
+    final syncState = _syncState;
+    if (syncState == null || _userPubkey.isEmpty) return true;
+    return isRecoveringHistory ||
+        syncState.historyDrainComplete(_userPubkey) ||
+        syncState.drainVersion(_userPubkey) >= DmSyncState.currentDrainVersion;
+  }
+
   void _beginRecovery() {
     _activeRecoveryOps++;
     if (_activeRecoveryOps == 1 && !_recoveryStateController.isClosed) {
@@ -1169,14 +1186,6 @@ class DmRepository {
           '${DmHistoryDrainConfig.maxDecryptRetries} attempts; those inbound '
           'messages are permanently unrecoverable',
           category: LogCategory.system,
-        );
-        _errorReporter?.call(
-          StateError(
-            'Abandoned $abandoned undecryptable gift wrap(s) after '
-            '${DmHistoryDrainConfig.maxDecryptRetries} attempts',
-          ),
-          StackTrace.current,
-          site: DmRepositoryReportableSites.pendingDecryptExhausted,
         );
       }
       final pending = await dao.getRetryable(
@@ -2348,11 +2357,10 @@ class DmRepository {
     // Schnorr verifies per wrap were ~47% of main-isolate CPU in on-device
     // profiling of a live DM burst). Only GiftWrapUtil.getRumorEvent accepts
     // a verifier; a test-injected decryptor is used unchanged. If the isolate
-    // is torn down mid-flight (account switch) verifyPart throws StateError —
-    // the parallel-decrypt drain worker catches it and falls through to the
-    // per-event retry queue; the live _handleGiftWrapEvent path catches it
-    // and drops that one wrap, which the switch re-recovers (drain completion
-    // is deferred and the live subscription re-subscribes on switch-back).
+    // is torn down mid-flight (account switch) verifyPart throws StateError.
+    // The parallel-decrypt drain worker falls through to the per-event path,
+    // and the live _handleGiftWrapEvent path records the failed decrypt for
+    // retry as long as the session generation is still current.
     // See #5424.
     if (identical(_rumorDecryptor, GiftWrapUtil.getRumorEvent)) {
       final verifyWorker = await _ensureVerifyIsolate();

@@ -2350,6 +2350,7 @@
     "inboxRemoveConfirmTitle": "Sohbet kaldırılsın mı?",
     "inboxRemovedConversation": "Sohbet kaldırıldı",
     "inboxRestorePausedTitle": "Bazı sohbetler tam geri yüklenmedi",
+    "conversationRestorePausedTitle": "Bu sohbet tam geri yüklenmedi",
     "inboxRestoreRetryAction": "Yeniden dene",
     "inboxRestoringMessages": "Mesajların geri yükleniyor…",
     "inboxReportedUser": "{displayName} bildirildi",

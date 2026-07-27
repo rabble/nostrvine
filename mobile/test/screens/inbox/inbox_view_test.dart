@@ -1096,6 +1096,29 @@ void main() {
         },
       );
 
+      testWidgets(
+        'hides the restore-paused banner while recovery is actively running',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                isRestoringHistory: true,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(RestorePausedBanner), findsNothing);
+          expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        },
+      );
+
       testWidgets('hides the restore-paused banner when nothing is withheld', (
         tester,
       ) async {

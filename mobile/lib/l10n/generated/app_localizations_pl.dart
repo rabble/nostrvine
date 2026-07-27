@@ -5758,6 +5758,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Część czatów nie została w pełni odzyskana';
 
   @override
+  String get conversationRestorePausedTitle =>
+      'Ten czat nie został jeszcze w pełni odzyskany';
+
+  @override
   String get inboxRestoreRetryAction => 'Spróbuj ponownie';
 
   @override

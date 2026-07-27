@@ -5406,6 +5406,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxRestorePausedTitle => '일부 대화를 아직 다 복구하지 못했어요';
 
   @override
+  String get conversationRestorePausedTitle => '이 대화를 아직 다 복구하지 못했어요';
+
+  @override
   String get inboxRestoreRetryAction => '다시 시도';
 
   @override

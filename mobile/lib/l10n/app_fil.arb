@@ -1464,6 +1464,7 @@
     "inboxUnblockedUser": "Na-unblock si {displayName}",
     "inboxRemovedConversation": "Inalis ang conversation",
     "inboxRestorePausedTitle": "May mga chat na hindi pa tapos ibalik",
+    "conversationRestorePausedTitle": "Hindi pa tapos ibalik ang chat na ito",
     "inboxRestoreRetryAction": "Subukan ulit",
     "inboxRestoringMessages": "Ibinabalik ang mga message mo…",
     "inboxEmptyTitle": "Wala pang messages",

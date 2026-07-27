@@ -3033,10 +3033,13 @@ void main() {
       );
 
       test(
-        'reports when gift wraps are abandoned at the decrypt retry cap',
+        'does not report when gift wraps are abandoned at the decrypt '
+        'retry cap',
         () async {
           // These are inbound DMs the user will never see. Dropping them with
-          // no log and no report made permanent message loss invisible.
+          // no log made permanent message loss invisible, but reaching the cap
+          // is an expected outcome for spam or permanently undecryptable wraps,
+          // not a programming invariant.
           final pendingDao = _MockPendingGiftWrapsDao();
           when(
             () => pendingDao.deleteExhausted(
@@ -3054,11 +3057,7 @@ void main() {
           final repository = createRepository(pendingGiftWrapsDao: pendingDao);
           await repository.retryPendingDecryptions();
 
-          expect(reporterCalls, hasLength(1));
-          expect(
-            reporterCalls.single.site,
-            DmRepositoryReportableSites.pendingDecryptExhausted,
-          );
+          expect(reporterCalls, isEmpty);
         },
       );
 
@@ -4711,6 +4710,41 @@ void main() {
         'isHistoryRecoveryComplete is true when no sync state is wired (#5304)',
         () {
           expect(createRepository().isHistoryRecoveryComplete, isTrue);
+        },
+      );
+
+      test(
+        'hasAttemptedHistoryRecovery distinguishes a fresh install from a '
+        'stopped-short drain',
+        () {
+          final fresh = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = 0;
+          expect(
+            createRepository(syncState: fresh).hasAttemptedHistoryRecovery,
+            isFalse,
+          );
+
+          final attempted = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          expect(
+            createRepository(syncState: attempted).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+
+          final complete = _FakeDmSyncState()..drainCompleteOverride = true;
+          expect(
+            createRepository(syncState: complete).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'hasAttemptedHistoryRecovery is true when no sync state is wired',
+        () {
+          expect(createRepository().hasAttemptedHistoryRecovery, isTrue);
         },
       );
 

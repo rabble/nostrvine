@@ -414,7 +414,10 @@ void main() {
 
           final l10n = lookupAppLocalizations(const Locale('en'));
           expect(find.byType(EmptyConversation), findsOneWidget);
-          expect(find.text(l10n.inboxRestorePausedTitle), findsNothing);
+          expect(
+            find.text(l10n.conversationRestorePausedTitle),
+            findsNothing,
+          );
         },
       );
 
@@ -427,18 +430,44 @@ void main() {
           await tester.pumpWidget(
             buildSubject(
               state: const ConversationState(status: ConversationStatus.loaded),
+              restoreStatus: const DmRestoreStatusState(
+                hasAttempted: true,
+                isComplete: false,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.text(l10n.conversationRestorePausedTitle),
+            findsOneWidget,
+          );
+          // The profile card survives intact alongside the qualifier.
+          expect(find.byType(EmptyConversation), findsOneWidget);
+          expect(
+            find.text(l10n.inboxConversationViewProfileButton),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'empty conversation stays unqualified before recovery has been attempted',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationState(status: ConversationStatus.loaded),
               restoreStatus: const DmRestoreStatusState(isComplete: false),
             ),
           );
           await tester.pumpAndSettle();
 
           final l10n = lookupAppLocalizations(const Locale('en'));
-          expect(find.text(l10n.inboxRestorePausedTitle), findsOneWidget);
-          // The profile card survives intact alongside the qualifier.
           expect(find.byType(EmptyConversation), findsOneWidget);
           expect(
-            find.text(l10n.inboxConversationViewProfileButton),
-            findsOneWidget,
+            find.text(l10n.conversationRestorePausedTitle),
+            findsNothing,
           );
         },
       );

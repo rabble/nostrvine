@@ -9864,6 +9864,12 @@ abstract class AppLocalizations {
   /// **'Some chats haven\'t finished restoring'**
   String get inboxRestorePausedTitle;
 
+  /// Short note shown in a single empty DM conversation when history recovery has run but stopped before finishing, so this chat may still receive restored messages.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat hasn\'t finished restoring'**
+  String get conversationRestorePausedTitle;
+
   /// Label of the action on the inbox restore-paused banner that re-runs the DM history recovery.
   ///
   /// In en, this message translates to:

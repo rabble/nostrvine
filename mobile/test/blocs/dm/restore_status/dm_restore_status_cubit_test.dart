@@ -19,6 +19,7 @@ void main() {
     setUp(() {
       dmRepository = _MockDmRepository();
       when(() => dmRepository.isRecoveringHistory).thenReturn(false);
+      when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(false);
       when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(true);
       when(
         () => dmRepository.historyRecoveryStream,
@@ -27,6 +28,7 @@ void main() {
 
     test('seeds from the repository because the stream does not replay', () {
       when(() => dmRepository.isRecoveringHistory).thenReturn(true);
+      when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
       when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
 
       final cubit = DmRestoreStatusCubit(dmRepository: dmRepository);
@@ -37,7 +39,21 @@ void main() {
       expect(cubit.state.mayBeIncomplete, isTrue);
     });
 
+    test(
+      'a fresh repository reports nothing outstanding before a drain runs',
+      () {
+        when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
+
+        final cubit = DmRestoreStatusCubit(dmRepository: dmRepository);
+        addTearDown(cubit.close);
+
+        expect(cubit.state.mayBeIncomplete, isFalse);
+      },
+    );
+
     test('a settled repository reports nothing outstanding', () {
+      when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
+
       final cubit = DmRestoreStatusCubit(dmRepository: dmRepository);
       addTearDown(cubit.close);
 
@@ -51,6 +67,7 @@ void main() {
         // clean exhaustion — page cap, exception, no connected relay — ends
         // the running flag while leaving the persisted flag false.
         when(() => dmRepository.isRecoveringHistory).thenReturn(true);
+        when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
         when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
         when(
           () => dmRepository.historyRecoveryStream,
@@ -60,6 +77,7 @@ void main() {
       wait: const Duration(milliseconds: 50),
       verify: (cubit) {
         expect(cubit.state.isRestoring, isFalse);
+        expect(cubit.state.hasAttempted, isTrue);
         expect(cubit.state.isComplete, isFalse);
         expect(cubit.state.mayBeIncomplete, isTrue);
       },
@@ -69,15 +87,15 @@ void main() {
       're-reads the persisted flag on every recovery tick',
       setUp: () {
         when(() => dmRepository.isRecoveringHistory).thenReturn(true);
+        when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
         when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(false);
         final controller = StreamController<bool>();
         when(
           () => dmRepository.historyRecoveryStream,
         ).thenAnswer((_) => controller.stream);
         Future<void>.delayed(const Duration(milliseconds: 20)).then((_) {
-          when(
-            () => dmRepository.isHistoryRecoveryComplete,
-          ).thenReturn(true);
+          when(() => dmRepository.isHistoryRecoveryComplete).thenReturn(true);
+          when(() => dmRepository.hasAttemptedHistoryRecovery).thenReturn(true);
           controller.add(false);
         });
       },
