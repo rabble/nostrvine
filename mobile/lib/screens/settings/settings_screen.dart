@@ -43,6 +43,7 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/deferred_login_options_navigator.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/delete_account_action.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -337,6 +338,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: () => context.push(DeveloperOptionsScreen.path),
                   ),
 
+                // Deletion is reachable from here, not only from "Nostr
+                // Settings" — a developer-facing name that someone looking to
+                // delete their account has no reason to open.
+                if (isAuthenticated)
+                  _SettingsTile(
+                    divineIcon: DivineIconName.trash,
+                    title: context.l10n.nostrSettingsDeleteAccount,
+                    subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
+                    iconColor: VineTheme.error,
+                    titleColor: VineTheme.error,
+                    onTap: () => startAccountDeletionFlow(
+                      context: context,
+                      ref: ref,
+                      screenName: 'SettingsScreen',
+                    ),
+                  ),
+
                 const SizedBox(height: 24),
                 _VersionTile(appVersion: _appVersion),
               ],
@@ -627,6 +645,7 @@ class _SettingsTile extends StatelessWidget {
     this.divineIcon,
     this.icon,
     this.iconColor,
+    this.titleColor,
     this.subtitle,
   }) : assert(
          divineIcon != null || icon != null,
@@ -640,6 +659,9 @@ class _SettingsTile extends StatelessWidget {
   final VoidCallback onTap;
   final Color? iconColor;
 
+  /// Overrides the title colour, for destructive entries.
+  final Color? titleColor;
+
   @override
   Widget build(BuildContext context) {
     final Widget leadingWidget = divineIcon != null
@@ -652,7 +674,12 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       minTileHeight: 64,
       leading: leadingWidget,
-      title: Text(title, style: VineTheme.titleMediumFont()),
+      title: Text(
+        title,
+        style: titleColor != null
+            ? VineTheme.titleMediumFont(color: titleColor!)
+            : VineTheme.titleMediumFont(),
+      ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,

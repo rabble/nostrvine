@@ -1,7 +1,8 @@
-// ABOUTME: Tests for Delete Account integration in Settings screen
-// ABOUTME: Verifies Account section appears and delete flow triggers correctly
+// ABOUTME: Tests for the Delete Account entry on the Settings hub
+// ABOUTME: Verifies it appears only when authenticated and reads copy from l10n
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,49 +38,18 @@ void main() {
       mockAuthService = _MockAuthService();
       mockLocaleCubit = _MockLocaleCubit();
       when(() => mockLocaleCubit.state).thenReturn(const LocaleState());
+      when(() => mockAuthService.isAnonymous).thenReturn(false);
+      when(() => mockAuthService.hasExpiredOAuthSession).thenReturn(false);
+      when(() => mockAuthService.currentProfile).thenReturn(null);
     });
 
-    testWidgets('should show Delete Account option when authenticated', (
-      tester,
-    ) async {
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentProfile).thenReturn(null);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            accountDeletionServiceProvider.overrideWithValue(
-              mockDeletionService,
-            ),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: BlocProvider<LocaleCubit>.value(
-              value: mockLocaleCubit,
-              child: const SettingsScreen(),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.text('ACCOUNT'), findsOneWidget);
-      expect(find.text('Delete Account'), findsOneWidget);
-      expect(
-        find.text('Permanently delete all your content from Nostr relays'),
-        findsOneWidget,
-      );
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('should hide Delete Account when not authenticated', (
-      tester,
-    ) async {
-      when(() => mockAuthService.isAuthenticated).thenReturn(false);
+    Future<void> pumpSettings(
+      WidgetTester tester, {
+      required AuthState authState,
+    }) async {
+      when(
+        () => mockAuthService.isAuthenticated,
+      ).thenReturn(authState == AuthState.authenticated);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -89,9 +59,7 @@ void main() {
               mockDeletionService,
             ),
             authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(
-              AuthState.unauthenticated,
-            ),
+            currentAuthStateProvider.overrideWithValue(authState),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -103,96 +71,82 @@ void main() {
           ),
         ),
       );
-
       await tester.pumpAndSettle();
+    }
 
-      expect(find.text('ACCOUNT'), findsNothing);
-      expect(find.text('Delete Account'), findsNothing);
+    /// Drags to the end of the settings list.
+    ///
+    /// The entry sits at the bottom, and a `ListView` only builds its visible
+    /// range — so without this, `findsNothing` would pass for a tile that is
+    /// merely off-screen and the absence test could never fail.
+    Future<void> scrollToEnd(WidgetTester tester) async {
+      for (var i = 0; i < 8; i++) {
+        await tester.drag(find.byType(ListView), const Offset(0, -600));
+        await tester.pumpAndSettle();
+      }
+    }
+
+    // Deletion used to be reachable only from Settings -> "Nostr Settings" ->
+    // Danger Zone, a developer-facing name a user has no reason to open. #6335
+    // was filed by someone who could not find it.
+    testWidgets('offers deletion when authenticated', (tester) async {
+      await pumpSettings(tester, authState: AuthState.authenticated);
+      await scrollToEnd(tester);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.nostrSettingsDeleteAccount), findsOneWidget);
+      expect(
+        find.text(l10n.nostrSettingsDeleteAccountSubtitle),
+        findsOneWidget,
+      );
+
+      // Proves the tile reads from l10n rather than a hardcoded English
+      // string: the same key in another locale must not be on screen.
+      expect(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('de'),
+          ).nostrSettingsDeleteAccount,
+        ),
+        findsNothing,
+      );
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('hides deletion when signed out', (tester) async {
+      await pumpSettings(tester, authState: AuthState.unauthenticated);
+      await scrollToEnd(tester);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.nostrSettingsDeleteAccount), findsNothing);
 
       // Dispose and pump to clear any pending timers from overlay visibility
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('should show warning dialog when Delete Account tapped', (
-      tester,
-    ) async {
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentProfile).thenReturn(null);
+    // Destructive entries read in the error colour, matching the Danger Zone
+    // tile this one mirrors.
+    testWidgets('renders the entry as destructive', (tester) async {
+      await pumpSettings(tester, authState: AuthState.authenticated);
+      await scrollToEnd(tester);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            accountDeletionServiceProvider.overrideWithValue(
-              mockDeletionService,
-            ),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: BlocProvider<LocaleCubit>.value(
-              value: mockLocaleCubit,
-              child: const SettingsScreen(),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Delete Account'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('\u26A0\uFE0F Delete Account?'), findsOneWidget);
-      expect(find.textContaining('PERMANENT'), findsOneWidget);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('Delete Account tile should have red icon and text', (
-      tester,
-    ) async {
-      when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.currentProfile).thenReturn(null);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            accountDeletionServiceProvider.overrideWithValue(
-              mockDeletionService,
-            ),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: BlocProvider<LocaleCubit>.value(
-              value: mockLocaleCubit,
-              child: const SettingsScreen(),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final deleteAccountTile = find.ancestor(
-        of: find.text('Delete Account'),
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final tile = find.ancestor(
+        of: find.text(l10n.nostrSettingsDeleteAccount),
         matching: find.byType(ListTile),
       );
+      expect(tile, findsOneWidget);
 
-      expect(deleteAccountTile, findsOneWidget);
+      final listTile = tester.widget<ListTile>(tile);
+      expect((listTile.title! as Text).style?.color, VineTheme.error);
+      expect((listTile.leading! as DivineIcon).color, VineTheme.error);
+      expect((listTile.leading! as DivineIcon).icon, DivineIconName.trash);
 
-      final listTile = tester.widget<ListTile>(deleteAccountTile);
-      final leadingIcon = listTile.leading! as Icon;
-      final titleText = listTile.title! as Text;
-
-      expect(leadingIcon.color, equals(Colors.red));
-      expect(leadingIcon.icon, equals(Icons.delete_forever));
-      expect(titleText.style?.color, equals(Colors.red));
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
   });
 }

@@ -68,7 +68,6 @@ test/widgets/composable_video_grid_test.dart
 test/widgets/comprehensive_clickable_hashtag_text_test.dart
 test/widgets/profile_menu_drafts_test.dart
 test/widgets/settings_bottom_nav_test.dart
-test/widgets/settings_delete_account_test.dart
 test/widgets/settings_screen_scaffold_test.dart
 test/widgets/user_profile_tile_layout_test.dart
 test/widgets/video_overlay_context_title_simple_test.dart
