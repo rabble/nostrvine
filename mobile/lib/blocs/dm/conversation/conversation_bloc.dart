@@ -71,6 +71,16 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     emit(state.copyWith(status: ConversationStatus.loading));
 
+    // Arm the one-time history drain here too, not just on inbox open.
+    // Profile → Message reaches a thread without ever passing through
+    // Messages, so on a reinstall this can be the first DM surface the user
+    // touches. Until the drain arms, `hasAttemptedHistoryRecovery` is false
+    // and an empty thread reports itself complete while the user's history is
+    // still sitting on the relay. Idempotent, resumable and shared with the
+    // inbox's call, so arriving from either entry point costs one drain.
+    // See #4953.
+    unawaited(_dmRepository.backfillHistoryIfNeeded());
+
     // Mark as read when opening
     await _dmRepository.markConversationAsRead(_conversationId);
 

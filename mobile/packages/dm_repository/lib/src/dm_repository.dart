@@ -1187,6 +1187,18 @@ class DmRepository {
           'messages are permanently unrecoverable',
           category: LogCategory.system,
         );
+        // A local warning is invisible in triage, and permanent inbound-message
+        // loss is exactly what we cannot afford to discover only from user
+        // reports. Bounded on purpose: one report per drain pass carrying the
+        // aggregate count, so a spam burst cannot flood the dashboard.
+        _errorReporter?.call(
+          StateError(
+            'Abandoned $abandoned undecryptable gift wrap(s) after '
+            '${DmHistoryDrainConfig.maxDecryptRetries} attempts',
+          ),
+          StackTrace.current,
+          site: DmRepositoryReportableSites.pendingDecryptExhausted,
+        );
       }
       final pending = await dao.getRetryable(
         ownerPubkey: pubkey,

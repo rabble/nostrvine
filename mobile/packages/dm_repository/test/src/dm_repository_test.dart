@@ -3033,13 +3033,15 @@ void main() {
       );
 
       test(
-        'does not report when gift wraps are abandoned at the decrypt '
-        'retry cap',
+        'reports once with an aggregate count when gift wraps are abandoned '
+        'at the decrypt retry cap',
         () async {
-          // These are inbound DMs the user will never see. Dropping them with
-          // no log made permanent message loss invisible, but reaching the cap
-          // is an expected outcome for spam or permanently undecryptable wraps,
-          // not a programming invariant.
+          // These are inbound DMs the user will never see, and the wrap
+          // carries no decryptable sender or conversation, so nothing can be
+          // surfaced in the UI. A local warning is invisible in triage, so
+          // this report is the only signal that permanent message loss
+          // happened. One report per drain pass, not per wrap, so a spam
+          // burst cannot flood the dashboard.
           final pendingDao = _MockPendingGiftWrapsDao();
           when(
             () => pendingDao.deleteExhausted(
@@ -3057,7 +3059,12 @@ void main() {
           final repository = createRepository(pendingGiftWrapsDao: pendingDao);
           await repository.retryPendingDecryptions();
 
-          expect(reporterCalls, isEmpty);
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.pendingDecryptExhausted,
+          );
+          expect(reporterCalls.single.error.toString(), contains('3'));
         },
       );
 

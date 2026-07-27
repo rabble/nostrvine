@@ -78,6 +78,7 @@ void main() {
       // Stub both mocks so the bloc can run without throwing.
       for (final repo in [mockRepoA, mockRepoB]) {
         when(() => repo.markConversationAsRead(any())).thenAnswer((_) async {});
+        when(repo.backfillHistoryIfNeeded).thenAnswer((_) async {});
         when(
           () => repo.watchMessages(any()),
         ).thenAnswer((_) => const Stream<List<DmMessage>>.empty());
@@ -290,6 +291,9 @@ void main() {
       mockResponseSvcA = _MockCollaboratorResponseService();
       mockResponseSvcB = _MockCollaboratorResponseService();
 
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
       when(
         () => mockDmRepository.markConversationAsRead(any()),
       ).thenAnswer((_) async {});

@@ -493,6 +493,7 @@ void main() {
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());
 
+      when(mockDmRepository.backfillHistoryIfNeeded).thenAnswer((_) async {});
       when(
         () => mockDmRepository.markConversationAsRead(any()),
       ).thenAnswer((_) async {});

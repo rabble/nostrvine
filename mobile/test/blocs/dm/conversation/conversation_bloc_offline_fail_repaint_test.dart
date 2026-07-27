@@ -50,6 +50,8 @@ void main() {
     when(
       () => repo.markConversationAsRead(any()),
     ).thenAnswer((_) async {});
+    // Opening a conversation arms the one-time history drain.
+    when(() => repo.backfillHistoryIfNeeded()).thenAnswer((_) async {});
     // Persisted-message stream stays empty and stable; the outgoing queue
     // drives every tick — exactly the open-conversation scenario in the bug.
     when(
