@@ -3412,6 +3412,76 @@ void main() {
       },
     );
 
+    test(
+      'recovers on a cold start when the relay serves a superseded block '
+      'list to the #p filter',
+      () async {
+        // Reproduces relay.divine.video as measured: both versions of
+        // (author, kind 30000, d=block) stay stored, so the #p discovery
+        // filter keeps returning the last version that still tagged us
+        // while the author filter returns the current, empty one.
+        final staleRelay = _FilterAwareRelay(retainSuperseded: true);
+        addTearDown(staleRelay.close);
+
+        final staleClient = _MockNostrClient();
+        when(
+          () => staleClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer(
+          (invocation) => staleRelay.subscribe(
+            invocation.positionalArguments.first as List<Filter>,
+          ),
+        );
+        when(() => staleClient.unsubscribe(any())).thenAnswer((_) async {});
+
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        staleRelay
+          ..publish(
+            listEvent(
+              30000,
+              [
+                ['d', 'block'],
+                ['p', ourPubkey],
+              ],
+              createdAt: now,
+              id: 'block-event',
+            ),
+          )
+          // The unblock supersedes it, but the old row is retained.
+          ..publish(
+            listEvent(
+              30000,
+              [
+                ['d', 'block'],
+                ['title', 'Block List'],
+              ],
+              createdAt: now + 600,
+              id: 'unblock-event',
+            ),
+          );
+
+        // Cold start: nothing in memory, everything re-derived from relay.
+        final coldService = ContentBlocklistRepository();
+        await coldService.syncBlockListsInBackground(
+          staleClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(
+          coldService.hasBlockedUs(blockerPubkey),
+          isFalse,
+          reason:
+              'the by-author watch must correct the stale #p delivery, or '
+              'the blockee stays blocked forever across restarts',
+        );
+        expect(coldService.shouldFilterFromFeeds(blockerPubkey), isFalse);
+      },
+    );
+
     test('the by-author watch follows a recreated NostrClient', () async {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
@@ -3488,6 +3558,17 @@ void main() {
 /// production filter is `#p = <us>`, and a lifted block publishes a list
 /// with no `p` tag, so the update stops matching and is never delivered.
 class _FilterAwareRelay {
+  /// [retainSuperseded] reproduces the behaviour observed on
+  /// relay.divine.video: superseded versions of a replaceable/addressable
+  /// event stay stored, and "latest wins" is resolved *after* the filter
+  /// predicate. A tag query therefore returns the newest version that still
+  /// carries the tag — which, for a lifted block, is the stale one. NIP-01
+  /// says a relay should not do this, but the deployed relay does, so the
+  /// fix has to survive it.
+  _FilterAwareRelay({this.retainSuperseded = false});
+
+  final bool retainSuperseded;
+
   final List<({List<Filter> filters, StreamController<Event> controller})>
   _subscriptions = [];
   final List<Event> _stored = [];
@@ -3498,7 +3579,9 @@ class _FilterAwareRelay {
     // Relays replay stored matches on REQ. Deliver them asynchronously:
     // the caller attaches its listener after this returns, and a broadcast
     // controller discards anything added while it has no subscribers.
-    final replay = _stored.where((e) => _matchesAny(filters, e)).toList();
+    final replay = _newestPerCoordinate(
+      _stored.where((e) => _matchesAny(filters, e)),
+    );
     scheduleMicrotask(() {
       for (final event in replay) {
         if (!controller.isClosed) controller.add(event);
@@ -3507,13 +3590,17 @@ class _FilterAwareRelay {
     return controller.stream;
   }
 
-  /// Stores [event] with replaceable semantics (one per author+kind, as the
-  /// relay does for kind 10000 and for kind 30000 at a fixed `d` tag) and
-  /// fans it out to every matching subscription.
+  /// Stores [event] and fans it out to every matching subscription.
+  ///
+  /// Unless [retainSuperseded] is set, prior versions of the same
+  /// (author, kind) are dropped — the NIP-01 behaviour.
   void publish(Event event) {
-    _stored
-      ..removeWhere((e) => e.pubkey == event.pubkey && e.kind == event.kind)
-      ..add(event);
+    if (!retainSuperseded) {
+      _stored.removeWhere(
+        (e) => e.pubkey == event.pubkey && e.kind == event.kind,
+      );
+    }
+    _stored.add(event);
     for (final subscription in _subscriptions) {
       if (_matchesAny(subscription.filters, event) &&
           !subscription.controller.isClosed) {
@@ -3527,6 +3614,27 @@ class _FilterAwareRelay {
       await subscription.controller.close();
     }
     _subscriptions.clear();
+  }
+
+  /// Collapses [events] to the newest version per (author, kind, d-tag).
+  ///
+  /// Applied *after* the filter predicate, which is precisely how the
+  /// deployed relay resolves replaceable events — and why a `#p` query can
+  /// surface a superseded list.
+  static List<Event> _newestPerCoordinate(Iterable<Event> events) {
+    final newest = <String, Event>{};
+    for (final event in events) {
+      final dTag = event.tags
+          .where((t) => t.length >= 2 && t[0] == 'd')
+          .map((t) => t[1])
+          .firstOrNull;
+      final coordinate = '${event.pubkey}:${event.kind}:${dTag ?? ''}';
+      final current = newest[coordinate];
+      if (current == null || event.createdAt > current.createdAt) {
+        newest[coordinate] = event;
+      }
+    }
+    return newest.values.toList();
   }
 
   static bool _matchesAny(List<Filter> filters, Event event) =>
