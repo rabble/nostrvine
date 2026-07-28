@@ -302,25 +302,22 @@ class ProfileRepository {
   }
 
   /// Fires at most one background profile re-check per pubkey per session, for
-  /// the two read paths that never otherwise reach the network.
-  ///
-  /// - **A locally cached profile.** The cache-first read short-circuits before
-  ///   any network call, so an account cached before it asked to be deleted
-  ///   would render from cache indefinitely.
-  /// - **An already-vanished pubkey.** [fetchFreshProfile] answers those from
-  ///   the durable marker, so this is the only channel that can clear a wrong
-  ///   `deleted: true`. It runs once in *every* session, including after a
-  ///   restart, so recovery is not limited to the session that recorded the
-  ///   vanish.
+  /// the read path that never otherwise reaches the network: an
+  /// already-vanished pubkey, which [fetchFreshProfile] and
+  /// [fetchBatchProfiles] both answer from the durable marker. This is
+  /// therefore the only channel that can clear a wrong `deleted: true`, and it
+  /// runs once in *every* session — including after a restart — so recovery is
+  /// not limited to the session that recorded the vanish.
   ///
   /// Deliberately calls the unguarded fetch: the guarded entry point would
   /// bounce straight back here for a vanished pubkey.
   ///
-  /// The session set is load-bearing rather than an optimisation. The calling
-  /// providers are `autoDispose`, so they re-run every time a row scrolls back
-  /// into view; without the set an inbox scroll would fire one request per row
-  /// per scroll. `UserProfile` carries no fetch timestamp, so once-per-session
-  /// is the tightest bound available without widening the model.
+  /// The session set is load-bearing rather than an optimisation. The callers
+  /// sit behind `autoDispose` providers, so they re-run every time a row
+  /// scrolls back into view; without the set an inbox scroll would fire one
+  /// request per row per scroll. `UserProfile` carries no fetch timestamp, so
+  /// once-per-session is the tightest bound available without widening the
+  /// model.
   void revalidateVanishOnce(String pubkey) {
     if (!_vanishRevalidated.add(pubkey)) return;
     unawaited(
