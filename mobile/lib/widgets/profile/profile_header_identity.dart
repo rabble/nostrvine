@@ -9,6 +9,7 @@ class _ProfileNameAndBio extends StatelessWidget {
     required this.isOwnProfile,
     required this.monetizationLinks,
     this.displayNameHint,
+    this.isVanished = false,
     this.accentColor,
   });
 
@@ -22,6 +23,12 @@ class _ProfileNameAndBio extends StatelessWidget {
   final List<MonetizationLink> monetizationLinks;
 
   final String? displayNameHint;
+
+  /// Whether the account behind [userIdHex] has requested NIP-62 deletion.
+  ///
+  /// Suppresses the generated-from-pubkey fallback name: for a deleted account
+  /// that fallback reads as a real (if odd) handle rather than as an absence.
+  final bool isVanished;
 
   /// Optional accent color (from profile color) for links/buttons.
   final Color? accentColor;
@@ -41,7 +48,15 @@ class _ProfileNameAndBio extends StatelessWidget {
           padding: inset,
           child: Column(
             children: [
-              if (profile != null)
+              if (isVanished)
+                // Deliberately not a UserName: that widget re-resolves the
+                // profile through its own provider and falls back to a
+                // generated handle, which is exactly what must not appear.
+                Text(
+                  context.l10n.profileDeletedAccountName,
+                  style: VineTheme.titleLargeFont(),
+                )
+              else if (profile != null)
                 UserName.fromUserProfile(
                   profile!,
                   style: VineTheme.titleLargeFont(),
