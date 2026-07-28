@@ -263,6 +263,10 @@ class NotificationRepository {
   /// `refresh()` would impose anyway, so this only brings that bound forward
   /// to feed-close instead of next-open.
   void resetPaginationDepth({NotificationKind? filter}) {
+    if (_closed) {
+      return;
+    }
+
     final feed = _feedFor(filter);
     final current = feed.snapshot.value;
     if (current.items.length > _pageSize) {

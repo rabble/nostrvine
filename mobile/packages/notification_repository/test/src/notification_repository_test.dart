@@ -4550,6 +4550,16 @@ void main() {
         expect(repository.isClosed, isTrue);
       });
 
+      test('resetPaginationDepth is a no-op after close()', () async {
+        await repository.close();
+
+        expect(
+          () =>
+              repository.resetPaginationDepth(filter: NotificationKind.follow),
+          returnsNormally,
+        );
+      });
+
       test('emits snapshot after refresh', () async {
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
