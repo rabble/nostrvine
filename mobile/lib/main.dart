@@ -71,6 +71,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
+import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -1586,6 +1587,13 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
 
   if (ScreenshotMode.enabled) {
     await buildScreenshotModeService(container).prepare();
+    // Deterministic, on-brand lists for the 06_lists capture instead of
+    // whatever public lists the relays happen to surface. Seeded here in
+    // startup rather than by the screen: presentation must not import the
+    // service layer (scripts/check_ui_service_boundary.sh).
+    container
+        .read(discoveredListsProvider.notifier)
+        .setLists(screenshotDiscoverListsFixtures());
     // The native side wrote the capture route + seed flag into
     // SharedPreferences at launch (AppDelegate). Load them, seed editor
     // clips if requested, then drive the router imperatively —
