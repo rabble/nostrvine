@@ -300,6 +300,9 @@ void main() {
       when(
         () => profileRepo.getCachedProfile(pubkey: any(named: 'pubkey')),
       ).thenAnswer((_) async => null);
+      // Not a deleted account — the bloc short-circuits the whole load when
+      // this is true.
+      when(() => profileRepo.isVanished(any())).thenReturn(false);
       when(
         () => profileRepo.watchProfile(pubkey: any(named: 'pubkey')),
       ).thenAnswer((_) => const Stream<UserProfile?>.empty());

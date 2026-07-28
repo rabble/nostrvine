@@ -35,6 +35,8 @@ class _MockPendingProfileSavesDao extends Mock
 
 class _MockIdentityEventsDao extends Mock implements IdentityEventsDao {}
 
+class _MockVanishedProfilesDao extends Mock implements VanishedProfilesDao {}
+
 class _TestNostrSession extends NostrSession {
   _TestNostrSession(this._readiness);
 
@@ -422,6 +424,15 @@ void main() {
         when(
           () => database.identityEventsDao,
         ).thenReturn(_MockIdentityEventsDao());
+        final vanishedProfilesDao = _MockVanishedProfilesDao();
+        // The repository hydrates its vanish set on construction, so this has
+        // to resolve or the provider throws before it returns an instance.
+        when(vanishedProfilesDao.getAllPubkeys).thenAnswer(
+          (_) async => <String>[],
+        );
+        when(
+          () => database.vanishedProfilesDao,
+        ).thenReturn(vanishedProfilesDao);
 
         final container = ProviderContainer(
           overrides: [
