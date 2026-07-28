@@ -2475,24 +2475,6 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-        'a frame captured while assembling is dropped',
-        build: buildBloc,
-        seed: () => const VideoRecorderBlocState(
-          recorderMode: VideoRecorderMode.stopMotion,
-          stopMotionStatus: StopMotionStatus.assembling,
-        ),
-        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
-        wait: const Duration(milliseconds: 20),
-        verify: (bloc) {
-          // The assemble owns the session: it reads the frame list, saves it,
-          // then clears it. A still appended here races that save.
-          verifyNever(() => cameraService.capturePhoto());
-          expect(bloc.state.stopMotionFrames, isEmpty);
-          expect(bloc.state.stopMotionStatus, StopMotionStatus.assembling);
-        },
-      );
-
-      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'a frame captured while ready (assemble done, navigation pending) '
         'skips the wasted native capture',
         build: buildBloc,

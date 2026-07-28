@@ -368,8 +368,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     if (capturedFrames.isEmpty) return;
 
     final targetFrames = target.stopMotionFrames ?? const [];
-    // Fresh captures arrive with the app default hold; adopt the session's
-    // global default so they don't drift from the stills already in the clip.
+    // Fresh captures arrive stretched to fill a second on their own
+    // ([StopMotionFrameOps.initialHold]) — one still added from here would
+    // splice into a long clip at a 1s hold — so the session's global default
+    // is re-applied, both to undo that stretch and to keep the new stills from
+    // drifting from the ones already in the clip.
     final newFrames = StopMotionFrameOps.setGlobalHold(
       capturedFrames,
       StopMotionFrameOps.globalDefaultFramesPerImage(targetFrames),

@@ -24,7 +24,14 @@ abstract class StopMotionFrameOps {
   /// Highest number of output frames a still may be held for.
   static const int maxFramesPerImage = 300;
 
-  /// Default hold for a freshly captured still: 1 output frame at 24fps.
+  /// Fallback hold of 1 output frame at 24fps: the floor
+  /// [initialFramesPerImage] clamps to, and what
+  /// [globalDefaultFramesPerImage] falls back to for an empty frame list.
+  ///
+  /// *Not* the hold a freshly captured still gets — that is
+  /// [initialFramesPerImage], which stretches a short session to fill
+  /// [minimumInitialDuration]. Nothing outside this file uses this constant;
+  /// a new capture path wanting a starting hold wants [initialHold].
   static const int defaultFramesPerImage = 1;
 
   /// Shortest a freshly captured session plays for.
