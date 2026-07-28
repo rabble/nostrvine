@@ -20,11 +20,6 @@ typedef CrosspostingAuthenticate =
     });
 
 /// Opens [authorizationUri] in the native OAuth session and returns its callback.
-///
-/// The HTTPS universal-link callback relies on
-/// `ASWebAuthenticationSession.Callback.https(host:path:)`, available on
-/// iOS 17.4+. The project deployment target enforces that floor, so every
-/// supported iOS device reaches the HTTPS callback path.
 Future<Uri?> launchCrosspostingOAuth(
   Uri authorizationUri, {
   CrosspostingAuthenticate authenticate = _authenticate,

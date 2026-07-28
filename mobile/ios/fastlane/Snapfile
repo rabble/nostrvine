@@ -19,9 +19,9 @@ scheme("DivineUITests")
 # The scheme's Flutter "prepare" pre-action regenerates
 # FlutterGeneratedPluginSwiftPackage, defaulting its SPM platform to iOS 13.0
 # when IPHONEOS_DEPLOYMENT_TARGET is absent from the build env — which then
-# fails to satisfy plugins that require iOS 15/16/17. Pin it so the
-# regenerated package targets iOS 17.4 to match the Podfile / Runner target.
-xcargs("IPHONEOS_DEPLOYMENT_TARGET=17.4")
+# fails to satisfy plugins that require iOS 15/16. Pin it so the regenerated
+# package targets iOS 16 to match the Podfile / Runner target.
+xcargs("IPHONEOS_DEPLOYMENT_TARGET=16.0")
 
 output_directory("./fastlane/screenshots")
 clear_previous_screenshots(true)
