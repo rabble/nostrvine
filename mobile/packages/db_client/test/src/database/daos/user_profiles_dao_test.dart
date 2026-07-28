@@ -500,6 +500,54 @@ void main() {
       });
     });
 
+    group('vanished pubkeys', () {
+      test('upsertProfile does not re-create an evicted profile', () async {
+        // The scenario the guard exists for: a relay still serving the
+        // deleted account's kind 0 routes it straight to this DAO.
+        await database.vanishedProfilesDao.markVanished(testPubkey);
+
+        await dao.upsertProfile(createProfile(name: 'Deleted'));
+
+        expect(await dao.getProfile(testPubkey), isNull);
+      });
+
+      test('upsertProfile removes nothing it did not write', () async {
+        await dao.upsertProfile(createProfile(name: 'Alice'));
+        await database.vanishedProfilesDao.markVanished(testPubkey2);
+
+        await dao.upsertProfile(
+          createProfile(pubkey: testPubkey2, name: 'Deleted'),
+        );
+
+        expect((await dao.getProfile(testPubkey))!.name, equals('Alice'));
+        expect(await dao.getProfile(testPubkey2), isNull);
+      });
+
+      test('upsertProfiles drops only the vanished pubkeys', () async {
+        await database.vanishedProfilesDao.markVanished(testPubkey2);
+
+        await dao.upsertProfiles([
+          createProfile(name: 'Alice'),
+          createProfile(pubkey: testPubkey2, name: 'Deleted'),
+        ]);
+
+        final allProfiles = await dao.getAllProfiles();
+        expect(allProfiles.map((p) => p.pubkey), equals([testPubkey]));
+      });
+
+      test('writes resume once the vanish is cleared', () async {
+        // Self-heal: a wrong `deleted: true` must not lock the pubkey out of
+        // the cache for the life of the install.
+        await database.vanishedProfilesDao.markVanished(testPubkey);
+        await dao.upsertProfile(createProfile(name: 'Blocked'));
+
+        await database.vanishedProfilesDao.clearVanished(testPubkey);
+        await dao.upsertProfile(createProfile(name: 'Allowed'));
+
+        expect((await dao.getProfile(testPubkey))!.name, equals('Allowed'));
+      });
+    });
+
     group('watchProfile', () {
       test(
         'emits when content advances under an unchanged synthetic eventId',

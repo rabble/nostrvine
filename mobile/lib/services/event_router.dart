@@ -319,6 +319,12 @@ class EventRouter {
     }
   }
 
+  /// Denormalizes a kind 0 into `user_profiles`.
+  ///
+  /// This is a direct DAO write — it does not pass through `ProfileRepository`.
+  /// The NIP-62 vanish guard therefore lives in `UserProfilesDao.upsertProfile`
+  /// rather than here, so a relay still serving a deleted account's kind 0
+  /// cannot re-create its row.
   Future<void> _handleProfileEvent(Event event) async {
     try {
       final profile = UserProfile.fromNostrEvent(event);

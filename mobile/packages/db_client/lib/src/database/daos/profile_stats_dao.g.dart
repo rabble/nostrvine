@@ -5,6 +5,8 @@ part of 'profile_stats_dao.dart';
 // ignore_for_file: type=lint
 mixin _$ProfileStatsDaoMixin on DatabaseAccessor<AppDatabase> {
   $ProfileStatsTable get profileStats => attachedDatabase.profileStats;
+  $VanishedProfilesTable get vanishedProfiles =>
+      attachedDatabase.vanishedProfiles;
   ProfileStatsDaoManager get managers => ProfileStatsDaoManager(this);
 }
 
@@ -13,4 +15,9 @@ class ProfileStatsDaoManager {
   ProfileStatsDaoManager(this._db);
   $$ProfileStatsTableTableManager get profileStats =>
       $$ProfileStatsTableTableManager(_db.attachedDatabase, _db.profileStats);
+  $$VanishedProfilesTableTableManager get vanishedProfiles =>
+      $$VanishedProfilesTableTableManager(
+        _db.attachedDatabase,
+        _db.vanishedProfiles,
+      );
 }
