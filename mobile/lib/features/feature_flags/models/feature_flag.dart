@@ -55,8 +55,7 @@ enum FeatureFlag {
   ),
   lightMode(
     'Light Mode',
-    'Enable the experimental System, Light, and Dark appearance settings.',
-    audience: FeatureFlagAudience.internal,
+    'Enable the System, Light, and Dark appearance settings.',
   ),
   adaptiveMediaChrome(
     'Adaptive Media Chrome',

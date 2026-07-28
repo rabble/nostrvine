@@ -48,8 +48,13 @@ void main() {
       }
     });
 
+    test('exposes light mode to every user', () {
+      // Promoted out of staged rollout: the appearance picker is opt-in for
+      // everyone, gated only by its build default.
+      expect(FeatureFlag.lightMode.audience, FeatureFlagAudience.user);
+    });
+
     test('should classify staged rollout flags as internal', () {
-      expect(FeatureFlag.lightMode.audience, FeatureFlagAudience.internal);
       expect(
         FeatureFlag.adaptiveMediaChrome.audience,
         FeatureFlagAudience.internal,
