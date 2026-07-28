@@ -254,11 +254,18 @@ class NotificationFeedBloc
   }
 
   /// Handle scroll pagination.
+  ///
+  /// Deliberately does NOT consult [_loadMoreFailed]: that flag only stops
+  /// the automatic empty-page continuation from re-arming. A load-more
+  /// failure emits no snapshot (`_markRefreshError` is first-page-only) and
+  /// surfaces no error affordance, so gating this handler on it would leave
+  /// a user who hit one transient 5xx at the bottom of the list unable to
+  /// paginate for the rest of the session.
   Future<void> _onLoadMore(
     NotificationFeedLoadMore event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    if (!state.hasMore || state.isLoadingMore || _loadMoreFailed) return;
+    if (!state.hasMore || state.isLoadingMore) return;
 
     emit(state.copyWith(isLoadingMore: true));
 

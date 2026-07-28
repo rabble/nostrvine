@@ -482,7 +482,8 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'recovers isLoadingMore on loadNextPage failure and stops retrying',
+        'recovers isLoadingMore on loadNextPage failure and still retries '
+        'when the user scrolls again',
         setUp: () {
           when(
             () => mockNotificationRepo.loadNextPageFor(null),
@@ -508,10 +509,22 @@ void main() {
             status: NotificationFeedStatus.loaded,
             hasMore: true,
           ),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            hasMore: true,
+          ),
         ],
-        errors: () => [isA<Exception>()],
+        errors: () => [isA<Exception>(), isA<Exception>()],
+        // A load-more failure emits no snapshot and shows no error
+        // affordance, so latching it would strand the user with a list
+        // that silently refuses to paginate for the rest of the session.
         verify: (_) {
-          verify(() => mockNotificationRepo.loadNextPageFor(null)).called(1);
+          verify(() => mockNotificationRepo.loadNextPageFor(null)).called(2);
         },
       );
 
