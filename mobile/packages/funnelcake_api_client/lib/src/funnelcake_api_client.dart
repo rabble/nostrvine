@@ -1747,6 +1747,16 @@ class FunnelcakeApiClient {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+        // Checked before the profile shape: the server sources `deleted` from
+        // the permanent vanish-request record, so it can be true while a
+        // pre-erasure copy of the Kind 0 is still being served. Deletion wins.
+        // Absent means the server predates the field, which reads as not
+        // deleted and preserves the previous behaviour.
+        if (data['deleted'] == true) {
+          return UserProfileVanished(pubkey: pubkey);
+        }
+
         final profileJson = data['profile'] as Map<String, dynamic>?;
         final socialJson = data['social'] as Map<String, dynamic>?;
         final statsJson = data['stats'] as Map<String, dynamic>?;
@@ -2131,6 +2141,12 @@ class FunnelcakeApiClient {
           if (user is Map<String, dynamic>) {
             final pubkey = user['pubkey']?.toString();
             if (pubkey == null || pubkey.isEmpty) continue;
+
+            // Deletion wins over profile presence — see getUserProfile.
+            if (user['deleted'] == true) {
+              result[pubkey] = UserProfileVanished(pubkey: pubkey);
+              continue;
+            }
 
             final profileJson = user['profile'] as Map<String, dynamic>?;
             final socialJson = user['social'] as Map<String, dynamic>?;

@@ -3703,6 +3703,66 @@ void main() {
         expect((result! as UserProfileNotPublished).pubkey, equals(testPubkey));
       });
 
+      test('returns UserProfileVanished when deleted is true', () async {
+        const deletedResponse = '{"deleted": true, "profile": null}';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(deletedResponse, 200));
+
+        final result = await client.getUserProfile(testPubkey);
+
+        expect(result, isA<UserProfileVanished>());
+        expect((result! as UserProfileVanished).pubkey, equals(testPubkey));
+      });
+
+      test('deleted takes precedence over a populated profile', () async {
+        // The server reports `deleted` from the permanent vanish-request
+        // record, so it can be true while a pre-erasure copy of the Kind 0 is
+        // still being served. That window is exactly when someone is most
+        // likely to open the profile, so deletion has to win.
+        const deletedWithProfile =
+            '{"deleted": true, "profile": {"name": "meylis", '
+            '"display_name": "meylis.divine"}}';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(deletedWithProfile, 200));
+
+        final result = await client.getUserProfile(testPubkey);
+
+        expect(
+          result,
+          isA<UserProfileVanished>(),
+          reason:
+              'a vanished account must not surface its pre-erasure metadata',
+        );
+      });
+
+      test('deleted false with a null profile is not vanished', () async {
+        // The discriminator: a user who never published a Kind 0 looks
+        // identical on the wire apart from this flag, and must not be treated
+        // as deleted.
+        const notPublishedResponse = '{"deleted": false, "profile": null}';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(notPublishedResponse, 200));
+
+        final result = await client.getUserProfile(testPubkey);
+
+        expect(result, isA<UserProfileNotPublished>());
+      });
+
+      test('a missing deleted field is not vanished', () async {
+        // Servers that predate the field must keep the previous behaviour.
+        const legacyResponse = '{"profile": null}';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(legacyResponse, 200));
+
+        final result = await client.getUserProfile(testPubkey);
+
+        expect(result, isA<UserProfileNotPublished>());
+      });
+
       test('returns null on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),

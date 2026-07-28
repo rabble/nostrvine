@@ -197,6 +197,7 @@ void main() {
       final name = switch (result) {
         UserProfileFound(:final profile) => profile.name,
         UserProfileNotPublished() => null,
+        UserProfileVanished() => null,
       };
 
       expect(name, equals('alice'));
@@ -208,9 +209,61 @@ void main() {
       final matched = switch (result) {
         UserProfileFound() => false,
         UserProfileNotPublished() => true,
+        UserProfileVanished() => false,
       };
 
       expect(matched, isTrue);
+    });
+
+    test('switch on UserProfileVanished works exhaustively', () {
+      const UserProfileResult result = UserProfileVanished(pubkey: _pubkey);
+
+      final matched = switch (result) {
+        UserProfileFound() => false,
+        UserProfileNotPublished() => false,
+        UserProfileVanished() => true,
+      };
+
+      expect(matched, isTrue);
+    });
+  });
+
+  group(UserProfileVanished, () {
+    test('carries no social, stats, or engagement data', () {
+      // Hard-nulled on the variant so a vanished account cannot have counters
+      // cached for it even if a caller forgets to branch on the type.
+      const result = UserProfileVanished(pubkey: _pubkey);
+
+      expect(result.social, isNull);
+      expect(result.stats, isNull);
+      expect(result.engagement, isNull);
+    });
+
+    test('instances with the same pubkey are equal', () {
+      const a = UserProfileVanished(pubkey: _pubkey);
+      const b = UserProfileVanished(pubkey: _pubkey);
+
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('instances with different pubkeys are not equal', () {
+      const a = UserProfileVanished(pubkey: _pubkey);
+      const b = UserProfileVanished(
+        pubkey:
+            '0000000000000000000000000000000000000000000000000000000000000001',
+      );
+
+      expect(a, isNot(equals(b)));
+    });
+
+    test('is not equal to a not-published result for the same pubkey', () {
+      // These are different domain facts: one account asked to be erased, the
+      // other simply has not set up a profile yet.
+      const vanished = UserProfileVanished(pubkey: _pubkey);
+      const notPublished = UserProfileNotPublished(pubkey: _pubkey);
+
+      expect(vanished, isNot(equals(notPublished)));
     });
   });
 }

@@ -11,6 +11,8 @@ import 'package:models/src/user_profile_data.dart';
 ///
 /// ```dart
 /// switch (result) {
+///   case UserProfileVanished(:final pubkey):
+///     // account requested deletion — do not render it
 ///   case UserProfileFound(:final profile, :final social):
 ///     // user has a Kind 0 profile event
 ///   case UserProfileNotPublished(:final pubkey):
@@ -21,7 +23,7 @@ import 'package:models/src/user_profile_data.dart';
 /// A `null` return from `getUserProfile` (not this type) means the user was
 /// not found at all (404).
 ///
-/// Both variants expose [social], [stats], and [engagement] directly on the
+/// Every variant exposes [social], [stats], and [engagement] directly on the
 /// base class so callers that only need those fields don't have to switch.
 sealed class UserProfileResult {
   const UserProfileResult();
@@ -120,4 +122,45 @@ final class UserProfileNotPublished extends UserProfileResult {
   String toString() =>
       'UserProfileNotPublished(pubkey: $pubkey, social: $social, '
       'stats: $stats, engagement: $engagement)';
+}
+
+/// The account has a NIP-62 request to vanish on record.
+///
+/// Takes precedence over profile presence. The server reports `deleted` from
+/// the permanent vanish-request record, so it can be `true` while a pre-erasure
+/// copy of the Kind 0 metadata is still being served — which is exactly the
+/// window in which someone is most likely to open the profile. Callers must
+/// treat this variant as "there is nothing to show" regardless of what else the
+/// response carried.
+///
+/// [social], [stats], and [engagement] are always `null` here so it is
+/// structurally impossible to cache counters for an account that asked to be
+/// erased.
+@immutable
+final class UserProfileVanished extends UserProfileResult {
+  const UserProfileVanished({required this.pubkey});
+
+  /// The user's public key (hex format).
+  final String pubkey;
+
+  @override
+  ProfileSocialData? get social => null;
+
+  @override
+  ProfileStatsData? get stats => null;
+
+  @override
+  ProfileEngagementData? get engagement => null;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is UserProfileVanished && other.pubkey == pubkey;
+  }
+
+  @override
+  int get hashCode => pubkey.hashCode;
+
+  @override
+  String toString() => 'UserProfileVanished(pubkey: $pubkey)';
 }
