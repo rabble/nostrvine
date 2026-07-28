@@ -339,10 +339,11 @@ class ProfileRepository {
   /// Also clears the pubkey from the confirmed-missing set and adds
   /// it to the known-cached set.
   ///
-  /// No-ops for an account that requested deletion. Every Kind 0 seen on any
-  /// relay subscription funnels through here, so without this guard a vanished
-  /// account whose Kind 0 still lives on a non-compliant relay would re-create
-  /// its row minutes after eviction.
+  /// No-ops for an account that requested deletion. This is the fast path
+  /// only — relay ingestion (`EventRouter`) and the classic-viner seed import
+  /// write straight to the DAO, so the authoritative guard is the tombstone
+  /// check in [UserProfilesDao.upsertProfile]. Short-circuiting here also keeps
+  /// a vanished pubkey out of [_knownCached], which the DAO cannot do.
   Future<void> cacheProfile(UserProfile profile) {
     if (_vanished.contains(profile.pubkey)) return Future.value();
     _confirmedMissing.remove(profile.pubkey);
