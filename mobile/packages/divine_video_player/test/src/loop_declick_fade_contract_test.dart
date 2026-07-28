@@ -18,7 +18,9 @@ void main() {
         source,
         matches(
           RegExp(
-            r'if i == 0, fadeSeconds > 0 \{[\s\S]*?'
+            r'if i == 0, fadeTicks > 0 \{\s*'
+            r'flatStart = CMTimeAdd\(t, fade\)\s*'
+            r'params\.setVolumeRamp\(\s*'
             r'fromStartVolume: 0,\s*toEndVolume: vol,',
           ),
         ),
@@ -30,7 +32,8 @@ void main() {
         source,
         matches(
           RegExp(
-            r'if i == lastIndex, fadeSeconds > 0 \{[\s\S]*?'
+            r'if i == lastIndex, fadeTicks > 0 \{\s*'
+            r'params\.setVolumeRamp\(\s*'
             r'fromStartVolume: vol,\s*toEndVolume: 0,',
           ),
         ),
@@ -59,10 +62,26 @@ void main() {
       );
       expect(
         source,
-        contains('declickProcessor.videoDurationUs'),
+        matches(
+          RegExp(
+            r'playbackState == Player\.STATE_READY\) \{[\s\S]{0,400}?'
+            r'updateDeclickDuration\(\)',
+          ),
+        ),
         reason:
-            'The fade out has to know where the loop join is; without a '
-            'duration only the video start can be faded.',
+            'The fade out has to know where the loop join is, and the length '
+            'is only readable once the timeline is populated. Naming the '
+            'field alone is not enough — setClips also writes it, with '
+            'DURATION_UNKNOWN.',
+      );
+      expect(
+        source,
+        contains(
+          'declickProcessor.videoDurationUs = if (durationMs == C.TIME_UNSET)',
+        ),
+        reason:
+            'An unknown length has to stay unknown rather than become a '
+            'negative duration the fade would wrap on.',
       );
     });
 
@@ -82,14 +101,17 @@ void main() {
         source,
         matches(
           RegExp(
-            r'min\(\s*Self\.edgeDeclickFadeSeconds,\s*'
-            r'\(durations\.first \?\? 0\) / 2,\s*'
-            r'\(durations\.last \?\? 0\) / 2',
+            r'let fadeTicks = min\([\s\S]{0,200}?'
+            r'Self\.ticks\(durations\.first \?\? 0\) / 2,\s*'
+            r'Self\.ticks\(durations\.last \?\? 0\) / 2',
           ),
         ),
         reason:
             'A video shorter than the two fades combined must get shorter '
-            'ones, otherwise the fade in and fade out overlap.',
+            'ones, and the halving has to happen in the same whole ticks the '
+            'clip bounds are quantised to. Taking the minimum in seconds and '
+            'rounding afterwards lets half a 9-tick clip round back up to 5, '
+            'which puts the two fades over each other.',
       );
     });
   });

@@ -1,9 +1,13 @@
 package com.divinevideo.divine_video_player
 
+import androidx.media3.common.C
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 /**
  * Guards the fade that keeps a looping video's join from clicking (#6468).
@@ -22,12 +26,43 @@ class LoopDeclickAudioProcessorTest {
     /** 6 s at 48 kHz. */
     private val durationFrames = 288_000L
 
+    /** Full-scale mono sample the buffer-level tests feed. */
+    private val level: Short = 20_000
+
     private fun processor(
         durationUs: Long = 6_000_000L,
         enabled: Boolean = true,
     ): LoopDeclickAudioProcessor = LoopDeclickAudioProcessor().apply {
         this.videoDurationUs = durationUs
         this.enabled = enabled
+    }
+
+    /** A mono processor already through `configure`, ready to be flushed. */
+    private fun configured(
+        durationUs: Long = 6_000_000L,
+    ): LoopDeclickAudioProcessor = processor(durationUs = durationUs).apply {
+        configure(
+            AudioProcessor.AudioFormat(sampleRate, 1, C.ENCODING_PCM_16BIT),
+        )
+    }
+
+    private fun LoopDeclickAudioProcessor.flushPipeline() =
+        flush(AudioProcessor.StreamMetadata.DEFAULT)
+
+    private fun pcm(frames: Int): ByteBuffer =
+        ByteBuffer.allocateDirect(frames * 2)
+            .order(ByteOrder.LITTLE_ENDIAN)
+            .apply {
+                repeat(frames) { putShort(level) }
+                flip()
+            }
+
+    /** Pushes [frames] frames through and returns the gain of the last one. */
+    private fun LoopDeclickAudioProcessor.play(frames: Int): Float {
+        queueInput(pcm(frames))
+        val out = output
+        val last = out.getShort((frames - 1) * 2)
+        return last.toFloat() / level
     }
 
     @Test
@@ -134,5 +169,103 @@ class LoopDeclickAudioProcessorTest {
 
         assertEquals(10_000L, LoopDeclickAudioProcessor.FADE_US)
         assertEquals(fadeFrames, subject.fadeFrames(sampleRate))
+    }
+
+    @Test
+    fun `the seek offset survives the second flush a seek triggers`() {
+        val subject = configured()
+        subject.nextStreamStartUs = 3_000_000L
+
+        // media3 flushes the pipeline twice before the first frame of a seek
+        // arrives: once from DefaultAudioSink.flush(), which releases the audio
+        // output, and again when the next buffer rebuilds it.
+        subject.flushPipeline()
+        subject.flushPipeline()
+
+        // Half way in is in neither fade. An offset consumed by the first
+        // flush would leave this anchored at zero, fading in mid-video and
+        // putting the fade out three seconds early.
+        assertEquals(1f, subject.play(1), 0f)
+    }
+
+    @Test
+    fun `the buffers a seek discards do not anchor a loop`() {
+        val subject = configured()
+        subject.nextStreamStartUs = 3_000_000L
+        subject.flushPipeline()
+
+        // MediaCodecAudioRenderer reports every buffer it drops on the way to
+        // the seek target as a discontinuity. None of them is a loop restart.
+        subject.onStreamChanged()
+        subject.onStreamChanged()
+
+        assertEquals(1f, subject.play(1), 0f)
+    }
+
+    @Test
+    fun `a loop restart fades in again`() {
+        val subject = configured()
+        subject.flushPipeline()
+        subject.play(1_000)
+
+        subject.onStreamChanged()
+
+        assertEquals(0f, subject.play(1), 0f)
+    }
+
+    @Test
+    fun `the first loop falls back to the container's duration`() {
+        // 100 ms at 48 kHz is 4800 frames, and nothing has been measured yet.
+        val subject = configured(durationUs = 100_000L)
+        subject.flushPipeline()
+
+        assertEquals(1f, subject.play(4_800 - fadeFrames.toInt() + 1), 0f)
+        assertTrue("fade out must start before the container's end", subject.play(1) < 1f)
+    }
+
+    @Test
+    fun `later loops follow the frames one really delivered`() {
+        // The container claims 100 ms (4800 frames) but the audio track only
+        // ever delivers 3000. Trusting the container would put the fade out
+        // 1800 frames past the join, so the loop would still click.
+        val subject = configured(durationUs = 100_000L)
+        subject.flushPipeline()
+        subject.play(3_000)
+        subject.onStreamChanged()
+
+        assertEquals(1f, subject.play(3_000 - fadeFrames.toInt() + 1), 0f)
+        assertTrue("fade out must start where the loop really ends", subject.play(1) < 1f)
+    }
+
+    @Test
+    fun `a loop cut short by an unrelated flush is not measured`() {
+        val subject = configured(durationUs = 100_000L)
+        subject.flushPipeline()
+        subject.play(1_000)
+        // A route change or an underrun flushes mid-loop, which restarts the
+        // count. What reaches the join is not the length of a loop.
+        subject.flushPipeline()
+        subject.play(1_000)
+        subject.onStreamChanged()
+
+        assertEquals(1f, subject.play(4_800 - fadeFrames.toInt() + 1), 0f)
+        assertTrue("the container's estimate must survive", subject.play(1) < 1f)
+    }
+
+    @Test
+    fun `a new video drops the previous one's measurement`() {
+        val subject = configured(durationUs = 100_000L)
+        subject.flushPipeline()
+        subject.play(3_000)
+        subject.onStreamChanged()
+
+        // What setClips does: clear the length, then publish the new one.
+        subject.videoDurationUs = LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        subject.videoDurationUs = 200_000L
+        subject.flushPipeline()
+
+        // 9600 frames now. Reusing the 3000-frame measurement would wrap here
+        // and silence the frame instead.
+        assertEquals(1f, subject.play(3_001), 0f)
     }
 }

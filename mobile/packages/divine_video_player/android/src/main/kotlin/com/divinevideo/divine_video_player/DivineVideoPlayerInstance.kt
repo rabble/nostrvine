@@ -510,6 +510,17 @@ internal class DivineVideoPlayerInstance(
             }
         }
 
+        // Fade the video's edges only when the whole video is one clip, which
+        // is what the feed loops. On a multi-clip timeline a stream is one clip
+        // rather than the whole video, so fading every stream would notch the
+        // audio at each cut. The length is not known until STATE_READY.
+        //
+        // Published before the playlist swap below, because that swap disables
+        // the audio renderer and flushes the pipeline on the playback thread.
+        declickProcessor.enabled = clipCount == 1
+        declickProcessor.videoDurationUs = LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        declickProcessor.nextStreamStartUs = startLocalMs * 1000L
+
         // Replace the playlist in-place without calling stop() first.
         // stop() transitions ExoPlayer to STATE_IDLE which on some OEM decoders
         // (e.g. Vivo/Mediatek) triggers a full MediaCodec reset and surface
@@ -533,14 +544,6 @@ internal class DivineVideoPlayerInstance(
         // While ExoPlayer buffers to the seek position, report the target
         // position so the timeline doesn't show intermediate values.
         pendingGlobalStartMs = globalStartMs
-
-        // Fade the video's edges only when the whole video is one clip, which
-        // is what the feed loops. On a multi-clip timeline a stream is one clip
-        // rather than the whole video, so fading every stream would notch the
-        // audio at each cut. The length is not known until STATE_READY.
-        declickProcessor.enabled = clipCount == 1
-        declickProcessor.videoDurationUs = LoopDeclickAudioProcessor.DURATION_UNKNOWN
-        declickProcessor.nextStreamStartUs = startLocalMs * 1000L
 
         // Hold the Dart result until STATE_READY so `await setClips()` only
         // resolves once the decoder is truly ready. Cancel any previous
