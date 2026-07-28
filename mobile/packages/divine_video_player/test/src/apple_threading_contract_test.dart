@@ -78,6 +78,31 @@ void main() {
         contains('clearBufferingWatchdog(resetReported: true)'),
       );
     });
+
+    test('seeks new players to the same start time as reused players', () {
+      final source = _appleSourceFile().readAsStringSync();
+
+      expect(
+        source,
+        contains(
+          'await newPlayer.seek(to: startTime, '
+          'toleranceBefore: .zero, toleranceAfter: .zero)',
+        ),
+        reason:
+            'Feed playback often creates a fresh native player. The leading '
+            'black-frame skip must apply there too, otherwise position stays '
+            'at 0ms until stale playback failover trips.',
+      );
+      expect(
+        source,
+        isNot(
+          contains(
+            'if startPositionMs > 0 {\n'
+            '                        await newPlayer.seek(to: startTime',
+          ),
+        ),
+      );
+    });
   });
 }
 

@@ -260,9 +260,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     self.addTimeObserver()
                     self.observeCurrentItem()
                     self.configureQueue(with: playerItem)
-                    if startPositionMs > 0 {
-                        await newPlayer.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
-                    }
+                    await newPlayer.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
                     self.textureOutput?.forceRefresh(for: startTime)
                 }
 
