@@ -352,6 +352,26 @@ class VideoStats {
       rawTags['platform'] = platform;
     }
 
+    // Funnelcake list/stats rows expose ProofMode/C2PA/verification as
+    // top-level fields, not inside `event.tags`, so the tag loop above never
+    // captures them. Map them under the same keys the VideoEvent proof getters
+    // read so REST/feed-loaded videos keep their verification signals instead
+    // of decaying to an unverified shell (which also poisons the shared cache
+    // for the detail view). Relay-shaped payloads already carry the tags, so
+    // only fill keys the tag loop didn't set.
+    for (final key in const [
+      'verification',
+      'proofmode',
+      'device_attestation',
+      'c2pa_manifest_id',
+    ]) {
+      if (rawTags.containsKey(key)) continue;
+      final value = eventData[key] ?? json[key] ?? statsData[key];
+      if (value is String && value.isNotEmpty) {
+        rawTags[key] = value;
+      }
+    }
+
     // Parse categories from Funnelcake VLM classification.
     final categoriesRaw = json['categories'] ?? eventData['categories'];
     final categories = categoriesRaw is List
