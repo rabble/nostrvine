@@ -16265,6 +16265,9 @@ class VanishedProfileRow extends DataClass
   final String pubkey;
 
   /// When this device first learned the account had vanished.
+  ///
+  /// First-seen and stable: re-marking an already-recorded pubkey keeps this
+  /// value rather than refreshing it.
   final DateTime detectedAt;
   const VanishedProfileRow({required this.pubkey, required this.detectedAt});
   @override

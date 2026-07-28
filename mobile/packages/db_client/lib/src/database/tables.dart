@@ -1600,6 +1600,9 @@ class VanishedProfiles extends Table {
   TextColumn get pubkey => text()();
 
   /// When this device first learned the account had vanished.
+  ///
+  /// First-seen and stable: re-marking an already-recorded pubkey keeps this
+  /// value rather than refreshing it.
   DateTimeColumn get detectedAt => dateTime().named('detected_at')();
 
   @override

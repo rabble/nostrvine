@@ -952,9 +952,9 @@ void main() {
           );
 
           test('cacheProfile is a no-op for a vanished account', () async {
-            // Every Kind 0 seen on any relay subscription funnels through
-            // cacheProfile, so without this guard a non-compliant relay would
-            // re-create the row minutes after eviction.
+            // One of two guards on the relay ingestion path. Events that reach
+            // this repository stop here; events that EventRouter writes
+            // straight to the DAO are stopped by UserProfilesDao itself.
             when(
               () => mockFunnelcakeClient.getUserProfile(testPubkey),
             ).thenAnswer(
@@ -975,28 +975,56 @@ void main() {
             verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
           });
 
-          test('clears the vanish marker when the account is live '
-              'again', () async {
+          test('a vanished account costs one request for the whole '
+              'session', () async {
+            // Eviction leaves no cached row, so every cache-miss caller takes
+            // the network branch. Three autoDispose providers re-instantiate
+            // per widget; without the short-circuit an inbox scroll would
+            // re-run the whole eviction once per row per rebuild.
             when(
               () => mockFunnelcakeClient.getUserProfile(testPubkey),
             ).thenAnswer(
               (_) async => const UserProfileVanished(pubkey: testPubkey),
             );
             await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
-            expect(repoWithVanishDao.isVanished(testPubkey), isTrue);
 
+            for (var i = 0; i < 5; i++) {
+              expect(
+                await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey),
+                isNull,
+              );
+            }
+            await pumpEventQueue();
+
+            verify(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).called(1);
+            verify(() => mockVanishedDao.markVanished(testPubkey)).called(1);
+            verify(
+              () => mockUserProfilesDao.deleteProfile(testPubkey),
+            ).called(1);
+          });
+
+          test('re-checks a vanish recorded in an earlier session and '
+              'self-heals', () async {
+            // Recovery from a wrong deleted:true must not be limited to the
+            // session that recorded it — a restart hydrates the marker from
+            // the durable table with no fetch behind it, and that session's
+            // one re-check is what clears it.
+            when(
+              () => mockVanishedDao.getAllPubkeys(),
+            ).thenAnswer((_) async => [testPubkey]);
+            await repoWithVanishDao.loadVanishedPubkeys();
             when(
               () => mockFunnelcakeClient.getUserProfile(testPubkey),
             ).thenAnswer(
               (_) async => const UserProfileNotPublished(pubkey: testPubkey),
             );
-            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
 
-            expect(
-              repoWithVanishDao.isVanished(testPubkey),
-              isFalse,
-              reason: 'a wrong deleted:true must be recoverable, not permanent',
-            );
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+            await pumpEventQueue();
+
+            expect(repoWithVanishDao.isVanished(testPubkey), isFalse);
             verify(() => mockVanishedDao.clearVanished(testPubkey)).called(1);
           });
 
@@ -1071,17 +1099,29 @@ void main() {
             });
 
             test(
-              'skips the re-check for an already-vanished account',
+              'still re-checks an already-vanished account, but only once',
               () async {
+                // This is the only channel that can undo a wrong deleted:true:
+                // fetchFreshProfile answers a vanished pubkey from the durable
+                // marker, so nothing else reaches the network for it.
                 when(
                   () => mockVanishedDao.getAllPubkeys(),
                 ).thenAnswer((_) async => [testPubkey]);
                 await repoWithVanishDao.loadVanishedPubkeys();
+                when(
+                  () => mockFunnelcakeClient.getUserProfile(testPubkey),
+                ).thenAnswer(
+                  (_) async => const UserProfileVanished(pubkey: testPubkey),
+                );
 
                 repoWithVanishDao.revalidateVanishOnce(testPubkey);
                 await pumpEventQueue();
+                repoWithVanishDao.revalidateVanishOnce(testPubkey);
+                await pumpEventQueue();
 
-                verifyNever(() => mockFunnelcakeClient.getUserProfile(any()));
+                verify(
+                  () => mockFunnelcakeClient.getUserProfile(testPubkey),
+                ).called(1);
               },
             );
 
@@ -6596,6 +6636,37 @@ void main() {
           ),
         );
         verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
+      });
+
+      test('drops a known-vanished pubkey before the bulk request', () async {
+        // Eviction leaves no cached row, so without this the pubkey rides in
+        // every bulk request an inbox or feed prefetch makes and re-runs the
+        // eviction each time.
+        final mockVanishedDao = MockVanishedProfilesDao();
+        when(
+          mockVanishedDao.getAllPubkeys,
+        ).thenAnswer((_) async => [testPubkey]);
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          vanishedProfilesDao: mockVanishedDao,
+        );
+        await repoWithFunnelcake.loadVanishedPubkeys();
+
+        final result = await repoWithFunnelcake.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, isEmpty);
+        verifyNever(() => mockFunnelcakeClient.getBulkProfiles(any()));
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
       });
 
       test('does not batch-write when nothing was fetched', () async {

@@ -47,6 +47,20 @@ void main() {
       expect(await dao.getAllPubkeys(), equals([_pubkey]));
     });
 
+    test('markVanished keeps the first detectedAt on a re-mark', () async {
+      // detected_at is documented as first-seen, and a vanished pubkey is
+      // re-checked once per session, so a refresh-on-write would make the
+      // column mean "last re-checked" instead.
+      final first = DateTime.utc(2026, 7, 1, 12);
+      await dao.markVanished(_pubkey, detectedAt: first);
+
+      await dao.markVanished(_pubkey, detectedAt: DateTime.utc(2026, 7, 20));
+
+      final row = await database.select(database.vanishedProfiles).getSingle();
+      // Drift round-trips timestamps through unix seconds in local time.
+      expect(row.detectedAt.isAtSameMomentAs(first), isTrue);
+    });
+
     test('clearVanished forgets the pubkey', () async {
       // The self-heal path: a wrong `deleted: true` must be recoverable
       // rather than erasing the account from this device forever.

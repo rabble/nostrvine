@@ -253,14 +253,25 @@ class ProfileRepository {
     _vanished.addAll(await dao.getAllPubkeys());
   }
 
-  /// Evicts every local trace of an account that requested deletion.
+  /// Evicts the local profile, stats, identity-claims and Divine-identity
+  /// entries for an account that requested deletion, and records the pubkey
+  /// durably so the eviction survives a restart.
   ///
   /// Deliberately routed through [deleteCachedProfile] rather than folding a
   /// flag into it: that method's contract is "a local eviction does not prove
   /// remote absence", which is the opposite of what a vanish means.
+  ///
+  /// The raw kind 0 stays in `nostr_events`. Nothing renders a profile from
+  /// there — every read path goes through `user_profiles` — so it is not a
+  /// surface the account can reappear on.
   Future<void> _applyVanish(String pubkey) async {
     _vanished.add(pubkey);
     _confirmedMissing.add(pubkey);
+    // This response *is* this session's re-check. Without it the next
+    // [fetchFreshProfile] would immediately spend a second request to be told
+    // the same thing; recovery from a wrong `deleted: true` rides on the next
+    // session instead, which every session performs exactly once.
+    _vanishRevalidated.add(pubkey);
     // Load-bearing: stops the raw-Kind-0 retry ladder from re-querying relays
     // for a profile that is never coming back.
     _rawKind0ConfirmedMissing.add(pubkey);
@@ -282,23 +293,30 @@ class ProfileRepository {
     await _vanishedProfilesDao?.clearVanished(pubkey);
   }
 
-  /// Fires at most one background re-check per pubkey per session so a locally
-  /// cached profile can still be discovered as vanished.
+  /// Fires at most one background profile re-check per pubkey per session, for
+  /// the two read paths that never otherwise reach the network.
   ///
-  /// Nothing else ever re-checks a cached profile: the cache-first read path
-  /// short-circuits before any network call, so an account cached before it
-  /// asked to be deleted would otherwise render from cache indefinitely.
+  /// - **A locally cached profile.** The cache-first read short-circuits before
+  ///   any network call, so an account cached before it asked to be deleted
+  ///   would render from cache indefinitely.
+  /// - **An already-vanished pubkey.** [fetchFreshProfile] answers those from
+  ///   the durable marker, so this is the only channel that can clear a wrong
+  ///   `deleted: true`. It runs once in *every* session, including after a
+  ///   restart, so recovery is not limited to the session that recorded the
+  ///   vanish.
+  ///
+  /// Deliberately calls the unguarded fetch: the guarded entry point would
+  /// bounce straight back here for a vanished pubkey.
   ///
   /// The session set is load-bearing rather than an optimisation. The calling
-  /// provider is `autoDispose`, so it re-runs every time a row scrolls back
+  /// providers are `autoDispose`, so they re-run every time a row scrolls back
   /// into view; without the set an inbox scroll would fire one request per row
   /// per scroll. `UserProfile` carries no fetch timestamp, so once-per-session
   /// is the tightest bound available without widening the model.
   void revalidateVanishOnce(String pubkey) {
-    if (_vanished.contains(pubkey)) return;
     if (!_vanishRevalidated.add(pubkey)) return;
     unawaited(
-      fetchFreshProfile(
+      _fetchFreshProfileUnguarded(
         pubkey: pubkey,
       ).catchError((Object _, StackTrace _) => null),
     );
@@ -589,9 +607,37 @@ class ProfileRepository {
   /// only one fetch pipeline runs, and all callers share
   /// the result.
   ///
+  /// Answers `null` without any network call for an account known to have
+  /// requested deletion. Eviction leaves no cached row, so every cache-miss
+  /// caller — three `autoDispose` profile providers, each re-instantiated per
+  /// widget — would otherwise take the network branch on every rebuild and
+  /// re-run the eviction. [revalidateVanishOnce] carries the self-heal instead,
+  /// bounded to one request per pubkey per session.
+  ///
   /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
   Future<UserProfile?> fetchFreshProfile({
+    required String pubkey,
+    bool requireRawKind0 = false,
+    List<Duration> rawKind0RetryDelays = const [],
+  }) {
+    if (_vanished.contains(pubkey)) {
+      revalidateVanishOnce(pubkey);
+      return Future<UserProfile?>.value();
+    }
+
+    return _fetchFreshProfileUnguarded(
+      pubkey: pubkey,
+      requireRawKind0: requireRawKind0,
+      rawKind0RetryDelays: rawKind0RetryDelays,
+    );
+  }
+
+  /// [fetchFreshProfile] without the vanish short-circuit.
+  ///
+  /// Only [revalidateVanishOnce] calls this directly, so a vanished pubkey has
+  /// exactly one way back to the network per session.
+  Future<UserProfile?> _fetchFreshProfileUnguarded({
     required String pubkey,
     bool requireRawKind0 = false,
     List<Duration> rawKind0RetryDelays = const [],
@@ -2126,6 +2172,14 @@ class ProfileRepository {
       results[profile.pubkey] = profile;
       remaining.remove(profile.pubkey);
     }
+    // Same rule as [fetchFreshProfile]: an evicted account leaves no cached
+    // row, so it would otherwise ride in every bulk request and re-run the
+    // eviction each time. [revalidateVanishOnce] carries the self-heal.
+    remaining.removeWhere((pubkey) {
+      if (!_vanished.contains(pubkey)) return false;
+      revalidateVanishOnce(pubkey);
+      return true;
+    });
     if (remaining.isEmpty) return results;
 
     Log.debug(

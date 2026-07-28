@@ -13,14 +13,16 @@ class VanishedProfilesDao extends DatabaseAccessor<AppDatabase>
 
   /// Records that [pubkey] has requested deletion.
   ///
-  /// Idempotent: re-marking an already-vanished pubkey refreshes
-  /// `detected_at` rather than failing.
+  /// Idempotent, and `detected_at` is first-seen: re-marking an
+  /// already-vanished pubkey keeps the original timestamp rather than
+  /// refreshing it, so the column means what the table documents.
   Future<void> markVanished(String pubkey, {DateTime? detectedAt}) {
-    return into(vanishedProfiles).insertOnConflictUpdate(
+    return into(vanishedProfiles).insert(
       VanishedProfilesCompanion.insert(
         pubkey: pubkey,
         detectedAt: detectedAt ?? DateTime.now(),
       ),
+      mode: InsertMode.insertOrIgnore,
     );
   }
 
