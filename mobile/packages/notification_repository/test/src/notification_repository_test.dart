@@ -2859,6 +2859,103 @@ void main() {
         );
       });
 
+      test('filtered feeds seed from the hydrated unfiltered rows', () async {
+        when(
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            NotificationRow(
+              id: 'cached_like',
+              type: 'like',
+              fromPubkey: 'cached_actor',
+              timestamp: 1700000000,
+              targetEventId: 'cached_video',
+              hasCommentTarget: false,
+              isRead: false,
+              cachedAt: DateTime(2026),
+            ),
+            NotificationRow(
+              id: 'cached_follow',
+              type: 'follow',
+              fromPubkey: 'cached_follower',
+              timestamp: 1700000001,
+              hasCommentTarget: false,
+              isRead: false,
+              cachedAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+        // Give the unawaited hydration a chance to resolve.
+        await Future<void>.delayed(Duration.zero);
+
+        // Only the unfiltered feed reads the DAO, so without the cross-feed
+        // seed a category tab starts empty and a failed first fetch renders
+        // the full-screen failure body instead of cached rows.
+        final follows = await hydrated
+            .watchSnapshot(filter: NotificationKind.follow)
+            .first;
+        expect(follows.items.map((n) => n.id), equals(['cached_follow']));
+        final likes = await hydrated
+            .watchSnapshot(filter: NotificationKind.like)
+            .first;
+        expect(likes.items.map((n) => n.id), equals(['cached_like']));
+      });
+
+      test('filtered feeds mounted before hydration are seeded too', () async {
+        final daoGate = Completer<List<NotificationRow>>();
+        when(
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => daoGate.future);
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+
+        // The repository is built when ProfileRepository resolves, which on a
+        // cold start can land after the inbox already mounted its tabs.
+        final emissions = <NotificationPage>[];
+        final sub = hydrated
+            .watchSnapshot(filter: NotificationKind.follow)
+            .listen(emissions.add);
+        addTearDown(sub.cancel);
+
+        daoGate.complete([
+          NotificationRow(
+            id: 'cached_follow',
+            type: 'follow',
+            fromPubkey: 'cached_follower',
+            timestamp: 1700000001,
+            hasCommentTarget: false,
+            isRead: false,
+            cachedAt: DateTime(2026),
+          ),
+        ]);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emissions.last.items.map((n) => n.id),
+          equals(['cached_follow']),
+        );
+      });
+
       test('hydration is a no-op when DAO is empty', () async {
         when(
           () => notificationsDao.getAllNotifications(

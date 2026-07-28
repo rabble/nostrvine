@@ -179,12 +179,74 @@ class NotificationRepository {
     if (_closed) {
       throw StateError('NotificationRepository is closed');
     }
-    return _feeds.putIfAbsent(filter, () => _NotificationFeed(filter: filter));
+    final existing = _feeds[filter];
+    if (existing != null) return existing;
+    final feed = _NotificationFeed(filter: filter);
+    _feeds[filter] = feed;
+    if (filter != null) _seedFilteredFeed(feed);
+    return feed;
   }
 
   _NotificationFeed get _allFeed => _feedFor(null);
 
   Iterable<_NotificationFeed> get _liveFeeds => _feeds.values;
+
+  /// Seeds a freshly minted filtered feed from the unfiltered feed's rows.
+  ///
+  /// Only the unfiltered feed reads and writes the DAO, so without this a
+  /// category tab starts at [NotificationPage.empty] with no cache path at
+  /// all: on a cold start with no network its first fetch fails against an
+  /// empty list, and the bloc renders the full-screen failure body instead
+  /// of cached rows plus the inline refresh-error banner. Before per-tab
+  /// feeds every tab read the same hydrated snapshot and degraded to a
+  /// cached subset.
+  ///
+  /// Placeholder-grade by construction: the feed's page count stays 0 and
+  /// its own first-page fetch replaces these rows wholesale.
+  void _seedFilteredFeed(_NotificationFeed feed) {
+    if (feed.pagesLoaded > 0) return;
+    final source = _feeds[null];
+    if (source == null) return;
+    final items = source.snapshot.value.items
+        .where((item) => _belongsInFeed(item, feed.filter))
+        .toList();
+    if (items.isEmpty) return;
+    feed.snapshot.add(
+      // Seeded rows are a degraded view; assume more is available until the
+      // feed's own refresh resolves. Mirrors [_hydrateFromCache].
+      feed.snapshot.value.copyWith(items: items, hasMore: true),
+    );
+  }
+
+  /// Re-seeds every live filtered feed that has not fetched yet.
+  ///
+  /// The repository is constructed when [ProfileRepository] becomes
+  /// available, which on a cold start can land after the inbox has already
+  /// mounted its tabs — so hydration finishes with the filtered feeds
+  /// already minted and empty.
+  void _seedFilteredFeedsFromAllFeed() {
+    for (final feed in _liveFeeds.toList()) {
+      if (feed.filter == null) continue;
+      if (feed.snapshot.value.items.isNotEmpty) continue;
+      _seedFilteredFeed(feed);
+    }
+  }
+
+  /// Whether [item] belongs in the tab identified by [filter].
+  ///
+  /// Mirrors the server-side `types` mapping in [_serverTypesForFilter] for
+  /// rows that were fetched without it (cache hydration, cross-feed seed).
+  bool _belongsInFeed(NotificationItem item, NotificationKind? filter) =>
+      switch (filter) {
+        null => true,
+        NotificationKind.comment => _belongsInCommentsFeed(item),
+        // `reaction`/`zap` map to a video like or a comment like depending on
+        // the target, and both belong in the Likes tab.
+        NotificationKind.like =>
+          item.type == NotificationKind.like ||
+              item.type == NotificationKind.likeComment,
+        _ => item.type == filter,
+      };
 
   /// Reactive snapshot of the enriched, grouped notification feed.
   ///
@@ -521,6 +583,7 @@ class NotificationRepository {
           hasMore: true,
         ),
       );
+      _seedFilteredFeedsFromAllFeed();
       unawaited(_enrichCachedPlaceholders(items));
     } on Exception catch (e, s) {
       Log.error(
