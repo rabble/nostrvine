@@ -6,8 +6,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
@@ -20,8 +22,7 @@ import 'package:openvine/screens/settings/invites_screen.dart';
 ///
 /// Wraps [NotificationsView] with the existing 5-tab UI (All / Likes /
 /// Comments / Follows / Reposts) and the invites banner shown on the All
-/// tab. Each tab passes a [NotificationKind] filter to the same view; the
-/// underlying [NotificationFeedBloc] is shared across tabs.
+/// tab. Each tab owns a feed BLoC with independent server-side pagination.
 class InboxNotificationsPage extends ConsumerWidget {
   /// Creates an [InboxNotificationsPage].
   const InboxNotificationsPage({super.key});
@@ -39,25 +40,21 @@ class InboxNotificationsPage extends ConsumerWidget {
     }
     final followRepository = ref.watch(followRepositoryProvider);
 
-    // Key on the watched dependency identities so the bloc rebuilds when
-    // either repository swaps (account switch, sign-out → sign-in, or
-    // provider invalidation). The upstream KeyedSubtree in `inbox_view.dart`
-    // already forces this subtree to remount on pubkey change today, but
-    // pinning the contract here keeps the page safe even if the inbox
-    // scaffold is restructured. See `.claude/rules/state_management.md`.
-    return BlocProvider(
-      key: ValueKey((notificationRepository, followRepository)),
-      create: (_) => NotificationFeedBloc(
-        notificationRepository: notificationRepository,
-        followRepository: followRepository,
-      )..add(const NotificationFeedStarted()),
-      child: const _InboxNotificationsScaffold(),
+    return _InboxNotificationsScaffold(
+      notificationRepository: notificationRepository,
+      followRepository: followRepository,
     );
   }
 }
 
 class _InboxNotificationsScaffold extends StatefulWidget {
-  const _InboxNotificationsScaffold();
+  const _InboxNotificationsScaffold({
+    required this.notificationRepository,
+    required this.followRepository,
+  });
+
+  final NotificationRepository notificationRepository;
+  final FollowRepository followRepository;
 
   @override
   State<_InboxNotificationsScaffold> createState() =>
@@ -127,12 +124,37 @@ class _InboxNotificationsScaffoldState
             Expanded(
               child: TabBarView(
                 controller: _tabController,
-                children: const [
-                  _AllTabContent(),
-                  NotificationsView(kindFilter: NotificationKind.like),
-                  NotificationsView(kindFilter: NotificationKind.comment),
-                  NotificationsView(kindFilter: NotificationKind.follow),
-                  NotificationsView(kindFilter: NotificationKind.repost),
+                children: [
+                  _NotificationTab(
+                    notificationRepository: widget.notificationRepository,
+                    followRepository: widget.followRepository,
+                    child: const Column(
+                      children: [
+                        _InvitesBanner(),
+                        Expanded(child: NotificationsView()),
+                      ],
+                    ),
+                  ),
+                  _NotificationTab(
+                    notificationRepository: widget.notificationRepository,
+                    followRepository: widget.followRepository,
+                    filter: NotificationKind.like,
+                  ),
+                  _NotificationTab(
+                    notificationRepository: widget.notificationRepository,
+                    followRepository: widget.followRepository,
+                    filter: NotificationKind.comment,
+                  ),
+                  _NotificationTab(
+                    notificationRepository: widget.notificationRepository,
+                    followRepository: widget.followRepository,
+                    filter: NotificationKind.follow,
+                  ),
+                  _NotificationTab(
+                    notificationRepository: widget.notificationRepository,
+                    followRepository: widget.followRepository,
+                    filter: NotificationKind.repost,
+                  ),
                 ],
               ),
             ),
@@ -143,17 +165,46 @@ class _InboxNotificationsScaffoldState
   }
 }
 
-/// All tab — invites banner above the unfiltered notifications list.
-class _AllTabContent extends StatelessWidget {
-  const _AllTabContent();
+class _NotificationTab extends StatefulWidget {
+  const _NotificationTab({
+    required this.notificationRepository,
+    required this.followRepository,
+    this.filter,
+    this.child = const NotificationsView(),
+  });
+
+  final NotificationRepository notificationRepository;
+  final FollowRepository followRepository;
+  final NotificationKind? filter;
+  final Widget child;
+
+  @override
+  State<_NotificationTab> createState() => _NotificationTabState();
+}
+
+class _NotificationTabState extends State<_NotificationTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        _InvitesBanner(),
-        Expanded(child: NotificationsView()),
-      ],
+    super.build(context);
+    // Key on the watched dependency identities plus filter so each tab's bloc
+    // rebuilds when repositories swap and keeps an independent pagination
+    // stream for its server-side category.
+    return BlocProvider(
+      key: ValueKey((
+        widget.notificationRepository,
+        widget.followRepository,
+        widget.filter,
+      )),
+      create: (_) => NotificationFeedBloc(
+        notificationRepository: widget.notificationRepository,
+        followRepository: widget.followRepository,
+        filter: widget.filter,
+      )..add(const NotificationFeedStarted()),
+      child: widget.child,
     );
   }
 }

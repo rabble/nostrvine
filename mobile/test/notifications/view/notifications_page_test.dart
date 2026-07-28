@@ -57,10 +57,11 @@ void main() {
         mockFollowRepo = _MockFollowRepository();
 
         when(
-          () => mockNotificationRepo.watchSnapshot(),
+          () =>
+              mockNotificationRepo.watchSnapshot(filter: any(named: 'filter')),
         ).thenAnswer((_) => const Stream<NotificationPage>.empty());
         when(
-          () => mockNotificationRepo.refresh(),
+          () => mockNotificationRepo.refreshFeed(any()),
         ).thenAnswer((_) async => NotificationPage.empty);
         when(
           () => mockNotificationRepo.markAllAsRead(),
@@ -84,12 +85,10 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        verify(() => mockNotificationRepo.refresh()).called(1);
+        verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
       });
 
-      testWidgets('marks notifications seen on open', (
-        tester,
-      ) async {
+      testWidgets('marks notifications seen on open', (tester) async {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 

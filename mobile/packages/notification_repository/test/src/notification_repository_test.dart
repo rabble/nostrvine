@@ -55,18 +55,21 @@ void main() {
         limit: any(named: 'limit'),
         cursor: any(named: 'cursor'),
         cursorId: any(named: 'cursorId'),
+        types: any(named: 'types'),
       ),
     ).thenAnswer((invocation) {
       final pubkey = invocation.namedArguments[#pubkey] as String;
       final limit = invocation.namedArguments[#limit] as int? ?? 50;
       final cursor = invocation.namedArguments[#cursor] as String?;
       final cursorId = invocation.namedArguments[#cursorId] as String?;
+      final types = invocation.namedArguments[#types] as List<String>?;
       final effectiveBefore =
           cursor ?? DateTime.now().millisecondsSinceEpoch.toString();
       final queryParameters = <String, String>{
         'limit': '$limit',
         'before': effectiveBefore,
         'before_id': ?cursorId,
+        if (types != null && types.isNotEmpty) 'types': types.join(','),
       };
       return Uri.parse(
         'https://api.example.com/api/users/$pubkey/notifications',
@@ -177,6 +180,7 @@ void main() {
         pubkey: any(named: 'pubkey'),
         cursor: any(named: 'cursor'),
         cursorId: any(named: 'cursorId'),
+        types: any(named: 'types'),
         requestUri: any(named: 'requestUri'),
         authHeaders: any(named: 'authHeaders'),
         limit: any(named: 'limit'),
@@ -344,6 +348,175 @@ void main() {
           );
         },
       );
+
+      test('signs filtered notifications URL with server types', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications(filter: NotificationKind.follow);
+
+        expect(
+          signedUrl,
+          startsWith(
+            'https://api.example.com/api/users/$userPubkey/notifications',
+          ),
+        );
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('follow'));
+      });
+
+      test('maps likes tab to reaction and zap server types', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubNotifications([]);
+        stubProfiles({});
+
+        await repository.getNotifications(filter: NotificationKind.like);
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('reaction,zap'));
+      });
+
+      test('comment feed keeps comment-target mentions', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'comment_mention',
+            notificationType: 'mention',
+            sourceKind: 1,
+            referencedEventId: null,
+            targetCommentId: 'comment_target',
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications(
+          filter: NotificationKind.comment,
+        );
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.mention));
+        expect(item.hasCommentTarget, isTrue);
+      });
+
+      test('comment feed keeps nested replies', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'nested_reply',
+            notificationType: 'reply',
+            sourceKind: 1111,
+            referencedEventId: 'parent_comment',
+            rootEventId: 'root_video',
+            targetCommentId: 'parent_comment',
+            isReferencedVideo: false,
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications(
+          filter: NotificationKind.comment,
+        );
+
+        expect(page.items, hasLength(1));
+        expect(page.items.single.type, equals(NotificationKind.reply));
+      });
+
+      test('comment feed excludes video mentions', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'video_mention',
+            sourceEventId: 'video_source',
+            notificationType: 'mention',
+            sourceKind: 34236,
+            referencedEventId: 'mentioned_video',
+            rootEventId: 'mentioned_video',
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications(
+          filter: NotificationKind.comment,
+        );
+
+        expect(page.items, isEmpty);
+      });
+
+      test('keeps independent cursors for filtered feeds', () async {
+        var signedUrl = '';
+        repository = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+          authHeadersProvider: (url, method, {body}) async {
+            signedUrl = url;
+            return {'Authorization': 'Nostr test-token'};
+          },
+        );
+        stubProfiles({});
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: any(named: 'types'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((invocation) async {
+          final types = invocation.namedArguments[#types] as List<String>?;
+          final cursor = invocation.namedArguments[#cursor] as String?;
+          if (types?.contains('follow') ?? false) {
+            return NotificationResponse(
+              notifications: const [],
+              unreadCount: 0,
+              hasMore: cursor == null,
+              nextCursor: cursor == null ? 'follow_cursor' : null,
+            );
+          }
+          return NotificationResponse(
+            notifications: const [],
+            unreadCount: 0,
+            hasMore: cursor == null,
+            nextCursor: cursor == null ? 'like_cursor' : null,
+          );
+        });
+
+        await repository.getNotifications(filter: NotificationKind.follow);
+        await repository.getNotifications(filter: NotificationKind.like);
+        await repository.loadNextPageFor(NotificationKind.follow);
+
+        final signedUri = Uri.parse(signedUrl);
+        expect(signedUri.queryParameters['types'], equals('follow'));
+        expect(signedUri.queryParameters['before'], equals('follow_cursor'));
+      });
 
       test('explicit cursor override does not leak stored cursor id', () async {
         var signedUrl = '';
@@ -1285,6 +1458,76 @@ void main() {
         expect(follow.type, equals(NotificationKind.follow));
         expect(follow.actor.pubkey, equals('follower_pub'));
         expect(follow.timestamp, equals(fresh));
+      });
+
+      test('same follower is consolidated across appended pages', () async {
+        final stale = DateTime(2025);
+        final fresh = DateTime(2025, 1, 10);
+        var call = 0;
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: any(named: 'types'),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async {
+          call++;
+          return call == 1
+              ? NotificationResponse(
+                  notifications: [
+                    makeNotification(
+                      id: 'follow_stale',
+                      sourceEventId: 'follow_evt_stale',
+                      sourcePubkey: 'follower_pub',
+                      notificationType: 'follow',
+                      sourceKind: 3,
+                      referencedEventId: null,
+                      createdAt: stale,
+                      read: true,
+                    ),
+                  ],
+                  unreadCount: 0,
+                  hasMore: true,
+                  nextCursor: 'cursor_1',
+                )
+              : NotificationResponse(
+                  notifications: [
+                    makeNotification(
+                      id: 'follow_fresh',
+                      sourceEventId: 'follow_evt_fresh',
+                      sourcePubkey: 'follower_pub',
+                      notificationType: 'follow',
+                      sourceKind: 3,
+                      referencedEventId: null,
+                      createdAt: fresh,
+                    ),
+                  ],
+                  unreadCount: 1,
+                  hasMore: false,
+                );
+        });
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+        });
+
+        await repository.getNotifications(filter: NotificationKind.follow);
+        await repository.loadNextPageFor(NotificationKind.follow);
+
+        final page = await repository
+            .watchSnapshot(filter: NotificationKind.follow)
+            .first;
+        expect(page.items, hasLength(1));
+        final follow = page.items.single as ActorNotification;
+        expect(follow.timestamp, equals(fresh));
+        expect(follow.isRead, isFalse);
+        expect(
+          follow.notificationIds,
+          containsAll(['follow_stale', 'follow_fresh']),
+        );
       });
     });
 
@@ -2616,6 +2859,103 @@ void main() {
         );
       });
 
+      test('filtered feeds seed from the hydrated unfiltered rows', () async {
+        when(
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            NotificationRow(
+              id: 'cached_like',
+              type: 'like',
+              fromPubkey: 'cached_actor',
+              timestamp: 1700000000,
+              targetEventId: 'cached_video',
+              hasCommentTarget: false,
+              isRead: false,
+              cachedAt: DateTime(2026),
+            ),
+            NotificationRow(
+              id: 'cached_follow',
+              type: 'follow',
+              fromPubkey: 'cached_follower',
+              timestamp: 1700000001,
+              hasCommentTarget: false,
+              isRead: false,
+              cachedAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+        // Give the unawaited hydration a chance to resolve.
+        await Future<void>.delayed(Duration.zero);
+
+        // Only the unfiltered feed reads the DAO, so without the cross-feed
+        // seed a category tab starts empty and a failed first fetch renders
+        // the full-screen failure body instead of cached rows.
+        final follows = await hydrated
+            .watchSnapshot(filter: NotificationKind.follow)
+            .first;
+        expect(follows.items.map((n) => n.id), equals(['cached_follow']));
+        final likes = await hydrated
+            .watchSnapshot(filter: NotificationKind.like)
+            .first;
+        expect(likes.items.map((n) => n.id), equals(['cached_like']));
+      });
+
+      test('filtered feeds mounted before hydration are seeded too', () async {
+        final daoGate = Completer<List<NotificationRow>>();
+        when(
+          () => notificationsDao.getAllNotifications(
+            limit: any(named: 'limit'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) => daoGate.future);
+
+        final hydrated = NotificationRepository(
+          funnelcakeApiClient: funnelcakeApiClient,
+          profileRepository: profileRepository,
+          notificationsDao: notificationsDao,
+          userPubkey: userPubkey,
+        );
+        addTearDown(hydrated.close);
+
+        // The repository is built when ProfileRepository resolves, which on a
+        // cold start can land after the inbox already mounted its tabs.
+        final emissions = <NotificationPage>[];
+        final sub = hydrated
+            .watchSnapshot(filter: NotificationKind.follow)
+            .listen(emissions.add);
+        addTearDown(sub.cancel);
+
+        daoGate.complete([
+          NotificationRow(
+            id: 'cached_follow',
+            type: 'follow',
+            fromPubkey: 'cached_follower',
+            timestamp: 1700000001,
+            hasCommentTarget: false,
+            isRead: false,
+            cachedAt: DateTime(2026),
+          ),
+        ]);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          emissions.last.items.map((n) => n.id),
+          equals(['cached_follow']),
+        );
+      });
+
       test('hydration is a no-op when DAO is empty', () async {
         when(
           () => notificationsDao.getAllNotifications(
@@ -3369,6 +3709,131 @@ void main() {
 
         await expectLater(staleRefresh, completion(isFalse));
       });
+
+      test('refreshApplied leaves a deep-scrolled feed intact', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        final likesSubscription = repository
+            .watchSnapshot(filter: NotificationKind.like)
+            .listen((_) {});
+        addTearDown(likesSubscription.cancel);
+        await repository.refreshFeed(NotificationKind.like);
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPageFor(NotificationKind.like);
+
+        stubNotifications([]);
+        await repository.refreshApplied();
+
+        // A first-page replace would have collapsed Likes back to one
+        // page under the user; it must be skipped, not refreshed.
+        final likes = await repository
+            .watchSnapshot(filter: NotificationKind.like)
+            .first;
+        expect(likes.items, hasLength(2));
+        // Likes is the only live feed and it is deep-scrolled, so there is
+        // genuinely nothing left for a resume refresh to serve.
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+      });
+
+      test(
+        'refreshApplied skips filtered feeds nobody is listening to',
+        () async {
+          stubProfiles({});
+          stubNotifications([makeNotification()]);
+          // Open and close the Likes tab: its feed stays in the map, but the
+          // bloc's subscription is gone.
+          final likes = repository
+              .watchSnapshot(filter: NotificationKind.like)
+              .listen((_) {});
+          await repository.refreshFeed(NotificationKind.like);
+          await likes.cancel();
+          // The badge keeps the unfiltered feed subscribed app-wide.
+          final all = repository.watchSnapshot().listen((_) {});
+          addTearDown(all.cancel);
+          await repository.refreshFeed(null);
+
+          clearInteractions(funnelcakeApiClient);
+          await repository.refreshApplied();
+
+          verify(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              cursorId: any(named: 'cursorId'),
+              types: any(named: 'types', that: isNull),
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              cursorId: any(named: 'cursorId'),
+              types: const ['reaction', 'zap'],
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      test('refreshApplied keeps refreshing after one feed fails', () async {
+        stubProfiles({});
+        stubNotifications([makeNotification()]);
+        final likes = repository
+            .watchSnapshot(filter: NotificationKind.like)
+            .listen((_) {});
+        addTearDown(likes.cancel);
+        await repository.refreshFeed(NotificationKind.like);
+        await repository.refreshFeed(null);
+
+        // The unfiltered feed is created first, so without per-feed error
+        // isolation its failure would abort the whole fan-out.
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: any(named: 'types', that: isNull),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(
+          const FunnelcakeApiException(message: 'boom', statusCode: 500),
+        );
+
+        await expectLater(repository.refreshApplied(), completion(isTrue));
+
+        verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: const ['reaction', 'zap'],
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      });
     });
 
     group('loadNextPage', () {
@@ -3588,6 +4053,34 @@ void main() {
         expect(repository.hasPaginatedBeyondFirstPage, isFalse);
       });
 
+      test('false while any live feed is still on its first page', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.refreshFeed(NotificationKind.like);
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPageFor(NotificationKind.like);
+
+        // Likes is two pages deep, but the unfiltered feed is not — a
+        // resume refresh can still serve it, so the guard must stay open.
+        await repository.refreshFeed(null);
+
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+      });
+
       test('resetPaginationDepth releases the resume-refresh guard', () async {
         stubProfiles({});
         stubNotifications(
@@ -3647,6 +4140,45 @@ void main() {
           expect(after.map((n) => n.id).toList(), equals(expectedKeptIds));
         },
       );
+
+      test('resetPaginationDepth collapses a filtered feed snapshot', () async {
+        stubProfiles({
+          for (var i = 0; i < 25; i++)
+            'follower_$i': makeProfile(
+              'follower_$i',
+              displayName: 'Follower $i',
+            ),
+        });
+        stubNotifications([
+          for (var i = 0; i < 25; i++)
+            makeNotification(
+              id: 'follow_$i',
+              sourcePubkey: 'follower_$i',
+              sourceEventId: 'follow_evt_$i',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              createdAt: DateTime(2025).subtract(Duration(minutes: i)),
+            ),
+        ], hasMore: true);
+        await repository.getNotifications(filter: NotificationKind.follow);
+        final before =
+            (await repository
+                    .watchSnapshot(filter: NotificationKind.follow)
+                    .first)
+                .items;
+        expect(before, hasLength(25));
+        final expectedKeptIds = before.take(20).map((n) => n.id).toList();
+
+        repository.resetPaginationDepth(filter: NotificationKind.follow);
+
+        final after =
+            (await repository
+                    .watchSnapshot(filter: NotificationKind.follow)
+                    .first)
+                .items;
+        expect(after.map((n) => n.id).toList(), equals(expectedKeptIds));
+      });
     });
 
     group('markAsRead', () {
@@ -3694,6 +4226,52 @@ void main() {
             authHeaders: any(named: 'authHeaders'),
           ),
         );
+      });
+
+      test('updates matching rows in every live filtered snapshot', () async {
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            notificationIds: any(named: 'notificationIds'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer(
+          (_) async => const MarkReadResponse(success: true, markedCount: 1),
+        );
+        when(
+          () => notificationsDao.markAsRead(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => true);
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+        });
+        stubNotifications([
+          makeNotification(
+            id: 'follow_notification',
+            sourceEventId: 'follow_event',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+          ),
+        ], unreadCount: 1);
+
+        await repository.getNotifications();
+        await repository.getNotifications(filter: NotificationKind.follow);
+
+        await repository.markAsRead(['follow_notification']);
+
+        final allItem = (await repository.watchSnapshot().first).items.single;
+        final followItem =
+            (await repository
+                    .watchSnapshot(filter: NotificationKind.follow)
+                    .first)
+                .items
+                .single;
+        expect(allItem.isRead, isTrue);
+        expect(followItem.isRead, isTrue);
       });
 
       test('expands a grouped row to every raw notification id before '
@@ -4222,6 +4800,16 @@ void main() {
         expect(repository.isClosed, isTrue);
       });
 
+      test('resetPaginationDepth is a no-op after close()', () async {
+        await repository.close();
+
+        expect(
+          () =>
+              repository.resetPaginationDepth(filter: NotificationKind.follow),
+          returnsNormally,
+        );
+      });
+
       test('emits snapshot after refresh', () async {
         stubProfiles({
           'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
@@ -4447,6 +5035,49 @@ void main() {
         await expectLater(markFuture, throwsA(isA<FunnelcakeException>()));
 
         expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+      });
+
+      test('markAllAsRead rollback keeps a page that landed mid-flight on a '
+          'feed it never flipped', () async {
+        stubProfiles({});
+        stubNotifications([makeNotification()], unreadCount: 1);
+        await repository.refresh();
+        // The inbox mounts all five tabs, so the Follows feed is already live
+        // when the POST starts — it just holds nothing to flip yet.
+        stubNotifications([]);
+        await repository.refreshFeed(NotificationKind.follow);
+
+        final markGate = Completer<MarkReadResponse>();
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer((_) => markGate.future);
+        final markFuture = repository.markAllAsRead();
+
+        // The user swipes to Follows while the mark-read POST is in flight.
+        stubNotifications([
+          makeNotification(
+            id: 'follow_1',
+            sourcePubkey: 'pubkey_follower',
+            sourceEventId: 'evt_follow_1',
+            sourceKind: 3,
+            notificationType: 'follow',
+            referencedEventId: null,
+          ),
+        ]);
+        await repository.refreshFeed(NotificationKind.follow);
+
+        markGate.completeError(const FunnelcakeException('boom'));
+        await expectLater(markFuture, throwsA(isA<FunnelcakeException>()));
+
+        final follows = await repository
+            .watchSnapshot(filter: NotificationKind.follow)
+            .first;
+        expect(follows.items, hasLength(1));
+        // The unfiltered feed was flipped, so it still rolls back.
+        expect(await repository.watchUnreadCount().first, equals(1));
       });
     });
 

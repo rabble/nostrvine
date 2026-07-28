@@ -271,6 +271,7 @@ class FunnelcakeApiClient {
     int limit = 50,
     String? cursor,
     String? cursorId,
+    List<String>? types,
   }) {
     // Server timestamps are Unix seconds, not milliseconds.
     final effectiveBefore =
@@ -279,6 +280,7 @@ class FunnelcakeApiClient {
       'limit': '$limit',
       'before': effectiveBefore,
       'before_id': ?cursorId,
+      if (types != null && types.isNotEmpty) 'types': types.join(','),
     };
 
     return Uri.parse(
@@ -2415,6 +2417,7 @@ class FunnelcakeApiClient {
     int limit = 50,
     String? cursor,
     String? cursorId,
+    List<String>? types,
     Uri? requestUri,
     Map<String, String>? authHeaders,
   }) async {
@@ -2429,6 +2432,7 @@ class FunnelcakeApiClient {
           limit: limit,
           cursor: cursor,
           cursorId: cursorId,
+          types: types,
         );
 
     try {

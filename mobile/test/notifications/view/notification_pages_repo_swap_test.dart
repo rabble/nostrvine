@@ -57,9 +57,11 @@ void main() {
 
       for (final repo in [mockNotificationRepoA, mockNotificationRepoB]) {
         when(
-          repo.watchSnapshot,
+          () => repo.watchSnapshot(filter: any(named: 'filter')),
         ).thenAnswer((_) => const Stream<NotificationPage>.empty());
-        when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
+        when(
+          () => repo.refreshFeed(any()),
+        ).thenAnswer((_) async => NotificationPage.empty);
         when(repo.markAllAsRead).thenAnswer((_) async {});
       }
 
@@ -263,9 +265,11 @@ void main() {
 
       for (final repo in [mockNotificationRepoA, mockNotificationRepoB]) {
         when(
-          repo.watchSnapshot,
+          () => repo.watchSnapshot(filter: any(named: 'filter')),
         ).thenAnswer((_) => const Stream<NotificationPage>.empty());
-        when(repo.refresh).thenAnswer((_) async => NotificationPage.empty);
+        when(
+          () => repo.refreshFeed(any()),
+        ).thenAnswer((_) async => NotificationPage.empty);
         when(repo.markAllAsRead).thenAnswer((_) async {});
       }
 
