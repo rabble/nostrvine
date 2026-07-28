@@ -26,6 +26,8 @@ abstract class SemanticIds {
 
   static String listCard(int index) => 'list_card_$index';
 
+  static String categoryTile(int index) => 'category_tile_$index';
+
   static const String shareButton = 'share_button';
   static const String shareWithSection = 'share_with_section';
 

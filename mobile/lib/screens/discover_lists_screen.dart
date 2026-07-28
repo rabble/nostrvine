@@ -9,12 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/services/screenshot_mode_service.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -67,6 +69,14 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
     // Check if we already have cached lists from provider
     // Only stream if cache is empty
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ScreenshotMode.enabled) {
+        // Deterministic, on-brand lists for the App Store capture instead of
+        // whatever public lists the relays happen to surface.
+        ref
+            .read(discoveredListsProvider.notifier)
+            .setLists(screenshotDiscoverListsFixtures());
+        return;
+      }
       final cachedState = ref.read(discoveredListsProvider);
       if (cachedState.lists.isEmpty) {
         _streamPublicLists();

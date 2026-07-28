@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoCategory;
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_category_name.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -131,6 +132,7 @@ class _CategoriesListBody extends StatelessWidget {
           category: category,
           visuals: CategoryVisuals.forCategory(category, index),
           onTap: () => onCategoryTap(category),
+          index: index,
         );
       },
     );
@@ -142,8 +144,10 @@ class _CategoryTile extends StatelessWidget {
     required this.category,
     required this.visuals,
     required this.onTap,
+    required this.index,
   });
 
+  final int index;
   final VideoCategory category;
   final CategoryVisuals visuals;
   final VoidCallback onTap;
@@ -154,6 +158,7 @@ class _CategoryTile extends StatelessWidget {
     return Semantics(
       button: true,
       label: localizedName,
+      identifier: SemanticIds.categoryTile(index),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
