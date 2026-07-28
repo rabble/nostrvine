@@ -210,20 +210,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get generalSettingsSectionApp => 'APP';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'Weergave';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Kies hoe Divine eruitziet op dit apparaat';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'Systeemstandaard';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'Licht';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'Donker';
 
   @override
   String get generalSettingsClosedCaptions => 'Ondertiteling';

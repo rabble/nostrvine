@@ -173,20 +173,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get generalSettingsSectionApp => '앱';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => '화면 모드';
 
   @override
-  String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+  String get appearanceSettingsSubtitle => '이 기기에서 Divine이 보이는 방식을 선택하세요';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => '시스템 기본값';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => '라이트';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => '다크';
 
   @override
   String get generalSettingsClosedCaptions => '자막';

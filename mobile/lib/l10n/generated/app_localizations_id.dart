@@ -180,20 +180,20 @@ class AppLocalizationsId extends AppLocalizations {
   String get generalSettingsSectionApp => 'APLIKASI';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'Tampilan';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Pilih tampilan Divine di perangkat ini';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'Default sistem';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'Terang';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'Gelap';
 
   @override
   String get generalSettingsClosedCaptions => 'Teks Tertutup';

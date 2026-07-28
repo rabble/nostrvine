@@ -204,11 +204,6 @@ const _knownUntranslatedDebt = <String>{
   'crosspostStillWorking',
   'crosspostDone',
   // #6217: light-mode experiment copy; translation deferred until rollout.
-  'appearanceSettingsTitle',
-  'appearanceSettingsSubtitle',
-  'appearanceSettingsSystem',
-  'appearanceSettingsLight',
-  'appearanceSettingsDark',
   // #6126: opt-in username-burn strings; translation deferred to the l10n pass.
   'deleteAccountBurnUsernameFailed',
   'deleteAccountBurnUsernameReleased',

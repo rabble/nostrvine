@@ -145,9 +145,7 @@ class _RecordingProgressBar extends ConsumerWidget {
                   if (remainingMs > 0)
                     Flexible(
                       flex: remainingMs,
-                      child: const ColoredBox(
-                        color: VineTheme.onSurfaceDisabled,
-                      ),
+                      child: Container(color: VineTheme.onSurfaceDisabled),
                     ),
                   if (overflowMs > 0)
                     Flexible(

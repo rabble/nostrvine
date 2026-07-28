@@ -198,20 +198,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get generalSettingsSectionApp => 'التطبيق';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'المظهر';
 
   @override
-  String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+  String get appearanceSettingsSubtitle => 'اختر شكل Divine على هذا الجهاز';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'إعداد النظام';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'فاتح';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'داكن';
 
   @override
   String get generalSettingsClosedCaptions => 'الترجمة المصاحبة';

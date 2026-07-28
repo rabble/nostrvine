@@ -180,20 +180,20 @@ class AppLocalizationsTr extends AppLocalizations {
   String get generalSettingsSectionApp => 'UYGULAMA';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'Görünüm';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Divine\'ın bu cihazda nasıl görüneceğini seç';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'Sistem varsayılanı';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'Açık';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'Koyu';
 
   @override
   String get generalSettingsClosedCaptions => 'Altyazılar';

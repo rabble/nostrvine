@@ -212,20 +212,20 @@ class AppLocalizationsAm extends AppLocalizations {
   String get generalSettingsSectionApp => 'መተግበሪያ';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'መልክ';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Divine በዚህ መሣሪያ ላይ እንዴት እንደሚታይ ይምረጡ';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'የሥርዓት ነባሪ';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'ብሩህ';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'ጨለማ';
 
   @override
   String get generalSettingsClosedCaptions => 'የተዘጉ መግለጫዎች';

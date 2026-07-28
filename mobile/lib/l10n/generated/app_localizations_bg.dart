@@ -212,20 +212,20 @@ class AppLocalizationsBg extends AppLocalizations {
   String get generalSettingsSectionApp => 'ПРИЛОЖЕНИЕ';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'Външен вид';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Избери как да изглежда Divine на това устройство';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'Системна настройка';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'Светла';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'Тъмна';
 
   @override
   String get generalSettingsClosedCaptions => 'Субтитри';

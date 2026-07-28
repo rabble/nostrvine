@@ -235,6 +235,23 @@ void main() {
         }
       });
 
+      test('mediaCard keeps neutral10 on the dark palette', () {
+        // The chat bubble frame and the classic recorder's progress track
+        // both had this exact value before the light-mode migration.
+        expect(VineTheme.darkColors.mediaCard, VineTheme.neutral10);
+      });
+
+      test('mediaCard stays distinct from the surfaces it sits on', () {
+        // Drawn on `surface` (chat) and `surfaceContainerHigh` (recorder);
+        // matching either makes the element vanish, which is how the light
+        // progress track disappeared when mediaCard shared #E7E4E1 with
+        // surfaceContainerHigh.
+        for (final colors in [VineTheme.darkColors, VineTheme.lightColors]) {
+          expect(colors.mediaCard, isNot(colors.surface));
+          expect(colors.mediaCard, isNot(colors.surfaceContainerHigh));
+        }
+      });
+
       test('a single changed token breaks equality', () {
         for (final token in tokens.keys) {
           final changed = paint(Colors.black).copyWith(

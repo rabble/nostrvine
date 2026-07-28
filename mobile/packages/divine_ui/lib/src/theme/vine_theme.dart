@@ -50,9 +50,13 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Neutral surface that stays neutral in both modes, for chrome that must
   /// not pick up the palette's green cast — the shared-video chat bubble's
   /// frame (its thumbnail has to read as a media card rather than a coloured
-  /// pill) and the classic recorder's unfilled progress track. Deliberately
-  /// distinct from [card], which is white on the light palette and would
-  /// disappear against the surfaces these sit on.
+  /// pill) and the classic recorder's unfilled progress track.
+  ///
+  /// Its dark value is [VineTheme.neutral10], which both of those had before
+  /// the light-mode migration, so dark mode is unchanged. The light value is
+  /// kept clear of every surface it is drawn on: [card] is white on the light
+  /// palette and would vanish against the conversation, and
+  /// [surfaceContainerHigh] is the recorder's own background.
   final Color mediaCard;
 
   /// Primary surface.
@@ -969,7 +973,7 @@ class VineTheme {
   static const VineThemeColors lightColors = VineThemeColors(
     background: Color(0xFFF9F7F6),
     card: Color(0xFFFFFFFF),
-    mediaCard: Color(0xFFE7E4E1),
+    mediaCard: Color(0xFFDCD7D2),
     surface: Color(0xFFFFFFFF),
     surfaceContainer: Color(0xFFF0EEEC),
     surfaceContainerHigh: Color(0xFFE7E4E1),
