@@ -238,9 +238,9 @@ class _InitialState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.search,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               size: 64,
             ),
             const SizedBox(height: 16),
@@ -250,7 +250,9 @@ class _InitialState extends StatelessWidget {
             ),
             Text(
               context.l10n.searchFindCuratedVideoLists,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ],
         ),
@@ -276,9 +278,9 @@ class _ListsSkeletonLoader extends StatelessWidget {
     return Semantics(
       identifier: 'lists_loading_indicator',
       label: context.l10n.searchListsLoadingLabel,
-      child: const Skeletonizer(
-        effect: vineSkeletonEffect,
-        child: Padding(
+      child: Skeletonizer(
+        effect: vineSkeletonEffectOf(context),
+        child: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             spacing: 12,
@@ -308,7 +310,7 @@ class _ListCardSkeletonItem extends StatelessWidget {
             aspectRatio: 0.85,
             child: Container(
               decoration: BoxDecoration(
-                color: VineTheme.skeletonSurface,
+                color: context.vineColors.skeleton,
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
@@ -320,7 +322,7 @@ class _ListCardSkeletonItem extends StatelessWidget {
             width: 100,
             height: 16,
             decoration: BoxDecoration(
-              color: VineTheme.skeletonSurface,
+              color: context.vineColors.skeleton,
               borderRadius: BorderRadius.circular(8),
             ),
           ),
@@ -331,7 +333,7 @@ class _ListCardSkeletonItem extends StatelessWidget {
             width: 140,
             height: 12,
             decoration: BoxDecoration(
-              color: VineTheme.skeletonSurface,
+              color: context.vineColors.skeleton,
               borderRadius: BorderRadius.circular(8),
             ),
           ),

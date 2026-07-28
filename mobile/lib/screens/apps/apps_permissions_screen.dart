@@ -53,7 +53,7 @@ class _AppsPermissionsContent extends StatelessWidget {
         showBackButton: true,
         onBackPressed: Navigator.of(context).pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -114,13 +114,17 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
             Text(
               context.l10n.appsPermissionsEmptyTitle,
               textAlign: TextAlign.center,
-              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+              style: VineTheme.headlineSmallFont(
+                color: context.vineColors.onSurface,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
               context.l10n.appsPermissionsEmptySubtitle,
               textAlign: TextAlign.center,
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -140,21 +144,25 @@ class _GrantCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             grant.appId,
-            style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.headlineSmallFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             grant.origin,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Text(

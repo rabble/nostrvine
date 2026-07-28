@@ -75,8 +75,8 @@ class EnvironmentBanner extends ConsumerWidget {
         child: Center(
           child: Text(
             'Environment: ${environment.displayName} - Tap for options',
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),

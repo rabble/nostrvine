@@ -28,7 +28,9 @@ class VerifiedAccountsSection extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16, bottom: 8),
             child: Text(
               l10n.profileEditVerifiedAccountsTitle,
-              style: VineTheme.labelMediumFont(color: VineTheme.lightText),
+              style: VineTheme.labelMediumFont(
+                color: context.vineColors.mutedText,
+              ),
             ),
           ),
           if (claims.isNotEmpty) ...[
@@ -58,11 +60,11 @@ class _GetVerifiedTile extends StatelessWidget {
       ),
       subtitle: Text(
         l10n.profileEditGetVerifiedSubtitle,
-        style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: () => context.read<ProfileEditorBloc>().add(
         const VerifierLaunchRequested(),

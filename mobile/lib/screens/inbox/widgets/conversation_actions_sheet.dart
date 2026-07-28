@@ -83,26 +83,28 @@ class _MuteActionTile extends StatelessWidget {
       toggled: isMuted,
       label: context.l10n.inboxActionMute,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: context.vineColors.outlineDisabled),
+          ),
         ),
         child: Material(
           type: MaterialType.transparency,
           child: SwitchListTile(
             value: isMuted,
-            activeThumbColor: VineTheme.whiteText,
+            activeThumbColor: context.vineColors.primaryText,
             activeTrackColor: VineTheme.primary,
-            inactiveThumbColor: VineTheme.onSurfaceDisabled,
-            inactiveTrackColor: VineTheme.surfaceContainer,
+            inactiveThumbColor: context.vineColors.disabled,
+            inactiveTrackColor: context.vineColors.surfaceContainer,
             onChanged: (_) =>
                 Navigator.of(context).pop(ConversationAction.toggleMute),
             title: Text(
               context.l10n.inboxActionMute,
               style: VineTheme.titleMediumFont(),
             ),
-            secondary: const DivineIcon(
+            secondary: DivineIcon(
               icon: DivineIconName.bellSimple,
-              color: VineTheme.onSurface,
+              color: context.vineColors.onSurface,
             ),
           ),
         ),
@@ -128,7 +130,9 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? VineTheme.error : VineTheme.onSurface;
+    final color = isDestructive
+        ? VineTheme.error
+        : context.vineColors.onSurface;
 
     return Semantics(
       button: true,
@@ -139,8 +143,10 @@ class _ActionTile extends StatelessWidget {
         child: DecoratedBox(
           decoration: BoxDecoration(
             border: showDivider
-                ? const Border(
-                    bottom: BorderSide(color: VineTheme.outlineDisabled),
+                ? Border(
+                    bottom: BorderSide(
+                      color: context.vineColors.outlineDisabled,
+                    ),
                   )
                 : null,
           ),

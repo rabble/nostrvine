@@ -24,22 +24,26 @@ class RestorePausedBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           spacing: 12,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.info,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             Expanded(
               child: Text(
                 l10n.inboxRestorePausedTitle,
-                style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.secondaryText,
+                ),
               ),
             ),
             DivineButton(

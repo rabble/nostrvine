@@ -42,7 +42,7 @@ class ConversationAppBar extends StatelessWidget
       onTitleTap: onTitleTap,
       showBackButton: true,
       onBackPressed: onBack,
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       style: DiVineAppBarStyle(
         titleStyle: VineTheme.titleMediumFont(),
         horizontalPadding: 10,

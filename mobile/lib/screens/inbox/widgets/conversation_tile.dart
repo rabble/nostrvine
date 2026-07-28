@@ -120,9 +120,9 @@ class ConversationTile extends ConsumerWidget {
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: highlighted ? VineTheme.containerLow : null,
-            border: const Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+            color: highlighted ? context.vineColors.containerLow : null,
+            border: Border(
+              bottom: BorderSide(color: context.vineColors.outlineDisabled),
             ),
           ),
           child: Padding(
@@ -168,7 +168,7 @@ class ConversationTile extends ConsumerWidget {
                             Text(
                               relativeTime,
                               style: VineTheme.bodyMediumFont(
-                                color: VineTheme.onSurfaceMuted,
+                                color: context.vineColors.onSurfaceMuted,
                               ),
                             ),
                           ],
@@ -183,7 +183,7 @@ class ConversationTile extends ConsumerWidget {
                         Text(
                           subtitle,
                           style: VineTheme.bodyMediumFont(
-                            color: VineTheme.onSurfaceVariant,
+                            color: context.vineColors.onSurfaceVariant,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -227,9 +227,9 @@ class _ModerationAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.containerLow,
-      child: DivineIcon(
+    return ColoredBox(
+      color: context.vineColors.containerLow,
+      child: const DivineIcon(
         icon: DivineIconName.logo,
         size: 40,
         fit: BoxFit.cover,
@@ -296,7 +296,7 @@ class _ConversationPreviewText extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = emphasized
         ? VineTheme.labelLargeFont()
-        : VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant);
+        : VineTheme.bodyMediumFont(color: context.vineColors.onSurfaceVariant);
     if (!payload.isDivineVideoShare) {
       return Text(
         payload.text,
@@ -317,7 +317,7 @@ class _ConversationPreviewText extends StatelessWidget {
               padding: const EdgeInsets.only(right: 4),
               child: DivineIcon(
                 icon: DivineIconName.cameraRetro,
-                color: VineTheme.whiteText,
+                color: context.vineColors.primaryText,
                 size: iconSize,
               ),
             ),

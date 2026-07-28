@@ -65,7 +65,7 @@ class _AppDetailContent extends StatelessWidget {
             showBackButton: true,
             onBackPressed: context.pop,
           ),
-          backgroundColor: VineTheme.backgroundColor,
+          backgroundColor: context.vineColors.background,
           body: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(
@@ -81,16 +81,16 @@ class _AppDetailContent extends StatelessWidget {
                 AppDetailLoaded(:final app) => ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 28,
-                      backgroundColor: VineTheme.cardBackground,
-                      child: Icon(Icons.apps, color: VineTheme.vineGreen),
+                      backgroundColor: context.vineColors.card,
+                      child: const Icon(Icons.apps, color: VineTheme.vineGreen),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       app.name,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
                       ),
@@ -98,8 +98,8 @@ class _AppDetailContent extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       app.tagline,
-                      style: const TextStyle(
-                        color: VineTheme.lightText,
+                      style: TextStyle(
+                        color: context.vineColors.mutedText,
                         fontSize: 16,
                       ),
                     ),
@@ -108,8 +108,8 @@ class _AppDetailContent extends StatelessWidget {
                       title: context.l10n.appsDetailHowItWorksTitle,
                       child: Text(
                         context.l10n.appsDetailHowItWorksBody,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
+                        style: TextStyle(
+                          color: context.vineColors.primaryText,
                           fontSize: 15,
                           height: 1.5,
                         ),
@@ -119,8 +119,8 @@ class _AppDetailContent extends StatelessWidget {
                       title: context.l10n.appsDetailAboutTitle,
                       child: Text(
                         app.description,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
+                        style: TextStyle(
+                          color: context.vineColors.primaryText,
                           fontSize: 15,
                           height: 1.5,
                         ),
@@ -176,7 +176,7 @@ class _AppDetailSection extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -184,8 +184,8 @@ class _AppDetailSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: VineTheme.lightText,
+            style: TextStyle(
+              color: context.vineColors.mutedText,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -208,7 +208,7 @@ class _PillList extends StatelessWidget {
     if (items.isEmpty) {
       return Text(
         context.l10n.appsDetailNoneDeclared,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       );
     }
 
@@ -220,14 +220,14 @@ class _PillList extends StatelessWidget {
             (item) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: VineTheme.backgroundColor,
+                color: context.vineColors.background,
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: VineTheme.vineGreen.withAlpha(80)),
               ),
               child: Text(
                 item,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 13,
                 ),
               ),
@@ -253,8 +253,8 @@ class _AppDetailMessage extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
@@ -263,8 +263,8 @@ class _AppDetailMessage extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: VineTheme.lightText,
+            style: TextStyle(
+              color: context.vineColors.mutedText,
               fontSize: 14,
               height: 1.4,
             ),

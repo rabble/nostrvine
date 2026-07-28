@@ -104,11 +104,11 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           return SizedBox(
             width: widget.size,
             height: widget.size,
-            child: const Center(
+            child: Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  VineTheme.onSurfaceMuted,
+                  context.vineColors.onSurfaceMuted,
                 ),
               ),
             ),

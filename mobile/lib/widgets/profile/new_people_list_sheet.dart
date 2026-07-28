@@ -173,7 +173,9 @@ class _CollaboratorsRow extends StatelessWidget {
       children: [
         Text(
           l10n.metadataCollaboratorsLabel,
-          style: VineTheme.titleSmallFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.titleSmallFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 8),
         InkWell(

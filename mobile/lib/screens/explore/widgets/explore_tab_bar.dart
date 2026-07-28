@@ -48,12 +48,12 @@ class ExploreTabBar extends StatelessWidget {
               indicatorWeight: 4,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: VineTheme.transparent,
-              labelColor: VineTheme.whiteText,
-              unselectedLabelColor: VineTheme.onSurfaceMuted55,
+              labelColor: context.vineColors.primaryText,
+              unselectedLabelColor: context.vineColors.onSurfaceMuted,
               labelPadding: const EdgeInsets.symmetric(horizontal: 14),
               labelStyle: VineTheme.titleMediumFont(),
               unselectedLabelStyle: VineTheme.titleMediumFont(
-                color: VineTheme.onSurfaceMuted55,
+                color: context.vineColors.onSurfaceMuted,
               ),
               onTap: onTap,
               tabs: [
@@ -70,7 +70,7 @@ class ExploreTabBar extends StatelessWidget {
               ],
             ),
             // Right-edge fade gradient shim
-            const Positioned(
+            Positioned(
               top: 0,
               bottom: 0,
               right: 0,
@@ -82,8 +82,8 @@ class ExploreTabBar extends StatelessWidget {
                       begin: Alignment.centerRight,
                       end: Alignment.centerLeft,
                       colors: [
-                        VineTheme.surfaceContainerHigh,
-                        Color(0x00000A06),
+                        context.vineColors.surfaceContainerHigh,
+                        const Color(0x00000A06),
                       ],
                     ),
                   ),

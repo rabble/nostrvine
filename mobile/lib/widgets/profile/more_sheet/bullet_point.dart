@@ -19,12 +19,16 @@ class BulletPoint extends StatelessWidget {
       children: [
         Text(
           '•  ',
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyLargeFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
         Expanded(
           child: Text(
             text,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
       ],

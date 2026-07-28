@@ -87,7 +87,7 @@ class DraftsTab extends ConsumerWidget {
                     context.l10n.libraryOpenErrorDescription,
                     textAlign: TextAlign.center,
                     style: VineTheme.bodyLargeFont(
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -265,7 +265,7 @@ class DraftsTab extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.libraryDeleteDraftTitle,
           style: VineTheme.titleSmallFont(),
@@ -281,7 +281,9 @@ class DraftsTab extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(
@@ -366,14 +368,14 @@ class DraftListTile extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: ShapeDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
         foregroundDecoration: ShapeDecoration(
           shape: RoundedRectangleBorder(
-            side: const BorderSide(color: VineTheme.onSurfaceDisabled),
+            side: BorderSide(color: context.vineColors.disabled),
             borderRadius: BorderRadius.circular(16),
           ),
         ),
@@ -383,16 +385,16 @@ class DraftListTile extends StatelessWidget {
                 child: ClipThumbnailImage(
                   path: thumbnailPath,
                   fit: BoxFit.cover,
-                  placeholder: const DivineIcon(
+                  placeholder: DivineIcon(
                     icon: DivineIconName.filmSlate,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                     size: 20,
                   ),
                 ),
               )
-            : const DivineIcon(
+            : DivineIcon(
                 icon: DivineIconName.filmSlate,
-                color: VineTheme.secondaryText,
+                color: context.vineColors.secondaryText,
                 size: 20,
               ),
       ),
@@ -410,9 +412,9 @@ class DraftListTile extends StatelessWidget {
           ? null
           : IconButton(
               onPressed: onOpenMore,
-              icon: const DivineIcon(
+              icon: DivineIcon(
                 icon: DivineIconName.dotsThreeVertical,
-                color: VineTheme.onSurface,
+                color: context.vineColors.onSurface,
                 size: 28,
               ),
             ),

@@ -26,14 +26,14 @@ Future<bool?> showUnfollowConfirmation(
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 style: OutlinedButton.styleFrom(
-                  backgroundColor: VineTheme.surfaceContainer,
+                  backgroundColor: context.vineColors.surfaceContainer,
                   foregroundColor: VineTheme.vineGreen,
                   padding: const EdgeInsets.symmetric(
                     vertical: 12,
                     horizontal: 16,
                   ),
-                  side: const BorderSide(
-                    color: VineTheme.outlineMuted,
+                  side: BorderSide(
+                    color: context.vineColors.outlineMuted,
                     width: 2,
                   ),
                   shape: RoundedRectangleBorder(

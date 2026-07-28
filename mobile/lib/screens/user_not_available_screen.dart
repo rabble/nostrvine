@@ -13,7 +13,7 @@ class UserNotAvailableScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.profileTitle,
         showBackButton: true,
@@ -29,8 +29,8 @@ class UserNotAvailableScreen extends StatelessWidget {
                 DivineIconName.prohibit.assetPath,
                 width: 48,
                 height: 48,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.secondaryText,
+                colorFilter: ColorFilter.mode(
+                  context.vineColors.secondaryText,
                   BlendMode.srcIn,
                 ),
               ),
@@ -42,7 +42,9 @@ class UserNotAvailableScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 context.l10n.userNotAvailableBody,
-                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.secondaryText,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

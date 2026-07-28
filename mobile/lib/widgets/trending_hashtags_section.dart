@@ -36,7 +36,7 @@ class TrendingHashtagsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: SizedBox(
         height: 52,
         child: Row(
@@ -72,7 +72,7 @@ class _HashtagLoadingPlaceholder extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         context.l10n.trendingHashtagsLoading,
-        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 14),
       ),
     );
   }

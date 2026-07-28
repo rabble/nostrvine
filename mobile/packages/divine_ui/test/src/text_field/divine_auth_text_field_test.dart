@@ -109,6 +109,29 @@ void main() {
         },
       );
 
+      testWidgets('dims the visibility toggle while the field is empty', (
+        tester,
+      ) async {
+        final controller = TextEditingController();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          buildTestWidget(obscureText: true, controller: controller),
+        );
+
+        expect(
+          tester.widget<DivineIcon>(find.byType(DivineIcon)).color,
+          VineTheme.darkColors.onSurfaceMuted,
+        );
+
+        controller.text = 'hunter2';
+        await tester.pump();
+
+        expect(
+          tester.widget<DivineIcon>(find.byType(DivineIcon)).color,
+          VineTheme.darkColors.onSurface,
+        );
+      });
+
       testWidgets(
         'does not render visibility toggle '
         'when obscureText is false',

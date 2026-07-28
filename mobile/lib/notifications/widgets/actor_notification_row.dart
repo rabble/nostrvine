@@ -41,7 +41,7 @@ class ActorNotificationRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Material(
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: Semantics(
         button: true,
         container: true,
@@ -49,9 +49,9 @@ class ActorNotificationRow extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: VineTheme.outlineDisabled),
+                bottom: BorderSide(color: context.vineColors.outlineDisabled),
               ),
             ),
             child: Padding(
@@ -212,7 +212,9 @@ class _MessageText extends StatelessWidget {
       spans.add(
         TextSpan(
           text: ' $ts',
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         ),
       );
     }

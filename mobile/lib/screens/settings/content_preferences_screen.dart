@@ -33,7 +33,7 @@ class ContentPreferencesScreen extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -66,19 +66,19 @@ class _ContentFiltersTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.contentPreferencesContentFilters,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         context.l10n.contentPreferencesContentFiltersSubtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: () => context.push(ContentFiltersScreen.path),
     );
@@ -121,19 +121,19 @@ class _LanguageSettingTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.contentPreferencesContentLanguage,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: () => _showLanguagePicker(context),
     );
@@ -144,7 +144,7 @@ class _LanguageSettingTile extends StatelessWidget {
     final state = cubit.state;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -199,8 +199,8 @@ class _LanguagePickerContent extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Text(
             context.l10n.contentPreferencesContentLanguage,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -210,11 +210,11 @@ class _LanguagePickerContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             context.l10n.contentPreferencesTagYourVideos,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 13),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 13),
           ),
         ),
         const SizedBox(height: 8),
-        const Divider(color: VineTheme.lightText, height: 1),
+        Divider(color: context.vineColors.mutedText, height: 1),
         ListTile(
           leading: Icon(
             !isCustomLanguageSet
@@ -224,17 +224,17 @@ class _LanguagePickerContent extends StatelessWidget {
           ),
           title: Text(
             context.l10n.contentPreferencesUseDeviceLanguage,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
           subtitle: Text(
             LanguagePreferenceService.displayNameFor(
               PlatformDispatcher.instance.locale.languageCode,
             ),
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 12),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 12),
           ),
           onTap: onUseDeviceLanguage,
         ),
-        const Divider(color: VineTheme.lightText, height: 1),
+        Divider(color: context.vineColors.mutedText, height: 1),
         Expanded(
           child: ListView.builder(
             controller: scrollController,
@@ -255,12 +255,12 @@ class _LanguagePickerContent extends StatelessWidget {
                 ),
                 title: Text(
                   name,
-                  style: const TextStyle(color: VineTheme.whiteText),
+                  style: TextStyle(color: context.vineColors.primaryText),
                 ),
                 subtitle: Text(
                   code.toUpperCase(),
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
+                  style: TextStyle(
+                    color: context.vineColors.mutedText,
                     fontSize: 12,
                   ),
                 ),
@@ -301,15 +301,15 @@ class _AudioSharingToggleTile extends StatelessWidget {
       onChanged: (value) => context.read<AudioSharingCubit>().setEnabled(value),
       title: Text(
         context.l10n.contentPreferencesAudioSharing,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         context.l10n.contentPreferencesAudioSharingSubtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const DivineIcon(
@@ -362,19 +362,19 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
           ),
           title: Text(
             context.l10n.contentPreferencesAudioInputDevice,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
           ),
           subtitle: Text(
             currentDisplayName,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
           ),
-          trailing: const DivineIcon(
+          trailing: DivineIcon(
             icon: DivineIconName.caretRight,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           onTap: () => _showAudioDevicePicker(
             context,
@@ -409,7 +409,7 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
     final cubit = context.read<AudioDeviceCubit>();
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -454,14 +454,14 @@ class _AudioDevicePickerContent extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Text(
             context.l10n.contentPreferencesSelectAudioInput,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        const Divider(color: VineTheme.lightText, height: 1),
+        Divider(color: context.vineColors.mutedText, height: 1),
         ListTile(
           leading: Icon(
             currentDeviceId == null
@@ -471,15 +471,15 @@ class _AudioDevicePickerContent extends StatelessWidget {
           ),
           title: Text(
             context.l10n.contentPreferencesAutoRecommended,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
           subtitle: Text(
             context.l10n.contentPreferencesAutoSelectsBest,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 12),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 12),
           ),
           onTap: onUseAuto,
         ),
-        const Divider(color: VineTheme.lightText, height: 1),
+        Divider(color: context.vineColors.mutedText, height: 1),
         ...devices.map(
           (device) => ListTile(
             leading: Icon(
@@ -490,11 +490,14 @@ class _AudioDevicePickerContent extends StatelessWidget {
             ),
             title: Text(
               _formatAudioDeviceName(context, device.name),
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
             ),
             subtitle: Text(
               device.id,
-              style: const TextStyle(color: VineTheme.lightText, fontSize: 11),
+              style: TextStyle(
+                color: context.vineColors.mutedText,
+                fontSize: 11,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
             onTap: () => onSelectDevice(device.id),

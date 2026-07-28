@@ -222,7 +222,7 @@ class _ExploreViewState extends ConsumerState<ExploreView>
                 top: Radius.circular(VineTheme.shellInnerCornerRadius),
               ),
               child: ColoredBox(
-                color: VineTheme.surfaceContainerHigh,
+                color: context.vineColors.surfaceContainerHigh,
                 child: Column(
                   children: [
                     const SizedBox(height: 12),

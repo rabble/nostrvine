@@ -86,7 +86,7 @@ class _ContentWarningState extends State<ContentWarning>
             children: [
               DivineIcon(
                 icon: _getWarningIcon(widget.moderationResult.severity),
-                color: VineTheme.whiteText,
+                color: context.vineColors.primaryText,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -98,8 +98,8 @@ class _ContentWarningState extends State<ContentWarning>
                         context,
                         widget.moderationResult.severity,
                       ),
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -107,8 +107,8 @@ class _ContentWarningState extends State<ContentWarning>
                     if (warningDetails != null)
                       Text(
                         warningDetails,
-                        style: const TextStyle(
-                          color: VineTheme.onSurfaceVariant,
+                        style: TextStyle(
+                          color: context.vineColors.onSurfaceVariant,
                           fontSize: 14,
                         ),
                       ),
@@ -131,7 +131,9 @@ class _ContentWarningState extends State<ContentWarning>
                       backgroundColor: VineTheme.whiteText.withValues(
                         alpha: 0.2,
                       ),
-                      labelStyle: const TextStyle(color: VineTheme.whiteText),
+                      labelStyle: TextStyle(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                   )
                   .toList(),
@@ -144,7 +146,7 @@ class _ContentWarningState extends State<ContentWarning>
                   onPressed: _revealContent,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: VineTheme.whiteText,
-                    side: const BorderSide(color: VineTheme.whiteText),
+                    side: BorderSide(color: context.vineColors.primaryText),
                   ),
                   child: Text(context.l10n.contentWarningViewAnyway),
                 ),
@@ -154,18 +156,18 @@ class _ContentWarningState extends State<ContentWarning>
                 if (widget.onReport != null)
                   IconButton(
                     onPressed: widget.onReport,
-                    icon: const DivineIcon(
+                    icon: DivineIcon(
                       icon: DivineIconName.flag,
-                      color: VineTheme.whiteText,
+                      color: context.vineColors.primaryText,
                     ),
                     tooltip: context.l10n.contentWarningReportContentTooltip,
                   ),
                 if (widget.onBlock != null)
                   IconButton(
                     onPressed: widget.onBlock,
-                    icon: const DivineIcon(
+                    icon: DivineIcon(
                       icon: DivineIconName.prohibit,
-                      color: VineTheme.whiteText,
+                      color: context.vineColors.primaryText,
                     ),
                     tooltip: context.l10n.contentWarningBlockUserTooltip,
                   ),
@@ -184,23 +186,23 @@ class _ContentWarningState extends State<ContentWarning>
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: VineTheme.errorContainer,
+        color: context.vineColors.errorContainer,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: VineTheme.error, width: 2),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.prohibit,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
             size: 48,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.contentWarningBlockedTitle,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -209,8 +211,8 @@ class _ContentWarningState extends State<ContentWarning>
           if (warningDetails != null)
             Text(
               warningDetails,
-              style: const TextStyle(
-                color: VineTheme.onSurfaceVariant,
+              style: TextStyle(
+                color: context.vineColors.onSurfaceVariant,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -258,7 +260,7 @@ class _ContentWarningState extends State<ContentWarning>
       case ContentSeverity.hide:
         return VineTheme.error;
       case ContentSeverity.block:
-        return VineTheme.errorContainer;
+        return context.vineColors.errorContainer;
     }
   }
 
@@ -323,12 +325,16 @@ class QuickContentWarning extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                DivineIcon(icon: icon, color: VineTheme.whiteText, size: 16),
+                DivineIcon(
+                  icon: icon,
+                  color: context.vineColors.primaryText,
+                  size: 16,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   warningText,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -401,16 +407,16 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.warning,
-                  color: VineTheme.whiteText,
+                  color: context.vineColors.primaryText,
                   size: 32,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   context.l10n.contentWarningSensitiveContent,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
@@ -430,7 +436,9 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
                         },
                         child: Text(
                           context.l10n.contentWarningView,
-                          style: const TextStyle(color: VineTheme.whiteText),
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
+                          ),
                         ),
                       ),
                     if (widget.onReport != null)

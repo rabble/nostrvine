@@ -161,8 +161,8 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: VineTheme.secondaryText,
+        style: TextStyle(
+          color: context.vineColors.secondaryText,
           fontSize: 13,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
@@ -186,7 +186,7 @@ class _VideoReplyTile extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
-          decoration: const BoxDecoration(color: VineTheme.cardBackground),
+          decoration: BoxDecoration(color: context.vineColors.card),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -195,10 +195,10 @@ class _VideoReplyTile extends StatelessWidget {
                 blurhash: comment.videoBlurhash,
               ),
               // Play icon overlay
-              const Center(
+              Center(
                 child: DivineIcon(
                   icon: DivineIconName.playCircle,
-                  color: VineTheme.whiteText,
+                  color: context.vineColors.primaryText,
                   size: 32,
                 ),
               ),
@@ -253,16 +253,16 @@ class _ProfileCommentCard extends StatelessWidget {
                       comment.createdAt.millisecondsSinceEpoch ~/ 1000,
                     ),
                     style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.caretRight,
-              color: VineTheme.onSurfaceMuted,
+              color: context.vineColors.onSurfaceMuted,
               size: 20,
             ),
           ],

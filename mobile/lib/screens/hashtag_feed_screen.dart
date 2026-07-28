@@ -273,8 +273,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const SizedBox(height: 24),
                 Text(
                   context.l10n.hashtagFeedLoadingTitle(widget.hashtag),
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -282,8 +282,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const SizedBox(height: 8),
                 Text(
                   context.l10n.hashtagFeedLoadingSubtitle,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                 ),
@@ -297,12 +297,16 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
+                Icon(
+                  Icons.tag,
+                  size: 64,
+                  color: context.vineColors.secondaryText,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.hashtagFeedEmptyTitle(widget.hashtag),
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -310,8 +314,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 const SizedBox(height: 8),
                 Text(
                   context.l10n.hashtagFeedEmptySubtitle,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                 ),
@@ -339,7 +343,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     }
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: '#${widget.hashtag}',
         showBackButton: true,

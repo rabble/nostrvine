@@ -47,7 +47,7 @@ class NostrSettingsScreen extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -58,8 +58,8 @@ class NostrSettingsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   context.l10n.nostrSettingsIntro,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
+                  style: TextStyle(
+                    color: context.vineColors.mutedText,
                     fontSize: 14,
                   ),
                 ),
@@ -221,15 +221,15 @@ class _ClientAttributionToggle extends ConsumerWidget {
             },
       title: Text(
         context.l10n.nostrSettingsClientAttribution,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         context.l10n.nostrSettingsClientAttributionSubtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.travel_explore, color: VineTheme.vineGreen),
@@ -270,7 +270,7 @@ class _SignatureVerificationPolicyScreen extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -281,8 +281,8 @@ class _SignatureVerificationPolicyScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   context.l10n.nostrSettingsSignatureVerificationIntro,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
+                  style: TextStyle(
+                    color: context.vineColors.mutedText,
                     fontSize: 14,
                   ),
                 ),
@@ -302,16 +302,16 @@ class _SignatureVerificationPolicyScreen extends ConsumerWidget {
                         activeColor: VineTheme.vineGreen,
                         title: Text(
                           _policyTitle(context, policy),
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                         subtitle: Text(
                           _policySubtitle(context, policy),
-                          style: const TextStyle(
-                            color: VineTheme.lightText,
+                          style: TextStyle(
+                            color: context.vineColors.mutedText,
                             fontSize: 14,
                           ),
                         ),
@@ -397,18 +397,18 @@ class _SettingsTile extends StatelessWidget {
       title: Text(
         title,
         style: TextStyle(
-          color: titleColor ?? VineTheme.whiteText,
+          color: titleColor ?? context.vineColors.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: onTap,
     );

@@ -132,7 +132,7 @@ class _ListNotFoundView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.peopleListsRouteTitle,
         showBackButton: true,
@@ -142,16 +142,16 @@ class _ListNotFoundView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.group_off,
               size: 64,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             const SizedBox(height: 16),
             Text(
               context.l10n.peopleListsListNotFoundTitle,
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -159,8 +159,8 @@ class _ListNotFoundView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               context.l10n.peopleListsListDeletedSubtitle,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -194,7 +194,9 @@ class _PeopleListAppBarTitle extends StatelessWidget {
           const SizedBox(height: 2),
           LinkifiedText(
             text: description,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -232,21 +234,25 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.surfaceContainer,
+        backgroundColor: context.vineColors.surfaceContainer,
         title: Text(
           l10n.peopleListsDeleteConfirmTitle,
           style: VineTheme.titleMediumFont(),
         ),
         content: Text(
           l10n.peopleListsDeleteConfirmBody,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               l10n.commonCancel,
-              style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.labelMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           TextButton(
@@ -270,7 +276,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
     final userList = widget.userList;
     final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: _activeVideoIndex == null
           ? DiVineAppBar(
               titleWidget: _PeopleListAppBarTitle(userList: userList),
@@ -304,16 +310,16 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.users,
                     size: 64,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     l10n.peopleListsNoPeopleTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
@@ -321,8 +327,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                   const SizedBox(height: 8),
                   Text(
                     l10n.peopleListsNoPeopleSubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -350,16 +356,16 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.video_library,
                   size: 64,
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   l10n.peopleListsNoVideosTitle,
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
                   ),
@@ -367,8 +373,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                 const SizedBox(height: 8),
                 Text(
                   l10n.peopleListsNoVideosSubtitle,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                 ),
@@ -408,7 +414,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                   emptyBuilder: () => Center(
                     child: Text(
                       l10n.peopleListsNoVideosAvailable,
-                      style: const TextStyle(color: VineTheme.secondaryText),
+                      style: TextStyle(color: context.vineColors.secondaryText),
                     ),
                   ),
                 ),
@@ -452,8 +458,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -476,7 +482,7 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
           return Center(
             child: Text(
               l10n.peopleListsVideoNotAvailable,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: TextStyle(color: context.vineColors.secondaryText),
             ),
           );
         }
@@ -517,9 +523,9 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                             color: VineTheme.scrim50,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.grid_view,
-                            color: VineTheme.whiteText,
+                            color: context.vineColors.primaryText,
                             size: 20,
                           ),
                         ),
@@ -539,8 +545,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                           children: [
                             Text(
                               userList.name,
-                              style: const TextStyle(
-                                color: VineTheme.whiteText,
+                              style: TextStyle(
+                                color: context.vineColors.primaryText,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -550,8 +556,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                             if (userList.description != null)
                               Text(
                                 userList.description!,
-                                style: const TextStyle(
-                                  color: VineTheme.secondaryText,
+                                style: TextStyle(
+                                  color: context.vineColors.secondaryText,
                                   fontSize: 12,
                                 ),
                                 maxLines: 1,
@@ -572,8 +578,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                         ),
                         child: Text(
                           '${_activeVideoIndex! + 1}/${videos.length}',
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -609,10 +615,10 @@ class _PeopleListActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<_PeopleListAction>(
       tooltip: context.l10n.peopleListsActionsTooltip,
-      color: VineTheme.surfaceContainer,
-      icon: const DivineIcon(
+      color: context.vineColors.surfaceContainer,
+      icon: DivineIcon(
         icon: DivineIconName.dotsThreeVertical,
-        color: VineTheme.whiteText,
+        color: context.vineColors.primaryText,
       ),
       onSelected: onSelected,
       itemBuilder: (context) => [
@@ -620,7 +626,7 @@ class _PeopleListActionsMenu extends StatelessWidget {
           value: _PeopleListAction.delete,
           child: Text(
             context.l10n.listDeleteAction,
-            style: const TextStyle(color: VineTheme.primaryText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
         ),
       ],
@@ -645,7 +651,7 @@ class PeopleCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: SizedBox(
         height: 100,
         child: ListView.builder(
@@ -683,21 +689,25 @@ class _PeopleAvatarItem extends ConsumerWidget {
     final shouldRemove = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.surfaceContainer,
+        backgroundColor: context.vineColors.surfaceContainer,
         title: Text(
           l10n.peopleListsRemoveConfirmTitle(displayName),
           style: VineTheme.titleMediumFont(),
         ),
         content: Text(
           l10n.peopleListsRemoveConfirmBody,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               l10n.commonCancel,
-              style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.labelMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           TextButton(

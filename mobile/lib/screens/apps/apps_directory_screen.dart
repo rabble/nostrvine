@@ -53,7 +53,7 @@ class _AppsDirectoryContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -123,7 +123,7 @@ class _AppsDirectoryFrame extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: child,
     );
   }
@@ -147,9 +147,9 @@ class _AppsDirectoryRow extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: VineTheme.cardBackground,
+              color: context.vineColors.card,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: VineTheme.outlineMuted),
+              border: Border.all(color: context.vineColors.outlineMuted),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,8 +162,8 @@ class _AppsDirectoryRow extends StatelessWidget {
                     children: [
                       Text(
                         app.name,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
+                        style: TextStyle(
+                          color: context.vineColors.primaryText,
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
                         ),
@@ -182,8 +182,8 @@ class _AppsDirectoryRow extends StatelessWidget {
                         app.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: VineTheme.lightText,
+                        style: TextStyle(
+                          color: context.vineColors.mutedText,
                           fontSize: 14,
                           height: 1.4,
                         ),
@@ -192,11 +192,11 @@ class _AppsDirectoryRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Padding(
-                  padding: EdgeInsets.only(top: 6),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
                   child: DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.lightText,
+                    color: context.vineColors.mutedText,
                   ),
                 ),
               ],
@@ -219,7 +219,7 @@ class _AppsDirectoryIcon extends StatelessWidget {
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: VineTheme.backgroundColor,
+        color: context.vineColors.background,
         borderRadius: BorderRadius.circular(16),
       ),
       child: const DivineIcon(
@@ -269,8 +269,8 @@ class _AppsDirectoryMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
               ),
@@ -279,7 +279,10 @@ class _AppsDirectoryMessage extends StatelessWidget {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: VineTheme.lightText, fontSize: 15),
+              style: TextStyle(
+                color: context.vineColors.mutedText,
+                fontSize: 15,
+              ),
             ),
             const SizedBox(height: 16),
             DivineButton(label: actionLabel, onPressed: onAction),
@@ -300,21 +303,25 @@ class _AppsDirectoryIntro extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: VineTheme.outlineMuted),
+          border: Border.all(color: context.vineColors.outlineMuted),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               context.l10n.appsDirectoryIntroTitle,
-              style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+              style: VineTheme.headlineSmallFont(
+                color: context.vineColors.onSurface,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               context.l10n.appsDirectoryIntroBody,
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -337,8 +344,8 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
             Text(
               context.l10n.appsDirectoryUnsupportedTitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
               ),
@@ -347,7 +354,10 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
             Text(
               context.l10n.appsDirectoryUnsupportedSubtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: VineTheme.lightText, fontSize: 15),
+              style: TextStyle(
+                color: context.vineColors.mutedText,
+                fontSize: 15,
+              ),
             ),
           ],
         ),

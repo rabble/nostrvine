@@ -356,7 +356,7 @@ class VineBottomSheet extends StatelessWidget {
         top: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
       child: ColoredBox(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         child: scrollable
             ? _ScrollableContent(
                 showHeader: showHeader,
@@ -511,7 +511,7 @@ class _ScrollableContent extends StatelessWidget {
                         child: Text(
                           contentTitle!,
                           style: VineTheme.titleMediumFont(
-                            color: VineTheme.onSurface,
+                            color: context.vineColors.onSurface,
                           ),
                         ),
                       ),
@@ -521,7 +521,7 @@ class _ScrollableContent extends StatelessWidget {
               ),
         ),
         if (bottomInput != null)
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+          Divider(height: 2, color: context.vineColors.surfaceContainer),
 
         // Optional bottom input
         if (bottomInput != null)
@@ -618,7 +618,7 @@ class _FixedContent extends StatelessWidget {
                             child: Text(
                               contentTitle!,
                               style: VineTheme.titleMediumFont(
-                                color: VineTheme.onSurface,
+                                color: context.vineColors.onSurface,
                               ),
                             ),
                           ),
@@ -630,7 +630,7 @@ class _FixedContent extends StatelessWidget {
           ),
 
           if (bottomInput != null)
-            const Divider(height: 2, color: VineTheme.outlinedDisabled),
+            Divider(height: 2, color: context.vineColors.surfaceContainer),
 
           // Optional bottom input
           if (bottomInput != null)

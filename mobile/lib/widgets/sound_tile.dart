@@ -127,7 +127,7 @@ class SoundTile extends StatelessWidget {
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: VineTheme.cardBackground,
+            color: context.vineColors.card,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Padding(
@@ -142,8 +142,8 @@ class SoundTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   _displayTitle(context),
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                   ),
@@ -168,7 +168,7 @@ class SoundTile extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Material(
@@ -201,8 +201,8 @@ class SoundTile extends StatelessWidget {
                             Expanded(
                               child: Text(
                                 _displayTitle(context),
-                                style: const TextStyle(
-                                  color: VineTheme.whiteText,
+                                style: TextStyle(
+                                  color: context.vineColors.primaryText,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -236,11 +236,11 @@ class SoundTile extends StatelessWidget {
                             _displayTitle(context),
                           ),
                           button: true,
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
                             child: DivineIcon(
                               icon: DivineIconName.caretRight,
-                              color: VineTheme.lightText,
+                              color: context.vineColors.mutedText,
                             ),
                           ),
                         ),
@@ -291,7 +291,7 @@ class SoundTile extends StatelessWidget {
 
     return Text(
       parts.join(' · '),
-      style: const TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+      style: TextStyle(color: context.vineColors.secondaryText, fontSize: 13),
     );
   }
 }

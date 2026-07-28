@@ -64,9 +64,9 @@ class _HashtagSearchEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.search,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             size: 64,
           ),
           const SizedBox(height: 16),
@@ -76,7 +76,9 @@ class _HashtagSearchEmptyState extends StatelessWidget {
           ),
           Text(
             context.l10n.hashtagSearchSubtitle,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ],
       ),
@@ -189,9 +191,9 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.search,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             size: 64,
           ),
           const SizedBox(height: 16),
@@ -222,7 +224,9 @@ class _HashtagSearchErrorState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.hashtagSearchFailed,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
         ],
       ),

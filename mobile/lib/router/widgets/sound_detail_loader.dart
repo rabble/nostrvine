@@ -24,12 +24,12 @@ class SoundDetailLoader extends ConsumerWidget {
       data: (sound) {
         if (sound == null) {
           return Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
+            backgroundColor: context.vineColors.background,
             appBar: DiVineAppBar(title: context.l10n.soundDetailNotFoundTitle),
             body: Center(
               child: Text(
                 context.l10n.soundDetailNotFoundMessage,
-                style: const TextStyle(color: VineTheme.whiteText),
+                style: TextStyle(color: context.vineColors.primaryText),
               ),
             ),
           );
@@ -38,12 +38,12 @@ class SoundDetailLoader extends ConsumerWidget {
       },
       loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         appBar: DiVineAppBar(title: context.l10n.featureFlagError),
         body: Center(
           child: Text(
             context.l10n.soundDetailLoadError(error.toString()),
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
         ),
       ),

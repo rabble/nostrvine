@@ -38,7 +38,7 @@ class ProfileTabEmptyState extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: VineTheme.titleMediumFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
               ),
               const SizedBox(height: 8),
@@ -46,7 +46,7 @@ class ProfileTabEmptyState extends StatelessWidget {
                 subtitle,
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
               ),
             ],

@@ -76,7 +76,7 @@ class CrosspostSheetView extends StatelessWidget {
                     context.l10n.crosspostSheetSubtitle,
                     textAlign: TextAlign.center,
                     style: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -107,7 +107,7 @@ class CrosspostSheetView extends StatelessWidget {
                     _submitErrorText(context, state.submitError),
                     textAlign: TextAlign.center,
                     style: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -132,7 +132,7 @@ class CrosspostSheetView extends StatelessWidget {
                       context.l10n.crosspostStillWorking,
                       textAlign: TextAlign.center,
                       style: VineTheme.bodySmallFont(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                       ),
                     ),
                   ],
@@ -240,7 +240,7 @@ class _PlatformRow extends StatelessWidget {
                       Text(
                         account,
                         style: VineTheme.bodySmallFont(
-                          color: VineTheme.secondaryText,
+                          color: context.vineColors.secondaryText,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -299,7 +299,9 @@ class _JobRow extends StatelessWidget {
               Expanded(child: Text(name, style: VineTheme.titleMediumFont())),
               Text(
                 _statusLabel(context, job.status),
-                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.secondaryText,
+                ),
               ),
             ],
           ),
@@ -394,7 +396,9 @@ class _ReconnectPrompt extends StatelessWidget {
       children: [
         Text(
           context.l10n.crosspostReconnectPrompt(platformName),
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         DivineButton(
           label: context.l10n.crosspostReconnect,

@@ -123,10 +123,10 @@ class VineBottomSheetHeader extends StatelessWidget {
 
         // Divider separating header from content
         if (showDivider)
-          const Divider(
+          Divider(
             height: 2,
             thickness: 2,
-            color: VineTheme.outlinedDisabled,
+            color: context.vineColors.surfaceContainer,
           ),
       ],
     );

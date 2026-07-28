@@ -105,9 +105,9 @@ class ProfileSetupListeners extends ConsumerWidget {
                           color: VineTheme.vineGreen,
                           shape: BoxShape.circle,
                         ),
-                        child: const DivineIcon(
+                        child: DivineIcon(
                           icon: DivineIconName.check,
-                          color: VineTheme.whiteText,
+                          color: context.vineColors.primaryText,
                           size: 17,
                         ),
                       ),
@@ -118,7 +118,7 @@ class ProfileSetupListeners extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  backgroundColor: VineTheme.whiteText,
+                  backgroundColor: context.vineColors.primaryText,
                 ),
               );
               if (isNewUser) {
@@ -136,21 +136,21 @@ class ProfileSetupListeners extends ConsumerWidget {
               showDialog<void>(
                 context: context,
                 builder: (dialogContext) => AlertDialog(
-                  backgroundColor: VineTheme.cardBackground,
+                  backgroundColor: context.vineColors.card,
                   title: Text(
                     context.l10n.profileSetupCreateNewProfile,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                   ),
                   content: Text(
                     context.l10n.profileSetupNoExistingProfile,
-                    style: const TextStyle(color: VineTheme.secondaryText),
+                    style: TextStyle(color: context.vineColors.secondaryText),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       child: Text(
                         context.l10n.profileCancelButton,
-                        style: const TextStyle(color: VineTheme.lightText),
+                        style: TextStyle(color: context.vineColors.mutedText),
                       ),
                     ),
                     TextButton(

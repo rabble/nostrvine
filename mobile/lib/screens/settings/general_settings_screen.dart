@@ -42,7 +42,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -58,15 +58,15 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   ),
                   title: Text(
                     context.l10n.settingsBlueskyPublishing,
-                    style: _titleStyle,
+                    style: _titleStyleOf(context),
                   ),
                   subtitle: Text(
                     context.l10n.settingsBlueskyPublishingSubtitle,
-                    style: _subtitleStyle,
+                    style: _subtitleStyleOf(context),
                   ),
-                  trailing: const DivineIcon(
+                  trailing: DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.lightText,
+                    color: context.vineColors.mutedText,
                   ),
                   onTap: () => context.push(BlueskySettingsScreen.path),
                 ),
@@ -87,15 +87,15 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   ),
                   title: Text(
                     context.l10n.appearanceSettingsTitle,
-                    style: _titleStyle,
+                    style: _titleStyleOf(context),
                   ),
                   subtitle: Text(
                     context.l10n.appearanceSettingsSubtitle,
-                    style: _subtitleStyle,
+                    style: _subtitleStyleOf(context),
                   ),
-                  trailing: const DivineIcon(
+                  trailing: DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.lightText,
+                    color: context.vineColors.mutedText,
                   ),
                   onTap: () => context.push(AppearanceSettingsScreen.path),
                 ),
@@ -106,11 +106,11 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 ),
                 title: Text(
                   context.l10n.settingsStorageTitle,
-                  style: _titleStyle,
+                  style: _titleStyleOf(context),
                 ),
-                trailing: const DivineIcon(
+                trailing: DivineIcon(
                   icon: DivineIconName.caretRight,
-                  color: VineTheme.lightText,
+                  color: context.vineColors.mutedText,
                 ),
                 onTap: () => context.push(StorageManagementPage.path),
               ),
@@ -122,13 +122,14 @@ class GeneralSettingsScreen extends ConsumerWidget {
   }
 }
 
-const _titleStyle = TextStyle(
-  color: VineTheme.whiteText,
+TextStyle _titleStyleOf(BuildContext context) => TextStyle(
+  color: context.vineColors.primaryText,
   fontSize: 16,
   fontWeight: FontWeight.w500,
 );
 
-const _subtitleStyle = TextStyle(color: VineTheme.lightText, fontSize: 14);
+TextStyle _subtitleStyleOf(BuildContext context) =>
+    TextStyle(color: context.vineColors.mutedText, fontSize: 14);
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader(this.title);
@@ -163,7 +164,7 @@ class _ClosedCaptionsToggle extends ConsumerWidget {
       onChanged: (_) => ref.read(subtitleVisibilityProvider.notifier).toggle(),
       title: Text(
         context.l10n.generalSettingsClosedCaptions,
-        style: _titleStyle,
+        style: _titleStyleOf(context),
       ),
       subtitle: Text(context.l10n.generalSettingsClosedCaptionsSubtitle),
       activeThumbColor: VineTheme.vineGreen,
@@ -194,11 +195,14 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
         icon: DivineIconName.cropSquare,
         color: VineTheme.vineGreen,
       ),
-      title: Text(context.l10n.generalSettingsVideoShape, style: _titleStyle),
-      subtitle: Text(subtitle, style: _subtitleStyle),
-      trailing: const DivineIcon(
+      title: Text(
+        context.l10n.generalSettingsVideoShape,
+        style: _titleStyleOf(context),
+      ),
+      subtitle: Text(subtitle, style: _subtitleStyleOf(context)),
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: () => _showPicker(context, service),
     );
@@ -210,7 +214,7 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
   ) async {
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -223,14 +227,14 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               child: Text(
                 context.l10n.generalSettingsVideoShape,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const Divider(color: VineTheme.lightText, height: 1),
+            Divider(color: context.vineColors.mutedText, height: 1),
             RadioGroup<FeedAspectRatioPreference>(
               groupValue: service.preference,
               onChanged: (value) async {
@@ -281,8 +285,8 @@ class _FeedAspectRatioOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return RadioListTile<FeedAspectRatioPreference>(
       value: value,
-      title: Text(title, style: _titleStyle),
-      subtitle: Text(subtitle, style: _subtitleStyle),
+      title: Text(title, style: _titleStyleOf(context)),
+      subtitle: Text(subtitle, style: _subtitleStyleOf(context)),
       activeColor: VineTheme.vineGreen,
     );
   }
@@ -312,11 +316,11 @@ class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
       },
       title: Text(
         context.l10n.contentPreferencesAudioSharing,
-        style: _titleStyle,
+        style: _titleStyleOf(context),
       ),
       subtitle: Text(
         context.l10n.contentPreferencesAudioSharingSubtitle,
-        style: _subtitleStyle,
+        style: _subtitleStyleOf(context),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const DivineIcon(
@@ -343,11 +347,11 @@ class _LongPressRecordingToggle extends ConsumerWidget {
       },
       title: Text(
         context.l10n.generalSettingsHoldToRecord,
-        style: _titleStyle,
+        style: _titleStyleOf(context),
       ),
       subtitle: Text(
         context.l10n.generalSettingsHoldToRecordSubtitle,
-        style: _subtitleStyle,
+        style: _subtitleStyleOf(context),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const DivineIcon(
@@ -379,11 +383,14 @@ class _AppLanguageTile extends StatelessWidget {
             icon: DivineIconName.globe,
             color: VineTheme.vineGreen,
           ),
-          title: Text(context.l10n.settingsAppLanguage, style: _titleStyle),
-          subtitle: Text(subtitle, style: _subtitleStyle),
-          trailing: const DivineIcon(
+          title: Text(
+            context.l10n.settingsAppLanguage,
+            style: _titleStyleOf(context),
+          ),
+          subtitle: Text(subtitle, style: _subtitleStyleOf(context)),
+          trailing: DivineIcon(
             icon: DivineIconName.caretRight,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           onTap: () => context.push(AppLanguageScreen.path),
         );

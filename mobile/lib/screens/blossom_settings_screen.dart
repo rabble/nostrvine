@@ -77,7 +77,7 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
             SnackBar(
               content: Text(
                 context.l10n.blossomSettingsSaved,
-                style: const TextStyle(color: VineTheme.whiteText),
+                style: TextStyle(color: context.vineColors.primaryText),
               ),
               backgroundColor: VineTheme.vineGreen,
             ),
@@ -126,7 +126,7 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
                     ),
                   ],
           ),
-          backgroundColor: VineTheme.backgroundColor,
+          backgroundColor: context.vineColors.background,
           body: isLoading
               ? const Center(
                   child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -162,7 +162,7 @@ class _AboutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.backgroundColor.withValues(alpha: 0.7),
+      color: context.vineColors.background.withValues(alpha: 0.7),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
@@ -192,7 +192,10 @@ class _AboutCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               context.l10n.blossomAboutDescription,
-              style: const TextStyle(color: VineTheme.onSurface, fontSize: 14),
+              style: TextStyle(
+                color: context.vineColors.onSurface,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -212,20 +215,20 @@ class _EnableToggle extends StatelessWidget {
     return SwitchListTile(
       title: Text(
         context.l10n.blossomUseCustomServer,
-        style: const TextStyle(color: VineTheme.whiteText, fontSize: 16),
+        style: TextStyle(color: context.vineColors.primaryText, fontSize: 16),
       ),
       subtitle: Text(
         isEnabled
             ? context.l10n.blossomCustomServerEnabledSubtitle
             : context.l10n.blossomCustomServerDisabledSubtitle,
-        style: const TextStyle(color: VineTheme.onSurfaceMuted),
+        style: TextStyle(color: context.vineColors.onSurfaceMuted),
       ),
       value: isEnabled,
       onChanged: (value) =>
           context.read<BlossomSettingsCubit>().setEnabled(value),
       activeThumbColor: VineTheme.vineGreen,
-      inactiveThumbColor: VineTheme.lightText,
-      inactiveTrackColor: VineTheme.lightText.withValues(alpha: 0.3),
+      inactiveThumbColor: context.vineColors.mutedText,
+      inactiveTrackColor: context.vineColors.mutedText.withValues(alpha: 0.3),
     );
   }
 }
@@ -250,8 +253,8 @@ class _ServerUrlSection extends StatelessWidget {
       children: [
         Text(
           context.l10n.blossomCustomServerUrl,
-          style: const TextStyle(
-            color: VineTheme.whiteText,
+          style: TextStyle(
+            color: context.vineColors.primaryText,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -259,12 +262,12 @@ class _ServerUrlSection extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: TextStyle(color: context.vineColors.primaryText),
           decoration: InputDecoration(
             hintText: 'https://blossom.band',
-            hintStyle: const TextStyle(color: VineTheme.onSurfaceDisabled),
+            hintStyle: TextStyle(color: context.vineColors.disabled),
             filled: true,
-            fillColor: VineTheme.whiteText.withValues(alpha: 0.1),
+            fillColor: context.vineColors.surfaceContainer,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
@@ -292,16 +295,16 @@ class _ServerUrlSection extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           context.l10n.blossomCustomServerHelper,
-          style: const TextStyle(
-            color: VineTheme.onSurfaceMuted,
+          style: TextStyle(
+            color: context.vineColors.onSurfaceMuted,
             fontSize: 12,
           ),
         ),
         const SizedBox(height: 30),
         Text(
           context.l10n.blossomPopularServers,
-          style: const TextStyle(
-            color: VineTheme.whiteText,
+          style: TextStyle(
+            color: context.vineColors.primaryText,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -332,14 +335,17 @@ class _ServerOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.whiteText.withValues(alpha: 0.05),
+      color: context.vineColors.surfaceContainer,
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(name, style: const TextStyle(color: VineTheme.whiteText)),
+        title: Text(
+          name,
+          style: TextStyle(color: context.vineColors.primaryText),
+        ),
         subtitle: Text(
           url,
-          style: const TextStyle(
-            color: VineTheme.onSurfaceMuted,
+          style: TextStyle(
+            color: context.vineColors.onSurfaceMuted,
             fontSize: 12,
           ),
         ),

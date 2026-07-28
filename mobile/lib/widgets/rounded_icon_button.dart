@@ -42,9 +42,9 @@ class RoundedIconButton extends StatelessWidget {
         width: 48,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
+          color: context.vineColors.surfaceContainer,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+          border: Border.all(color: context.vineColors.outlineMuted, width: 2),
           boxShadow: const [
             BoxShadow(
               color: VineTheme.innerShadow,

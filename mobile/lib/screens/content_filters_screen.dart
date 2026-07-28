@@ -69,7 +69,7 @@ class ContentFiltersView extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -123,22 +123,22 @@ class _AgeGateBanner extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VineTheme.onSurfaceDisabled, width: 0.5),
+        border: Border.all(color: context.vineColors.disabled, width: 0.5),
       ),
       child: Row(
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.lockSimple,
-            color: VineTheme.onSurfaceMuted,
+            color: context.vineColors.onSurfaceMuted,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               context.l10n.contentFiltersAgeGateMessage,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 13,
               ),
             ),
@@ -234,8 +234,8 @@ class _ContentFilterRow extends StatelessWidget {
               localizedContentLabelName(context.l10n, label),
               style: TextStyle(
                 color: locked
-                    ? VineTheme.onSurfaceDisabled
-                    : VineTheme.whiteText,
+                    ? context.vineColors.disabled
+                    : context.vineColors.primaryText,
                 fontSize: 15,
               ),
             ),
@@ -266,9 +266,9 @@ class _FilterSegmentedControl extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.onSurfaceDisabled, width: 0.5),
+        border: Border.all(color: context.vineColors.disabled, width: 0.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -333,10 +333,10 @@ class _FilterSegment extends StatelessWidget {
           _label,
           style: TextStyle(
             color: _locked
-                ? VineTheme.onSurfaceDisabled
+                ? context.vineColors.disabled
                 : _selected
-                ? VineTheme.backgroundColor
-                : VineTheme.secondaryText,
+                ? context.vineColors.background
+                : context.vineColors.secondaryText,
             fontSize: 12,
             fontWeight: _selected ? FontWeight.w600 : FontWeight.w400,
           ),

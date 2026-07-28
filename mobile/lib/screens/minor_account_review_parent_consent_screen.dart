@@ -23,7 +23,7 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
         title: context.l10n.minorAccountReviewTitle,
         showBackButton: true,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -44,9 +44,9 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
                       '${context.l10n.minorAccountReviewParentConsentHonestyBody}'
                       '\n\n'
                       '${context.l10n.minorAccountReviewParentConsentBody}',
-                  backgroundColor: VineTheme.inverseSurface,
-                  borderColor: VineTheme.inverseOnSurface,
-                  textColor: VineTheme.inverseOnSurface,
+                  backgroundColor: context.vineColors.inverseSurface,
+                  borderColor: context.vineColors.inverseOnSurface,
+                  textColor: context.vineColors.inverseOnSurface,
                 ),
                 const SizedBox(height: 16),
                 _ChecklistCard(
@@ -160,7 +160,7 @@ class _ChecklistCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -189,7 +189,7 @@ class _ChecklistCard extends StatelessWidget {
                     child: Text(
                       item,
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.lightText,
+                        color: context.vineColors.mutedText,
                       ),
                     ),
                   ),

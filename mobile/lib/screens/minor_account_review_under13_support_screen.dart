@@ -36,7 +36,7 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
         onBackPressed: () =>
             context.safePop(fallback: MinorAccountReviewScreen.path),
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -98,7 +98,7 @@ class _Under13SupportBody extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           l10n.minorAccountReviewUnder13SupportBody,
-          style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+          style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
         ),
         const SizedBox(height: 24),
         _ValueCard(
@@ -125,7 +125,7 @@ class _Under13SupportBody extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           l10n.minorAccountReviewUnder13Instructions,
-          style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+          style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
         ),
         const SizedBox(height: 24),
         DivineButton(
@@ -199,7 +199,7 @@ class _ValueCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -211,7 +211,7 @@ class _ValueCard extends StatelessWidget {
                 Text(
                   title,
                   style: VineTheme.labelMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -263,7 +263,9 @@ class _MinorAccountReviewLoadErrorView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             body,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),

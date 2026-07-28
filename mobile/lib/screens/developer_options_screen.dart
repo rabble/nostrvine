@@ -142,7 +142,7 @@ class _DeveloperOptionsScreenState
     final slowestRecords = PageLoadHistory().getSlowest(5);
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.devOptionsTitle,
         showBackButton: true,
@@ -168,16 +168,16 @@ class _DeveloperOptionsScreenState
                   ),
                   title: Text(
                     env.displayName,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     env.relayUrl,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -192,7 +192,7 @@ class _DeveloperOptionsScreenState
               }),
 
               // Divider between environments and page load times
-              const Divider(color: VineTheme.outlineVariant, height: 32),
+              Divider(color: context.vineColors.outline, height: 32),
 
               // Page Load Times section header
               Padding(
@@ -216,8 +216,8 @@ class _DeveloperOptionsScreenState
                   padding: const EdgeInsets.all(16),
                   child: Text(
                     context.l10n.devOptionsNoPageLoads,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -227,16 +227,16 @@ class _DeveloperOptionsScreenState
                   return ListTile(
                     title: Text(
                       _recordTitle(record),
-                      style: const TextStyle(
-                        color: VineTheme.primaryText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     subtitle: Text(
                       _recordDetailsText(context, record),
-                      style: const TextStyle(
-                        color: VineTheme.secondaryText,
+                      style: TextStyle(
+                        color: context.vineColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -253,7 +253,7 @@ class _DeveloperOptionsScreenState
 
               // Slowest Screens subsection
               if (slowestRecords.isNotEmpty) ...[
-                const Divider(color: VineTheme.outlineVariant, height: 32),
+                Divider(color: context.vineColors.outline, height: 32),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -276,8 +276,8 @@ class _DeveloperOptionsScreenState
                   return ListTile(
                     title: Text(
                       _recordTitle(record),
-                      style: const TextStyle(
-                        color: VineTheme.primaryText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
@@ -301,7 +301,7 @@ class _DeveloperOptionsScreenState
                 }),
               ],
 
-              const Divider(color: VineTheme.outlineVariant, height: 32),
+              Divider(color: context.vineColors.outline, height: 32),
 
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -324,16 +324,16 @@ class _DeveloperOptionsScreenState
                 return ListTile(
                   title: Text(
                     option.label,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     option.urlPattern,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -348,7 +348,7 @@ class _DeveloperOptionsScreenState
               }),
 
               if (kDebugMode) ...[
-                const Divider(color: VineTheme.outlineVariant, height: 32),
+                Divider(color: context.vineColors.outline, height: 32),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -366,8 +366,8 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsMinorReviewCurrentStateLabel,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -384,8 +384,8 @@ class _DeveloperOptionsScreenState
                       error: (error, stackTrace) =>
                           context.l10n.devOptionsMinorReviewStateError,
                     ),
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -393,16 +393,16 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsMinorReviewClearTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     context.l10n.devOptionsMinorReviewClearSubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -411,16 +411,16 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsMinorReviewTeenTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     context.l10n.devOptionsMinorReviewTeenSubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -429,16 +429,16 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsMinorReviewUnder13Title,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     context.l10n.devOptionsMinorReviewUnder13Subtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -448,7 +448,7 @@ class _DeveloperOptionsScreenState
                 // debug-only ProtectedMinorOverrideService so QA can exercise
                 // the #175/#176 protections without a real approved-minor
                 // account. Sibling of the review simulation above.
-                const Divider(color: VineTheme.outlineVariant, height: 32),
+                Divider(color: context.vineColors.outline, height: 32),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -466,16 +466,16 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsProtectedMinorCurrentStateLabel,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     _protectedMinorStateText(context),
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -483,16 +483,16 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsProtectedMinorSimulateTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     context.l10n.devOptionsProtectedMinorSimulateSubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -501,8 +501,8 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsProtectedMinorSimulateNonMinorTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -511,8 +511,8 @@ class _DeveloperOptionsScreenState
                     context
                         .l10n
                         .devOptionsProtectedMinorSimulateNonMinorSubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -521,16 +521,16 @@ class _DeveloperOptionsScreenState
                 ListTile(
                   title: Text(
                     context.l10n.devOptionsProtectedMinorClearTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     context.l10n.devOptionsProtectedMinorClearSubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -538,7 +538,7 @@ class _DeveloperOptionsScreenState
                 ),
               ],
 
-              const Divider(color: VineTheme.outlineVariant, height: 32),
+              Divider(color: context.vineColors.outline, height: 32),
               ListTile(
                 leading: const DivineIcon(
                   icon: DivineIconName.bracketsAngle,
@@ -554,8 +554,8 @@ class _DeveloperOptionsScreenState
                 ),
                 subtitle: Text(
                   context.l10n.devOptionsDisableDeveloperModeSubtitle,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                 ),
@@ -620,23 +620,23 @@ class _DeveloperOptionsScreenState
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.devOptionsSwitchEnvironmentTitle,
-          style: const TextStyle(color: VineTheme.primaryText),
+          style: TextStyle(color: context.vineColors.primaryText),
         ),
         content: Text(
           context.l10n.devOptionsSwitchEnvironmentMessage(
             newConfig.displayName,
           ),
-          style: const TextStyle(color: VineTheme.onSurfaceVariant),
+          style: TextStyle(color: context.vineColors.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
             child: Text(
               context.l10n.devOptionsCancel,
-              style: const TextStyle(color: VineTheme.onSurfaceVariant),
+              style: TextStyle(color: context.vineColors.onSurfaceVariant),
             ),
           ),
           ElevatedButton(
@@ -646,7 +646,7 @@ class _DeveloperOptionsScreenState
             ),
             child: Text(
               context.l10n.devOptionsSwitch,
-              style: const TextStyle(color: VineTheme.primaryText),
+              style: TextStyle(color: context.vineColors.primaryText),
             ),
           ),
         ],

@@ -45,7 +45,7 @@ class _WebsiteFieldState extends State<WebsiteField> {
             style: VineTheme.labelMediumFont(
               color: _focusNode.hasFocus
                   ? VineTheme.primary
-                  : VineTheme.onSurfaceMuted,
+                  : context.vineColors.onSurfaceMuted,
             ),
           ),
         ),
@@ -53,12 +53,12 @@ class _WebsiteFieldState extends State<WebsiteField> {
           controller: widget.controller,
           focusNode: _focusNode,
           style: VineTheme.bodyLargeFont(
-            color: VineTheme.onSurface,
+            color: context.vineColors.onSurface,
           ),
           decoration: InputDecoration(
             isCollapsed: true,
             hintText: context.l10n.profileSetupWebsiteHint,
-            hintStyle: profileFieldHintStyle,
+            hintStyle: profileFieldHintStyleOf(context),
             border: profileFieldBorder,
             enabledBorder: profileFieldBorder,
             focusedBorder: profileFieldBorder,

@@ -73,7 +73,7 @@ class _CollaboratorInviteCardState extends State<CollaboratorInviteCard> {
         senderDisplayName: widget.senderDisplayName,
         action: _StatusText(
           label: context.l10n.inboxCollabInviteSentStatus,
-          color: VineTheme.onSurfaceMuted,
+          color: context.vineColors.onSurfaceMuted,
         ),
       );
     }
@@ -160,11 +160,11 @@ class _CardChrome extends ConsumerWidget {
             maxWidth: maxCardWidth,
           ),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainerHigh,
+            color: context.vineColors.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(16),
           ),
           foregroundDecoration: BoxDecoration(
-            border: Border.all(color: VineTheme.outlineMuted),
+            border: Border.all(color: context.vineColors.outlineMuted),
             borderRadius: BorderRadius.circular(16),
           ),
           clipBehavior: Clip.antiAlias,
@@ -325,13 +325,13 @@ class _InviteThumbnailPreview extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           if (thumbnailUrl == null)
-            const ColoredBox(
-              key: ValueKey('collaborator_invite_video_placeholder'),
-              color: VineTheme.surfaceContainer,
+            ColoredBox(
+              key: const ValueKey('collaborator_invite_video_placeholder'),
+              color: context.vineColors.surfaceContainer,
               child: Center(
                 child: DivineIcon(
                   icon: DivineIconName.videoCamera,
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                   size: 32,
                 ),
               ),
@@ -343,11 +343,11 @@ class _InviteThumbnailPreview extends StatelessWidget {
               child: VineCachedImage(
                 key: const ValueKey('collaborator_invite_thumbnail'),
                 imageUrl: thumbnailUrl!,
-                placeholder: (context, url) => const ColoredBox(
-                  color: VineTheme.surfaceContainer,
+                placeholder: (context, url) => ColoredBox(
+                  color: context.vineColors.surfaceContainer,
                 ),
-                errorWidget: (context, url, error) => const ColoredBox(
-                  color: VineTheme.surfaceContainer,
+                errorWidget: (context, url, error) => ColoredBox(
+                  color: context.vineColors.surfaceContainer,
                 ),
               ),
             ),
@@ -465,7 +465,7 @@ class _InvitePlayBadge extends StatelessWidget {
         height: 48,
         child: DivineIcon(
           icon: DivineIconName.playFill,
-          color: VineTheme.backgroundColor,
+          color: VineTheme.onPrimary,
           size: 32,
         ),
       ),
@@ -506,7 +506,9 @@ class _InviteCopy extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           consequence,
-          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         ),
       ],
     );
@@ -532,7 +534,7 @@ class _InviteActions extends StatelessWidget {
       ),
       CollaboratorInviteState.ignored => _StatusText(
         label: l10n.inboxCollabInviteIgnoredStatus,
-        color: VineTheme.onSurfaceMuted,
+        color: context.vineColors.onSurfaceMuted,
       ),
       CollaboratorInviteState.failed => Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -521,7 +521,7 @@ class _VideoGridTile extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
-          decoration: const BoxDecoration(color: VineTheme.cardBackground),
+          decoration: BoxDecoration(color: context.vineColors.card),
           child: ProfileTabThumbnail(
             thumbnailUrl: videoEvent.thumbnailUrl,
             blurhash: videoEvent.blurhash,
@@ -594,7 +594,7 @@ class _OwnVideoActionTile extends StatelessWidget {
           height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: VineTheme.cardBackground,
+            color: context.vineColors.card,
             borderRadius: BorderRadius.circular(8),
           ),
           child: DivineIcon(icon: icon, color: iconColor, size: 20),
@@ -602,7 +602,9 @@ class _OwnVideoActionTile extends StatelessWidget {
         title: Text(title, style: VineTheme.titleMediumFont()),
         subtitle: Text(
           subtitle,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         onTap: () {
           Navigator.of(context).pop();
@@ -670,12 +672,12 @@ class _PendingCollaboratorInviteBanner extends ConsumerWidget {
                   builder: (context, state) {
                     return DecoratedBox(
                       decoration: BoxDecoration(
-                        color: VineTheme.surfaceContainer,
+                        color: context.vineColors.surfaceContainer,
                         borderRadius: BorderRadius.circular(
                           _PendingInviteBannerTokens.borderRadius,
                         ),
                         border: Border.all(
-                          color: VineTheme.outlineMuted,
+                          color: context.vineColors.outlineMuted,
                           width: _PendingInviteBannerTokens.borderWidth,
                         ),
                       ),
@@ -711,7 +713,7 @@ class _PendingCollaboratorInviteBanner extends ConsumerWidget {
                                           group.inviteCount,
                                         ),
                                     style: VineTheme.titleMediumFont(
-                                      color: VineTheme.onSurface,
+                                      color: context.vineColors.onSurface,
                                     ),
                                   ),
                                   const SizedBox(
@@ -728,7 +730,8 @@ class _PendingCollaboratorInviteBanner extends ConsumerWidget {
                                                 title,
                                               ),
                                     style: VineTheme.bodySmallFont(
-                                      color: VineTheme.onSurfaceVariant,
+                                      color:
+                                          context.vineColors.onSurfaceVariant,
                                     ),
                                   ),
                                 ],

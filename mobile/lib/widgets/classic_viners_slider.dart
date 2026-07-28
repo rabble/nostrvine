@@ -29,7 +29,7 @@ class ClassicVinersSlider extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.only(top: 16),
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -86,7 +86,7 @@ class _VinersLoadingPlaceholder extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: VineTheme.cardBackground,
+                  color: context.vineColors.card,
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
@@ -95,7 +95,7 @@ class _VinersLoadingPlaceholder extends StatelessWidget {
                 width: 50,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: VineTheme.cardBackground,
+                  color: context.vineColors.card,
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),

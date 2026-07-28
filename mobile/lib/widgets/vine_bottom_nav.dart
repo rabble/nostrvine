@@ -116,7 +116,9 @@ class VineBottomNav extends ConsumerWidget {
       (HomeFeedRetapCubit cubit) => cubit.state.isRefreshing,
     );
     return ColoredBox(
-      color: VineTheme.surfaceBackground,
+      // The bottom nav keeps the dark brand green in both appearance
+      // modes (same value the shell paints behind its rounded corners).
+      color: VineTheme.navGreen,
       // The bottom nav has no Container padding — all four edges of the
       // breathing room around the icons are folded into adjacent tab hit
       // targets (see [_kTopExtraTapHeight], [_kBottomExtraTapHeight],

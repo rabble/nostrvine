@@ -135,7 +135,9 @@ class _ActionPrompt extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),

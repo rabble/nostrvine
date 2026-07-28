@@ -76,7 +76,7 @@ class _OthersFollowingView extends ConsumerWidget {
         : context.l10n.followingTitle;
 
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         titleWidget:
             FollowerCountTitle<OthersFollowingBloc, OthersFollowingState>(
@@ -198,16 +198,16 @@ class _FollowingEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.userPlus,
             size: 64,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.followingEmptyTitle,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 16,
             ),
           ),
@@ -228,16 +228,16 @@ class _FollowingErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.warningCircle,
             size: 64,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.followingFailedToLoadList,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 16,
             ),
           ),

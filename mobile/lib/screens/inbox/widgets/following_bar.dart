@@ -29,9 +29,9 @@ class FollowingBar extends StatelessWidget {
         if (followingPubkeys.isEmpty) return const SizedBox.shrink();
 
         return DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+              bottom: BorderSide(color: context.vineColors.outlineDisabled),
             ),
           ),
           child: SizedBox(
@@ -102,8 +102,10 @@ class _FollowingUserButton extends ConsumerWidget {
             Text(
               displayName,
               textScaler: TextScaler.noScaling,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant)
-                  .copyWith(
+              style:
+                  VineTheme.bodySmallFont(
+                    color: context.vineColors.onSurfaceVariant,
+                  ).copyWith(
                     fontSize: MediaQuery.textScalerOf(
                       context,
                     ).scale(VineTheme.bodySmallFont().fontSize!).clamp(0, 18),

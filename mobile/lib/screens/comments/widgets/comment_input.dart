@@ -214,7 +214,7 @@ class _CommentInputState extends State<CommentInput> {
             ),
             child: Container(
               decoration: BoxDecoration(
-                color: VineTheme.iconButtonBackground,
+                color: context.vineColors.iconButton,
                 borderRadius: BorderRadius.circular(20),
               ),
               constraints: const BoxConstraints(minHeight: 48),
@@ -295,15 +295,15 @@ class _VideoReplyButton extends StatelessWidget {
             height: 40,
             margin: const EdgeInsets.only(bottom: 4),
             decoration: BoxDecoration(
-              color: VineTheme.containerLow,
+              color: context.vineColors.containerLow,
               borderRadius: BorderRadius.circular(17),
             ),
             child: IconButton(
               onPressed: onPressed,
               padding: EdgeInsets.zero,
-              icon: const DivineIcon(
+              icon: DivineIcon(
                 icon: DivineIconName.videoCamera,
-                color: VineTheme.whiteText,
+                color: context.vineColors.primaryText,
                 size: 22,
               ),
             ),
@@ -368,7 +368,7 @@ class _CommentTextField extends StatelessWidget {
               : TextInputAction.send,
           onSubmitted: isComposingMultiline ? null : (_) => onSubmitted(),
           enableInteractiveSelection: true,
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           cursorColor: VineTheme.tabIndicatorGreen,
           decoration: InputDecoration(
             hintText: hintText,
@@ -405,7 +405,7 @@ class _KeyboardDismissButton extends StatelessWidget {
         height: 40,
         margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
-          color: VineTheme.containerLow,
+          color: context.vineColors.containerLow,
           borderRadius: BorderRadius.circular(17),
         ),
         child: IconButton(
@@ -413,9 +413,9 @@ class _KeyboardDismissButton extends StatelessWidget {
           padding: EdgeInsets.zero,
           // Use the design-system icon set for new UI so the bottom-sheet input
           // stays visually consistent with the rest of Divine.
-          icon: const DivineIcon(
+          icon: DivineIcon(
             icon: DivineIconName.caretDown,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
             size: 22,
           ),
         ),
@@ -461,9 +461,9 @@ class _SendButton extends StatelessWidget {
         child: IconButton(
           onPressed: onSubmit,
           padding: EdgeInsets.zero,
-          icon: const DivineIcon(
+          icon: DivineIcon(
             icon: DivineIconName.arrowUp,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
             size: 20,
           ),
         ),

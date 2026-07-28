@@ -125,7 +125,7 @@ class UserProfileTile extends ConsumerWidget {
                     Text(
                       displayName,
                       style: VineTheme.titleSmallFont(
-                        color: VineTheme.onSurface,
+                        color: context.vineColors.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -133,7 +133,7 @@ class UserProfileTile extends ConsumerWidget {
                     Text(
                       uniqueIdentifier,
                       style: VineTheme.bodySmallFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -146,11 +146,11 @@ class UserProfileTile extends ConsumerWidget {
               if (showAddToList) ...[
                 const SizedBox(width: 4),
                 IconButton(
-                  icon: const DivineIcon(
+                  icon: DivineIcon(
                     icon: DivineIconName.listPlus,
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                   tooltip: context.l10n.peopleListsAddToList,
                   onPressed: () => AddToPeopleListsSheet.show(
                     context,
@@ -224,9 +224,12 @@ class _FollowButton extends StatelessWidget {
             height: 48,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: VineTheme.outlineMuted, width: 2),
+              border: Border.all(
+                color: context.vineColors.outlineMuted,
+                width: 2,
+              ),
             ),
             child: SvgPicture.asset(
               DivineIconName.userMinus.assetPath,

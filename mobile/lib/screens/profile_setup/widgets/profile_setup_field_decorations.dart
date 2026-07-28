@@ -8,4 +8,5 @@ const profileFieldBorder = UnderlineInputBorder(
 );
 
 /// Shared hint text style for the profile-setup form fields.
-const profileFieldHintStyle = TextStyle(color: VineTheme.lightText);
+TextStyle profileFieldHintStyleOf(BuildContext context) =>
+    TextStyle(color: context.vineColors.mutedText);

@@ -168,7 +168,7 @@ class _ProfileBadgeChip extends StatelessWidget {
       button: true,
       label: l10n.profileBadgeSemanticLabel(badge.displayName),
       child: Material(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
           side: const BorderSide(color: VineTheme.neutral10),
@@ -309,7 +309,7 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
                         Text(
                           badge.displayName,
                           style: VineTheme.titleMediumFont(
-                            color: VineTheme.onSurface,
+                            color: context.vineColors.onSurface,
                           ),
                         ),
                         if (description != null && description.isNotEmpty) ...[
@@ -317,7 +317,7 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
                           Text(
                             description,
                             style: VineTheme.bodyMediumFont(
-                              color: VineTheme.onSurfaceVariant,
+                              color: context.vineColors.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -352,7 +352,7 @@ class _ProfileBadgeDetailsSheet extends StatelessWidget {
                     child: Text(
                       l10n.profileBadgeMoreRecipients(hiddenRecipientCount),
                       style: VineTheme.bodySmallFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -376,7 +376,9 @@ class _ProfileBadgeSheetSectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(left: 16, bottom: 2),
       child: Text(
         text,
-        style: VineTheme.labelMediumFont(color: VineTheme.onSurfaceVariant),
+        style: VineTheme.labelMediumFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
       ),
     );
   }

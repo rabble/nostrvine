@@ -72,7 +72,7 @@ class RequestPreviewView extends ConsumerWidget {
         UserProfile.defaultDisplayNameFor(otherPubkey);
 
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: displayName,
         showBackButton: true,
@@ -83,7 +83,7 @@ class RequestPreviewView extends ConsumerWidget {
           top: Radius.circular(VineTheme.bottomSheetBorderRadius),
         ),
         child: ColoredBox(
-          color: VineTheme.surfaceContainerHigh,
+          color: context.vineColors.surfaceContainerHigh,
           child: Column(
             children: [
               Expanded(
@@ -156,7 +156,7 @@ class _ProfileContent extends StatelessWidget {
                 Text(
                   nip05,
                   style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
@@ -257,7 +257,9 @@ class _StatsLine extends StatelessWidget {
 
     return Text(
       parts.join(' \u2022 '),
-      style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+      style: VineTheme.bodySmallFont(
+        color: context.vineColors.onSurfaceVariant,
+      ),
       textAlign: TextAlign.center,
     );
   }
@@ -280,7 +282,9 @@ class _MessageCountDescription extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         context.l10n.messageRequestWantsToMessageYou(displayName, msgText),
-        style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        style: VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
         textAlign: TextAlign.center,
       ),
     );
@@ -380,8 +384,11 @@ class _OutlinedActionButton extends StatelessWidget {
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
-            border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            color: context.vineColors.surfaceContainer,
+            border: Border.all(
+              color: context.vineColors.outlineMuted,
+              width: 2,
+            ),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
@@ -415,8 +422,11 @@ class _SecondaryActionButton extends StatelessWidget {
           onTap: onTap,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
-              border: Border.all(color: VineTheme.outlineMuted, width: 2),
+              color: context.vineColors.surfaceContainer,
+              border: Border.all(
+                color: context.vineColors.outlineMuted,
+                width: 2,
+              ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Padding(

@@ -141,7 +141,7 @@ class _TagsSkeletonLoader extends StatelessWidget {
         identifier: 'tags_loading_indicator',
         label: context.l10n.searchTagsLoadingLabel,
         child: Skeletonizer(
-          effect: vineSkeletonEffect,
+          effect: vineSkeletonEffectOf(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Wrap(
@@ -171,7 +171,7 @@ class _TagChipSkeletonItem extends StatelessWidget {
         width: width,
         height: 36,
         decoration: BoxDecoration(
-          color: VineTheme.skeletonSurface,
+          color: context.vineColors.skeleton,
           borderRadius: BorderRadius.circular(16),
         ),
       ),

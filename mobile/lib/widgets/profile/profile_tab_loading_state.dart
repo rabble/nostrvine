@@ -34,7 +34,7 @@ class ProfileTabLoadingState extends StatelessWidget {
                 Text(
                   message!,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ),
             ],

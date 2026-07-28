@@ -37,7 +37,7 @@ class SupportCenterScreen extends ConsumerWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -281,18 +281,18 @@ class _SupportTile extends StatelessWidget {
       title: Text(
         title,
         style: TextStyle(
-          color: titleColor ?? VineTheme.whiteText,
+          color: titleColor ?? context.vineColors.primaryText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: onTap,
     );

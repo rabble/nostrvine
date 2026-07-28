@@ -103,7 +103,9 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-        color: isSelected ? VineTheme.surfaceContainer : VineTheme.transparent,
+        color: isSelected
+            ? context.vineColors.surfaceContainer
+            : VineTheme.transparent,
         child: InkWell(
           onTap: onTap,
           child: Container(
@@ -116,14 +118,14 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
                     padding: const EdgeInsetsDirectional.only(end: 12),
                     child: DivineIcon(
                       icon: leadingIcon!,
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                   ),
                 Expanded(
                   child: Text(
                     label,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                   ),
                 ),

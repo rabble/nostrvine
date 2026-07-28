@@ -122,7 +122,7 @@ class _UploadFailureSheetContent extends StatelessWidget {
               Text(
                 errorMessage,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 textAlign: .center,
               ),

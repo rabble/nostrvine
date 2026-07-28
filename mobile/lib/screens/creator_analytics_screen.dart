@@ -89,7 +89,9 @@ class _CreatorAnalyticsScreenState
           title: context.l10n.analyticsViewDataTitle,
           child: Text(
             context.l10n.analyticsViewDataUnavailable,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
         ),
       ],
@@ -137,7 +139,9 @@ class _CreatorAnalyticsScreenState
           const SizedBox(height: 8),
           Text(
             context.l10n.analyticsAudiencePlaceholder,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
         ],
       ),
@@ -151,7 +155,9 @@ class _CreatorAnalyticsScreenState
         summary.hasViewData
             ? context.l10n.analyticsRetentionWithViews
             : context.l10n.analyticsRetentionWithoutViews,
-        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+        style: VineTheme.bodySmallFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
       ),
     );
   }
@@ -159,7 +165,7 @@ class _CreatorAnalyticsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.analyticsTitle,
         showBackButton: true,
@@ -255,7 +261,7 @@ class _CreatorAnalyticsScreenState
                         _formatLastUpdated(context.l10n, data.fetchedAt),
                       ),
                       style: VineTheme.bodySmallFont(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                     ),
                   ],
@@ -283,16 +289,18 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.analytics_outlined,
-              color: VineTheme.onSurfaceMuted,
+              color: context.vineColors.onSurfaceMuted,
               size: 40,
             ),
             const SizedBox(height: 12),
             Text(
               '$error',
               textAlign: TextAlign.center,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -328,10 +336,14 @@ class _RangeSelector extends StatelessWidget {
           selected: isSelected,
           selectedColor: VineTheme.vineGreen.withValues(alpha: 0.2),
           labelStyle: VineTheme.bodySmallFont(
-            color: isSelected ? VineTheme.whiteText : VineTheme.onSurfaceMuted,
+            color: isSelected
+                ? context.vineColors.primaryText
+                : context.vineColors.onSurfaceMuted,
           ),
           side: BorderSide(
-            color: isSelected ? VineTheme.vineGreen : VineTheme.outlineMuted,
+            color: isSelected
+                ? VineTheme.vineGreen
+                : context.vineColors.outlineMuted,
           ),
           onSelected: (_) => onSelected(window),
         );
@@ -407,7 +419,9 @@ class _DiagnosticsPanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             context.l10n.analyticsDiagnosticsSources(sourceText),
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
           const SizedBox(height: 10),
           Row(
@@ -517,9 +531,9 @@ class _KpiCard extends StatelessWidget {
       width: width,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -530,7 +544,9 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
         ],
       ),
@@ -603,7 +619,9 @@ class _BreakdownRow extends StatelessWidget {
             const Spacer(),
             Text(
               '${StringUtils.formatCompactNumber(value)} (${(share * 100).toStringAsFixed(1)}%)',
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
           ],
         ),
@@ -612,7 +630,7 @@ class _BreakdownRow extends StatelessWidget {
           value: share,
           minHeight: 8,
           borderRadius: BorderRadius.circular(999),
-          backgroundColor: VineTheme.outlineMuted,
+          backgroundColor: context.vineColors.outlineMuted,
           valueColor: AlwaysStoppedAnimation<Color>(color),
         ),
       ],
@@ -715,7 +733,9 @@ class _HighlightRow extends StatelessWidget {
               width: 112,
               child: Text(
                 label,
-                style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurfaceMuted,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -754,7 +774,9 @@ class _TopVideosList extends StatelessWidget {
       child: topVideos.isEmpty
           ? Text(
               context.l10n.analyticsPublishPrompt,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -764,7 +786,7 @@ class _TopVideosList extends StatelessWidget {
                       ? context.l10n.analyticsEngagementRateExplainer
                       : context.l10n.analyticsEngagementRateNoViews,
                   style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -777,7 +799,7 @@ class _TopVideosList extends StatelessWidget {
                         context.l10n.analyticsEngagementLabel,
                         textAlign: TextAlign.right,
                         style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceMuted,
+                          color: context.vineColors.onSurfaceMuted,
                         ),
                       ),
                     ),
@@ -844,7 +866,7 @@ class _TopVideoRow extends StatelessWidget {
                     '${performance.views != null ? context.l10n.analyticsViewsCount(StringUtils.formatCompactNumber(performance.views!)) : context.l10n.analyticsViewsUnavailable} \u2022 '
                     '${context.l10n.analyticsInteractionsCount(StringUtils.formatCompactNumber(performance.interactions))}',
                     style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                   ),
                 ],
@@ -882,7 +904,7 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
     final repostShare = total == 0 ? 0.0 : reposts / total;
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.analyticsPostAnalytics,
         showBackButton: true,
@@ -968,12 +990,14 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                               },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: VineTheme.whiteText,
-                          side: const BorderSide(color: VineTheme.outlineMuted),
+                          side: BorderSide(
+                            color: context.vineColors.outlineMuted,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                        icon: const DivineIcon(
+                        icon: DivineIcon(
                           icon: DivineIconName.playCircle,
-                          color: VineTheme.whiteText,
+                          color: context.vineColors.primaryText,
                         ),
                         label: Text(context.l10n.analyticsOpenPost),
                       ),
@@ -1000,9 +1024,9 @@ class _MetricPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1010,7 +1034,9 @@ class _MetricPill extends StatelessWidget {
           Text(value, style: VineTheme.titleSmallFont()),
           Text(
             label,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
         ],
       ),
@@ -1039,7 +1065,9 @@ class _DailyTrendCard extends StatelessWidget {
       child: points.isEmpty
           ? Text(
               context.l10n.analyticsNoActivityYet,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1047,14 +1075,14 @@ class _DailyTrendCard extends StatelessWidget {
                 Text(
                   context.l10n.analyticsDailyInteractionsExplainer,
                   style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   context.l10n.analyticsDailyBarExplainer,
                   style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -1071,7 +1099,7 @@ class _DailyTrendCard extends StatelessWidget {
                           child: Text(
                             point.axisLabel(locale),
                             style: VineTheme.bodySmallFont(
-                              color: VineTheme.onSurfaceMuted,
+                              color: context.vineColors.onSurfaceMuted,
                             ),
                           ),
                         ),
@@ -1081,7 +1109,7 @@ class _DailyTrendCard extends StatelessWidget {
                             value: ratio,
                             minHeight: 7,
                             borderRadius: BorderRadius.circular(999),
-                            backgroundColor: VineTheme.outlineMuted,
+                            backgroundColor: context.vineColors.outlineMuted,
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               VineTheme.vineGreen,
                             ),
@@ -1117,9 +1145,9 @@ class _AnalyticsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

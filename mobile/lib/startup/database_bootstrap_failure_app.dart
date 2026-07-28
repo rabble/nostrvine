@@ -67,7 +67,7 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -83,23 +83,23 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
                       size: 48,
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       "couldn't unlock your local database",
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: VineTheme.primaryText,
+                        color: context.vineColors.primaryText,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         decoration: TextDecoration.none,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'Restart Divine after unlocking your device. If this '
                       'keeps happening, update the app or contact support.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                         fontSize: 14,
                         height: 1.45,
                         decoration: TextDecoration.none,
@@ -109,8 +109,8 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
                     Text(
                       'Diagnostic: ${databaseBootstrapDiagnosticCode(error)}',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: VineTheme.onSurfaceVariant,
+                      style: TextStyle(
+                        color: context.vineColors.onSurfaceVariant,
                         fontSize: 12,
                         height: 1.35,
                         decoration: TextDecoration.none,
@@ -168,9 +168,9 @@ class _DebugErrorDetails extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.onSurfaceDisabled),
+        border: Border.all(color: context.vineColors.disabled),
       ),
       child: Text(
         '$error\n$stack',

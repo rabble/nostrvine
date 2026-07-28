@@ -53,7 +53,9 @@ class FollowerCountTitle<B extends StateStreamable<S>, S>
             Text(title, style: VineTheme.titleLargeFont()),
             Text(
               context.l10n.profileFollowerCountUsers(count),
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ],
         );

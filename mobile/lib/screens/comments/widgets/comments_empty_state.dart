@@ -55,8 +55,8 @@ class CommentsEmptyState extends StatelessWidget {
                   Text(
                     context.l10n.commentsEmptyClassicVineMessage,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: VineTheme.onSurfaceVariant,
+                    style: TextStyle(
+                      color: context.vineColors.onSurfaceVariant,
                       fontSize: 14,
                     ),
                   ),
@@ -71,14 +71,16 @@ class CommentsEmptyState extends StatelessWidget {
               Text(
                 context.l10n.commentsEmptyTitle,
                 textAlign: TextAlign.center,
-                style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
+                style: VineTheme.titleLargeFont(
+                  color: context.vineColors.onSurface,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 context.l10n.commentsEmptySubtitle,
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
               ),
             ],

@@ -23,10 +23,16 @@ class SectionHeader extends StatelessWidget {
         child: DecoratedBox(
           // 1 px outline-disabled hairline above and below each section
           // header, matching the Figma list-divider treatment.
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: VineTheme.outlineDisabled, width: 0),
-              bottom: BorderSide(color: VineTheme.outlineDisabled, width: 0),
+              top: BorderSide(
+                color: context.vineColors.outlineDisabled,
+                width: 0,
+              ),
+              bottom: BorderSide(
+                color: context.vineColors.outlineDisabled,
+                width: 0,
+              ),
             ),
           ),
           child: Padding(
@@ -37,7 +43,7 @@ class SectionHeader extends StatelessWidget {
                   child: Text(
                     title,
                     style: VineTheme.titleMediumFont().copyWith(
-                      color: VineTheme.whiteText,
+                      color: context.vineColors.primaryText,
                     ),
                   ),
                 ),

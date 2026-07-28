@@ -395,11 +395,11 @@ class _ClassicVideoItem extends StatelessWidget {
                     video.pubkey,
                     embeddedName: video.displayAuthorName,
                     maxLines: 1,
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      shadows: [
+                      shadows: const [
                         Shadow(
                           offset: Offset(0, 1),
                           blurRadius: 3,
@@ -430,16 +430,16 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.cloud_off,
               size: 64,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             const SizedBox(height: 16),
             Text(
               context.l10n.classicsUnavailableTitle,
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -448,8 +448,8 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               context.l10n.classicsUnavailableDescription,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -459,7 +459,7 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: VineTheme.cardBackground,
+                color: context.vineColors.card,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: VineTheme.vineGreen.withValues(alpha: 0.3),
@@ -475,8 +475,8 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     context.l10n.classicsUnavailableSettingsHint,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -502,12 +502,16 @@ class _ClassicVinesEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.history, size: 64, color: VineTheme.secondaryText),
+          Icon(
+            Icons.history,
+            size: 64,
+            color: context.vineColors.secondaryText,
+          ),
           const SizedBox(height: 16),
           Text(
             context.l10n.classicsEmptyTitle,
-            style: const TextStyle(
-              color: VineTheme.primaryText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -515,8 +519,8 @@ class _ClassicVinesEmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.classicsEmptyDescription,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 14,
             ),
           ),
@@ -551,8 +555,8 @@ class _ClassicVinesErrorState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             error,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 12,
             ),
             textAlign: TextAlign.center,

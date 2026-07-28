@@ -96,7 +96,7 @@ class SearchResultsPage extends ConsumerWidget {
           // bg/surface — matches SearchResultsView's body background so the
           // app bar area (which doesn't paint its own background) doesn't
           // show through to the root scaffold's darker default.
-          backgroundColor: VineTheme.surfaceBackground,
+          backgroundColor: context.vineColors.surface,
           body: _SearchResultsBody(
             initialQuery: initialQuery ?? '',
             requestFocusOnMount: requestFocusOnMount,

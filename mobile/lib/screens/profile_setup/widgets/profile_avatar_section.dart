@@ -283,7 +283,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: context.l10n.profileSetupGotItButton,
-              textColor: VineTheme.whiteText,
+              textColor: context.vineColors.primaryText,
               onPressed: () {},
             ),
           ),
@@ -302,7 +302,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
       isScrollControlled: true,
       title: Text(
         context.l10n.profileSetupImageUrlTitle,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       children: [
         Builder(
@@ -315,13 +315,13 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
             ),
             child: TextFormField(
               controller: _pictureController,
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
               cursorColor: VineTheme.primary,
               decoration: InputDecoration(
                 hintText: 'https://example.com/image.jpg',
-                hintStyle: const TextStyle(color: VineTheme.lightText),
+                hintStyle: TextStyle(color: context.vineColors.mutedText),
                 filled: true,
-                fillColor: VineTheme.surfaceContainer,
+                fillColor: context.vineColors.surfaceContainer,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(22),
                   borderSide: BorderSide.none,
@@ -363,9 +363,9 @@ class _ImageSourceButton extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
+          color: context.vineColors.surfaceContainer,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+          border: Border.all(color: context.vineColors.outlineMuted, width: 2),
         ),
         child: Center(
           child: SvgPicture.asset(

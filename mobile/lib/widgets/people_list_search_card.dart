@@ -87,7 +87,7 @@ class _ListDescription extends StatelessWidget {
   Widget build(BuildContext context) {
     return LinkifiedText(
       text: description,
-      style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+      style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
@@ -115,7 +115,7 @@ class _AvatarCollage extends StatelessWidget {
 
           return DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.containerLow,
+              color: context.vineColors.containerLow,
               borderRadius: BorderRadius.circular(_collageRadius),
             ),
             child: ClipRRect(
@@ -190,9 +190,9 @@ class _MemberCountBadge extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 4,
             children: [
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.user,
-                color: VineTheme.whiteText,
+                color: context.vineColors.primaryText,
                 size: 16,
               ),
               Text(

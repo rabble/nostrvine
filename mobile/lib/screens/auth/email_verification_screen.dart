@@ -456,7 +456,7 @@ class _EmailVerificationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
@@ -575,8 +575,8 @@ class _CloseButton extends StatelessWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: const BoxDecoration(
-          color: VineTheme.surfaceContainer,
+        decoration: BoxDecoration(
+          color: context.vineColors.surfaceContainer,
           shape: BoxShape.circle,
         ),
         child: const DivineIcon(
@@ -621,10 +621,10 @@ class _StatusButton extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: VineTheme.whiteText,
+              color: context.vineColors.primaryText,
             ),
           ),
         ],
@@ -741,11 +741,11 @@ class _PollingContent extends StatelessWidget {
                     isPollingMode
                         ? context.l10n.authCompleteRegistration
                         : context.l10n.authVerifying,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: VineTheme.fontFamilyBricolage,
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
-                      color: VineTheme.whiteText,
+                      color: context.vineColors.primaryText,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -754,9 +754,9 @@ class _PollingContent extends StatelessWidget {
                   if (isPollingMode && email != null && email!.isNotEmpty) ...[
                     Text(
                       context.l10n.authVerificationLinkSent,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
@@ -764,19 +764,19 @@ class _PollingContent extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       email!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: VineTheme.whiteText,
+                        color: context.vineColors.primaryText,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       context.l10n.authClickVerificationLink,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
@@ -784,9 +784,9 @@ class _PollingContent extends StatelessWidget {
                   ] else ...[
                     Text(
                       context.l10n.authPleaseWaitVerifying,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
@@ -882,7 +882,9 @@ class _PinEntrySectionState extends State<_PinEntrySection> {
       children: [
         Text(
           l10n.authVerificationPinPrompt,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
@@ -953,7 +955,9 @@ class _ResendRow extends StatelessWidget {
           children: [
             Text(
               l10n.authVerificationResendPrompt,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
             const SizedBox(width: 4),
             Semantics(
@@ -978,7 +982,7 @@ class _ResendRow extends StatelessWidget {
                         label,
                         style: VineTheme.labelLargeFont(
                           color: disabled
-                              ? VineTheme.secondaryText
+                              ? context.vineColors.secondaryText
                               : VineTheme.vineGreen,
                         ),
                       ),
@@ -1020,20 +1024,20 @@ class _SuccessContent extends StatelessWidget {
 
         Text(
           context.l10n.authWelcomeToDivine,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
         Text(
           context.l10n.authEmailVerified,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             height: 1.4,
           ),
           textAlign: TextAlign.center,
@@ -1081,20 +1085,20 @@ class _ErrorContent extends StatelessWidget {
 
         Text(
           l10n.authErrorTitle,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
             fontSize: 28,
             fontWeight: FontWeight.w700,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
         Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             height: 1.4,
           ),
           textAlign: TextAlign.center,

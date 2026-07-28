@@ -228,8 +228,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   DivineIconName.copy.assetPath,
                   width: 24,
                   height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
+                  colorFilter: ColorFilter.mode(
+                    context.vineColors.primaryText,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -248,9 +248,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.bracketsAngle,
-                  color: VineTheme.whiteText,
+                  color: context.vineColors.primaryText,
                 ),
                 const SizedBox(width: 16),
                 Text(
@@ -314,7 +314,7 @@ class _ProfileScaffold extends StatelessWidget {
     // No bottom nav here — the enclosing AppShell provides the shared
     // VineBottomNav for every tab (own-profile no longer bypasses the shell).
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       body: body,
     );
   }

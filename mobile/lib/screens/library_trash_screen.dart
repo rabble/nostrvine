@@ -37,13 +37,13 @@ class _LibraryTrashScreenState extends State<LibraryTrashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: context.l10n.libraryTrashTitle,
-        backgroundColor: VineTheme.surfaceBackground,
+        backgroundColor: context.vineColors.surface,
         surfaceTintColor: VineTheme.transparent,
-        shape: const Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
+        shape: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
         ),
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).maybePop(),
@@ -136,9 +136,9 @@ class _TrashedClipTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: VineTheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+      decoration: BoxDecoration(
+        color: context.vineColors.surfaceContainerHigh,
+        borderRadius: const BorderRadius.all(Radius.circular(12)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -169,7 +169,7 @@ class _TrashedClipTile extends StatelessWidget {
                   Text(
                     context.l10n.libraryTrashAutoDeletes(_daysUntilPurge(clip)),
                     style: VineTheme.bodyMediumFont(
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                   ),
                 ],

@@ -25,7 +25,7 @@ class SearchResultsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.surfaceBackground,
+      color: context.vineColors.surface,
       child: ValueListenableBuilder<TextEditingValue>(
         valueListenable: controller,
         builder: (context, value, _) => _Body(text: value.text),

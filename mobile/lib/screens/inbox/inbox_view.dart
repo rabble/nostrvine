@@ -140,7 +140,7 @@ class _InboxViewState extends ConsumerState<InboxView>
     _syncToIdentity(currentPubkey);
 
     return ColoredBox(
-      color: VineTheme.surfaceBackground,
+      color: context.vineColors.surface,
       child: SafeArea(
         bottom: false,
         child: Column(
@@ -162,7 +162,7 @@ class _InboxViewState extends ConsumerState<InboxView>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(32),
                 child: ColoredBox(
-                  color: VineTheme.surfaceContainerHigh,
+                  color: context.vineColors.surfaceContainerHigh,
                   child: _InboxTabContent(
                     animation: _transitionController,
                     selected: _selectedTab,
@@ -285,7 +285,7 @@ class _InboxTabPane extends StatelessWidget {
             child: FractionalTranslation(
               translation: Offset(dx, 0),
               child: ColoredBox(
-                color: VineTheme.surfaceContainerHigh,
+                color: context.vineColors.surfaceContainerHigh,
                 child: child,
               ),
             ),
@@ -413,7 +413,7 @@ class _RestoringHistoryIndicator extends StatelessWidget {
       child: isRestoring
           ? LinearProgressIndicator(
               minHeight: 2,
-              backgroundColor: VineTheme.surfaceContainerHigh,
+              backgroundColor: context.vineColors.surfaceContainerHigh,
               color: VineTheme.primary,
               semanticsLabel: context.l10n.inboxRestoringMessages,
             )
@@ -1038,21 +1038,25 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.inboxRemoveConfirmTitle,
           style: VineTheme.titleLargeFont(),
         ),
         content: Text(
           context.l10n.inboxRemoveConfirmBody(displayName),
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               context.l10n.commonCancel,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurface,
+              ),
             ),
           ),
           TextButton(
@@ -1091,12 +1095,16 @@ class _FilteredEmptyContent extends StatelessWidget {
           children: [
             Text(
               title,
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               textAlign: TextAlign.center,
             ),
             Text(
               subtitle,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1137,7 +1145,7 @@ class _FilterChipsHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlaps) {
     return ColoredBox(
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: UnreadFilterChips(
         unreadOnly: unreadOnly,
         onUnreadOnlyChanged: onUnreadOnlyChanged,

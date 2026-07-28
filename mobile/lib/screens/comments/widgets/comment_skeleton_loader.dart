@@ -16,7 +16,7 @@ class CommentsSkeletonLoader extends StatelessWidget {
       identifier: 'comments_loading_indicator',
       label: 'Loading comments',
       child: Skeletonizer(
-        effect: vineSkeletonEffect,
+        effect: vineSkeletonEffectOf(context),
         child: ListView.builder(
           padding: EdgeInsets.zero,
           itemCount: 6,
@@ -32,9 +32,6 @@ class CommentsSkeletonLoader extends StatelessWidget {
 /// Total height: 156px per Figma specification
 class _CommentSkeletonItem extends StatelessWidget {
   const _CommentSkeletonItem();
-
-  // Surface container color from Figma (green tint)
-  static const Color _surfaceColor = VineTheme.skeletonSurface;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +51,7 @@ class _CommentSkeletonItem extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: _surfaceColor,
+                      color: context.vineColors.skeleton,
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
@@ -66,7 +63,7 @@ class _CommentSkeletonItem extends StatelessWidget {
                     height: 20,
                     margin: const EdgeInsets.only(top: 8),
                     decoration: BoxDecoration(
-                      color: _surfaceColor,
+                      color: context.vineColors.skeleton,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -82,7 +79,7 @@ class _CommentSkeletonItem extends StatelessWidget {
                     width: 315,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: _surfaceColor,
+                      color: context.vineColors.skeleton,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -93,7 +90,7 @@ class _CommentSkeletonItem extends StatelessWidget {
                     width: 262,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: _surfaceColor,
+                      color: context.vineColors.skeleton,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -106,7 +103,7 @@ class _CommentSkeletonItem extends StatelessWidget {
                 width: 124,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: _surfaceColor,
+                  color: context.vineColors.skeleton,
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),

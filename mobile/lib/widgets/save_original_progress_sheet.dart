@@ -23,7 +23,7 @@ Future<void> showSaveOriginalSheet({
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: VineTheme.surfaceBackground,
+    backgroundColor: context.vineColors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(VineTheme.bottomSheetBorderRadius),
@@ -99,7 +99,7 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -122,7 +122,7 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
                       Text(
                         _stageDescription(state.stage, l10n),
                         style: VineTheme.bodySmallFont(
-                          color: VineTheme.secondaryText,
+                          color: context.vineColors.secondaryText,
                         ),
                       ),
                     ] else
@@ -175,7 +175,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.saveOriginalDone,
-            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],
@@ -193,7 +195,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
         const SizedBox(height: 8),
         Text(
           l10n.saveOriginalPhotosAccessMessage,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -214,7 +218,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.saveOriginalNotNow,
-            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],
@@ -232,7 +238,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
         const SizedBox(height: 8),
         Text(
           reason,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -240,7 +248,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.saveOriginalDismiss,
-            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],

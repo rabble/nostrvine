@@ -59,13 +59,13 @@ class _BioFieldState extends State<BioField> {
                 style: VineTheme.labelMediumFont(
                   color: _focusNode.hasFocus
                       ? VineTheme.primary
-                      : VineTheme.onSurfaceMuted,
+                      : context.vineColors.onSurfaceMuted,
                 ),
               ),
               Text(
                 '${widget.controller.text.length}/360',
                 style: VineTheme.labelMediumFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
               ),
             ],
@@ -74,11 +74,11 @@ class _BioFieldState extends State<BioField> {
         TextFormField(
           controller: widget.controller,
           focusNode: _focusNode,
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           decoration: InputDecoration(
             isCollapsed: true,
             hintText: context.l10n.profileSetupBioHint,
-            hintStyle: profileFieldHintStyle,
+            hintStyle: profileFieldHintStyleOf(context),
             border: profileFieldBorder,
             enabledBorder: profileFieldBorder,
             focusedBorder: profileFieldBorder,

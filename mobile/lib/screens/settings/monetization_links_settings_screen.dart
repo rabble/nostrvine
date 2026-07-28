@@ -137,7 +137,7 @@ class _MonetizationLinksSettingsViewState
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -193,9 +193,11 @@ class _MonetizationLinksSettingsViewState
       bottomNavigationBar: SafeArea(
         top: false,
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: VineTheme.surfaceBackground,
-            border: Border(top: BorderSide(color: VineTheme.outlineMuted)),
+          decoration: BoxDecoration(
+            color: context.vineColors.surface,
+            border: Border(
+              top: BorderSide(color: context.vineColors.outlineMuted),
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -301,9 +303,9 @@ class _SectionIntro extends StatelessWidget {
     ).length;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -315,14 +317,16 @@ class _SectionIntro extends StatelessWidget {
               appStoreTipPolicy
                   ? context.l10n.monetizationTipsSettingsIntroTitle
                   : context.l10n.monetizationSettingsIntroTitle,
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.onSurface,
+              ),
             ),
             Text(
               appStoreTipPolicy
                   ? context.l10n.monetizationTipsSettingsIntroBody
                   : context.l10n.monetizationSettingsIntroBody,
               style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
               ),
             ),
             Text(
@@ -353,7 +357,9 @@ class _SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
       child: Text(
         title.toUpperCase(),
-        style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
+        style: VineTheme.labelSmallFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -382,9 +388,9 @@ class _ProviderEditor extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: VineTheme.outlineMuted),
+          border: Border.all(color: context.vineColors.outlineMuted),
         ),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -398,7 +404,7 @@ class _ProviderEditor extends StatelessWidget {
                     child: Text(
                       provider.displayName,
                       style: VineTheme.titleMediumFont(
-                        color: VineTheme.onSurface,
+                        color: context.vineColors.onSurface,
                       ),
                     ),
                   ),

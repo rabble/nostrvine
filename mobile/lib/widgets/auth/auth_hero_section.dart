@@ -46,11 +46,11 @@ class AuthHeroSection extends StatelessWidget {
                     Text(
                       context.l10n.authHeroTaglineHuman,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: VineTheme.fontFamilyBricolage,
                         fontSize: 48,
                         fontWeight: FontWeight.w800, // ExtraBold
-                        color: VineTheme.whiteText,
+                        color: context.vineColors.primaryText,
                         height: 1.1,
                       ),
                     ),

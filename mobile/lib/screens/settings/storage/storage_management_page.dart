@@ -55,7 +55,7 @@ class StorageManagementView extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: BlocListener<StorageCubit, StorageState>(
         listenWhen: (prev, curr) =>
             prev.cacheStatus != curr.cacheStatus ||
@@ -144,7 +144,9 @@ class _CacheSection extends StatelessWidget {
         children: [
           Text(
             l10n.settingsStorageCacheDescription,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           Text(
             busy
@@ -178,7 +180,9 @@ class _CacheSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
             l10n.settingsStorageClearConfirmMessage(_formatBytes(bytes)),
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
         ),
         Padding(
@@ -251,7 +255,7 @@ class _CacheLimitControl extends StatelessWidget {
         ),
         Text(
           l10n.settingsStorageApproxVideos(approxVideos),
-          style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+          style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
         ),
       ],
     );
@@ -280,7 +284,9 @@ class _LibrarySection extends StatelessWidget {
         children: [
           Text(
             l10n.settingsStorageLibraryDescription,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           if (status == StorageLibraryStatus.scanned && brokenCount == 0 ||
               status == StorageLibraryStatus.cleaned)

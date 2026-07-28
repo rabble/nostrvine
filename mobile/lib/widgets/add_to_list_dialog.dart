@@ -16,15 +16,15 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.all(12),
       child: Center(
         child: SizedBox(
           width: 16,
           height: 16,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
           ),
         ),
       ),
@@ -48,10 +48,10 @@ class SelectListDialog extends StatelessWidget {
 
           final l10n = context.l10n;
           return AlertDialog(
-            backgroundColor: VineTheme.cardBackground,
+            backgroundColor: context.vineColors.card,
             title: Text(
               l10n.listAddToList,
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
             ),
             content: SizedBox(
               width: double.maxFinite,
@@ -69,15 +69,15 @@ class SelectListDialog extends StatelessWidget {
                           : DivineIconName.playlist,
                       color: isInList
                           ? VineTheme.vineGreen
-                          : VineTheme.whiteText,
+                          : context.vineColors.primaryText,
                     ),
                     title: Text(
                       list.name,
-                      style: const TextStyle(color: VineTheme.whiteText),
+                      style: TextStyle(color: context.vineColors.primaryText),
                     ),
                     subtitle: Text(
                       l10n.listVideoCount(list.videoEventIds.length),
-                      style: const TextStyle(color: VineTheme.secondaryText),
+                      style: TextStyle(color: context.vineColors.secondaryText),
                     ),
                     onTap: () => _toggleVideoInList(
                       context,
@@ -162,10 +162,10 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       title: Text(
         l10n.listCreateNewList,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -173,20 +173,20 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
           TextField(
             controller: _nameController,
             enableInteractiveSelection: true,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
             decoration: InputDecoration(
               labelText: l10n.listNameLabel,
-              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+              labelStyle: TextStyle(color: context.vineColors.secondaryText),
             ),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _descriptionController,
             enableInteractiveSelection: true,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
             decoration: InputDecoration(
               labelText: l10n.listDescriptionLabel,
-              labelStyle: const TextStyle(color: VineTheme.secondaryText),
+              labelStyle: TextStyle(color: context.vineColors.secondaryText),
             ),
             maxLines: 2,
           ),
@@ -194,11 +194,11 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
           SwitchListTile(
             title: Text(
               l10n.listPublicList,
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
             ),
             subtitle: Text(
               l10n.listPublicListSubtitle,
-              style: const TextStyle(color: VineTheme.secondaryText),
+              style: TextStyle(color: context.vineColors.secondaryText),
             ),
             value: _isPublic,
             onChanged: (value) => setState(() => _isPublic = value),

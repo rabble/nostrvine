@@ -92,7 +92,7 @@ class _ListDescription extends StatelessWidget {
   Widget build(BuildContext context) {
     return LinkifiedText(
       text: description,
-      style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+      style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
@@ -164,10 +164,10 @@ class _ThumbnailCard extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border.all(
           width: _cardBorder,
-          color: VineTheme.surfaceBackground,
+          color: context.vineColors.surface,
         ),
         borderRadius: BorderRadius.circular(_cardRadius),
-        color: VineTheme.containerLow,
+        color: context.vineColors.containerLow,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(_cardRadius),
@@ -204,9 +204,9 @@ class _CountBadge extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 4,
             children: [
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.play,
-                color: VineTheme.whiteText,
+                color: context.vineColors.primaryText,
                 size: 16,
               ),
               Text(

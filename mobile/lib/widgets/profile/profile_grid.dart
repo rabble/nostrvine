@@ -624,7 +624,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         BlocProvider<ProfileCommentsBloc>.value(value: _commentsBloc!),
       ],
       child: ColoredBox(
-        color: VineTheme.surfaceContainerHigh,
+        color: context.vineColors.surfaceContainerHigh,
         child: TabBarView(
           controller: _tabController,
           children: [for (final kind in _tabKinds) _gridForKind(kind)],
@@ -634,13 +634,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
     final content = RefreshIndicator(
       color: VineTheme.primary,
-      backgroundColor: VineTheme.surfaceContainer,
+      backgroundColor: context.vineColors.surfaceContainer,
       notificationPredicate: (_) => true,
       onRefresh: _refreshProfileContent,
       child: ClipRRect(
         borderRadius: const .vertical(bottom: .circular(30)),
         child: ColoredBox(
-          color: VineTheme.surfaceBackground,
+          color: context.vineColors.surface,
           child: DefaultTabController(
             length: _tabKinds.length,
             child: NestedScrollView(

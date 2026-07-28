@@ -56,7 +56,9 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? VineTheme.error : VineTheme.onSurface;
+    final color = isDestructive
+        ? VineTheme.error
+        : context.vineColors.onSurface;
 
     return GestureDetector(
       onTap: onTap,
@@ -64,8 +66,8 @@ class _ActionTile extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: showDivider
-              ? const Border(
-                  bottom: BorderSide(color: VineTheme.outlineDisabled),
+              ? Border(
+                  bottom: BorderSide(color: context.vineColors.outlineDisabled),
                 )
               : null,
         ),

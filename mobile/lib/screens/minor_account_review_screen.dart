@@ -62,7 +62,7 @@ class MinorAccountReviewScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: DiVineAppBar(title: context.l10n.minorAccountReviewTitle),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -103,7 +103,7 @@ class _WelcomeEntryView extends StatelessWidget {
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).maybePop(),
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -188,7 +188,7 @@ class MinorAccountReviewLoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -207,7 +207,7 @@ class MinorAccountReviewLoadingScreen extends StatelessWidget {
                 Text(
                   context.l10n.minorAccountReviewCheckingStatusBody,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -246,7 +246,7 @@ class _LoadedView extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainerHigh,
+            color: context.vineColors.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: VineTheme.vineGreen.withValues(alpha: .2),
@@ -259,14 +259,16 @@ class _LoadedView extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 body,
-                style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.mutedText,
+                ),
               ),
               if (caseId != null && caseId.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
                   l10n.minorAccountReviewCaseId(caseId),
                   style: VineTheme.labelMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ),
               ],
@@ -340,7 +342,9 @@ class _LoadedView extends ConsumerWidget {
           onPressed: () => ref.read(authServiceProvider).signOut(),
           child: Text(
             l10n.minorAccountReviewLogOut,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],
@@ -492,7 +496,7 @@ class _HeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainerHigh,
+        color: context.vineColors.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: VineTheme.vineGreen.withValues(alpha: .2)),
       ),
@@ -537,7 +541,9 @@ class _RestrictionLine extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.mutedText,
+              ),
             ),
           ),
         ],
@@ -557,7 +563,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
@@ -567,7 +573,9 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             body,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
         ],
       ),
@@ -595,7 +603,9 @@ class _ErrorView extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             context.l10n.minorAccountReviewErrorBody,
-            style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),

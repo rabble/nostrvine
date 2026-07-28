@@ -15,7 +15,7 @@ class BlockedUserScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: '',
         showBackButton: true,
@@ -25,7 +25,7 @@ class BlockedUserScreen extends StatelessWidget {
       body: Center(
         child: Text(
           context.l10n.profileBlockedAccountNotAvailable,
-          style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
+          style: TextStyle(color: context.vineColors.mutedText, fontSize: 16),
         ),
       ),
     );

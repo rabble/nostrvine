@@ -139,8 +139,10 @@ class _MetadataReplyLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -159,7 +161,7 @@ class _MetadataReplyLink extends StatelessWidget {
                   Text(
                     l10n.commentsReplyParentSectionTitle,
                     style: VineTheme.labelMediumFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -173,9 +175,9 @@ class _MetadataReplyLink extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.caretRight,
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
             ),
           ],
         ),

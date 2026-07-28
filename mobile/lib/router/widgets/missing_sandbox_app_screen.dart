@@ -17,14 +17,16 @@ class MissingSandboxAppScreen extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text(
             context.l10n.appsSandboxUnavailableBody,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
       ),

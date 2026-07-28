@@ -57,9 +57,9 @@ void _reportToCrashlytics(FlutterErrorDetails details) {
 class _MinimalFallbackError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.backgroundColor,
-      child: Center(
+    return ColoredBox(
+      color: context.vineColors.background,
+      child: const Center(
         child: SizedBox(
           width: 80,
           height: 80,
@@ -90,7 +90,7 @@ class _GlobalErrorWidget extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Container(
-        color: VineTheme.backgroundColor,
+        color: context.vineColors.background,
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Center(
           child: SingleChildScrollView(
@@ -106,11 +106,11 @@ class _GlobalErrorWidget extends StatelessWidget {
                 const SizedBox(height: 28),
 
                 // Headline
-                const Text(
+                Text(
                   'got a bit tangled',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: VineTheme.primaryText,
+                    color: context.vineColors.primaryText,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     decoration: TextDecoration.none,
@@ -120,11 +120,11 @@ class _GlobalErrorWidget extends StatelessWidget {
                 const SizedBox(height: 10),
 
                 // Friendly explanation
-                const Text(
+                Text(
                   "something tripped up here.\nit's not you, it's us.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.none,
@@ -134,11 +134,11 @@ class _GlobalErrorWidget extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 // Gentle nudge
-                const Text(
+                Text(
                   'try navigating away and coming back',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.none,
@@ -151,9 +151,9 @@ class _GlobalErrorWidget extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: VineTheme.cardBackground,
+                      color: context.vineColors.card,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: VineTheme.onSurfaceDisabled),
+                      border: Border.all(color: context.vineColors.disabled),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,8 +188,8 @@ class _GlobalErrorWidget extends StatelessWidget {
                             details.context!.toDescription(),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: VineTheme.onSurfaceMuted,
+                            style: TextStyle(
+                              color: context.vineColors.onSurfaceMuted,
                               fontSize: 11,
                               fontWeight: FontWeight.w400,
                               fontFamily: 'monospace',
@@ -201,8 +201,8 @@ class _GlobalErrorWidget extends StatelessWidget {
                           const SizedBox(height: 6),
                           Text(
                             'library: ${details.library}',
-                            style: const TextStyle(
-                              color: VineTheme.onSurfaceMuted,
+                            style: TextStyle(
+                              color: context.vineColors.onSurfaceMuted,
                               fontSize: 10,
                               fontWeight: FontWeight.w400,
                               fontFamily: 'monospace',

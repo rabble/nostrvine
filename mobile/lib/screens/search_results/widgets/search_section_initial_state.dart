@@ -29,9 +29,9 @@ class SearchSectionInitialState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: 16,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.search,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               size: 48,
             ),
             Text(
@@ -41,7 +41,9 @@ class SearchSectionInitialState extends StatelessWidget {
             ),
             Text(
               subtitle,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

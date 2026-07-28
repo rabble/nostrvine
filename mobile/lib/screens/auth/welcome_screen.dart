@@ -174,7 +174,7 @@ class _WelcomeView extends StatelessWidget {
         return Scaffold(
           backgroundColor: isReturningUser
               ? VineTheme.navGreen
-              : VineTheme.backgroundColor,
+              : context.vineColors.background,
           appBar: isReturningUser
               ? DiVineAppBar(
                   title: '',
@@ -467,13 +467,17 @@ class _ReturningUserProfile extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           displayName,
-          style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+          style: VineTheme.headlineSmallFont(
+            color: context.vineColors.onSurface,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         Text(
           identifier,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -550,8 +554,8 @@ class _TermsNoticeState extends State<_TermsNotice> {
 
   @override
   Widget build(BuildContext context) {
-    const linkStyle = TextStyle(
-      color: VineTheme.whiteText,
+    final linkStyle = TextStyle(
+      color: context.vineColors.primaryText,
       decoration: TextDecoration.underline,
       decorationColor: VineTheme.vineGreen,
     );
@@ -560,7 +564,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
       textAlign: TextAlign.center,
       textScaler: MediaQuery.textScalerOf(context),
       text: TextSpan(
-        style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
         children: [
           TextSpan(text: context.l10n.authTermsPrefix),
           TextSpan(

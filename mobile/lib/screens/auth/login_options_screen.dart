@@ -104,7 +104,7 @@ class _LoginOptionsView extends StatelessWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         body: SafeArea(
           child: BlocBuilder<DivineAuthCubit, DivineAuthState>(
             builder: (context, state) {
@@ -304,11 +304,11 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                 // Title
                 Text(
                   context.l10n.authSignInTitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: VineTheme.fontFamilyBricolage,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: VineTheme.whiteText,
+                    color: context.vineColors.primaryText,
                   ),
                 ),
 
@@ -396,11 +396,11 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                     onTap: isDisabled ? null : _showForgotPasswordDialog,
                     child: Text(
                       context.l10n.authForgotPassword,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 14,
                         decoration: TextDecoration.underline,
-                        decorationColor: VineTheme.whiteText,
+                        decorationColor: context.vineColors.primaryText,
                       ),
                     ),
                   ),
@@ -506,7 +506,9 @@ class _SignInOptionsHint extends ConsumerWidget {
             alignment: Alignment.centerLeft,
             child: Text.rich(
               TextSpan(
-                style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.secondaryText,
+                ),
                 children: [
                   TextSpan(text: l10n.authSignInOptionsHintPrefix),
                   TextSpan(
@@ -586,18 +588,18 @@ class _InfoItem extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           description,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             height: 1.4,
           ),
         ),

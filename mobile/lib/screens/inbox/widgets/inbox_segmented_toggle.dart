@@ -49,8 +49,8 @@ class InboxSegmentedToggle extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
-        border: Border.all(color: VineTheme.outlineMuted, width: 2),
+        color: context.vineColors.surfaceContainer,
+        border: Border.all(color: context.vineColors.outlineMuted, width: 2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Stack(
@@ -169,7 +169,7 @@ class _ToggleButton extends StatelessWidget {
                   style: VineTheme.titleMediumFont(
                     color: isSelected
                         ? VineTheme.onPrimaryButton
-                        : VineTheme.onSurfaceMuted,
+                        : context.vineColors.onSurfaceMuted,
                   ).copyWith(fontSize: fontSize),
                   child: Text(
                     label,

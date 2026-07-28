@@ -38,7 +38,9 @@ Future<void> showProfileSupportSheet({
           appStoreTipPolicy
               ? context.l10n.profileTipSheetBody
               : context.l10n.profileSupportSheetBody,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
       ),
       if (tipLinks.isNotEmpty)
@@ -78,7 +80,9 @@ class _SupportLinkGroup extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
             title.toUpperCase(),
-            style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.labelSmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
         for (final link in links)
@@ -110,9 +114,9 @@ class _SupportLinkTile extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: const DivineIcon(
+        trailing: DivineIcon(
           icon: DivineIconName.arrowUpRight,
-          color: VineTheme.onSurfaceVariant,
+          color: context.vineColors.onSurfaceVariant,
           size: 20,
         ),
         onTap: () async {

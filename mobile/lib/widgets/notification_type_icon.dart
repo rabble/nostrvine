@@ -81,8 +81,8 @@ class _UnreadDot extends StatelessWidget {
           NotificationTypeIcon._dotSize + NotificationTypeIcon._dotBorder * 2,
       height:
           NotificationTypeIcon._dotSize + NotificationTypeIcon._dotBorder * 2,
-      decoration: const BoxDecoration(
-        color: VineTheme.surfaceContainerHigh,
+      decoration: BoxDecoration(
+        color: context.vineColors.surfaceContainerHigh,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,

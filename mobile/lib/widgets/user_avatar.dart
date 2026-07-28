@@ -92,7 +92,7 @@ class UserAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(_cornerRadius),
                 border: Border.all(
-                  color: VineTheme.onSurfaceDisabled,
+                  color: context.vineColors.disabled,
                   width: _borderWidth,
                 ),
               ),

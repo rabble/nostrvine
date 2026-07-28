@@ -153,7 +153,9 @@ class DivineTextField extends StatelessWidget {
       onEditingComplete: onEditingComplete,
       decoration: InputDecoration(
         labelText: labelText,
-        labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        labelStyle: VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
         border: .none,
         enabledBorder: .none,
         focusedBorder: .none,
@@ -169,7 +171,7 @@ class DivineTextField extends StatelessWidget {
           return VineTheme.labelSmallFont(
             color: states.contains(WidgetState.focused) || isFilled
                 ? VineTheme.primary
-                : VineTheme.onSurfaceVariant,
+                : context.vineColors.onSurfaceVariant,
           ).copyWith(
             // The TextField scale the floating-label by a factor of 0.75.
             fontSize: 11 / 0.75,

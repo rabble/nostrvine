@@ -223,7 +223,11 @@ class _DivineButtonContent extends StatelessWidget {
   /// outer bounds — and the same content position — as an unbordered one
   /// of the same [size]. Without this, a secondary button renders 2px
   /// larger on every edge than a primary one.
-  double get _borderInset => _borderColor != null ? _kBorderWidth : 0;
+  /// Whether this [type] paints a visible border. Kept independent of the
+  /// resolved palette so padding geometry does not need a [BuildContext].
+  bool get _hasBorder => type == DivineButtonType.secondary;
+
+  double get _borderInset => _hasBorder ? _kBorderWidth : 0;
 
   /// Vertical inner padding. Fixed per size — it sets the button height
   /// (32 / 40 / 48px) and never changes with stretch state. The border
@@ -267,34 +271,35 @@ class _DivineButtonContent extends StatelessWidget {
     _ => 0.32,
   };
 
-  Color get _backgroundColor => switch (type) {
+  Color _backgroundColor(VineThemeColors colors) => switch (type) {
     DivineButtonType.primary => VineTheme.primary,
-    DivineButtonType.secondary => VineTheme.surfaceContainer,
-    DivineButtonType.tertiary => VineTheme.inverseSurface,
+    DivineButtonType.secondary => colors.surfaceContainer,
+    DivineButtonType.tertiary => colors.inverseSurface,
     DivineButtonType.ghost => VineTheme.scrim65,
     DivineButtonType.ghostSecondary => VineTheme.scrim15,
     DivineButtonType.link => VineTheme.transparent,
     DivineButtonType.error => VineTheme.error,
   };
 
-  Color get _foregroundColor => switch (type) {
+  Color _foregroundColor(VineThemeColors colors) => switch (type) {
     DivineButtonType.primary => VineTheme.onPrimary,
     DivineButtonType.secondary => VineTheme.primary,
-    DivineButtonType.tertiary => VineTheme.inverseOnSurface,
+    DivineButtonType.tertiary => colors.inverseOnSurface,
+    // Ghost variants sit on scrims over media, so they keep the fixed
+    // light-on-dark treatment in both appearance modes.
     DivineButtonType.ghost ||
     DivineButtonType.ghostSecondary => VineTheme.onSurface,
-    DivineButtonType.link => VineTheme.onSurfaceVariant,
+    DivineButtonType.link => colors.onSurfaceVariant,
     DivineButtonType.error => VineTheme.onErrorContainer,
   };
 
-  Color? get _borderColor => switch (type) {
-    DivineButtonType.secondary => VineTheme.outlineMuted,
-    _ => null,
-  };
+  Color? _borderColor(VineThemeColors colors) =>
+      _hasBorder ? colors.outlineMuted : null;
 
-  TextStyle get _textStyle {
+  TextStyle _textStyle(VineThemeColors colors) {
+    final foreground = _foregroundColor(colors);
     if (type == DivineButtonType.link) {
-      return VineTheme.bodyLargeFont(color: _foregroundColor).copyWith(
+      return VineTheme.bodyLargeFont(color: foreground).copyWith(
         decoration: TextDecoration.underline,
         decorationColor: VineTheme.primary,
         decorationThickness: 2,
@@ -307,10 +312,10 @@ class _DivineButtonContent extends StatelessWidget {
     // weight and brand font keep the small chip reading as a primary
     // action.
     if (size == DivineButtonSize.tiny) {
-      return VineTheme.titleSmallFont(color: _foregroundColor);
+      return VineTheme.titleSmallFont(color: foreground);
     }
 
-    return VineTheme.titleMediumFont(color: _foregroundColor);
+    return VineTheme.titleMediumFont(color: foreground);
   }
 
   List<BoxShadow>? get _boxShadow {
@@ -335,6 +340,9 @@ class _DivineButtonContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
+    final foregroundColor = _foregroundColor(colors);
+    final borderColor = _borderColor(colors);
     final content = Row(
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -348,20 +356,20 @@ class _DivineButtonContent extends StatelessWidget {
             height: _iconSize,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_foregroundColor),
+              valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
             ),
           )
         else if (leadingIcon != null)
           DivineIcon(
             icon: leadingIcon!,
-            color: _foregroundColor,
+            color: foregroundColor,
             size: _iconSize,
           ),
         if (!_noLabel)
           Flexible(
             child: Text(
               label,
-              style: _textStyle,
+              style: _textStyle(colors),
               textAlign: .center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -370,17 +378,17 @@ class _DivineButtonContent extends StatelessWidget {
         if (trailingIcon != null)
           DivineIcon(
             icon: trailingIcon!,
-            color: _foregroundColor,
+            color: foregroundColor,
             size: _iconSize,
           ),
       ],
     );
 
     final decoration = BoxDecoration(
-      color: _backgroundColor,
+      color: _backgroundColor(colors),
       borderRadius: BorderRadius.circular(_borderRadius),
-      border: _borderColor != null
-          ? Border.all(color: _borderColor!, width: _kBorderWidth)
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: _kBorderWidth)
           : null,
       boxShadow: _isEnabled ? _boxShadow : null,
     );
@@ -403,8 +411,8 @@ class _DivineButtonContent extends StatelessWidget {
         child: InkWell(
           onTap: _isEnabled ? onPressed : null,
           borderRadius: BorderRadius.circular(_borderRadius),
-          splashColor: _foregroundColor.withValues(alpha: 0.1),
-          highlightColor: _foregroundColor.withValues(alpha: 0.05),
+          splashColor: foregroundColor.withValues(alpha: 0.1),
+          highlightColor: foregroundColor.withValues(alpha: 0.05),
           excludeFromSemantics: size == DivineButtonSize.small,
           child: inkChild,
         ),

@@ -15,6 +15,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.surface,
     required this.surfaceContainer,
     required this.surfaceContainerHigh,
+    required this.containerLow,
     required this.nav,
     required this.iconButton,
     required this.primaryText,
@@ -22,8 +23,16 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.mutedText,
     required this.onSurface,
     required this.onSurfaceVariant,
+    required this.onSurfaceMuted,
     required this.outline,
+    required this.outlineMuted,
+    required this.outlineDisabled,
     required this.disabled,
+    required this.skeleton,
+    required this.errorContainer,
+    required this.onErrorContainer,
+    required this.inverseSurface,
+    required this.inverseOnSurface,
     required this.mediaChrome,
     required this.mediaChromeForeground,
   });
@@ -42,6 +51,9 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
 
   /// High-emphasis surface container.
   final Color surfaceContainerHigh;
+
+  /// Low-emphasis container background for inset rows and chips.
+  final Color containerLow;
 
   /// Navigation background.
   final Color nav;
@@ -64,11 +76,35 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Variant content on surfaces.
   final Color onSurfaceVariant;
 
+  /// Muted content on surfaces, for hints and placeholder text.
+  final Color onSurfaceMuted;
+
   /// Border and divider color.
   final Color outline;
 
+  /// Low-contrast border color for containers and chips.
+  final Color outlineMuted;
+
+  /// Lowest-contrast border color, used for separators inside containers.
+  final Color outlineDisabled;
+
   /// Disabled content color.
   final Color disabled;
+
+  /// Placeholder color for skeleton shapes and shimmer bases.
+  final Color skeleton;
+
+  /// Background for error banners and destructive containers.
+  final Color errorContainer;
+
+  /// Content color on [errorContainer].
+  final Color onErrorContainer;
+
+  /// Surface that contrasts with [background], used by tertiary actions.
+  final Color inverseSurface;
+
+  /// Content color on [inverseSurface].
+  final Color inverseOnSurface;
 
   /// Media controls background.
   final Color mediaChrome;
@@ -83,6 +119,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     Color? surface,
     Color? surfaceContainer,
     Color? surfaceContainerHigh,
+    Color? containerLow,
     Color? nav,
     Color? iconButton,
     Color? primaryText,
@@ -90,8 +127,16 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     Color? mutedText,
     Color? onSurface,
     Color? onSurfaceVariant,
+    Color? onSurfaceMuted,
     Color? outline,
+    Color? outlineMuted,
+    Color? outlineDisabled,
     Color? disabled,
+    Color? skeleton,
+    Color? errorContainer,
+    Color? onErrorContainer,
+    Color? inverseSurface,
+    Color? inverseOnSurface,
     Color? mediaChrome,
     Color? mediaChromeForeground,
   }) => VineThemeColors(
@@ -100,6 +145,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     surface: surface ?? this.surface,
     surfaceContainer: surfaceContainer ?? this.surfaceContainer,
     surfaceContainerHigh: surfaceContainerHigh ?? this.surfaceContainerHigh,
+    containerLow: containerLow ?? this.containerLow,
     nav: nav ?? this.nav,
     iconButton: iconButton ?? this.iconButton,
     primaryText: primaryText ?? this.primaryText,
@@ -107,8 +153,16 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     mutedText: mutedText ?? this.mutedText,
     onSurface: onSurface ?? this.onSurface,
     onSurfaceVariant: onSurfaceVariant ?? this.onSurfaceVariant,
+    onSurfaceMuted: onSurfaceMuted ?? this.onSurfaceMuted,
     outline: outline ?? this.outline,
+    outlineMuted: outlineMuted ?? this.outlineMuted,
+    outlineDisabled: outlineDisabled ?? this.outlineDisabled,
     disabled: disabled ?? this.disabled,
+    skeleton: skeleton ?? this.skeleton,
+    errorContainer: errorContainer ?? this.errorContainer,
+    onErrorContainer: onErrorContainer ?? this.onErrorContainer,
+    inverseSurface: inverseSurface ?? this.inverseSurface,
+    inverseOnSurface: inverseOnSurface ?? this.inverseOnSurface,
     mediaChrome: mediaChrome ?? this.mediaChrome,
     mediaChromeForeground: mediaChromeForeground ?? this.mediaChromeForeground,
   );
@@ -126,6 +180,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
         other.surfaceContainerHigh,
         t,
       ),
+      containerLow: Color.lerp(containerLow, other.containerLow, t),
       nav: Color.lerp(nav, other.nav, t),
       iconButton: Color.lerp(iconButton, other.iconButton, t),
       primaryText: Color.lerp(primaryText, other.primaryText, t),
@@ -133,8 +188,24 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       mutedText: Color.lerp(mutedText, other.mutedText, t),
       onSurface: Color.lerp(onSurface, other.onSurface, t),
       onSurfaceVariant: Color.lerp(onSurfaceVariant, other.onSurfaceVariant, t),
+      onSurfaceMuted: Color.lerp(onSurfaceMuted, other.onSurfaceMuted, t),
       outline: Color.lerp(outline, other.outline, t),
+      outlineMuted: Color.lerp(outlineMuted, other.outlineMuted, t),
+      outlineDisabled: Color.lerp(outlineDisabled, other.outlineDisabled, t),
       disabled: Color.lerp(disabled, other.disabled, t),
+      skeleton: Color.lerp(skeleton, other.skeleton, t),
+      errorContainer: Color.lerp(errorContainer, other.errorContainer, t),
+      onErrorContainer: Color.lerp(
+        onErrorContainer,
+        other.onErrorContainer,
+        t,
+      ),
+      inverseSurface: Color.lerp(inverseSurface, other.inverseSurface, t),
+      inverseOnSurface: Color.lerp(
+        inverseOnSurface,
+        other.inverseOnSurface,
+        t,
+      ),
       mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
       mediaChromeForeground: Color.lerp(
         mediaChromeForeground,
@@ -153,6 +224,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           surface == other.surface &&
           surfaceContainer == other.surfaceContainer &&
           surfaceContainerHigh == other.surfaceContainerHigh &&
+          containerLow == other.containerLow &&
           nav == other.nav &&
           iconButton == other.iconButton &&
           primaryText == other.primaryText &&
@@ -160,18 +232,27 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
           mutedText == other.mutedText &&
           onSurface == other.onSurface &&
           onSurfaceVariant == other.onSurfaceVariant &&
+          onSurfaceMuted == other.onSurfaceMuted &&
           outline == other.outline &&
+          outlineMuted == other.outlineMuted &&
+          outlineDisabled == other.outlineDisabled &&
           disabled == other.disabled &&
+          skeleton == other.skeleton &&
+          errorContainer == other.errorContainer &&
+          onErrorContainer == other.onErrorContainer &&
+          inverseSurface == other.inverseSurface &&
+          inverseOnSurface == other.inverseOnSurface &&
           mediaChrome == other.mediaChrome &&
           mediaChromeForeground == other.mediaChromeForeground;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     background,
     card,
     surface,
     surfaceContainer,
     surfaceContainerHigh,
+    containerLow,
     nav,
     iconButton,
     primaryText,
@@ -179,11 +260,30 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     mutedText,
     onSurface,
     onSurfaceVariant,
+    onSurfaceMuted,
     outline,
+    outlineMuted,
+    outlineDisabled,
     disabled,
+    skeleton,
+    errorContainer,
+    onErrorContainer,
+    inverseSurface,
+    inverseOnSurface,
     mediaChrome,
     mediaChromeForeground,
-  );
+  ]);
+}
+
+/// Convenient access to the semantic palette of the active theme.
+extension VineThemeColorsContext on BuildContext {
+  /// Semantic colors for the resolved appearance mode.
+  ///
+  /// Falls back to [VineTheme.darkColors] so widgets pumped without the
+  /// Divine theme (older widget tests, isolated previews) keep the
+  /// pre-light-mode appearance instead of Material defaults.
+  VineThemeColors get vineColors =>
+      Theme.of(this).extension<VineThemeColors>() ?? VineTheme.darkColors;
 }
 
 /// Vine-inspired theme with characteristic green colors and clean design.
@@ -719,11 +819,7 @@ class VineTheme {
   /// [BoxDecoration.boxShadow]. Same offsets/blur as [buttonShadows]
   /// but as [BoxShadow] instead of [Shadow].
   static const List<BoxShadow> buttonBoxShadows = [
-    BoxShadow(
-      color: innerShadow,
-      offset: Offset(0.4, 0.4),
-      blurRadius: 0.6,
-    ),
+    BoxShadow(color: innerShadow, offset: Offset(0.4, 0.4), blurRadius: 0.6),
     BoxShadow(color: innerShadow, offset: Offset(1, 1), blurRadius: 1),
   ];
 
@@ -780,6 +876,7 @@ class VineTheme {
     surface: surfaceBackground,
     surfaceContainer: surfaceContainer,
     surfaceContainerHigh: surfaceContainerHigh,
+    containerLow: containerLow,
     nav: navGreen,
     iconButton: iconButtonBackground,
     primaryText: primaryText,
@@ -787,8 +884,16 @@ class VineTheme {
     mutedText: lightText,
     onSurface: onSurface,
     onSurfaceVariant: onSurfaceVariant,
+    onSurfaceMuted: onSurfaceMuted,
     outline: outlineVariant,
+    outlineMuted: outlineMuted,
+    outlineDisabled: outlineDisabled,
     disabled: onSurfaceDisabled,
+    skeleton: skeletonBase,
+    errorContainer: errorContainer,
+    onErrorContainer: likeRed,
+    inverseSurface: inverseSurface,
+    inverseOnSurface: inverseOnSurface,
     mediaChrome: scrim80,
     mediaChromeForeground: whiteText,
   );
@@ -801,6 +906,7 @@ class VineTheme {
     surface: Color(0xFFFFFFFF),
     surfaceContainer: Color(0xFFF0EEEC),
     surfaceContainerHigh: Color(0xFFE7E4E1),
+    containerLow: Color(0xFFEDF3EF),
     nav: Color(0xFF07241B),
     iconButton: Color(0xFFE7F5EE),
     primaryText: Color(0xFF07241B),
@@ -808,8 +914,16 @@ class VineTheme {
     mutedText: Color(0xFF6F817A),
     onSurface: Color(0xFF17382D),
     onSurfaceVariant: Color(0xFF526B61),
+    onSurfaceMuted: Color(0x8C17382D),
     outline: Color(0xFFB7C9C1),
+    outlineMuted: Color(0xFFDCE7E2),
+    outlineDisabled: Color(0xFFEBF1EE),
     disabled: Color(0x6638584C),
+    skeleton: Color(0xFFE7E4E1),
+    errorContainer: Color(0xFFFFE7E2),
+    onErrorContainer: Color(0xFF8C1D18),
+    inverseSurface: Color(0xFF07241B),
+    inverseOnSurface: Color(0xFFFFFFFF),
     mediaChrome: Color(0xF2F9F7F6),
     mediaChromeForeground: Color(0xFF07241B),
   );
@@ -848,7 +962,9 @@ class VineTheme {
         foregroundColor: whiteText,
         elevation: 1,
         centerTitle: true,
-        systemOverlayStyle: isLight ? lightStatusBarStyle : statusBarStyle,
+        // The app bar keeps the dark brand green in both appearance modes,
+        // so status-bar icons drawn over it stay light either way.
+        systemOverlayStyle: statusBarStyle,
         titleTextStyle: const TextStyle(
           color: whiteText,
           fontSize: 20,

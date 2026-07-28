@@ -49,7 +49,7 @@ class _SelectableLinkifiedTextState
 
     final defaultStyle =
         widget.style ??
-        const TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 14);
+        TextStyle(color: context.vineColors.onSurfaceVariant, fontSize: 14);
     final linkStyle =
         widget.linkStyle ??
         const TextStyle(

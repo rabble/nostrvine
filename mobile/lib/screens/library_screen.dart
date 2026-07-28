@@ -622,7 +622,7 @@ class _LibraryContent extends StatelessWidget {
         Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
       child: ColoredBox(
-        color: VineTheme.surfaceContainerHigh,
+        color: context.vineColors.surfaceContainerHigh,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -637,12 +637,12 @@ class _LibraryContent extends StatelessWidget {
                 indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: VineTheme.transparent,
-                labelColor: VineTheme.whiteText,
-                unselectedLabelColor: VineTheme.onSurfaceMuted55,
+                labelColor: context.vineColors.primaryText,
+                unselectedLabelColor: context.vineColors.onSurfaceMuted,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 14),
                 labelStyle: VineTheme.titleMediumFont(),
                 unselectedLabelStyle: VineTheme.titleMediumFont(
-                  color: VineTheme.onSurfaceMuted55,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 tabs: [
                   Tab(text: context.l10n.libraryTabDrafts),
@@ -723,8 +723,8 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
         title: context.l10n.profileMyLibraryLabel,
         backgroundColor: VineTheme.onPrimary,
         surfaceTintColor: VineTheme.transparent,
-        shape: const Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
+        shape: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
         ),
         showBackButton: true,
         onBackPressed: () {
@@ -750,7 +750,9 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
               Text(
                 context.l10n.libraryWebUnavailableDescription,
                 textAlign: TextAlign.center,
-                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.secondaryText,
+                ),
               ),
             ],
           ),

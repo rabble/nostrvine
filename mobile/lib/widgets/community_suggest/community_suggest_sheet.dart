@@ -82,10 +82,10 @@ class CommunitySuggestView extends StatelessWidget {
             ),
             title: const _HeaderTitle(),
           ),
-          const Divider(
+          Divider(
             height: 0,
             thickness: 0,
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
           ),
           Expanded(
             child: ListView.separated(
@@ -94,10 +94,10 @@ class CommunitySuggestView extends StatelessWidget {
                 bottom: MediaQuery.paddingOf(context).bottom,
               ),
               itemCount: ContentLabel.values.length,
-              separatorBuilder: (_, _) => const Divider(
+              separatorBuilder: (_, _) => Divider(
                 height: 0,
                 thickness: 0,
-                color: VineTheme.surfaceContainer,
+                color: context.vineColors.surfaceContainer,
               ),
               itemBuilder: (_, index) =>
                   _LabelTile(label: ContentLabel.values[index]),
@@ -122,7 +122,9 @@ class _HeaderTitle extends StatelessWidget {
         Text(
           context.l10n.communitySuggestSubtitle,
           textAlign: TextAlign.center,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
       ],
     );
@@ -150,7 +152,7 @@ class _LabelTile extends StatelessWidget {
       label: localizedContentLabelName(context.l10n, label),
       child: Material(
         color: selected || alreadySuggested
-            ? VineTheme.surfaceContainer
+            ? context.vineColors.surfaceContainer
             : VineTheme.transparent,
         child: InkWell(
           onTap: alreadySuggested
@@ -175,7 +177,7 @@ class _LabelTile extends StatelessWidget {
                   Text(
                     context.l10n.communitySuggestAlready,
                     style: VineTheme.labelSmallFont(
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                   )
                 else
@@ -183,7 +185,7 @@ class _LabelTile extends StatelessWidget {
                     icon: selected ? .check : .plus,
                     color: selected
                         ? VineTheme.primary
-                        : VineTheme.secondaryText,
+                        : context.vineColors.secondaryText,
                   ),
               ],
             ),

@@ -69,7 +69,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
           // Hard failure path. The bloc gates `failure` on
@@ -440,15 +440,17 @@ class _FailureBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.warningCircle,
             size: 64,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.notificationsFailedToLoad,
-            style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
           const SizedBox(height: 16),
           TextButton(
@@ -538,7 +540,7 @@ class _NotificationList extends StatelessWidget {
                     locale: Localizations.localeOf(context).toLanguageTag(),
                   ),
                   style: VineTheme.labelLargeFont(
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
               ),
@@ -604,24 +606,24 @@ class _RefreshErrorBanner extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
+          color: context.vineColors.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
-              const DivineIcon(
+              DivineIcon(
                 icon: DivineIconName.warningCircle,
                 size: 20,
-                color: VineTheme.lightText,
+                color: context.vineColors.mutedText,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   context.l10n.notificationsRefreshError,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ),
               ),

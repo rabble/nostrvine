@@ -201,7 +201,7 @@ class _ForgotPasswordForm extends StatelessWidget {
               Text(
                 context.l10n.authResetPasswordDescription,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -275,7 +275,7 @@ class _ForgotPasswordConfirmation extends StatelessWidget {
           Builder(
             builder: (context) {
               final baseStyle = VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
               );
               final message = context.l10n.authResetLinkSentTo(email);
               final emailStart = message.indexOf(email);

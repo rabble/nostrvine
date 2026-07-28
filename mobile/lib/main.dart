@@ -1214,7 +1214,7 @@ Future<void> _startOpenVineApp() async {
                 const Text(
                   'Oops, something went wrong',
                   style: TextStyle(
-                    color: VineTheme.whiteText,
+                    color: VineTheme.primaryText,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     decoration: TextDecoration.none,

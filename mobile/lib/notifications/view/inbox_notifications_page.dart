@@ -31,9 +31,9 @@ class InboxNotificationsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationRepository = ref.watch(notificationRepositoryProvider);
     if (notificationRepository == null) {
-      return const ColoredBox(
-        color: VineTheme.backgroundColor,
-        child: Center(
+      return ColoredBox(
+        color: context.vineColors.background,
+        child: const Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
       );
@@ -90,7 +90,7 @@ class _InboxNotificationsScaffoldState
         top: Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
       child: ColoredBox(
-        color: VineTheme.surfaceContainerHigh,
+        color: context.vineColors.surfaceContainerHigh,
         child: Column(
           children: [
             const SizedBox(height: 12),
@@ -105,12 +105,12 @@ class _InboxNotificationsScaffoldState
                 indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: VineTheme.transparent,
-                labelColor: VineTheme.whiteText,
-                unselectedLabelColor: VineTheme.onSurfaceMuted55,
+                labelColor: context.vineColors.primaryText,
+                unselectedLabelColor: context.vineColors.onSurfaceMuted,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 14),
                 labelStyle: VineTheme.titleMediumFont(),
                 unselectedLabelStyle: VineTheme.titleMediumFont(
-                  color: VineTheme.onSurfaceMuted55,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 tabs: [
                   Tab(text: context.l10n.notificationsTabAll),
@@ -237,7 +237,7 @@ class _InviteNotificationCard extends StatelessWidget {
       onTap: () => context.push(InvitesScreen.path),
       child: Container(
         padding: const EdgeInsets.all(16),
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         child: Row(
           spacing: 12,
           children: [
@@ -248,15 +248,15 @@ class _InviteNotificationCard extends StatelessWidget {
                 color: VineTheme.vineGreen,
                 shape: BoxShape.circle,
               ),
-              child: const DivineIcon(
+              child: DivineIcon(
                 icon: DivineIconName.shareNetwork,
-                color: VineTheme.backgroundColor,
+                color: context.vineColors.background,
               ),
             ),
             Expanded(child: Text(label, style: VineTheme.bodyMediumFont())),
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.caretRight,
-              color: VineTheme.lightText,
+              color: context.vineColors.mutedText,
             ),
           ],
         ),

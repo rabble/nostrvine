@@ -119,7 +119,9 @@ class _CommentsTitle extends StatelessWidget {
           children: [
             Text(
               context.l10n.commentsHeaderCount(count),
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.onSurface,
+              ),
             ),
             if (state.newCommentCount > 0) ...[
               const SizedBox(width: 8),
@@ -887,18 +889,22 @@ class _CommentsSortToggle extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: VineTheme.containerLow,
+                color: context.vineColors.containerLow,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(icon, size: 14, color: VineTheme.onSurfaceVariant),
+                  Icon(
+                    icon,
+                    size: 14,
+                    color: context.vineColors.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
                   Text(
                     label,
                     style: VineTheme.labelMediumFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                 ],

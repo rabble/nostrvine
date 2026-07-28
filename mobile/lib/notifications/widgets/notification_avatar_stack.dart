@@ -92,19 +92,21 @@ class _OverflowTile extends StatelessWidget {
       width: NotificationAvatarStack._tileSize,
       height: NotificationAvatarStack._tileSize,
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(
           NotificationAvatarStack._tileRadius,
         ),
         border: Border.all(
-          color: VineTheme.onSurfaceDisabled,
+          color: context.vineColors.disabled,
           width: 0.8,
         ),
       ),
       alignment: Alignment.center,
       child: Text(
         '+$count',
-        style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
+        style: VineTheme.labelSmallFont(
+          color: context.vineColors.secondaryText,
+        ),
       ),
     );
   }

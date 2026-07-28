@@ -60,13 +60,16 @@ class _UpdateDialog extends StatelessWidget {
     final isUrgent = urgency == UpdateUrgency.urgent;
 
     return AlertDialog(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         isUrgent ? UpdateCopy.urgentTitle : UpdateCopy.moderateTitle,
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(color: VineTheme.primaryText),
+        style:
+            Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(
+              color: context.vineColors.primaryText,
+            ),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -76,7 +79,7 @@ class _UpdateDialog extends StatelessWidget {
             Text(
               UpdateCopy.newIn(latestVersion),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: VineTheme.lightText.withValues(alpha: 0.7),
+                color: context.vineColors.mutedText.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 8),
@@ -94,7 +97,7 @@ class _UpdateDialog extends StatelessWidget {
                       child: Text(
                         highlight,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: VineTheme.primaryText,
+                          color: context.vineColors.primaryText,
                         ),
                       ),
                     ),
@@ -112,7 +115,9 @@ class _UpdateDialog extends StatelessWidget {
           },
           child: Text(
             UpdateCopy.notNow,
-            style: TextStyle(color: VineTheme.lightText.withValues(alpha: 0.6)),
+            style: TextStyle(
+              color: context.vineColors.mutedText.withValues(alpha: 0.6),
+            ),
           ),
         ),
         FilledButton(

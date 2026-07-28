@@ -66,7 +66,9 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         modalContext.l10n.commentOptionsTitle,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(
+          color: modalContext.vineColors.onSurface,
+        ),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -105,7 +107,7 @@ class CommentOptionsModal {
       expanded: false,
       title: Text(
         context.l10n.commentOptionsTitle,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       body: Column(
         mainAxisSize: MainAxisSize.min,
@@ -165,7 +167,9 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? VineTheme.likeRed : VineTheme.onSurface;
+    final color = isDestructive
+        ? VineTheme.likeRed
+        : context.vineColors.onSurface;
 
     return Semantics(
       identifier: identifier,
@@ -211,7 +215,7 @@ class _FlagContentSheet extends StatefulWidget {
       isScrollControlled: true,
       title: Text(
         context.l10n.commentOptionsFlagContentLabel,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       body: _FlagContentSheet(
         onSubmit: (result) => Navigator.pop(context, result),
@@ -246,7 +250,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                   child: Text(
                     context.l10n.commentOptionsFlagReasonPrompt,
                     style: VineTheme.bodyMediumFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                   ),
                 ),
@@ -285,10 +289,10 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _selectedReason != null
                     ? VineTheme.vineGreen
-                    : VineTheme.containerLow,
+                    : context.vineColors.containerLow,
                 foregroundColor: _selectedReason != null
-                    ? VineTheme.backgroundColor
-                    : VineTheme.onSurfaceMuted,
+                    ? context.vineColors.background
+                    : context.vineColors.onSurfaceMuted,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
@@ -298,8 +302,8 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                 context.l10n.commentOptionsFlagSubmit,
                 style: VineTheme.labelLargeFont(
                   color: _selectedReason != null
-                      ? VineTheme.backgroundColor
-                      : VineTheme.onSurfaceMuted,
+                      ? context.vineColors.background
+                      : context.vineColors.onSurfaceMuted,
                 ),
               ),
             ),
@@ -348,7 +352,7 @@ class _ReasonRadioTile extends StatelessWidget {
                   border: Border.all(
                     color: isSelected
                         ? VineTheme.vineGreen
-                        : VineTheme.onSurfaceMuted,
+                        : context.vineColors.onSurfaceMuted,
                     width: 2,
                   ),
                 ),
@@ -374,15 +378,15 @@ class _ReasonRadioTile extends StatelessWidget {
                       context.l10n.reportReasonTitle(reason),
                       style: VineTheme.bodyLargeFont(
                         color: isSelected
-                            ? VineTheme.onSurface
-                            : VineTheme.onSurfaceVariant,
+                            ? context.vineColors.onSurface
+                            : context.vineColors.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       context.l10n.reportReasonSubtitle(reason),
                       style: VineTheme.bodySmallFont(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                     ),
                   ],

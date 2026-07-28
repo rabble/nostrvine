@@ -20,7 +20,7 @@ class AgeVerificationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Dialog(
-    backgroundColor: VineTheme.backgroundColor,
+    backgroundColor: context.vineColors.background,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
       side: const BorderSide(color: VineTheme.vineGreen, width: 2),
@@ -42,7 +42,7 @@ class AgeVerificationDialog extends StatelessWidget {
                 ? context.l10n.ageVerificationContentWarning
                 : context.l10n.ageVerificationTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: VineTheme.whiteText,
+              color: context.vineColors.primaryText,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -51,9 +51,12 @@ class AgeVerificationDialog extends StatelessWidget {
             type == AgeVerificationType.adultContent
                 ? context.l10n.ageVerificationAdultDescription
                 : context.l10n.ageVerificationCreationDescription,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: VineTheme.onSurfaceVariant),
+            style:
+                Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -62,7 +65,7 @@ class AgeVerificationDialog extends StatelessWidget {
                 ? context.l10n.ageVerificationAdultQuestion
                 : context.l10n.ageVerificationCreationQuestion,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: VineTheme.whiteText,
+              color: context.vineColors.primaryText,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -76,7 +79,7 @@ class AgeVerificationDialog extends StatelessWidget {
                   onPressed: () => context.pop(false),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: VineTheme.whiteText,
-                    side: const BorderSide(color: VineTheme.onSurfaceMuted),
+                    side: BorderSide(color: context.vineColors.onSurfaceMuted),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,

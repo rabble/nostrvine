@@ -72,7 +72,7 @@ class ClipsTab extends StatelessWidget {
                       context.l10n.libraryOpenErrorDescription,
                       textAlign: TextAlign.center,
                       style: VineTheme.bodyLargeFont(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -206,7 +206,7 @@ class ClipSelectionHeader extends StatelessWidget {
                       Text(
                         context.l10n.libraryClipSelectionTitle,
                         style: VineTheme.titleMediumFont(
-                          color: VineTheme.onSurface,
+                          color: context.vineColors.onSurface,
                         ),
                       ),
                     ],
@@ -225,10 +225,10 @@ class ClipSelectionHeader extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(
+            Divider(
               height: 2,
               thickness: 2,
-              color: VineTheme.outlinedDisabled,
+              color: context.vineColors.surfaceContainer,
             ),
           ],
         );

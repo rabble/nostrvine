@@ -201,7 +201,7 @@ class _RepostGridTile extends ConsumerWidget {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
-        decoration: const BoxDecoration(color: VineTheme.cardBackground),
+        decoration: BoxDecoration(color: context.vineColors.card),
         child: ProfileTabThumbnail(
           thumbnailUrl: videoEvent.thumbnailUrl,
           blurhash: videoEvent.blurhash,

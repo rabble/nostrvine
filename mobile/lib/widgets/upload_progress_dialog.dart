@@ -65,7 +65,7 @@ class _UploadProgressViewState extends State<_UploadProgressView> {
       builder: (context, state) {
         final percentageText = '${(state.progress * 100).toInt()}%';
         return Dialog(
-          backgroundColor: VineTheme.cardBackground,
+          backgroundColor: context.vineColors.card,
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
@@ -73,8 +73,8 @@ class _UploadProgressViewState extends State<_UploadProgressView> {
               children: [
                 Text(
                   context.l10n.uploadUploadingVideo,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -82,7 +82,7 @@ class _UploadProgressViewState extends State<_UploadProgressView> {
                 const SizedBox(height: 24),
                 LinearProgressIndicator(
                   value: state.progress,
-                  backgroundColor: VineTheme.cardBackground,
+                  backgroundColor: context.vineColors.card,
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     VineTheme.vineGreen,
                   ),
@@ -90,8 +90,8 @@ class _UploadProgressViewState extends State<_UploadProgressView> {
                 const SizedBox(height: 16),
                 Text(
                   percentageText,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),

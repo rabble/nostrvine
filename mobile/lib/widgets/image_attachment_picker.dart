@@ -162,10 +162,10 @@ class _Thumbnail extends StatelessWidget {
               errorBuilder: (_, _, _) => Container(
                 width: 64,
                 height: 64,
-                color: VineTheme.cardBackground,
-                child: const DivineIcon(
+                color: context.vineColors.card,
+                child: DivineIcon(
                   icon: DivineIconName.image,
-                  color: VineTheme.lightText,
+                  color: context.vineColors.mutedText,
                 ),
               ),
             ),
@@ -189,14 +189,14 @@ class _Thumbnail extends StatelessWidget {
                         child: Container(
                           width: 20,
                           height: 20,
-                          decoration: const BoxDecoration(
-                            color: VineTheme.cardBackground,
+                          decoration: BoxDecoration(
+                            color: context.vineColors.card,
                             shape: BoxShape.circle,
                           ),
-                          child: const DivineIcon(
+                          child: DivineIcon(
                             icon: DivineIconName.x,
                             size: 14,
-                            color: VineTheme.whiteText,
+                            color: context.vineColors.primaryText,
                           ),
                         ),
                       ),
@@ -238,13 +238,15 @@ class _AddButton extends StatelessWidget {
               border: Border.all(
                 color: enabled
                     ? VineTheme.vineGreen.withValues(alpha: 0.7)
-                    : VineTheme.lightText.withValues(alpha: 0.7),
+                    : context.vineColors.mutedText.withValues(alpha: 0.7),
               ),
             ),
             child: Center(
               child: DivineIcon(
                 icon: DivineIconName.imagesSquare,
-                color: enabled ? VineTheme.vineGreen : VineTheme.lightText,
+                color: enabled
+                    ? VineTheme.vineGreen
+                    : context.vineColors.mutedText,
               ),
             ),
           ),

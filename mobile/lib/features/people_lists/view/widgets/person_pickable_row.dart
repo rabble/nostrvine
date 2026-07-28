@@ -65,7 +65,9 @@ class PersonPickableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = enabled ? VineTheme.onSurface : VineTheme.secondaryText;
+    final textColor = enabled
+        ? context.vineColors.onSurface
+        : context.vineColors.secondaryText;
     return Semantics(
       identifier: 'person_pickable_row_$pubkey',
       button: true,
@@ -103,7 +105,7 @@ class PersonPickableRow extends StatelessWidget {
                         Text(
                           handle,
                           style: VineTheme.bodyMediumFont(
-                            color: VineTheme.secondaryText,
+                            color: context.vineColors.secondaryText,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

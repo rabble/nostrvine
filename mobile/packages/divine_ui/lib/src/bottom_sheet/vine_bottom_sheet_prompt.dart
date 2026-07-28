@@ -169,14 +169,20 @@ class VineBottomSheetPrompt extends StatelessWidget {
           const SizedBox(height: 32),
 
           // Title
-          Text(title, style: VineTheme.headlineSmallFont(), textAlign: .center),
+          Text(
+            title,
+            style: VineTheme.headlineSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+            textAlign: .center,
+          ),
           const SizedBox(height: 8),
 
           // Subtitle
           Text(
             subtitle,
             style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
             ),
             textAlign: .center,
           ),
@@ -188,7 +194,7 @@ class VineBottomSheetPrompt extends StatelessWidget {
               child: Text(
                 additionalText!,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 textAlign: .center,
               ),

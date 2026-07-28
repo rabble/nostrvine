@@ -38,13 +38,17 @@ class UnblockConfirmationView extends StatelessWidget {
           // Title
           Text(
             context.l10n.profileUnblockTitle(displayName),
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 16),
           // Explanation content
           Text(
             context.l10n.profileUnblockExplanation,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Column(
@@ -63,13 +67,15 @@ class UnblockConfirmationView extends StatelessWidget {
               TextSpan(
                 text: context.l10n.profileLearnMoreAt,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 children: [
                   TextSpan(
                     text: 'divine.video/safety',
-                    style: VineTheme.bodyLargeFont(color: VineTheme.onSurface)
-                        .copyWith(
+                    style:
+                        VineTheme.bodyLargeFont(
+                          color: context.vineColors.onSurface,
+                        ).copyWith(
                           decoration: TextDecoration.underline,
                           decorationColor: VineTheme.vineGreen,
                           decorationThickness: 2,

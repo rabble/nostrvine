@@ -155,7 +155,7 @@ class CategoryGalleryView extends StatelessWidget {
     final visuals = CategoryVisuals.forCategory(category, 0);
 
     return ColoredBox(
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: Column(
         children: [
           _CategoryGalleryHeader(
@@ -211,8 +211,8 @@ class _CategoryGalleryBody extends StatelessWidget {
             children: [
               Text(
                 context.l10n.categoryGalleryCouldNotLoadVideos,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 16,
                 ),
               ),
@@ -229,8 +229,8 @@ class _CategoryGalleryBody extends StatelessWidget {
           return Center(
             child: Text(
               context.l10n.categoryGalleryNoVideosInCategory,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 16,
               ),
             ),
@@ -416,7 +416,10 @@ class _CategoryHeaderActionButton extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: DivineIcon(icon: icon, color: VineTheme.onSurface),
+              child: DivineIcon(
+                icon: icon,
+                color: context.vineColors.onSurface,
+              ),
             ),
           ),
         ),
@@ -537,7 +540,7 @@ class _CategorySortSheetOption extends StatelessWidget {
           key: Key('category-sort-option-${option.value}'),
           decoration: BoxDecoration(
             color: isSelected
-                ? VineTheme.iconButtonBackground
+                ? context.vineColors.iconButton
                 : VineTheme.navGreen,
             border: const Border(
               bottom: BorderSide(color: _categorySortDivider),

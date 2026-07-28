@@ -29,7 +29,7 @@ class MessageRequestsView extends ConsumerWidget {
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: context.l10n.inboxMessageRequestsTitle,
         showBackButton: true,
@@ -47,7 +47,7 @@ class MessageRequestsView extends ConsumerWidget {
           top: Radius.circular(VineTheme.bottomSheetBorderRadius),
         ),
         child: ColoredBox(
-          color: VineTheme.surfaceContainerHigh,
+          color: context.vineColors.surfaceContainerHigh,
           child: _RequestList(currentPubkey: currentPubkey),
         ),
       ),
@@ -128,7 +128,7 @@ class _RequestList extends StatelessWidget {
               child: Text(
                 context.l10n.inboxMessageRequestsEmpty,
                 style: VineTheme.titleMediumFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 textAlign: TextAlign.center,
               ),

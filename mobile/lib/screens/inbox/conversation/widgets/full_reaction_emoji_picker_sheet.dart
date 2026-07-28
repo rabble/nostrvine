@@ -17,33 +17,34 @@ class FullReactionEmojiPickerSheet {
   /// Visible height of the picker body, excluding the keyboard inset.
   static const double _bodyHeight = 320;
 
-  /// Dark-mode picker styling.
+  /// Picker styling for the active appearance mode.
   ///
   /// Paints every sub-surface — grid, search bar, category bar, and bottom
-  /// action bar — with [VineTheme.surfaceBackground] so the picker reads as a
-  /// single dark panel. The package defaults the search/category/emoji views
-  /// to light grey, which would otherwise stand out against the dark sheet.
+  /// action bar — with the sheet surface color so the picker reads as a
+  /// single panel. The package defaults the search/category/emoji views to
+  /// light grey, which would otherwise stand out against the sheet.
   /// [VineBottomSheet] supplies the drag handle, so the editor's own is off.
-  static const _emojiEditorStyle = EmojiEditorStyle(
-    backgroundColor: VineTheme.surfaceBackground,
-    showDragHandle: false,
-    searchViewConfig: SearchViewConfig(
-      backgroundColor: VineTheme.surfaceBackground,
-      buttonIconColor: VineTheme.onSurface,
-    ),
-    bottomActionBarConfig: BottomActionBarConfig(
-      backgroundColor: VineTheme.surfaceBackground,
-      buttonColor: VineTheme.surfaceBackground,
-      buttonIconColor: VineTheme.onSurface,
-      showBackspaceButton: false,
-    ),
-    categoryViewConfig: CategoryViewConfig(
-      backgroundColor: VineTheme.surfaceBackground,
-    ),
-    emojiViewConfig: EmojiViewConfig(
-      backgroundColor: VineTheme.surfaceBackground,
-    ),
-  );
+  static EmojiEditorStyle _emojiEditorStyleOf(BuildContext context) =>
+      EmojiEditorStyle(
+        backgroundColor: context.vineColors.surface,
+        showDragHandle: false,
+        searchViewConfig: SearchViewConfig(
+          backgroundColor: context.vineColors.surface,
+          buttonIconColor: context.vineColors.onSurface,
+        ),
+        bottomActionBarConfig: BottomActionBarConfig(
+          backgroundColor: context.vineColors.surface,
+          buttonColor: context.vineColors.surface,
+          buttonIconColor: context.vineColors.onSurface,
+          showBackspaceButton: false,
+        ),
+        categoryViewConfig: CategoryViewConfig(
+          backgroundColor: context.vineColors.surface,
+        ),
+        emojiViewConfig: EmojiViewConfig(
+          backgroundColor: context.vineColors.surface,
+        ),
+      );
 
   /// Maps the picker's category / search labels to localized strings.
   ///
@@ -68,7 +69,7 @@ class FullReactionEmojiPickerSheet {
   static Future<String?> show({required BuildContext context}) async {
     final configs = ProImageEditorConfigs(
       i18n: I18n(emojiEditor: buildI18n(context.l10n)),
-      emojiEditor: const EmojiEditorConfigs(style: _emojiEditorStyle),
+      emojiEditor: EmojiEditorConfigs(style: _emojiEditorStyleOf(context)),
     );
 
     final layer = await VineBottomSheet.show<EmojiLayer>(

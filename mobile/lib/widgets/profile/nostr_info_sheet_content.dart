@@ -34,7 +34,9 @@ class NostrInfoSheetContent extends StatelessWidget {
           // Introduction paragraph
           RichText(
             text: TextSpan(
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurface,
+              ),
               children: [
                 TextSpan(
                   text: context.l10n.nostrInfoIntroBuiltOn,
@@ -51,12 +53,14 @@ class NostrInfoSheetContent extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.nostrInfoOwnership,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+            style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.nostrInfoLingo,
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           // npub explanation
@@ -88,14 +92,16 @@ class NostrInfoSheetContent extends StatelessWidget {
             },
             child: RichText(
               text: TextSpan(
-                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.onSurface,
+                ),
                 children: [
                   TextSpan(text: context.l10n.nostrInfoLearnMoreAt),
-                  const TextSpan(
+                  TextSpan(
                     text: 'divine.video/about',
                     style: TextStyle(
                       decoration: TextDecoration.underline,
-                      decorationColor: VineTheme.onSurface,
+                      decorationColor: context.vineColors.onSurface,
                     ),
                   ),
                 ],
@@ -109,13 +115,16 @@ class NostrInfoSheetContent extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onDismiss ?? () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
-                backgroundColor: VineTheme.surfaceContainer,
+                backgroundColor: context.vineColors.surfaceContainer,
                 foregroundColor: VineTheme.vineGreen,
                 padding: const EdgeInsets.symmetric(
                   vertical: 12,
                   horizontal: 16,
                 ),
-                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
+                side: BorderSide(
+                  color: context.vineColors.outlineMuted,
+                  width: 2,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
@@ -151,11 +160,16 @@ class _NostrBulletPoint extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('• ', style: VineTheme.bodyLargeFont(color: VineTheme.onSurface)),
+        Text(
+          '• ',
+          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
+        ),
         Expanded(
           child: RichText(
             text: TextSpan(
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurface,
+              ),
               children: [
                 TextSpan(
                   text: boldText,

@@ -142,12 +142,12 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
         body: Text(
           context.l10n.authWaitlistUpdatesAt(waitlistEmail),
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 16,
             height: 1.5,
             letterSpacing: 0.15,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
         ),
         primaryButton: DivineButton(
@@ -178,12 +178,12 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
             title: context.l10n.authInviteUnavailable,
             body: Text(
               context.l10n.authInviteUnavailableBody,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,
                 height: 1.5,
                 letterSpacing: 0.15,
-                color: VineTheme.lightText,
+                color: context.vineColors.mutedText,
               ),
               textAlign: TextAlign.center,
             ),
@@ -230,9 +230,9 @@ class _InviteLoadingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
-      body: Center(
+    return Scaffold(
+      backgroundColor: context.vineColors.background,
+      body: const Center(
         child: CircularProgressIndicator(color: VineTheme.vineGreen),
       ),
     );
@@ -261,7 +261,7 @@ class _InviteCodeEntryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: LayoutBuilder(
@@ -305,11 +305,11 @@ class _InviteCodeEntryPage extends StatelessWidget {
                               const SizedBox(height: 32),
                               Text(
                                 context.l10n.authAddInviteCode,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: VineTheme.fontFamilyBricolage,
                                   fontSize: 32,
                                   fontWeight: FontWeight.w700,
-                                  color: VineTheme.whiteText,
+                                  color: context.vineColors.primaryText,
                                   height: 1.25,
                                 ),
                               ),
@@ -353,10 +353,10 @@ class _InviteCodeEntryPage extends StatelessWidget {
                                     : onContactSupport,
                                 child: Text(
                                   context.l10n.authContactSupport,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 15,
-                                    color: VineTheme.lightText,
+                                    color: context.vineColors.mutedText,
                                   ),
                                 ),
                               ),
@@ -409,10 +409,10 @@ class _InviteCodeInput extends StatelessWidget {
             FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
             _InviteCodeTextInputFormatter(),
           ],
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w400,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
             letterSpacing: 0.15,
           ),
           decoration: InputDecoration(
@@ -432,7 +432,7 @@ class _InviteCodeInput extends StatelessWidget {
               letterSpacing: 0.15,
             ),
             filled: true,
-            fillColor: VineTheme.surfaceContainer,
+            fillColor: context.vineColors.surfaceContainer,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(24),
               borderSide: BorderSide.none,
@@ -494,7 +494,7 @@ class _InviteSheetPage extends StatelessWidget {
     final safeBottom = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -512,9 +512,9 @@ class _InviteSheetPage extends StatelessWidget {
             const Spacer(),
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
-                color: VineTheme.surfaceBackground,
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: context.vineColors.surface,
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(VineTheme.bottomSheetBorderRadius),
                 ),
               ),
@@ -525,9 +525,11 @@ class _InviteSheetPage extends StatelessWidget {
                     height: 32,
                     width: double.infinity,
                     alignment: const Alignment(0, -0.2),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: VineTheme.outlineDisabled),
+                        bottom: BorderSide(
+                          color: context.vineColors.outlineDisabled,
+                        ),
                       ),
                     ),
                     child: Container(
@@ -551,11 +553,11 @@ class _InviteSheetPage extends StatelessWidget {
                         const SizedBox(height: 32),
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: VineTheme.fontFamilyBricolage,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: VineTheme.whiteText,
+                            color: context.vineColors.primaryText,
                             height: 1.333,
                           ),
                           textAlign: TextAlign.center,
@@ -684,7 +686,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
         top: 16,
       ),
       child: Material(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         borderRadius: BorderRadius.circular(VineTheme.bottomSheetBorderRadius),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -702,22 +704,22 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
               const SizedBox(height: 24),
               Text(
                 context.l10n.authJoinWaitlistTitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: VineTheme.fontFamilyBricolage,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: VineTheme.whiteText,
+                  color: context.vineColors.primaryText,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.authJoinWaitlistDescription,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 16,
                   height: 1.5,
                   letterSpacing: 0.15,
-                  color: VineTheme.lightText,
+                  color: context.vineColors.mutedText,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -740,7 +742,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                       label: Text(
                         context.l10n.authJoinWaitlistNewsletterOptIn,
                         style: VineTheme.bodyLargeFont(
-                          color: VineTheme.lightText,
+                          color: context.vineColors.mutedText,
                         ),
                       ),
                     ),
@@ -782,10 +784,10 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                 onPressed: _isSubmitting ? null : _contactSupport,
                 child: Text(
                   context.l10n.authContactSupport,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 15,
-                    color: VineTheme.lightText,
+                    color: context.vineColors.mutedText,
                   ),
                 ),
               ),

@@ -89,7 +89,7 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
     return Skeletonizer(
       enabled: widget.isLoading && !_timeoutExpired,
       enableSwitchAnimation: true,
-      effect: vineSkeletonEffect,
+      effect: vineSkeletonEffectOf(context),
       child: widget.child,
     );
   }

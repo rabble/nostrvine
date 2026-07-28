@@ -279,7 +279,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           const SizedBox(height: 8),
           Text(
             l10n.reportPolicyNotice,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
           const SizedBox(height: 16),
           ...ContentFilterReason.values.map(
@@ -298,7 +300,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             const SizedBox(height: 4),
             DecoratedBox(
               decoration: BoxDecoration(
-                color: VineTheme.surfaceContainer,
+                color: context.vineColors.surfaceContainer,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Padding(
@@ -584,13 +586,17 @@ class _ReportConfirmationView extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             l10n.reportReceivedReviewNotice,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
           if (moderationDmFailed) ...[
             const SizedBox(height: 12),
             Text(
               l10n.reportModerationDmDelayed,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
           ],
           const SizedBox(height: 8),
@@ -607,7 +613,7 @@ class _ReportConfirmationView extends StatelessWidget {
                   TextSpan(
                     text: '${l10n.reportLearnMoreAt} ',
                     style: VineTheme.bodyMediumFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                   ),
                   TextSpan(
@@ -686,12 +692,12 @@ class _ReasonCard extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected
                   ? VineTheme.vineGreen
-                  : VineTheme.outlinedDisabled,
+                  : context.vineColors.surfaceContainer,
               width: 1.5,
             ),
           ),
@@ -709,7 +715,7 @@ class _ReasonCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: VineTheme.bodySmallFont(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                     ),
                   ],
@@ -739,11 +745,11 @@ class _RadioIndicator extends StatelessWidget {
           border: Border.all(color: VineTheme.vineGreen, width: 2),
         ),
         child: isSelected
-            ? const Center(
+            ? Center(
                 child: DivineIcon(
                   icon: DivineIconName.check,
                   size: 14,
-                  color: VineTheme.surfaceBackground,
+                  color: context.vineColors.surface,
                 ),
               )
             : null,

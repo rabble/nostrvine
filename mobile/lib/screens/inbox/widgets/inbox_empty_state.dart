@@ -23,12 +23,16 @@ class InboxEmptyState extends StatelessWidget {
           children: [
             Text(
               context.l10n.inboxEmptyTitle,
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               textAlign: TextAlign.center,
             ),
             Text(
               context.l10n.inboxEmptySubtitle,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

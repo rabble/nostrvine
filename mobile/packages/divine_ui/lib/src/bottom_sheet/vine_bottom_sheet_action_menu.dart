@@ -100,11 +100,12 @@ class _VineBottomSheetListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEnabled = data.onTap != null;
 
+    final colors = context.vineColors;
     final color = isEnabled
         ? data.isDestructive
               ? VineTheme.error
-              : VineTheme.whiteText
-        : VineTheme.onSurfaceDisabled;
+              : colors.primaryText
+        : colors.disabled;
 
     return Material(
       color: Colors.transparent,

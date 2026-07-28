@@ -21,16 +21,19 @@ class ErrorMessage extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.warningCircle,
-            color: VineTheme.whiteText,
+            color: context.vineColors.primaryText,
             size: 20,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message!,
-              style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
+              style: TextStyle(
+                color: context.vineColors.primaryText,
+                fontSize: 14,
+              ),
             ),
           ),
         ],

@@ -304,7 +304,7 @@ class MessageBubble extends StatelessWidget {
                     ? VineTheme.neutral10
                     : isSent
                     ? VineTheme.primaryAccessible
-                    : VineTheme.surfaceContainer,
+                    : context.vineColors.surfaceContainer,
                 borderRadius: _borderRadiusFor(effectiveIsLastInGroup),
               ),
               child: Column(
@@ -321,7 +321,7 @@ class MessageBubble extends StatelessWidget {
                       child: Text(
                         timestamp,
                         style: VineTheme.labelSmallFont(
-                          color: VineTheme.onSurfaceMuted,
+                          color: context.vineColors.onSurfaceMuted,
                         ),
                       ),
                     ),
@@ -437,7 +437,9 @@ class _MessageTextState extends ConsumerState<_MessageText> {
     // Sent bubbles have a primaryAccessible background → use white for
     // contrast. Received bubbles use surfaceContainer → primary green
     // reads cleanly there.
-    final linkColor = widget.isSent ? VineTheme.whiteText : VineTheme.primary;
+    final linkColor = widget.isSent
+        ? context.vineColors.primaryText
+        : VineTheme.primary;
     final referenceStyle = defaultStyle.copyWith(
       color: linkColor,
       decoration: TextDecoration.underline,
@@ -596,7 +598,7 @@ class _VideoLinkPreview extends ConsumerWidget {
       ),
       child: BlocBuilder<VideoLinkPreviewCubit, VideoLinkPreviewState>(
         builder: (context, state) => switch (state) {
-          VideoLinkPreviewLoading() => _buildLoadingPlaceholder(),
+          VideoLinkPreviewLoading() => _buildLoadingPlaceholder(context),
           VideoLinkPreviewNotFound() => const _VideoUnavailableCard(),
           VideoLinkPreviewResolved(:final video) => _VideoCard(
             video: video,
@@ -608,13 +610,13 @@ class _VideoLinkPreview extends ConsumerWidget {
     );
   }
 
-  static Widget _buildLoadingPlaceholder() {
+  static Widget _buildLoadingPlaceholder(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(_videoCardRadius),
       child: Container(
         width: _videoCardWidth,
         height: _videoCardHeight,
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         child: const Center(
           child: SizedBox(
             width: 24,
@@ -728,7 +730,7 @@ class _QuotedVideoFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isSent ? VineTheme.whiteText : VineTheme.primary;
+    final accent = isSent ? context.vineColors.primaryText : VineTheme.primary;
     final frame = SizedBox(
       width: _quotedPreviewWidth,
       child: DecoratedBox(
@@ -794,7 +796,7 @@ class _QuotedThumbPlaceholder extends StatelessWidget {
       width: _quotedThumbWidth,
       height: _quotedThumbHeight,
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(_quotedThumbRadius),
       ),
     );
@@ -854,10 +856,12 @@ class _QuotedVideoCard extends ConsumerWidget {
       AsyncError() => UserProfile.defaultDisplayNameFor(video.pubkey),
       AsyncLoading() => null,
     };
-    final primaryColor = isSent ? VineTheme.whiteText : VineTheme.onSurface;
+    final primaryColor = isSent
+        ? context.vineColors.primaryText
+        : context.vineColors.onSurface;
     final secondaryColor = isSent
         ? VineTheme.whiteText.withValues(alpha: 0.7)
-        : VineTheme.onSurfaceMuted;
+        : context.vineColors.onSurfaceMuted;
     final primaryLabel = hasTitle ? title : (authorName ?? '');
     final showSecondary =
         hasTitle && authorName != null && authorName.isNotEmpty;
@@ -946,9 +950,9 @@ class _QuotedPlayBadge extends StatelessWidget {
           width: 1.5,
         ),
       ),
-      child: const DivineIcon(
+      child: DivineIcon(
         icon: DivineIconName.play,
-        color: VineTheme.whiteText,
+        color: context.vineColors.primaryText,
         size: _quotedPlayGlyphSize,
       ),
     );
@@ -963,7 +967,9 @@ class _QuotedVideoUnavailable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSent ? VineTheme.whiteText : VineTheme.onSurfaceMuted;
+    final color = isSent
+        ? context.vineColors.primaryText
+        : context.vineColors.onSurfaceMuted;
     return _QuotedVideoFrame(
       isSent: isSent,
       child: Row(
@@ -1001,20 +1007,22 @@ class _VideoUnavailableCard extends StatelessWidget {
       child: Container(
         width: _videoCardWidth,
         height: _videoCardHeight,
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         alignment: Alignment.center,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.warningCircle,
-              color: VineTheme.onSurfaceMuted,
+              color: context.vineColors.onSurfaceMuted,
               size: 32,
             ),
             const SizedBox(height: 8),
             Text(
               context.l10n.notificationsVideoUnavailable,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
           ],
         ),

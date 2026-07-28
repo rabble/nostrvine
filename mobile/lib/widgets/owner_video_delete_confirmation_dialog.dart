@@ -11,14 +11,14 @@ Future<bool> showOwnerVideoDeleteConfirmationDialog(
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       title: Text(
         dialogContext.l10n.shareMenuDeleteVideo,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       content: Text(
         dialogContext.l10n.shareMenuDeleteConfirmation,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       actions: [
         TextButton(

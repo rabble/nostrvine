@@ -156,13 +156,17 @@ class _EmptyListRows extends StatelessWidget {
           Text(
             context.l10n.peopleListsEmptyTitle,
             textAlign: TextAlign.center,
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.peopleListsEmptySubtitle,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ],
       ),

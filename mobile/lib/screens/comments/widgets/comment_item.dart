@@ -90,7 +90,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           });
         },
         child: ColoredBox(
-          color: _isHeld ? VineTheme.containerLow : VineTheme.transparent,
+          color: _isHeld
+              ? context.vineColors.containerLow
+              : VineTheme.transparent,
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,7 +106,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                       decoration: BoxDecoration(
                         border: Border(
                           left: BorderSide(
-                            color: VineTheme.containerLow,
+                            color: context.vineColors.containerLow,
                             width: i == min(widget.depth, 4) - 1 ? 2 : 1,
                           ),
                         ),
@@ -324,20 +326,20 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       relativeTime,
                       style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                     ),
                     if (isCurrentUser) ...[
                       Text(
                         ' • ',
                         style: VineTheme.labelSmallFont(
-                          color: VineTheme.onSurfaceMuted,
+                          color: context.vineColors.onSurfaceMuted,
                         ),
                       ),
                       Text(
                         context.l10n.commentAuthorYouIndicator,
                         style: VineTheme.labelSmallFont(
-                          color: VineTheme.onSurfaceMuted,
+                          color: context.vineColors.onSurfaceMuted,
                         ),
                       ),
                     ],
@@ -352,7 +354,7 @@ class _CommentHeader extends ConsumerWidget {
                         ? Text(
                             UserProfile.generatedNameFor(authorPubkey),
                             style: VineTheme.titleSmallFont(
-                              color: VineTheme.onSurface,
+                              color: context.vineColors.onSurface,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -360,7 +362,7 @@ class _CommentHeader extends ConsumerWidget {
                         : UserName.fromUserProfile(
                             profile,
                             style: VineTheme.titleSmallFont(
-                              color: VineTheme.onSurface,
+                              color: context.vineColors.onSurface,
                             ),
                           ),
                   ),
@@ -430,11 +432,11 @@ class _CommentContent extends StatelessWidget {
     final baseStyle = isEmoji
         // Raw style: no VineTheme helper exists at the 40px emoji-only display
         // size (_emojiOnlyFontSize).
-        ? const TextStyle(
-            color: VineTheme.onSurface,
+        ? TextStyle(
+            color: context.vineColors.onSurface,
             fontSize: _emojiOnlyFontSize,
           )
-        : VineTheme.bodyMediumFont(color: VineTheme.onSurface);
+        : VineTheme.bodyMediumFont(color: context.vineColors.onSurface);
     return LinkifiedText(
       text: content,
       style: baseStyle,
@@ -498,13 +500,13 @@ class _ActionsRow extends StatelessWidget {
                   DivineIcon(
                     icon: DivineIconName.arrowBendDownRight,
                     size: MediaQuery.textScalerOf(context).scale(11),
-                    color: VineTheme.onSurface,
+                    color: context.vineColors.onSurface,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     context.l10n.commentReply,
                     style: VineTheme.labelLargeFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                   ),
                 ],
@@ -578,7 +580,7 @@ class _CommentVoteButtons extends StatelessWidget {
                     size: MediaQuery.textScalerOf(context).scale(16),
                     color: voteState.isUpvoted
                         ? VineTheme.vineGreen
-                        : VineTheme.onSurfaceMuted,
+                        : context.vineColors.onSurfaceMuted,
                   ),
                 ),
               ),
@@ -594,7 +596,7 @@ class _CommentVoteButtons extends StatelessWidget {
                         ? VineTheme.vineGreen
                         : voteState.isDownvoted
                         ? VineTheme.likeRed
-                        : VineTheme.onSurfaceMuted,
+                        : context.vineColors.onSurfaceMuted,
                   ),
                 ),
               ),
@@ -625,7 +627,7 @@ class _CommentVoteButtons extends StatelessWidget {
                     size: MediaQuery.textScalerOf(context).scale(16),
                     color: voteState.isDownvoted
                         ? VineTheme.likeRed
-                        : VineTheme.onSurfaceMuted,
+                        : context.vineColors.onSurfaceMuted,
                   ),
                 ),
               ),
@@ -679,7 +681,7 @@ class _ReplyIndicator extends ConsumerWidget {
         Flexible(
           child: Container(
             decoration: BoxDecoration(
-              color: VineTheme.containerLow,
+              color: context.vineColors.containerLow,
               borderRadius: BorderRadius.circular(8),
             ),
             padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),

@@ -53,7 +53,7 @@ class _UsernameFieldState extends State<UsernameField> {
                 style: VineTheme.labelMediumFont(
                   color: _focusNode.hasFocus && !isExternal
                       ? VineTheme.primary
-                      : VineTheme.onSurfaceMuted,
+                      : context.vineColors.onSurfaceMuted,
                 ),
               ),
             ),
@@ -63,20 +63,20 @@ class _UsernameFieldState extends State<UsernameField> {
               enabled: !isExternal,
               style: VineTheme.bodyLargeFont(
                 color: isExternal
-                    ? VineTheme.onSurfaceMuted
-                    : VineTheme.onSurface,
+                    ? context.vineColors.onSurfaceMuted
+                    : context.vineColors.onSurface,
               ),
               autovalidateMode: AutovalidateMode.onUserInteraction,
               decoration: InputDecoration(
                 isCollapsed: true,
                 hintText: context.l10n.profileSetupUsernameHint,
                 helperText: context.l10n.profileSetupUsernameHelper,
-                helperStyle: const TextStyle(
-                  color: VineTheme.onSurfaceMuted,
+                helperStyle: TextStyle(
+                  color: context.vineColors.onSurfaceMuted,
                   fontSize: 12,
                 ),
-                hintStyle: const TextStyle(
-                  color: VineTheme.onSurfaceMuted,
+                hintStyle: TextStyle(
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 border: profileFieldBorder,
                 enabledBorder: profileFieldBorder,
@@ -89,11 +89,11 @@ class _UsernameFieldState extends State<UsernameField> {
                 ),
                 prefixText: '@',
                 prefixStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 suffixText: '.divine.video',
                 suffixStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 errorMaxLines: 2,
               ),

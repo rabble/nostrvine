@@ -28,12 +28,16 @@ class InboxErrorState extends StatelessWidget {
           children: [
             Text(
               context.l10n.inboxLoadErrorTitle,
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               textAlign: TextAlign.center,
             ),
             Text(
               context.l10n.inboxLoadErrorSubtitle,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),

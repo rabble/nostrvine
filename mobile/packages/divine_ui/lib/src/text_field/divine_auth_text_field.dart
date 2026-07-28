@@ -239,7 +239,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
             decoration: BoxDecoration(
               color: _hasError
                   ? VineTheme.errorOverlay
-                  : VineTheme.surfaceContainer,
+                  : context.vineColors.surfaceContainer,
               borderRadius: BorderRadius.circular(24),
               border: _hasError
                   ? Border.all(color: VineTheme.error, width: 2)
@@ -347,7 +347,7 @@ class _AuthTextFieldContent extends StatelessWidget {
                       color: hasError ? VineTheme.error : VineTheme.primary,
                     )
                   : VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
               child: Text(label!),
             ),
@@ -437,7 +437,7 @@ class _AuthTextFieldInput extends StatelessWidget {
         onEditingComplete: onEditingComplete,
         maxLength: maxLength,
         autofillHints: autofillHints,
-        style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+        style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
         cursorColor: hasError ? VineTheme.error : VineTheme.primary,
         decoration: InputDecoration(
           isDense: true,
@@ -561,7 +561,9 @@ class _VisibilityToggle extends StatelessWidget {
           ),
           child: DivineIcon(
             icon: isObscured ? DivineIconName.eye : DivineIconName.eyeSlash,
-            color: hasText ? VineTheme.onSurface : VineTheme.onSurfaceMuted,
+            color: hasText
+                ? context.vineColors.onSurface
+                : context.vineColors.onSurfaceMuted,
           ),
         ),
       ),

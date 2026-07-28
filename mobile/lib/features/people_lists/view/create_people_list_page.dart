@@ -95,7 +95,7 @@ class _CreatePeopleListPageState extends State<CreatePeopleListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.peopleListsNewListTitle,
         showBackButton: true,
@@ -132,7 +132,7 @@ class _NameField extends StatelessWidget {
       autofocus: true,
       textCapitalization: TextCapitalization.sentences,
       textInputAction: TextInputAction.done,
-      style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       decoration: InputDecoration(
         labelText: context.l10n.peopleListsListNameLabel,
         hintText: context.l10n.peopleListsListNameHint,

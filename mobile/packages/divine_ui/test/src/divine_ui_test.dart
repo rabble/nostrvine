@@ -74,6 +74,65 @@ void main() {
     });
 
     group('VineThemeColors', () {
+      // Every semantic token, so adding a field to the palette without
+      // wiring it through copyWith/lerp/== fails here instead of silently
+      // staying dark in light mode.
+      final tokens = <String, Color Function(VineThemeColors)>{
+        'background': (c) => c.background,
+        'card': (c) => c.card,
+        'surface': (c) => c.surface,
+        'surfaceContainer': (c) => c.surfaceContainer,
+        'surfaceContainerHigh': (c) => c.surfaceContainerHigh,
+        'containerLow': (c) => c.containerLow,
+        'nav': (c) => c.nav,
+        'iconButton': (c) => c.iconButton,
+        'primaryText': (c) => c.primaryText,
+        'secondaryText': (c) => c.secondaryText,
+        'mutedText': (c) => c.mutedText,
+        'onSurface': (c) => c.onSurface,
+        'onSurfaceVariant': (c) => c.onSurfaceVariant,
+        'onSurfaceMuted': (c) => c.onSurfaceMuted,
+        'outline': (c) => c.outline,
+        'outlineMuted': (c) => c.outlineMuted,
+        'outlineDisabled': (c) => c.outlineDisabled,
+        'disabled': (c) => c.disabled,
+        'skeleton': (c) => c.skeleton,
+        'errorContainer': (c) => c.errorContainer,
+        'onErrorContainer': (c) => c.onErrorContainer,
+        'inverseSurface': (c) => c.inverseSurface,
+        'inverseOnSurface': (c) => c.inverseOnSurface,
+        'mediaChrome': (c) => c.mediaChrome,
+        'mediaChromeForeground': (c) => c.mediaChromeForeground,
+      };
+
+      VineThemeColors paint(Color color) => VineThemeColors(
+        background: color,
+        card: color,
+        surface: color,
+        surfaceContainer: color,
+        surfaceContainerHigh: color,
+        containerLow: color,
+        nav: color,
+        iconButton: color,
+        primaryText: color,
+        secondaryText: color,
+        mutedText: color,
+        onSurface: color,
+        onSurfaceVariant: color,
+        onSurfaceMuted: color,
+        outline: color,
+        outlineMuted: color,
+        outlineDisabled: color,
+        disabled: color,
+        skeleton: color,
+        errorContainer: color,
+        onErrorContainer: color,
+        inverseSurface: color,
+        inverseOnSurface: color,
+        mediaChrome: color,
+        mediaChromeForeground: color,
+      );
+
       test('copyWith replaces each semantic color', () {
         final copied = VineTheme.darkColors.copyWith(
           background: const Color(0xFF000001),
@@ -81,6 +140,7 @@ void main() {
           surface: const Color(0xFF000003),
           surfaceContainer: const Color(0xFF000004),
           surfaceContainerHigh: const Color(0xFF000005),
+          containerLow: const Color(0xFF000011),
           nav: const Color(0xFF000006),
           iconButton: const Color(0xFF000007),
           primaryText: const Color(0xFF000008),
@@ -88,8 +148,16 @@ void main() {
           mutedText: const Color(0xFF00000A),
           onSurface: const Color(0xFF00000B),
           onSurfaceVariant: const Color(0xFF00000C),
+          onSurfaceMuted: const Color(0xFF000012),
           outline: const Color(0xFF00000D),
+          outlineMuted: const Color(0xFF000013),
+          outlineDisabled: const Color(0xFF000014),
           disabled: const Color(0xFF00000E),
+          skeleton: const Color(0xFF000015),
+          errorContainer: const Color(0xFF000016),
+          onErrorContainer: const Color(0xFF000017),
+          inverseSurface: const Color(0xFF000018),
+          inverseOnSurface: const Color(0xFF000019),
           mediaChrome: const Color(0xFF00000F),
           mediaChromeForeground: const Color(0xFF000010),
         );
@@ -99,6 +167,7 @@ void main() {
         expect(copied.surface, const Color(0xFF000003));
         expect(copied.surfaceContainer, const Color(0xFF000004));
         expect(copied.surfaceContainerHigh, const Color(0xFF000005));
+        expect(copied.containerLow, const Color(0xFF000011));
         expect(copied.nav, const Color(0xFF000006));
         expect(copied.iconButton, const Color(0xFF000007));
         expect(copied.primaryText, const Color(0xFF000008));
@@ -106,8 +175,16 @@ void main() {
         expect(copied.mutedText, const Color(0xFF00000A));
         expect(copied.onSurface, const Color(0xFF00000B));
         expect(copied.onSurfaceVariant, const Color(0xFF00000C));
+        expect(copied.onSurfaceMuted, const Color(0xFF000012));
         expect(copied.outline, const Color(0xFF00000D));
+        expect(copied.outlineMuted, const Color(0xFF000013));
+        expect(copied.outlineDisabled, const Color(0xFF000014));
         expect(copied.disabled, const Color(0xFF00000E));
+        expect(copied.skeleton, const Color(0xFF000015));
+        expect(copied.errorContainer, const Color(0xFF000016));
+        expect(copied.onErrorContainer, const Color(0xFF000017));
+        expect(copied.inverseSurface, const Color(0xFF000018));
+        expect(copied.inverseOnSurface, const Color(0xFF000019));
         expect(copied.mediaChrome, const Color(0xFF00000F));
         expect(copied.mediaChromeForeground, const Color(0xFF000010));
       });
@@ -120,88 +197,12 @@ void main() {
       );
 
       test('lerp interpolates each semantic color', () {
-        final start = VineTheme.darkColors.copyWith(
-          background: Colors.black,
-          card: Colors.black,
-          surface: Colors.black,
-          surfaceContainer: Colors.black,
-          surfaceContainerHigh: Colors.black,
-          nav: Colors.black,
-          iconButton: Colors.black,
-          primaryText: Colors.black,
-          secondaryText: Colors.black,
-          mutedText: Colors.black,
-          onSurface: Colors.black,
-          onSurfaceVariant: Colors.black,
-          outline: Colors.black,
-          disabled: Colors.black,
-          mediaChrome: Colors.black,
-          mediaChromeForeground: Colors.black,
-        );
-        final end = VineTheme.darkColors.copyWith(
-          background: Colors.white,
-          card: Colors.white,
-          surface: Colors.white,
-          surfaceContainer: Colors.white,
-          surfaceContainerHigh: Colors.white,
-          nav: Colors.white,
-          iconButton: Colors.white,
-          primaryText: Colors.white,
-          secondaryText: Colors.white,
-          mutedText: Colors.white,
-          onSurface: Colors.white,
-          onSurfaceVariant: Colors.white,
-          outline: Colors.white,
-          disabled: Colors.white,
-          mediaChrome: Colors.white,
-          mediaChromeForeground: Colors.white,
-        );
+        final midpoint = paint(Colors.black).lerp(paint(Colors.white), 0.5);
+        final expected = Color.lerp(Colors.black, Colors.white, 0.5);
 
-        final midpoint = start.lerp(end, 0.5);
-
-        expect(
-          midpoint.background,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(midpoint.card, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(midpoint.surface, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(
-          midpoint.surfaceContainer,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(
-          midpoint.surfaceContainerHigh,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(midpoint.nav, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(
-          midpoint.iconButton,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(
-          midpoint.primaryText,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(
-          midpoint.secondaryText,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(midpoint.mutedText, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(midpoint.onSurface, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(
-          midpoint.onSurfaceVariant,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(midpoint.outline, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(midpoint.disabled, Color.lerp(Colors.black, Colors.white, 0.5));
-        expect(
-          midpoint.mediaChrome,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
-        expect(
-          midpoint.mediaChromeForeground,
-          Color.lerp(Colors.black, Colors.white, 0.5),
-        );
+        for (final token in tokens.entries) {
+          expect(token.value(midpoint), expected, reason: token.key);
+        }
       });
 
       test('lerp returns this when the other palette is null', () {
@@ -214,6 +215,104 @@ void main() {
         expect(copy, VineTheme.darkColors);
         expect(copy.hashCode, VineTheme.darkColors.hashCode);
         expect(copy, isNot(VineTheme.lightColors));
+      });
+
+      test('every token differs between the light and dark palettes', () {
+        for (final token in tokens.entries) {
+          expect(
+            token.value(VineTheme.lightColors),
+            isNot(token.value(VineTheme.darkColors)),
+            reason: '${token.key} is identical in both palettes',
+          );
+        }
+      });
+
+      test('a single changed token breaks equality', () {
+        for (final token in tokens.keys) {
+          final changed = paint(Colors.black).copyWith(
+            background: token == 'background' ? Colors.white : null,
+            card: token == 'card' ? Colors.white : null,
+            surface: token == 'surface' ? Colors.white : null,
+            surfaceContainer: token == 'surfaceContainer' ? Colors.white : null,
+            surfaceContainerHigh: token == 'surfaceContainerHigh'
+                ? Colors.white
+                : null,
+            containerLow: token == 'containerLow' ? Colors.white : null,
+            nav: token == 'nav' ? Colors.white : null,
+            iconButton: token == 'iconButton' ? Colors.white : null,
+            primaryText: token == 'primaryText' ? Colors.white : null,
+            secondaryText: token == 'secondaryText' ? Colors.white : null,
+            mutedText: token == 'mutedText' ? Colors.white : null,
+            onSurface: token == 'onSurface' ? Colors.white : null,
+            onSurfaceVariant: token == 'onSurfaceVariant' ? Colors.white : null,
+            onSurfaceMuted: token == 'onSurfaceMuted' ? Colors.white : null,
+            outline: token == 'outline' ? Colors.white : null,
+            outlineMuted: token == 'outlineMuted' ? Colors.white : null,
+            outlineDisabled: token == 'outlineDisabled' ? Colors.white : null,
+            disabled: token == 'disabled' ? Colors.white : null,
+            skeleton: token == 'skeleton' ? Colors.white : null,
+            errorContainer: token == 'errorContainer' ? Colors.white : null,
+            onErrorContainer: token == 'onErrorContainer' ? Colors.white : null,
+            inverseSurface: token == 'inverseSurface' ? Colors.white : null,
+            inverseOnSurface: token == 'inverseOnSurface' ? Colors.white : null,
+            mediaChrome: token == 'mediaChrome' ? Colors.white : null,
+            mediaChromeForeground: token == 'mediaChromeForeground'
+                ? Colors.white
+                : null,
+          );
+
+          expect(changed, isNot(paint(Colors.black)), reason: token);
+        }
+      });
+    });
+
+    group('context.vineColors', () {
+      testWidgets('resolves the palette of the active theme', (tester) async {
+        late VineThemeColors light;
+        late VineThemeColors dark;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.lightTheme,
+            home: Builder(
+              builder: (context) {
+                light = context.vineColors;
+                return Theme(
+                  data: VineTheme.theme,
+                  child: Builder(
+                    builder: (context) {
+                      dark = context.vineColors;
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        expect(light, VineTheme.lightColors);
+        expect(dark, VineTheme.darkColors);
+      });
+
+      testWidgets('falls back to the dark palette without the extension', (
+        tester,
+      ) async {
+        late VineThemeColors colors;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData.light(),
+            home: Builder(
+              builder: (context) {
+                colors = context.vineColors;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        expect(colors, VineTheme.darkColors);
       });
     });
 
@@ -402,6 +501,19 @@ void main() {
         expect(theme.scaffoldBackgroundColor, VineTheme.lightColors.background);
         expect(colors, VineTheme.lightColors);
         expect(colors?.primaryText, const Color(0xFF07241B));
+      });
+
+      test('keeps light status-bar icons over the app bar in light mode', () {
+        // The app bar stays on the dark brand green in both modes, so dark
+        // status-bar icons would be unreadable over it.
+        expect(
+          VineTheme.lightTheme.appBarTheme.systemOverlayStyle,
+          VineTheme.statusBarStyle,
+        );
+        expect(
+          VineTheme.lightTheme.appBarTheme.backgroundColor,
+          VineTheme.lightColors.nav,
+        );
       });
 
       test('returns ThemeData with correct primaryColor', () {
