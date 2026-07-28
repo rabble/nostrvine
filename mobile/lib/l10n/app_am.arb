@@ -379,8 +379,8 @@
     "profileMyLibraryLabel": "የእኔ ቤተ-መጽሐፍት",
     "profileMessageLabel": "መልእክት",
     "profileDeletedAccountName": "የተሰረዘ መለያ",
-  "inboxConversationDeletedAccountSubtitle": "ይህ መለያ ተሰርዟል",
-  "profileUserFallback": "ተጠቃሚ",
+    "inboxConversationDeletedAccountSubtitle": "ይህ መለያ ተሰርዟል",
+    "profileUserFallback": "ተጠቃሚ",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },

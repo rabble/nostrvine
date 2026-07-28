@@ -3267,8 +3267,8 @@
     "profileMyLibraryLabel": "Biblioteca mea",
     "profileMessageLabel": "Mesaj",
     "profileDeletedAccountName": "Cont șters",
-  "inboxConversationDeletedAccountSubtitle": "Acest cont a fost șters",
-  "profileUserFallback": "utilizator",
+    "inboxConversationDeletedAccountSubtitle": "Acest cont a fost șters",
+    "profileUserFallback": "utilizator",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },

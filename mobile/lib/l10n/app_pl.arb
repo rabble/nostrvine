@@ -3267,8 +3267,8 @@
     "profileMyLibraryLabel": "Moja biblioteka",
     "profileMessageLabel": "Wiadomość",
     "profileDeletedAccountName": "Usunięte konto",
-  "inboxConversationDeletedAccountSubtitle": "To konto zostało usunięte",
-  "profileUserFallback": "użytkownik",
+    "inboxConversationDeletedAccountSubtitle": "To konto zostało usunięte",
+    "profileUserFallback": "użytkownik",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },

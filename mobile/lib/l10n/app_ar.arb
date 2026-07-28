@@ -3260,8 +3260,8 @@
     "profileMyLibraryLabel": "مكتبتي",
     "profileMessageLabel": "رسالة",
     "profileDeletedAccountName": "حساب محذوف",
-  "inboxConversationDeletedAccountSubtitle": "تم حذف هذا الحساب",
-  "profileUserFallback": "مستخدم",
+    "inboxConversationDeletedAccountSubtitle": "تم حذف هذا الحساب",
+    "profileUserFallback": "مستخدم",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },
