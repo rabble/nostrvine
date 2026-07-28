@@ -53,6 +53,7 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.releaseCurrentWhenInactive = false,
     this.prefetchCount = 8,
     this.shouldPortraitExpand = true,
+    this.maxPlaybackDuration,
     this.maxLoopDuration,
     this.onActiveVideoChanged,
     this.onNearEnd,
@@ -231,10 +232,24 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// Defaults to `true`.
   final bool shouldPortraitExpand;
 
+  /// Hard cap on how long each video plays before the native player loops.
+  ///
+  /// Applied as the clip end position ([VideoClip.end]) on every source the
+  /// feed opens, so the loop point lives in the platform player: Android
+  /// clips the `MediaItem` and repeats it, iOS trims the composition the
+  /// `AVPlayerLooper` loops over. A source shorter than the cap plays to its
+  /// natural end — both backends clamp the clip end to the real duration.
+  ///
+  /// When `null`, every source plays to its full length.
+  final Duration? maxPlaybackDuration;
+
   /// Seeks active playback back to zero once this position is reached.
   ///
   /// When `null`, timeline-length loop enforcement is disabled and native
   /// looping behavior applies.
+  ///
+  /// Prefer [maxPlaybackDuration] for length enforcement: a Dart-side seek
+  /// produces an audible seam at the loop point (#5544).
   final Duration? maxLoopDuration;
 
   /// Called when the active video changes.
@@ -1146,7 +1161,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
       if (fromCache) {
         try {
-          await controller.setSource(VideoClip.file(cachedFile.path));
+          await controller.setSource(
+            VideoClip.file(
+              cachedFile.path,
+              end: widget.maxPlaybackDuration,
+            ),
+          );
           if (!guardInitOwnership('setSource(cache)')) return;
           _loadedFromCache.add(index);
           // Register network sources with prestart so a runtime parseError
@@ -1184,6 +1204,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             log: _log,
             httpHeadersForSource: httpHeadersForSource,
             isLoadCurrent: ownsInit,
+            maxPlaybackDuration: widget.maxPlaybackDuration,
           );
           if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
@@ -1204,6 +1225,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           log: _log,
           httpHeadersForSource: httpHeadersForSource,
           isLoadCurrent: ownsInit,
+          maxPlaybackDuration: widget.maxPlaybackDuration,
         );
         if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
@@ -1363,6 +1385,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       await controller.setSource(
         VideoClip.network(
           nextSource,
+          end: widget.maxPlaybackDuration,
           httpHeaders: _httpHeadersByIndex[index] ?? const {},
         ),
       );
@@ -1458,6 +1481,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       await controller.setSource(
         VideoClip.network(
           source,
+          end: widget.maxPlaybackDuration,
           httpHeaders: _httpHeadersByIndex[index] ?? const {},
         ),
       );

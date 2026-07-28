@@ -55,6 +55,23 @@ class AppConstants {
   static const int followingVideoThreshold = 5;
 
   // ============================================================================
+  // FEED PLAYBACK
+  // ============================================================================
+
+  /// Hard cap on how long any feed video plays before it loops.
+  ///
+  /// Nothing in the feed plays longer than a Vine, including kind-34236 events
+  /// published by other Nostr clients that point at arbitrarily long files.
+  /// The cap is applied as a native clip end (`VideoClip.end`), so the loop
+  /// point stays inside the platform player — a Dart-side seek-to-zero is what
+  /// produced the audible loop seam in #5544.
+  ///
+  /// Deliberately above `VideoEditorConstants.maxDuration` (6.3s, the
+  /// *recording* limit): classic Vine assets measure 6.500–6.533s, and capping
+  /// at the recording limit would clip their musical loop point (#6421).
+  static const Duration maxFeedPlaybackDuration = Duration(seconds: 7);
+
+  // ============================================================================
   // VIDEO PROCESSING
   // ============================================================================
 

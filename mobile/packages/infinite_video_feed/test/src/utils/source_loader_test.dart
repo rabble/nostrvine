@@ -26,7 +26,49 @@ void main() {
 
       expect(result, equals(('urlA', 0)));
       expect(controller.lastSource?.httpHeaders, isEmpty);
+      // No cap requested — the package must not invent one of its own.
+      expect(controller.lastSource?.end, isNull);
       expect(logs, isEmpty);
+    });
+
+    test('caps every source in the chain at maxPlaybackDuration', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithOneFailure(clips.add);
+      addTearDown(controller.dispose);
+
+      const cap = Duration(seconds: 7);
+      final result = await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: ['optimizedUrl', 'rawUrl'],
+        log: logs.add,
+        maxPlaybackDuration: cap,
+      );
+
+      expect(result, equals(('rawUrl', 1)));
+      expect(clips.map((clip) => clip.end), equals([cap, cap]));
+    });
+
+    test('keeps the cap on a source retried after HTTP 202', () async {
+      final clips = <VideoClip>[];
+      final controller = _RecordingControllerWithFailures(
+        clips.add,
+        failures: [Exception('CoreMediaErrorDomain error -12667 - HTTP 202')],
+      );
+      addTearDown(controller.dispose);
+
+      const cap = Duration(seconds: 7);
+      final result = await setSourceWithFallbacks(
+        index: 0,
+        controller: controller,
+        sources: ['processingUrl'],
+        log: logs.add,
+        maxPlaybackDuration: cap,
+        delay: (_) async {},
+      );
+
+      expect(result, equals(('processingUrl', 0)));
+      expect(clips.map((clip) => clip.end), equals([cap, cap]));
     });
 
     test('passes headers for the selected source', () async {

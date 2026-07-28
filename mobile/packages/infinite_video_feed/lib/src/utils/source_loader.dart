@@ -34,6 +34,10 @@ class SourceLoadAborted implements Exception {
 /// Returns a record of `(source, attemptIndex)` for the URL that opened.
 /// Logs each failure via [log] and re-throws the last error when every
 /// source fails.
+///
+/// [maxPlaybackDuration] becomes the clip's end position, so the native
+/// player stops (and loops) there. Sources shorter than the cap are
+/// unaffected — both backends clamp the clip end to the real duration.
 Future<(String, int)> setSourceWithFallbacks({
   required int index,
   required DivineVideoPlayerController controller,
@@ -41,6 +45,7 @@ Future<(String, int)> setSourceWithFallbacks({
   required void Function(String) log,
   Map<String, String>? Function(String source)? httpHeadersForSource,
   bool Function()? isLoadCurrent,
+  Duration? maxPlaybackDuration,
   SourceLoadDelay delay = Future<void>.delayed,
 }) async {
   Object? lastError;
@@ -59,6 +64,7 @@ Future<(String, int)> setSourceWithFallbacks({
       await controller.setSource(
         VideoClip.network(
           source,
+          end: maxPlaybackDuration,
           httpHeaders: httpHeadersForSource?.call(source) ?? const {},
         ),
       );
@@ -101,6 +107,7 @@ Future<(String, int)> setSourceWithFallbacks({
             await controller.setSource(
               VideoClip.network(
                 source,
+                end: maxPlaybackDuration,
                 httpHeaders: httpHeadersForSource?.call(source) ?? const {},
               ),
             );

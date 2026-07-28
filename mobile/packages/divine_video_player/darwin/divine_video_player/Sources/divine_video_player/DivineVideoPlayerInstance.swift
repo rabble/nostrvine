@@ -389,7 +389,18 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             let startTime = CMTime(value: startMs, timescale: 1000)
             let endTime: CMTime
             if let endMs {
-                endTime = CMTime(value: endMs.int64Value, timescale: 1000)
+                // Clamp to the asset: insertTimeRange silently inserts only the
+                // media that exists, so an endMs past the source would leave
+                // clipDuration (and therefore the reported totalDuration)
+                // longer than what actually plays. The feed relies on this —
+                // it caps every clip at maxFeedPlaybackDuration without knowing
+                // the source length up front. ExoPlayer clamps the equivalent
+                // ClippingConfiguration itself.
+                let requestedEnd = CMTime(value: endMs.int64Value, timescale: 1000)
+                endTime =
+                    (assetDuration.isNumeric && CMTimeCompare(requestedEnd, assetDuration) > 0)
+                    ? assetDuration
+                    : requestedEnd
             } else {
                 endTime = assetDuration
             }
