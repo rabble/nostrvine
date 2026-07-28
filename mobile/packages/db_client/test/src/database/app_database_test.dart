@@ -1249,6 +1249,98 @@ void main() {
       );
     });
 
+    group('vanished profiles', () {
+      test(
+        'upgrade path — existing database gets the table on reopen',
+        () async {
+          await database.customStatement('DROP TABLE vanished_profiles');
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+          final tables = await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='vanished_profiles'",
+              )
+              .get();
+          expect(
+            tables,
+            hasLength(1),
+            reason: 'vanished_profiles must be re-created on reopen',
+          );
+
+          await database.vanishedProfilesDao.markVanished(testPubkey);
+          expect(
+            await database.vanishedProfilesDao.isVanished(testPubkey),
+            isTrue,
+            reason: 'the recreated table must be writable',
+          );
+        },
+      );
+
+      test(
+        'schema parity — fresh install matches the runtime '
+        'CREATE-IF-NOT-EXISTS path',
+        () async {
+          final freshColumns = await _collectTableInfo(
+            database,
+            'vanished_profiles',
+          );
+          final freshIndexes = await _collectIndexNames(
+            database,
+            'vanished_profiles',
+          );
+
+          expect(
+            freshColumns,
+            isNotEmpty,
+            reason: 'precondition: fresh install should have vanished_profiles',
+          );
+
+          await database.customStatement('DROP TABLE vanished_profiles');
+          await database.close();
+
+          database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+          await database
+              .customSelect(
+                "SELECT name FROM sqlite_master WHERE type='table' "
+                "AND name='vanished_profiles'",
+              )
+              .get();
+
+          final recreatedColumns = await _collectTableInfo(
+            database,
+            'vanished_profiles',
+          );
+          final recreatedIndexes = await _collectIndexNames(
+            database,
+            'vanished_profiles',
+          );
+
+          expect(recreatedColumns, equals(freshColumns));
+          expect(recreatedIndexes, equals(freshIndexes));
+        },
+      );
+
+      test('survives startup cleanup', () async {
+        // A vanish does not expire. If this table ever gets swept, a deleted
+        // account starts rendering from cache again after a restart.
+        await database.vanishedProfilesDao.markVanished(
+          testPubkey,
+          detectedAt: DateTime.now().subtract(const Duration(days: 400)),
+        );
+
+        await database.runStartupCleanup();
+
+        expect(
+          await database.vanishedProfilesDao.isVanished(testPubkey),
+          isTrue,
+          reason: 'vanished_profiles must not be swept by startup cleanup',
+        );
+      });
+    });
+
     group('event table d_tag column', () {
       test(
         'upgrade path — adds, indexes, and backfills d_tag on reopen',

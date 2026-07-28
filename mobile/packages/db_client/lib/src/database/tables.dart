@@ -1574,3 +1574,34 @@ class IdentityVerifications extends Table {
   @override
   Set<Column> get primaryKey => {pubkey};
 }
+
+/// Pubkeys the server has reported as having a NIP-62 request to vanish.
+///
+/// Exists to *honour* an erasure request rather than to retain data about one:
+/// it holds an already-public pubkey and a local timestamp, and it is what
+/// keeps a deleted account from re-rendering from cache after a restart. The
+/// in-memory equivalent would be session-scoped, and the profile row it guards
+/// has been deleted, so there is nothing else left to remember the fact.
+///
+/// Deliberately **not** cleared by `runStartupCleanup` — a vanish does not
+/// expire — and deliberately **not** cleared on logout or account switch, since
+/// it is a global network fact rather than per-viewer state. Clearing it on an
+/// account switch would resurrect vanished profiles for the other account.
+///
+/// Rows are removed only when the server reports the account as live again
+/// (`ProfileRepository._clearVanish`), so a wrong `deleted: true` is
+/// recoverable rather than permanent.
+@DataClassName('VanishedProfileRow')
+class VanishedProfiles extends Table {
+  @override
+  String get tableName => 'vanished_profiles';
+
+  /// Hex pubkey of the account that requested deletion.
+  TextColumn get pubkey => text()();
+
+  /// When this device first learned the account had vanished.
+  DateTimeColumn get detectedAt => dateTime().named('detected_at')();
+
+  @override
+  Set<Column> get primaryKey => {pubkey};
+}
