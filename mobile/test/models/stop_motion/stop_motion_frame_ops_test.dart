@@ -59,16 +59,14 @@ void main() {
       );
     });
 
-    test('a short session fills at least the minimum duration', () {
-      // Counted in output frames: the per-frame microsecond conversion rounds,
-      // so summing the holds can land a microsecond under the second.
-      final minimumOutputFrames = StopMotionFrameOps.durationToFramesPerImage(
-        StopMotionFrameOps.minimumInitialDuration,
-      );
-      for (var frameCount = 1; frameCount <= 24; frameCount++) {
+    test('a session of any size fills at least the minimum duration', () {
+      // Asserted on summed *duration*, which is what the editor's Done gate
+      // compares — counting output frames instead hides the rounding in
+      // framesPerImageToDuration (3 and 12 stills land 1µs and 4µs short).
+      for (var frameCount = 1; frameCount <= 40; frameCount++) {
         expect(
-          StopMotionFrameOps.initialFramesPerImage(frameCount) * frameCount,
-          greaterThanOrEqualTo(minimumOutputFrames),
+          StopMotionFrameOps.initialHold(frameCount) * frameCount,
+          greaterThanOrEqualTo(StopMotionFrameOps.minimumInitialDuration),
           reason: '$frameCount still(s) fall short of the minimum',
         );
       }

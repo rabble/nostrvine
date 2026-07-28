@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
@@ -32,7 +33,13 @@ abstract class StopMotionFrameOps {
   /// second — the editor preview reads as a flicker looping past rather than a
   /// clip — so a short session is stretched to fill at least this long before
   /// it first reaches the editor (see [initialFramesPerImage]).
-  static const Duration minimumInitialDuration = Duration(seconds: 1);
+  ///
+  /// Deliberately *is* the editor's Done gate and the renderer's loop-to-length
+  /// minimum rather than a second one-second constant: the stretch exists so a
+  /// short capture clears that gate instead of being bounced with "capture at
+  /// least 1 second", so the two must never drift apart.
+  static const Duration minimumInitialDuration =
+      VideoEditorConstants.stopMotionMinOutputDuration;
 
   /// Frames-per-image for a freshly captured session of [frameCount] stills:
   /// [defaultFramesPerImage] once there are enough stills to fill
@@ -41,10 +48,21 @@ abstract class StopMotionFrameOps {
   static int initialFramesPerImage(int frameCount) {
     if (frameCount <= 0) return defaultFramesPerImage;
     final outputFrames = durationToFramesPerImage(minimumInitialDuration);
-    return (outputFrames / frameCount).ceil().clamp(
+    final framesPerImage = (outputFrames / frameCount).ceil().clamp(
       defaultFramesPerImage,
       maxFramesPerImage,
     );
+    // Output frames divide the minimum evenly; whole microseconds don't, and
+    // [framesPerImageToDuration] rounds. 3 stills (8 frames each) sum to
+    // 999,999µs and 12 stills (2 each) to 999,996µs — just under the gate,
+    // which compares summed durations, not frame counts. One extra frame is
+    // always enough to cover it: a frame is ~41ms against a ≤4µs shortfall.
+    if (framesPerImage < maxFramesPerImage &&
+        framesPerImageToDuration(framesPerImage) * frameCount <
+            minimumInitialDuration) {
+      return framesPerImage + 1;
+    }
+    return framesPerImage;
   }
 
   /// Hold for one still in a freshly captured session of [frameCount] stills

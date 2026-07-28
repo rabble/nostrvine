@@ -1509,14 +1509,10 @@ class VideoRecorderBloc
     VideoRecorderMode mode, {
     required bool keepAutosavedDraft,
   }) {
-    // An assemble owns the captured stills until it resolves: it saves them to
-    // the library across an await, while this method deletes them and clears
-    // the clip manager. Switching mode mid-assemble would delete the stills out
-    // from under the save and leave the library row pointing at missing files,
-    // so the switch is dropped instead. The mode wheel is already gated while
-    // assembling; this keeps the invariant if anything else ever dispatches.
-    if (state.stopMotionStatus == StopMotionStatus.assembling) return;
-
+    // No assembling-status guard: the assemble is synchronous, so a mode switch
+    // cannot land inside it, and the `ready` it leaves behind already carries an
+    // empty frame list — so the discard below is a no-op and the queued library
+    // write has nothing to lose.
     final previousMode = state.recorderMode;
     final previousFrames = state.stopMotionFrames;
     emit(
@@ -1822,6 +1818,10 @@ class VideoRecorderBloc
     final frames = state.stopMotionFrames;
     if (frames.isEmpty) return;
 
+    // Never painted (the handler is synchronous, so this is superseded before
+    // the next frame) — but required: without a distinct state in between, a
+    // second assemble of the same failing frame list emits a state equal to the
+    // current one, which `emit` drops, and the failure snackbar never re-fires.
     emit(state.copyWith(stopMotionStatus: StopMotionStatus.assembling));
 
     try {

@@ -3045,6 +3045,59 @@ void main() {
           verifyNever(() => clipManager.saveClipToLibrary(any()));
         },
       );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'retrying a failing assemble re-emits failure',
+        setUp: () {
+          when(
+            () => clipManager.addStopMotionClip(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          ).thenThrow(Exception('ingest failed'));
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderStopMotionAssembleRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const VideoRecorderStopMotionAssembleRequested());
+        },
+        errors: () => [isA<Exception>(), isA<Exception>()],
+        // The snackbar fires on the status *transition*, and `emit` drops a
+        // state equal to the current one — so the transient `assembling` in
+        // between is what lets a second identical failure reach the UI.
+        expect: () => [
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.assembling,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.failure,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.assembling,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.failure,
+          ),
+        ],
+      );
     });
   });
 }
