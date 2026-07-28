@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio, AudioEvent;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -2474,24 +2475,6 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
-        'a frame captured while assembling is dropped',
-        build: buildBloc,
-        seed: () => const VideoRecorderBlocState(
-          recorderMode: VideoRecorderMode.stopMotion,
-          stopMotionStatus: StopMotionStatus.assembling,
-        ),
-        act: (bloc) => bloc.add(const VideoRecorderStopMotionFrameCaptured()),
-        wait: const Duration(milliseconds: 20),
-        verify: (bloc) {
-          // The assemble owns the session: it reads the frame list, saves it,
-          // then clears it. A still appended here races that save.
-          verifyNever(() => cameraService.capturePhoto());
-          expect(bloc.state.stopMotionFrames, isEmpty);
-          expect(bloc.state.stopMotionStatus, StopMotionStatus.assembling);
-        },
-      );
-
-      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'a frame captured while ready (assemble done, navigation pending) '
         'skips the wasted native capture',
         build: buildBloc,
@@ -2981,6 +2964,42 @@ void main() {
       );
 
       blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'ingest stretches a session too short to fill the minimum duration',
+        setUp: stubClipIngest,
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) =>
+            bloc.add(const VideoRecorderStopMotionAssembleRequested()),
+        verify: (bloc) {
+          final captured = verify(
+            () => clipManager.addStopMotionClip(
+              id: any(named: 'id'),
+              frames: captureAny(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: captureAny(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          )..called(1);
+          // Captured values follow the method's parameter declaration order:
+          // frames is declared before duration.
+          final frames = captured.captured[0] as List<StopMotionClipFrame>;
+          expect(
+            frames.single.duration,
+            StopMotionFrameOps.minimumInitialDuration,
+          );
+          expect(
+            captured.captured[1],
+            StopMotionFrameOps.minimumInitialDuration,
+          );
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
         'emits failure when ingest throws',
         setUp: () {
           when(
@@ -3007,6 +3026,59 @@ void main() {
           expect(bloc.state.stopMotionStatus, StopMotionStatus.failure);
           verifyNever(() => clipManager.saveClipToLibrary(any()));
         },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'retrying a failing assemble re-emits failure',
+        setUp: () {
+          when(
+            () => clipManager.addStopMotionClip(
+              id: any(named: 'id'),
+              frames: any(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: any(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          ).thenThrow(Exception('ingest failed'));
+        },
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoRecorderStopMotionAssembleRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const VideoRecorderStopMotionAssembleRequested());
+        },
+        errors: () => [isA<Exception>(), isA<Exception>()],
+        // The snackbar fires on the status *transition*, and `emit` drops a
+        // state equal to the current one — so the transient `assembling` in
+        // between is what lets a second identical failure reach the UI.
+        expect: () => [
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.assembling,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.failure,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.assembling,
+          ),
+          isA<VideoRecorderBlocState>().having(
+            (s) => s.stopMotionStatus,
+            'status',
+            StopMotionStatus.failure,
+          ),
+        ],
       );
     });
   });

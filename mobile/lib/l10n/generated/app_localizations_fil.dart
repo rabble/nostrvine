@@ -8324,9 +8324,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Magdagdag ng audio bago mag-record';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'Ginagawa ang iyong video…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'Hindi magawa ang video. Subukan ulit.';
 

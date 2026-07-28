@@ -3063,7 +3063,6 @@
     "videoRecorderCaptureCloseLabel": "閉じる",
     "videoRecorderCaptureNextLabel": "次へ",
     "videoRecorderLipSyncAddAudioFirst": "録画する前にオーディオを追加してください",
-    "videoRecorderStopMotionAssembling": "動画を作成しています…",
     "videoRecorderStopMotionAssembleFailed": "動画を作成できませんでした。もう一度お試しください。",
     "videoRecorderClipDeletedMessage": "クリップをゴミ箱に移動しました",
     "videoRecorderClipUndoLabel": "元に戻す",

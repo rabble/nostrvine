@@ -7928,9 +7928,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => '녹화하기 전에 오디오를 추가하세요';
 
   @override
-  String get videoRecorderStopMotionAssembling => '동영상을 만드는 중…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       '동영상을 만들지 못했습니다. 다시 시도해 주세요.';
 

@@ -183,25 +183,29 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
           // Countdown overlay
           const VideoRecorderCountdownOverlay(),
 
-          // Stop-motion: encodes captured frames into one clip, then opens the
-          // editor; shows a blocking overlay while assembling.
-          _StopMotionAssembleOverlay(fromEditor: fromEditor),
+          // Stop-motion: collects the captured stills into one clip, then opens
+          // the editor.
+          _StopMotionAssembleListener(fromEditor: fromEditor),
         ],
       ),
     );
   }
 }
 
-/// Drives the stop-motion assemble step: a blocking progress overlay while
-/// encoding, navigation to the editor on success, and a snackbar on failure.
-class _StopMotionAssembleOverlay extends ConsumerWidget {
-  const _StopMotionAssembleOverlay({required this.fromEditor});
+/// Drives the stop-motion assemble step: navigation to the editor on success,
+/// and a snackbar on failure.
+///
+/// Renders nothing. The assemble collects the captured stills into a clip
+/// synchronously and queues the library write, so the `assembling` status never
+/// survives a frame — a progress overlay could only ever flash.
+class _StopMotionAssembleListener extends ConsumerWidget {
+  const _StopMotionAssembleListener({required this.fromEditor});
 
   final bool fromEditor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocConsumer<VideoRecorderBloc, VideoRecorderBlocState>(
+    return BlocListener<VideoRecorderBloc, VideoRecorderBlocState>(
       listenWhen: (previous, current) =>
           previous.stopMotionStatus != current.stopMotionStatus,
       listener: (context, state) {
@@ -224,31 +228,7 @@ class _StopMotionAssembleOverlay extends ConsumerWidget {
             break;
         }
       },
-      buildWhen: (previous, current) =>
-          previous.stopMotionStatus != current.stopMotionStatus,
-      builder: (context, state) {
-        // The spinner animates continuously, so only mount it while assembling
-        // (a permanently-animating child never lets `pumpAndSettle` settle).
-        if (state.stopMotionStatus != StopMotionStatus.assembling) {
-          return const SizedBox.shrink();
-        }
-        return ColoredBox(
-          color: VineTheme.surfaceBackground.withValues(alpha: 0.7),
-          child: Center(
-            child: Column(
-              mainAxisSize: .min,
-              spacing: 16,
-              children: [
-                const CircularProgressIndicator(color: VineTheme.primary),
-                Text(
-                  context.l10n.videoRecorderStopMotionAssembling,
-                  style: VineTheme.bodyMediumFont(),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      child: const SizedBox.shrink(),
     );
   }
 }

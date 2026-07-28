@@ -51,6 +51,46 @@ void main() {
     });
   });
 
+  group('initialFramesPerImage / initialHold', () {
+    test('holds a lone still for the whole minimum duration', () {
+      expect(
+        StopMotionFrameOps.initialHold(1),
+        StopMotionFrameOps.minimumInitialDuration,
+      );
+    });
+
+    test('a session of any size fills at least the minimum duration', () {
+      // Asserted on summed *duration*, which is what the editor's Done gate
+      // compares — counting output frames instead hides the rounding in
+      // framesPerImageToDuration (3 and 12 stills land 1µs and 4µs short).
+      for (var frameCount = 1; frameCount <= 40; frameCount++) {
+        expect(
+          StopMotionFrameOps.initialHold(frameCount) * frameCount,
+          greaterThanOrEqualTo(StopMotionFrameOps.minimumInitialDuration),
+          reason: '$frameCount still(s) fall short of the minimum',
+        );
+      }
+    });
+
+    test('keeps the default hold once the stills fill it on their own', () {
+      expect(
+        StopMotionFrameOps.initialFramesPerImage(24),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+      expect(
+        StopMotionFrameOps.initialFramesPerImage(100),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+    });
+
+    test('falls back to the default hold for an empty session', () {
+      expect(
+        StopMotionFrameOps.initialFramesPerImage(0),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+    });
+  });
+
   group('removeFrame', () {
     test('removes the frame at the index', () {
       final result = StopMotionFrameOps.removeFrame(framesOf([1, 1, 1]), 1);

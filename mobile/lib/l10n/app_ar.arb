@@ -3063,7 +3063,6 @@
     "videoRecorderCaptureCloseLabel": "إغلاق",
     "videoRecorderCaptureNextLabel": "التالي",
     "videoRecorderLipSyncAddAudioFirst": "أضف صوتًا قبل التسجيل",
-    "videoRecorderStopMotionAssembling": "جارٍ إنشاء الفيديو…",
     "videoRecorderStopMotionAssembleFailed": "تعذّر إنشاء الفيديو. حاول مرة أخرى.",
     "videoRecorderClipDeletedMessage": "تم نقل المقطع إلى المهملات",
     "videoRecorderClipUndoLabel": "تراجع",

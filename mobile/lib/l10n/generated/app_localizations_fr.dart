@@ -8337,9 +8337,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajoutez de l\'audio avant d\'enregistrer';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'Création de la vidéo…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'Impossible de créer la vidéo. Réessayez.';
 

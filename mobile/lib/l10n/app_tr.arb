@@ -3070,7 +3070,6 @@
     "videoRecorderCaptureCloseLabel": "Kapat",
     "videoRecorderCaptureNextLabel": "İleri",
     "videoRecorderLipSyncAddAudioFirst": "Kayıttan önce ses ekleyin",
-    "videoRecorderStopMotionAssembling": "Videon oluşturuluyor…",
     "videoRecorderStopMotionAssembleFailed": "Video oluşturulamadı. Tekrar deneyin.",
     "videoRecorderClipDeletedMessage": "Klip çöp kutusuna taşındı",
     "videoRecorderClipUndoLabel": "Geri al",

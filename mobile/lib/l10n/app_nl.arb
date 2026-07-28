@@ -2787,7 +2787,6 @@
     "videoRecorderCaptureCloseLabel": "Sluiten",
     "videoRecorderCaptureNextLabel": "Volgende",
     "videoRecorderLipSyncAddAudioFirst": "Voeg audio toe vóór de opname",
-    "videoRecorderStopMotionAssembling": "Je video wordt gemaakt…",
     "videoRecorderStopMotionAssembleFailed": "Kan de video niet maken. Probeer het opnieuw.",
     "videoRecorderToggleFlashLabel": "Flitser in-/uitschakelen",
     "videoRecorderCycleTimerLabel": "Timer wisselen",

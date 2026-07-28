@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
@@ -23,8 +24,58 @@ abstract class StopMotionFrameOps {
   /// Highest number of output frames a still may be held for.
   static const int maxFramesPerImage = 300;
 
-  /// Default hold for a freshly captured still: 1 output frame at 24fps.
+  /// Fallback hold of 1 output frame at 24fps: the floor
+  /// [initialFramesPerImage] clamps to, and what
+  /// [globalDefaultFramesPerImage] falls back to for an empty frame list.
+  ///
+  /// *Not* the hold a freshly captured still gets — that is
+  /// [initialFramesPerImage], which stretches a short session to fill
+  /// [minimumInitialDuration]. Nothing outside this file uses this constant;
+  /// a new capture path wanting a starting hold wants [initialHold].
   static const int defaultFramesPerImage = 1;
+
+  /// Shortest a freshly captured session plays for.
+  ///
+  /// A handful of stills at [defaultFramesPerImage] is over in a fraction of a
+  /// second — the editor preview reads as a flicker looping past rather than a
+  /// clip — so a short session is stretched to fill at least this long before
+  /// it first reaches the editor (see [initialFramesPerImage]).
+  ///
+  /// Deliberately *is* the editor's Done gate and the renderer's loop-to-length
+  /// minimum rather than a second one-second constant: the stretch exists so a
+  /// short capture clears that gate instead of being bounced with "capture at
+  /// least 1 second", so the two must never drift apart.
+  static const Duration minimumInitialDuration =
+      VideoEditorConstants.stopMotionMinOutputDuration;
+
+  /// Frames-per-image for a freshly captured session of [frameCount] stills:
+  /// [defaultFramesPerImage] once there are enough stills to fill
+  /// [minimumInitialDuration] on their own, and an evenly shared longer hold
+  /// below that — a lone still is held for the full second.
+  static int initialFramesPerImage(int frameCount) {
+    if (frameCount <= 0) return defaultFramesPerImage;
+    final outputFrames = durationToFramesPerImage(minimumInitialDuration);
+    final framesPerImage = (outputFrames / frameCount).ceil().clamp(
+      defaultFramesPerImage,
+      maxFramesPerImage,
+    );
+    // Output frames divide the minimum evenly; whole microseconds don't, and
+    // [framesPerImageToDuration] rounds. 3 stills (8 frames each) sum to
+    // 999,999µs and 12 stills (2 each) to 999,996µs — just under the gate,
+    // which compares summed durations, not frame counts. One extra frame is
+    // always enough to cover it: a frame is ~41ms against a ≤4µs shortfall.
+    if (framesPerImage < maxFramesPerImage &&
+        framesPerImageToDuration(framesPerImage) * frameCount <
+            minimumInitialDuration) {
+      return framesPerImage + 1;
+    }
+    return framesPerImage;
+  }
+
+  /// Hold for one still in a freshly captured session of [frameCount] stills
+  /// (see [initialFramesPerImage]).
+  static Duration initialHold(int frameCount) =>
+      framesPerImageToDuration(initialFramesPerImage(frameCount));
 
   /// Hold duration for a still shown for [framesPerImage] output frames at the
   /// default frame rate. [framesPerImage] is clamped to
