@@ -881,7 +881,10 @@ class NotificationRepository {
       try {
         final result = await _refreshResultFor(feed.filter);
         applied = applied || result.applied;
-      } catch (e, s) {
+      } on Object catch (e, s) {
+        // Deliberately broad: one feed's failure — typed
+        // FunnelcakeException or an Error — must not stop the others.
+        // The original type and stack are preserved by the rethrow below.
         firstError ??= e;
         firstStackTrace ??= s;
       }
