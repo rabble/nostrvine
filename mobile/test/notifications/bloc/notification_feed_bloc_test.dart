@@ -443,6 +443,42 @@ void main() {
         ).called(1);
       });
 
+      test('runs the documented number of empty-page continuations', () async {
+        final emptyWithMore = NotificationPage(
+          items: const [],
+          unreadCount: 0,
+          hasMore: true,
+        );
+        when(
+          () => mockNotificationRepo.refreshFeed(NotificationKind.follow),
+        ).thenAnswer((_) async {
+          snapshotController.add(emptyWithMore);
+          await Future<void>.value();
+          await Future<void>.value();
+          return emptyWithMore;
+        });
+        // Each continuation's page also filters down to nothing, and its
+        // snapshot lands while `isLoadingMore` is still true — so the next
+        // continuation is deferred and only fires if `_onLoadMore` flushes
+        // it. Without that flush the cap is effectively 1.
+        when(
+          () => mockNotificationRepo.loadNextPageFor(NotificationKind.follow),
+        ).thenAnswer((_) async {
+          snapshotController.add(emptyWithMore);
+          await Future<void>.value();
+          await Future<void>.value();
+          return emptyWithMore;
+        });
+
+        final bloc = createFollowBloc()..add(NotificationFeedStarted());
+        addTearDown(bloc.close);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(
+          () => mockNotificationRepo.loadNextPageFor(NotificationKind.follow),
+        ).called(3);
+      });
+
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'no-op when hasMore is false',
         build: createBloc,

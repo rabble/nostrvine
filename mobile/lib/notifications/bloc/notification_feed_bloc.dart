@@ -272,6 +272,13 @@ class NotificationFeedBloc
     try {
       await _notificationRepository.loadNextPageFor(_filter);
       emit(state.copyWith(isLoadingMore: false));
+      // The page this call fetched lands on the snapshot while
+      // `isLoadingMore` is still true, so a page that filters down to
+      // nothing parks its continuation instead of dispatching it. Flush it
+      // here — otherwise only the first of [_maxEmptyPageContinuations]
+      // could ever fire, and a Comments feed whose pages are mostly video
+      // mentions would get one extra page of runway instead of three.
+      _flushPendingEmptyPageContinuation();
     } on Exception catch (e, s) {
       _loadMoreFailed = true;
       // `NotificationRepository.loadNextPage` (single-attempt
