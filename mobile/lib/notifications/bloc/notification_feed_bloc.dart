@@ -53,6 +53,7 @@ class NotificationFeedBloc
   late final StreamSubscription<NotificationPage> _snapshotSubscription;
   int _emptyPageContinuations = 0;
   bool _loadMoreFailed = false;
+  bool _emptyPageContinuationPending = false;
 
   static const _maxEmptyPageContinuations = 3;
 
@@ -89,21 +90,45 @@ class NotificationFeedBloc
     _continuePastEmptyPageIfNeeded(notifications);
   }
 
+  /// Keeps an all-filtered-out page paginating instead of rendering as an
+  /// empty tab while the server still reports more rows.
+  ///
+  /// The repository emits the snapshot from inside `refreshFeed`, before it
+  /// completes, so on the first open this runs while `_onStarted` still
+  /// holds `isRefreshing: true` and `status: initial`. Dispatching a
+  /// load-more there would race the refresh's cursor reset, but simply
+  /// bailing strands the tab: no further snapshot follows, so it settles
+  /// empty with `hasMore: true` and never paginates. Defer instead, and
+  /// let [_flushPendingEmptyPageContinuation] pick it up once the refresh
+  /// handler has settled.
   void _continuePastEmptyPageIfNeeded(List<NotificationItem> notifications) {
     if (notifications.isNotEmpty || !state.hasMore) {
       _emptyPageContinuations = 0;
       _loadMoreFailed = false;
+      _emptyPageContinuationPending = false;
+      return;
+    }
+    if (_loadMoreFailed ||
+        _emptyPageContinuations >= _maxEmptyPageContinuations) {
       return;
     }
     if (state.status != NotificationFeedStatus.loaded ||
         state.isLoadingMore ||
-        state.isRefreshing ||
-        _loadMoreFailed ||
-        _emptyPageContinuations >= _maxEmptyPageContinuations) {
+        state.isRefreshing) {
+      _emptyPageContinuationPending = true;
       return;
     }
+    _emptyPageContinuationPending = false;
     _emptyPageContinuations += 1;
     add(const NotificationFeedLoadMore());
+  }
+
+  /// Re-runs a continuation that [_continuePastEmptyPageIfNeeded] had to
+  /// defer because a refresh was still in flight when the empty page landed.
+  void _flushPendingEmptyPageContinuation() {
+    if (!_emptyPageContinuationPending) return;
+    _emptyPageContinuationPending = false;
+    _continuePastEmptyPageIfNeeded(state.notifications);
   }
 
   /// Handle initial load.
@@ -126,6 +151,7 @@ class NotificationFeedBloc
   ) async {
     _emptyPageContinuations = 0;
     _loadMoreFailed = false;
+    _emptyPageContinuationPending = false;
     // Stale-while-revalidate: keep any hydrated/cached items rendered and
     // flag the in-flight refresh so the view shows a thin progress bar
     // instead of a blanking full-screen spinner.
@@ -139,6 +165,7 @@ class NotificationFeedBloc
           isRefreshing: false,
         ),
       );
+      _flushPendingEmptyPageContinuation();
       if (_filter == null) {
         await _markSeenOnOpen();
       }
@@ -264,6 +291,7 @@ class NotificationFeedBloc
   ) async {
     _emptyPageContinuations = 0;
     _loadMoreFailed = false;
+    _emptyPageContinuationPending = false;
     emit(state.copyWith(isRefreshing: true));
     try {
       await _notificationRepository.refreshFeed(_filter);
@@ -273,6 +301,7 @@ class NotificationFeedBloc
           isRefreshing: false,
         ),
       );
+      _flushPendingEmptyPageContinuation();
     } on Exception catch (e, s) {
       // `NotificationRepository.refresh` propagates typed
       // `FunnelcakeException` (4xx/5xx/timeout). Per

@@ -412,6 +412,37 @@ void main() {
         },
       );
 
+      test('continues past an empty page when the snapshot lands during '
+          '_onStarted', () async {
+        final emptyWithMore = NotificationPage(
+          items: const [],
+          unreadCount: 0,
+          hasMore: true,
+        );
+        // Mirrors the repository: `_getNotificationsResult` emits the
+        // snapshot before `refreshFeed` completes, so `_onSnapshotChanged`
+        // runs while `_onStarted` still holds `isRefreshing: true` and
+        // `status: initial`. Nothing emits afterwards, so unless the
+        // continuation is re-checked at the tail of `_onStarted` the tab
+        // settles empty with `hasMore: true` and never paginates.
+        when(
+          () => mockNotificationRepo.refreshFeed(NotificationKind.follow),
+        ).thenAnswer((_) async {
+          snapshotController.add(emptyWithMore);
+          await Future<void>.value();
+          await Future<void>.value();
+          return emptyWithMore;
+        });
+
+        final bloc = createFollowBloc()..add(NotificationFeedStarted());
+        addTearDown(bloc.close);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verify(
+          () => mockNotificationRepo.loadNextPageFor(NotificationKind.follow),
+        ).called(1);
+      });
+
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'no-op when hasMore is false',
         build: createBloc,
