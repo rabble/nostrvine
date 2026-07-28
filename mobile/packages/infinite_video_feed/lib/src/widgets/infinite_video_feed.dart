@@ -1165,6 +1165,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             VideoClip.file(
               cachedFile.path,
               end: widget.maxPlaybackDuration,
+              trimToCommonTrackEnd: true,
             ),
           );
           if (!guardInitOwnership('setSource(cache)')) return;
@@ -1387,6 +1388,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           nextSource,
           end: widget.maxPlaybackDuration,
           httpHeaders: _httpHeadersByIndex[index] ?? const {},
+          trimToCommonTrackEnd: true,
         ),
       );
       if (index == _currentIndex && _isActive && _canAutoPlayAt(index)) {
@@ -1483,6 +1485,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           source,
           end: widget.maxPlaybackDuration,
           httpHeaders: _httpHeadersByIndex[index] ?? const {},
+          trimToCommonTrackEnd: true,
         ),
       );
       if (!guardRetryOwnership('setSource')) return;

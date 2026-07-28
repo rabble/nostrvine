@@ -1,6 +1,8 @@
 package com.divinevideo.divine_video_player
 
 import android.content.Context
+import android.media.MediaExtractor
+import android.media.MediaFormat
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -415,6 +417,18 @@ internal class DivineVideoPlayerInstance(
             }
             val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
             val endMs = (map["endMs"] as? Number)?.toLong()
+            val trimToCommonTrackEnd = map["trimToCommonTrackEnd"] as? Boolean ?: false
+            // The container duration is the *longest* track, so ending there
+            // leaves a stretch where the shorter track has already run out —
+            // silence, or a frozen frame. On a looping player that stretch is
+            // the seam. Clamping may only ever shorten: an earlier explicit
+            // trim still wins.
+            val commonEndMs = if (trimToCommonTrackEnd) {
+                boundedCommonTrackEndMs(uri, startMs, endMs)
+            } else {
+                null
+            }
+            val effectiveEndMs = listOfNotNull(endMs, commonEndMs).minOrNull()
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
             val clipSpeed = ((map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f)
                 .coerceAtLeast(MIN_PLAYBACK_SPEED)
@@ -436,7 +450,7 @@ internal class DivineVideoPlayerInstance(
                     MediaItem.ClippingConfiguration.Builder()
                         .setStartPositionMs(startMs)
                         .apply {
-                            if (endMs != null) setEndPositionMs(endMs)
+                            if (effectiveEndMs != null) setEndPositionMs(effectiveEndMs)
                         }
                         .build(),
                 )
@@ -450,8 +464,8 @@ internal class DivineVideoPlayerInstance(
             // Offsets accumulate in playback time so the global timeline
             // matches what the editor UI shows (slow clips occupy more
             // space, fast clips less).
-            if (endMs != null) {
-                accumulated += sourceToPlaybackMs(endMs - startMs, clipSpeed)
+            if (effectiveEndMs != null) {
+                accumulated += sourceToPlaybackMs(effectiveEndMs - startMs, clipSpeed)
             }
         }
 
@@ -527,6 +541,83 @@ internal class DivineVideoPlayerInstance(
         // 10 s safety net — if STATE_READY never fires (e.g. corrupt file),
         // Dart is unblocked rather than hanging forever.
         mainHandler.postDelayed(setClipsTimeoutRunnable, SET_CLIPS_TIMEOUT_MS)
+    }
+
+    /**
+     * The point up to which *every* track of [uri] still has content, in
+     * milliseconds, or `null` when it cannot be determined without I/O that
+     * would delay playback.
+     *
+     * Only local files are probed. Reading a remote source's metadata means a
+     * network round trip on the platform thread before playback can start, so
+     * remote clips keep the container duration — and the seam — instead.
+     */
+    private fun boundedCommonTrackEndMs(
+        uri: String,
+        startMs: Long,
+        requestedEndMs: Long?,
+    ): Long? {
+        val path = when {
+            uri.startsWith("/") -> uri
+            uri.startsWith("file://") -> Uri.parse(uri).path
+            else -> null
+        } ?: return null
+
+        val extractor = MediaExtractor()
+        return try {
+            extractor.setDataSource(path)
+            var videoUs = -1L
+            var audioUs = -1L
+            for (i in 0 until extractor.trackCount) {
+                val format = extractor.getTrackFormat(i)
+                val mime = format.getString(MediaFormat.KEY_MIME) ?: continue
+                if (!format.containsKey(MediaFormat.KEY_DURATION)) continue
+                val durationUs = format.getLong(MediaFormat.KEY_DURATION)
+                when {
+                    mime.startsWith("video/") && videoUs < 0 -> videoUs = durationUs
+                    mime.startsWith("audio/") && audioUs < 0 -> audioUs = durationUs
+                }
+            }
+            // A clip without both track types has no mismatch to trim.
+            if (videoUs <= 0 || audioUs <= 0) {
+                null
+            } else {
+                boundedCommonTrackEndMs(
+                    startMs = startMs,
+                    requestedEndMs = requestedEndMs,
+                    videoEndMs = videoUs / 1000,
+                    audioEndMs = audioUs / 1000,
+                )
+            }
+        } catch (e: Exception) {
+            DivineVideoPlayerLog.warning(
+                "Player $playerId could not read track durations: $e",
+                name = "DivineVideoPlayer.Load",
+            )
+            null
+        } finally {
+            extractor.release()
+        }
+    }
+
+    private fun boundedCommonTrackEndMs(
+        startMs: Long,
+        requestedEndMs: Long?,
+        videoEndMs: Long,
+        audioEndMs: Long,
+    ): Long? {
+        val containerEndMs = maxOf(videoEndMs, audioEndMs)
+        val playbackEndMs = minOf(requestedEndMs ?: containerEndMs, containerEndMs)
+        val commonEndMs = minOf(videoEndMs, audioEndMs)
+        val trimMs = playbackEndMs - commonEndMs
+        if (commonEndMs <= startMs || trimMs <= 0) return null
+
+        val playableDurationMs = playbackEndMs - startMs
+        if (playableDurationMs <= 0) return null
+
+        val relativeLimitMs = (playableDurationMs * MAX_COMMON_TRACK_END_TRIM_RATIO).toLong()
+        val trimLimitMs = minOf(MAX_COMMON_TRACK_END_TRIM_MS, relativeLimitMs)
+        return commonEndMs.takeIf { trimMs <= trimLimitMs }
     }
 
     private fun handleSeekTo(call: MethodCall, result: MethodChannel.Result) {
@@ -1235,6 +1326,10 @@ internal class DivineVideoPlayerInstance(
          * sensible lower bound the editor UI exposes.
          */
         private const val MIN_PLAYBACK_SPEED = 0.001f
+
+        /** Maximum tail considered an encoder/export track-end mismatch. */
+        private const val MAX_COMMON_TRACK_END_TRIM_MS = 500L
+        private const val MAX_COMMON_TRACK_END_TRIM_RATIO = 0.10
 
         /**
          * How many times an editing/preview player re-prepares after a

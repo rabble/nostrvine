@@ -66,6 +66,7 @@ Future<(String, int)> setSourceWithFallbacks({
           source,
           end: maxPlaybackDuration,
           httpHeaders: httpHeadersForSource?.call(source) ?? const {},
+          trimToCommonTrackEnd: true,
         ),
       );
       abortIfStale(source);
@@ -109,6 +110,7 @@ Future<(String, int)> setSourceWithFallbacks({
                 source,
                 end: maxPlaybackDuration,
                 httpHeaders: httpHeadersForSource?.call(source) ?? const {},
+                trimToCommonTrackEnd: true,
               ),
             );
             abortIfStale(source);
