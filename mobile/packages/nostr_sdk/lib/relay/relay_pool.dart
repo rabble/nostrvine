@@ -95,6 +95,8 @@ class RelayPool {
 
   final Map<String, Function> _queryCompleteCallbacks = {};
 
+  final Set<String> _queryFanoutInProgress = {};
+
   /// Tracks which relays have sent EOSE for each subscription.
   /// Used to determine when all relays have finished sending stored events.
   final Map<String, Set<String>> _subscriptionEoseRelays = {};
@@ -219,6 +221,13 @@ class RelayPool {
     // Without that guard a permanent allow-list rejection would be tracked
     // and hang until the publish deadline instead of failing fast.
     return _isRestrictedReason(message) &&
+        relay.relayStatus.alwaysAuth &&
+        !relay.relayStatus.authed;
+  }
+
+  bool _shouldReplayQueryAfterAuth(Relay relay, String reason) {
+    if (_isExplicitAuthRequiredReason(reason)) return true;
+    return _isRestrictedReason(reason) &&
         relay.relayStatus.alwaysAuth &&
         !relay.relayStatus.authed;
   }
@@ -662,6 +671,7 @@ class RelayPool {
   void _fireQueryCompleteIfSettled(String subId) {
     final callback = _queryCompleteCallbacks[subId];
     if (callback == null) return;
+    if (_queryFanoutInProgress.contains(subId)) return;
 
     final list = [
       ..._relaysSnapshot(),
@@ -1089,17 +1099,10 @@ class RelayPool {
         relay.failCountQuery(subscriptionId, reason);
       }
 
-      // A REQ the relay refused or abandoned is terminal for that relay: no
-      // EVENT and no EOSE will follow, so nothing else would ever settle the
-      // query. Funnelcake sends this when the stored-event query errors or the
-      // stored replay is backpressured (funnelcake
-      // `crates/relay/src/handler.rs:117`, `:405`, `:433`, `:488`). Without
-      // this the caller waits out its entire timeout and reports a timeout for
-      // what was really a refusal.
-      //
-      // Distinguishing "relay refused" from "relay had nothing" in the
-      // returned record is out of scope here and tracked by #6238.
-      if (relay.discardQuery(subscriptionId)) {
+      // A refused/abandoned REQ is terminal unless it is the pre-AUTH probe
+      // that must stay saved for replay after NIP-42 succeeds.
+      if (!_shouldReplayQueryAfterAuth(relay, reason) &&
+          relay.discardQuery(subscriptionId)) {
         _fireQueryCompleteIfSettled(subscriptionId);
       }
     }
@@ -1279,6 +1282,7 @@ class RelayPool {
       // completion callback so a query cancelled before EOSE doesn't leak a
       // never-fired callback in [_queryCompleteCallbacks].
       _queryCompleteCallbacks.remove(id);
+      _queryFanoutInProgress.remove(id);
 
       // check query and send close
       var it = _relaysSnapshot();
@@ -1357,6 +1361,7 @@ class RelayPool {
     Subscription subscription = Subscription(filters, onEvent, id: id);
     if (onComplete != null) {
       _queryCompleteCallbacks[subscription.id] = onComplete;
+      _queryFanoutInProgress.add(subscription.id);
     }
 
     // Collect futures so we can await them before the early-completion
@@ -1407,23 +1412,18 @@ class RelayPool {
       }
     }
 
-    // Wait for all sends to complete (and saveQuery to run) before
-    // checking whether any relay accepted the query.
-    await Future.wait(queryFutures);
-
-    // If no relay accepted the query (all sends failed), fire onComplete
-    // immediately so callers don't wait for the full timeout.
-    if (onComplete != null) {
-      final list = [
-        ..._relaysSnapshot(),
-        ..._tempRelaysSnapshot(),
-        ..._cacheRelaysSnapshot(),
-      ];
-      final anyPending = list.any((r) => r.checkQuery(subscription.id));
-      if (!anyPending) {
-        _queryCompleteCallbacks.remove(subscription.id);
-        onComplete();
+    try {
+      // Wait for all sends to complete (and saveQuery to run) before allowing
+      // terminal frames to decide whether every relay has settled.
+      await Future.wait(queryFutures);
+    } finally {
+      if (onComplete != null) {
+        _queryFanoutInProgress.remove(subscription.id);
       }
+    }
+
+    if (onComplete != null) {
+      _fireQueryCompleteIfSettled(subscription.id);
     }
 
     return subscription.id;
