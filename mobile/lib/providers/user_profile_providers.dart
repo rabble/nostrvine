@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -80,6 +81,29 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
   final repo = ref.watch(profileRepositoryProvider);
   if (repo == null) return null;
 
-  return await repo.getCachedProfile(pubkey: pubkey) ??
-      await repo.fetchFreshProfile(pubkey: pubkey);
+  final cached = await repo.getCachedProfile(pubkey: pubkey);
+  if (cached != null) {
+    // This read is cache-first, so it short-circuits before any network call.
+    // Without a nudge, an account cached before it requested deletion would
+    // keep rendering from cache forever. Bounded to one check per pubkey per
+    // session inside the repository.
+    repo.revalidateVanishOnce(pubkey);
+    return cached;
+  }
+
+  return repo.fetchFreshProfile(pubkey: pubkey);
+}
+
+/// Whether the account behind [pubkey] has requested NIP-62 deletion.
+///
+/// Backed by the durable `vanished_profiles` table, so a cold start resolves
+/// without a network round trip, and it flips live when a fetch discovers a
+/// new deletion. This — not the profile provider — drives the deleted-account
+/// treatment in the inbox and the following bar.
+@riverpod
+Stream<bool> profileVanished(Ref ref, String pubkey) {
+  return ref
+      .watch(databaseProvider)
+      .vanishedProfilesDao
+      .watchIsVanished(pubkey);
 }

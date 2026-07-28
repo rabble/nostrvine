@@ -32,6 +32,10 @@ class MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 
 class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
+class MockVanishedProfilesDao extends Mock implements VanishedProfilesDao {}
+
+class MockIdentityEventsDao extends Mock implements IdentityEventsDao {}
+
 void main() {
   group('ProfileRepository', () {
     late MockNostrClient mockNostrClient;
@@ -820,6 +824,205 @@ void main() {
             verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
           },
         );
+
+        group('NIP-62 vanished accounts', () {
+          late MockVanishedProfilesDao mockVanishedDao;
+          late MockIdentityEventsDao mockIdentityDao;
+          late ProfileRepository repoWithVanishDao;
+
+          setUp(() {
+            mockVanishedDao = MockVanishedProfilesDao();
+            mockIdentityDao = MockIdentityEventsDao();
+
+            when(() => mockVanishedDao.markVanished(any())).thenAnswer(
+              (_) async {},
+            );
+            when(
+              () => mockVanishedDao.clearVanished(any()),
+            ).thenAnswer((_) async => 1);
+            when(
+              () => mockVanishedDao.getAllPubkeys(),
+            ).thenAnswer((_) async => <String>[]);
+            when(
+              () => mockIdentityDao.deleteEvent(any()),
+            ).thenAnswer((_) async => 1);
+            when(
+              () => mockUserProfilesDao.deleteProfile(any()),
+            ).thenAnswer((_) async => 1);
+            when(
+              () => mockProfileStatsDao.deleteStats(any()),
+            ).thenAnswer((_) async => 1);
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+            repoWithVanishDao = ProfileRepository(
+              nostrClient: mockNostrClient,
+              userProfilesDao: mockUserProfilesDao,
+              httpClient: mockHttpClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              profileStatsDao: mockProfileStatsDao,
+              identityEventsDao: mockIdentityDao,
+              vanishedProfilesDao: mockVanishedDao,
+            );
+          });
+
+          test('evicts every local trace of a vanished account', () async {
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileVanished(pubkey: testPubkey),
+            );
+
+            final result = await repoWithVanishDao.fetchFreshProfile(
+              pubkey: testPubkey,
+            );
+
+            expect(result, isNull);
+            expect(repoWithVanishDao.isVanished(testPubkey), isTrue);
+            verify(
+              () => mockUserProfilesDao.deleteProfile(testPubkey),
+            ).called(1);
+            verify(() => mockProfileStatsDao.deleteStats(testPubkey)).called(1);
+            verify(() => mockIdentityDao.deleteEvent(testPubkey)).called(1);
+            verify(() => mockVanishedDao.markVanished(testPubkey)).called(1);
+          });
+
+          test('never caches stats for a vanished account', () async {
+            // The counters ride in on the same response that says the account
+            // is gone. Writing them would leave the profile screen showing
+            // "4 Following / 4 Followers" for a deleted account.
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileVanished(pubkey: testPubkey),
+            );
+
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+
+            verifyNever(
+              () => mockProfileStatsDao.upsertStats(
+                pubkey: any(named: 'pubkey'),
+                followerCount: any(named: 'followerCount'),
+                followingCount: any(named: 'followingCount'),
+                videoCount: any(named: 'videoCount'),
+                totalLikes: any(named: 'totalLikes'),
+                totalViews: any(named: 'totalViews'),
+              ),
+            );
+          });
+
+          test('does not fall back to relays for a vanished account', () async {
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileVanished(pubkey: testPubkey),
+            );
+
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+
+            verifyNever(() => mockNostrClient.fetchProfile(any()));
+            verifyNever(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+                useCache: any(named: 'useCache'),
+              ),
+            );
+          });
+
+          test(
+            'does not fall back to relays even when requireRawKind0 is set',
+            () async {
+              // The NotPublished branch breaks to the relay path under this
+              // flag. Vanish must not, or the relay copy resurrects what was
+              // just deleted.
+              when(
+                () => mockFunnelcakeClient.getUserProfile(testPubkey),
+              ).thenAnswer(
+                (_) async => const UserProfileVanished(pubkey: testPubkey),
+              );
+
+              final result = await repoWithVanishDao.fetchFreshProfile(
+                pubkey: testPubkey,
+                requireRawKind0: true,
+              );
+
+              expect(result, isNull);
+              verifyNever(() => mockNostrClient.fetchProfile(any()));
+            },
+          );
+
+          test('cacheProfile is a no-op for a vanished account', () async {
+            // Every Kind 0 seen on any relay subscription funnels through
+            // cacheProfile, so without this guard a non-compliant relay would
+            // re-create the row minutes after eviction.
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileVanished(pubkey: testPubkey),
+            );
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+
+            await repoWithVanishDao.cacheProfile(
+              UserProfile(
+                pubkey: testPubkey,
+                name: 'resurrected',
+                createdAt: DateTime.now(),
+                eventId: 'relay-copy',
+                rawData: const {},
+              ),
+            );
+
+            verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+          });
+
+          test('clears the vanish marker when the account is live '
+              'again', () async {
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileVanished(pubkey: testPubkey),
+            );
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+            expect(repoWithVanishDao.isVanished(testPubkey), isTrue);
+
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileNotPublished(pubkey: testPubkey),
+            );
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+
+            expect(
+              repoWithVanishDao.isVanished(testPubkey),
+              isFalse,
+              reason: 'a wrong deleted:true must be recoverable, not permanent',
+            );
+            verify(() => mockVanishedDao.clearVanished(testPubkey)).called(1);
+          });
+
+          test('loadVanishedPubkeys hydrates the in-memory set', () async {
+            when(
+              () => mockVanishedDao.getAllPubkeys(),
+            ).thenAnswer((_) async => [testPubkey]);
+
+            await repoWithVanishDao.loadVanishedPubkeys();
+
+            expect(repoWithVanishDao.isVanished(testPubkey), isTrue);
+          });
+
+          test('a non-vanished account is not marked', () async {
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileNotPublished(pubkey: testPubkey),
+            );
+
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+
+            expect(repoWithVanishDao.isVanished(testPubkey), isFalse);
+            verifyNever(() => mockVanishedDao.markVanished(any()));
+          });
+        });
 
         test('marks missing immediately when Funnelcake returns '
             'UserProfileNotPublished', () async {

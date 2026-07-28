@@ -202,7 +202,7 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'b5565d7d2d026d79ff21286d42511b8aee085d4d';
+String _$fetchUserProfileHash() => r'dfe728a31fbdb14c6466704f7688b6ee85091e2b';
 
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
@@ -230,4 +230,107 @@ final class FetchUserProfileFamily extends $Family
 
   @override
   String toString() => r'fetchUserProfileProvider';
+}
+
+/// Whether the account behind [pubkey] has requested NIP-62 deletion.
+///
+/// Backed by the durable `vanished_profiles` table, so a cold start resolves
+/// without a network round trip, and it flips live when a fetch discovers a
+/// new deletion. This — not the profile provider — drives the deleted-account
+/// treatment in the inbox and the following bar.
+
+@ProviderFor(profileVanished)
+final profileVanishedProvider = ProfileVanishedFamily._();
+
+/// Whether the account behind [pubkey] has requested NIP-62 deletion.
+///
+/// Backed by the durable `vanished_profiles` table, so a cold start resolves
+/// without a network round trip, and it flips live when a fetch discovers a
+/// new deletion. This — not the profile provider — drives the deleted-account
+/// treatment in the inbox and the following bar.
+
+final class ProfileVanishedProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
+    with $FutureModifier<bool>, $StreamProvider<bool> {
+  /// Whether the account behind [pubkey] has requested NIP-62 deletion.
+  ///
+  /// Backed by the durable `vanished_profiles` table, so a cold start resolves
+  /// without a network round trip, and it flips live when a fetch discovers a
+  /// new deletion. This — not the profile provider — drives the deleted-account
+  /// treatment in the inbox and the following bar.
+  ProfileVanishedProvider._({
+    required ProfileVanishedFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'profileVanishedProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$profileVanishedHash();
+
+  @override
+  String toString() {
+    return r'profileVanishedProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<bool> create(Ref ref) {
+    final argument = this.argument as String;
+    return profileVanished(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ProfileVanishedProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$profileVanishedHash() => r'cb1f9c9ef27a29577e5299d468dc777a052a86b1';
+
+/// Whether the account behind [pubkey] has requested NIP-62 deletion.
+///
+/// Backed by the durable `vanished_profiles` table, so a cold start resolves
+/// without a network round trip, and it flips live when a fetch discovers a
+/// new deletion. This — not the profile provider — drives the deleted-account
+/// treatment in the inbox and the following bar.
+
+final class ProfileVanishedFamily extends $Family
+    with $FunctionalFamilyOverride<Stream<bool>, String> {
+  ProfileVanishedFamily._()
+    : super(
+        retry: null,
+        name: r'profileVanishedProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Whether the account behind [pubkey] has requested NIP-62 deletion.
+  ///
+  /// Backed by the durable `vanished_profiles` table, so a cold start resolves
+  /// without a network round trip, and it flips live when a fetch discovers a
+  /// new deletion. This — not the profile provider — drives the deleted-account
+  /// treatment in the inbox and the following bar.
+
+  ProfileVanishedProvider call(String pubkey) =>
+      ProfileVanishedProvider._(argument: pubkey, from: this);
+
+  @override
+  String toString() => r'profileVanishedProvider';
 }

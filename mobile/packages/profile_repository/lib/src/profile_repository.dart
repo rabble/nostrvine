@@ -88,6 +88,7 @@ class ProfileRepository {
     BlockedProfileFilter? blockFilter,
     PendingProfileSavesDao? pendingProfileSavesDao,
     IdentityEventsDao? identityEventsDao,
+    VanishedProfilesDao? vanishedProfilesDao,
     List<String> indexerRelays = defaultProfileIndexerRelays,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
@@ -98,6 +99,7 @@ class ProfileRepository {
        _blockFilter = blockFilter,
        _pendingProfileSavesDao = pendingProfileSavesDao,
        _identityEventsDao = identityEventsDao,
+       _vanishedProfilesDao = vanishedProfilesDao,
        _indexerRelays = indexerRelays;
 
   /// Event kind carrying NIP-39 identity claims since the 2026-02 spec
@@ -124,6 +126,12 @@ class ProfileRepository {
   /// identity-tag methods then skip persistence and fall through to the
   /// kind-0 tags.
   final IdentityEventsDao? _identityEventsDao;
+
+  /// Durable record of accounts that requested NIP-62 deletion. Null when the
+  /// caller does not wire it — the vanish handling then degrades to
+  /// session-scoped, which still evicts but does not survive a restart.
+  final VanishedProfilesDao? _vanishedProfilesDao;
+
   final List<String> _indexerRelays;
 
   /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
@@ -145,6 +153,16 @@ class ProfileRepository {
   /// Enables synchronous [hasProfile] checks for subscription
   /// manager filtering.
   final _knownCached = <String>{};
+
+  /// Pubkeys with a NIP-62 request to vanish, mirroring the durable
+  /// `vanished_profiles` table. Kept in memory so [isVanished] can answer
+  /// synchronously and so the write paths can reject a resurrected profile
+  /// without an await.
+  final _vanished = <String>{};
+
+  /// Pubkeys already re-checked for a vanish this session. Bounds
+  /// [revalidateVanishOnce] to one request per pubkey per session.
+  final _vanishRevalidated = <String>{};
 
   /// Cache of Divine-identity determinations keyed by lowercase pubkey,
   /// with the timestamp of the lookup. Entries expire after
@@ -217,6 +235,75 @@ class ProfileRepository {
     _knownCached.addAll(all.map((p) => p.pubkey));
   }
 
+  /// Whether the account behind [pubkey] has requested NIP-62 deletion.
+  ///
+  /// Synchronous so callers can gate a render without an await. Backed by the
+  /// durable `vanished_profiles` table via [loadVanishedPubkeys], so a cold
+  /// start on a deleted account resolves without a network round trip.
+  bool isVanished(String pubkey) => _vanished.contains(pubkey);
+
+  /// Pre-loads the in-memory vanished set from the durable table.
+  ///
+  /// Call once after construction, unconditionally — the write-path guards in
+  /// [cacheProfile] depend on it, and a cache warm-up is not the only thing
+  /// that can resurrect a profile.
+  Future<void> loadVanishedPubkeys() async {
+    final dao = _vanishedProfilesDao;
+    if (dao == null) return;
+    _vanished.addAll(await dao.getAllPubkeys());
+  }
+
+  /// Evicts every local trace of an account that requested deletion.
+  ///
+  /// Deliberately routed through [deleteCachedProfile] rather than folding a
+  /// flag into it: that method's contract is "a local eviction does not prove
+  /// remote absence", which is the opposite of what a vanish means.
+  Future<void> _applyVanish(String pubkey) async {
+    _vanished.add(pubkey);
+    _confirmedMissing.add(pubkey);
+    // Load-bearing: stops the raw-Kind-0 retry ladder from re-querying relays
+    // for a profile that is never coming back.
+    _rawKind0ConfirmedMissing.add(pubkey);
+    _divineIdentityCache.remove(pubkey.trim().toLowerCase());
+
+    await _vanishedProfilesDao?.markVanished(pubkey);
+    await deleteCachedProfile(pubkey: pubkey);
+    await _profileStatsDao?.deleteStats(pubkey);
+    await _identityEventsDao?.deleteEvent(pubkey);
+  }
+
+  /// Forgets a previously recorded vanish.
+  ///
+  /// Called whenever the server reports the account as live again, so a wrong
+  /// `deleted: true` is recoverable instead of erasing the account from this
+  /// device permanently.
+  Future<void> _clearVanish(String pubkey) async {
+    if (!_vanished.remove(pubkey)) return;
+    await _vanishedProfilesDao?.clearVanished(pubkey);
+  }
+
+  /// Fires at most one background re-check per pubkey per session so a locally
+  /// cached profile can still be discovered as vanished.
+  ///
+  /// Nothing else ever re-checks a cached profile: the cache-first read path
+  /// short-circuits before any network call, so an account cached before it
+  /// asked to be deleted would otherwise render from cache indefinitely.
+  ///
+  /// The session set is load-bearing rather than an optimisation. The calling
+  /// provider is `autoDispose`, so it re-runs every time a row scrolls back
+  /// into view; without the set an inbox scroll would fire one request per row
+  /// per scroll. `UserProfile` carries no fetch timestamp, so once-per-session
+  /// is the tightest bound available without widening the model.
+  void revalidateVanishOnce(String pubkey) {
+    if (_vanished.contains(pubkey)) return;
+    if (!_vanishRevalidated.add(pubkey)) return;
+    unawaited(
+      fetchFreshProfile(
+        pubkey: pubkey,
+      ).catchError((Object _, StackTrace _) => null),
+    );
+  }
+
   /// Returns the cached profile from local storage (SQLite) only.
   ///
   /// Does NOT fetch from Nostr relays. Use this for immediate UI display
@@ -233,7 +320,13 @@ class ProfileRepository {
   /// If a profile with the same pubkey already exists, it is updated.
   /// Also clears the pubkey from the confirmed-missing set and adds
   /// it to the known-cached set.
+  ///
+  /// No-ops for an account that requested deletion. Every Kind 0 seen on any
+  /// relay subscription funnels through here, so without this guard a vanished
+  /// account whose Kind 0 still lives on a non-compliant relay would re-create
+  /// its row minutes after eviction.
   Future<void> cacheProfile(UserProfile profile) {
+    if (_vanished.contains(profile.pubkey)) return Future.value();
     _confirmedMissing.remove(profile.pubkey);
     if (!profile.isRestProjection) {
       _rawKind0ConfirmedMissing.remove(profile.pubkey);
@@ -563,7 +656,17 @@ class ProfileRepository {
       try {
         final result = await _funnelcakeApiClient!.getUserProfile(pubkey);
         switch (result) {
+          case UserProfileVanished():
+            // The account asked to be erased. Drop every local trace and stop
+            // — unconditionally, even under requireRawKind0, so the relay
+            // fallback cannot resurrect what we just deleted.
+            await _applyVanish(pubkey);
+            return null;
           case UserProfileFound():
+            // Self-heal: the server says this account is live, so forget any
+            // vanish we recorded earlier. Without this a single wrong
+            // `deleted: true` would erase the account from this device forever.
+            await _clearVanish(pubkey);
             final funnelcakeProfile = UserProfile.fromUserProfileFound(result);
             await _cacheProfileStatsFromResult(pubkey, result);
 
@@ -605,6 +708,7 @@ class ProfileRepository {
           case UserProfileNotPublished():
             // User exists but has no Kind 0. Cache stats and skip relay
             // fallback — the profile genuinely does not exist yet.
+            await _clearVanish(pubkey);
             await _cacheProfileStatsFromResult(pubkey, result);
             if (requireRawKind0) {
               break;
@@ -671,6 +775,9 @@ class ProfileRepository {
     UserProfile? cached,
     bool cachedResolved = false,
   }) async {
+    // Same guard as cacheProfile: the relay path writes through here.
+    if (_vanished.contains(profile.pubkey)) return false;
+
     final cachedProfile = cachedResolved
         ? cached
         : await _userProfilesDao.getProfile(profile.pubkey);
@@ -2040,11 +2147,18 @@ class ProfileRepository {
           final result = entry.value;
 
           switch (result) {
+            case UserProfileVanished():
+              // Erased account — evict rather than hydrate, and stop the relay
+              // fallback from filling the gap back in.
+              await _applyVanish(pubkey);
+              remaining.remove(pubkey);
             case UserProfileNotPublished():
               // User exists in Funnelcake but has no Kind 0. Skip relay
               // fallback — the profile genuinely does not exist yet.
+              await _clearVanish(pubkey);
               remaining.remove(pubkey);
             case UserProfileFound():
+              await _clearVanish(pubkey);
               final profile = UserProfile.fromUserProfileFound(
                 result,
                 eventIdPrefix: 'rest-bulk',
@@ -2142,7 +2256,12 @@ class ProfileRepository {
       }
     }
 
-    // Step 4: Batch-write all freshly fetched to Drift
+    // Step 4: Batch-write all freshly fetched to Drift.
+    //
+    // Writes to the DAO directly rather than through cacheProfile, so the
+    // vanish guard has to be applied here too — otherwise a relay copy of an
+    // erased account slips back into the cache via the batch path.
+    toCache.removeWhere((profile) => _vanished.contains(profile.pubkey));
     if (toCache.isNotEmpty) {
       _knownCached.addAll(toCache.map((p) => p.pubkey));
       await _userProfilesDao.upsertProfiles(toCache);
