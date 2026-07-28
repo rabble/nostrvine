@@ -213,8 +213,7 @@ class ClipEditorState extends Equatable {
   final Set<int> selectedFrameIndexes;
 
   /// Total wall-clock duration of all clips (respecting trim and playback speed).
-  Duration get totalDuration =>
-      clips.fold(Duration.zero, (sum, clip) => sum + clip.playbackDuration);
+  Duration get totalDuration => compositionDuration(clips);
 
   /// Creates a copy with the given fields replaced.
   ClipEditorState copyWith({

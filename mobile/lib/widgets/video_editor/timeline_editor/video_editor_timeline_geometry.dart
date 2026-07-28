@@ -229,6 +229,91 @@ List<AudioEvent> rebaseAnchoredAudioForClipState(
   return changed ? result : audioTracks;
 }
 
+/// Granularity an audio window survives a history/draft round-trip at.
+///
+/// [AudioEvent] serializes its window in whole milliseconds while a stop-motion
+/// composition is microsecond-accurate (a 1/24s hold is 41667µs), so a window
+/// restored from history sits up to a millisecond short of the composition end
+/// it was clamped to. Comparisons against the composition end carry that slack.
+const _audioWindowResolution = Duration(milliseconds: 1);
+
+/// Stretches audio windows that ran to the end of the composition so they keep
+/// covering it after an edit made the composition longer.
+///
+/// A sound is added with its window clamped to the composition end (see
+/// `_openMusicLibrary`). Growing the composition afterwards used to leave that
+/// window frozen at the old, shorter end — a stop-motion hold change that
+/// stretches nine stills from 0.375s to 6.375s published a 6.375s video muxed
+/// with a 0.375s audio track (#6401).
+///
+/// Only tracks whose window *ended at* [previousDuration] follow the new end.
+/// A window the user deliberately trimmed shorter keeps its length, and so does
+/// one that overhangs the old end — after a shrink-then-grow (lower the hold,
+/// raise it again) a trimmed window sits past the shorter composition, and a
+/// one-sided "did it reach the end" test would read that overhang as coverage
+/// and silently undo the trim. The cost of the symmetric test is that a window
+/// left overhanging a shrunken composition keeps its old end instead of being
+/// re-extended; the sound strip's trim handle is the affordance for that.
+///
+/// The new end is bounded by the audio the track still has left after its
+/// [AudioEvent.startOffset] and by [maxDuration], matching the ceiling the
+/// track would have been given had the sound been added at the new composition
+/// length. Windows are never shortened here — a composition that shrank is
+/// clamped for display by the timeline and for output by the render.
+///
+/// Returns the original list instance when nothing moved.
+List<AudioEvent> growAudioToCompositionEnd(
+  List<AudioEvent> audioTracks, {
+  required Duration previousDuration,
+  required Duration duration,
+  required Duration maxDuration,
+}) {
+  if (audioTracks.isEmpty || duration <= previousDuration) return audioTracks;
+
+  final ceiling = duration < maxDuration ? duration : maxDuration;
+  var changed = false;
+  final result = <AudioEvent>[];
+  for (final track in audioTracks) {
+    final endTime = track.endTime;
+    // No window: the track already plays to its own end, and the render clamps
+    // that to the video. A window that ends anywhere but the old composition
+    // end — short of it or past it — was placed by the user, not by the clamp.
+    if (endTime == null ||
+        (endTime - previousDuration).abs() > _audioWindowResolution) {
+      result.add(track);
+      continue;
+    }
+
+    final sourceEnd = _audioSourceEnd(track);
+    final newEnd = sourceEnd != null && sourceEnd < ceiling
+        ? sourceEnd
+        : ceiling;
+    if (newEnd <= endTime) {
+      result.add(track);
+      continue;
+    }
+    changed = true;
+    result.add(track.copyWith(endTime: newEnd));
+  }
+
+  return changed ? result : audioTracks;
+}
+
+/// Timeline position at which [track] runs out of source audio, or `null` when
+/// its source length is unknown.
+///
+/// A non-positive duration counts as unknown, matching the sound timeline item
+/// and the duration-heal path, so a persisted-but-zero duration cannot collapse
+/// a window instead of leaving it uncapped.
+Duration? _audioSourceEnd(AudioEvent track) {
+  final duration = track.duration;
+  if (duration == null || duration <= 0) return null;
+  final remaining =
+      Duration(milliseconds: (duration * 1000).toInt()) - track.startOffset;
+  if (remaining <= Duration.zero) return null;
+  return track.startTime + remaining;
+}
+
 _TimelineMarkerAnchor? _timelineMarkerAnchorForPosition(
   List<DivineVideoClip> clips,
   Duration marker,

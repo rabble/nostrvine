@@ -1538,6 +1538,132 @@ void main() {
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'restores a sound bar the redo reconcile clamped against a stale total',
+        build: TimelineOverlayBloc.new,
+        // Redo of a stop-motion hold change: the history entry carries the
+        // grown 4.5s window, but the reconcile reads the total off
+        // ClipEditorBloc *before* the restored clips land there, so the bar is
+        // built against the pre-redo 3s. The timeline then reports the real
+        // total — the bar has to follow it back out, or the sound plays 3s
+        // under a 4.5s video (#6401).
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(milliseconds: 4500),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 3),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(milliseconds: 4500),
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(milliseconds: 4500));
+          // The bar alone is not enough: the preview player builds its window
+          // from the item and is only re-synced when this counter moves, so
+          // without the bump the sound keeps playing the truncated 3s.
+          expect(bloc.state.audioTracksPlayerRevision, 1);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not re-sync the player mid clip-trim drag',
+        build: TimelineOverlayBloc.new,
+        // The total changes every frame of the drag, so bumping here would
+        // tear down and reschedule native audio per frame. The bar still
+        // follows; only the player bump waits.
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(seconds: 6),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 6),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(seconds: 3),
+              isClipTrimDragging: true,
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(seconds: 3));
+          expect(bloc.state.audioTracksPlayerRevision, 0);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not re-sync the player when no sound window moved',
+        build: TimelineOverlayBloc.new,
+        // A layer clamp must not churn the native audio tracks.
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'layer-1',
+              type: TimelineOverlayType.layer,
+              start: const Duration(seconds: 2),
+              end: const Duration(seconds: 10),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 5)),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.audioTracksPlayerRevision, 0);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not stretch a sound past the window the user trimmed it to',
+        build: TimelineOverlayBloc.new,
+        // Same growth, but this track's own window is 1.5s. Following the
+        // total must never invent coverage the AudioEvent does not have.
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(milliseconds: 1500),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 3),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(milliseconds: 4500),
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(milliseconds: 1500));
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
         'clamps markers to the provided total duration',
         build: TimelineOverlayBloc.new,
         seed: () => const TimelineOverlayState(

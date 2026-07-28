@@ -2,6 +2,7 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/composition_duration.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide AudioTrack;
@@ -156,6 +157,48 @@ extension VideoEditorExtensions on ProImageEditorState {
       },
     );
     setState(() {});
+  }
+
+  /// Persists a clip-list change that can make the composition longer, growing
+  /// any audio window that covered the old end onto the new one (#6401).
+  ///
+  /// [previousClips] is the composition as it stood *before* the edit, so the
+  /// grow can tell a window that ran to the end from one the user trimmed
+  /// short. Falls back to a plain [setClipState] when no window moved, so an
+  /// edit over a soundless composition does not start writing an audio key
+  /// into every history entry.
+  ///
+  /// Use this from every commit that can lengthen the composition — the
+  /// stop-motion frame-list commit, the camera/clips-picker sync, duplicating
+  /// a clip, slowing a clip down, and dragging a trim handle back out. The
+  /// grow is one-way: a later shrink leaves the window overhanging, and the
+  /// sound strip's trim handle is the affordance for pulling it back.
+  /// Deliberately *not* folded into [setClipState] itself: that is the
+  /// generic clip writer with no previous-clip list to compare against, and
+  /// the transition path measures its output with `TransitionTimelineMap`
+  /// rather than a plain sum of playback durations.
+  void setLengthenedClipState({
+    required List<DivineVideoClip> previousClips,
+    required List<DivineVideoClip> clips,
+    List<Duration>? timelineMarkers,
+  }) {
+    final currentTracks = stateManager.audioTracks;
+    final grownTracks = growAudioToCompositionEnd(
+      rebaseAnchoredAudioForClipState(clips, currentTracks),
+      previousDuration: compositionDuration(previousClips),
+      duration: compositionDuration(clips),
+      maxDuration: VideoEditorConstants.maxDuration,
+    );
+
+    if (identical(grownTracks, currentTracks)) {
+      setClipState(clips, timelineMarkers: timelineMarkers);
+      return;
+    }
+    setClipAndAudioState(
+      clips: clips,
+      audioTracks: grownTracks,
+      timelineMarkers: timelineMarkers,
+    );
   }
 
   /// Persists clip trim and order state in the editor's history metadata.

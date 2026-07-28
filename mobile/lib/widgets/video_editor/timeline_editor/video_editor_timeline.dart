@@ -189,7 +189,10 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             // shortening while a trim gesture is active.
             final overlayBloc = context.read<TimelineOverlayBloc>();
             overlayBloc.add(
-              TimelineOverlayTotalDurationChanged(state.totalDuration),
+              TimelineOverlayTotalDurationChanged(
+                state.totalDuration,
+                isClipTrimDragging: state.isTrimDragging,
+              ),
             );
             final rebasedMarkers = _rebasedClipTrimMarkers(state.clips);
             if (rebasedMarkers != null) {
@@ -542,8 +545,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
       overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
       clipEditorBloc.add(const ClipEditorTrimDragEnded());
 
-      editor.setClipState(
-        clipEditorBloc.state.clips,
+      // Dragging a trim handle back out lengthens the composition, so a sound
+      // that covered the old end has to grow with it (#6401); a trim that
+      // only shortened the clip passes through unchanged.
+      editor.setLengthenedClipState(
+        previousClips: _clipTrimStartClips ?? clipEditorBloc.state.clips,
+        clips: clipEditorBloc.state.clips,
         timelineMarkers: rebasedMarkers,
       );
       _clipTrimStartClips = null;
