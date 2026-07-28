@@ -234,14 +234,17 @@ class NotificationRepository {
   /// resulting [StateError] as expected account-switch noise.
   bool get isClosed => _closed;
 
-  /// Whether the snapshot currently holds more than the first page.
+  /// Whether every live feed is paginated beyond its first page.
   ///
   /// Resume-driven liveness triggers consult this to avoid collapsing a
-  /// user-visible paginated feed back to page 1. An explicit [refresh]
-  /// (pull-to-refresh, page mount) still replaces the snapshot and resets
-  /// this to `false`.
+  /// user-visible paginated feed back to page 1. [refreshApplied] already
+  /// skips the individual feeds that would collapse, so this only reports
+  /// `true` when no live feed is refreshable at all — otherwise one tab
+  /// scrolled two pages deep would suppress resume refreshes for every
+  /// other tab as well. An explicit [refresh] (pull-to-refresh, page mount)
+  /// still replaces the snapshot and resets this to `false`.
   bool get hasPaginatedBeyondFirstPage =>
-      _liveFeeds.any((feed) => feed.pagesLoaded > 1);
+      _liveFeeds.isNotEmpty && _liveFeeds.every((feed) => feed.pagesLoaded > 1);
 
   /// Releases the current page-depth guard after the feed UI is gone, and
   /// collapses any deep-scrolled accumulation back to the first page.
@@ -845,16 +848,46 @@ class NotificationRepository {
     return _refreshResultFor(null);
   }
 
+  /// Refreshes every live feed that a first-page replace would not collapse.
+  ///
+  /// Feeds the user scrolled past page 1 are skipped rather than rebuilt, so
+  /// a deep-scrolled tab loses neither its position nor its accumulated
+  /// items — and, unlike a single global guard, does not suppress the
+  /// refresh for the tabs that are still on page 1.
+  ///
+  /// Each feed is refreshed independently: one feed's failure must not stop
+  /// the others from refreshing. The first error is rethrown only when no
+  /// feed applied a snapshot, so a partial success still advances the
+  /// coordinator's cooldown instead of re-running the whole fan-out on
+  /// every trigger.
   Future<bool> _refreshAppliedForLiveFeeds() async {
-    final feeds = _liveFeeds.toList();
-    if (feeds.isEmpty) {
+    final live = _liveFeeds.toList(growable: false);
+    if (live.isEmpty) {
       return _refreshResult().then((result) => result.applied);
     }
 
+    final feeds = live
+        .where((feed) => feed.pagesLoaded <= 1)
+        .toList(growable: false);
+    // Every live feed is deep-scrolled — refreshing any of them would
+    // collapse it, and falling back to the unfiltered feed would collapse
+    // that one too.
+    if (feeds.isEmpty) return false;
+
     var applied = false;
+    Object? firstError;
+    StackTrace? firstStackTrace;
     for (final feed in feeds) {
-      final result = await _refreshResultFor(feed.filter);
-      applied = applied || result.applied;
+      try {
+        final result = await _refreshResultFor(feed.filter);
+        applied = applied || result.applied;
+      } catch (e, s) {
+        firstError ??= e;
+        firstStackTrace ??= s;
+      }
+    }
+    if (!applied && firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStackTrace!);
     }
     return applied;
   }

@@ -3612,6 +3612,77 @@ void main() {
 
         await expectLater(staleRefresh, completion(isFalse));
       });
+
+      test('refreshApplied leaves a deep-scrolled feed intact', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.refreshFeed(NotificationKind.like);
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPageFor(NotificationKind.like);
+
+        stubNotifications([]);
+        await repository.refreshApplied();
+
+        // A first-page replace would have collapsed Likes back to one
+        // page under the user; it must be skipped, not refreshed.
+        final likes = await repository
+            .watchSnapshot(filter: NotificationKind.like)
+            .first;
+        expect(likes.items, hasLength(2));
+        // Likes is the only live feed and it is deep-scrolled, so there is
+        // genuinely nothing left for a resume refresh to serve.
+        expect(repository.hasPaginatedBeyondFirstPage, isTrue);
+      });
+
+      test('refreshApplied keeps refreshing after one feed fails', () async {
+        stubProfiles({});
+        stubNotifications([makeNotification()]);
+        await repository.refreshFeed(NotificationKind.like);
+
+        // The unfiltered feed is created first, so without per-feed error
+        // isolation its failure would abort the whole fan-out.
+        when(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: any(named: 'types', that: isNull),
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(
+          const FunnelcakeApiException(message: 'boom', statusCode: 500),
+        );
+
+        await expectLater(repository.refreshApplied(), completion(isTrue));
+
+        verify(
+          () => funnelcakeApiClient.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            cursor: any(named: 'cursor'),
+            cursorId: any(named: 'cursorId'),
+            types: const ['reaction', 'zap'],
+            requestUri: any(named: 'requestUri'),
+            authHeaders: any(named: 'authHeaders'),
+            limit: any(named: 'limit'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      });
     });
 
     group('loadNextPage', () {
@@ -3827,6 +3898,34 @@ void main() {
 
         stubNotifications([]);
         await repository.refresh();
+
+        expect(repository.hasPaginatedBeyondFirstPage, isFalse);
+      });
+
+      test('false while any live feed is still on its first page', () async {
+        stubProfiles({});
+        stubNotifications(
+          [makeNotification()],
+          nextCursor: 'c1',
+          hasMore: true,
+        );
+        await repository.refreshFeed(NotificationKind.like);
+        stubNotifications(
+          [
+            makeNotification(
+              id: 'n2',
+              sourceEventId: 'evt2',
+              referencedEventId: 'video_2',
+            ),
+          ],
+          nextCursor: 'c2',
+          hasMore: true,
+        );
+        await repository.loadNextPageFor(NotificationKind.like);
+
+        // Likes is two pages deep, but the unfiltered feed is not — a
+        // resume refresh can still serve it, so the guard must stay open.
+        await repository.refreshFeed(null);
 
         expect(repository.hasPaginatedBeyondFirstPage, isFalse);
       });
