@@ -724,6 +724,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileMessageLabel => 'Pesan';
 
   @override
+  String get profileDeletedAccountName => 'Akun dihapus';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle =>
+      'Akun ini telah dihapus';
+
+  @override
   String get profileUserFallback => 'pengguna';
 
   @override

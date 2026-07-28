@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -152,6 +153,57 @@ void main() {
           expect(tappedPubkey, equals(pubkey1));
         },
       );
+    });
+
+    group('deleted accounts', () {
+      Future<void> pumpBar(
+        WidgetTester tester, {
+        required bool vanished,
+      }) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [pubkey1],
+            ),
+            additionalOverrides: [
+              fetchUserProfileProvider(pubkey1).overrideWith(
+                (ref) async =>
+                    createTestProfile(pubkey: pubkey1, displayName: 'Alice'),
+              ),
+              profileVanishedProvider(
+                pubkey1,
+              ).overrideWith((ref) => Stream.value(vanished)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('shows a deleted account under the deleted-account name', (
+        tester,
+      ) async {
+        // A vanish cannot rewrite the viewer's own contact list, so the
+        // account stays in this bar and must not keep its stale name.
+        await pumpBar(tester, vanished: true);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        expect(find.text('Alice'), findsNothing);
+      });
+
+      testWidgets('resolves the copy from l10n', (tester) async {
+        await pumpBar(tester, vanished: true);
+
+        final de = lookupAppLocalizations(const Locale('de'));
+        expect(find.text(de.profileDeletedAccountName), findsNothing);
+      });
+
+      testWidgets('leaves a live account untouched', (tester) async {
+        await pumpBar(tester, vanished: false);
+
+        expect(find.text('Alice'), findsOneWidget);
+      });
     });
   });
 }

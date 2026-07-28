@@ -3266,7 +3266,9 @@
     "profileLikesLabel": "Likes",
     "profileMyLibraryLabel": "Mijn bibliotheek",
     "profileMessageLabel": "Bericht",
-    "profileUserFallback": "gebruiker",
+    "profileDeletedAccountName": "Verwijderd account",
+  "inboxConversationDeletedAccountSubtitle": "Dit account is verwijderd",
+  "profileUserFallback": "gebruiker",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },

@@ -749,6 +749,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileMessageLabel => 'Съобщение';
 
   @override
+  String get profileDeletedAccountName => 'Изтрит акаунт';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle => 'Този акаунт е изтрит';
+
+  @override
   String get profileUserFallback => 'Потребител';
 
   @override

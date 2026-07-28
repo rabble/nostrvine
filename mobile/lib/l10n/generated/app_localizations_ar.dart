@@ -727,6 +727,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileMessageLabel => 'رسالة';
 
   @override
+  String get profileDeletedAccountName => 'حساب محذوف';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle => 'تم حذف هذا الحساب';
+
+  @override
   String get profileUserFallback => 'مستخدم';
 
   @override

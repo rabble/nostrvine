@@ -410,6 +410,14 @@
   "profileLikesLabel": "Likes",
   "profileMyLibraryLabel": "My Library",
   "profileMessageLabel": "Message",
+  "profileDeletedAccountName": "Deleted account",
+  "@profileDeletedAccountName": {
+    "description": "Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear \u2014 the inbox row, the conversation header, and the following bar."
+  },
+  "inboxConversationDeletedAccountSubtitle": "This account was deleted",
+  "@inboxConversationDeletedAccountSubtitle": {
+    "description": "Shown under the name in a direct-message conversation header when the other participant deleted their account. Replaces their handle."
+  },
   "profileUserFallback": "user",
   "@profileUserFallback": {
     "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."

@@ -138,16 +138,25 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         : '';
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
     final profile = profileAsync.asData?.value;
-    final displayName =
-        profile?.bestDisplayName ??
-        UserProfile.defaultDisplayNameFor(otherPubkey);
+    // The conversation and its history remain readable — they are the viewer's
+    // own copy of messages a NIP-62 vanish cannot retract. Only the header
+    // identity changes.
+    final isDeleted = ref
+        .watch(profileVanishedProvider(otherPubkey))
+        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
+    final displayName = isDeleted
+        ? context.l10n.profileDeletedAccountName
+        : profile?.bestDisplayName ??
+              UserProfile.defaultDisplayNameFor(otherPubkey);
     // Prefer the profile's NIP-05 / divine handle when set, otherwise
     // fall back to a truncated npub so the header always carries a
     // stable secondary identifier under the display name. Format
     // mirrors the profile header (`profile_header_widget.dart`): first
     // 16 chars of the npub + ellipsis.
     final profileHandle = profile?.handle;
-    final handle = (profileHandle != null && profileHandle.isNotEmpty)
+    final handle = isDeleted
+        ? context.l10n.inboxConversationDeletedAccountSubtitle
+        : (profileHandle != null && profileHandle.isNotEmpty)
         ? profileHandle
         : (otherPubkey.isNotEmpty
               ? truncateNpubForDisplay(NostrKeyUtils.encodePubKey(otherPubkey))

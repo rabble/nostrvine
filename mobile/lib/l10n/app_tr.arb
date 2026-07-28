@@ -3266,7 +3266,9 @@
     "profileLikesLabel": "Beğeniler",
     "profileMyLibraryLabel": "Kütüphanem",
     "profileMessageLabel": "Mesaj",
-    "profileUserFallback": "kullanıcı",
+    "profileDeletedAccountName": "Silinmiş hesap",
+  "inboxConversationDeletedAccountSubtitle": "Bu hesap silindi",
+  "profileUserFallback": "kullanıcı",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },

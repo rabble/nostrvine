@@ -3266,7 +3266,9 @@
     "profileLikesLabel": "Gilla-markeringar",
     "profileMyLibraryLabel": "Mitt bibliotek",
     "profileMessageLabel": "Meddelande",
-    "profileUserFallback": "användare",
+    "profileDeletedAccountName": "Raderat konto",
+  "inboxConversationDeletedAccountSubtitle": "Det här kontot har raderats",
+  "profileUserFallback": "användare",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
     },

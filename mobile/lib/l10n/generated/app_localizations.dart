@@ -1330,6 +1330,18 @@ abstract class AppLocalizations {
   /// **'Message'**
   String get profileMessageLabel;
 
+  /// Stands in for the display name of an account that requested deletion. A noun phrase used where a person's name would normally appear — the inbox row, the conversation header, and the following bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted account'**
+  String get profileDeletedAccountName;
+
+  /// Shown under the name in a direct-message conversation header when the other participant deleted their account. Replaces their handle.
+  ///
+  /// In en, this message translates to:
+  /// **'This account was deleted'**
+  String get inboxConversationDeletedAccountSubtitle;
+
   /// Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'.
   ///
   /// In en, this message translates to:

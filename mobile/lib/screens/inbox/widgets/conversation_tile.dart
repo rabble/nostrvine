@@ -61,19 +61,29 @@ class ConversationTile extends ConsumerWidget {
 
     final profileAsync = ref.watch(fetchUserProfileProvider(otherPubkey));
 
-    final displayName =
-        displayNameOverride ??
-        profileAsync.maybeWhen<String>(
-          data: (profile) =>
-              profile?.bestDisplayName ??
-              UserProfile.defaultDisplayNameFor(otherPubkey),
-          orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
-        );
+    // The thread and its history stay — the messages are the viewer's own copy
+    // and a NIP-62 vanish cannot retract them. Only the counterparty's identity
+    // is replaced.
+    final isDeleted = ref
+        .watch(profileVanishedProvider(otherPubkey))
+        .maybeWhen(data: (vanished) => vanished, orElse: () => false);
 
-    final imageUrl = profileAsync.maybeWhen(
-      data: (profile) => profile?.picture,
-      orElse: () => null,
-    );
+    final displayName = isDeleted
+        ? context.l10n.profileDeletedAccountName
+        : displayNameOverride ??
+              profileAsync.maybeWhen<String>(
+                data: (profile) =>
+                    profile?.bestDisplayName ??
+                    UserProfile.defaultDisplayNameFor(otherPubkey),
+                orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
+              );
+
+    final imageUrl = isDeleted
+        ? null
+        : profileAsync.maybeWhen(
+            data: (profile) => profile?.picture,
+            orElse: () => null,
+          );
 
     final relativeTime = conversation.lastMessageTimestamp != null
         ? LocalizedTimeFormatter.formatConversationTimestamp(
