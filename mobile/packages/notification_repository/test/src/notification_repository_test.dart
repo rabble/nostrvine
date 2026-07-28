@@ -397,6 +397,76 @@ void main() {
         expect(signedUri.queryParameters['types'], equals('reaction,zap'));
       });
 
+      test('comment feed keeps comment-target mentions', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'comment_mention',
+            notificationType: 'mention',
+            sourceKind: 1,
+            referencedEventId: null,
+            targetCommentId: 'comment_target',
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications(
+          filter: NotificationKind.comment,
+        );
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.mention));
+        expect(item.hasCommentTarget, isTrue);
+      });
+
+      test('comment feed keeps nested replies', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'nested_reply',
+            notificationType: 'reply',
+            sourceKind: 1111,
+            referencedEventId: 'parent_comment',
+            rootEventId: 'root_video',
+            targetCommentId: 'parent_comment',
+            isReferencedVideo: false,
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications(
+          filter: NotificationKind.comment,
+        );
+
+        expect(page.items, hasLength(1));
+        expect(page.items.single.type, equals(NotificationKind.reply));
+      });
+
+      test('comment feed excludes video mentions', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'video_mention',
+            sourceEventId: 'video_source',
+            notificationType: 'mention',
+            sourceKind: 34236,
+            referencedEventId: 'mentioned_video',
+            rootEventId: 'mentioned_video',
+          ),
+        ]);
+        stubProfiles({
+          'pubkey_alice': makeProfile('pubkey_alice', displayName: 'Alice'),
+        });
+
+        final page = await repository.getNotifications(
+          filter: NotificationKind.comment,
+        );
+
+        expect(page.items, isEmpty);
+      });
+
       test('keeps independent cursors for filtered feeds', () async {
         var signedUrl = '';
         repository = NotificationRepository(
@@ -3820,6 +3890,45 @@ void main() {
           expect(after.map((n) => n.id).toList(), equals(expectedKeptIds));
         },
       );
+
+      test('resetPaginationDepth collapses a filtered feed snapshot', () async {
+        stubProfiles({
+          for (var i = 0; i < 25; i++)
+            'follower_$i': makeProfile(
+              'follower_$i',
+              displayName: 'Follower $i',
+            ),
+        });
+        stubNotifications([
+          for (var i = 0; i < 25; i++)
+            makeNotification(
+              id: 'follow_$i',
+              sourcePubkey: 'follower_$i',
+              sourceEventId: 'follow_evt_$i',
+              notificationType: 'follow',
+              sourceKind: 3,
+              referencedEventId: null,
+              createdAt: DateTime(2025).subtract(Duration(minutes: i)),
+            ),
+        ], hasMore: true);
+        await repository.getNotifications(filter: NotificationKind.follow);
+        final before =
+            (await repository
+                    .watchSnapshot(filter: NotificationKind.follow)
+                    .first)
+                .items;
+        expect(before, hasLength(25));
+        final expectedKeptIds = before.take(20).map((n) => n.id).toList();
+
+        repository.resetPaginationDepth(filter: NotificationKind.follow);
+
+        final after =
+            (await repository
+                    .watchSnapshot(filter: NotificationKind.follow)
+                    .first)
+                .items;
+        expect(after.map((n) => n.id).toList(), equals(expectedKeptIds));
+      });
     });
 
     group('markAsRead', () {

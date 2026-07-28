@@ -382,7 +382,7 @@ void main() {
         expect(find.byType(LinearProgressIndicator), findsNothing);
       });
 
-      testWidgets('dispatches load-more for an empty loaded feed with more', (
+      testWidgets('does not dispatch load-more from empty-state build', (
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
@@ -392,7 +392,7 @@ void main() {
         await _pumpView(tester, mockBloc);
         await tester.pump();
 
-        verify(() => mockBloc.add(const NotificationFeedLoadMore())).called(1);
+        verifyNever(() => mockBloc.add(const NotificationFeedLoadMore()));
       });
     });
 

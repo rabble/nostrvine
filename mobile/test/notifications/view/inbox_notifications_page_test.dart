@@ -136,6 +136,32 @@ void main() {
       },
     );
 
+    testWidgets('keeps visited tab blocs alive across tab switches', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      verify(() => mockNotificationRepo.refreshFeed(null)).called(1);
+      verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+      clearInteractions(mockNotificationRepo);
+
+      await tester.tap(find.byType(Tab).at(1));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockNotificationRepo.refreshFeed(NotificationKind.like),
+      ).called(1);
+      verifyNever(() => mockNotificationRepo.markAllAsRead());
+      clearInteractions(mockNotificationRepo);
+
+      await tester.tap(find.byType(Tab).at(0));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockNotificationRepo.refreshFeed(null));
+      verifyNever(() => mockNotificationRepo.markAllAsRead());
+    });
+
     group('invite banner', () {
       // Restores show/hide coverage that the deleted
       // notifications_screen_test.dart asserted before #3567 removed

@@ -57,7 +57,7 @@ class _FakeNotificationRepository extends Fake
   }
 
   @override
-  void resetPaginationDepth() {}
+  void resetPaginationDepth({NotificationKind? filter}) {}
 
   @override
   Future<NotificationPage> refreshFeed(NotificationKind? filter) async =>

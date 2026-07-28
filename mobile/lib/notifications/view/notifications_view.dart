@@ -35,7 +35,6 @@ class NotificationsView extends ConsumerStatefulWidget {
 
 class _NotificationsViewState extends ConsumerState<NotificationsView> {
   final ScrollController _scrollController = ScrollController();
-  bool _emptyLoadMoreQueued = false;
 
   /// Threshold (in pixels from bottom) to trigger load-more.
   static const _loadMoreThreshold = 200.0;
@@ -67,34 +66,12 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
-  void _requestLoadMoreFromEmptyState(NotificationFeedState state) {
-    if (!state.hasMore ||
-        state.isLoadingMore ||
-        state.isRefreshing ||
-        _emptyLoadMoreQueued) {
-      return;
-    }
-    _emptyLoadMoreQueued = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<NotificationFeedBloc>().add(
-        const NotificationFeedLoadMore(),
-      );
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
       color: VineTheme.surfaceContainerHigh,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
-          if (state.notifications.isNotEmpty ||
-              state.isLoadingMore ||
-              !state.hasMore) {
-            _emptyLoadMoreQueued = false;
-          }
-
           // Hard failure path. The bloc gates `failure` on
           // `notifications.isEmpty`, so we only land here when the cache
           // is also empty.
@@ -172,12 +149,6 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           // `onRefresh` returns.
           return Stack(
             children: [
-              Builder(
-                builder: (context) {
-                  _requestLoadMoreFromEmptyState(state);
-                  return const SizedBox.shrink();
-                },
-              ),
               RefreshIndicator(
                 color: VineTheme.onPrimary,
                 backgroundColor: VineTheme.vineGreen,

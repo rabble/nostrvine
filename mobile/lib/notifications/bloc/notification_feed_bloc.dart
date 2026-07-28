@@ -51,6 +51,10 @@ class NotificationFeedBloc
   final FollowRepository _followRepository;
   final NotificationKind? _filter;
   late final StreamSubscription<NotificationPage> _snapshotSubscription;
+  int _emptyPageContinuations = 0;
+  bool _loadMoreFailed = false;
+
+  static const _maxEmptyPageContinuations = 3;
 
   /// Override [ActorNotification.isFollowingBack] for follow-type rows so the
   /// flag tracks the authoritative follow state in [FollowRepository] rather
@@ -73,14 +77,33 @@ class NotificationFeedBloc
     _SnapshotChanged event,
     Emitter<NotificationFeedState> emit,
   ) {
+    final notifications = _applyFollowState(event.page.items);
     emit(
       state.copyWith(
-        notifications: _applyFollowState(event.page.items),
+        notifications: notifications,
         unreadCount: event.page.unreadCount,
         hasMore: event.page.hasMore,
         refreshError: event.page.lastRefreshError,
       ),
     );
+    _continuePastEmptyPageIfNeeded(notifications);
+  }
+
+  void _continuePastEmptyPageIfNeeded(List<NotificationItem> notifications) {
+    if (notifications.isNotEmpty || !state.hasMore) {
+      _emptyPageContinuations = 0;
+      _loadMoreFailed = false;
+      return;
+    }
+    if (state.status != NotificationFeedStatus.loaded ||
+        state.isLoadingMore ||
+        state.isRefreshing ||
+        _loadMoreFailed ||
+        _emptyPageContinuations >= _maxEmptyPageContinuations) {
+      return;
+    }
+    _emptyPageContinuations += 1;
+    add(const NotificationFeedLoadMore());
   }
 
   /// Handle initial load.
@@ -101,6 +124,8 @@ class NotificationFeedBloc
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
   ) async {
+    _emptyPageContinuations = 0;
+    _loadMoreFailed = false;
     // Stale-while-revalidate: keep any hydrated/cached items rendered and
     // flag the in-flight refresh so the view shows a thin progress bar
     // instead of a blanking full-screen spinner.
@@ -206,7 +231,7 @@ class NotificationFeedBloc
     NotificationFeedLoadMore event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    if (!state.hasMore || state.isLoadingMore) return;
+    if (!state.hasMore || state.isLoadingMore || _loadMoreFailed) return;
 
     emit(state.copyWith(isLoadingMore: true));
 
@@ -214,6 +239,7 @@ class NotificationFeedBloc
       await _notificationRepository.loadNextPageFor(_filter);
       emit(state.copyWith(isLoadingMore: false));
     } on Exception catch (e, s) {
+      _loadMoreFailed = true;
       // `NotificationRepository.loadNextPage` (single-attempt
       // paginate-load-more) propagates typed `FunnelcakeException`
       // (4xx/5xx/timeout). Per .claude/rules/error_handling.md they
@@ -221,6 +247,7 @@ class NotificationFeedBloc
       addError(e, s);
       emit(state.copyWith(isLoadingMore: false));
     } catch (e, s) {
+      _loadMoreFailed = true;
       // Errors (StateError, TypeError) — matrix-YES invariant.
       addError(
         Reportable(e, context: NotificationFeedBlocReportableSites.onLoadMore),
@@ -235,6 +262,8 @@ class NotificationFeedBloc
     NotificationFeedRefreshed event,
     Emitter<NotificationFeedState> emit,
   ) async {
+    _emptyPageContinuations = 0;
+    _loadMoreFailed = false;
     emit(state.copyWith(isRefreshing: true));
     try {
       await _notificationRepository.refreshFeed(_filter);
@@ -347,9 +376,7 @@ class NotificationFeedBloc
   @override
   Future<void> close() async {
     await _snapshotSubscription.cancel();
-    if (_filter == null) {
-      _notificationRepository.resetPaginationDepth();
-    }
+    _notificationRepository.resetPaginationDepth(filter: _filter);
     return super.close();
   }
 }

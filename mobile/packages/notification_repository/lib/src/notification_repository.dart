@@ -173,9 +173,14 @@ class NotificationRepository {
   final AuthHeadersProvider? _authHeadersProvider;
 
   final Map<NotificationKind?, _NotificationFeed> _feeds = {};
+  bool _closed = false;
 
-  _NotificationFeed _feedFor(NotificationKind? filter) =>
-      _feeds.putIfAbsent(filter, () => _NotificationFeed(filter: filter));
+  _NotificationFeed _feedFor(NotificationKind? filter) {
+    if (_closed) {
+      throw StateError('NotificationRepository is closed');
+    }
+    return _feeds.putIfAbsent(filter, () => _NotificationFeed(filter: filter));
+  }
 
   _NotificationFeed get _allFeed => _feedFor(null);
 
@@ -214,7 +219,9 @@ class NotificationRepository {
   /// Called when the repository is no longer needed (e.g. on auth flip
   /// when a new repository instance replaces this one).
   Future<void> close() async {
-    for (final feed in _liveFeeds) {
+    if (_closed) return;
+    _closed = true;
+    for (final feed in _liveFeeds.toList()) {
       await feed.snapshot.close();
     }
   }
@@ -225,7 +232,7 @@ class NotificationRepository {
   /// long-lived consumer (e.g. the refresh coordinator) may still hold it
   /// across an in-flight call. Such callers use this to classify the
   /// resulting [StateError] as expected account-switch noise.
-  bool get isClosed => _snapshot.isClosed;
+  bool get isClosed => _closed;
 
   /// Whether the snapshot currently holds more than the first page.
   ///
@@ -233,7 +240,8 @@ class NotificationRepository {
   /// user-visible paginated feed back to page 1. An explicit [refresh]
   /// (pull-to-refresh, page mount) still replaces the snapshot and resets
   /// this to `false`.
-  bool get hasPaginatedBeyondFirstPage => _allFeed.pagesLoaded > 1;
+  bool get hasPaginatedBeyondFirstPage =>
+      _liveFeeds.any((feed) => feed.pagesLoaded > 1);
 
   /// Releases the current page-depth guard after the feed UI is gone, and
   /// collapses any deep-scrolled accumulation back to the first page.
@@ -254,14 +262,15 @@ class NotificationRepository {
   /// reflects only the newest page's unread rows — the same bound the next
   /// `refresh()` would impose anyway, so this only brings that bound forward
   /// to feed-close instead of next-open.
-  void resetPaginationDepth() {
-    final current = _snapshot.value;
+  void resetPaginationDepth({NotificationKind? filter}) {
+    final feed = _feedFor(filter);
+    final current = feed.snapshot.value;
     if (current.items.length > _pageSize) {
-      _snapshot.add(
+      feed.snapshot.add(
         current.copyWith(items: current.items.take(_pageSize).toList()),
       );
     }
-    _allFeed.pagesLoaded = _snapshot.value.items.isEmpty ? 0 : 1;
+    feed.pagesLoaded = feed.snapshot.value.items.isEmpty ? 0 : 1;
   }
 
   /// Fetches the next page of notifications.
@@ -326,7 +335,10 @@ class NotificationRepository {
         ..lastCursor = response.nextCursor
         ..lastCursorId = response.nextCursorId;
 
-      final items = await _enrichAndGroup(response.notifications);
+      final items = await _enrichAndGroup(
+        response.notifications,
+        filter: filter,
+      );
       if (generation != feed.fetchGeneration) {
         return (page: feed.snapshot.value, applied: false);
       }
@@ -802,7 +814,7 @@ class NotificationRepository {
         NotificationKind.mention => const ['mention'],
         NotificationKind.likeComment => const ['reaction', 'zap'],
         NotificationKind.reply => const ['reply'],
-        NotificationKind.system => null,
+        NotificationKind.system => const ['list_add'],
       };
 
   static final math.Random _jitter = math.Random();
@@ -822,11 +834,25 @@ class NotificationRepository {
   /// when the refresh was superseded by another first-page fetch before it
   /// could apply.
   Future<bool> refreshApplied() {
-    return _refreshResult().then((result) => result.applied);
+    return _refreshAppliedForLiveFeeds();
   }
 
   Future<({NotificationPage page, bool applied})> _refreshResult() {
     return _refreshResultFor(null);
+  }
+
+  Future<bool> _refreshAppliedForLiveFeeds() async {
+    final feeds = _liveFeeds.toList();
+    if (feeds.isEmpty) {
+      return _refreshResult().then((result) => result.applied);
+    }
+
+    var applied = false;
+    for (final feed in feeds) {
+      final result = await _refreshResultFor(feed.filter);
+      applied = applied || result.applied;
+    }
+    return applied;
   }
 
   Future<({NotificationPage page, bool applied})> _refreshResultFor(
@@ -1239,8 +1265,9 @@ class NotificationRepository {
   /// Enriches raw relay notifications with profile + video metadata, then
   /// groups them into [VideoNotification]s and [ActorNotification]s.
   Future<List<NotificationItem>> _enrichAndGroup(
-    List<RelayNotification> raw,
-  ) async {
+    List<RelayNotification> raw, {
+    NotificationKind? filter,
+  }) async {
     if (raw.isEmpty) return [];
 
     final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
@@ -1266,7 +1293,25 @@ class NotificationRepository {
 
     final items = <NotificationItem>[...videos, ...actors, ...reclassified]
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    return _applyBlockFilter(items);
+    return _applyBlockFilter(_applyFeedFilter(items, filter));
+  }
+
+  List<NotificationItem> _applyFeedFilter(
+    List<NotificationItem> items,
+    NotificationKind? filter,
+  ) {
+    if (filter != NotificationKind.comment) return items;
+    return items.where(_belongsInCommentsFeed).toList();
+  }
+
+  bool _belongsInCommentsFeed(NotificationItem item) {
+    if (item.type == NotificationKind.comment ||
+        item.type == NotificationKind.reply) {
+      return true;
+    }
+    return item is ActorNotification &&
+        item.type == NotificationKind.mention &&
+        item.hasCommentTarget;
   }
 
   /// Filters notifications from blocked/muted users.

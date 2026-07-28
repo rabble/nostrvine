@@ -125,9 +125,15 @@ class _InboxNotificationsScaffoldState
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _AllTabContent(
+                  _NotificationTab(
                     notificationRepository: widget.notificationRepository,
                     followRepository: widget.followRepository,
+                    child: const Column(
+                      children: [
+                        _InvitesBanner(),
+                        Expanded(child: NotificationsView()),
+                      ],
+                    ),
                   ),
                   _NotificationTab(
                     notificationRepository: widget.notificationRepository,
@@ -159,7 +165,7 @@ class _InboxNotificationsScaffoldState
   }
 }
 
-class _NotificationTab extends StatelessWidget {
+class _NotificationTab extends StatefulWidget {
   const _NotificationTab({
     required this.notificationRepository,
     required this.followRepository,
@@ -173,43 +179,32 @@ class _NotificationTab extends StatelessWidget {
   final Widget child;
 
   @override
+  State<_NotificationTab> createState() => _NotificationTabState();
+}
+
+class _NotificationTabState extends State<_NotificationTab>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     // Key on the watched dependency identities plus filter so each tab's bloc
     // rebuilds when repositories swap and keeps an independent pagination
     // stream for its server-side category.
     return BlocProvider(
-      key: ValueKey((notificationRepository, followRepository, filter)),
+      key: ValueKey((
+        widget.notificationRepository,
+        widget.followRepository,
+        widget.filter,
+      )),
       create: (_) => NotificationFeedBloc(
-        notificationRepository: notificationRepository,
-        followRepository: followRepository,
-        filter: filter,
+        notificationRepository: widget.notificationRepository,
+        followRepository: widget.followRepository,
+        filter: widget.filter,
       )..add(const NotificationFeedStarted()),
-      child: child,
-    );
-  }
-}
-
-/// All tab — invites banner above the unfiltered notifications list.
-class _AllTabContent extends StatelessWidget {
-  const _AllTabContent({
-    required this.notificationRepository,
-    required this.followRepository,
-  });
-
-  final NotificationRepository notificationRepository;
-  final FollowRepository followRepository;
-
-  @override
-  Widget build(BuildContext context) {
-    return _NotificationTab(
-      notificationRepository: notificationRepository,
-      followRepository: followRepository,
-      child: const Column(
-        children: [
-          _InvitesBanner(),
-          Expanded(child: NotificationsView()),
-        ],
-      ),
+      child: widget.child,
     );
   }
 }
