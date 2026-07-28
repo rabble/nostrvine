@@ -7,13 +7,13 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -160,6 +160,13 @@ internal class DivineVideoPlayerInstance(
     private val audioOverlayManager = audioOverlayManagerFactory(context)
 
     /**
+     * Fades the outer edges of a looping video so its loop join is not a click
+     * (#6468). Lives for the life of the instance because it is wired into the
+     * renderers factory when the player is built.
+     */
+    private val declickProcessor = LoopDeclickAudioProcessor()
+
+    /**
      * Pending result for an async seekTo call.
      * Completed when ExoPlayer transitions to STATE_READY after a seek,
      * so the Dart `await seekTo()` blocks until the frame is decoded.
@@ -286,7 +293,8 @@ internal class DivineVideoPlayerInstance(
         // extraction contend for a small hardware decoder pool — into a
         // successful (if slower) decode instead of a dead surface.
         val renderersFactory =
-            DefaultRenderersFactory(context).setEnableDecoderFallback(true)
+            LoopDeclickRenderersFactory(context, declickProcessor)
+                .setEnableDecoderFallback(true)
         val builder = ExoPlayer.Builder(context, renderersFactory)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
@@ -526,6 +534,14 @@ internal class DivineVideoPlayerInstance(
         // position so the timeline doesn't show intermediate values.
         pendingGlobalStartMs = globalStartMs
 
+        // Fade the video's edges only when the whole video is one clip, which
+        // is what the feed loops. On a multi-clip timeline a stream is one clip
+        // rather than the whole video, so fading every stream would notch the
+        // audio at each cut. The length is not known until STATE_READY.
+        declickProcessor.enabled = clipCount == 1
+        declickProcessor.videoDurationUs = LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        declickProcessor.nextStreamStartUs = startLocalMs * 1000L
+
         // Hold the Dart result until STATE_READY so `await setClips()` only
         // resolves once the decoder is truly ready. Cancel any previous
         // in-flight setClips (shouldn't happen, but defensive) — surface as
@@ -620,6 +636,19 @@ internal class DivineVideoPlayerInstance(
         return commonEndMs.takeIf { trimMs <= trimLimitMs }
     }
 
+    /**
+     * Hands the declick fade the current video's length, so it knows where the
+     * loop join it has to fade into actually is.
+     */
+    private fun updateDeclickDuration() {
+        val durationMs = player?.duration ?: C.TIME_UNSET
+        declickProcessor.videoDurationUs = if (durationMs == C.TIME_UNSET) {
+            LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        } else {
+            durationMs * 1000L
+        }
+    }
+
     private fun handleSeekTo(call: MethodCall, result: MethodChannel.Result) {
         val globalMs = (call.argument<Number>("positionMs"))?.toLong() ?: 0L
         val exoPlayer = ensurePlayer()
@@ -641,6 +670,10 @@ internal class DivineVideoPlayerInstance(
         val resolved = resolveGlobalPosition(globalMs)
 
         val targetIndex = resolved.first
+        // The seek flushes the audio pipeline, which re-anchors the fade at
+        // whatever the next stream starts with. Tell it that is the seek target
+        // and not the start of the video, so the fade out stays on the join.
+        declickProcessor.nextStreamStartUs = resolved.second * 1000L
         exoPlayer.seekTo(targetIndex, resolved.second)
 
         // Apply the target clip's per-clip speed and volume immediately.
@@ -1000,6 +1033,9 @@ internal class DivineVideoPlayerInstance(
                 syncAudioOverlays()
             }
             if (playbackState == Player.STATE_READY) {
+                // The video's length is only known once the timeline is
+                // populated, and the fade out has to know where the join is.
+                updateDeclickDuration()
                 // Seek complete — switch from reporting target to actual position.
                 pendingGlobalStartMs = 0L
                 completeSeekIfPending()

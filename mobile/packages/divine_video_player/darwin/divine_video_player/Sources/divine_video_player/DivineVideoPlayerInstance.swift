@@ -35,6 +35,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private static let bufferingStallMs = 8_000
     private static let maxCommonTrackEndTrimMs = 500.0
     private static let maxCommonTrackEndTrimRatio = 0.10
+    /// Length of the fade applied to each outer edge of the composition.
+    ///
+    /// A loop restart cuts from the composition's last sample straight back to
+    /// its first, and that cut has never been tied to a zero crossing — it
+    /// comes from a trim or a recording length. Unless both edges happen to
+    /// sit near silence the step is audible as a click. Ten milliseconds is
+    /// long enough to remove the step even on low-frequency content and short
+    /// enough not to read as a level change.
+    private static let edgeDeclickFadeSeconds = 0.010
 
     /// AVFoundation's asset-option key for per-asset HTTP request headers.
     ///
@@ -521,20 +530,58 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         // the single composition audio track. AVQueuePlayer.volume multiplies on
         // top automatically, so 0.0 here = muted for that clip regardless of the
         // global volume.
+        //
+        // The video's two outer edges also fade, because AVPlayerLooper joins
+        // them directly on every loop restart (#6468). Everything between keeps
+        // its flat gain — only the join is audible, not the cuts inside it.
+        //
+        // The fade is folded into the gain it starts and ends at rather than
+        // layered over it. Ramps may not overlap: AVFoundation rejects a ramp
+        // that crosses an existing one with an Objective-C
+        // NSInvalidArgumentException, which is not a Swift Error and would
+        // abort the process. Folding also keeps a muted video silent.
         var audioMix: AVMutableAudioMix?
         if let audioTrack {
             let params = AVMutableAudioMixInputParameters(track: audioTrack)
+            let fadeSeconds = min(
+                Self.edgeDeclickFadeSeconds,
+                (durations.first ?? 0) / 2,
+                (durations.last ?? 0) / 2
+            )
+            let fade = CMTime(seconds: fadeSeconds, preferredTimescale: 600)
+            let lastIndex = durations.count - 1
             var t = CMTime.zero
             for (i, dur) in durations.enumerated() {
-                let clipDuration = CMTime(seconds: dur, preferredTimescale: 600)
-                let range = CMTimeRange(start: t, duration: clipDuration)
+                let clipEnd = CMTimeAdd(t, CMTime(seconds: dur, preferredTimescale: 600))
                 let vol = clipVolumes[i]
-                params.setVolumeRamp(
-                    fromStartVolume: vol,
-                    toEndVolume: vol,
-                    timeRange: range
-                )
-                t = CMTimeAdd(t, clipDuration)
+                var flatStart = t
+                var flatEnd = clipEnd
+                if i == 0, fadeSeconds > 0 {
+                    flatStart = CMTimeAdd(t, fade)
+                    params.setVolumeRamp(
+                        fromStartVolume: 0,
+                        toEndVolume: vol,
+                        timeRange: CMTimeRange(start: t, end: flatStart)
+                    )
+                }
+                if i == lastIndex, fadeSeconds > 0 {
+                    flatEnd = CMTimeSubtract(clipEnd, fade)
+                }
+                if CMTimeCompare(flatEnd, flatStart) > 0 {
+                    params.setVolumeRamp(
+                        fromStartVolume: vol,
+                        toEndVolume: vol,
+                        timeRange: CMTimeRange(start: flatStart, end: flatEnd)
+                    )
+                }
+                if i == lastIndex, fadeSeconds > 0 {
+                    params.setVolumeRamp(
+                        fromStartVolume: vol,
+                        toEndVolume: 0,
+                        timeRange: CMTimeRange(start: flatEnd, end: clipEnd)
+                    )
+                }
+                t = clipEnd
             }
             let mix = AVMutableAudioMix()
             mix.inputParameters = [params]
