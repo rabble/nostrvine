@@ -18,6 +18,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -236,6 +237,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
             }
 
             refreshClip(clip);
+            unawaited(_alignClipToRecordedMedia(clip.id));
           },
         ),
       );
@@ -262,7 +264,64 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // This runs after trimming (if any) completes via the processingCompleter.
     unawaited(_generateClipProof(clip));
 
+    // A trimmed clip is realigned once its re-render lands, above.
+    if (!isClipTooLong) {
+      unawaited(_alignClipToRecordedMedia(clip.id));
+    }
+
     return clip;
+  }
+
+  /// Replaces a recorded clip's stopwatch length with the point where its media
+  /// tracks both still have content.
+  ///
+  /// The recorder times how long the button was held, but an mp4's declared
+  /// length is its *longest* track, and capture stops the audio and video
+  /// writers independently — so a recording's tail routinely carries picture
+  /// with no sound. Leaving that tail in the clip's length puts the whole
+  /// editor timeline out of step with the media: trims, layer windows and
+  /// transitions are authored against a stretch the export cannot fill, and the
+  /// feed's looping player replays the silence every cycle (#6386).
+  ///
+  /// Only ever shortens, and only within [clipTrackEndTolerance] — a clip that
+  /// genuinely outlasts its audio keeps its full length.
+  Future<void> _alignClipToRecordedMedia(String clipId) async {
+    final clip = getClipById(clipId);
+    final video = clip?.video;
+    if (clip == null || video == null) return;
+
+    final VideoMetadata metadata;
+    try {
+      metadata = await ProVideoEditor.instance.getMetadata(video);
+    } catch (e) {
+      // Keep the recorded length: a clip that cannot be probed is still
+      // editable, it just keeps the seam it was captured with.
+      Log.warning(
+        '⚠️ Could not read media length for clip $clipId: $e',
+        name: 'ClipManagerNotifier',
+        category: .video,
+      );
+      return;
+    }
+
+    if (!ref.mounted) return;
+
+    final trackEnd = commonTrackEnd(metadata);
+    if (trackEnd == null) return;
+
+    final current = getClipById(clipId);
+    if (current == null || current.duration <= trackEnd) return;
+
+    final aligned = current.copyWith(duration: trackEnd);
+    refreshClip(aligned);
+    unawaited(saveClipToLibrary(aligned));
+
+    Log.debug(
+      '✂️ Aligned clip $clipId to its common track end: '
+      '${current.duration.inMilliseconds}ms → ${trackEnd.inMilliseconds}ms',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
   }
 
   /// Adds a frames-based stop-motion clip to the manager.
