@@ -1,0 +1,23 @@
+name: iap_repository
+description: In-app purchase store abstraction and client-first entitlement validation for Divine supporters.
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  in_app_purchase: ^3.2.0
+  meta: ^1.17.0
+  models:
+    path: ../models
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0

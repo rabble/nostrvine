@@ -17733,6 +17733,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trust Divine relays, verify the rest.'**
   String get nostrSettingsSignatureVerificationNonDivineSubtitle;
+
+  /// Title of the supporter subscription settings screen and its settings tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Supporters'**
+  String get supporterTitle;
+
+  /// Subtitle of the supporter subscription settings tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Support Divine with an optional monthly subscription.'**
+  String get supporterTileSubtitle;
+
+  /// Headline at the top of the supporter subscription screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Divine running'**
+  String get supporterHeroTitle;
+
+  /// Introductory copy on the supporter subscription screen explaining the optional monthly support.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.'**
+  String get supporterHeroBody;
+
+  /// Confirmation shown to users with an active supporter subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Divine Supporter. Thank you for keeping this going.'**
+  String get supporterActiveBadge;
+
+  /// Status note shown while a supporter purchase awaits store approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchase is pending approval.'**
+  String get supporterPurchasePending;
+
+  /// Status note shown while the server verifies a supporter purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming your support…'**
+  String get supporterPurchaseConfirming;
+
+  /// Loading note shown while supporter subscription tiers are fetched from the store.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the store…'**
+  String get supporterStoreChecking;
+
+  /// Note shown when no supporter subscription tiers are available on this device or storefront.
+  ///
+  /// In en, this message translates to:
+  /// **'Supporter subscriptions are not available here right now.'**
+  String get supporterUnavailable;
+
+  /// Button label that re-checks the store for an existing supporter subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get supporterRestorePurchases;
+
+  /// Accessibility label for the button that dismisses the supporter error banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss error'**
+  String get supporterDismissError;
+
+  /// Error shown when the device cannot reach the app store billing client.
+  ///
+  /// In en, this message translates to:
+  /// **'The store is unavailable on this device.'**
+  String get supporterErrorStoreUnavailable;
+
+  /// Error shown when a supporter purchase fails or is cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'The purchase did not complete. You were not charged.'**
+  String get supporterErrorPurchaseFailed;
+
+  /// Error-banner variant shown when a supporter purchase is left in a pending state.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchase is pending approval.'**
+  String get supporterErrorPurchasePending;
+
+  /// Error shown when restoring purchases finds no supporter subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'No supporter subscription was found to restore.'**
+  String get supporterErrorRestoreFailed;
+
+  /// Error shown when the store purchase is already claimed by a different Divine account.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase belongs to another Divine account.'**
+  String get supporterErrorOwnershipConflict;
+
+  /// Error shown when the server-side verification of a supporter purchase is temporarily unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine could not confirm supporter status right now.'**
+  String get supporterErrorVerificationUnavailable;
+
+  /// Generic supporter flow error shown when no more specific message applies.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get supporterErrorUnknown;
+
+  /// Footnote on the supporter screen explaining server-side confirmation and that recognition is optional.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.'**
+  String get supporterDisclaimer;
 }
 
 class _AppLocalizationsDelegate

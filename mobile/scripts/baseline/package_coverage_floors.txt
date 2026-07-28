@@ -34,6 +34,7 @@ follow_repository 100
 funnelcake_api_client 44
 hashtag_repository 30
 image_metadata_stripper 100
+iap_repository 90
 infinite_video_feed 100
 invite_api_client 89
 keycast_flutter 44

@@ -1,0 +1,244 @@
+// ABOUTME: Service that owns a user's supporter entitlement across sessions.
+// ABOUTME: Caches the latest entitlement in SharedPreferences and bridges the
+// ABOUTME: EntitlementValidator stream to app state.
+
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:iap_repository/iap_repository.dart';
+import 'package:models/models.dart';
+import 'package:openvine/services/supporter_api_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Persists and surfaces the current [SupporterEntitlement].
+///
+/// Wraps an [EntitlementValidator] (StoreKit/Play Billing in production) and
+/// keeps the last known entitlement in an account-scoped [SharedPreferences]
+/// entry so it survives relaunches and is available offline. The cache is a
+/// display and retry aid, never canonical entitlement authority. The repository
+/// is the single read-side surface the UI consults; the validator is the write
+/// side.
+class SupporterRepository {
+  /// Creates a [SupporterRepository].
+  ///
+  /// [pubkey] scopes the local cache to the active Divine account.
+  /// [validator] is the store-backed validator. [prefs] is the
+  /// [SharedPreferences] from [sharedPreferencesProvider].
+  SupporterRepository({
+    required String pubkey,
+    required EntitlementValidator validator,
+    required SharedPreferences prefs,
+    SupporterApiClient? apiClient,
+  }) : _apiClient = apiClient,
+       _pubkey = pubkey,
+       _validator = validator,
+       _prefs = prefs,
+       _cacheKey = '$_cacheKeyPrefix$pubkey' {
+    if (pubkey.isEmpty) {
+      throw ArgumentError.value(pubkey, 'pubkey', 'must not be empty');
+    }
+    _current = _loadCached();
+    _subscription = _validator.entitlementChanges.listen(
+      _handleChange,
+      onError: _handleValidatorError,
+    );
+    _proofSubscription = _validator.purchaseProofChanges.listen(
+      (proof) => unawaited(_confirmPurchase(proof)),
+      onError: _handleValidatorError,
+    );
+  }
+
+  final EntitlementValidator _validator;
+  final SupporterApiClient? _apiClient;
+  final String _pubkey;
+  final SharedPreferences _prefs;
+
+  static const String _cacheKeyPrefix = 'divine_supporter_entitlement:';
+  final String _cacheKey;
+
+  late SupporterEntitlement _current;
+  StreamSubscription<SupporterEntitlement>? _subscription;
+  StreamSubscription<SupporterPurchaseProof>? _proofSubscription;
+  final StreamController<SupporterEntitlement> _controller =
+      StreamController<SupporterEntitlement>.broadcast();
+
+  /// The current entitlement (hydrated from cache on construction, refreshed by
+  /// the validator stream as purchases arrive).
+  SupporterEntitlement get current => _current;
+
+  /// Whether the user is currently an active supporter.
+  bool get isSupporter => _current.isSupporter;
+
+  /// A stream of entitlement updates. Emits the current value to new
+  /// listeners.
+  Stream<SupporterEntitlement> get changes => _controller.stream;
+
+  /// The underlying validator, exposed so the UI/cubit can drive purchases and
+  /// restores through the same store connection this repository owns.
+  EntitlementValidator get validator => _validator;
+
+  /// Starts a purchase with the current full pubkey captured in the attempt.
+  /// The store result is proof only; it cannot activate support.
+  Future<SupporterEntitlement> purchase(String productId) {
+    return _validator.purchase(
+      productId,
+      capturedPubkey: _pubkey,
+      attemptId: 'supporter-${DateTime.now().microsecondsSinceEpoch}',
+    );
+  }
+
+  /// Restores purchases for this exact signed-in account.
+  Future<SupporterEntitlement> restorePurchases() {
+    return _validator.restorePurchases(
+      capturedPubkey: _pubkey,
+      attemptId: 'supporter-restore-${DateTime.now().microsecondsSinceEpoch}',
+    );
+  }
+
+  /// Whether canonical Worker requests are configured for this build.
+  bool get hasServerClient => _apiClient != null;
+
+  /// Refreshes the account from canonical Worker state when configured.
+  Future<SupporterAccountSnapshot> refreshFromServer() async {
+    final client = _apiClient;
+    if (client == null) {
+      throw const SupporterApiException(
+        SupporterApiFailureKind.unavailable,
+        'Supporter verification is not configured.',
+      );
+    }
+    final snapshot = await client.fetchMe();
+    _handleChange(snapshot.entitlement);
+    return snapshot;
+  }
+
+  /// Claims a verified store proof for this repository's signed-in account.
+  Future<SupporterAccountSnapshot> claimPurchase(
+    SupporterPurchaseClaim claim,
+  ) async {
+    final client = _apiClient;
+    if (client == null) {
+      throw const SupporterApiException(
+        SupporterApiFailureKind.unavailable,
+        'Supporter verification is not configured.',
+      );
+    }
+    final snapshot = await client.claimPurchase(claim);
+    _handleChange(snapshot.entitlement);
+    return snapshot;
+  }
+
+  /// Updates recognition preferences without mutating payment state.
+  Future<SupporterAccountSnapshot> updateRecognition({
+    required bool haloVisible,
+    required bool discoveryVisible,
+    required bool foundingHistoryVisible,
+  }) async {
+    final client = _apiClient;
+    if (client == null) {
+      throw const SupporterApiException(
+        SupporterApiFailureKind.unavailable,
+        'Supporter verification is not configured.',
+      );
+    }
+    final snapshot = await client.updateRecognition(
+      haloVisible: haloVisible,
+      discoveryVisible: discoveryVisible,
+      foundingHistoryVisible: foundingHistoryVisible,
+    );
+    _handleChange(snapshot.entitlement);
+    return snapshot;
+  }
+
+  SupporterEntitlement _loadCached() {
+    final raw = _prefs.getString(_cacheKey);
+    if (raw == null) return SupporterEntitlement.inactive;
+    try {
+      final decoded = SupporterEntitlement.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+      // Recompute active against the current clock in case expiry passed while
+      // the app was closed.
+      return decoded.refreshed();
+    } on Object {
+      return SupporterEntitlement.inactive;
+    }
+  }
+
+  Future<void> _persist(SupporterEntitlement entitlement) async {
+    try {
+      await _prefs.setString(_cacheKey, jsonEncode(entitlement.toJson()));
+    } on Object {
+      // Swallow: persistence is best-effort; the in-memory value is still
+      // authoritative for this session.
+    }
+  }
+
+  void _handleChange(SupporterEntitlement entitlement) {
+    if (entitlement == _current) return;
+    _current = entitlement;
+    if (!_controller.isClosed) _controller.add(entitlement);
+    _persist(entitlement);
+  }
+
+  void _handleValidatorError(Object error, StackTrace stackTrace) {
+    if (!_controller.isClosed) _controller.addError(error, stackTrace);
+  }
+
+  Future<void> _confirmPurchase(SupporterPurchaseProof proof) async {
+    // Never send a store result under a different account after an account
+    // switch. A device-scope durable queue will retain this case once wired.
+    if (proof.capturedPubkey != _pubkey) return;
+
+    final client = _apiClient;
+    if (client == null) {
+      _handleValidatorError(
+        const SupporterApiException(
+          SupporterApiFailureKind.unavailable,
+          'Supporter verification is not configured.',
+        ),
+        StackTrace.current,
+      );
+      return;
+    }
+
+    try {
+      final snapshot = await client.claimPurchase(
+        SupporterPurchaseClaim(
+          store: proof.store,
+          productId: proof.productId,
+          idempotencyKey: proof.attemptId,
+          proof: proof.toJson(),
+        ),
+      );
+      _handleChange(snapshot.entitlement);
+      await _validator.completePurchase(proof);
+    } on Object catch (error, stackTrace) {
+      _handleValidatorError(error, stackTrace);
+      // Keep the purchase unacknowledged so the store can redeliver it after
+      // the Worker or signer becomes available.
+    }
+  }
+
+  /// Mark the entitlement inactive locally (e.g. after a confirmed expiry or
+  /// cancellation detected out-of-band). The validator stream is the source of
+  /// truth; this is a cache reset.
+  Future<void> clearLocalEntitlement() async {
+    _handleChange(SupporterEntitlement.inactive);
+    try {
+      await _prefs.remove(_cacheKey);
+    } on Object {
+      // best-effort
+    }
+  }
+
+  /// Release the validator stream subscription. The validator itself is
+  /// disposed by whoever owns it (the provider).
+  void dispose() {
+    _subscription?.cancel();
+    _subscription = null;
+    _proofSubscription?.cancel();
+    _proofSubscription = null;
+    _controller.close();
+  }
+}

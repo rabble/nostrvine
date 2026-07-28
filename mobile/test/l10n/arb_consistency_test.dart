@@ -243,6 +243,27 @@ const _knownUntranslatedDebt = <String>{
   'authVerificationErrorPinLocked',
   'authVerificationErrorPinFailed',
   'authVerificationErrorPinUnavailable',
+  // #6413: supporter subscription screen copy; translation deferred to the
+  // next l10n pass. Non-English locales fall back to English.
+  'supporterTitle',
+  'supporterTileSubtitle',
+  'supporterHeroTitle',
+  'supporterHeroBody',
+  'supporterActiveBadge',
+  'supporterPurchasePending',
+  'supporterPurchaseConfirming',
+  'supporterStoreChecking',
+  'supporterUnavailable',
+  'supporterRestorePurchases',
+  'supporterDismissError',
+  'supporterErrorStoreUnavailable',
+  'supporterErrorPurchaseFailed',
+  'supporterErrorPurchasePending',
+  'supporterErrorRestoreFailed',
+  'supporterErrorOwnershipConflict',
+  'supporterErrorVerificationUnavailable',
+  'supporterErrorUnknown',
+  'supporterDisclaimer',
 };
 
 const _signatureVerificationKeys = <String>{
