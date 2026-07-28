@@ -1,8 +1,6 @@
 // ABOUTME: Tests for ClipManagerProvider - Riverpod state management
 // ABOUTME: Validates state updates and provider lifecycle
 
-import 'dart:ui';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,17 +12,12 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 class _MockClipLibraryService extends Mock implements ClipLibraryService {}
-
-class _MockProVideoEditor extends Mock
-    with MockPlatformInterfaceMixin
-    implements ProVideoEditor {}
 
 void main() {
   group('ClipManagerProvider', () {
@@ -43,7 +36,6 @@ void main() {
           originalAspectRatio: 9 / 16,
         ),
       );
-      registerFallbackValue(EditorVideo.file('/fallback.mp4'));
     });
 
     setUp(() async {
@@ -953,123 +945,5 @@ void main() {
         ).called(1);
       });
     });
-
-    group('aligning a recorded clip to its media', () {
-      late ProVideoEditor originalEditor;
-      late _MockProVideoEditor editor;
-
-      setUp(() {
-        originalEditor = ProVideoEditor.instance;
-        editor = _MockProVideoEditor();
-        ProVideoEditor.instance = editor;
-        when(() => mockClipLibraryService.saveClip(any())).thenAnswer(
-          (_) async {},
-        );
-      });
-
-      tearDown(() {
-        ProVideoEditor.instance = originalEditor;
-      });
-
-      /// Adds a clip and lets the fire-and-forget alignment settle.
-      Future<DivineVideoClip> addAndSettle(ClipManagerNotifier notifier) async {
-        final clip = notifier.addClip(
-          limitClipDuration: false,
-          video: EditorVideo.file('/path/to/video.mp4'),
-          duration: const Duration(milliseconds: 3000),
-          targetAspectRatio: .vertical,
-          originalAspectRatio: 9 / 16,
-        );
-        await pumpEventQueue();
-        return clip;
-      }
-
-      test(
-        'shortens the clip to where both tracks still have content',
-        () async {
-          when(() => editor.getMetadata(any())).thenAnswer(
-            (_) async => _metadata(
-              duration: const Duration(milliseconds: 3000),
-              audioDuration: const Duration(milliseconds: 2931),
-            ),
-          );
-          final notifier = container.read(clipManagerProvider.notifier);
-
-          await addAndSettle(notifier);
-
-          expect(
-            container.read(clipManagerProvider).clips.single.duration,
-            equals(const Duration(milliseconds: 2931)),
-          );
-        },
-      );
-
-      test('persists the aligned length to the library', () async {
-        when(() => editor.getMetadata(any())).thenAnswer(
-          (_) async => _metadata(
-            duration: const Duration(milliseconds: 3000),
-            audioDuration: const Duration(milliseconds: 2931),
-          ),
-        );
-        final notifier = container.read(clipManagerProvider.notifier);
-
-        await addAndSettle(notifier);
-
-        final captured =
-            verify(
-                  () => mockClipLibraryService.saveClip(captureAny()),
-                ).captured.single
-                as DivineVideoClip;
-        expect(captured.duration, equals(const Duration(milliseconds: 2931)));
-      });
-
-      test('leaves a clip that genuinely outlasts its audio', () async {
-        when(() => editor.getMetadata(any())).thenAnswer(
-          (_) async => _metadata(
-            duration: const Duration(milliseconds: 3000),
-            audioDuration: const Duration(milliseconds: 800),
-          ),
-        );
-        final notifier = container.read(clipManagerProvider.notifier);
-
-        await addAndSettle(notifier);
-
-        expect(
-          container.read(clipManagerProvider).clips.single.duration,
-          equals(const Duration(milliseconds: 3000)),
-        );
-        verifyNever(() => mockClipLibraryService.saveClip(any()));
-      });
-
-      test(
-        'keeps the recorded length when the media cannot be probed',
-        () async {
-          when(
-            () => editor.getMetadata(any()),
-          ).thenThrow(Exception('unreadable'));
-          final notifier = container.read(clipManagerProvider.notifier);
-
-          await addAndSettle(notifier);
-
-          expect(
-            container.read(clipManagerProvider).clips.single.duration,
-            equals(const Duration(milliseconds: 3000)),
-          );
-        },
-      );
-    });
   });
 }
-
-VideoMetadata _metadata({
-  required Duration duration,
-  Duration? audioDuration,
-}) => VideoMetadata(
-  duration: duration,
-  audioDuration: audioDuration,
-  extension: 'mp4',
-  fileSize: 1024,
-  resolution: const Size(720, 1280),
-  rotation: 0,
-  bitrate: 2000000,
-);

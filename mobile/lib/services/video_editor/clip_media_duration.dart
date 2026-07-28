@@ -1,6 +1,7 @@
 // ABOUTME: Derives a recorded clip's true length from its media tracks
 // ABOUTME: so the editor timeline matches the file the export is built from
 
+import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// How far a clip's audio may fall short of its video before the gap counts as
@@ -12,6 +13,10 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 /// audio — a stop-motion still held past a short sound, or a source with a
 /// broken audio track — and shortening it would swallow content.
 const clipTrackEndTolerance = Duration(milliseconds: 500);
+
+/// Shorter common track ends are treated as unusable metadata, matching the
+/// editor's minimum editable clip duration.
+const Duration minCommonTrackEnd = VideoEditorSplitService.minClipDuration;
 
 /// The point where every track of a recorded clip still has content, or `null`
 /// when the clip's recorded length should be kept as it is.
@@ -27,6 +32,7 @@ const clipTrackEndTolerance = Duration(milliseconds: 500);
 Duration? commonTrackEnd(VideoMetadata metadata) {
   final audioDuration = metadata.audioDuration;
   if (audioDuration == null) return null;
+  if (audioDuration < minCommonTrackEnd) return null;
   if (audioDuration >= metadata.duration) return null;
   if (metadata.duration - audioDuration > clipTrackEndTolerance) return null;
   return audioDuration;

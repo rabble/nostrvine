@@ -75,5 +75,17 @@ void main() {
 
       expect(commonTrackEnd(result), isNull);
     });
+
+    test(
+      'ignores degenerate audio tracks below the editable duration floor',
+      () {
+        final result = _metadata(
+          duration: const Duration(milliseconds: 400),
+          audioDuration: Duration.zero,
+        );
+
+        expect(commonTrackEnd(result), isNull);
+      },
+    );
   });
 }
