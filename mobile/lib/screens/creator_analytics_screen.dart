@@ -853,7 +853,7 @@ class _TopVideoRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               performance.engagementRate == null
-                  ? 'N/A'
+                  ? context.l10n.analyticsNa
                   : '${(performance.engagementRate! * 100).toStringAsFixed(1)}%',
               style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
               textAlign: TextAlign.right,
@@ -1342,9 +1342,9 @@ class _VideoPerformance {
   });
 
   factory _VideoPerformance.fromVideo(VideoEvent video) {
-    final likes = video.originalLikes ?? 0;
-    final comments = video.originalComments ?? 0;
-    final reposts = video.originalReposts ?? 0;
+    final likes = liveLikeCountSeed(video) ?? 0;
+    final comments = liveCommentCountSeed(video) ?? 0;
+    final reposts = liveRepostCountSeed(video) ?? 0;
     final views = extractViewLikeCount(video);
     final interactions = likes + comments + reposts;
     final engagementRate = (views != null && views > 0)
@@ -1352,7 +1352,7 @@ class _VideoPerformance {
         : null;
     final displayTitle = video.title?.trim().isNotEmpty == true
         ? video.title!.trim()
-        : 'Video ${video.id.substring(0, math.min(8, video.id.length))}';
+        : video.id;
 
     return _VideoPerformance(
       video: video,

@@ -1,9 +1,8 @@
 // ABOUTME: Regression tests for feed action counter display seeds.
 // ABOUTME: Preserves archival Vine baselines while adding live Divine counts.
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
+import 'package:test/test.dart';
 
 void main() {
   VideoEvent videoWith({

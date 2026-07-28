@@ -8,7 +8,6 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Comment action button with count display for video overlay.
@@ -25,11 +24,9 @@ class CommentActionButton extends StatelessWidget {
     super.key,
   });
 
-  const CommentActionButton.preview({
-    this.onInteracted,
-    super.key,
-  }) : video = null,
-       isPreviewMode = true;
+  const CommentActionButton.preview({this.onInteracted, super.key})
+    : video = null,
+      isPreviewMode = true;
 
   final VideoEvent? video;
   final bool isPreviewMode;
