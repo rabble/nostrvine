@@ -74,12 +74,14 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// A row in `vanished_profiles` means the account asked to be erased, so
   /// `user_profiles` must not hold a row for it. The guard lives here rather
-  /// than at each call site because this DAO is the only write path into the
-  /// table, and the callers are spread across layers that cannot all reach
-  /// `ProfileRepository`: relay ingestion (`EventRouter`), the classic-viner
-  /// seed import, and the repository's own REST and relay caching. A vanished
-  /// account whose kind 0 still lives on a non-compliant relay would otherwise
-  /// re-create its row minutes after eviction.
+  /// than at each call site because every production writer goes through this
+  /// DAO — `AppDbClient.upsertProfile` is the one other way in and has no
+  /// callers outside its own tests — and those writers are spread across
+  /// layers that cannot all reach `ProfileRepository`: relay ingestion
+  /// (`EventRouter`), the classic-viner seed import, and the repository's own
+  /// REST and relay caching. A vanished account whose kind 0 still lives on a
+  /// non-compliant relay would otherwise re-create its row minutes after
+  /// eviction.
   ///
   /// The tombstone table is keyed on `pubkey` and holds only vanished
   /// accounts, so this is a primary-key lookup against a table that is empty
