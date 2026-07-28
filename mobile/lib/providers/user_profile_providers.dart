@@ -6,32 +6,38 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/repository_providers.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
 // ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
-    StreamProvider.family<ProfileStats?, String>((ref, pubkey) async* {
+    StreamProvider.family<ProfileStats?, String>((ref, pubkey) {
       // Counts come from a public funnelcake REST call + Drift; they need only
       // an identity-known session, not the full nostrReady relay-connect settle.
       // Using the identity-known-gated stats repo lets counts render as soon as
       // REST returns instead of stalling on "—" until relays connect (#5863).
       final repo = ref.watch(profileStatsRepositoryProvider);
       if (repo == null) {
-        return;
+        return const Stream<ProfileStats?>.empty();
       }
 
-      unawaited(
-        repo
-            .fetchFreshProfile(pubkey: pubkey)
-            .catchError((Object _, StackTrace _) => null),
-      );
-
-      await for (final stats in repo.watchProfileStats(pubkey: pubkey)) {
-        yield stats;
-      }
+      return _watchProfileStats(repo, pubkey);
     });
+
+Stream<ProfileStats?> _watchProfileStats(
+  ProfileRepository repo,
+  String pubkey,
+) async* {
+  unawaited(
+    repo
+        .fetchFreshProfile(pubkey: pubkey)
+        .catchError((Object _, StackTrace _) => null),
+  );
+
+  yield* repo.watchProfileStats(pubkey: pubkey);
+}
 
 /// Reactive profile provider backed by Drift's watchProfile stream.
 ///
@@ -43,10 +49,19 @@ final userProfileStatsReactiveProvider =
 /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
 /// FutureProvider, so widget code changes are minimal.
 @riverpod
-Stream<UserProfile?> userProfileReactive(Ref ref, String pubkey) async* {
+Stream<UserProfile?> userProfileReactive(Ref ref, String pubkey) {
   final repo = ref.watch(profileRepositoryProvider);
-  if (repo == null) return;
+  if (repo == null) {
+    return const Stream<UserProfile?>.empty();
+  }
 
+  return _watchUserProfile(repo, pubkey);
+}
+
+Stream<UserProfile?> _watchUserProfile(
+  ProfileRepository repo,
+  String pubkey,
+) async* {
   // Kick off a background fetch if nothing is cached yet.
   final cached = await repo.getCachedProfile(pubkey: pubkey);
   if (cached == null) {
