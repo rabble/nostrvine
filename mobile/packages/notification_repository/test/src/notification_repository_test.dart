@@ -4885,6 +4885,49 @@ void main() {
 
         expect(repository.hasPaginatedBeyondFirstPage, isTrue);
       });
+
+      test('markAllAsRead rollback keeps a page that landed mid-flight on a '
+          'feed it never flipped', () async {
+        stubProfiles({});
+        stubNotifications([makeNotification()], unreadCount: 1);
+        await repository.refresh();
+        // The inbox mounts all five tabs, so the Follows feed is already live
+        // when the POST starts — it just holds nothing to flip yet.
+        stubNotifications([]);
+        await repository.refreshFeed(NotificationKind.follow);
+
+        final markGate = Completer<MarkReadResponse>();
+        when(
+          () => funnelcakeApiClient.markNotificationsRead(
+            pubkey: any(named: 'pubkey'),
+            authHeaders: any(named: 'authHeaders'),
+          ),
+        ).thenAnswer((_) => markGate.future);
+        final markFuture = repository.markAllAsRead();
+
+        // The user swipes to Follows while the mark-read POST is in flight.
+        stubNotifications([
+          makeNotification(
+            id: 'follow_1',
+            sourcePubkey: 'pubkey_follower',
+            sourceEventId: 'evt_follow_1',
+            sourceKind: 3,
+            notificationType: 'follow',
+            referencedEventId: null,
+          ),
+        ]);
+        await repository.refreshFeed(NotificationKind.follow);
+
+        markGate.completeError(const FunnelcakeException('boom'));
+        await expectLater(markFuture, throwsA(isA<FunnelcakeException>()));
+
+        final follows = await repository
+            .watchSnapshot(filter: NotificationKind.follow)
+            .first;
+        expect(follows.items, hasLength(1));
+        // The unfiltered feed was flipped, so it still rolls back.
+        expect(await repository.watchUnreadCount().first, equals(1));
+      });
     });
 
     group('cross-page dedupe in page-merge (#4264)', () {

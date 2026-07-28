@@ -928,14 +928,6 @@ class NotificationRepository {
     return getNotifications(filter: filter);
   }
 
-  Map<_NotificationFeed, NotificationPage> _snapshotValuesByFeed() => {
-    for (final feed in _liveFeeds) feed: feed.snapshot.value,
-  };
-
-  Map<_NotificationFeed, int> _pagesLoadedByFeed() => {
-    for (final feed in _liveFeeds) feed: feed.pagesLoaded,
-  };
-
   void _restoreSnapshots(Map<_NotificationFeed, NotificationPage> values) {
     for (final entry in values.entries) {
       entry.key.snapshot.add(entry.value);
@@ -955,20 +947,29 @@ class NotificationRepository {
   /// failure, restores the pre-write snapshot so subscribers see the
   /// authoritative state, and rethrows so callers can surface the
   /// error.
+  ///
+  /// Rollback is scoped to the feeds the flip actually changed. Capturing
+  /// every live feed would revert a tab that landed a fresh page while the
+  /// POST was in flight — the common case being a tab swipe during the
+  /// `markAllAsRead` that runs on inbox open.
   Future<void> markAsRead(List<String> ids) async {
     if (ids.isEmpty) return;
 
     final idSet = ids.toSet();
-    final before = _snapshotValuesByFeed();
-    final pagesLoadedBefore = _pagesLoadedByFeed();
-    for (final feed in _liveFeeds) {
+    final itemsBefore = <NotificationItem>[];
+    final snapshotsBefore = <_NotificationFeed, NotificationPage>{};
+    final pagesLoadedBefore = <_NotificationFeed, int>{};
+    for (final feed in _liveFeeds.toList()) {
       final page = feed.snapshot.value;
+      itemsBefore.addAll(page.items);
+      if (!page.items.any((n) => !n.isRead && _matchesMarkReadId(n, idSet))) {
+        continue;
+      }
+      snapshotsBefore[feed] = page;
+      pagesLoadedBefore[feed] = feed.pagesLoaded;
       feed.snapshot.add(page.copyWith(items: _flipIsRead(page.items, idSet)));
     }
-    final notificationIds = _expandServerNotificationIds(
-      before.values.expand((page) => page.items),
-      idSet,
-    );
+    final notificationIds = _expandServerNotificationIds(itemsBefore, idSet);
 
     try {
       // Sign the exact URL + body the request will use, otherwise the
@@ -995,7 +996,7 @@ class NotificationRepository {
       }
     } catch (_) {
       _restorePagesLoaded(pagesLoadedBefore);
-      _restoreSnapshots(before);
+      _restoreSnapshots(snapshotsBefore);
       rethrow;
     }
   }
@@ -1007,17 +1008,21 @@ class NotificationRepository {
   /// restores the pre-write snapshot — preserves the rollback semantics
   /// introduced by PR #4034 at the repository layer so every consumer
   /// (badge cubit, feed bloc) recovers consistently.
+  ///
+  /// As in [markAsRead], only the feeds this call actually flipped are
+  /// captured for rollback, so a tab that paginated while the POST was in
+  /// flight keeps its fresher page.
   Future<void> markAllAsRead() async {
-    final before = _snapshotValuesByFeed();
-    if (before.values.every((page) => page.items.every((n) => n.isRead))) {
-      return;
-    }
-    final pagesLoadedBefore = _pagesLoadedByFeed();
-
-    for (final feed in _liveFeeds) {
+    final snapshotsBefore = <_NotificationFeed, NotificationPage>{};
+    final pagesLoadedBefore = <_NotificationFeed, int>{};
+    for (final feed in _liveFeeds.toList()) {
       final page = feed.snapshot.value;
+      if (page.items.every((n) => n.isRead)) continue;
+      snapshotsBefore[feed] = page;
+      pagesLoadedBefore[feed] = feed.pagesLoaded;
       feed.snapshot.add(page.copyWith(items: _flipAllRead(page.items)));
     }
+    if (snapshotsBefore.isEmpty) return;
 
     try {
       final url = _funnelcakeApiClient
@@ -1036,7 +1041,7 @@ class NotificationRepository {
       await _notificationsDao.markAllAsRead(ownerPubkey: _userPubkey);
     } catch (_) {
       _restorePagesLoaded(pagesLoadedBefore);
-      _restoreSnapshots(before);
+      _restoreSnapshots(snapshotsBefore);
       rethrow;
     }
   }
