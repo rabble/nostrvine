@@ -33,6 +33,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as p;
@@ -1089,9 +1090,10 @@ class VideoRecorderBloc
       final metadata = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(File(workCopyPath)),
       );
-      clipManager.updateClipDuration(clip.id, metadata.duration);
+      final clipDuration = commonTrackEnd(metadata) ?? metadata.duration;
+      clipManager.updateClipDuration(clip.id, clipDuration);
       Log.debug(
-        '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
+        '📊 Video duration: ${clipDuration.inMilliseconds}ms',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
