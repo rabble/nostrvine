@@ -8328,6 +8328,168 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Buka editor audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Subtitel';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'Buka editor subtitel';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Tanam ke video';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Kustom';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Gaya kustom';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Terapkan';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Warna teks';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Latar';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Warna latar';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animasi';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Tidak ada';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Pudar';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Pegas';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Subtitel';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Mendengarkan…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Mengubah audiomu jadi saran subtitel.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Kami tidak mendengar suara apa pun. Kamu tetap bisa menulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Pengenalan suara tidak tersedia di perangkat ini. Kamu bisa menulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Pengenalan suara tidak diizinkan. Aktifkan di Pengaturan atau tulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transkripsi kali ini gagal. Kamu bisa menulis subtitel sendiri.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Tulis subtitel sendiri';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Tambahkan subtitel';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Teks subtitel';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Hapus subtitel';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Hapus semua subtitel';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'Hapus subtitel?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Semua teks dan pengaturan waktu akan hilang.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'Tutup editor subtitel';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Konfirmasi subtitel';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Gaya subtitel';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasik';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Judul';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Mesin tik';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Spidol';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrafi';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegan';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Gelembung';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Tebal';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Mimpi';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Samudra';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Cerah';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Tulisan tangan';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stempel';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Buka editor teks';
 
   @override

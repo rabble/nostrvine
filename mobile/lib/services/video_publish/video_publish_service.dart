@@ -2,20 +2,25 @@
 // ABOUTME: Handles video upload to Blossom servers, retry logic, and Nostr event creation
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -151,7 +156,8 @@ class VideoPublishService {
     this.collaboratorInviteService,
     this.languagePreferenceService,
     this.mentionResolutionService,
-  });
+    Duration subtitlePublishTimeout = _defaultSubtitlePublishTimeout,
+  }) : _subtitlePublishTimeout = subtitlePublishTimeout;
 
   /// Manages background video uploads.
   final UploadManager uploadManager;
@@ -179,6 +185,14 @@ class VideoPublishService {
 
   /// Resolves typed mentions before publishing Nostr video events.
   final MentionResolutionService? mentionResolutionService;
+
+  /// Deadline for each optional caption-asset network step. Captions are
+  /// best-effort, so a stalled upload / relay publish must never hold up the
+  /// primary video event. An upload timeout yields no refs; a later relay
+  /// timeout preserves the direct VTT URL.
+  final Duration _subtitlePublishTimeout;
+
+  static const Duration _defaultSubtitlePublishTimeout = Duration(seconds: 30);
 
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
@@ -263,6 +277,11 @@ class VideoPublishService {
         currentUserPubkey: pubkey,
       );
 
+      final captionTrack = _captionTrackForPublish(draft);
+      final textTrackRefs = captionTrack != null
+          ? await _publishSubtitleAssets(captionTrack, pendingUpload)
+          : const <String>[];
+
       final published = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
         title: draft.title,
@@ -286,6 +305,10 @@ class VideoPublishService {
         thumbnailTimestamp: draft.thumbnailTimestamp,
         replyContext: draft.videoReplyContext,
         addReplyToFeed: draft.shareReplyToFeed,
+        textTrackRefs: textTrackRefs,
+        textTrackLang: captionTrack != null
+            ? _languageCode(captionTrack.languageTag)
+            : 'en',
       );
 
       if (!published) {
@@ -313,6 +336,108 @@ class VideoPublishService {
       return _handleUploadError(e, stackTrace, draft);
     }
   }
+
+  /// The draft's caption track for CC publishing, or `null` when the session
+  /// has no captions or the stored value is malformed. Captions are always
+  /// published as CC — whether or not they are also burned in.
+  CaptionTrack? _captionTrackForPublish(DivineVideoDraft draft) {
+    try {
+      final meta = draft.editorEditingParameters['meta'];
+      if (meta is! Map) return null;
+      final raw = meta[VideoEditorConstants.captionsStateHistoryKey];
+      if (raw is! Map<Object?, Object?>) return null;
+      final track = CaptionTrack.fromJson(raw);
+      if (track.cues.isEmpty) return null;
+      return track;
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse caption track from draft',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// Uploads the VTT to Blossom and publishes the Kind 39307 subtitle event
+  /// for [track], returning the `text-track` refs for the video event.
+  ///
+  /// Captions are best-effort: any failure logs a warning and returns the
+  /// refs collected so far (possibly empty) so the video publish proceeds
+  /// without captions rather than failing.
+  Future<List<String>> _publishSubtitleAssets(
+    CaptionTrack track,
+    PendingUpload upload,
+  ) async {
+    try {
+      final vineId = upload.videoId;
+      if (vineId == null || vineId.isEmpty) return const [];
+
+      // Timeline edits can reorder or overlap cues; WebVTT expects cues in
+      // start order, so sort before serializing.
+      final vtt = SubtitleService.generateVtt(
+        [for (final cue in track.cues) cue.toSubtitleCue()]
+          ..sort((a, b) => a.start.compareTo(b.start)),
+      );
+      final result = await blossomService
+          .uploadSubtitleVtt(bytes: Uint8List.fromList(utf8.encode(vtt)))
+          .timeout(_subtitlePublishTimeout);
+      final blossomUrl = result.url;
+      if (!result.success || blossomUrl == null) {
+        Log.warning(
+          '⚠️ Caption VTT upload failed - publishing without captions: '
+          '${result.errorMessage}',
+          category: LogCategory.video,
+        );
+        return const [];
+      }
+
+      try {
+        final coordsRef = await videoEventPublisher
+            .publishSubtitleTrack(
+              vineId: vineId,
+              vttContent: vtt,
+              blossomUrl: blossomUrl,
+              lang: _languageCode(track.languageTag),
+            )
+            .timeout(_subtitlePublishTimeout);
+        return [blossomUrl, ?coordsRef];
+      } on TimeoutException catch (e) {
+        Log.warning(
+          '⚠️ Subtitle event publish timed out - publishing with direct '
+          'VTT URL: $e',
+          category: LogCategory.video,
+        );
+        return [blossomUrl];
+      } catch (e, stackTrace) {
+        Log.error(
+          'Subtitle event publish failed - publishing with direct VTT URL',
+          category: LogCategory.video,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        return [blossomUrl];
+      }
+    } on TimeoutException catch (e) {
+      Log.warning(
+        '⚠️ Caption VTT upload timed out - publishing without captions: $e',
+        category: LogCategory.video,
+      );
+      return const [];
+    } catch (e, stackTrace) {
+      Log.error(
+        'Caption VTT upload failed - publishing without captions',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return const [];
+    }
+  }
+
+  /// `de-CH` -> `de`; text-track lang tags carry the bare language code.
+  String _languageCode(String languageTag) => languageTag.split('-').first;
 
   Future<List<String>> _resolveMentionedPubkeys(
     DivineVideoDraft draft, {

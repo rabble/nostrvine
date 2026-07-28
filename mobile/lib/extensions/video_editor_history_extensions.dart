@@ -1,6 +1,7 @@
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 extension VideoEditorHistoryExtensions on StateManager {
@@ -8,6 +9,21 @@ extension VideoEditorHistoryExtensions on StateManager {
     final raw = activeMeta[VideoEditorConstants.audioStateHistoryKey];
     if (raw is! List) return [];
     return raw.cast<Map<String, dynamic>>().map(AudioEvent.fromJson).toList();
+  }
+
+  /// Restores the caption track from the current history metadata, or `null`
+  /// when the session has no captions (or the stored value is malformed).
+  CaptionTrack? get captionTrack {
+    final raw = activeMeta[VideoEditorConstants.captionsStateHistoryKey];
+    if (raw is! Map<Object?, Object?>) return null;
+    try {
+      return CaptionTrack.fromJson(raw);
+    } on Object {
+      // A stale or malformed draft must never crash editor loading. Normalize
+      // every parse failure — FormatException, or a TypeError from a bad nested
+      // cue/style cast — to "no captions".
+      return null;
+    }
   }
 
   /// Restores timeline marker positions from the current history metadata.

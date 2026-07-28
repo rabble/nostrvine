@@ -8412,6 +8412,172 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Abrir editor de áudio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Legendas';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Abrir o editor de legendas';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Gravar no vídeo';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Person.';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Estilo personalizado';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Aplicar';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Fonte';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Cor do texto';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Fundo';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Cor do fundo';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animação';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Nenhuma';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Fade';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Mola';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Legendas';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Ouvindo…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Transformamos seu áudio em sugestões de legenda.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Não ouvimos nenhuma fala. Você ainda pode escrever as legendas.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'O reconhecimento de voz não está disponível neste aparelho. Você pode escrever as legendas.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'O reconhecimento de voz não está permitido. Ative-o nos Ajustes ou escreva as legendas.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'A transcrição não funcionou desta vez. Você pode escrever as legendas.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Escrever as legendas eu mesmo';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Adicionar legenda';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Texto da legenda';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Excluir legenda';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Remover todas as legendas';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Remover as legendas?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Todo o texto e os tempos serão perdidos.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Fechar o editor de legendas';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Confirmar legendas';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Estilo das legendas';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Clássico';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Manchete';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Máquina de escrever';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Marcador';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Caligrafia';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retrô';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegante';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bolha';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Negrito';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Sonhador';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Oceano';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Ensolarado';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Manuscrito';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serifa';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Carimbo';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Abrir editor de texto';
 
   @override

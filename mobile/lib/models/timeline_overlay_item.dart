@@ -33,6 +33,9 @@ enum TimelineOverlayType {
 
   /// Audio track added on top of the original video audio.
   sound,
+
+  /// Caption cue (burned-in caption layer or CC overlay cue).
+  captions,
 }
 
 /// The audio source for a sound overlay item.

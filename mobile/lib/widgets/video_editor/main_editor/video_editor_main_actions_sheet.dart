@@ -165,6 +165,16 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                   scope.onAddStickers();
                 },
               ),
+              _ItemButton(
+                icon: .closedCaptioning,
+                label: context.l10n.videoEditorCaptionsLabel,
+                semanticLabel:
+                    context.l10n.videoEditorOpenCaptionsSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onOpenCaptions();
+                },
+              ),
               // Timeline markers anchor to video playback positions; on a
               // frames-first stop-motion composition the stills themselves
               // are the granularity, so the option is hidden.

@@ -8464,6 +8464,174 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Ouvrir l\'éditeur audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Sous-titres';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Ouvrir l\'éditeur de sous-titres';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Incruster dans la vidéo';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Perso';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Style personnalisé';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Appliquer';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Police';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Couleur du texte';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Arrière-plan';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Couleur de fond';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Aucune';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Fondu';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Ressort';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Sous-titres';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Écoute en cours…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Nous transformons votre audio en suggestions de sous-titres.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Nous n\'avons entendu aucune voix. Vous pouvez quand même écrire les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'La reconnaissance vocale n\'est pas disponible sur cet appareil. Vous pouvez écrire les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'La reconnaissance vocale n\'est pas autorisée. Activez-la dans les Réglages ou écrivez les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'La transcription n\'a pas fonctionné cette fois. Vous pouvez écrire les sous-titres vous-même.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Écrire les sous-titres moi-même';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Ajouter un sous-titre';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Texte du sous-titre';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel =>
+      'Supprimer le sous-titre';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Supprimer tous les sous-titres';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Supprimer les sous-titres ?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Tout le texte et les réglages de temps seront perdus.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Fermer l\'éditeur de sous-titres';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel =>
+      'Confirmer les sous-titres';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Style des sous-titres';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Classique';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Gros titre';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Machine à écrire';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Marqueur';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Calligraphie';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Rétro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Élégant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bulle';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Néon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Gras';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Rêveur';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Océan';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Ensoleillé';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Manuscrit';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Tampon';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Ouvrir l\'éditeur de texte';
 
   @override

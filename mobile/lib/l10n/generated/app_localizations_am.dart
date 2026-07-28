@@ -8188,6 +8188,168 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'የድምጽ አርታዒን ክፈት';
 
   @override
+  String get videoEditorCaptionsLabel => 'የግርጌ ጽሑፎች';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'የግርጌ ጽሑፍ አርታዒን ክፈት';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'በቪዲዮ ውስጥ አስገባ';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'ብጁ';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'ብጁ ቅጥ';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'ተግብር';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'ቅርጸ-ቁምፊ';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'የጽሑፍ ቀለም';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'ዳራ';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'የዳራ ቀለም';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'እነማ';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'የለም';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'መደብዘዝ';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'ፖፕ';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'ስፕሪንግ';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'የግርጌ ጽሑፎች';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'እያዳመጥን ነው…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'ድምጽህን ወደ የግርጌ ጽሑፍ ሐሳቦች እየቀየርን ነው።';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'ምንም ንግግር አልሰማንም። አሁንም የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'በዚህ መሣሪያ ላይ የንግግር ማወቂያ አይገኝም። የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'የንግግር ማወቂያ አልተፈቀደም። በቅንብሮች ውስጥ አብራው ወይም የግርጌ ጽሑፎቹን ራስህ ጻፍ።';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'ወደ ጽሑፍ መቀየሩ በዚህ ጊዜ አልሰራም። የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'የግርጌ ጽሑፎቹን ራሴ እጽፋለሁ';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'የግርጌ ጽሑፍ ጨምር';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'የግርጌ ጽሑፍ';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'የግርጌ ጽሑፉን ሰርዝ';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'ሁሉንም የግርጌ ጽሑፎች አስወግድ';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'የግርጌ ጽሑፎቹ ይወገዱ?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'ሁሉም ጽሑፍ እና ጊዜዎች ይጠፋሉ።';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'የግርጌ ጽሑፍ አርታዒን ዝጋ';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'የግርጌ ጽሑፎችን አረጋግጥ';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'የግርጌ ጽሑፍ ቅጥ';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'ክላሲክ';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'ፖፕ';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'ስፕሪንግ';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'ሞኖ';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'አርዕስት';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'የጽሕፈት መኪና';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'ማርከር';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'ካሊግራፊ';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'ሬትሮ';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'ቄንጠኛ';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'አረፋ';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'ኒዮን';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'ደማቅ';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'ህልማዊ';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'ውቅያኖስ';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'ፀሐያማ';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'የእጅ ጽሑፍ';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'ሴሪፍ';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'ማህተም';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'የጽሑፍ አርታዒን ክፈት';
 
   @override

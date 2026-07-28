@@ -1,0 +1,154 @@
+// ABOUTME: Tests for the caption track/cue models.
+// ABOUTME: Covers JSON round-trips, adapters, and unknown-mode fallback.
+
+import 'package:caption_generator/caption_generator.dart';
+import 'package:flutter/painting.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/video_editor/caption_style.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show LayerBackgroundMode;
+
+void main() {
+  const cue = CaptionCue(
+    id: 'cue-1',
+    text: 'Hello world.',
+    start: Duration(milliseconds: 250),
+    end: Duration(milliseconds: 1750),
+  );
+
+  group(CaptionCue, () {
+    test('round-trips through toJson/fromJson', () {
+      expect(CaptionCue.fromJson(cue.toJson()), equals(cue));
+    });
+
+    test('fromJson throws $FormatException for malformed maps', () {
+      expect(
+        () => CaptionCue.fromJson(const {'id': 'x', 'text': 'y'}),
+        throwsFormatException,
+      );
+    });
+
+    test('adapts a recognizer segment', () {
+      const segment = CaptionSegment(
+        text: 'Hi there.',
+        start: Duration(milliseconds: 100),
+        end: Duration(milliseconds: 900),
+      );
+
+      final adapted = CaptionCue.fromSegment(segment, id: 'cue-9');
+
+      expect(adapted.id, equals('cue-9'));
+      expect(adapted.text, equals('Hi there.'));
+      expect(adapted.start, equals(const Duration(milliseconds: 100)));
+      expect(adapted.end, equals(const Duration(milliseconds: 900)));
+    });
+
+    test('adapts to a SubtitleCue in milliseconds', () {
+      final subtitle = cue.toSubtitleCue();
+
+      expect(subtitle.start, equals(250));
+      expect(subtitle.end, equals(1750));
+      expect(subtitle.text, equals('Hello world.'));
+    });
+
+    test('exposes its duration and supports copyWith', () {
+      expect(cue.duration, equals(const Duration(milliseconds: 1500)));
+      final moved = cue.copyWith(start: Duration.zero);
+      expect(moved.id, equals(cue.id));
+      expect(moved.start, equals(Duration.zero));
+      expect(moved.text, equals(cue.text));
+    });
+  });
+
+  group(CaptionTrack, () {
+    const track = CaptionTrack(
+      presetId: 'classic',
+      languageTag: 'de-CH',
+      cues: [cue],
+    );
+
+    test('round-trips through toJson/fromJson', () {
+      final decoded = CaptionTrack.fromJson(track.toJson());
+
+      expect(decoded, equals(track));
+      expect(decoded.burnIn, isFalse);
+      expect(decoded.cues.single, equals(cue));
+    });
+
+    test('round-trips a burn-in track with cues', () {
+      const burnIn = CaptionTrack(
+        burnIn: true,
+        presetId: 'pop',
+        languageTag: 'en-US',
+        cues: [cue],
+      );
+
+      final decoded = CaptionTrack.fromJson(burnIn.toJson());
+
+      expect(decoded.burnIn, isTrue);
+      expect(decoded.cues.single, equals(cue));
+    });
+
+    test('round-trips a custom style', () {
+      const custom = CaptionCustomStyle(
+        fontIndex: 4,
+        color: Color(0xFF112233),
+        background: Color(0x80445566),
+        colorMode: LayerBackgroundMode.onlyColor,
+        animation: CaptionAnimationStyle.pop,
+      );
+      final withCustom = track.copyWith(burnIn: true, customStyle: custom);
+
+      final decoded = CaptionTrack.fromJson(withCustom.toJson());
+
+      expect(decoded.customStyle, equals(custom));
+      expect(decoded, equals(withCustom));
+    });
+
+    test('omits customStyle from JSON when absent and clears it on copy', () {
+      expect(track.toJson().containsKey('customStyle'), isFalse);
+
+      const custom = CaptionCustomStyle(
+        fontIndex: 0,
+        color: Color(0xFFFFFFFF),
+        background: Color(0x80000000),
+        colorMode: LayerBackgroundMode.backgroundAndColor,
+        animation: CaptionAnimationStyle.fade,
+      );
+      final withCustom = track.copyWith(customStyle: custom);
+      expect(withCustom.copyWith(clearCustomStyle: true).customStyle, isNull);
+    });
+
+    test('reads burnIn from a legacy serialized mode field', () {
+      final json = track.toJson()
+        ..remove('burnIn')
+        ..['mode'] = 'burnIn';
+
+      expect(CaptionTrack.fromJson(json).burnIn, isTrue);
+    });
+
+    test('defaults burnIn to false for an unknown legacy mode', () {
+      final json = track.toJson()
+        ..remove('burnIn')
+        ..['mode'] = 'holograph';
+
+      expect(CaptionTrack.fromJson(json).burnIn, isFalse);
+    });
+
+    test('fromJson throws $FormatException for malformed maps', () {
+      expect(
+        () => CaptionTrack.fromJson(const {'presetId': 1}),
+        throwsFormatException,
+      );
+    });
+
+    test('copyWith replaces only the given fields', () {
+      final updated = track.copyWith(presetId: 'mono');
+
+      expect(updated.presetId, equals('mono'));
+      expect(updated.burnIn, equals(track.burnIn));
+      expect(updated.cues, equals(track.cues));
+    });
+  });
+}

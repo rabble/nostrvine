@@ -8308,6 +8308,168 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'فتح محرر الصوت';
 
   @override
+  String get videoEditorCaptionsLabel => 'الترجمات';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'فتح محرر الترجمات';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'دمج في الفيديو';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'مخصص';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'نمط مخصص';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'تطبيق';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'الخط';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'لون النص';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'الخلفية';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'لون الخلفية';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'الحركة';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'بلا';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'تلاشٍ';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'ظهور';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'نابض';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'الترجمات';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'نستمع الآن…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'نحوّل صوتك إلى اقتراحات ترجمة.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'لم نسمع أي كلام. لا يزال بإمكانك كتابة الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'التعرف على الكلام غير متاح على هذا الجهاز. يمكنك كتابة الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'التعرف على الكلام غير مسموح به. فعّله من الإعدادات أو اكتب الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'لم ينجح التفريغ هذه المرة. يمكنك كتابة الترجمات بنفسك.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'سأكتب الترجمات بنفسي';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'إضافة ترجمة';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'نص الترجمة';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'حذف الترجمة';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'إزالة كل الترجمات';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'إزالة الترجمات؟';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'سيُفقد كل النص والتوقيتات.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'إغلاق محرر الترجمات';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'تأكيد الترجمات';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'أسلوب الترجمات';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'كلاسيكي';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'بوب';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'نابض';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'أحادي';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'عنوان';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'آلة كاتبة';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'قلم تحديد';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'خط مزخرف';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'ريترو';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'أنيق';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'فقاعة';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'نيون';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'عريض';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'حالم';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'محيط';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'مشمس';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'خط اليد';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'سيريف';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'ختم';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'فتح محرر النص';
 
   @override

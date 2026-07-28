@@ -8329,6 +8329,172 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Ses düzenleyiciyi aç';
 
   @override
+  String get videoEditorCaptionsLabel => 'Altyazılar';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Altyazı düzenleyicisini aç';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Videoya göm';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Özel';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Özel stil';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Uygula';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Yazı tipi';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Metin rengi';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Arka plan';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Arka plan rengi';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animasyon';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Yok';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Solma';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Yay';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Altyazılar';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Dinliyoruz…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Sesini altyazı önerilerine dönüştürüyoruz.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Hiç konuşma duyamadık. Altyazıları yine de kendin yazabilirsin.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Konuşma tanıma bu cihazda kullanılamıyor. Altyazıları kendin yazabilirsin.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Konuşma tanımaya izin verilmiyor. Ayarlar\'dan aç ya da altyazıları kendin yaz.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Yazıya dökme bu sefer işe yaramadı. Altyazıları kendin yazabilirsin.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Altyazıları kendim yazacağım';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Altyazı ekle';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Altyazı metni';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Altyazıyı sil';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Tüm altyazıları kaldır';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Altyazılar kaldırılsın mı?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Tüm metin ve zamanlamalar silinecek.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Altyazı düzenleyicisini kapat';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Altyazıları onayla';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Altyazı stili';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasik';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Manşet';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Daktilo';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrafi';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Zarif';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Baloncuk';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Kalın';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Rüya gibi';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Okyanus';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Güneşli';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'El yazısı';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Damga';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Metin düzenleyiciyi aç';
 
   @override

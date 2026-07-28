@@ -2,6 +2,8 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/models/video_editor/composition_duration.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
@@ -96,6 +98,152 @@ extension VideoEditorExtensions on ProImageEditorState {
       // in-place when skipUpdateHistory is true.
       stateManager.activeMeta[VideoEditorConstants.audioStateHistoryKey] =
           audioTracks.map((e) => e.toJson()).toList();
+    }
+    setState(() {});
+  }
+
+  /// Persists the caption track in the editor's history metadata.
+  ///
+  /// Creates a new undo point. Passing `null` removes the track (the user
+  /// deleted their captions).
+  void setCaptionState(CaptionTrack? track) {
+    final meta = {...stateManager.activeMeta};
+    if (track == null) {
+      meta.remove(VideoEditorConstants.captionsStateHistoryKey);
+    } else {
+      meta[VideoEditorConstants.captionsStateHistoryKey] = track.toJson();
+    }
+    addHistory(meta: meta);
+    setState(() {});
+  }
+
+  /// Commits a whole captions session as one history entry (one undo step):
+  /// replaces all existing caption layers with [captionLayers] and stores
+  /// [track] in the `captions` meta key (`null` removes the track).
+  ///
+  /// Overlay sessions pass no layers; burn-in sessions pass one layer per
+  /// cue; delete passes neither.
+  void commitCaptionState({
+    required CaptionTrack? track,
+    List<Layer> captionLayers = const [],
+  }) {
+    final meta = {...stateManager.activeMeta};
+    if (track == null) {
+      meta.remove(VideoEditorConstants.captionsStateHistoryKey);
+    } else {
+      meta[VideoEditorConstants.captionsStateHistoryKey] = track.toJson();
+    }
+    addHistory(
+      layers: [
+        ...activeLayers.where((layer) => !isCaptionCueLayer(layer)),
+        ...captionLayers,
+      ],
+      meta: meta,
+    );
+    setState(() {});
+  }
+
+  /// Removes one caption cue and, when it's burned in, its matching text layer
+  /// — in a single history entry, so the track metadata and the
+  /// rendered/exported layers can never drift apart. Callable from either the
+  /// timeline (by cue id) or the canvas (by the removed layer's cue id).
+  ///
+  /// No-op when there is no caption track or nothing matches [cueId].
+  void removeCaptionCue(String cueId) {
+    final track = stateManager.captionTrack;
+    if (track == null) return;
+
+    final remainingCues = [
+      for (final cue in track.cues)
+        if (cue.id != cueId) cue,
+    ];
+    final remainingLayers = [
+      for (final layer in activeLayers)
+        if (captionCueIdOf(layer) != cueId) layer,
+    ];
+    final removedCue = remainingCues.length != track.cues.length;
+    final removedLayer = remainingLayers.length != activeLayers.length;
+    if (!removedCue && !removedLayer) return;
+
+    addHistory(
+      layers: remainingLayers,
+      meta: {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.captionsStateHistoryKey: track
+            .copyWith(cues: remainingCues)
+            .toJson(),
+      },
+    );
+    setState(() {});
+  }
+
+  /// Updates one caption cue's timing.
+  ///
+  /// Mirrors [setSoundTimeline]: with [skipUpdateHistory] the current meta is
+  /// mutated in-place (ongoing trim drag), otherwise a new undo point is
+  /// created. The given range is stored verbatim — cues may freely overlap;
+  /// the interaction layer owns the minimum-duration policy. When the track
+  /// is burned in, the matching caption layer is retimed in the same step so
+  /// the canvas render and the exported video stay in sync. No-op when the
+  /// session has no caption track or [cueId] is unknown.
+  void setCaptionCueTimeline({
+    required String cueId,
+    Duration? startTime,
+    Duration? endTime,
+    bool skipUpdateHistory = false,
+  }) {
+    final track = stateManager.captionTrack;
+    if (track == null) return;
+    final index = track.cues.indexWhere((cue) => cue.id == cueId);
+    if (index < 0) return;
+
+    final cue = track.cues[index];
+    final newStart = startTime ?? cue.start;
+    final newEnd = endTime ?? cue.end;
+    final cues = List<CaptionCue>.from(track.cues);
+    cues[index] = cue.copyWith(start: newStart, end: newEnd);
+    final updated = track.copyWith(cues: cues).toJson();
+
+    final layerIndex = activeLayers.indexWhere(
+      (layer) =>
+          isCaptionCueLayer(layer) &&
+          layer.meta?[VideoEditorConstants.captionCueIdMetaKey] == cueId,
+    );
+
+    if (!skipUpdateHistory) {
+      final meta = {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.captionsStateHistoryKey: updated,
+      };
+      if (layerIndex >= 0) {
+        // Build the retimed layers list without mutating the current history
+        // entry, then write layers + meta as one atomic undo point — like
+        // [removeCaptionCue]. Pre-mutating the shared layer via
+        // setLayerTimeline(skipUpdateHistory: true) would retime the previous
+        // entry's burn-in layer while leaving its caption meta stale, so undo
+        // would drift the CC track and the burned-in text apart.
+        final layers = [...activeLayers];
+        layers[layerIndex] = activeLayers[layerIndex].copyWith(
+          startTime: newStart,
+          endTime: newEnd,
+        );
+        addHistory(layers: layers, meta: meta);
+      } else {
+        addHistory(meta: meta);
+      }
+    } else {
+      // Mutate the meta map in-place so the current history entry is updated
+      // directly — matching setSoundTimeline's drag behavior.
+      stateManager.activeMeta[VideoEditorConstants.captionsStateHistoryKey] =
+          updated;
+      if (layerIndex >= 0) {
+        setLayerTimeline(
+          index: layerIndex,
+          startTime: newStart,
+          endTime: newEnd,
+          skipUpdateHistory: true,
+        );
+      }
     }
     setState(() {});
   }

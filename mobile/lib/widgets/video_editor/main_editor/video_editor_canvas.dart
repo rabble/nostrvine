@@ -29,6 +29,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
 import 'package:openvine/models/video_editor/transition_geometry.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -404,6 +405,12 @@ class _VideoEditor extends ConsumerStatefulWidget {
 class _VideoEditorState extends ConsumerState<_VideoEditor>
     with TickerProviderStateMixin {
   late final ProVideoController _proVideoController;
+
+  /// The scope's fine-grained play-time notifier, cached from
+  /// [didChangeDependencies]. Published alongside every [_setLayerPlayTime] so
+  /// canvas overlays (the CC pill) track playback at the layer cadence.
+  ValueNotifier<Duration>? _playTimeNotifier;
+
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   DivineVideoPlayerController? _videoPlayer;
   StreamSubscription<DivineVideoPlayerState>? _videoPlayerSubscription;
@@ -579,6 +586,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       if (!mounted || !_isStopMotionComposition) return;
       unawaited(_syncAudioTracks());
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _playTimeNotifier = VideoEditorScope.of(context).playTimeNotifier;
   }
 
   /// Renders and caches transition seams so the preview can splice them in
@@ -774,7 +787,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       if (mounted && _seekEpoch == ownerEpoch) {
         _lastReportedPosition = timelineStartPosition;
         _pendingSeekTarget = timelineStartPosition;
-        _proVideoController.setPlayTime(timelineStartPosition);
+        _setLayerPlayTime(timelineStartPosition);
       }
     } finally {
       if (_seekEpoch == ownerEpoch) _isSeeking = false;
@@ -966,7 +979,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (!ticker.isActive) ticker.start();
 
     // Timed layers follow the overlay play time, not the bloc position.
-    _proVideoController.setPlayTime(_stopMotionAnchor);
+    _setLayerPlayTime(_stopMotionAnchor);
     final audio = _stopMotionAudio;
     if (audio != null) {
       // Re-anchoring is a clock set, not a tick: a resume that lands mid-window
@@ -1012,7 +1025,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
         ..reset()
         ..start();
     }
-    _proVideoController.setPlayTime(clamped);
+    _setLayerPlayTime(clamped);
     final audio = _stopMotionAudio;
     if (audio != null) {
       unawaited(
@@ -1046,7 +1059,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // (the normal path drives it per frame from the playhead interpolator),
     // and the audio engine needs the wrap/window transitions the throttled
     // bloc emit below would swallow.
-    _proVideoController.setPlayTime(looped);
+    _setLayerPlayTime(looped);
     final audio = _stopMotionAudio;
     if (audio != null) unawaited(audio.syncTo(looped, isPlaying: true));
 
@@ -1129,7 +1142,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     // can't overwrite the seek target before the next player report stops it.
     _setPlayheadTickerActive(false);
     final playTime = playTimePosition ?? position;
-    _proVideoController.setPlayTime(playTime);
+    _setLayerPlayTime(playTime);
     // Pin the play time to this scrub so late reports from a superseded seek
     // are dropped until the player converges here (see [_onPlayerStateChanged]
     // / [VideoEditorCanvas.shouldAcceptPlayerReport]).
@@ -1220,7 +1233,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
     if (canDrivePlayTime && timelinePosition != _lastReportedPosition) {
       _lastReportedPosition = timelinePosition;
       bloc.add(VideoEditorPositionChanged(timelinePosition));
-      _proVideoController.setPlayTime(timelinePosition);
+      _setLayerPlayTime(timelinePosition);
     }
 
     // Smoothly interpolate the layer overlay between the coarse native reports
@@ -1272,7 +1285,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
       speed: _playheadAnchorSpeed,
       maxDuration: _lastPlayerDuration,
     );
-    _proVideoController.setPlayTime(_playerToTimeline(position));
+    _setLayerPlayTime(_playerToTimeline(position));
+  }
+
+  /// Drives the burned-in layers' play time and publishes the same timeline
+  /// position to the scope so canvas overlays (the CC caption pill) track
+  /// playback at the layer cadence instead of the coarse bloc position.
+  void _setLayerPlayTime(Duration timelinePosition) {
+    _proVideoController.setPlayTime(timelinePosition);
+    _playTimeNotifier?.value = timelinePosition;
   }
 
   /// Called when clip paths change. Updates the player with the new clips
@@ -1695,6 +1716,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           totalVideoDuration: videoDuration,
           audioTracks: editor.stateManager.audioTracks,
           timelineMarkers: editor.stateManager.timelineMarkers,
+          captionTrack: editor.stateManager.captionTrack,
         ),
       );
 
@@ -2299,7 +2321,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               if (!mounted) return;
               _lastReportedPosition = currentPosition;
               _pendingSeekTarget = currentPosition;
-              _proVideoController.setPlayTime(currentPosition);
+              _setLayerPlayTime(currentPosition);
             } finally {
               if (_seekEpoch == ownerEpoch) {
                 _isSeeking = false;
@@ -2701,16 +2723,33 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             },
             onScaleEnd: (_) {
               if (_isLayerBeingTransformed) {
-                if (bloc.state.isLayerOverRemoveArea) {
+                final removed = _selectedLayer;
+                final captionCueId =
+                    bloc.state.isLayerOverRemoveArea && removed != null
+                    ? captionCueIdOf(removed)
+                    : null;
+
+                if (captionCueId != null) {
+                  // Burn-in caption: drop the cue and its layer together in one
+                  // history step, so the track meta and the exported video stay
+                  // consistent (never leave an orphaned cue behind).
                   Log.debug(
-                    '🎬 Layer removed via drag',
+                    '🎬 Caption layer removed via drag',
                     name: 'VideoEditorCanvas',
                     category: LogCategory.video,
                   );
-                  scope.editor?.activeLayers.remove(_selectedLayer);
+                  scope.editor?.removeCaptionCue(captionCueId);
+                } else {
+                  if (bloc.state.isLayerOverRemoveArea) {
+                    Log.debug(
+                      '🎬 Layer removed via drag',
+                      name: 'VideoEditorCanvas',
+                      category: LogCategory.video,
+                    );
+                    scope.editor?.activeLayers.remove(removed);
+                  }
+                  _onStateHistoryChange(scope, bloc);
                 }
-
-                _onStateHistoryChange(scope, bloc);
                 _selectedLayer = null;
               }
 
@@ -2744,7 +2783,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
               direction: ClipHistoryDirection.undo,
             ),
             onCreateTextLayer: scope.onAddEditTextLayer,
-            onEditTextLayer: scope.onAddEditTextLayer,
+            // Burned-in caption layers are edited through the captions sheet,
+            // not the text editor: tapping one on the canvas must not reopen
+            // it as a plain text layer.
+            onEditTextLayer: (layer) async => isCaptionCueLayer(layer)
+                ? null
+                : scope.onAddEditTextLayer(layer),
             helperLines: HelperLinesCallbacks(
               onLineHit: () => unawaited(HapticService.snapFeedback()),
             ),

@@ -8532,6 +8532,169 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Otwórz edytor audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Napisy';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'Otwórz edytor napisów';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Wypal na wideo';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Własny';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Własny styl';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Zastosuj';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Czcionka';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Kolor tekstu';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Tło';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Kolor tła';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animacja';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Brak';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Zanikanie';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Sprężyna';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Napisy';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Słuchamy…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Zamieniamy Twoje audio w propozycje napisów.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Nie usłyszeliśmy żadnej mowy. Nadal możesz napisać napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Rozpoznawanie mowy nie jest dostępne na tym urządzeniu. Możesz napisać napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Rozpoznawanie mowy nie jest dozwolone. Włącz je w Ustawieniach albo napisz napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transkrypcja tym razem się nie udała. Możesz napisać napisy samodzielnie.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Napiszę napisy samodzielnie';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Dodaj napis';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Tekst napisu';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Usuń napis';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Usuń wszystkie napisy';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'Usunąć napisy?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Cały tekst i czasy zostaną utracone.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'Zamknij edytor napisów';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Zatwierdź napisy';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Styl napisów';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasyczny';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Nagłówek';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Maszyna do pisania';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrafia';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegancki';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bąbelek';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Pogrubiony';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Marzycielski';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ocean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Słoneczny';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Odręczny';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Szeryfowy';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stempel';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Otwórz edytor tekstu';
 
   @override

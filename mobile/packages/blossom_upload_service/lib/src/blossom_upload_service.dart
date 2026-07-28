@@ -3245,6 +3245,68 @@ class BlossomUploadService {
     }
   }
 
+  /// Transcribes [bytes] (a WAV/audio clip) server-side, returning the raw
+  /// WebVTT, or `null` on any failure (not authenticated, network error,
+  /// non-200 response).
+  ///
+  /// Posts to the Divine edge's `/transcribe` with a Blossom `t=media` auth
+  /// event; the edge forwards to the upload service, which calls the
+  /// transcoder. Always targets [_defaultServerUrl] (a custom Blossom server
+  /// would not expose this Divine-specific endpoint). Callers should fall back
+  /// to on-device transcription when this returns `null`.
+  Future<String?> transcribeAudio({
+    required Uint8List bytes,
+    String? language,
+    Duration authTtl = _defaultAuthTtl,
+  }) async {
+    if (!authProvider.isAuthenticated) return null;
+
+    final expirationTimestamp =
+        DateTime.now().add(authTtl).millisecondsSinceEpoch ~/ 1000;
+    final signedEvent = await authProvider.createAndSignEvent(
+      kind: 24242,
+      content: 'Transcribe audio',
+      tags: [
+        ['t', 'media'],
+        ['expiration', expirationTimestamp.toString()],
+      ],
+    );
+    if (signedEvent == null) return null;
+
+    final trimmedLang = language?.trim();
+    try {
+      final response = await dio.post<String>(
+        '$_defaultServerUrl/transcribe',
+        data: bytes,
+        queryParameters: {
+          if (trimmedLang != null && trimmedLang.isNotEmpty)
+            'language': trimmedLang,
+        },
+        options: Options(
+          headers: {
+            'Authorization': _buildAuthHeader(signedEvent),
+            'Content-Type': 'audio/wav',
+          },
+          responseType: ResponseType.plain,
+        ),
+      );
+      if (response.statusCode == 200) return response.data;
+      Log.warning(
+        'Transcribe returned ${response.statusCode}',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return null;
+    } on Object catch (e) {
+      Log.warning(
+        'Transcribe request failed: $e',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
   /// Test connection to a Blossom server
   ///
   /// Returns a [BlossomHealthCheckResult] with status, latency, and any errors.

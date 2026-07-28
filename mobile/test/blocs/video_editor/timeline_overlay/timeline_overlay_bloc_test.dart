@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 TimelineOverlayItem _item({
@@ -104,6 +105,73 @@ void main() {
             ],
           ),
         ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'drives the captions strip from cues and keeps burned layers off '
+        'both strips',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: [
+              TextLayer(
+                id: 'text-1',
+                text: 'Plain text',
+                startTime: Duration.zero,
+                endTime: const Duration(seconds: 2),
+              ),
+              // A burned-in caption layer is a derived render, not a timeline
+              // item: excluded from the layer strip and never a caption item.
+              TextLayer(
+                id: 'caption-layer-1',
+                text: 'Burned cue',
+                startTime: const Duration(seconds: 3),
+                endTime: const Duration(seconds: 4),
+                meta: const {
+                  VideoEditorConstants.captionCueMetaKey: true,
+                  VideoEditorConstants.captionCueIdMetaKey: 'cue-1',
+                },
+              ),
+            ],
+            filters: const <FilterState>[],
+            audioTracks: const [],
+            totalVideoDuration: const Duration(seconds: 6),
+            captionTrack: const CaptionTrack(
+              burnIn: true,
+              presetId: 'classic',
+              languageTag: 'en-US',
+              cues: [
+                CaptionCue(
+                  id: 'cue-1',
+                  text: 'The cue',
+                  start: Duration(seconds: 3),
+                  end: Duration(seconds: 4),
+                ),
+              ],
+            ),
+          ),
+        ),
+        verify: (bloc) {
+          final items = bloc.state.items;
+          final layerItems = items
+              .where((i) => i.type == TimelineOverlayType.layer)
+              .toList();
+          final captionItems = items
+              .where((i) => i.type == TimelineOverlayType.captions)
+              .toList();
+
+          // The plain text layer stays a layer item; the burned caption layer
+          // appears on neither strip.
+          expect(layerItems.map((i) => i.id), equals(['text-1']));
+          // Caption items come only from the track cues, addressed by cue id.
+          expect(captionItems.map((i) => i.id), equals(['cue-1']));
+          expect(captionItems.single.layer, isNull);
+          expect(captionItems.single.label, equals('The cue'));
+          expect(
+            captionItems.single.startTime,
+            equals(const Duration(seconds: 3)),
+          );
+        },
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(

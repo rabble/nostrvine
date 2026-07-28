@@ -14448,6 +14448,318 @@ abstract class AppLocalizations {
   /// **'Open audio editor'**
   String get videoEditorOpenAudioSemanticLabel;
 
+  /// No description provided for @videoEditorCaptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get videoEditorCaptionsLabel;
+
+  /// No description provided for @videoEditorOpenCaptionsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open captions editor'**
+  String get videoEditorOpenCaptionsSemanticLabel;
+
+  /// Checkbox label in the captions sheet to additionally burn the captions into the exported video (closed captions are always published).
+  ///
+  /// In en, this message translates to:
+  /// **'Burn into video'**
+  String get videoEditorCaptionsBurnInLabel;
+
+  /// No description provided for @videoEditorCaptionsPresetCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get videoEditorCaptionsPresetCustom;
+
+  /// No description provided for @videoEditorCaptionsCustomStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom style'**
+  String get videoEditorCaptionsCustomStyleTitle;
+
+  /// No description provided for @videoEditorCaptionsCustomApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get videoEditorCaptionsCustomApply;
+
+  /// No description provided for @videoEditorCaptionsCustomFont.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get videoEditorCaptionsCustomFont;
+
+  /// No description provided for @videoEditorCaptionsCustomTextColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Text color'**
+  String get videoEditorCaptionsCustomTextColor;
+
+  /// No description provided for @videoEditorCaptionsCustomBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get videoEditorCaptionsCustomBackground;
+
+  /// No description provided for @videoEditorCaptionsCustomBackgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Background color'**
+  String get videoEditorCaptionsCustomBackgroundColor;
+
+  /// No description provided for @videoEditorCaptionsCustomAnimation.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation'**
+  String get videoEditorCaptionsCustomAnimation;
+
+  /// No description provided for @videoEditorCaptionsAnimationNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get videoEditorCaptionsAnimationNone;
+
+  /// No description provided for @videoEditorCaptionsAnimationFade.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade'**
+  String get videoEditorCaptionsAnimationFade;
+
+  /// No description provided for @videoEditorCaptionsAnimationPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop'**
+  String get videoEditorCaptionsAnimationPop;
+
+  /// No description provided for @videoEditorCaptionsAnimationSpring.
+  ///
+  /// In en, this message translates to:
+  /// **'Spring'**
+  String get videoEditorCaptionsAnimationSpring;
+
+  /// No description provided for @videoEditorCaptionsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get videoEditorCaptionsEditTitle;
+
+  /// No description provided for @videoEditorCaptionsGeneratingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening for speech…'**
+  String get videoEditorCaptionsGeneratingTitle;
+
+  /// No description provided for @videoEditorCaptionsGeneratingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning your audio into caption suggestions.'**
+  String get videoEditorCaptionsGeneratingSubtitle;
+
+  /// No description provided for @videoEditorCaptionsNoSpeechMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t hear any speech. You can still write captions yourself.'**
+  String get videoEditorCaptionsNoSpeechMessage;
+
+  /// No description provided for @videoEditorCaptionsUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition isn\'t available on this device. You can write captions yourself.'**
+  String get videoEditorCaptionsUnavailableMessage;
+
+  /// No description provided for @videoEditorCaptionsNotAuthorizedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition isn\'t allowed. Enable it in Settings or write captions yourself.'**
+  String get videoEditorCaptionsNotAuthorizedMessage;
+
+  /// No description provided for @videoEditorCaptionsFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription didn\'t work this time. You can write captions yourself.'**
+  String get videoEditorCaptionsFailedMessage;
+
+  /// No description provided for @videoEditorCaptionsStartEmptyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Write captions myself'**
+  String get videoEditorCaptionsStartEmptyButton;
+
+  /// No description provided for @videoEditorCaptionsAddCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add caption'**
+  String get videoEditorCaptionsAddCue;
+
+  /// No description provided for @videoEditorCaptionsCueTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption text'**
+  String get videoEditorCaptionsCueTextHint;
+
+  /// No description provided for @videoEditorCaptionsCueDeleteSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete caption'**
+  String get videoEditorCaptionsCueDeleteSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsDeleteTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all captions'**
+  String get videoEditorCaptionsDeleteTrack;
+
+  /// No description provided for @videoEditorCaptionsDeleteTrackConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove captions?'**
+  String get videoEditorCaptionsDeleteTrackConfirmTitle;
+
+  /// No description provided for @videoEditorCaptionsDeleteTrackConfirmSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All caption text and timing will be gone.'**
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle;
+
+  /// No description provided for @videoEditorCaptionsCloseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close captions editor'**
+  String get videoEditorCaptionsCloseSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsDoneSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm captions'**
+  String get videoEditorCaptionsDoneSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsPresetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption style'**
+  String get videoEditorCaptionsPresetTitle;
+
+  /// No description provided for @videoEditorCaptionsPresetClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get videoEditorCaptionsPresetClassic;
+
+  /// No description provided for @videoEditorCaptionsPresetPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop'**
+  String get videoEditorCaptionsPresetPop;
+
+  /// No description provided for @videoEditorCaptionsPresetZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get videoEditorCaptionsPresetZoom;
+
+  /// No description provided for @videoEditorCaptionsPresetSpring.
+  ///
+  /// In en, this message translates to:
+  /// **'Spring'**
+  String get videoEditorCaptionsPresetSpring;
+
+  /// No description provided for @videoEditorCaptionsPresetMono.
+  ///
+  /// In en, this message translates to:
+  /// **'Mono'**
+  String get videoEditorCaptionsPresetMono;
+
+  /// No description provided for @videoEditorCaptionsPresetHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Headline'**
+  String get videoEditorCaptionsPresetHeadline;
+
+  /// No description provided for @videoEditorCaptionsPresetTypewriter.
+  ///
+  /// In en, this message translates to:
+  /// **'Typewriter'**
+  String get videoEditorCaptionsPresetTypewriter;
+
+  /// No description provided for @videoEditorCaptionsPresetMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker'**
+  String get videoEditorCaptionsPresetMarker;
+
+  /// No description provided for @videoEditorCaptionsPresetScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get videoEditorCaptionsPresetScript;
+
+  /// No description provided for @videoEditorCaptionsPresetRetro.
+  ///
+  /// In en, this message translates to:
+  /// **'Retro'**
+  String get videoEditorCaptionsPresetRetro;
+
+  /// No description provided for @videoEditorCaptionsPresetElegant.
+  ///
+  /// In en, this message translates to:
+  /// **'Elegant'**
+  String get videoEditorCaptionsPresetElegant;
+
+  /// No description provided for @videoEditorCaptionsPresetBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubble'**
+  String get videoEditorCaptionsPresetBubble;
+
+  /// No description provided for @videoEditorCaptionsPresetNeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Neon'**
+  String get videoEditorCaptionsPresetNeon;
+
+  /// No description provided for @videoEditorCaptionsPresetBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get videoEditorCaptionsPresetBold;
+
+  /// No description provided for @videoEditorCaptionsPresetDreamy.
+  ///
+  /// In en, this message translates to:
+  /// **'Dreamy'**
+  String get videoEditorCaptionsPresetDreamy;
+
+  /// No description provided for @videoEditorCaptionsPresetOcean.
+  ///
+  /// In en, this message translates to:
+  /// **'Ocean'**
+  String get videoEditorCaptionsPresetOcean;
+
+  /// No description provided for @videoEditorCaptionsPresetSunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunny'**
+  String get videoEditorCaptionsPresetSunny;
+
+  /// No description provided for @videoEditorCaptionsPresetHandwritten.
+  ///
+  /// In en, this message translates to:
+  /// **'Handwritten'**
+  String get videoEditorCaptionsPresetHandwritten;
+
+  /// No description provided for @videoEditorCaptionsPresetSerif.
+  ///
+  /// In en, this message translates to:
+  /// **'Serif'**
+  String get videoEditorCaptionsPresetSerif;
+
+  /// No description provided for @videoEditorCaptionsPresetStamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamp'**
+  String get videoEditorCaptionsPresetStamp;
+
   /// No description provided for @videoEditorOpenTextSemanticLabel.
   ///
   /// In en, this message translates to:

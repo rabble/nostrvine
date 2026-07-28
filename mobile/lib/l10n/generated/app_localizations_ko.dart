@@ -8049,6 +8049,167 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => '오디오 편집기 열기';
 
   @override
+  String get videoEditorCaptionsLabel => '자막';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => '자막 편집기 열기';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => '영상에 새기기';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => '사용자';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => '사용자 스타일';
+
+  @override
+  String get videoEditorCaptionsCustomApply => '적용';
+
+  @override
+  String get videoEditorCaptionsCustomFont => '글꼴';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => '글자 색';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => '배경';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => '배경색';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => '애니메이션';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => '없음';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => '페이드';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => '팝';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => '스프링';
+
+  @override
+  String get videoEditorCaptionsEditTitle => '자막';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => '음성을 듣고 있어요…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle => '오디오로 자막 제안을 만들고 있어요.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      '음성이 들리지 않았어요. 자막을 직접 작성할 수도 있어요.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      '이 기기에서는 음성 인식을 사용할 수 없어요. 자막을 직접 작성할 수 있어요.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      '음성 인식이 허용되지 않았어요. 설정에서 켜거나 자막을 직접 작성하세요.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      '이번에는 변환이 되지 않았어요. 자막을 직접 작성할 수 있어요.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => '자막 직접 쓰기';
+
+  @override
+  String get videoEditorCaptionsAddCue => '자막 추가';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => '자막 텍스트';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => '자막 삭제';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => '모든 자막 제거';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => '자막을 제거할까요?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      '모든 텍스트와 타이밍이 사라져요.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => '자막 편집기 닫기';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => '자막 확정';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => '자막 스타일';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => '클래식';
+
+  @override
+  String get videoEditorCaptionsPresetPop => '팝';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => '스프링';
+
+  @override
+  String get videoEditorCaptionsPresetMono => '모노';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => '헤드라인';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => '타자기';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => '마커';
+
+  @override
+  String get videoEditorCaptionsPresetScript => '캘리그래피';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => '레트로';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => '우아함';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => '버블';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => '네온';
+
+  @override
+  String get videoEditorCaptionsPresetBold => '굵게';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => '몽환';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => '오션';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => '화창함';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => '손글씨';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => '세리프';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => '스탬프';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => '텍스트 편집기 열기';
 
   @override

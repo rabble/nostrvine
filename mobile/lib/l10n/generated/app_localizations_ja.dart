@@ -8026,6 +8026,167 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'オーディオエディタを開く';
 
   @override
+  String get videoEditorCaptionsLabel => '字幕';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => '字幕エディタを開く';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => '動画に焼き込む';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'カスタム';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'カスタムスタイル';
+
+  @override
+  String get videoEditorCaptionsCustomApply => '適用';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'フォント';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => '文字色';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => '背景';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => '背景色';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'アニメーション';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'なし';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'フェード';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'ポップ';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'スプリング';
+
+  @override
+  String get videoEditorCaptionsEditTitle => '字幕';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => '音声を聞き取っています…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle => '音声から字幕の候補を作成しています。';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      '音声が聞き取れませんでした。字幕は自分で書くこともできます。';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'この端末では音声認識を利用できません。字幕は自分で書けます。';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      '音声認識が許可されていません。設定で有効にするか、字幕を自分で書いてください。';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      '今回は文字起こしができませんでした。字幕は自分で書けます。';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => '自分で字幕を書く';
+
+  @override
+  String get videoEditorCaptionsAddCue => '字幕を追加';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => '字幕テキスト';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => '字幕を削除';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'すべての字幕を削除';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => '字幕を削除しますか?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'すべてのテキストとタイミングが失われます。';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => '字幕エディタを閉じる';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => '字幕を確定';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => '字幕スタイル';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'クラシック';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'ポップ';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'スプリング';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'モノ';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'ヘッドライン';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'タイプライター';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'マーカー';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'カリグラフィー';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'レトロ';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'エレガント';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'バブル';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'ネオン';
+
+  @override
+  String get videoEditorCaptionsPresetBold => '太字';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'ドリーミー';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'オーシャン';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'サニー';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => '手書き';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'セリフ';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'スタンプ';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'テキストエディタを開く';
 
   @override

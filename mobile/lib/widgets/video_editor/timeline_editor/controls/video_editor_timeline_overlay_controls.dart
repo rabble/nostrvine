@@ -7,6 +7,7 @@ import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bl
 import 'package:openvine/blocs/video_editor/tune_editor/video_editor_tune_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
+import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
@@ -33,6 +34,7 @@ class TimelineOverlayControls extends StatelessWidget {
       .filter => _FilterOverlayControls(item: item),
       .tune => _TuneOverlayControls(item: item),
       .layer => _LayerOverlayControls(item: item),
+      .captions => _CaptionOverlayControls(item: item),
     };
   }
 
@@ -174,6 +176,42 @@ class _LayerOverlayControls extends StatelessWidget {
     context.read<TimelineOverlayBloc>().add(
       TimelineOverlayItemSelected(second.id),
     );
+  }
+}
+
+/// Controls for caption cues: edit (re-opens the captions editor), delete
+/// (removes just this cue), and done.
+class _CaptionOverlayControls extends StatelessWidget {
+  const _CaptionOverlayControls({required this.item});
+
+  final TimelineOverlayItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return VideoEditorTimelineControls(
+      onDelete: () => _removeCue(context),
+      onEdit: () => _editCaptions(context),
+      onDone: () => TimelineOverlayControls._deselect(context),
+    );
+  }
+
+  /// Re-opens the captions editor for the whole track; per-cue text editing
+  /// lives there alongside preset and mode controls.
+  void _editCaptions(BuildContext context) {
+    final scope = VideoEditorScope.of(context);
+    TimelineOverlayControls._deselect(context);
+    scope.onOpenCaptions();
+  }
+
+  void _removeCue(BuildContext context) {
+    final scope = VideoEditorScope.of(context);
+    final editor = scope.editor;
+    if (editor == null) return;
+
+    // Drops the cue and, when burned in, its text layer together — so a
+    // deleted caption never lingers in the exported video.
+    editor.removeCaptionCue(item.id);
+    TimelineOverlayControls._deselect(context);
   }
 }
 

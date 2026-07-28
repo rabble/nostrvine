@@ -17,6 +17,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
     required this.totalVideoDuration,
     this.tuneAdjustments = const [],
     this.timelineMarkers = const [],
+    this.captionTrack,
   });
 
   final List<Layer> layers;
@@ -24,6 +25,9 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
   final List<TuneAdjustmentMatrix> tuneAdjustments;
   final List<AudioEvent> audioTracks;
   final List<Duration> timelineMarkers;
+
+  /// The session's caption track; overlay-mode cues become captions items.
+  final CaptionTrack? captionTrack;
 
   final Duration totalVideoDuration;
 
@@ -35,6 +39,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
     audioTracks,
     totalVideoDuration,
     timelineMarkers,
+    captionTrack,
   ];
 }
 

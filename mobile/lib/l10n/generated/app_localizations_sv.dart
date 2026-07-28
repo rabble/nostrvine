@@ -8355,6 +8355,171 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Öppna ljudredigerare';
 
   @override
+  String get videoEditorCaptionsLabel => 'Undertexter';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Öppna undertextredigeraren';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Bränn in i videon';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Egen';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Egen stil';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Använd';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Typsnitt';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Textfärg';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Bakgrund';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Bakgrundsfärg';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Ingen';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Tona';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Fjäder';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Undertexter';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Lyssnar…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Vi gör undertextförslag av ditt ljud.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Vi hörde inget tal. Du kan ändå skriva undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Taligenkänning är inte tillgängligt på den här enheten. Du kan skriva undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Taligenkänning är inte tillåtet. Aktivera det i Inställningar eller skriv undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transkriberingen fungerade inte den här gången. Du kan skriva undertexterna själv.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Skriv undertexterna själv';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Lägg till undertext';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Undertextens text';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Ta bort undertext';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Ta bort alla undertexter';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Ta bort undertexterna?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'All text och timing försvinner.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Stäng undertextredigeraren';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Bekräfta undertexter';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Undertextstil';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klassisk';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Rubrik';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Skrivmaskin';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Märkpenna';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kalligrafi';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bubbla';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Fet';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Drömsk';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ocean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Solig';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Handskriven';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Stämpel';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Öppna textredigerare';
 
   @override

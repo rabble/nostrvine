@@ -626,6 +626,44 @@ void main() {
       );
     });
 
+    test(
+      'publishVideoEvent attaches text-track tags to the initial event',
+      () async {
+        stubSignAndPublish();
+
+        final result = await publisher.publishVideoEvent(
+          upload: createUpload(),
+          textTrackRefs: const [
+            'https://media.divine.video/captions.vtt',
+            '39307:$testPubkey:subtitles:video-id',
+          ],
+          textTrackLang: 'de',
+        );
+
+        expect(result, isTrue);
+        expect(
+          _containsTag(capturedTags, const [
+            'text-track',
+            'https://media.divine.video/captions.vtt',
+            'wss://relay.divine.video',
+            'captions',
+            'de',
+          ]),
+          isTrue,
+        );
+        expect(
+          _containsTag(capturedTags, const [
+            'text-track',
+            '39307:$testPubkey:subtitles:video-id',
+            'wss://relay.divine.video',
+            'captions',
+            'de',
+          ]),
+          isTrue,
+        );
+      },
+    );
+
     group('reused audio attribution', () {
       // A reused original sound carries the source video's event id behind a
       // `video_` prefix; the reference must survive so the audio is credited

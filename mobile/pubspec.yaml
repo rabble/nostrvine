@@ -101,6 +101,9 @@ dependencies:
 
   blossom_upload_service:
 
+  caption_generator:
+    path: packages/caption_generator
+
   # Testable time source — wraps DateTime.now/Stopwatch so fakeAsync can
   # virtualize them in tests.
   clock: ^1.1.2

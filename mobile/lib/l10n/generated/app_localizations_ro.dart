@@ -8537,6 +8537,171 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorOpenAudioSemanticLabel => 'Deschide editorul audio';
 
   @override
+  String get videoEditorCaptionsLabel => 'Subtitrări';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Deschide editorul de subtitrări';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Încorporează în videoclip';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Person.';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Stil personalizat';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Aplică';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Culoare text';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Fundal';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Culoare fundal';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animație';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Niciuna';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Estompare';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Arc';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Subtitrări';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Ascultăm…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Transformăm audio-ul tău în sugestii de subtitrare.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Nu am auzit nicio voce. Poți totuși să scrii subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Recunoașterea vocală nu este disponibilă pe acest dispozitiv. Poți scrie subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Recunoașterea vocală nu este permisă. Activeaz-o din Setări sau scrie subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Transcrierea nu a funcționat de data asta. Poți scrie subtitrările singur.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Scriu subtitrările singur';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Adaugă subtitrare';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Textul subtitrării';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Șterge subtitrarea';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Elimină toate subtitrările';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Elimini subtitrările?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Tot textul și timpii se vor pierde.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Închide editorul de subtitrări';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Confirmă subtitrările';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Stilul subtitrărilor';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Clasic';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Titlu';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Mașină de scris';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Caligrafie';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegant';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bulă';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Aldin';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Visător';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Ocean';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Însorit';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Scris de mână';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Ștampilă';
+
+  @override
   String get videoEditorOpenTextSemanticLabel => 'Deschide editorul de text';
 
   @override

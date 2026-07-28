@@ -2,8 +2,8 @@ group = "co.openvine.caption_generator"
 version = "1.0-SNAPSHOT"
 
 plugins {
-    id("com.android.library") version "8.11.1"
-    id("org.jetbrains.kotlin.android") version "2.2.20"
+    id("com.android.library")
+    id("org.jetbrains.kotlin.android")
 }
 
 repositories {
