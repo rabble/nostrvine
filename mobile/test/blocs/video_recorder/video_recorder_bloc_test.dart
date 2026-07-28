@@ -1595,7 +1595,7 @@ void main() {
       );
     });
 
-    group('detached enrichment → clip removed mid-enrichment', () {
+    group('detached enrichment', () {
       late Directory docsDir;
       late File recordingFile;
       late ProVideoEditor originalProVideoEditor;
