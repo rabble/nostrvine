@@ -2936,6 +2936,7 @@ class UploadFailureListener extends StatefulWidget {
 
 class _UploadFailureListenerState extends State<UploadFailureListener> {
   var _lastKnownFailedIds = <String>{};
+  var _lastKnownSucceededIds = <String>{};
   var _pendingSuccessCount = 0;
 
   @override
@@ -2948,12 +2949,20 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 
         // Use the bloc's own recentlySucceededIds so we never confuse a
         // BackgroundPublishVanished removal with a true publish success.
-        final succeededCount = state.recentlySucceededIds.length;
+        final succeededIds = state.recentlySucceededIds.difference(
+          _lastKnownSucceededIds,
+        );
+        _lastKnownSucceededIds = state.recentlySucceededIds;
+        final succeededCount = succeededIds.length;
 
         if (succeededCount > 0) {
           if (authService.isAuthenticated) {
-            // Show immediately — user is still in-app.
-            _showPublishSuccessSnackbar(context, succeededCount);
+            // Show immediately — user is still in-app. If the root navigator
+            // context is unavailable the snackbar would be silently dropped,
+            // so buffer it and replay once the context is ready.
+            if (!_showPublishSuccessSnackbar(succeededCount)) {
+              _pendingSuccessCount += succeededCount;
+            }
           } else {
             // Buffer for when auth is restored after re-auth redirect.
             _pendingSuccessCount += succeededCount;
@@ -2974,8 +2983,8 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
         }
 
         // Auth is now confirmed — flush buffered successes from re-auth window.
-        if (_pendingSuccessCount > 0) {
-          _showPublishSuccessSnackbar(context, _pendingSuccessCount);
+        if (_pendingSuccessCount > 0 &&
+            _showPublishSuccessSnackbar(_pendingSuccessCount)) {
           _pendingSuccessCount = 0;
         }
 
@@ -2985,7 +2994,7 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
         if (newFailedIds.isEmpty) return;
 
         final navContext = NavigatorKeys.root.currentContext;
-        if (navContext == null) return;
+        if (navContext == null || !navContext.mounted) return;
 
         final newFailures = state.uploads
             .where((u) => newFailedIds.contains(u.draft.id))
@@ -3000,15 +3009,16 @@ class _UploadFailureListenerState extends State<UploadFailureListener> {
 
 /// Shows a snackbar confirming that [count] background uploads completed.
 ///
-/// Uses [ScaffoldMessenger] via [NavigatorKeys.root] to reach the root
-/// [Scaffold] — this is required because the listener's [BuildContext] may
-/// not have a [Scaffold] ancestor when the snackbar fires during a re-auth
-/// redirect. The l10n strings are resolved from the passed-in [context]
-/// (the BlocListener's context), which always has localisation ancestors.
-void _showPublishSuccessSnackbar(BuildContext context, int count) {
+/// Returns `true` when the snackbar was shown.
+///
+/// Uses [NavigatorKeys.root] to resolve both localization and
+/// [ScaffoldMessenger] from inside the app tree. The listener itself is mounted
+/// above [MaterialApp], so its own [BuildContext] does not have localization or
+/// scaffold ancestors in production.
+bool _showPublishSuccessSnackbar(int count) {
   final navContext = NavigatorKeys.root.currentContext;
-  if (navContext == null || !navContext.mounted) return;
-  final l10n = context.l10n;
+  if (navContext == null || !navContext.mounted) return false;
+  final l10n = navContext.l10n;
   ScaffoldMessenger.of(navContext).showSnackBar(
     SnackBar(
       content: Text(
@@ -3019,6 +3029,7 @@ void _showPublishSuccessSnackbar(BuildContext context, int count) {
       behavior: SnackBarBehavior.floating,
     ),
   );
+  return true;
 }
 
 /// Shows failure bottom sheets one after another for each failed upload.
