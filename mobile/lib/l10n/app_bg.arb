@@ -3037,7 +3037,6 @@
     "videoRecorderCaptureCloseLabel": "Затвори",
     "videoRecorderCaptureNextLabel": "Следваща",
     "videoRecorderLipSyncAddAudioFirst": "Добавете аудио преди запис",
-    "videoRecorderStopMotionAssembling": "Създаване на видеото…",
     "videoRecorderStopMotionAssembleFailed": "Видеото не можа да се създаде. Опитайте отново.",
     "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
     "videoRecorderCycleTimerLabel": "Цикъл таймер",

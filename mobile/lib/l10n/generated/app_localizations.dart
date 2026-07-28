@@ -14238,12 +14238,6 @@ abstract class AppLocalizations {
   /// **'Add audio before recording'**
   String get videoRecorderLipSyncAddAudioFirst;
 
-  /// Loading label shown while captured stop-motion frames are being encoded into one video.
-  ///
-  /// In en, this message translates to:
-  /// **'Creating your video…'**
-  String get videoRecorderStopMotionAssembling;
-
   /// Snackbar shown when assembling captured stop-motion frames into a video failed.
   ///
   /// In en, this message translates to:

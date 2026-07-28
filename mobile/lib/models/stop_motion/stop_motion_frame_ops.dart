@@ -26,6 +26,32 @@ abstract class StopMotionFrameOps {
   /// Default hold for a freshly captured still: 1 output frame at 24fps.
   static const int defaultFramesPerImage = 1;
 
+  /// Shortest a freshly captured session plays for.
+  ///
+  /// A handful of stills at [defaultFramesPerImage] is over in a fraction of a
+  /// second — the editor preview reads as a flicker looping past rather than a
+  /// clip — so a short session is stretched to fill at least this long before
+  /// it first reaches the editor (see [initialFramesPerImage]).
+  static const Duration minimumInitialDuration = Duration(seconds: 1);
+
+  /// Frames-per-image for a freshly captured session of [frameCount] stills:
+  /// [defaultFramesPerImage] once there are enough stills to fill
+  /// [minimumInitialDuration] on their own, and an evenly shared longer hold
+  /// below that — a lone still is held for the full second.
+  static int initialFramesPerImage(int frameCount) {
+    if (frameCount <= 0) return defaultFramesPerImage;
+    final outputFrames = durationToFramesPerImage(minimumInitialDuration);
+    return (outputFrames / frameCount).ceil().clamp(
+      defaultFramesPerImage,
+      maxFramesPerImage,
+    );
+  }
+
+  /// Hold for one still in a freshly captured session of [frameCount] stills
+  /// (see [initialFramesPerImage]).
+  static Duration initialHold(int frameCount) =>
+      framesPerImageToDuration(initialFramesPerImage(frameCount));
+
   /// Hold duration for a still shown for [framesPerImage] output frames at the
   /// default frame rate. [framesPerImage] is clamped to
   /// [minFramesPerImage]..[maxFramesPerImage].

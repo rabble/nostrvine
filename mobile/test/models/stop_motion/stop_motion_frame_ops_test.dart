@@ -51,6 +51,48 @@ void main() {
     });
   });
 
+  group('initialFramesPerImage / initialHold', () {
+    test('holds a lone still for the whole minimum duration', () {
+      expect(
+        StopMotionFrameOps.initialHold(1),
+        StopMotionFrameOps.minimumInitialDuration,
+      );
+    });
+
+    test('a short session fills at least the minimum duration', () {
+      // Counted in output frames: the per-frame microsecond conversion rounds,
+      // so summing the holds can land a microsecond under the second.
+      final minimumOutputFrames = StopMotionFrameOps.durationToFramesPerImage(
+        StopMotionFrameOps.minimumInitialDuration,
+      );
+      for (var frameCount = 1; frameCount <= 24; frameCount++) {
+        expect(
+          StopMotionFrameOps.initialFramesPerImage(frameCount) * frameCount,
+          greaterThanOrEqualTo(minimumOutputFrames),
+          reason: '$frameCount still(s) fall short of the minimum',
+        );
+      }
+    });
+
+    test('keeps the default hold once the stills fill it on their own', () {
+      expect(
+        StopMotionFrameOps.initialFramesPerImage(24),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+      expect(
+        StopMotionFrameOps.initialFramesPerImage(100),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+    });
+
+    test('falls back to the default hold for an empty session', () {
+      expect(
+        StopMotionFrameOps.initialFramesPerImage(0),
+        StopMotionFrameOps.defaultFramesPerImage,
+      );
+    });
+  });
+
   group('removeFrame', () {
     test('removes the frame at the index', () {
       final result = StopMotionFrameOps.removeFrame(framesOf([1, 1, 1]), 1);

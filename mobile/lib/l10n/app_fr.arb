@@ -2787,7 +2787,6 @@
     "videoRecorderCaptureCloseLabel": "Fermer",
     "videoRecorderCaptureNextLabel": "Suivant",
     "videoRecorderLipSyncAddAudioFirst": "Ajoutez de l'audio avant d'enregistrer",
-    "videoRecorderStopMotionAssembling": "Création de la vidéo…",
     "videoRecorderStopMotionAssembleFailed": "Impossible de créer la vidéo. Réessayez.",
     "videoRecorderToggleFlashLabel": "Activer/désactiver le flash",
     "videoRecorderCycleTimerLabel": "Changer le minuteur",

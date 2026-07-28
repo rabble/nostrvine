@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio, AudioEvent;
 import 'package:openvine/blocs/video_recorder/video_recorder_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -2977,6 +2978,42 @@ void main() {
           verify(() => clipManager.saveClipToLibrary(any())).called(1);
           expect(bloc.state.stopMotionStatus, StopMotionStatus.ready);
           expect(bloc.state.stopMotionFrames, isEmpty);
+        },
+      );
+
+      blocTest<VideoRecorderBloc, VideoRecorderBlocState>(
+        'ingest stretches a session too short to fill the minimum duration',
+        setUp: stubClipIngest,
+        build: buildBloc,
+        seed: () => VideoRecorderBlocState(
+          recorderMode: VideoRecorderMode.stopMotion,
+          stopMotionFrames: [frameAPath],
+        ),
+        act: (bloc) =>
+            bloc.add(const VideoRecorderStopMotionAssembleRequested()),
+        verify: (bloc) {
+          final captured = verify(
+            () => clipManager.addStopMotionClip(
+              id: any(named: 'id'),
+              frames: captureAny(named: 'frames'),
+              originalAspectRatio: any(named: 'originalAspectRatio'),
+              targetAspectRatio: any(named: 'targetAspectRatio'),
+              duration: captureAny(named: 'duration'),
+              thumbnailPath: any(named: 'thumbnailPath'),
+              lensMetadata: any(named: 'lensMetadata'),
+            ),
+          )..called(1);
+          // Captured values follow the method's parameter declaration order:
+          // frames is declared before duration.
+          final frames = captured.captured[0] as List<StopMotionClipFrame>;
+          expect(
+            frames.single.duration,
+            StopMotionFrameOps.minimumInitialDuration,
+          );
+          expect(
+            captured.captured[1],
+            StopMotionFrameOps.minimumInitialDuration,
+          );
         },
       );
 

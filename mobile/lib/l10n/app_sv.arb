@@ -2787,7 +2787,6 @@
     "videoRecorderCaptureCloseLabel": "Stäng",
     "videoRecorderCaptureNextLabel": "Nästa",
     "videoRecorderLipSyncAddAudioFirst": "Lägg till ljud innan inspelning",
-    "videoRecorderStopMotionAssembling": "Skapar din video…",
     "videoRecorderStopMotionAssembleFailed": "Det gick inte att skapa videon. Försök igen.",
     "videoRecorderToggleFlashLabel": "Växla blixt",
     "videoRecorderCycleTimerLabel": "Växla timer",

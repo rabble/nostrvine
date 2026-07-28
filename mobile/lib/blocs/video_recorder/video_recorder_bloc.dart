@@ -1612,13 +1612,15 @@ class VideoRecorderBloc
 
   // === Stop-motion handlers ===
 
-  /// Hold duration of one captured still: the editor's default
-  /// frames-per-image at the render frame rate, so the library preview, the
-  /// timeline, and the assembled clip all agree.
-  static final Duration _stopMotionPerFrame =
-      StopMotionFrameOps.framesPerImageToDuration(
-        StopMotionFrameOps.defaultFramesPerImage,
-      );
+  /// Hold duration of one captured still in a session of [frameCount] stills,
+  /// at the render frame rate, so the library preview, the timeline, and the
+  /// assembled clip all agree.
+  ///
+  /// A session too short to fill a second on its own is stretched to it
+  /// ([StopMotionFrameOps.initialHold]): three stills at the default hold play
+  /// in an eighth of a second, which the editor only shows as a flicker.
+  static Duration _stopMotionHold(int frameCount) =>
+      StopMotionFrameOps.initialHold(frameCount);
 
   /// Stable library-clip id for the capture session that begins with
   /// [firstFramePath]. The first frame's filename is unique per session and
@@ -1782,9 +1784,10 @@ class VideoRecorderBloc
   /// where a still that goes missing mid-session gets dropped.
   Future<void> _persistStopMotionSession(List<String> framePaths) async {
     if (framePaths.isEmpty) return;
+    final hold = _stopMotionHold(framePaths.length);
     final frames = [
       for (final path in framePaths)
-        StopMotionClipFrame(path: path, duration: _stopMotionPerFrame),
+        StopMotionClipFrame(path: path, duration: hold),
     ];
     final saved = await _readClipManager().saveStopMotionSessionToLibrary(
       id: _stopMotionSessionId(framePaths.first),
@@ -1805,22 +1808,24 @@ class VideoRecorderBloc
   }
 
   /// Saves the captured frames as a frames-based stop-motion clip in the clip
-  /// manager (and the library), then emits [StopMotionStatus.ready].
+  /// manager, then emits [StopMotionStatus.ready] for the editor handoff.
   ///
   /// The frames are the source of truth; no mp4 is rendered here. The editor
   /// previews the frames via the stop-motion player and only renders an mp4 at
-  /// publish.
-  Future<void> _onStopMotionAssembleRequested(
+  /// publish. Synchronous by design: nothing here is worth making the user wait
+  /// for (the library save is queued, see [_ingestStopMotionClip]), so no
+  /// progress UI ever gets a frame to paint in.
+  void _onStopMotionAssembleRequested(
     VideoRecorderStopMotionAssembleRequested event,
     Emitter<VideoRecorderBlocState> emit,
-  ) async {
+  ) {
     final frames = state.stopMotionFrames;
     if (frames.isEmpty) return;
 
     emit(state.copyWith(stopMotionStatus: StopMotionStatus.assembling));
 
     try {
-      await _ingestStopMotionClip(frames);
+      _ingestStopMotionClip(frames);
     } catch (e, stackTrace) {
       Log.warning(
         '⚠️ Stop-motion ingest failed',
@@ -1841,23 +1846,34 @@ class VideoRecorderBloc
   }
 
   /// Adds the captured [framePaths] to the clip manager as a frames-based
-  /// stop-motion clip and saves it to the library. Frame files are kept (not
+  /// stop-motion clip and queues its library save. Frame files are kept (not
   /// deleted) since they are the clip's source of truth.
   ///
   /// Reuses the capture session's library id so the row already written during
-  /// capture is updated in place rather than duplicated.
-  Future<void> _ingestStopMotionClip(List<String> framePaths) async {
+  /// capture is updated in place rather than duplicated. That row exists by the
+  /// time the user taps "Next" (capture upserts it on every still) and the
+  /// editor reads the clip from the clip manager, not the library — so the save
+  /// is queued behind the capture-time writes rather than awaited, and the
+  /// handoff to the editor stays instant.
+  void _ingestStopMotionClip(List<String> framePaths) {
     final clipManager = _readClipManager();
 
     // Drop unreadable captures; a session with no readable still is a failed
-    // assemble (surfaced by the caller's failure snackbar).
-    final frames = StopMotionFrameOps.existingFrames([
+    // assemble (surfaced by the caller's failure snackbar). Filtered before the
+    // hold is computed so the stretch to a minimum length counts only the
+    // stills that actually make it into the clip.
+    final readablePaths = [
       for (final path in framePaths)
-        StopMotionClipFrame(path: path, duration: _stopMotionPerFrame),
-    ]);
-    if (frames.isEmpty) {
+        if (StopMotionFrameOps.isReadableImage(path)) path,
+    ];
+    if (readablePaths.isEmpty) {
       throw StateError('No readable stop-motion stills to assemble');
     }
+    final hold = _stopMotionHold(readablePaths.length);
+    final frames = [
+      for (final path in readablePaths)
+        StopMotionClipFrame(path: path, duration: hold),
+    ];
 
     final clip = clipManager.addStopMotionClip(
       id: _stopMotionSessionId(framePaths.first),
@@ -1873,14 +1889,18 @@ class VideoRecorderBloc
       (c) => c.id == clip.id,
       orElse: () => clip,
     );
-    final saved = await clipManager.saveClipToLibrary(updatedClip);
-    if (!saved) {
-      Log.warning(
-        '⚠️ Stop-motion clip save to library failed for ${clip.id}',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    }
+    unawaited(
+      _enqueueStopMotionSessionWrite(() async {
+        final saved = await clipManager.saveClipToLibrary(updatedClip);
+        if (!saved) {
+          Log.warning(
+            '⚠️ Stop-motion clip save to library failed for ${clip.id}',
+            name: 'VideoRecorderBloc',
+            category: LogCategory.video,
+          );
+        }
+      }),
+    );
   }
 
   /// Discards an abandoned capture session: deletes its frame files and drops

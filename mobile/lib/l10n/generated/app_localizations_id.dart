@@ -8203,9 +8203,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Tambahkan audio sebelum merekam';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'Membuat video Anda…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'Tidak dapat membuat video. Coba lagi.';
 

@@ -8306,9 +8306,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'Добавете аудио преди запис';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'Създаване на видеото…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'Видеото не можа да се създаде. Опитайте отново.';
 
