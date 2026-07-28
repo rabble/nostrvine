@@ -1028,6 +1028,27 @@ void main() {
             verify(() => mockVanishedDao.clearVanished(testPubkey)).called(1);
           });
 
+          test('clears a tombstone this instance never mirrored', () async {
+            // Same self-heal as above, minus the hydration. The in-memory set
+            // is per-instance and hydrates asynchronously, but the table is
+            // shared by profileRepository and profileStatsRepository — so a
+            // miss does not prove the row is absent. Gating the durable delete
+            // on the mirror would strand the tombstone, and UserProfilesDao
+            // would then silently drop every re-cache of the recovered account.
+            when(
+              () => mockFunnelcakeClient.getUserProfile(testPubkey),
+            ).thenAnswer(
+              (_) async => const UserProfileNotPublished(pubkey: testPubkey),
+            );
+
+            expect(repoWithVanishDao.isVanished(testPubkey), isFalse);
+
+            await repoWithVanishDao.fetchFreshProfile(pubkey: testPubkey);
+            await pumpEventQueue();
+
+            verify(() => mockVanishedDao.clearVanished(testPubkey)).called(1);
+          });
+
           test('loadVanishedPubkeys hydrates the in-memory set', () async {
             when(
               () => mockVanishedDao.getAllPubkeys(),

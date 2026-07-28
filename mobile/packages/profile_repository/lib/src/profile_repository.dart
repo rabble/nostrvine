@@ -288,8 +288,16 @@ class ProfileRepository {
   /// Called whenever the server reports the account as live again, so a wrong
   /// `deleted: true` is recoverable instead of erasing the account from this
   /// device permanently.
+  ///
+  /// Deliberately **not** gated on [_vanished]. That set is one mirror per
+  /// repository instance, hydrated asynchronously, of a table every instance
+  /// shares, so a miss does not prove the row is absent. Trusting one would
+  /// strand the tombstone, and [UserProfilesDao] would then drop every re-cache
+  /// while [cacheProfile] had already claimed the pubkey in [_knownCached] —
+  /// leaving [hasProfile] asserting a row that does not exist. A delete
+  /// matching nothing dirties no page; that disagreement is costlier.
   Future<void> _clearVanish(String pubkey) async {
-    if (!_vanished.remove(pubkey)) return;
+    _vanished.remove(pubkey);
     await _vanishedProfilesDao?.clearVanished(pubkey);
   }
 
