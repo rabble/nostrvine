@@ -211,6 +211,56 @@ void main() {
     });
   });
 
+  group('fetchUserProfileProvider', () {
+    late _MockProfileRepository profileRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      profileRepository = _MockProfileRepository();
+      container = ProviderContainer(
+        overrides: [
+          profileRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test('returns cached profile without scheduling a revalidation', () async {
+      final cachedProfile = _profile(pubkey, name: 'cached');
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => cachedProfile);
+
+      final result = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(result, cachedProfile);
+      verifyNever(() => profileRepository.fetchFreshProfile(pubkey: pubkey));
+      verifyNever(() => profileRepository.revalidateVanishOnce(pubkey));
+    });
+
+    test('fetches fresh profile when cache is empty', () async {
+      final freshProfile = _profile(pubkey, name: 'live');
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => freshProfile);
+
+      final result = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(result, freshProfile);
+      verify(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).called(1);
+      verifyNever(() => profileRepository.revalidateVanishOnce(pubkey));
+    });
+  });
+
   group('userProfileStatsReactiveProvider lifecycle', () {
     test(
       'does not touch a disposed Ref after immediate invalidation',

@@ -83,11 +83,6 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
 
   final cached = await repo.getCachedProfile(pubkey: pubkey);
   if (cached != null) {
-    // This read is cache-first, so it short-circuits before any network call.
-    // Without a nudge, an account cached before it requested deletion would
-    // keep rendering from cache forever. Bounded to one check per pubkey per
-    // session inside the repository.
-    repo.revalidateVanishOnce(pubkey);
     return cached;
   }
 

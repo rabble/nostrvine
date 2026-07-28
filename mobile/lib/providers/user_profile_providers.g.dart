@@ -202,7 +202,7 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'dfe728a31fbdb14c6466704f7688b6ee85091e2b';
+String _$fetchUserProfileHash() => r'6f16ff504ee65f0b1f8dbdf51674de0d4f375d94';
 
 /// One-shot provider: returns cached profile or fetches fresh.
 ///
