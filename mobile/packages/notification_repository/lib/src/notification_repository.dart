@@ -923,8 +923,17 @@ class NotificationRepository {
   /// feed applied a snapshot, so a partial success still advances the
   /// coordinator's cooldown instead of re-running the whole fan-out on
   /// every trigger.
+  ///
+  /// A filtered feed is only refreshed while something is subscribed to it.
+  /// [_feeds] is append-only, so without that gate a user who swiped through
+  /// the five tabs once would pay five REST requests — and five NIP-98
+  /// signatures, which are not free on a remote signer — on every later
+  /// resume, forever. The unfiltered feed is always refreshed: the badge
+  /// reads it whether or not the inbox is on screen.
   Future<bool> _refreshAppliedForLiveFeeds() async {
-    final live = _liveFeeds.toList(growable: false);
+    final live = _liveFeeds
+        .where((feed) => feed.filter == null || feed.snapshot.hasListener)
+        .toList(growable: false);
     if (live.isEmpty) {
       return _refreshResult().then((result) => result.applied);
     }

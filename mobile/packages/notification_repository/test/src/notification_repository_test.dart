@@ -3717,6 +3717,10 @@ void main() {
           nextCursor: 'c1',
           hasMore: true,
         );
+        final likesSubscription = repository
+            .watchSnapshot(filter: NotificationKind.like)
+            .listen((_) {});
+        addTearDown(likesSubscription.cancel);
         await repository.refreshFeed(NotificationKind.like);
         stubNotifications(
           [
@@ -3745,10 +3749,60 @@ void main() {
         expect(repository.hasPaginatedBeyondFirstPage, isTrue);
       });
 
+      test(
+        'refreshApplied skips filtered feeds nobody is listening to',
+        () async {
+          stubProfiles({});
+          stubNotifications([makeNotification()]);
+          // Open and close the Likes tab: its feed stays in the map, but the
+          // bloc's subscription is gone.
+          final likes = repository
+              .watchSnapshot(filter: NotificationKind.like)
+              .listen((_) {});
+          await repository.refreshFeed(NotificationKind.like);
+          await likes.cancel();
+          // The badge keeps the unfiltered feed subscribed app-wide.
+          final all = repository.watchSnapshot().listen((_) {});
+          addTearDown(all.cancel);
+          await repository.refreshFeed(null);
+
+          clearInteractions(funnelcakeApiClient);
+          await repository.refreshApplied();
+
+          verify(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              cursorId: any(named: 'cursorId'),
+              types: any(named: 'types', that: isNull),
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => funnelcakeApiClient.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              cursor: any(named: 'cursor'),
+              cursorId: any(named: 'cursorId'),
+              types: const ['reaction', 'zap'],
+              requestUri: any(named: 'requestUri'),
+              authHeaders: any(named: 'authHeaders'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
       test('refreshApplied keeps refreshing after one feed fails', () async {
         stubProfiles({});
         stubNotifications([makeNotification()]);
+        final likes = repository
+            .watchSnapshot(filter: NotificationKind.like)
+            .listen((_) {});
+        addTearDown(likes.cancel);
         await repository.refreshFeed(NotificationKind.like);
+        await repository.refreshFeed(null);
 
         // The unfiltered feed is created first, so without per-feed error
         // isolation its failure would abort the whole fan-out.
