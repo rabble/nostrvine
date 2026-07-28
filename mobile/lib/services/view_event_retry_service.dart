@@ -94,7 +94,7 @@ class ViewEventRetryService {
       );
 
       for (final row in retryable) {
-        if (_isTerminal(row)) {
+        if (row.watchDurationMs < 1000) {
           await _dao.deleteById(row.id);
           continue;
         }
@@ -113,7 +113,7 @@ class ViewEventRetryService {
             video: _toVideoEvent(row),
             startSeconds: 0,
             endSeconds: row.watchDurationMs ~/ 1000,
-            source: _trafficSourceFrom(row.trafficSource),
+            source: viewTrafficSourceFromTag(row.trafficSource),
             sourceDetail: row.sourceDetail,
             loopCount: row.loopCount,
           );
@@ -131,10 +131,6 @@ class ViewEventRetryService {
     }
   }
 
-  bool _isTerminal(PendingViewEvent row) {
-    return row.videoPubkey == _userPubkey || row.watchDurationMs < 1000;
-  }
-
   VideoEvent _toVideoEvent(PendingViewEvent row) {
     return VideoEvent(
       id: row.videoId,
@@ -144,22 +140,5 @@ class ViewEventRetryService {
       timestamp: row.createdAt,
       vineId: row.videoVineId,
     );
-  }
-
-  ViewTrafficSource _trafficSourceFrom(String raw) {
-    return switch (raw) {
-      'home' => ViewTrafficSource.home,
-      'profile' => ViewTrafficSource.profile,
-      'search' => ViewTrafficSource.search,
-      'share' => ViewTrafficSource.share,
-      'discovery:new' || 'discovery_new' => ViewTrafficSource.discoveryNew,
-      'discovery:popular' ||
-      'discovery_popular' => ViewTrafficSource.discoveryPopular,
-      'discovery:classic' ||
-      'discovery_classic' => ViewTrafficSource.discoveryClassic,
-      'discovery:foryou' ||
-      'discovery_for_you' => ViewTrafficSource.discoveryForYou,
-      _ => ViewTrafficSource.unknown,
-    };
   }
 }

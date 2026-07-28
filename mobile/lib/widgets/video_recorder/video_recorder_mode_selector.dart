@@ -33,6 +33,7 @@ class _VideoRecorderModeSelectorWheelState
   bool _isSnapping = false;
   bool _userScrolling = false;
   double _lastScrollDelta = 0.0;
+  int? _pendingJumpIndex;
 
   /// Scroll offset that centers each item, indexed by mode. Recomputed on
   /// every build from the measured label widths.
@@ -78,7 +79,7 @@ class _VideoRecorderModeSelectorWheelState
       // External changes (persisted-mode restore right after open,
       // editor-driven switches) reposition instantly — a visible scroll
       // animation on a screen the user just opened feels broken.
-      _jumpTo(index);
+      _pendingJumpIndex = index;
     }
   }
 
@@ -188,6 +189,14 @@ class _VideoRecorderModeSelectorWheelState
     ).clamp(maxScaleFactor: 1.3);
     final itemWidths = _itemWidths(textScaler);
     _snapOffsets = _snapOffsetsFor(itemWidths);
+    final pendingJumpIndex = _pendingJumpIndex;
+    if (pendingJumpIndex != null) {
+      _pendingJumpIndex = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _jumpTo(pendingJumpIndex);
+      });
+    }
     return LayoutBuilder(
       builder: (context, constraints) {
         final leadingPadding = (constraints.maxWidth - itemWidths.first) / 2;
