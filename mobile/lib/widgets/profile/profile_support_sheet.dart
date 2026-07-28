@@ -110,7 +110,9 @@ class _SupportLinkTile extends StatelessWidget {
         ),
         title: Text(
           link.provider.displayName,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),

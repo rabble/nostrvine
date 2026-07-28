@@ -162,7 +162,9 @@ class _OverviewSection extends StatelessWidget {
       if (hasTitle)
         LinkifiedText(
           text: title,
-          style: VineTheme.headlineSmallFont(),
+          style: VineTheme.headlineSmallFont(
+            color: context.vineColors.primaryText,
+          ),
           linkStyle: VineTheme.headlineSmallFont(color: VineTheme.info),
           mentionStyle: VineTheme.headlineSmallFont(color: VineTheme.info),
           mentionProfilePubkeys: video.mentionedPubkeys,
@@ -172,7 +174,9 @@ class _OverviewSection extends StatelessWidget {
       if (hasDescription)
         LinkifiedText(
           text: description,
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyLargeFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
           mentionProfilePubkeys: video.mentionedPubkeys,
           dismissModalBeforeNavigation: true,
         ),
@@ -198,7 +202,7 @@ class _OverviewSection extends StatelessWidget {
               child: Text(
                 formattedDate,
                 style: VineTheme.labelSmallFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
               ),
             ),

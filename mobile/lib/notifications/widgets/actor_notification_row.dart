@@ -199,12 +199,15 @@ class _MessageText extends StatelessWidget {
         ? <InlineSpan>[
             TextSpan(
               text: l10n.notificationSystemUpdate,
-              style: VineTheme.bodyMediumFont(),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
           ]
         : localizedActorSentenceSpans(
             fullText: _messageFor(l10n, type, notification.actor.displayName),
             actorName: notification.actor.displayName,
+            colors: context.vineColors,
           );
 
     final ts = timestamp;

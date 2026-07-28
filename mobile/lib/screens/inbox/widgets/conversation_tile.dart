@@ -158,7 +158,9 @@ class ConversationTile extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               displayName,
-                              style: VineTheme.titleMediumFont(),
+                              style: VineTheme.titleMediumFont(
+                                color: context.vineColors.primaryText,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -295,7 +297,7 @@ class _ConversationPreviewText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = emphasized
-        ? VineTheme.labelLargeFont()
+        ? VineTheme.labelLargeFont(color: context.vineColors.primaryText)
         : VineTheme.bodyMediumFont(color: context.vineColors.onSurfaceVariant);
     if (!payload.isDivineVideoShare) {
       return Text(

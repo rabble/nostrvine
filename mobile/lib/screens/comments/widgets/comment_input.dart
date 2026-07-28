@@ -373,7 +373,7 @@ class _CommentTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: VineTheme.bodyLargeFont(
-              color: const Color.fromARGB(128, 228, 219, 219),
+              color: context.vineColors.onSurfaceMuted,
             ),
             border: InputBorder.none,
             contentPadding: EdgeInsets.zero,
@@ -461,9 +461,9 @@ class _SendButton extends StatelessWidget {
         child: IconButton(
           onPressed: onSubmit,
           padding: EdgeInsets.zero,
-          icon: DivineIcon(
+          icon: const DivineIcon(
             icon: DivineIconName.arrowUp,
-            color: context.vineColors.primaryText,
+            color: VineTheme.primaryText,
             size: 20,
           ),
         ),

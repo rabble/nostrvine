@@ -5,7 +5,6 @@
 // ABOUTME: dmRepositoryProvider, not driven by this screen's lifecycle.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
@@ -47,95 +46,96 @@ class InboxPage extends ConsumerWidget {
         ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
     final protectedMinorInboxGate = ref.watch(protectedMinorInboxGateProvider);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: MultiBlocProvider(
-        // `dmRepositoryProvider` is keepAlive but its body rebuilds a
-        // brand-new DmRepository whenever the nostr session advances
-        // (identityKnown -> nostrReady) or on account switch, and only the
-        // *ready* instance ever gets setCredentials()/startListening(). A
-        // BlocProvider factory runs once and captures whichever instance was
-        // current at mount; if the inbox is opened during the not-ready
-        // window the ConversationListBloc stays wired to that orphaned repo,
-        // whose userPubkeyStream never fires — so the list spins forever
-        // while DMs ingest on the new instance. Re-key on the captured
-        // repositories' identities so the blocs are rebuilt bound to the
-        // fresh instances on every flip. The tuple carries EVERY watched
-        // value a create: factory below captures whose identity can change
-        // at runtime (currentUserPubkey flips on account switch) — or the
-        // cubits capturing them silently keep the stale instance. See
-        // .claude/rules/state_management.md ("Bridging Riverpod-provided
-        // dependencies into BlocProvider").
-        //
-        // reportingService is deliberately NOT in this tuple: it resolves
-        // from null asynchronously shortly after every inbox mount, and
-        // keying the whole MultiBlocProvider on it tore down and recreated
-        // all five blocs (double ConversationListStarted + list reload)
-        // right after every open. Only its consumer — the
-        // ConversationActionsCubit provider below — is re-keyed on it.
-        key: ValueKey((
-          dmRepository,
-          followRepository,
-          blocklistRepository,
-          currentUserPubkey,
-          protectedMinorInboxGate,
-        )),
-        providers: [
-          BlocProvider(
-            // Deliberately unkeyed on profileRepository. A key here would NOT
-            // narrow anything: `providers[0]` is the OUTERMOST entry in the
-            // nested chain, so keying it re-inflates every provider below plus
-            // the whole InboxView subtree — losing the tab selection, scroll
-            // offset and search text. The nullable-gated instance is delivered
-            // in place by ConversationListProfileRepositoryChanged from
-            // _InboxRepositorySync below, refreshing only this bloc's
-            // dependency. The constructor still carries the initial value.
-            create: (_) => ConversationListBloc(
-              dmRepository: dmRepository,
-              followRepository: followRepository,
-              contentBlocklistRepository: blocklistRepository,
-              profileRepository: profileRepository,
-              protectedMinorInboxGate: protectedMinorInboxGate,
-              // Pinned Divine Moderation support row (#6283). The identity is
-              // the release-pinned one — the same anchor the protected-minor
-              // gate resolves against — so the row can never point somewhere
-              // the gate would not approve.
-              supportRowPubkey: kModerationPubkeyHex,
-            )..add(const ConversationListStarted()),
+    // No status-bar override here: the inbox renders no app bar, so the
+    // app-level AnnotatedRegion in main.dart — which picks its icon
+    // brightness from the resolved appearance mode — is what should apply.
+    // A hardcoded style would pin white icons onto the light-mode header.
+    return MultiBlocProvider(
+      // `dmRepositoryProvider` is keepAlive but its body rebuilds a
+      // brand-new DmRepository whenever the nostr session advances
+      // (identityKnown -> nostrReady) or on account switch, and only the
+      // *ready* instance ever gets setCredentials()/startListening(). A
+      // BlocProvider factory runs once and captures whichever instance was
+      // current at mount; if the inbox is opened during the not-ready
+      // window the ConversationListBloc stays wired to that orphaned repo,
+      // whose userPubkeyStream never fires — so the list spins forever
+      // while DMs ingest on the new instance. Re-key on the captured
+      // repositories' identities so the blocs are rebuilt bound to the
+      // fresh instances on every flip. The tuple carries EVERY watched
+      // value a create: factory below captures whose identity can change
+      // at runtime (currentUserPubkey flips on account switch) — or the
+      // cubits capturing them silently keep the stale instance. See
+      // .claude/rules/state_management.md ("Bridging Riverpod-provided
+      // dependencies into BlocProvider").
+      //
+      // reportingService is deliberately NOT in this tuple: it resolves
+      // from null asynchronously shortly after every inbox mount, and
+      // keying the whole MultiBlocProvider on it tore down and recreated
+      // all five blocs (double ConversationListStarted + list reload)
+      // right after every open. Only its consumer — the
+      // ConversationActionsCubit provider below — is re-keyed on it.
+      key: ValueKey((
+        dmRepository,
+        followRepository,
+        blocklistRepository,
+        currentUserPubkey,
+        protectedMinorInboxGate,
+      )),
+      providers: [
+        BlocProvider(
+          // Deliberately unkeyed on profileRepository. A key here would NOT
+          // narrow anything: `providers[0]` is the OUTERMOST entry in the
+          // nested chain, so keying it re-inflates every provider below plus
+          // the whole InboxView subtree — losing the tab selection, scroll
+          // offset and search text. The nullable-gated instance is delivered
+          // in place by ConversationListProfileRepositoryChanged from
+          // _InboxRepositorySync below, refreshing only this bloc's
+          // dependency. The constructor still carries the initial value.
+          create: (_) => ConversationListBloc(
+            dmRepository: dmRepository,
+            followRepository: followRepository,
+            contentBlocklistRepository: blocklistRepository,
+            profileRepository: profileRepository,
+            protectedMinorInboxGate: protectedMinorInboxGate,
+            // Pinned Divine Moderation support row (#6283). The identity is
+            // the release-pinned one — the same anchor the protected-minor
+            // gate resolves against — so the row can never point somewhere
+            // the gate would not approve.
+            supportRowPubkey: kModerationPubkeyHex,
+          )..add(const ConversationListStarted()),
+        ),
+        // Inbox-scope NotificationBadgeCubit feeds the segmented
+        // toggle's notifications count. Mirrors the app-shell-scope
+        // cubit provided in `main.dart` so `inbox_view.dart` can read
+        // via `context.watch<NotificationBadgeCubit>()`.
+        BlocProvider(
+          create: (_) => NotificationBadgeCubit(
+            repository: ref.read(notificationRepositoryProvider),
           ),
-          // Inbox-scope NotificationBadgeCubit feeds the segmented
-          // toggle's notifications count. Mirrors the app-shell-scope
-          // cubit provided in `main.dart` so `inbox_view.dart` can read
-          // via `context.watch<NotificationBadgeCubit>()`.
-          BlocProvider(
-            create: (_) => NotificationBadgeCubit(
-              repository: ref.read(notificationRepositoryProvider),
-            ),
+        ),
+        BlocProvider(
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistRepository: blocklistRepository,
+          )..add(const MyFollowingListLoadRequested()),
+        ),
+        BlocProvider(create: (_) => ConversationMuteCubit(prefs: prefs)),
+        // Re-keyed on the async-resolving reportingService alone (last in
+        // the list so the swap recreates the smallest possible subtree):
+        // the actions cubit is action-only state and cheap to rebuild,
+        // and without the key it would capture the pre-resolution null
+        // forever, silently failing every report.
+        BlocProvider(
+          key: ValueKey(reportingService),
+          create: (_) => ConversationActionsCubit(
+            contentReportingService: reportingService,
+            contentBlocklistRepository: blocklistRepository,
+            dmRepository: dmRepository,
+            currentUserPubkey: currentUserPubkey,
           ),
-          BlocProvider(
-            create: (_) => MyFollowingBloc(
-              followRepository: followRepository,
-              contentBlocklistRepository: blocklistRepository,
-            )..add(const MyFollowingListLoadRequested()),
-          ),
-          BlocProvider(create: (_) => ConversationMuteCubit(prefs: prefs)),
-          // Re-keyed on the async-resolving reportingService alone (last in
-          // the list so the swap recreates the smallest possible subtree):
-          // the actions cubit is action-only state and cheap to rebuild,
-          // and without the key it would capture the pre-resolution null
-          // forever, silently failing every report.
-          BlocProvider(
-            key: ValueKey(reportingService),
-            create: (_) => ConversationActionsCubit(
-              contentReportingService: reportingService,
-              contentBlocklistRepository: blocklistRepository,
-              dmRepository: dmRepository,
-              currentUserPubkey: currentUserPubkey,
-            ),
-          ),
-        ],
-        child: const _InboxRepositorySync(child: InboxView()),
-      ),
+        ),
+      ],
+      child: const _InboxRepositorySync(child: InboxView()),
     );
   }
 }

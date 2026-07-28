@@ -32,29 +32,32 @@ class FeedEmptyWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.filmSlate,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             _getEmptyMessage(context, state),
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
+            style: TextStyle(
+              color: context.vineColors.primaryText,
+              fontSize: 18,
+            ),
             textAlign: TextAlign.center,
           ),
           if (isNoFollowedUsers) ...[
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => context.go(ExploreScreen.path),
-              icon: const DivineIcon(
+              icon: DivineIcon(
                 icon: DivineIconName.compass,
-                color: VineTheme.backgroundColor,
+                color: context.vineColors.background,
               ),
               label: Text(context.l10n.feedExploreVideos),
               style: FilledButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.backgroundColor,
+                foregroundColor: context.vineColors.background,
               ),
             ),
           ],
@@ -97,7 +100,7 @@ class _FollowingFeedEmptyState extends StatelessWidget {
               child: Text(
                 context.l10n.feedFollowingEmpty,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -124,14 +127,14 @@ class _FeedEmptyTestPatternMark extends StatelessWidget {
       width: 112,
       height: 88,
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       padding: const EdgeInsets.all(8),
-      child: const Column(
+      child: Column(
         children: [
-          Expanded(
+          const Expanded(
             flex: 3,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -139,21 +142,28 @@ class _FeedEmptyTestPatternMark extends StatelessWidget {
                 Expanded(child: ColoredBox(color: VineTheme.primary)),
                 Expanded(child: ColoredBox(color: VineTheme.warning)),
                 Expanded(child: ColoredBox(color: VineTheme.error)),
-                Expanded(child: ColoredBox(color: VineTheme.inverseSurface)),
+                // Fourth bar of a fixed test-pattern illustration; the other
+                // three are brand constants, so this one stays white too.
+                Expanded(child: ColoredBox(color: VineTheme.whiteText)),
               ],
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
                   flex: 2,
-                  child: ColoredBox(color: VineTheme.onSurface),
+                  child: ColoredBox(color: context.vineColors.onSurface),
                 ),
-                Expanded(child: ColoredBox(color: VineTheme.outlineMuted)),
-                Expanded(flex: 2, child: ColoredBox(color: VineTheme.scrim65)),
+                Expanded(
+                  child: ColoredBox(color: context.vineColors.outlineMuted),
+                ),
+                const Expanded(
+                  flex: 2,
+                  child: ColoredBox(color: VineTheme.scrim65),
+                ),
               ],
             ),
           ),

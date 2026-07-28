@@ -224,7 +224,7 @@ class _LoadingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -273,11 +273,9 @@ class _PermissionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: VideoEditorConstants.uiOverlayStyle.copyWith(
-        systemNavigationBarColor: VineTheme.surfaceContainerHigh,
-      ),
+      value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
       child: Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -312,7 +310,7 @@ class _PermissionScreen extends StatelessWidget {
                           Text(
                             title,
                             style: VineTheme.titleMediumFont(
-                              color: VineTheme.onSurfaceMuted,
+                              color: context.vineColors.onSurfaceMuted,
                             ),
                             textAlign: .center,
                           ),
@@ -320,7 +318,7 @@ class _PermissionScreen extends StatelessWidget {
                           Text(
                             description,
                             style: VineTheme.bodyMediumFont(
-                              color: VineTheme.onSurfaceMuted,
+                              color: context.vineColors.onSurfaceMuted,
                             ),
                             textAlign: .center,
                           ),
@@ -335,7 +333,7 @@ class _PermissionScreen extends StatelessWidget {
                 IgnorePointer(
                   child: Container(
                     padding: const .only(top: 8),
-                    color: VineTheme.surfaceContainerHigh,
+                    color: context.vineColors.surfaceContainerHigh,
                     child: const Opacity(
                       opacity: 0.25,
                       child: VideoRecorderBottomBar(),

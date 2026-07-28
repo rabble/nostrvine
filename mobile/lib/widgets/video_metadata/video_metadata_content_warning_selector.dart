@@ -125,10 +125,10 @@ class _ContentWarningMultiSelectState
             onPressed: () => context.pop(_selected),
           ),
         ),
-        const Divider(
+        Divider(
           height: 0,
           thickness: 0,
-          color: VineTheme.surfaceContainer,
+          color: context.vineColors.surfaceContainer,
         ),
         Expanded(
           child: ListView.separated(
@@ -137,10 +137,10 @@ class _ContentWarningMultiSelectState
             ),
             controller: widget.scrollController,
             itemCount: ContentLabel.values.length,
-            separatorBuilder: (_, _) => const Divider(
+            separatorBuilder: (_, _) => Divider(
               height: 0,
               thickness: 0,
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
             ),
             itemBuilder: (_, index) {
               final label = ContentLabel.values[index];
@@ -168,7 +168,9 @@ class _ContentWarningHeaderTitle extends StatelessWidget {
         Text(context.l10n.videoMetadataContentWarnings),
         Text(
           context.l10n.videoMetadataContentWarningSelectAllThatApply,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
       ],
     );
@@ -189,7 +191,9 @@ class _ContentLabelTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isChecked ? VineTheme.surfaceContainer : VineTheme.transparent,
+      color: isChecked
+          ? context.vineColors.surfaceContainer
+          : VineTheme.transparent,
       child: InkWell(
         onTap: onTap,
         child: Container(
@@ -200,7 +204,9 @@ class _ContentLabelTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   localizedContentLabelName(context.l10n, label),
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.onSurface,
+                  ),
                 ),
               ),
               DivineSpriteCheckbox(state: isChecked ? .selected : .unselected),

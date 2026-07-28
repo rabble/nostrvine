@@ -110,7 +110,7 @@ Future<CaptionsEditorResult?> showCaptionsEditorSheet(
       minChildSize: 0.8,
       title: Text(
         l10n.videoEditorCaptionsEditTitle,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       headerLeadingAction: canDeleteTrack
           ? DivineIconButton(
@@ -266,7 +266,9 @@ class _GeneratingView extends StatelessWidget {
         Text(
           l10n.videoEditorCaptionsGeneratingTitle,
           textAlign: TextAlign.center,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         Text(
           l10n.videoEditorCaptionsGeneratingSubtitle,
@@ -361,7 +363,9 @@ class _CaptionsModeControls extends StatelessWidget {
               context.read<CaptionsEditorCubit>().setBurnIn(burnIn: checked),
           label: Text(
             l10n.videoEditorCaptionsBurnInLabel,
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ),
 

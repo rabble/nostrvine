@@ -75,12 +75,14 @@ class _TuneSlider extends StatelessWidget {
         data: SliderTheme.of(context).copyWith(
           trackHeight: 3,
           activeTrackColor: VineTheme.primary,
-          inactiveTrackColor: VineTheme.outlineMuted,
+          inactiveTrackColor: context.vineColors.outlineMuted,
           thumbColor: VineTheme.primary,
           overlayColor: VineTheme.primary.withValues(alpha: 0.12),
           overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-          valueIndicatorColor: VineTheme.surfaceContainer,
-          valueIndicatorTextStyle: VineTheme.bodySmallFont(),
+          valueIndicatorColor: context.vineColors.surfaceContainer,
+          valueIndicatorTextStyle: VineTheme.bodySmallFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         child: Slider(
           min: adjustment.min,
@@ -181,10 +183,12 @@ class _TuneChip extends StatelessWidget {
         child: Container(
           padding: const .symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: .circular(16),
             border: .all(
-              color: isSelected ? VineTheme.primary : VineTheme.outlineMuted,
+              color: isSelected
+                  ? VineTheme.primary
+                  : context.vineColors.outlineMuted,
               width: 2,
             ),
           ),
@@ -197,15 +201,17 @@ class _TuneChip extends StatelessWidget {
                 Text(
                   label,
                   style: VineTheme.bodySmallFont(
-                    color: isSelected ? VineTheme.primary : VineTheme.onSurface,
+                    color: isSelected
+                        ? VineTheme.primary
+                        : context.vineColors.onSurface,
                   ),
                 ),
                 Text(
                   valueLabel,
                   style: VineTheme.labelSmallFont(
                     color: isAdjusted
-                        ? VineTheme.onSurface
-                        : VineTheme.secondaryText,
+                        ? context.vineColors.onSurface
+                        : context.vineColors.secondaryText,
                   ),
                 ),
               ],

@@ -218,7 +218,9 @@ class _ProfileCommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = VineTheme.bodyMediumFont();
+    final baseStyle = VineTheme.bodyMediumFont(
+      color: context.vineColors.primaryText,
+    );
 
     return GestureDetector(
       onTap: () =>

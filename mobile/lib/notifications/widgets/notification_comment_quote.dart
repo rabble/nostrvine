@@ -15,7 +15,7 @@ import 'package:openvine/widgets/linkified_text/linkified_text_support.dart';
 /// The text is wrapped in curly quotes and rendered in
 /// [VineTheme.bodyMediumFont]. When [timestamp] is non-empty the
 /// formatted relative time (e.g. `2d`) is appended inline at the end of
-/// the quote in [VineTheme.onSurfaceMuted55] — keeping the timestamp
+/// the quote in the muted on-surface color — keeping the timestamp
 /// anchored to the visual end of the row rather than floating between
 /// the message text and the quote, which is what happens when the quote
 /// is rendered as a separate widget below a message that already
@@ -51,7 +51,9 @@ class _NotificationCommentQuoteState
 
   @override
   Widget build(BuildContext context) {
-    final bodyStyle = VineTheme.bodyMediumFont();
+    final bodyStyle = VineTheme.bodyMediumFont(
+      color: context.vineColors.primaryText,
+    );
     final linkStyle = VineTheme.bodyMediumFont(
       color: VineTheme.info,
     ).copyWith(fontWeight: FontWeight.w600);
@@ -85,7 +87,7 @@ class _NotificationCommentQuoteState
             TextSpan(
               text: ' $ts',
               style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceMuted55,
+                color: context.vineColors.onSurfaceMuted,
               ),
             ),
         ],

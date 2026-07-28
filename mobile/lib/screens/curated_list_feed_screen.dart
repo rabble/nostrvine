@@ -81,7 +81,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(widget.listName, style: VineTheme.titleLargeFont()),
+                  Text(
+                    widget.listName,
+                    style: VineTheme.titleLargeFont(
+                      color: context.vineColors.onNav,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   _buildSubheading(),
                 ],
@@ -413,7 +418,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         backgroundColor: context.vineColors.surfaceContainer,
         title: Text(
           l10n.curatedListDeleteConfirmTitle,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           l10n.curatedListDeleteConfirmBody,

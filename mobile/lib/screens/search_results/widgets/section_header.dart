@@ -42,9 +42,12 @@ class SectionHeader extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: VineTheme.titleMediumFont().copyWith(
-                      color: context.vineColors.primaryText,
-                    ),
+                    style:
+                        VineTheme.titleMediumFont(
+                          color: context.vineColors.primaryText,
+                        ).copyWith(
+                          color: context.vineColors.primaryText,
+                        ),
                   ),
                 ),
                 if (onTap != null)

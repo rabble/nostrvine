@@ -396,7 +396,12 @@ class _EmptyPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.titleSmallFont()),
+          Text(
+            title,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 6),
           Text(
             subtitle,
@@ -428,7 +433,12 @@ class _BadgesErrorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.badgesLoadError, style: VineTheme.titleSmallFont()),
+          Text(
+            context.l10n.badgesLoadError,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 12),
           DivineButton(
             label: context.l10n.commonRetry,

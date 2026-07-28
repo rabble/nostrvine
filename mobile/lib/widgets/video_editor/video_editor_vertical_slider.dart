@@ -169,7 +169,7 @@ class _Track extends StatelessWidget {
       size: Size(16, height),
       painter: _TrackPainter(
         value: value,
-        activeColor: VineTheme.onSurface,
+        activeColor: context.vineColors.onSurface,
         inactiveColor: VineTheme.onSurface.withValues(alpha: 0.5),
       ),
     );

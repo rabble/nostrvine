@@ -45,9 +45,9 @@ class VideoEditorScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: VideoEditorConstants.uiOverlayStyle,
+      value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
       child: Scaffold(
-        backgroundColor: VineTheme.backgroundCamera,
+        backgroundColor: context.vineColors.surfaceContainerHigh,
         resizeToAvoidBottomInset: false,
         floatingActionButton: const _AddElementFab(),
         body: _SplitFailureListener(
@@ -507,7 +507,7 @@ class _TimelineSectionState extends State<_TimelineSection>
         }
       },
       child: ColoredBox(
-        color: VineTheme.backgroundCamera,
+        color: context.vineColors.surfaceContainerHigh,
         child: Column(
           mainAxisSize: .min,
           crossAxisAlignment: .stretch,
@@ -593,7 +593,7 @@ class _ReverseProgressOverlay extends StatelessWidget {
         }
 
         return ColoredBox(
-          color: VineTheme.backgroundColor.withAlpha(210),
+          color: context.vineColors.background.withAlpha(210),
           child: Center(
             child: RepaintBoundary(
               child: Column(
@@ -617,7 +617,9 @@ class _ReverseProgressOverlay extends StatelessWidget {
                     child: Text(
                       context.l10n.videoEditorReverseProgressLabel,
                       textAlign: TextAlign.center,
-                      style: VineTheme.bodyMediumFont(),
+                      style: VineTheme.bodyMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                   ),
                 ],
@@ -673,7 +675,7 @@ class _TransformProgressContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return AbsorbPointer(
       child: ColoredBox(
-        color: VineTheme.backgroundColor.withAlpha(210),
+        color: context.vineColors.background.withAlpha(210),
         child: Center(
           child: RepaintBoundary(
             child: Column(
@@ -692,7 +694,9 @@ class _TransformProgressContent extends StatelessWidget {
                   child: Text(
                     context.l10n.videoEditorTransformProgressLabel,
                     textAlign: TextAlign.center,
-                    style: VineTheme.bodyMediumFont(),
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                 ),
               ],
@@ -744,7 +748,7 @@ class _MergeProgressContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return AbsorbPointer(
       child: ColoredBox(
-        color: VineTheme.backgroundColor.withAlpha(210),
+        color: context.vineColors.background.withAlpha(210),
         child: Center(
           child: RepaintBoundary(
             child: Column(
@@ -763,7 +767,9 @@ class _MergeProgressContent extends StatelessWidget {
                   child: Text(
                     context.l10n.videoEditorMergeProgressLabel,
                     textAlign: TextAlign.center,
-                    style: VineTheme.bodyMediumFont(),
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                 ),
               ],
@@ -862,9 +868,12 @@ class _AddElementFabContent extends StatelessWidget {
           width: 56,
           height: 56,
           decoration: ShapeDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             shape: RoundedRectangleBorder(
-              side: const BorderSide(width: 2, color: VineTheme.outlineMuted),
+              side: BorderSide(
+                width: 2,
+                color: context.vineColors.outlineMuted,
+              ),
               borderRadius: .circular(24),
             ),
           ),

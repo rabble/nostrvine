@@ -28,7 +28,9 @@ class SearchSectionErrorState extends StatelessWidget {
             ),
             Text(
               context.l10n.searchSomethingWentWrong,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             DivineButton(
               type: DivineButtonType.secondary,

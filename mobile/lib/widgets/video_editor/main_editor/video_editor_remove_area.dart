@@ -33,10 +33,10 @@ class VideoEditorRemoveArea extends ConsumerWidget {
               color: VineTheme.error,
               shape: RoundedRectangleBorder(borderRadius: .circular(20)),
             ),
-            child: const DivineIcon(
+            child: DivineIcon(
               icon: .trash,
               size: 28,
-              color: VineTheme.backgroundColor,
+              color: context.vineColors.background,
             ),
           ),
         ),

@@ -137,7 +137,7 @@ class _InlineCommentComposerBarState extends State<InlineCommentComposerBar> {
         context.read<InlineCommentComposerCubit>().acknowledge();
       },
       child: ColoredBox(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         // Manually compute the bottom inset instead of using SafeArea
         // because the bar lives inside the Scaffold body (so it can ride
         // above the keyboard). When the keyboard is up, viewInsets.bottom
@@ -206,7 +206,7 @@ class _ComposerField extends StatelessWidget {
     // pill instead of being clipped to a single line.
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.iconButtonBackground,
+        color: context.vineColors.iconButton,
         borderRadius: BorderRadius.circular(20),
       ),
       child: ConstrainedBox(
@@ -245,11 +245,13 @@ class _ComposerField extends StatelessWidget {
                     onTapOutside: (_) =>
                         FocusManager.instance.primaryFocus?.unfocus(),
                     cursorColor: VineTheme.tabIndicatorGreen,
-                    style: VineTheme.bodyLargeFont(),
+                    style: VineTheme.bodyLargeFont(
+                      color: context.vineColors.primaryText,
+                    ),
                     decoration: InputDecoration(
                       hintText: context.l10n.videoOverlayCommentBarHint,
                       hintStyle: VineTheme.bodyLargeFont(
-                        color: VineTheme.onSurfaceMuted55,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,

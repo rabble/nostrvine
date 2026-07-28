@@ -101,7 +101,9 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                       child: UserName.fromPubKey(
                         video.pubkey,
                         embeddedName: video.displayAuthorName,
-                        style: VineTheme.titleSmallFont(),
+                        style: VineTheme.titleSmallFont(
+                          color: VineTheme.whiteText,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -111,7 +113,9 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                         StringUtils.formatCompactNumber(video.totalLoops),
                         video.totalLoops,
                       ),
-                      style: VineTheme.labelSmallFont(),
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.whiteText,
+                      ),
                     ),
                   ],
                 ),
@@ -138,9 +142,10 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                 },
                 child: Text(
                   video.displayTitle!.trim(),
-                  style: VineTheme.labelMediumFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
+                  style: VineTheme.labelMediumFont(color: VineTheme.whiteText)
+                      .copyWith(
+                        shadows: VineTheme.buttonShadows,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -169,12 +174,14 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                 },
                 child: LinkifiedText(
                   text: video.displayContent.trim(),
-                  style: VineTheme.bodySmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
-                  linkStyle: VineTheme.bodySmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
+                  style: VineTheme.bodySmallFont(color: VineTheme.whiteText)
+                      .copyWith(
+                        shadows: VineTheme.buttonShadows,
+                      ),
+                  linkStyle: VineTheme.bodySmallFont(color: VineTheme.whiteText)
+                      .copyWith(
+                        shadows: VineTheme.buttonShadows,
+                      ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),

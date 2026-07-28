@@ -80,9 +80,10 @@ class AutoActionButton extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
                     label,
-                    style: VineTheme.labelSmallFont().copyWith(
-                      shadows: VineTheme.buttonShadows,
-                    ),
+                    style: VineTheme.labelSmallFont(color: VineTheme.whiteText)
+                        .copyWith(
+                          shadows: VineTheme.buttonShadows,
+                        ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

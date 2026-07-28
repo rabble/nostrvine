@@ -86,7 +86,9 @@ class _MessageInputBarState extends State<MessageInputBar> {
                 // Field honours font scaling (#4620): no withNoTextScaling.
                 child: TextField(
                   controller: _controller,
-                  style: VineTheme.bodyLargeFont(),
+                  style: VineTheme.bodyLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   cursorColor: VineTheme.primary,
                   keyboardType: TextInputType.multiline,
                   // Return = newline; send via button only (#4620).

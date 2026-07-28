@@ -183,7 +183,7 @@ class _VideoActionCaption extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Text(
         text,
-        style: VineTheme.labelSmallFont().copyWith(
+        style: VineTheme.labelSmallFont(color: VineTheme.whiteText).copyWith(
           shadows: VineTheme.buttonShadows,
         ),
         textAlign: TextAlign.center,

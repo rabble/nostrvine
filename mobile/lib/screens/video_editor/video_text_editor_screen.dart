@@ -147,9 +147,9 @@ class _BottomPanel extends StatelessWidget {
     final showBottomPanel = showFontSelector || showColorPicker;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: VineTheme.surfaceBackground,
-        borderRadius: .vertical(
+      decoration: BoxDecoration(
+        color: context.vineColors.surface,
+        borderRadius: const .vertical(
           top: .circular(VineTheme.bottomSheetBorderRadius),
         ),
       ),
@@ -160,10 +160,10 @@ class _BottomPanel extends StatelessWidget {
             padding: .symmetric(vertical: 16),
             child: VideoEditorTextStyleBar(),
           ),
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+          Divider(height: 2, color: context.vineColors.surfaceContainer),
           _KeyboardHeightPanel(
             showBottomPanel: showBottomPanel,
-            backgroundColor: VineTheme.surfaceBackground,
+            backgroundColor: context.vineColors.surface,
             onKeyboardClosedWithoutPanel: onKeyboardClosedWithoutPanel,
             child: showFontSelector
                 ? VideoEditorTextFontSelector(

@@ -72,7 +72,9 @@ class _HashtagSearchEmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.hashtagSearchTitle,
-            style: VineTheme.titleSmallFont(),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           Text(
             context.l10n.hashtagSearchSubtitle,
@@ -199,7 +201,9 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.hashtagSearchNoResults(query),
-            style: VineTheme.titleSmallFont(),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ],
       ),

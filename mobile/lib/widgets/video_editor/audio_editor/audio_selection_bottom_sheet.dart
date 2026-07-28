@@ -509,20 +509,20 @@ class _ImportAudioAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: VineTheme.onPrimary,
+      color: context.vineColors.surface,
       child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.upload_file, color: VineTheme.whiteText),
+              Icon(Icons.upload_file, color: context.vineColors.primaryText),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   context.l10n.videoEditorAudioImportAudio,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -545,24 +545,24 @@ class _PickerSearchInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: VineTheme.onPrimary,
+      color: context.vineColors.surface,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
-          hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+          hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
           prefixIconConstraints: const BoxConstraints(),
-          prefixIcon: const Padding(
-            padding: EdgeInsetsDirectional.only(start: 12, end: 8),
+          prefixIcon: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
             child: DivineIcon(
               icon: DivineIconName.search,
-              color: VineTheme.onSurfaceMuted,
+              color: context.vineColors.onSurfaceMuted,
             ),
           ),
           filled: true,
-          fillColor: VineTheme.backgroundColor,
+          fillColor: context.vineColors.background,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -605,14 +605,14 @@ class _SoundsContent extends StatelessWidget {
     return CustomScrollView(
       controller: scrollController,
       slivers: [
-        const SliverToBoxAdapter(
-          child: Divider(height: 1, color: VineTheme.outlineDisabled),
+        SliverToBoxAdapter(
+          child: Divider(height: 1, color: context.vineColors.outlineDisabled),
         ),
 
         SliverList.separated(
           itemCount: sounds.length,
           separatorBuilder: (context, index) =>
-              const Divider(height: 1, color: VineTheme.outlineDisabled),
+              Divider(height: 1, color: context.vineColors.outlineDisabled),
           itemBuilder: (context, index) {
             final audio = sounds[index];
             final isSelected = audio.id == selectedSound?.id;
@@ -660,16 +660,24 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
+          Icon(
+            Icons.music_off,
+            size: 64,
+            color: context.vineColors.secondaryText,
+          ),
           const SizedBox(height: 16),
           Text(
             title ?? context.l10n.videoEditorAudioNoSoundsAvailableTitle,
-            style: VineTheme.bodyLargeFont(),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle ?? context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -687,20 +695,24 @@ class _SearchEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.search_off,
             size: 64,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.soundsNoSoundsFound,
-            style: VineTheme.bodyLargeFont(),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.soundsNoSoundsFoundDescription,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -730,12 +742,16 @@ class _ErrorState extends ConsumerWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.videoEditorAudioFailedToLoadTitle,
-              style: VineTheme.bodyLargeFont(),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.secondaryText,
+              ),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -745,14 +761,14 @@ class _ErrorState extends ConsumerWidget {
               onPressed: () {
                 ref.invalidate(trendingSoundsProvider);
               },
-              icon: const DivineIcon(
+              icon: DivineIcon(
                 icon: DivineIconName.arrowClockwise,
-                color: VineTheme.backgroundColor,
+                color: context.vineColors.background,
               ),
               label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.backgroundColor,
+                foregroundColor: context.vineColors.background,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

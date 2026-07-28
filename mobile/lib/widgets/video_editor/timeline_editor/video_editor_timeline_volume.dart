@@ -57,8 +57,8 @@ class VideoEditorTimelineVolume extends StatelessWidget {
             begin: Alignment.centerRight,
             end: Alignment.centerLeft,
             colors: [
-              VineTheme.surfaceContainerHigh.withValues(alpha: 0),
-              VineTheme.surfaceContainerHigh.withValues(alpha: 0.96),
+              context.vineColors.surfaceContainerHigh.withValues(alpha: 0),
+              context.vineColors.surfaceContainerHigh.withValues(alpha: 0.96),
             ],
             stops: const [0.0, 0.1739],
           ),
@@ -294,12 +294,14 @@ class _VolumeArcState extends State<_VolumeArc> {
                   painter: _VolumeArcPainter(
                     volume: _localVolume,
                     gapSweepDeg: _gapSweepDeg,
+                    trackColor: context.vineColors.disabled,
+                    fullColor: context.vineColors.onSurface,
                   ),
                 ),
                 DivineIcon(
                   icon: isMuted ? .speakerSimpleSlash : .speakerHigh,
                   color: _localVolume >= 1
-                      ? VineTheme.whiteText
+                      ? context.vineColors.onSurface
                       : VineTheme.accentYellow,
                   size: 16,
                 ),
@@ -316,10 +318,19 @@ class _VolumeArcPainter extends CustomPainter {
   _VolumeArcPainter({
     required this.volume,
     required this.gapSweepDeg,
+    required this.trackColor,
+    required this.fullColor,
   });
 
   final double volume;
   final double gapSweepDeg;
+
+  /// Unfilled arc colour for the active appearance mode.
+  final Color trackColor;
+
+  /// Filled arc colour at full volume; below full the arc uses the fixed
+  /// accent yellow that flags a modified track in both modes.
+  final Color fullColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -332,7 +343,7 @@ class _VolumeArcPainter extends CustomPainter {
     final startAngle = math.pi / 2 + gapSweep / 2;
 
     final track = Paint()
-      ..color = VineTheme.onSurfaceDisabled
+      ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.butt;
@@ -340,7 +351,7 @@ class _VolumeArcPainter extends CustomPainter {
 
     if (volume > 0) {
       final fill = Paint()
-        ..color = volume >= 1 ? VineTheme.whiteText : VineTheme.accentYellow
+        ..color = volume >= 1 ? fullColor : VineTheme.accentYellow
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4
         ..strokeCap = StrokeCap.butt;
@@ -350,5 +361,8 @@ class _VolumeArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_VolumeArcPainter oldDelegate) =>
-      oldDelegate.volume != volume || oldDelegate.gapSweepDeg != gapSweepDeg;
+      oldDelegate.volume != volume ||
+      oldDelegate.gapSweepDeg != gapSweepDeg ||
+      oldDelegate.trackColor != trackColor ||
+      oldDelegate.fullColor != fullColor;
 }

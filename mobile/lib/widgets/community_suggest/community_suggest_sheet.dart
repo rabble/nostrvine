@@ -170,7 +170,9 @@ class _LabelTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     localizedContentLabelName(context.l10n, label),
-                    style: VineTheme.bodyMediumFont(),
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                 ),
                 if (alreadySuggested)

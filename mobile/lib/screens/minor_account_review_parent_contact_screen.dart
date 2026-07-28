@@ -194,7 +194,9 @@ class _ParentContactBody extends StatelessWidget {
             children: [
               Text(
                 l10n.minorAccountReviewParentContactHeading,
-                style: VineTheme.headlineMediumFont(),
+                style: VineTheme.headlineMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
@@ -264,7 +266,9 @@ class _SuccessView extends StatelessWidget {
         children: [
           Text(
             context.l10n.minorAccountReviewSubmissionReceivedTitle,
-            style: VineTheme.headlineMediumFont(),
+            style: VineTheme.headlineMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -372,7 +376,9 @@ class _ParentContactLoadErrorView extends StatelessWidget {
         children: [
           Text(
             context.l10n.minorAccountReviewErrorTitle,
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),

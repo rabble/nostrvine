@@ -113,7 +113,9 @@ class _HashtagChipList extends StatelessWidget {
               child: Center(
                 child: Text(
                   context.l10n.trendingTitle,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
             );

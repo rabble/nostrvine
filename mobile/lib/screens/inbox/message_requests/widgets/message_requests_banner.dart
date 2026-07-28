@@ -45,7 +45,9 @@ class MessageRequestsBanner extends StatelessWidget {
                 Expanded(
                   child: Text(
                     context.l10n.inboxMessageRequestsTitle,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                 ),
                 if (requestCount > 0) _RequestCountBadge(count: requestCount),

@@ -489,11 +489,11 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
               : null;
 
           return Scaffold(
-            backgroundColor: VineTheme.onPrimary,
+            backgroundColor: context.vineColors.surface,
             body: Stack(
               children: [
                 Material(
-                  color: VineTheme.onPrimary,
+                  color: context.vineColors.surface,
                   child: SafeArea(
                     bottom: false,
                     child: Column(
@@ -579,7 +579,9 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                           if (isPreparing)
                             Text(
                               context.l10n.libraryPreparingVideo,
-                              style: VineTheme.bodyMediumFont(),
+                              style: VineTheme.bodyMediumFont(
+                                color: context.vineColors.primaryText,
+                              ),
                             ),
                         ],
                       ),
@@ -640,7 +642,9 @@ class _LibraryContent extends StatelessWidget {
                 labelColor: context.vineColors.primaryText,
                 unselectedLabelColor: context.vineColors.onSurfaceMuted,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                labelStyle: VineTheme.titleMediumFont(),
+                labelStyle: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
                 unselectedLabelStyle: VineTheme.titleMediumFont(
                   color: context.vineColors.onSurfaceMuted,
                 ),
@@ -695,7 +699,7 @@ class _CreateVideoBar extends StatelessWidget {
           ? SafeArea(
               top: false,
               child: ColoredBox(
-                color: VineTheme.onPrimary,
+                color: context.vineColors.surface,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: DivineButton(
@@ -718,10 +722,12 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.onPrimary,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: context.l10n.profileMyLibraryLabel,
-        backgroundColor: VineTheme.onPrimary,
+        // No background override: the default `nav` surface already matches
+        // the scaffold's `surface` in both appearance modes, so the bar stays
+        // flush with the page.
         surfaceTintColor: VineTheme.transparent,
         shape: Border(
           bottom: BorderSide(color: context.vineColors.outlineDisabled),
@@ -745,7 +751,9 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
               Text(
                 context.l10n.libraryWebUnavailableHeadline,
                 textAlign: TextAlign.center,
-                style: VineTheme.titleMediumFont(),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               Text(
                 context.l10n.libraryWebUnavailableDescription,

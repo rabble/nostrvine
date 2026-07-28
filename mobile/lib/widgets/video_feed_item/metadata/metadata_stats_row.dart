@@ -33,9 +33,9 @@ class MetadataStatsRow extends StatelessWidget {
             video.isOriginalVine && video.hasOriginalVineMetrics;
 
         return DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+              bottom: BorderSide(color: context.vineColors.outlineDisabled),
             ),
           ),
           child: Column(
@@ -179,12 +179,17 @@ class _BreakdownLine extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 8,
         children: [
-          Text(label, style: VineTheme.labelSmallFont()),
+          Text(
+            label,
+            style: VineTheme.labelSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           Expanded(
             child: Text(
               value,
               style: VineTheme.labelSmallFont(
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
               ),
             ),
           ),
@@ -217,13 +222,17 @@ class _StatColumn extends StatelessWidget {
       children: [
         Text(
           displayValue,
-          style: VineTheme.statNumberFont(),
+          style: VineTheme.statNumberFont(
+            color: context.vineColors.primaryText,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         Text(
           label,
-          style: VineTheme.labelSmallFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.labelSmallFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -235,12 +244,12 @@ class _VerticalDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       height: 40,
       child: VerticalDivider(
         width: 2,
         thickness: 2,
-        color: VineTheme.outlineMuted,
+        color: context.vineColors.outlineMuted,
       ),
     );
   }

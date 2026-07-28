@@ -108,7 +108,9 @@ class _InboxNotificationsScaffoldState
                 labelColor: context.vineColors.primaryText,
                 unselectedLabelColor: context.vineColors.onSurfaceMuted,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                labelStyle: VineTheme.titleMediumFont(),
+                labelStyle: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
                 unselectedLabelStyle: VineTheme.titleMediumFont(
                   color: context.vineColors.onSurfaceMuted,
                 ),
@@ -253,7 +255,14 @@ class _InviteNotificationCard extends StatelessWidget {
                 color: context.vineColors.background,
               ),
             ),
-            Expanded(child: Text(label, style: VineTheme.bodyMediumFont())),
+            Expanded(
+              child: Text(
+                label,
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+            ),
             DivineIcon(
               icon: DivineIconName.caretRight,
               color: context.vineColors.mutedText,

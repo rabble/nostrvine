@@ -40,7 +40,9 @@ class _ExploreFeedContentState extends ConsumerState<ExploreFeedContent> {
       return Center(
         child: Text(
           context.l10n.exploreNoVideosAvailable,
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
     }

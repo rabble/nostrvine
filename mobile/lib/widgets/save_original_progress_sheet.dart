@@ -116,7 +116,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
                       const SizedBox(height: 16),
                       Text(
                         _stageLabel(state.stage, l10n),
-                        style: VineTheme.titleMediumFont(),
+                        style: VineTheme.titleMediumFont(
+                          color: context.vineColors.primaryText,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -151,7 +153,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
         const SizedBox(height: 16),
         Text(
           l10n.saveOriginalSavedToCameraRoll,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -190,7 +194,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
         const SizedBox(height: 16),
         Text(
           l10n.saveOriginalPhotosAccessNeeded,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -233,7 +239,9 @@ class _SaveOriginalProgressViewState extends State<_SaveOriginalProgressView>
         const SizedBox(height: 16),
         Text(
           l10n.saveOriginalDownloadFailed,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 8),
         Text(

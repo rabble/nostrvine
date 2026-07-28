@@ -155,7 +155,9 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                       context.l10n.contentPreferencesAccountContentLabels,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: VineTheme.titleLargeFont(),
+                      style: VineTheme.titleLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                   ),
                   if (_selected.isNotEmpty)

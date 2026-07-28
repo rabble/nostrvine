@@ -125,7 +125,9 @@ class _CreatorAnalyticsScreenState
                 data.socialCounts?.followerCount ?? 0,
               ),
             ),
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -134,7 +136,9 @@ class _CreatorAnalyticsScreenState
                 data.socialCounts?.followingCount ?? 0,
               ),
             ),
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -386,35 +390,45 @@ class _DiagnosticsPanel extends StatelessWidget {
             context.l10n.analyticsDiagnosticsTotalVideos(
               diagnostics.totalVideos,
             ),
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.analyticsDiagnosticsWithViews(
               diagnostics.videosWithAnyViews,
             ),
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.analyticsDiagnosticsMissingViews(
               diagnostics.videosMissingViews,
             ),
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.analyticsDiagnosticsHydratedBulk(
               diagnostics.videosHydratedByBulkStats,
             ),
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             context.l10n.analyticsDiagnosticsHydratedViews(
               diagnostics.videosHydratedByViewsEndpoint,
             ),
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
@@ -429,7 +443,9 @@ class _DiagnosticsPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.l10n.analyticsDiagnosticsUseFixture,
-                  style: VineTheme.bodySmallFont(),
+                  style: VineTheme.bodySmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               Switch(
@@ -540,7 +556,12 @@ class _KpiCard extends StatelessWidget {
         children: [
           Icon(icon, color: VineTheme.vineGreen, size: 20),
           const SizedBox(height: 10),
-          Text(value, style: VineTheme.titleMediumFont()),
+          Text(
+            value,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             label,
@@ -615,7 +636,12 @@ class _BreakdownRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label, style: VineTheme.bodySmallFont()),
+            Text(
+              label,
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.primaryText,
+              ),
+            ),
             const Spacer(),
             Text(
               '${StringUtils.formatCompactNumber(value)} (${(share * 100).toStringAsFixed(1)}%)',
@@ -744,7 +770,9 @@ class _HighlightRow extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: VineTheme.bodyMediumFont(),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -848,7 +876,12 @@ class _TopVideoRow extends StatelessWidget {
                 color: VineTheme.vineGreen.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(999),
               ),
-              child: Text('$rank', style: VineTheme.bodySmallFont()),
+              child: Text(
+                '$rank',
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -859,7 +892,9 @@ class _TopVideoRow extends StatelessWidget {
                     performance.displayTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.bodyMediumFont(),
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -989,7 +1024,7 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                                 );
                               },
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: VineTheme.whiteText,
+                          foregroundColor: context.vineColors.primaryText,
                           side: BorderSide(
                             color: context.vineColors.outlineMuted,
                           ),
@@ -1031,7 +1066,12 @@ class _MetricPill extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: VineTheme.titleSmallFont()),
+          Text(
+            value,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           Text(
             label,
             style: VineTheme.bodySmallFont(
@@ -1121,7 +1161,9 @@ class _DailyTrendCard extends StatelessWidget {
                           child: Text(
                             StringUtils.formatCompactNumber(point.interactions),
                             textAlign: TextAlign.right,
-                            style: VineTheme.bodySmallFont(),
+                            style: VineTheme.bodySmallFont(
+                              color: context.vineColors.primaryText,
+                            ),
                           ),
                         ),
                       ],
@@ -1152,7 +1194,12 @@ class _AnalyticsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.titleSmallFont()),
+          Text(
+            title,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 12),
           child,
         ],

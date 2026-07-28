@@ -164,7 +164,9 @@ class _TrashedClipTile extends StatelessWidget {
                 children: [
                   Text(
                     '${clip.duration.inSeconds}s',
-                    style: VineTheme.titleSmallFont(),
+                    style: VineTheme.titleSmallFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   Text(
                     context.l10n.libraryTrashAutoDeletes(_daysUntilPurge(clip)),

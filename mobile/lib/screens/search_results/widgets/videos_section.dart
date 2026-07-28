@@ -205,11 +205,11 @@ class SearchVideoTile extends StatelessWidget {
                   video.pubkey,
                   embeddedName: video.authorName,
                   maxLines: 1,
-                  style: TextStyle(
-                    color: context.vineColors.primaryText,
+                  style: const TextStyle(
+                    color: VineTheme.primaryText,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    shadows: const [
+                    shadows: [
                       Shadow(
                         offset: Offset(0, 1),
                         blurRadius: 3,

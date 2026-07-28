@@ -72,7 +72,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('SettingsScreen has black background', (tester) async {
+    testWidgets('SettingsScreen takes its background from the palette', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -96,9 +98,9 @@ void main() {
       final scaffoldFinder = find.byType(Scaffold);
       expect(scaffoldFinder, findsOneWidget);
 
-      // Verify Scaffold background is nav green
+      // Follows the appearance mode; the fallback palette is the dark one.
       final Scaffold scaffold = tester.widget(scaffoldFinder);
-      expect(scaffold.backgroundColor, equals(VineTheme.navGreen));
+      expect(scaffold.backgroundColor, equals(VineTheme.darkColors.surface));
 
       // Dispose and pump to clear any pending timers from overlay visibility
       await tester.pumpWidget(const SizedBox());

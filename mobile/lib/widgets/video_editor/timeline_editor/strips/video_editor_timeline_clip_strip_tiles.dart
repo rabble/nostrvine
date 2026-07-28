@@ -700,9 +700,9 @@ class _ThumbnailImage extends StatelessWidget {
             fit: BoxFit.cover,
             excludeFromSemantics: true,
             errorBuilder: (_, _, _) =>
-                const ColoredBox(color: VineTheme.surfaceContainerHigh),
+                ColoredBox(color: context.vineColors.surfaceContainerHigh),
           )
-        : const ColoredBox(color: VineTheme.surfaceContainerHigh);
+        : ColoredBox(color: context.vineColors.surfaceContainerHigh);
 
     if (stripThumbnailPath == null) return fallback;
 

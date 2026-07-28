@@ -106,11 +106,11 @@ class _VideoMetadataClassicPreviewThumbnailState
     return AspectRatio(
       aspectRatio: 1,
       child: clip.thumbnailPath == null
-          ? const Center(
+          ? Center(
               child: DivineIcon(
                 icon: .warning,
                 size: 32,
-                color: VineTheme.lightText,
+                color: context.vineColors.mutedText,
               ),
             )
           : Stack(

@@ -190,7 +190,7 @@ class _ReactionPill extends StatelessWidget {
     final background = isOwnFailed
         ? context.vineColors.errorContainer
         : hasOwn
-        ? VineTheme.primaryDarkGreen
+        ? context.vineColors.primaryContainer
         : context.vineColors.containerLow;
     final borderColor = isOwnFailed
         ? VineTheme.error

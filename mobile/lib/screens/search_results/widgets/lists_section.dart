@@ -246,7 +246,9 @@ class _InitialState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.searchForLists,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             Text(
               context.l10n.searchFindCuratedVideoLists,

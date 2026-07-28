@@ -87,7 +87,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                         // Title
                         Text(
                           context.l10n.keyImportTitle,
-                          style: VineTheme.headlineLargeFont(),
+                          style: VineTheme.headlineLargeFont(
+                            color: context.vineColors.primaryText,
+                          ),
                         ),
 
                         const SizedBox(height: 12),

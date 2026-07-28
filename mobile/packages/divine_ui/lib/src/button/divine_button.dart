@@ -318,24 +318,13 @@ class _DivineButtonContent extends StatelessWidget {
     return VineTheme.titleMediumFont(color: foreground);
   }
 
-  List<BoxShadow>? get _boxShadow {
+  List<BoxShadow>? _boxShadow(VineThemeColors colors) {
     // Link buttons have no shadow
     if (type == DivineButtonType.link) return null;
     // Disabled primary buttons have no shadow
     if (!_isEnabled && type == DivineButtonType.primary) return null;
 
-    return const [
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(0.4, 0.4),
-        blurRadius: 0.6,
-      ),
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(1, 1),
-        blurRadius: 1,
-      ),
-    ];
+    return VineTheme.buttonBoxShadowsFor(colors);
   }
 
   @override
@@ -390,7 +379,7 @@ class _DivineButtonContent extends StatelessWidget {
       border: borderColor != null
           ? Border.all(color: borderColor, width: _kBorderWidth)
           : null,
-      boxShadow: _isEnabled ? _boxShadow : null,
+      boxShadow: _isEnabled ? _boxShadow(colors) : null,
     );
 
     final inkChild = Ink(
@@ -690,49 +679,39 @@ class DivineTextLink extends StatelessWidget {
   /// Returns a [TextSpan] for use in [Text.rich] or [RichText].
   ///
   /// This is useful when you need to embed the link within a larger text flow.
+  /// Pass the palette of the surrounding appearance mode via [colors] — a
+  /// [TextSpan] has no build context of its own to resolve it from.
   static TextSpan span({
     required String text,
     required VoidCallback? onTap,
+    required VineThemeColors colors,
     TextStyle? style,
   }) {
-    final isEnabled = onTap != null;
-    final baseStyle =
-        VineTheme.bodyLargeFont(
-          color: isEnabled
-              ? VineTheme.onSurfaceVariant
-              : VineTheme.onSurfaceDisabled,
-        ).copyWith(
-          decoration: TextDecoration.underline,
-          decorationColor: isEnabled
-              ? VineTheme.primary
-              : VineTheme.onSurfaceDisabled,
-          decorationThickness: 2,
-        );
-
     return TextSpan(
       text: text,
-      style: style ?? baseStyle,
+      style: style ?? _baseStyle(colors, isEnabled: onTap != null),
       recognizer: onTap != null
           ? (TapGestureRecognizer()..onTap = onTap)
           : null,
     );
   }
 
+  static TextStyle _baseStyle(
+    VineThemeColors colors, {
+    required bool isEnabled,
+  }) =>
+      VineTheme.bodyLargeFont(
+        color: isEnabled ? colors.onSurfaceVariant : colors.disabled,
+      ).copyWith(
+        decoration: TextDecoration.underline,
+        decorationColor: isEnabled ? VineTheme.primary : colors.disabled,
+        decorationThickness: 2,
+      );
+
   @override
   Widget build(BuildContext context) {
     final isEnabled = onTap != null;
-    final baseStyle =
-        VineTheme.bodyLargeFont(
-          color: isEnabled
-              ? VineTheme.onSurfaceVariant
-              : VineTheme.onSurfaceDisabled,
-        ).copyWith(
-          decoration: TextDecoration.underline,
-          decorationColor: isEnabled
-              ? VineTheme.primary
-              : VineTheme.onSurfaceDisabled,
-          decorationThickness: 2,
-        );
+    final baseStyle = _baseStyle(context.vineColors, isEnabled: isEnabled);
 
     return GestureDetector(
       onTap: onTap,

@@ -65,12 +65,12 @@ class _MissingThumbnailPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.cardBackground,
+    return ColoredBox(
+      color: context.vineColors.card,
       child: Center(
         child: DivineIcon(
           icon: DivineIconName.filmSlate,
-          color: VineTheme.secondaryText,
+          color: context.vineColors.secondaryText,
           size: 20,
         ),
       ),

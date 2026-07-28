@@ -34,7 +34,9 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
               children: [
                 Text(
                   context.l10n.minorAccountReviewParentConsentTitle,
-                  style: VineTheme.headlineMediumFont(),
+                  style: VineTheme.headlineMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 _InfoCard(
@@ -166,7 +168,12 @@ class _ChecklistCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.titleMediumFont()),
+          Text(
+            title,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 10),
           for (final item in items)
             Padding(

@@ -34,9 +34,9 @@ class _MessageInput extends StatelessWidget {
               ),
               decoration: InputDecoration(
                 hintText: context.l10n.shareMessageHint,
-                hintStyle: const TextStyle(color: VineTheme.secondaryText),
+                hintStyle: TextStyle(color: context.vineColors.secondaryText),
                 filled: true,
-                fillColor: VineTheme.containerLow,
+                fillColor: context.vineColors.containerLow,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,

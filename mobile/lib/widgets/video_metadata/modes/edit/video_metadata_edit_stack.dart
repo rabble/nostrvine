@@ -131,9 +131,9 @@ class _VideoMetadataEditStackContentState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.surfaceContainerHigh,
+      backgroundColor: context.vineColors.surfaceContainerHigh,
       appBar: DiVineAppBar(
-        backgroundColor: VineTheme.surfaceContainerHigh,
+        backgroundColor: context.vineColors.surfaceContainerHigh,
         leadingIcon: SvgIconSource(DivineIconName.caretLeft.assetPath),
         onLeadingPressed: context.pop,
         title: context.l10n.shareMenuEditVideo,
@@ -223,14 +223,14 @@ class _EditClipPreview extends StatelessWidget {
                     fit: BoxFit.cover,
                     placeholder: thumbnailUrl != null
                         ? VineCachedImage(imageUrl: thumbnailUrl)
-                        : const ColoredBox(color: VineTheme.onSurfaceMuted),
+                        : ColoredBox(color: context.vineColors.onSurfaceMuted),
                   )
                 else if (thumbnailUrl != null)
                   VineCachedImage(imageUrl: thumbnailUrl)
                 else
-                  const ColoredBox(
-                    color: VineTheme.onSurfaceMuted,
-                    child: DivineIcon(
+                  ColoredBox(
+                    color: context.vineColors.onSurfaceMuted,
+                    child: const DivineIcon(
                       icon: .playCircle,
                       size: 64,
                       color: VineTheme.whiteText,

@@ -464,7 +464,7 @@ class _ProfileActionLabel extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 badgeCount.toString(),
-                style: VineTheme.labelSmallFont(),
+                style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
               ),
             ),
           ),

@@ -91,7 +91,9 @@ class _ProgressBar extends ConsumerWidget {
           if (remainingMs > 0)
             Flexible(
               flex: remainingMs,
-              child: Container(color: VineTheme.neutral10),
+              // Unfilled track: a neutral grey in both modes — `mediaCard`
+              // keeps the dark value this had before the migration.
+              child: ColoredBox(color: context.vineColors.mediaCard),
             ),
         ],
       ),

@@ -62,7 +62,7 @@ class ModeratedContentOverlay extends StatelessWidget {
         : context.l10n.videoErrorContentRestrictedBody;
 
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -74,12 +74,12 @@ class ModeratedContentOverlay extends StatelessWidget {
                 DivineIcon(icon: icon, color: VineTheme.whiteText, size: 64),
                 Text(
                   title,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(color: VineTheme.whiteText),
                   textAlign: TextAlign.center,
                 ),
                 Text(
                   body,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(color: VineTheme.whiteText),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),

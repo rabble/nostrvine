@@ -29,7 +29,9 @@ class MinorAccountReviewUnder13Screen extends StatelessWidget {
               children: [
                 Text(
                   context.l10n.minorAccountReviewUnder13PublicTitle,
-                  style: VineTheme.headlineMediumFont(),
+                  style: VineTheme.headlineMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 _CalloutCard(

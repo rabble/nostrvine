@@ -54,7 +54,7 @@ class _SupporterScreenViewState extends State<SupporterScreenView> {
             showBackButton: true,
             onBackPressed: context.pop,
           ),
-          backgroundColor: VineTheme.navGreen,
+          backgroundColor: context.vineColors.surface,
           body: Align(
             alignment: Alignment.topCenter,
             child: ConstrainedBox(

@@ -187,7 +187,7 @@ class CollaboratorAvatarRowBody extends StatelessWidget {
     return context.showVideoPausingVineBottomSheet<void>(
       title: Text(
         context.l10n.metadataCollaboratorsLabel,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       buildScrollBody: (scrollController) => _CollaboratorPickerList(
         pubkeys: pubkeys,
@@ -244,10 +244,10 @@ class _CollaboratorPickerList extends StatelessWidget {
       controller: scrollController,
       padding: const EdgeInsets.only(bottom: 16),
       itemCount: pubkeys.length,
-      separatorBuilder: (context, index) => const Divider(
+      separatorBuilder: (context, index) => Divider(
         height: 1,
         thickness: 1,
-        color: VineTheme.outlineDisabled,
+        color: context.vineColors.outlineDisabled,
       ),
       itemBuilder: (context, index) {
         final pubkey = pubkeys[index];
@@ -289,20 +289,20 @@ class _CollaboratorPickerTile extends ConsumerWidget {
           name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+          style: VineTheme.titleSmallFont(color: context.vineColors.onSurface),
         ),
         subtitle: isPending
             ? Text(
                 context.l10n.videoCollaboratorPendingDecoration,
                 style: VineTheme.labelSmallFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
               )
             : null,
-        trailing: const DivineIcon(
+        trailing: DivineIcon(
           icon: DivineIconName.caretRight,
           size: 18,
-          color: VineTheme.onSurfaceVariant,
+          color: context.vineColors.onSurfaceVariant,
         ),
         onTap: () => _navigateToProfile(context),
       ),
@@ -432,7 +432,7 @@ class _CollaboratorLabel extends ConsumerWidget {
 
     return Text(
       label,
-      style: VineTheme.labelMediumFont().copyWith(
+      style: VineTheme.labelMediumFont(color: VineTheme.whiteText).copyWith(
         shadows: const [Shadow(blurRadius: 4)],
       ),
       maxLines: 1,

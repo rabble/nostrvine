@@ -589,7 +589,9 @@ class _NpubDisplayBlock extends ConsumerWidget {
                   npub,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

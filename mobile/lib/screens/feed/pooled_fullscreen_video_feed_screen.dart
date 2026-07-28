@@ -674,7 +674,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               // than the loading spinner below.
               if (state.status == FullscreenFeedStatus.emptyAfterRemoval) {
                 return Scaffold(
-                  backgroundColor: VineTheme.backgroundColor,
+                  backgroundColor: context.vineColors.background,
                   appBar: DiVineAppBar(
                     title: widget.contextTitle ?? '',
                     showBackButton: true,
@@ -689,7 +689,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   body: Center(
                     child: Text(
                       context.l10n.fullscreenFeedRemovedMessage,
-                      style: VineTheme.bodyMediumFont(),
+                      style: VineTheme.bodyMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                   ),
                 );
@@ -698,7 +700,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               if (state.status == FullscreenFeedStatus.initial ||
                   !state.hasVideos) {
                 return Scaffold(
-                  backgroundColor: VineTheme.backgroundColor,
+                  backgroundColor: context.vineColors.background,
                   appBar: DiVineAppBar(
                     title: widget.contextTitle ?? '',
                     showBackButton: true,
@@ -752,12 +754,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
+                // This bar really does sit on the player, unlike the
+                // transparent bars over themed pages, so it opts into the
+                // fixed white treatment and light status-bar icons.
+                systemOverlayStyle: VineTheme.statusBarStyle,
                 // Stretch the back-button tap target to the full
                 // leading slot. The fullscreen feed sits over playing
                 // video so a small icon hit-target is easy to miss.
                 expandLeadingHitArea: true,
                 customActions: [FeedSettingsMenu(video: state.currentVideo)],
-                style: DiVineAppBarStyle.transparentStyle.copyWith(
+                style: DiVineAppBarStyle.overMediaStyle.copyWith(
                   horizontalPadding: 12,
                   // With the default 48 px icon button and 12 px
                   // [horizontalPadding], a 72 px leading slot leaves
@@ -768,7 +774,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   // 800, 16 / 24 / 0.15) — overrides the default
                   // [VineTheme.titleLargeFont] (22) used by the
                   // shared app bar.
-                  titleStyle: VineTheme.titleMediumFont(),
+                  titleStyle: VineTheme.titleMediumFont(
+                    color: VineTheme.whiteText,
+                  ),
                 ),
               );
 
@@ -792,7 +800,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 // video item's own [ColoredBox] paints
                 // [VineTheme.surfaceContainerHigh] on top of this so
                 // the video area itself reads as a darker canvas.
-                backgroundColor: VineTheme.surfaceBackground,
+                backgroundColor: context.vineColors.surface,
                 // Always edge-to-edge: the video fills the screen and the
                 // (transparent) AppBar overlays it, matching the home feed.
                 // 1 × 1 / landscape / dimensions-less videos are rendered
@@ -826,7 +834,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                           // Match the home feed: when the comment bar is on
                           // screen, the video carries the same rounded
                           // bottom corners as `video_feed_page.dart`, so
-                          // the corners reveal [VineTheme.navGreen] (the
+                          // the corners reveal the semantic nav surface (the
                           // outer color [NavRoundedShell] paints). It
                           // shares its hex (`#00150D`) with the comment
                           // bar's [VineTheme.surfaceBackground], so the
@@ -1019,13 +1027,13 @@ class _MaybeRoundFeedBottom extends StatelessWidget {
     // a faint green tint. That's the canvas around contain-fit videos
     // (1 × 1 classics, landscape, anything without dimensions
     // metadata) which leave letterbox bands the user can see. The
-    // shell's outer colour is [VineTheme.navGreen] (the color
+    // shell's outer colour is the semantic nav surface (the color
     // [NavRoundedShell] paints by construction); it shares its hex
     // (`#00150D`) with the comment bar's [VineTheme.surfaceBackground],
     // so the rounded bottom corners reveal a colour that seams
     // continuously into the bar.
     return NavRoundedShell(
-      innerColor: VineTheme.surfaceContainerHigh,
+      innerColor: context.vineColors.surfaceContainerHigh,
       child: child,
     );
   }
@@ -1067,7 +1075,7 @@ class LoadingMorePill extends StatelessWidget {
                   ),
                   Text(
                     context.l10n.feedLoadingMore,
-                    style: VineTheme.bodyMediumFont(),
+                    style: VineTheme.bodyMediumFont(color: VineTheme.whiteText),
                   ),
                 ],
               ),

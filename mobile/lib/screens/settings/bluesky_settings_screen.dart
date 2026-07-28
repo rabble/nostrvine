@@ -171,7 +171,7 @@ class _UsernameLookupUnavailableNotice extends StatelessWidget {
       ),
       title: Text(
         context.l10n.blueskyStatusUnavailableRetry,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       trailing: DivineButton(
         label: context.l10n.commonRetry,

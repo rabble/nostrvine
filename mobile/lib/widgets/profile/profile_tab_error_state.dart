@@ -38,7 +38,9 @@ class ProfileTabErrorState extends StatelessWidget {
                 Text(
                   message,
                   textAlign: .center,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

@@ -46,13 +46,13 @@ class VideoMetadataClassicAppBar extends StatelessWidget
                   Text(
                     context.l10n.videoMetadataShareTitle,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                   ),
                   Text(
                     context.l10n.videoMetadataVideoDetailsSubtitle,
                     style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                 ],

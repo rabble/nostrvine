@@ -186,7 +186,9 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             c.isUsernameConfirmation
                 ? context.l10n.deleteAccountConfirmUsernamePrompt
                 : context.l10n.deleteAccountConfirmDeletePrompt,
-            style: VineTheme.bodyLargeFont(),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -234,7 +236,9 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
                 context.l10n.deleteAccountBurnUsernameToggle(
                   '@${owned.name}.divine.video',
                 ),
-                style: VineTheme.bodyMediumFont(),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
             ),
           ],
@@ -303,7 +307,9 @@ class _DeleteIdentityHeader extends StatelessWidget {
               children: [
                 Text(
                   confirmation.displayName,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

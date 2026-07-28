@@ -28,7 +28,9 @@ class SearchSectionEmptyState extends StatelessWidget {
             ),
             Text(
               context.l10n.searchNoResultsFound(query),
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
               textAlign: TextAlign.center,
             ),
             Text(

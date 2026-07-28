@@ -100,7 +100,9 @@ class _MuteActionTile extends StatelessWidget {
                 Navigator.of(context).pop(ConversationAction.toggleMute),
             title: Text(
               context.l10n.inboxActionMute,
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             secondary: DivineIcon(
               icon: DivineIconName.bellSimple,

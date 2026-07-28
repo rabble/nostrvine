@@ -119,7 +119,9 @@ class _WelcomeEntryView extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   l10n.minorAccountReviewChooseAgeBandTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -146,7 +148,9 @@ class _WelcomeEntryView extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   l10n.minorAccountReviewLearnMoreTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DivineButton(
@@ -200,7 +204,9 @@ class MinorAccountReviewLoadingScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 Text(
                   context.l10n.minorAccountReviewCheckingStatusTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
@@ -255,7 +261,12 @@ class _LoadedView extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: VineTheme.headlineMediumFont()),
+              Text(
+                title,
+                style: VineTheme.headlineMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
               const SizedBox(height: 12),
               Text(
                 body,
@@ -278,7 +289,9 @@ class _LoadedView extends ConsumerWidget {
         const SizedBox(height: 24),
         Text(
           l10n.minorAccountReviewRestrictionsTitle,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 12),
         ...[
@@ -503,11 +516,18 @@ class _HeroCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.headlineMediumFont()),
+          Text(
+            title,
+            style: VineTheme.headlineMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 12),
           Text(
             body,
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ],
       ),
@@ -569,7 +589,12 @@ class _InfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.titleMediumFont()),
+          Text(
+            title,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             body,
@@ -597,7 +622,9 @@ class _ErrorView extends StatelessWidget {
         children: [
           Text(
             context.l10n.minorAccountReviewErrorTitle,
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),

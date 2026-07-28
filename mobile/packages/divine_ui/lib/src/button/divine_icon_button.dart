@@ -275,7 +275,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   Color? _borderColor(VineThemeColors colors) =>
       _hasBorder ? colors.outlineMuted : null;
 
-  List<BoxShadow>? get _boxShadow {
+  List<BoxShadow>? _boxShadow(VineThemeColors colors) {
     if (!showShadow) {
       return null;
     }
@@ -287,18 +287,7 @@ class _DivineIconButtonContent extends StatelessWidget {
       return null;
     }
 
-    return const [
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(0.4, 0.4),
-        blurRadius: 0.6,
-      ),
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(1, 1),
-        blurRadius: 1,
-      ),
-    ];
+    return VineTheme.buttonBoxShadowsFor(colors);
   }
 
   Widget _iconWidget(Color iconColor) {
@@ -341,7 +330,7 @@ class _DivineIconButtonContent extends StatelessWidget {
       border: borderColor != null
           ? Border.all(color: borderColor, width: _borderWidth)
           : null,
-      boxShadow: _isEnabled ? _boxShadow : null,
+      boxShadow: _isEnabled ? _boxShadow(colors) : null,
     );
     final inkBox = Ink(
       decoration: decoration,

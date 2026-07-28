@@ -25,7 +25,7 @@ Future<CaptionCustomStyle?> showCaptionCustomStyleSheet(
     minChildSize: 0.6,
     title: Text(
       context.l10n.videoEditorCaptionsCustomStyleTitle,
-      style: VineTheme.titleMediumFont(),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     ),
     buildScrollBody: (scrollController) => _CaptionCustomStyleView(
       initial: initial,
@@ -132,7 +132,9 @@ class _CaptionCustomStyleViewState extends State<_CaptionCustomStyleView>
                 }),
                 label: Text(
                   l10n.videoEditorCaptionsCustomBackground,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               if (hasBackground) ...[

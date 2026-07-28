@@ -114,8 +114,8 @@ class _ActionButton extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: VineTheme.surfaceContainer,
-                border: .all(width: 2, color: VineTheme.outlineMuted),
+                color: context.vineColors.surfaceContainer,
+                border: .all(width: 2, color: context.vineColors.outlineMuted),
                 borderRadius: .circular(16),
               ),
               child: DivineIcon(icon: icon, color: VineTheme.primary),
@@ -125,7 +125,9 @@ class _ActionButton extends StatelessWidget {
         ExcludeSemantics(
           child: Text(
             label,
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: .center,
           ),
         ),

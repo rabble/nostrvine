@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
@@ -325,200 +326,207 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     );
     final retapCubit = _maybeRetapCubit(context);
 
-    return BlocProvider.value(
-      value: _autoAdvanceCubit,
-      child: NavRoundedShell(
-        innerColor: VineTheme.backgroundColor,
-        child: MultiBlocListener(
-          listeners: [
-            // Refresh and scroll to top when the user re-taps the home tab
-            // while already on it (TikTok-style). VineBottomNav flips the
-            // cubit to refreshing; [_onHomeRetap] settles it again. Skipped
-            // when no cubit is provided (direct construction in tests).
-            if (retapCubit != null)
-              BlocListener<HomeFeedRetapCubit, HomeFeedRetapState>(
-                bloc: retapCubit,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      // Video runs full-bleed under the status bar here, so its icons stay
+      // light in both appearance modes — the app-level style in main.dart
+      // follows the palette and would turn them dark on a light theme.
+      value: VineTheme.statusBarStyle,
+      child: BlocProvider.value(
+        value: _autoAdvanceCubit,
+        child: NavRoundedShell(
+          innerColor: context.vineColors.background,
+          child: MultiBlocListener(
+            listeners: [
+              // Refresh and scroll to top when the user re-taps the home tab
+              // while already on it (TikTok-style). VineBottomNav flips the
+              // cubit to refreshing; [_onHomeRetap] settles it again. Skipped
+              // when no cubit is provided (direct construction in tests).
+              if (retapCubit != null)
+                BlocListener<HomeFeedRetapCubit, HomeFeedRetapState>(
+                  bloc: retapCubit,
+                  listenWhen: (previous, current) =>
+                      !previous.isRefreshing && current.isRefreshing,
+                  listener: (context, _) => _onHomeRetap(context, retapCubit),
+                ),
+              // Reset page position when mode changes.
+              BlocListener<VideoFeedBloc, VideoFeedBlocState>(
                 listenWhen: (previous, current) =>
-                    !previous.isRefreshing && current.isRefreshing,
-                listener: (context, _) => _onHomeRetap(context, retapCubit),
-              ),
-            // Reset page position when mode changes.
-            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
-              listenWhen: (previous, current) => previous.mode != current.mode,
-              listener: (_, _) {
-                _currentIndex = 0;
-                _pagePosition.value = 0;
-                ref
-                    .read(lastTabPositionProvider.notifier)
-                    .recordPosition(RouteType.home, 0);
-              },
-            ),
-            // Seed the page position from the BLoC's restored index (cold-start
-            // resume / mode switch). Runs before the builder, so [FeedVideos]
-            // mounts at the right page. Echoes of the user's own swipe are
-            // ignored because [_currentIndex] already matches.
-            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
-              listenWhen: (previous, current) =>
-                  previous.currentIndex != current.currentIndex,
-              listener: (_, state) {
-                if (state.currentIndex == _currentIndex) return;
-                _currentIndex = state.currentIndex;
-                _pagePosition.value = state.currentIndex.toDouble();
-              },
-            ),
-            // Mark UI ready when videos first become available.
-            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
-              listenWhen: (previous, current) =>
-                  !previous.isLoaded &&
-                  current.isLoaded &&
-                  current.videos.isNotEmpty,
-              listener: (_, _) {
-                if (!_hasMarkedUIReady) {
-                  _hasMarkedUIReady = true;
-                  StartupPerformanceService.instance.markUIReady();
-                }
-              },
-            ),
-            BlocListener<VideoFeedBloc, VideoFeedBlocState>(
-              listenWhen: (previous, current) =>
-                  previous.lastTuningAction != current.lastTuningAction &&
-                  current.lastTuningAction != null,
-              listener: (context, state) {
-                final action = state.lastTuningAction;
-                if (action != null) _showTuningSnackbar(action);
-              },
-            ),
-          ],
-          child: BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
-            // The builder renders from the widget's own [_currentIndex], never
-            // [state.currentIndex], so a per-swipe index emit must not rebuild
-            // the whole feed. Rebuild only when some other field changed.
-            buildWhen: (previous, current) =>
-                current !=
-                previous.copyWith(currentIndex: current.currentIndex),
-            builder: (context, state) {
-              final itemCount = state.videos.length;
-              final clampedIndex = _clampIndexForItemCount(
-                _currentIndex,
-                itemCount,
-              );
-              if (clampedIndex != _currentIndex) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  if (_currentIndex >= 0 && _currentIndex < itemCount) return;
-                  final normalized = _clampIndexForItemCount(
-                    _currentIndex,
-                    itemCount,
-                  );
-                  if (_currentIndex == normalized) return;
-                  _currentIndex = normalized;
-                  _pagePosition.value = normalized.toDouble();
+                    previous.mode != current.mode,
+                listener: (_, _) {
+                  _currentIndex = 0;
+                  _pagePosition.value = 0;
                   ref
                       .read(lastTabPositionProvider.notifier)
-                      .recordPosition(RouteType.home, normalized);
-                });
-              }
-
-              // Loading state (including initial state before first load)
-              if (state.isLoading) {
-                return const Center(child: BrandedLoadingIndicator());
-              }
-
-              // Error state
-              if (state.status == VideoFeedStatus.failure) {
-                return FeedErrorWidget(
-                  error: state.error,
-                  onRetry: () => _refreshFeed(context),
+                      .recordPosition(RouteType.home, 0);
+                },
+              ),
+              // Seed the page position from the BLoC's restored index (cold-start
+              // resume / mode switch). Runs before the builder, so [FeedVideos]
+              // mounts at the right page. Echoes of the user's own swipe are
+              // ignored because [_currentIndex] already matches.
+              BlocListener<VideoFeedBloc, VideoFeedBlocState>(
+                listenWhen: (previous, current) =>
+                    previous.currentIndex != current.currentIndex,
+                listener: (_, state) {
+                  if (state.currentIndex == _currentIndex) return;
+                  _currentIndex = state.currentIndex;
+                  _pagePosition.value = state.currentIndex.toDouble();
+                },
+              ),
+              // Mark UI ready when videos first become available.
+              BlocListener<VideoFeedBloc, VideoFeedBlocState>(
+                listenWhen: (previous, current) =>
+                    !previous.isLoaded &&
+                    current.isLoaded &&
+                    current.videos.isNotEmpty,
+                listener: (_, _) {
+                  if (!_hasMarkedUIReady) {
+                    _hasMarkedUIReady = true;
+                    StartupPerformanceService.instance.markUIReady();
+                  }
+                },
+              ),
+              BlocListener<VideoFeedBloc, VideoFeedBlocState>(
+                listenWhen: (previous, current) =>
+                    previous.lastTuningAction != current.lastTuningAction &&
+                    current.lastTuningAction != null,
+                listener: (context, state) {
+                  final action = state.lastTuningAction;
+                  if (action != null) _showTuningSnackbar(action);
+                },
+              ),
+            ],
+            child: BlocBuilder<VideoFeedBloc, VideoFeedBlocState>(
+              // The builder renders from the widget's own [_currentIndex], never
+              // [state.currentIndex], so a per-swipe index emit must not rebuild
+              // the whole feed. Rebuild only when some other field changed.
+              buildWhen: (previous, current) =>
+                  current !=
+                  previous.copyWith(currentIndex: current.currentIndex),
+              builder: (context, state) {
+                final itemCount = state.videos.length;
+                final clampedIndex = _clampIndexForItemCount(
+                  _currentIndex,
+                  itemCount,
                 );
-              }
+                if (clampedIndex != _currentIndex) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    if (_currentIndex >= 0 && _currentIndex < itemCount) return;
+                    final normalized = _clampIndexForItemCount(
+                      _currentIndex,
+                      itemCount,
+                    );
+                    if (_currentIndex == normalized) return;
+                    _currentIndex = normalized;
+                    _pagePosition.value = normalized.toDouble();
+                    ref
+                        .read(lastTabPositionProvider.notifier)
+                        .recordPosition(RouteType.home, normalized);
+                  });
+                }
 
-              // Empty state
-              if (state.isEmpty) {
-                return Stack(
-                  children: [
-                    FeedEmptyWidget(state: state),
-                    const FeedModeSwitch(),
-                  ],
-                );
-              }
+                // Loading state (including initial state before first load)
+                if (state.isLoading) {
+                  return const Center(child: BrandedLoadingIndicator());
+                }
 
-              // Pull-to-refresh: a [RefreshIndicator] wraps the feed and
-              // listens for overscroll notifications from the inner
-              // [PageView]. The default predicate (depth == 0) restricts the
-              // gesture to the outermost scrollable, so inner overlay
-              // scrollables can't trigger a refresh.
-              // The video overlay positions its author block and action
-              // column against `viewPadding.bottom`.
-              // [_KeyboardStableBottomInset] holds that inset steady while the
-              // share sheet's keyboard is open, so the overlay does not slide
-              // when the keyboard closes (#5758 follow-up).
-              return RefreshIndicator(
-                onRefresh: () => _refreshFeed(context),
-                child: _KeyboardStableBottomInset(
-                  child: Stack(
+                // Error state
+                if (state.status == VideoFeedStatus.failure) {
+                  return FeedErrorWidget(
+                    error: state.error,
+                    onRetry: () => _refreshFeed(context),
+                  );
+                }
+
+                // Empty state
+                if (state.isEmpty) {
+                  return Stack(
                     children: [
-                      FeedTuningSwipeGate(
-                        enabled: feedTuningEnabled,
-                        onTuned: _onTuned,
-                        child: FeedVideos(
-                          key: _feedVideosKey,
-                          videos: state.videos,
-                          contextTitle: state.feedContextTitle,
-                          currentIndex: clampedIndex,
-                          isActive: _isNewFeedActive,
-                          // The home feed stays mounted across tab switches and
-                          // pushed routes (StatefulShellRoute keep-alive), so
-                          // release the off-screen neighbour players and pause
-                          // disk prefetch while it is backgrounded. Bottom sheets
-                          // (comments/share) only pause the current player — they
-                          // keep neighbours and prefetch warm via
-                          // shouldRetainPlayer.
-                          releaseNeighboursWhenInactive: !shouldRetainPlayer,
-                          hasMore: state.hasMore,
-                          isLoadingMore: state.isLoadingMore,
-                          trafficSource: ViewTrafficSource.home,
-                          onActiveVideoChanged: (video, index) {
-                            final isTuningAutoAdvance =
-                                _pendingTuningAutoAdvanceIndex == index;
-                            _pendingTuningAutoAdvanceIndex = null;
-                            if (!isTuningAutoAdvance) {
-                              _dismissTuningSnackbar();
-                            }
-                            ref
-                                .read(foregroundFeedActivityGateProvider)
-                                .markActive();
-                            _currentIndex = index;
-                            context.read<VideoFeedBloc>().add(
-                              VideoFeedActiveIndexChanged(index),
-                            );
-                            ref
-                                .read(lastTabPositionProvider.notifier)
-                                .recordPosition(RouteType.home, index);
-                            _resumeAutoAdvanceAfterSwipe();
-                            FeedPerformanceTracker().startVideoSwipeTracking(
-                              video.id,
-                            );
-                            if (!_hasMarkedVideoReady && index == 0) {
-                              _hasMarkedVideoReady = true;
-                              StartupPerformanceService.instance
-                                  .markVideoReady();
-                            }
-                          },
-                          onNearEnd: () {
-                            if (state.hasMore) {
-                              context.read<VideoFeedBloc>().add(
-                                const VideoFeedLoadMoreRequested(),
-                              );
-                            }
-                          },
-                        ),
-                      ),
+                      FeedEmptyWidget(state: state),
                       const FeedModeSwitch(),
                     ],
+                  );
+                }
+
+                // Pull-to-refresh: a [RefreshIndicator] wraps the feed and
+                // listens for overscroll notifications from the inner
+                // [PageView]. The default predicate (depth == 0) restricts the
+                // gesture to the outermost scrollable, so inner overlay
+                // scrollables can't trigger a refresh.
+                // The video overlay positions its author block and action
+                // column against `viewPadding.bottom`.
+                // [_KeyboardStableBottomInset] holds that inset steady while the
+                // share sheet's keyboard is open, so the overlay does not slide
+                // when the keyboard closes (#5758 follow-up).
+                return RefreshIndicator(
+                  onRefresh: () => _refreshFeed(context),
+                  child: _KeyboardStableBottomInset(
+                    child: Stack(
+                      children: [
+                        FeedTuningSwipeGate(
+                          enabled: feedTuningEnabled,
+                          onTuned: _onTuned,
+                          child: FeedVideos(
+                            key: _feedVideosKey,
+                            videos: state.videos,
+                            contextTitle: state.feedContextTitle,
+                            currentIndex: clampedIndex,
+                            isActive: _isNewFeedActive,
+                            // The home feed stays mounted across tab switches and
+                            // pushed routes (StatefulShellRoute keep-alive), so
+                            // release the off-screen neighbour players and pause
+                            // disk prefetch while it is backgrounded. Bottom sheets
+                            // (comments/share) only pause the current player — they
+                            // keep neighbours and prefetch warm via
+                            // shouldRetainPlayer.
+                            releaseNeighboursWhenInactive: !shouldRetainPlayer,
+                            hasMore: state.hasMore,
+                            isLoadingMore: state.isLoadingMore,
+                            trafficSource: ViewTrafficSource.home,
+                            onActiveVideoChanged: (video, index) {
+                              final isTuningAutoAdvance =
+                                  _pendingTuningAutoAdvanceIndex == index;
+                              _pendingTuningAutoAdvanceIndex = null;
+                              if (!isTuningAutoAdvance) {
+                                _dismissTuningSnackbar();
+                              }
+                              ref
+                                  .read(foregroundFeedActivityGateProvider)
+                                  .markActive();
+                              _currentIndex = index;
+                              context.read<VideoFeedBloc>().add(
+                                VideoFeedActiveIndexChanged(index),
+                              );
+                              ref
+                                  .read(lastTabPositionProvider.notifier)
+                                  .recordPosition(RouteType.home, index);
+                              _resumeAutoAdvanceAfterSwipe();
+                              FeedPerformanceTracker().startVideoSwipeTracking(
+                                video.id,
+                              );
+                              if (!_hasMarkedVideoReady && index == 0) {
+                                _hasMarkedVideoReady = true;
+                                StartupPerformanceService.instance
+                                    .markVideoReady();
+                              }
+                            },
+                            onNearEnd: () {
+                              if (state.hasMore) {
+                                context.read<VideoFeedBloc>().add(
+                                  const VideoFeedLoadMoreRequested(),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        const FeedModeSwitch(),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

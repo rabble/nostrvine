@@ -17,7 +17,7 @@ class FeedTransitionIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     height: 200,
-    color: VineTheme.backgroundColor,
+    color: context.vineColors.background,
     child: Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -41,9 +41,12 @@ class FeedTransitionIndicator extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               "From here on we're showing you random vines until you follow somebody new or there are new posts by people you're following.",
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: VineTheme.secondaryText),
+              style:
+                  Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(
+                    color: context.vineColors.secondaryText,
+                  ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -74,7 +77,7 @@ class FeedTransitionIndicator extends StatelessWidget {
         label,
         style: Theme.of(
           context,
-        ).textTheme.bodySmall?.copyWith(color: VineTheme.lightText),
+        ).textTheme.bodySmall?.copyWith(color: context.vineColors.mutedText),
       ),
     ],
   );

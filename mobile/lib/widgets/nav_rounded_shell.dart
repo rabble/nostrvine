@@ -17,9 +17,7 @@ class NavRoundedShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ColoredBox(
-    // The nav itself stays on the dark brand green in both appearance
-    // modes, so only the inner content surface follows the palette.
-    color: VineTheme.navGreen,
+    color: context.vineColors.nav,
     child: ClipRRect(
       borderRadius: const BorderRadius.vertical(
         bottom: Radius.circular(VineTheme.shellCornerRadius),

@@ -59,12 +59,16 @@ class _ProfileNameAndBio extends StatelessWidget {
               else if (profile != null)
                 UserName.fromUserProfile(
                   profile!,
-                  style: VineTheme.titleLargeFont(),
+                  style: VineTheme.titleLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 )
               else
                 UserName.fromPubKey(
                   userIdHex,
-                  style: VineTheme.titleLargeFont(),
+                  style: VineTheme.titleLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   anonymousName: displayNameHint,
                 ),
               Skeleton.keep(
@@ -192,7 +196,9 @@ class _ProfileBadgeChip extends StatelessWidget {
                     constraints: const BoxConstraints(maxWidth: 180),
                     child: Text(
                       badge.displayName,
-                      style: VineTheme.labelMediumFont(),
+                      style: VineTheme.labelMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),

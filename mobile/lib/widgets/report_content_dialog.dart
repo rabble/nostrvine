@@ -275,7 +275,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          Text(l10n.reportWhyReporting, style: VineTheme.titleMediumFont()),
+          Text(
+            l10n.reportWhyReporting,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
             l10n.reportPolicyNotice,
@@ -324,7 +329,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                         if (_errorMessage == null) return;
                         setState(() => _errorMessage = null);
                       },
-                      style: VineTheme.bodyLargeFont(),
+                      style: VineTheme.bodyLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
                       minLines: 3,
                       maxLines: 5,
                       decoration: const InputDecoration(
@@ -576,13 +583,20 @@ class _ReportConfirmationView extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.reportReceivedTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Text(l10n.reportReceivedThankYou, style: VineTheme.bodyLargeFont()),
+          Text(
+            l10n.reportReceivedThankYou,
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 16),
           Text(
             l10n.reportReceivedReviewNotice,
@@ -710,7 +724,12 @@ class _ReasonCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(title, style: VineTheme.bodyLargeFont()),
+                    Text(
+                      title,
+                      style: VineTheme.bodyLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,

@@ -145,9 +145,15 @@ class _VideoRecorderModeSelectorWheelState
   }
 
   /// Rendered width of [label] at [textScaler].
+  ///
+  /// The painter is laid out but never painted, so the colour below only has
+  /// to be non-null for the metrics — it is not a missed theme migration.
   double _textWidth(String label, TextScaler textScaler) {
     final painter = TextPainter(
-      text: TextSpan(text: label, style: VineTheme.titleSmallFont()),
+      text: TextSpan(
+        text: label,
+        style: VineTheme.titleSmallFont(color: VineTheme.whiteText),
+      ),
       textDirection: TextDirection.ltr,
       textScaler: textScaler,
     )..layout();
@@ -214,7 +220,7 @@ class _VideoRecorderModeSelectorWheelState
                   height: _pillHeight,
                   width: _pillWidth(modes[_selectedIndex].label, textScaler),
                   decoration: BoxDecoration(
-                    color: VineTheme.surfaceContainer,
+                    color: context.vineColors.surfaceContainer,
                     borderRadius: .circular(_pillHeight / 2),
                   ),
                 ),
@@ -277,7 +283,7 @@ class _VideoRecorderModeSelectorWheelState
                                 style: VineTheme.titleSmallFont(
                                   color: isSelected
                                       ? VineTheme.primary
-                                      : VineTheme.whiteText,
+                                      : context.vineColors.onSurface,
                                 ),
                                 child: Text(
                                   modes[i].label,

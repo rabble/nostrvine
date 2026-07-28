@@ -32,7 +32,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 56),
         padding: const .symmetric(horizontal: 16, vertical: 20),
         decoration: ShapeDecoration(
-          color: VineTheme.containerLow,
+          color: context.vineColors.containerLow,
           shape: RoundedRectangleBorder(borderRadius: .circular(24)),
         ),
         child: Row(
@@ -47,7 +47,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
                   Text(
                     audio.title ?? context.l10n.videoEditorAudioUntitledSound,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                     maxLines: 1,
                     overflow: .ellipsis,
@@ -55,7 +55,7 @@ class AudioEditorSelectionOverlay extends StatelessWidget {
                   Text.rich(
                     TextSpan(
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                       children: [
                         TextSpan(

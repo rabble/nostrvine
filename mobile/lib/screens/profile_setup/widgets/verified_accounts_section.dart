@@ -56,7 +56,7 @@ class _GetVerifiedTile extends StatelessWidget {
     return ListTile(
       title: Text(
         l10n.profileEditGetVerifiedCta,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         l10n.profileEditGetVerifiedSubtitle,

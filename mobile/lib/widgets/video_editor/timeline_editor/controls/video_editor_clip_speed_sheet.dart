@@ -57,7 +57,9 @@ class _VideoEditorClipSpeedSheetState extends State<VideoEditorClipSpeedSheet> {
               Flexible(
                 child: Text(
                   context.l10n.videoEditorSpeedSheetTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               DivineIconButton(
@@ -68,10 +70,10 @@ class _VideoEditorClipSpeedSheetState extends State<VideoEditorClipSpeedSheet> {
             ],
           ),
         ),
-        const Divider(
+        Divider(
           height: 2,
           thickness: 2,
-          color: VineTheme.outlinedDisabled,
+          color: context.vineColors.surfaceContainer,
         ),
         const SizedBox(height: 16),
         _SpeedControlBar(speed: _speed),
@@ -131,11 +133,13 @@ class _SpeedLabelRow extends StatelessWidget {
       children: [
         Text(
           context.l10n.videoEditorSpeedLabel,
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         Text(
           '${value.toStringAsFixed(2)}×',
-          style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+          style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
         ),
       ],
     );

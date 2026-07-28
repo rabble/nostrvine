@@ -78,7 +78,7 @@ class AgeVerificationDialog extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => context.pop(false),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: VineTheme.whiteText,
+                    foregroundColor: context.vineColors.primaryText,
                     side: BorderSide(color: context.vineColors.onSurfaceMuted),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,

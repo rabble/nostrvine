@@ -115,9 +115,10 @@ class _OverlayReplyLink extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  style: VineTheme.labelSmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
+                  style: VineTheme.labelSmallFont(color: VineTheme.whiteText)
+                      .copyWith(
+                        shadows: VineTheme.buttonShadows,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -167,7 +168,9 @@ class _MetadataReplyLink extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: VineTheme.titleSmallFont(),
+                    style: VineTheme.titleSmallFont(
+                      color: context.vineColors.primaryText,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

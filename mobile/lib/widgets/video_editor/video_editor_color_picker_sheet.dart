@@ -63,9 +63,6 @@ class _VideoEditorColorPickerSheetState
   /// Minimum spacing before item size is reduced.
   static const double _minSpacing = 10;
 
-  /// Color shown for empty recent-color slots.
-  static const Color _emptySlotColor = Color(0xFF032017);
-
   /// SharedPreferences key for storing recent custom colors.
   static const _recentColorsKey = 'video_editor_recent_colors';
 
@@ -171,7 +168,7 @@ class _VideoEditorColorPickerSheetState
               if (index < presetCount) {
                 final isColorPicker = index == 0;
                 final color = isColorPicker
-                    ? VineTheme.surfaceContainer
+                    ? context.vineColors.surfaceContainer
                     : VideoEditorConstants.colors[index - 1];
                 final isSelected = color == widget.selectedColor;
 
@@ -187,7 +184,9 @@ class _VideoEditorColorPickerSheetState
 
               final recentIndex = index - presetCount;
               final recentColor = recentRow[recentIndex];
-              final color = recentColor ?? _emptySlotColor;
+              // Empty recent-colour slots read as an inset well on the
+              // sheet, so they follow the palette rather than a fixed tint.
+              final color = recentColor ?? context.vineColors.surfaceContainer;
               final isEmpty = recentColor == null;
 
               return _ColorButton(
@@ -272,8 +271,8 @@ class _ColorButton extends StatelessWidget {
                         ? null
                         : .all(
                             color: isColorPicker
-                                ? VineTheme.outlineMuted
-                                : VineTheme.onSurfaceDisabled,
+                                ? context.vineColors.outlineMuted
+                                : context.vineColors.disabled,
                             width: isColorPicker ? 2 : 1,
                           ),
                   ),
@@ -362,7 +361,9 @@ class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
                 Flexible(
                   child: Text(
                     context.l10n.videoEditorPickColorTitle,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                 ),
                 DivineIconButton(
@@ -379,10 +380,10 @@ class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
               ],
             ),
           ),
-          const Divider(
+          Divider(
             height: 32,
             thickness: 2,
-            color: VineTheme.outlinedDisabled,
+            color: context.vineColors.surfaceContainer,
           ),
           Padding(
             padding: const .symmetric(horizontal: 8),

@@ -173,7 +173,7 @@ class _WelcomeView extends StatelessWidget {
         final isReturningUser = state.hasReturningUsers;
         return Scaffold(
           backgroundColor: isReturningUser
-              ? VineTheme.navGreen
+              ? context.vineColors.nav
               : context.vineColors.background,
           appBar: isReturningUser
               ? DiVineAppBar(
@@ -232,7 +232,9 @@ class _NewUserLayout extends StatelessWidget {
           Text(
             context.l10n.authMinAgeNotice,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           const _Under16Choices(),
@@ -634,7 +636,9 @@ class _Under16ChoicesState extends State<_Under16Choices> {
         textAlign: TextAlign.center,
         textScaler: MediaQuery.textScalerOf(context),
         text: TextSpan(
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
           children: [
             TextSpan(text: context.l10n.authUnder16Prefix),
             TextSpan(

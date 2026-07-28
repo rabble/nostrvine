@@ -171,7 +171,7 @@ class _SheetTitle extends StatelessWidget {
     return Text(
       context.l10n.crosspostSheetTitle,
       textAlign: TextAlign.center,
-      style: VineTheme.headlineSmallFont(),
+      style: VineTheme.headlineSmallFont(color: context.vineColors.primaryText),
     );
   }
 }
@@ -235,7 +235,12 @@ class _PlatformRow extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: VineTheme.titleMediumFont()),
+                    Text(
+                      name,
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
+                    ),
                     if (account != null && account.isNotEmpty)
                       Text(
                         account,
@@ -296,7 +301,14 @@ class _JobRow extends StatelessWidget {
                       ? VineTheme.vineGreen
                       : VineTheme.error,
                 ),
-              Expanded(child: Text(name, style: VineTheme.titleMediumFont())),
+              Expanded(
+                child: Text(
+                  name,
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                ),
+              ),
               Text(
                 _statusLabel(context, job.status),
                 style: VineTheme.bodySmallFont(

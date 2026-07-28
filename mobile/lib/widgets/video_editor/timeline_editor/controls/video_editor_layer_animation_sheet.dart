@@ -70,7 +70,7 @@ Future<void> editLayerAnimation(
     isScrollControlled: true,
     title: Text(
       context.l10n.videoEditorLayerAnimationLabel,
-      style: VineTheme.titleMediumFont(),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     ),
     body: LayerAnimationPickerView(
       initialEnter: layer.divineEnterAnimations,
@@ -347,7 +347,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                               Text(
                                 _durationLabel(active.duration),
                                 style: VineTheme.labelSmallFont(
-                                  color: VineTheme.lightText,
+                                  color: context.vineColors.mutedText,
                                 ),
                               ),
                             ],
@@ -400,7 +400,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                       size: 18,
                                       color: direction == active.direction
                                           ? VineTheme.primary
-                                          : VineTheme.secondaryText,
+                                          : context.vineColors.secondaryText,
                                     ),
                                   ),
                               ],
@@ -419,7 +419,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                 Text(
                                   '${(active.scaleFrom * 100).round()}%',
                                   style: VineTheme.labelSmallFont(
-                                    color: VineTheme.lightText,
+                                    color: context.vineColors.mutedText,
                                   ),
                                 ),
                               ],
@@ -613,7 +613,9 @@ class _PhaseSegment extends StatelessWidget {
             child: Text(
               label,
               style: VineTheme.labelMediumFont(
-                color: selected ? VineTheme.primary : VineTheme.lightText,
+                color: selected
+                    ? VineTheme.primary
+                    : context.vineColors.mutedText,
               ),
             ),
           ),
@@ -701,7 +703,9 @@ class _LayerTypeTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: VineTheme.labelSmallFont(
-                    color: selected ? VineTheme.primary : VineTheme.lightText,
+                    color: selected
+                        ? VineTheme.primary
+                        : context.vineColors.mutedText,
                   ),
                 ),
               ),
@@ -740,11 +744,14 @@ class _LayerEffect extends StatelessWidget {
     return DecoratedBox(
       // Tinted backdrop (not a flat surface) so the placeholder layer reads
       // clearly against it during fade/slide/scale.
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [VineTheme.primaryDarkGreen, VineTheme.surfaceBackground],
+          colors: [
+            context.vineColors.primaryContainer,
+            context.vineColors.surface,
+          ],
         ),
       ),
       child: SizedBox(
@@ -792,14 +799,14 @@ class _PlaceholderLayer extends StatelessWidget {
         color: VineTheme.primary.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const SizedBox(
+      child: SizedBox(
         width: 30,
         height: 30,
         child: Center(
           child: DivineIcon(
             icon: .sparkle,
             size: 16,
-            color: VineTheme.backgroundColor,
+            color: context.vineColors.background,
           ),
         ),
       ),

@@ -44,7 +44,9 @@ class ConversationAppBar extends StatelessWidget
       onBackPressed: onBack,
       backgroundColor: context.vineColors.surface,
       style: DiVineAppBarStyle(
-        titleStyle: VineTheme.titleMediumFont(),
+        titleStyle: VineTheme.titleMediumFont(
+          color: context.vineColors.primaryText,
+        ),
         horizontalPadding: 10,
         // 16 px visual gap to the title: leadingWidth − (start padding + button)
         // = 74 − (10 + 48).

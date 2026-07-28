@@ -79,7 +79,9 @@ class SearchUserTile extends ConsumerWidget {
                   children: [
                     Text(
                       profile.bestDisplayName,
-                      style: VineTheme.titleMediumFont(),
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                     Text(
                       secondaryText,

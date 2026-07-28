@@ -468,7 +468,9 @@ class _LoadingContent extends StatelessWidget {
           const SizedBox(height: 72),
           Text(
             context.l10n.authScanSignerApp,
-            style: VineTheme.headlineLargeFont(),
+            style: VineTheme.headlineLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const Spacer(),
           const CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -580,13 +582,16 @@ class _QrCodeCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: context.vineColors.inverseSurface,
+            // A QR code is machine-readable, not chrome: the quiet zone has
+            // to stay white behind the black modules in both appearance
+            // modes, or scanners lose the contrast they need.
+            color: VineTheme.whiteText,
             borderRadius: BorderRadius.circular(12),
           ),
           child: QrImageView(
             data: connectUrl,
             size: 200,
-            backgroundColor: context.vineColors.inverseSurface,
+            backgroundColor: VineTheme.whiteText,
             errorCorrectionLevel: QrErrorCorrectLevel.M,
           ),
         ),

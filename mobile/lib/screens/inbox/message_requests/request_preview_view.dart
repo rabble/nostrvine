@@ -146,7 +146,9 @@ class _ProfileContent extends StatelessWidget {
               const SizedBox(height: 32),
               Text(
                 displayName,
-                style: VineTheme.titleLargeFont(),
+                style: VineTheme.titleLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,

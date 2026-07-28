@@ -35,7 +35,12 @@ class VideoEngagementListView extends StatelessWidget {
     return Scaffold(
       backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
-        titleWidget: Text(title, style: VineTheme.titleMediumFont()),
+        titleWidget: Text(
+          title,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
         backButtonSemanticLabel: context.l10n.commonBack,

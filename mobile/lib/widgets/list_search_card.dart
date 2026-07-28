@@ -76,7 +76,7 @@ class _ListTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: VineTheme.titleSmallFont(),
+      style: VineTheme.titleSmallFont(color: context.vineColors.primaryText),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -204,14 +204,14 @@ class _CountBadge extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: 4,
             children: [
-              DivineIcon(
+              const DivineIcon(
                 icon: DivineIconName.play,
-                color: context.vineColors.primaryText,
+                color: VineTheme.primaryText,
                 size: 16,
               ),
               Text(
                 CountFormatter.formatCompact(count),
-                style: VineTheme.labelSmallFont(),
+                style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
               ),
             ],
           ),

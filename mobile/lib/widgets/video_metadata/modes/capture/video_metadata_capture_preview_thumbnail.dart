@@ -21,8 +21,12 @@ class VideoMetadataCapturePreviewThumbnail extends ConsumerWidget {
     );
 
     if (clip.thumbnailPath == null) {
-      return const Center(
-        child: DivineIcon(icon: .warning, size: 32, color: VineTheme.lightText),
+      return Center(
+        child: DivineIcon(
+          icon: .warning,
+          size: 32,
+          color: context.vineColors.mutedText,
+        ),
       );
     }
 

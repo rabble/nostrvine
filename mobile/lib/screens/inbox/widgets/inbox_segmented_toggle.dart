@@ -143,9 +143,16 @@ class _ToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontSize = MediaQuery.textScalerOf(
-      context,
-    ).scale(VineTheme.titleMediumFont().fontSize!).clamp(0.0, 20.0);
+    final fontSize =
+        MediaQuery.textScalerOf(
+              context,
+            )
+            .scale(
+              VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ).fontSize!,
+            )
+            .clamp(0.0, 20.0);
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : kInboxTabTransitionDuration;
@@ -210,7 +217,7 @@ class _NotificationBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         count > 99 ? '99+' : '$count',
-        style: VineTheme.labelSmallFont(),
+        style: VineTheme.labelSmallFont(color: context.vineColors.primaryText),
       ),
     );
   }

@@ -143,7 +143,7 @@ class _VideoMetadataFormFieldsState
                                 '${_descriptionController.text.length}/'
                                 '${VideoEditorConstants.descriptionLimit}',
                                 style: VineTheme.labelSmallFont(
-                                  color: VineTheme.onSurfaceMuted,
+                                  color: context.vineColors.onSurfaceMuted,
                                 ),
                               )
                             : const SizedBox.shrink(),
@@ -203,15 +203,19 @@ class _VideoReplyVisibilityToggle extends ConsumerWidget {
           value: shareReplyToFeed,
           title: Text(
             context.l10n.videoMetadataShareReplyToFeedTitle,
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           subtitle: Text(
             context.l10n.videoMetadataShareReplyToFeedSubtitle,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           contentPadding: const .symmetric(horizontal: 12, vertical: 4),
           activeThumbColor: VineTheme.vineGreen,
-          inactiveThumbColor: VineTheme.lightText,
+          inactiveThumbColor: context.vineColors.mutedText,
           onChanged: (value) {
             ref.read(videoEditorProvider.notifier).setShareReplyToFeed(value);
           },
@@ -238,15 +242,19 @@ class _VideoMetadataAudioReuseToggle extends ConsumerWidget {
           value: allowAudioReuse,
           title: Text(
             context.l10n.videoMetadataAudioReuseTitle,
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           subtitle: Text(
             context.l10n.videoMetadataAudioReuseSubtitle,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           contentPadding: const .symmetric(horizontal: 12, vertical: 4),
           activeThumbColor: VineTheme.vineGreen,
-          inactiveThumbColor: VineTheme.lightText,
+          inactiveThumbColor: context.vineColors.mutedText,
           onChanged: (value) {
             ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
           },
@@ -267,7 +275,7 @@ class _InputWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         borderRadius: .circular(_borderRadius),
       ),
       child: child,

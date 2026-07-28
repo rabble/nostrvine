@@ -48,7 +48,9 @@ class LibraryToolbar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
                 context.l10n.profileMyLibraryLabel,
-                style: VineTheme.titleMediumFont(),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

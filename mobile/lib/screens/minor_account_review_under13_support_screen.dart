@@ -93,7 +93,9 @@ class _Under13SupportBody extends StatelessWidget {
       children: [
         Text(
           l10n.minorAccountReviewUnder13Heading,
-          style: VineTheme.headlineMediumFont(),
+          style: VineTheme.headlineMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
@@ -215,7 +217,12 @@ class _ValueCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(value, style: VineTheme.bodyMediumFont()),
+                Text(
+                  value,
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
+                ),
               ],
             ),
           ),
@@ -257,7 +264,9 @@ class _MinorAccountReviewLoadErrorView extends StatelessWidget {
         children: [
           Text(
             title,
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),

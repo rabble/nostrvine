@@ -35,24 +35,26 @@ class VideoRecorderUploadStack extends StatelessWidget {
             children: [
               Text(
                 l10n.videoRecorderUploadTitle,
-                style: VineTheme.titleLargeFont(),
+                style: VineTheme.titleLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               Text(
                 l10n.videoRecorderUploadBody,
                 style: VineTheme.bodyMediumFont(
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                 ),
               ),
               Text(
                 l10n.videoRecorderUploadBodyDetail,
                 style: VineTheme.bodyMediumFont(
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                 ),
               ),
               Text(
                 l10n.videoRecorderUploadBodyCta,
                 style: VineTheme.bodyMediumFont(
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                 ),
               ),
               _LearnMoreLink(onPressed: _openLearnMore),

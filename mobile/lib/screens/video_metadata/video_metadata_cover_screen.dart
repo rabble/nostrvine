@@ -336,10 +336,10 @@ class _VideoMetadataCoverScreenState
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: VideoEditorConstants.uiOverlayStyle,
+      value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
       child: SafeArea(
         child: Scaffold(
-          backgroundColor: VineTheme.backgroundCamera,
+          backgroundColor: context.vineColors.surfaceContainerHigh,
           body: Stack(
             fit: .expand,
             children: [
@@ -451,7 +451,7 @@ class _VideoAreaState extends State<_VideoArea> {
     if (localPath != null) {
       return ClipThumbnailImage(path: localPath, fit: BoxFit.cover);
     }
-    return const ColoredBox(color: VineTheme.onSurfaceMuted);
+    return ColoredBox(color: context.vineColors.onSurfaceMuted);
   }
 
   @override
@@ -522,7 +522,9 @@ class _TopBar extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.l10n.videoMetadataEditCoverTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: VineTheme.primaryText,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -792,9 +794,9 @@ class _SlotImage extends StatelessWidget {
             child: VineCachedImage(
               imageUrl: thumbnail!.networkUrl!,
               placeholder: (_, _) =>
-                  const ColoredBox(color: VineTheme.surfaceContainerHigh),
+                  ColoredBox(color: context.vineColors.surfaceContainerHigh),
               errorWidget: (_, _, _) =>
-                  const ColoredBox(color: VineTheme.surfaceContainerHigh),
+                  ColoredBox(color: context.vineColors.surfaceContainerHigh),
             ),
           )
         : thumbnail?.path != null
@@ -802,11 +804,11 @@ class _SlotImage extends StatelessWidget {
             path: thumbnail!.path!,
             fit: .cover,
             excludeFromSemantics: true,
-            placeholder: const ColoredBox(
-              color: VineTheme.surfaceContainerHigh,
+            placeholder: ColoredBox(
+              color: context.vineColors.surfaceContainerHigh,
             ),
           )
-        : const ColoredBox(color: VineTheme.surfaceContainerHigh);
+        : ColoredBox(color: context.vineColors.surfaceContainerHigh);
 
     if (stripThumbnailPath == null) return fallback;
 

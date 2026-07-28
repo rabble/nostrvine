@@ -69,7 +69,7 @@ class _Chip extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           padding: const .symmetric(horizontal: 16, vertical: 8),
           decoration: ShapeDecoration(
-            color: isSelected ? VineTheme.containerLow : null,
+            color: isSelected ? context.vineColors.containerLow : null,
             shape: RoundedRectangleBorder(borderRadius: .circular(16)),
           ),
           child: Text(
@@ -77,7 +77,7 @@ class _Chip extends StatelessWidget {
             style: VineTheme.titleSmallFont(
               color: isSelected
                   ? VineTheme.primary
-                  : VineTheme.onSurfaceVariant,
+                  : context.vineColors.onSurfaceVariant,
             ),
           ),
         ),

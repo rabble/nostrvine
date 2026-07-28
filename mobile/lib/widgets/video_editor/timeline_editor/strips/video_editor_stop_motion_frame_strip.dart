@@ -587,7 +587,7 @@ class _FrameTile extends StatelessWidget {
               border: Border.all(
                 color: isSelected
                     ? VineTheme.accentYellow
-                    : VineTheme.surfaceBackground,
+                    : context.vineColors.surface,
                 width: isSelected ? 2 : 0.5,
               ),
             ),

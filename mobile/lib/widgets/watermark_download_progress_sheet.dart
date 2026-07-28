@@ -128,7 +128,9 @@ class _WatermarkDownloadProgressViewState
                       const SizedBox(height: 16),
                       Text(
                         _stageLabel(state.stage, context),
-                        style: VineTheme.titleMediumFont(),
+                        style: VineTheme.titleMediumFont(
+                          color: context.vineColors.primaryText,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -163,7 +165,9 @@ class _WatermarkDownloadProgressViewState
         const SizedBox(height: 16),
         Text(
           l10n.watermarkDownloadSavedToCameraRoll,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -202,7 +206,9 @@ class _WatermarkDownloadProgressViewState
         const SizedBox(height: 16),
         Text(
           l10n.watermarkDownloadPhotosAccessNeeded,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -245,7 +251,9 @@ class _WatermarkDownloadProgressViewState
         const SizedBox(height: 16),
         Text(
           l10n.watermarkDownloadFailed,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 8),
         Text(

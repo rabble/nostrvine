@@ -271,7 +271,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
 
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         body: Center(
           child: Semantics(
             identifier: SemanticIds.videoDetailLoading,
@@ -287,7 +287,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         _VideoDetailError.loadFailed => context.l10n.videoDetailLoadError,
       };
       return Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         appBar: _buildExitAppBar(context),
         body: Center(
           child: Column(
@@ -301,7 +301,9 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
               const SizedBox(height: 16),
               Text(
                 message,
-                style: VineTheme.bodyLargeFont(),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -314,12 +316,14 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         videoEventService.shouldHideVideo(_video!) ||
         videoEventService.isVideoEventKnownDeleted(_video!)) {
       return Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         appBar: _buildExitAppBar(context),
         body: Center(
           child: Text(
             context.l10n.videoErrorNotFound,
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ),
       );

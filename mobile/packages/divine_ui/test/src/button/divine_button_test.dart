@@ -1310,6 +1310,7 @@ void main() {
         final span = DivineTextLink.span(
           text: 'Link',
           onTap: () {},
+          colors: VineTheme.darkColors,
         );
 
         expect(span.text, 'Link');
@@ -1320,6 +1321,7 @@ void main() {
         final span = DivineTextLink.span(
           text: 'Disabled Link',
           onTap: null,
+          colors: VineTheme.darkColors,
         );
 
         expect(span.text, 'Disabled Link');
@@ -1331,6 +1333,7 @@ void main() {
         final span = DivineTextLink.span(
           text: 'Link',
           onTap: () => tapped = true,
+          colors: VineTheme.darkColors,
         );
 
         (span.recognizer! as TapGestureRecognizer).onTap!();

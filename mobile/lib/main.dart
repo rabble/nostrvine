@@ -3051,9 +3051,9 @@ bool _showPublishSuccessSnackbar(int count) {
     SnackBar(
       content: Text(
         l10n.uploadPublishedCountMessage(count),
-        style: VineTheme.bodyMediumFont(),
+        style: VineTheme.bodyMediumFont(color: navContext.vineColors.onNav),
       ),
-      backgroundColor: VineTheme.navGreen,
+      backgroundColor: navContext.vineColors.nav,
       behavior: SnackBarBehavior.floating,
     ),
   );

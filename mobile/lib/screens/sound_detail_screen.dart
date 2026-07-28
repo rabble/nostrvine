@@ -1090,9 +1090,9 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                 children: [
                   // Close button
                   IconButton(
-                    icon: DivineIcon(
+                    icon: const DivineIcon(
                       icon: DivineIconName.x,
-                      color: context.vineColors.primaryText,
+                      color: VineTheme.primaryText,
                     ),
                     onPressed: onClose,
                     tooltip: context.l10n.soundCloseTooltip,

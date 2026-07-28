@@ -28,7 +28,9 @@ class NotificationEmptyState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.notificationsEmptyTitle,
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             const SizedBox(height: 8),
             Text(

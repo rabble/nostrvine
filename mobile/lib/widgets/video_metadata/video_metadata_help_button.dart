@@ -26,8 +26,8 @@ class VideoMetadataHelpButton extends StatelessWidget {
             padding: const EdgeInsets.all(4),
             child: SvgPicture.asset(
               DivineIconName.info.assetPath,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.onSurfaceVariant,
+              colorFilter: ColorFilter.mode(
+                context.vineColors.onSurfaceVariant,
                 BlendMode.srcIn,
               ),
               width: 16,

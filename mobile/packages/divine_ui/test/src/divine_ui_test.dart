@@ -80,11 +80,15 @@ void main() {
       final tokens = <String, Color Function(VineThemeColors)>{
         'background': (c) => c.background,
         'card': (c) => c.card,
+        'mediaCard': (c) => c.mediaCard,
         'surface': (c) => c.surface,
         'surfaceContainer': (c) => c.surfaceContainer,
         'surfaceContainerHigh': (c) => c.surfaceContainerHigh,
         'containerLow': (c) => c.containerLow,
+        'primaryContainer': (c) => c.primaryContainer,
         'nav': (c) => c.nav,
+        'onNav': (c) => c.onNav,
+        'onNavMuted': (c) => c.onNavMuted,
         'iconButton': (c) => c.iconButton,
         'primaryText': (c) => c.primaryText,
         'secondaryText': (c) => c.secondaryText,
@@ -108,11 +112,15 @@ void main() {
       VineThemeColors paint(Color color) => VineThemeColors(
         background: color,
         card: color,
+        mediaCard: color,
         surface: color,
         surfaceContainer: color,
         surfaceContainerHigh: color,
         containerLow: color,
+        primaryContainer: color,
         nav: color,
+        onNav: color,
+        onNavMuted: color,
         iconButton: color,
         primaryText: color,
         secondaryText: color,
@@ -232,13 +240,17 @@ void main() {
           final changed = paint(Colors.black).copyWith(
             background: token == 'background' ? Colors.white : null,
             card: token == 'card' ? Colors.white : null,
+            mediaCard: token == 'mediaCard' ? Colors.white : null,
             surface: token == 'surface' ? Colors.white : null,
             surfaceContainer: token == 'surfaceContainer' ? Colors.white : null,
             surfaceContainerHigh: token == 'surfaceContainerHigh'
                 ? Colors.white
                 : null,
             containerLow: token == 'containerLow' ? Colors.white : null,
+            primaryContainer: token == 'primaryContainer' ? Colors.white : null,
             nav: token == 'nav' ? Colors.white : null,
+            onNav: token == 'onNav' ? Colors.white : null,
+            onNavMuted: token == 'onNavMuted' ? Colors.white : null,
             iconButton: token == 'iconButton' ? Colors.white : null,
             primaryText: token == 'primaryText' ? Colors.white : null,
             secondaryText: token == 'secondaryText' ? Colors.white : null,
@@ -432,7 +444,7 @@ void main() {
         expect(style.fontWeight, FontWeight.w300);
         expect(style.height, 24 / 16);
         expect(style.letterSpacing, 0.5);
-        expect(style.color, VineTheme.whiteText);
+        expect(style.color, isNull);
       });
 
       testWidgets('captionPillFont accepts a color override', (tester) async {
@@ -446,7 +458,7 @@ void main() {
         expect(style.fontWeight, FontWeight.w300);
         expect(style.height, 20 / 13);
         expect(style.letterSpacing, 0.25);
-        expect(style.color, VineTheme.whiteText);
+        expect(style.color, isNull);
       });
 
       testWidgets('codeFont accepts a color override', (tester) async {
@@ -462,19 +474,36 @@ void main() {
     });
 
     group('tabTextStyle', () {
-      testWidgets('returns TextStyle with default color', (tester) async {
+      testWidgets('leaves the color to the ambient text style', (tester) async {
         final style = VineTheme.tabTextStyle();
 
         expect(style.fontSize, 18);
         expect(style.fontWeight, FontWeight.w800);
         expect(style.height, 24 / 18);
-        expect(style.color, VineTheme.whiteText);
+        expect(style.color, isNull);
       });
 
       testWidgets('returns TextStyle with custom color', (tester) async {
         final style = VineTheme.tabTextStyle(color: Colors.green);
 
         expect(style.color, Colors.green);
+      });
+    });
+
+    group('buttonBoxShadowsFor', () {
+      test('keeps the Figma emboss pair on the dark palette', () {
+        expect(
+          VineTheme.buttonBoxShadowsFor(VineTheme.darkColors),
+          VineTheme.buttonBoxShadows,
+        );
+      });
+
+      test('goes flat on the light palette', () {
+        // The buttons paint their decoration through `Ink`, and Material
+        // hard-clips ink features to its own bounds, so an outward drop
+        // shadow is cut off at the button edge and reads as a hard line.
+        // Light-mode fills separate themselves without one.
+        expect(VineTheme.buttonBoxShadowsFor(VineTheme.lightColors), isNull);
       });
     });
 
@@ -503,16 +532,25 @@ void main() {
         expect(colors?.primaryText, const Color(0xFF07241B));
       });
 
-      test('keeps light status-bar icons over the app bar in light mode', () {
-        // The app bar stays on the dark brand green in both modes, so dark
-        // status-bar icons would be unreadable over it.
+      test('flips status-bar icons to dark over the light app bar', () {
         expect(
           VineTheme.lightTheme.appBarTheme.systemOverlayStyle,
-          VineTheme.statusBarStyle,
+          VineTheme.lightStatusBarStyle,
         );
         expect(
           VineTheme.lightTheme.appBarTheme.backgroundColor,
           VineTheme.lightColors.nav,
+        );
+        expect(
+          VineTheme.lightTheme.appBarTheme.foregroundColor,
+          VineTheme.lightColors.onNav,
+        );
+      });
+
+      test('keeps light status-bar icons over the dark app bar', () {
+        expect(
+          VineTheme.theme.appBarTheme.systemOverlayStyle,
+          VineTheme.statusBarStyle,
         );
       });
 
@@ -531,8 +569,8 @@ void main() {
       test('returns ThemeData with correct appBarTheme', () {
         final theme = VineTheme.theme;
 
-        expect(theme.appBarTheme.backgroundColor, VineTheme.navGreen);
-        expect(theme.appBarTheme.foregroundColor, VineTheme.whiteText);
+        expect(theme.appBarTheme.backgroundColor, VineTheme.darkColors.nav);
+        expect(theme.appBarTheme.foregroundColor, VineTheme.darkColors.onNav);
         expect(theme.appBarTheme.elevation, 1);
         expect(theme.appBarTheme.centerTitle, true);
       });
@@ -542,11 +580,15 @@ void main() {
 
         expect(
           theme.bottomNavigationBarTheme.backgroundColor,
-          VineTheme.vineGreen,
+          VineTheme.darkColors.nav,
         );
         expect(
           theme.bottomNavigationBarTheme.selectedItemColor,
-          VineTheme.whiteText,
+          VineTheme.darkColors.onNav,
+        );
+        expect(
+          theme.bottomNavigationBarTheme.unselectedItemColor,
+          VineTheme.darkColors.onNavMuted,
         );
         expect(
           theme.bottomNavigationBarTheme.type,

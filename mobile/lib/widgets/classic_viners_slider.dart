@@ -41,7 +41,9 @@ class ClassicVinersSlider extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.classicVinersTitle,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),
@@ -179,7 +181,9 @@ class _VinerAvatar extends ConsumerWidget {
                   width: 70,
                   child: Text(
                     displayName,
-                    style: VineTheme.titleTinyFont(),
+                    style: VineTheme.titleTinyFont(
+                      color: context.vineColors.primaryText,
+                    ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

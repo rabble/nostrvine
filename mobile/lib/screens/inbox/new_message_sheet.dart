@@ -173,7 +173,12 @@ class _SheetHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text(context.l10n.newMessageTitle, style: VineTheme.titleMediumFont()),
+        Text(
+          context.l10n.newMessageTitle,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
         const SizedBox(height: 8),
         Divider(
           height: 1,
@@ -211,7 +216,9 @@ class _SearchField extends StatelessWidget {
             child: TextField(
               controller: controller,
               autofocus: true,
-              style: VineTheme.bodyLargeFont(),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.primaryText,
+              ),
               decoration: InputDecoration(
                 hintText: context.l10n.newMessageFindPeople,
                 hintStyle: VineTheme.bodyLargeFont(
@@ -302,14 +309,18 @@ class _UserTile extends StatelessWidget {
                     profile.bestDisplayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   if (profile.handle.isNotEmpty)
                     Text(
                       profile.handle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: VineTheme.bodyMediumFont(),
+                      style: VineTheme.bodyMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                 ],
               ),

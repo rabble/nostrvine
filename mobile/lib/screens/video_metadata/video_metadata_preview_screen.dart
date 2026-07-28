@@ -110,9 +110,9 @@ class _VideoMetadataPreviewScreenState
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: VideoEditorConstants.uiOverlayStyle,
+      value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
       child: Scaffold(
-        backgroundColor: VineTheme.surfaceContainerHigh,
+        backgroundColor: context.vineColors.surfaceContainerHigh,
         body: Column(
           spacing: 16,
           children: [

@@ -224,7 +224,9 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                                 const SizedBox(height: 24),
                                 Text(
                                   context.l10n.webAuthConnectTitle,
-                                  style: VineTheme.headlineLargeFont(),
+                                  style: VineTheme.headlineLargeFont(
+                                    color: context.vineColors.primaryText,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
@@ -328,7 +330,9 @@ class _Nip07AuthCard extends StatelessWidget {
                       children: [
                         Text(
                           context.l10n.webAuthBrowserExtension,
-                          style: VineTheme.titleSmallFont(),
+                          style: VineTheme.titleSmallFont(
+                            color: context.vineColors.primaryText,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Container(
@@ -425,7 +429,9 @@ class _BunkerAuthCard extends StatelessWidget {
                     children: [
                       Text(
                         context.l10n.webAuthNsecBunker,
-                        style: VineTheme.titleSmallFont(),
+                        style: VineTheme.titleSmallFont(
+                          color: context.vineColors.primaryText,
+                        ),
                       ),
                       Text(
                         context.l10n.webAuthConnectRemoteSigner,
@@ -546,7 +552,9 @@ class _NostrHelpBox extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.webAuthNewToNostr,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

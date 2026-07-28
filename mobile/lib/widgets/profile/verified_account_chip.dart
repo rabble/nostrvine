@@ -64,7 +64,9 @@ class VerifiedAccountChip extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   '${claim.platform}/${claim.identity}',
-                  style: VineTheme.labelMediumFont(),
+                  style: VineTheme.labelMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

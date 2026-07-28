@@ -604,16 +604,17 @@ class _VideoInfoSection extends StatelessWidget {
               video.pubkey,
               embeddedName: video.displayAuthorName,
               maxLines: 1,
-              style: VineTheme.titleTinyFont().copyWith(
-                decoration: TextDecoration.none,
-                shadows: const [
-                  Shadow(
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
-                    color: VineTheme.scrim15,
+              style: VineTheme.titleTinyFont(color: VineTheme.whiteText)
+                  .copyWith(
+                    decoration: TextDecoration.none,
+                    shadows: const [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                        color: VineTheme.scrim15,
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ),
           ),
           if (hasDescription)
@@ -626,16 +627,17 @@ class _VideoInfoSection extends StatelessWidget {
               ),
               child: Text(
                 video.displayTitle ?? video.displayContent,
-                style: VineTheme.bodyMediumFont().copyWith(
-                  decoration: TextDecoration.none,
-                  shadows: const [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 2,
-                      color: VineTheme.scrim15,
+                style: VineTheme.bodyMediumFont(color: VineTheme.whiteText)
+                    .copyWith(
+                      decoration: TextDecoration.none,
+                      shadows: const [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
+                          color: VineTheme.scrim15,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

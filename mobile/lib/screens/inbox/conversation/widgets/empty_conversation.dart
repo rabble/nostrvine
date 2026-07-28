@@ -54,7 +54,9 @@ class EmptyConversation extends StatelessWidget {
           // User info
           Text(
             displayName,
-            style: VineTheme.titleLargeFont(),
+            style: VineTheme.titleLargeFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

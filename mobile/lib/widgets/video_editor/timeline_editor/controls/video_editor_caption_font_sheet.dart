@@ -18,7 +18,7 @@ Future<int?> showCaptionFontSheet(
     context: context,
     title: Text(
       context.l10n.videoEditorCaptionsCustomFont,
-      style: VineTheme.titleMediumFont(),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     ),
     buildScrollBody: (scrollController) => ListView.builder(
       controller: scrollController,

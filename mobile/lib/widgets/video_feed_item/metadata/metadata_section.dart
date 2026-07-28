@@ -26,8 +26,10 @@ class MetadataSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -38,7 +40,7 @@ class MetadataSection extends StatelessWidget {
             Text(
               label,
               style: VineTheme.labelSmallFont(
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
               ),
             ),
             child,

@@ -1041,7 +1041,9 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
         backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.inboxRemoveConfirmTitle,
-          style: VineTheme.titleLargeFont(),
+          style: VineTheme.titleLargeFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           context.l10n.inboxRemoveConfirmBody(displayName),

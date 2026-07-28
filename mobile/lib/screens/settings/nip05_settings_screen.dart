@@ -569,7 +569,9 @@ class _Nip05SettingsLoadError extends StatelessWidget {
             Text(
               context.l10n.profilePleaseTryAgain,
               textAlign: TextAlign.center,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             DivineButton(
               type: DivineButtonType.secondary,

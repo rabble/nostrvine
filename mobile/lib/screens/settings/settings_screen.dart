@@ -294,7 +294,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           showBackButton: true,
           onBackPressed: context.pop,
         ),
-        backgroundColor: VineTheme.navGreen,
+        backgroundColor: context.vineColors.surface,
         body: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -739,7 +739,10 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       minTileHeight: 64,
       leading: leadingWidget,
-      title: Text(title, style: VineTheme.titleMediumFont()),
+      title: Text(
+        title,
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
+      ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,

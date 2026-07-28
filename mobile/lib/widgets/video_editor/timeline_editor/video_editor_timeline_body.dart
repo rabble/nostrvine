@@ -408,11 +408,11 @@ class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
       child: IgnorePointer(
         child: Visibility(
           visible: visible,
-          child: const CustomPaint(
+          child: CustomPaint(
             painter: _TimelineOutsideAreaPainter(
-              stripeColor: VineTheme.onSurfaceDisabled,
+              stripeColor: context.vineColors.disabled,
             ),
-            child: SizedBox.expand(),
+            child: const SizedBox.expand(),
           ),
         ),
       ),
@@ -445,7 +445,9 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
         child: Visibility(
           visible: visible,
           child: ColoredBox(
-            color: VineTheme.surfaceContainerHigh.withValues(alpha: 0.3),
+            color: context.vineColors.surfaceContainerHigh.withValues(
+              alpha: 0.3,
+            ),
             child: const SizedBox.expand(),
           ),
         ),

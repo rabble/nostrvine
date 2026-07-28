@@ -1177,7 +1177,7 @@ class _LoopTransitionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final foreground = hasTransition
         ? VineTheme.primary
-        : VineTheme.secondaryText;
+        : context.vineColors.secondaryText;
     final left = math.max(
       0.0,
       layout.totalWidth - _TransitionButtonsLayer._hitWidth / 2,
@@ -1201,7 +1201,7 @@ class _LoopTransitionButton extends StatelessWidget {
               dimension: _TransitionButtonsLayer._visualSize,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: VineTheme.surfaceBackground,
+                  color: context.vineColors.surface,
                   shape: BoxShape.circle,
                   border: Border.all(color: foreground, width: 1.5),
                 ),
@@ -1238,7 +1238,7 @@ class _TransitionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final foreground = hasTransition
         ? VineTheme.primary
-        : VineTheme.secondaryText;
+        : context.vineColors.secondaryText;
     return Semantics(
       button: true,
       label: context.l10n.videoEditorTransitionButtonSemanticLabel,
@@ -1250,7 +1250,7 @@ class _TransitionButton extends StatelessWidget {
             dimension: visualSize,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: VineTheme.surfaceBackground,
+                color: context.vineColors.surface,
                 shape: BoxShape.circle,
                 border: Border.all(color: foreground, width: 1.5),
               ),

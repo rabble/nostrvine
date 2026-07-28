@@ -86,9 +86,3 @@ class EnvironmentBanner extends ConsumerWidget {
     );
   }
 }
-
-/// Helper function to get app bar color based on environment
-/// Always uses nav green — environment is indicated by the EnvironmentBadge tag
-Color getEnvironmentAppBarColor(EnvironmentConfig environment) {
-  return VineTheme.navGreen;
-}

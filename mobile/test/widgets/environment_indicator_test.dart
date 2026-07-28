@@ -1,6 +1,5 @@
 // ABOUTME: Widget tests for environment indicator components
 // ABOUTME: Tests badge, banner visibility and behavior across environments
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -453,28 +452,6 @@ void main() {
       );
 
       expect(container.color, Color(testConfig.indicatorColorValue));
-    });
-  });
-
-  group('getEnvironmentAppBarColor', () {
-    test('returns navGreen for staging environment', () {
-      final color = getEnvironmentAppBarColor(stagingConfig);
-      expect(color, VineTheme.navGreen);
-    });
-
-    test('returns navGreen for POC environment', () {
-      final color = getEnvironmentAppBarColor(pocConfig);
-      expect(color, VineTheme.navGreen);
-    });
-
-    test('returns navGreen for test environment', () {
-      final color = getEnvironmentAppBarColor(testConfig);
-      expect(color, VineTheme.navGreen);
-    });
-
-    test('returns navGreen for production environment', () {
-      final color = getEnvironmentAppBarColor(EnvironmentConfig.production);
-      expect(color, VineTheme.navGreen);
     });
   });
 }

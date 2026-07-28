@@ -201,38 +201,52 @@ class _MessageText extends StatelessWidget {
         localizedActorSentenceSpans(
           fullText: _messageFor(l10n, type, actors.first.displayName),
           actorName: actors.first.displayName,
+          colors: context.vineColors,
         ),
       );
     } else {
       spans.add(
         TextSpan(
           text: actors.first.displayName,
-          style: VineTheme.labelLargeFont(),
+          style: VineTheme.labelLargeFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
       spans.add(
         TextSpan(
           text: ' ${l10n.notificationAndConnector} ',
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
       spans.add(
         TextSpan(
           text: l10n.notificationOthersCount(othersCount),
-          style: VineTheme.labelLargeFont(),
+          style: VineTheme.labelLargeFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
       spans.add(
         TextSpan(
           text: ' ${_verbFor(l10n, type)}',
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
     }
 
     if (videoTitle != null && _typeShowsTitle(type)) {
       spans.add(
-        TextSpan(text: ' $videoTitle', style: VineTheme.labelLargeFont()),
+        TextSpan(
+          text: ' $videoTitle',
+          style: VineTheme.labelLargeFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
       );
     }
 

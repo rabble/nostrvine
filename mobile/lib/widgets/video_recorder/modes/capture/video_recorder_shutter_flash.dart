@@ -57,6 +57,8 @@ class _VideoRecorderShutterFlashState extends State<VideoRecorderShutterFlash>
         builder: (context, _) => _controller.value == 0
             ? const SizedBox.shrink()
             : ColoredBox(
+                // Flashes over the live camera preview, so it stays dark in
+                // both appearance modes.
                 color: VineTheme.backgroundCamera.withValues(
                   alpha: _peakOpacity * _controller.value,
                 ),

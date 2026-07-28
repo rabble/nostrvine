@@ -176,8 +176,8 @@ class _ImageCropEditorScreenState extends State<ImageCropEditorScreen> {
             enableFlipAnimation: false,
             enableKeepAspectRatioOnRotate: kind == .banner,
             rotateDirection: .right,
-            style: const CropRotateEditorStyle(
-              background: VineTheme.surfaceBackground,
+            style: CropRotateEditorStyle(
+              background: context.vineColors.surface,
               cropCornerColor: VineTheme.primary,
             ),
             widgets: CropRotateEditorWidgets(

@@ -198,7 +198,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
           ),
           title: Text(
             context.l10n.videoMetadataTags,
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(color: context.vineColors.onNav),
           ),
           trailingAction: DivineIconButton(
             icon: .check,
@@ -218,7 +218,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
           child: Container(
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               borderRadius: BorderRadius.circular(_searchInputBorderRadius),
             ),
             child: TextField(
@@ -232,17 +232,19 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
               ],
               onSubmitted: _addTag,
               cursorColor: VineTheme.vineGreen,
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurface,
+              ),
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
-                prefixIcon: const Padding(
-                  padding: EdgeInsets.only(left: 16, right: 8),
+                prefixIcon: Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 8),
                   child: DivineIcon(
                     icon: DivineIconName.search,
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
                 border: InputBorder.none,
@@ -289,10 +291,10 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
                       : const SizedBox.shrink(),
                 ),
                 if (selectedTags.isNotEmpty)
-                  const Divider(
+                  Divider(
                     height: 1,
                     thickness: 1,
-                    color: VineTheme.outlineDisabled,
+                    color: context.vineColors.outlineDisabled,
                   ),
               ],
             );
@@ -339,7 +341,7 @@ class _TagsPickerViewState extends State<_TagsPickerView> {
                     child: Text(
                       context.l10n.videoMetadataTagsPickerNoResults,
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                     ),
                   ),
@@ -393,7 +395,7 @@ class _SuggestionChip extends StatelessWidget {
         onTap: onTap,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -406,7 +408,9 @@ class _SuggestionChip extends StatelessWidget {
                     label,
                     maxLines: 1,
                     overflow: .ellipsis,
-                    style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+                    style: VineTheme.titleSmallFont(
+                      color: context.vineColors.onSurface,
+                    ),
                   ),
                 ),
               ),
@@ -437,14 +441,16 @@ class _EmptyState extends StatelessWidget {
         mainAxisAlignment: .center,
         spacing: 16,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: .search,
             size: 40,
-            color: VineTheme.onSurfaceMuted,
+            color: context.vineColors.onSurfaceMuted,
           ),
           Text(
             context.l10n.videoMetadataTagsPickerEmptyHint,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -534,7 +540,7 @@ class _TagChipState extends State<_TagChip>
         scale: _scaleAnimation,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -545,7 +551,9 @@ class _TagChipState extends State<_TagChip>
                   padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
                   child: Text(
                     widget.label,
-                    style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+                    style: VineTheme.titleSmallFont(
+                      color: context.vineColors.onSurface,
+                    ),
                     maxLines: 1,
                     overflow: .ellipsis,
                   ),
@@ -556,8 +564,8 @@ class _TagChipState extends State<_TagChip>
                 label: context.l10n.videoMetadataDeleteTagHint(widget.label),
                 child: GestureDetector(
                   onTap: _handleRemove,
-                  child: const Padding(
-                    padding: EdgeInsets.only(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
                       left: 8,
                       right: 12,
                       top: 8,
@@ -566,7 +574,7 @@ class _TagChipState extends State<_TagChip>
                     child: DivineIcon(
                       icon: .x,
                       size: 16,
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                   ),
                 ),

@@ -236,7 +236,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 const SizedBox(width: 16),
                 Text(
                   context.l10n.profileCopyPublicKey,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),
@@ -255,7 +257,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 const SizedBox(width: 16),
                 Text(
                   context.l10n.profileGetEmbedCode,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

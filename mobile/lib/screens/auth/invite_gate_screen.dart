@@ -428,7 +428,7 @@ class _InviteCodeInput extends StatelessWidget {
             hintStyle: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w400,
-              color: VineTheme.whiteText.withValues(alpha: 0.25),
+              color: context.vineColors.disabled,
               letterSpacing: 0.15,
             ),
             filled: true,
@@ -536,7 +536,7 @@ class _InviteSheetPage extends StatelessWidget {
                       width: 64,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: VineTheme.whiteText.withValues(alpha: 0.25),
+                        color: context.vineColors.disabled,
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -697,7 +697,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                 width: 64,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: VineTheme.whiteText.withValues(alpha: 0.25),
+                  color: context.vineColors.disabled,
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),

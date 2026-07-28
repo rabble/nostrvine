@@ -72,14 +72,16 @@ class _VerificationCheckItem extends StatelessWidget {
           child: Text(
             label,
             style: VineTheme.bodyMediumFont(
-              color: passed ? VineTheme.whiteText : VineTheme.onSurfaceMuted,
+              color: passed
+                  ? context.vineColors.primaryText
+                  : context.vineColors.onSurfaceMuted,
             ),
           ),
         ),
         const SizedBox(width: 8),
         DivineIcon(
           icon: passed ? DivineIconName.check : DivineIconName.x,
-          color: passed ? VineTheme.success : VineTheme.onSurfaceMuted,
+          color: passed ? VineTheme.success : context.vineColors.onSurfaceMuted,
         ),
       ],
     );

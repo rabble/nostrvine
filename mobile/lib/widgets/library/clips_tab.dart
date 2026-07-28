@@ -65,7 +65,9 @@ class ClipsTab extends StatelessWidget {
                     Text(
                       context.l10n.libraryCouldNotLoadClips,
                       textAlign: TextAlign.center,
-                      style: VineTheme.titleMediumFont(),
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(

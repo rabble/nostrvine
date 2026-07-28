@@ -91,8 +91,8 @@ class _FontListItem extends StatelessWidget {
                   style: font(
                     fontSize: 24,
                     color: isSelected
-                        ? VineTheme.whiteText
-                        : VineTheme.onSurfaceVariant,
+                        ? context.vineColors.primaryText
+                        : context.vineColors.onSurfaceVariant,
                   ),
                 ),
               ),

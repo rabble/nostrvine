@@ -163,9 +163,9 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
     final videoController = _videoController;
     final playerController = _playerController;
     if (videoController == null || playerController == null) {
-      return const ColoredBox(
-        color: VineTheme.backgroundCamera,
-        child: Center(child: BrandedLoadingIndicator(size: 48)),
+      return ColoredBox(
+        color: context.vineColors.surfaceContainerHigh,
+        child: const Center(child: BrandedLoadingIndicator(size: 48)),
       );
     }
 
@@ -180,8 +180,8 @@ class _VideoClipTransformScreenState extends State<VideoClipTransformScreen> {
           cropRotateEditor: CropRotateEditorConfigs(
             enableKeepAspectRatioOnRotate: true,
             initAspectRatio: widget.clip.targetAspectRatio.value,
-            style: const CropRotateEditorStyle(
-              background: VineTheme.backgroundCamera,
+            style: CropRotateEditorStyle(
+              background: context.vineColors.surfaceContainerHigh,
             ),
             widgets: CropRotateEditorWidgets(
               appBar: (editorState, rebuildStream) => ReactiveAppbar(
@@ -279,9 +279,9 @@ class _TransformBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: VineTheme.backgroundCamera,
-        boxShadow: [
+      decoration: BoxDecoration(
+        color: context.vineColors.surfaceContainerHigh,
+        boxShadow: const [
           BoxShadow(
             color: VineTheme.shadow25,
             blurRadius: 8,
@@ -370,7 +370,10 @@ class _BottomAction extends StatelessWidget {
           type: .secondary,
           size: .small,
         ),
-        Text(label, style: VineTheme.bodySmallFont()),
+        Text(
+          label,
+          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        ),
       ],
     );
   }

@@ -83,9 +83,9 @@ class _SubtitleEditorScreenState extends ConsumerState<SubtitleEditorScreen> {
       if (_resolveFailed) {
         return RouteErrorScreen(message: context.l10n.routeInvalidVideoId);
       }
-      return const Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
-        body: Center(
+      return Scaffold(
+        backgroundColor: context.vineColors.background,
+        body: const Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
       );
@@ -113,10 +113,10 @@ class SubtitleEditorView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: l10n.subtitleEditorTitle,
-        backgroundColor: VineTheme.surfaceBackground,
+        backgroundColor: context.vineColors.surface,
         showBackButton: true,
         onBackPressed: context.safePop,
       ),
@@ -178,7 +178,9 @@ class _Processing extends StatelessWidget {
           Text(
             l10n.subtitleEditorProcessing,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
           TextButton(
             onPressed: () => context.read<SubtitleEditorCubit>().load(),
@@ -241,7 +243,9 @@ class _CueRow extends StatelessWidget {
             padding: const EdgeInsets.only(top: 14),
             child: Text(
               cue.timestampLabel,
-              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           Expanded(
@@ -249,7 +253,9 @@ class _CueRow extends StatelessWidget {
               initialValue: cue.text,
               minLines: 1,
               maxLines: null,
-              style: VineTheme.bodyMediumFont(),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.primaryText,
+              ),
               decoration: InputDecoration(
                 hintText: context.l10n.subtitleEditorCueHint,
               ),

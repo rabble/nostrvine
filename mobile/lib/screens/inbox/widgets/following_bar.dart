@@ -106,9 +106,16 @@ class _FollowingUserButton extends ConsumerWidget {
                   VineTheme.bodySmallFont(
                     color: context.vineColors.onSurfaceVariant,
                   ).copyWith(
-                    fontSize: MediaQuery.textScalerOf(
-                      context,
-                    ).scale(VineTheme.bodySmallFont().fontSize!).clamp(0, 18),
+                    fontSize:
+                        MediaQuery.textScalerOf(
+                              context,
+                            )
+                            .scale(
+                              VineTheme.bodySmallFont(
+                                color: context.vineColors.primaryText,
+                              ).fontSize!,
+                            )
+                            .clamp(0, 18),
                   ),
               textAlign: TextAlign.center,
               maxLines: 2,

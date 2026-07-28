@@ -186,7 +186,9 @@ class _PeopleListAppBarTitle extends StatelessWidget {
       children: [
         Text(
           userList.name,
-          style: VineTheme.titleLargeFont(),
+          style: VineTheme.titleLargeFont(
+            color: context.vineColors.primaryText,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -237,7 +239,9 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
         backgroundColor: context.vineColors.surfaceContainer,
         title: Text(
           l10n.peopleListsDeleteConfirmTitle,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           l10n.peopleListsDeleteConfirmBody,
@@ -523,9 +527,9 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                             color: VineTheme.scrim50,
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
+                          child: const Icon(
                             Icons.grid_view,
-                            color: context.vineColors.primaryText,
+                            color: VineTheme.primaryText,
                             size: 20,
                           ),
                         ),
@@ -578,8 +582,8 @@ class _UserListPeopleViewState extends ConsumerState<_UserListPeopleView>
                         ),
                         child: Text(
                           '${_activeVideoIndex! + 1}/${videos.length}',
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
+                          style: const TextStyle(
+                            color: VineTheme.primaryText,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -692,7 +696,9 @@ class _PeopleAvatarItem extends ConsumerWidget {
         backgroundColor: context.vineColors.surfaceContainer,
         title: Text(
           l10n.peopleListsRemoveConfirmTitle(displayName),
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           l10n.peopleListsRemoveConfirmBody,
@@ -776,7 +782,9 @@ class _PeopleAvatarItem extends ConsumerWidget {
                 width: 70,
                 child: Text(
                   displayName,
-                  style: VineTheme.titleTinyFont(),
+                  style: VineTheme.titleTinyFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,

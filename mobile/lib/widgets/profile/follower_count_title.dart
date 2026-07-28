@@ -50,7 +50,12 @@ class FollowerCountTitle<B extends StateStreamable<S>, S>
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(title, style: VineTheme.titleLargeFont()),
+            Text(
+              title,
+              style: VineTheme.titleLargeFont(
+                color: context.vineColors.primaryText,
+              ),
+            ),
             Text(
               context.l10n.profileFollowerCountUsers(count),
               style: VineTheme.bodySmallFont(

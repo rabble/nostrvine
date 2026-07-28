@@ -116,9 +116,8 @@ class VineBottomNav extends ConsumerWidget {
       (HomeFeedRetapCubit cubit) => cubit.state.isRefreshing,
     );
     return ColoredBox(
-      // The bottom nav keeps the dark brand green in both appearance
-      // modes (same value the shell paints behind its rounded corners).
-      color: VineTheme.navGreen,
+      // Same surface the shell paints behind its rounded corners.
+      color: context.vineColors.nav,
       // The bottom nav has no Container padding — all four edges of the
       // breathing room around the icons are folded into adjacent tab hit
       // targets (see [_kTopExtraTapHeight], [_kBottomExtraTapHeight],
@@ -238,8 +237,8 @@ const double _kHorizontalEdgePad = 16;
 //     unselected = 32 % opacity, no shadow.
 //   * **Profile tab** — 48×48 tap target, 24×24 rounded-8 box,
 //     lime fallback fill with the user's avatar on top. Selected and
-//     unselected differ only in the outer border (2 px white vs 1 px
-//     `onSurfaceDisabled`); no filter / opacity / shadow on the avatar
+//     unselected differ only in the outer border (2 px `onNav` vs 1 px
+//     `onNavMuted`); no filter / opacity / shadow on the avatar
 //     itself.
 
 /// Shared hit-target + [Semantics] wrapper for every bottom-nav tab.
@@ -465,9 +464,9 @@ class _HomeTabButtonState extends State<_HomeTabButton>
                       scale: _arrowScale.value,
                       child: Transform.rotate(
                         angle: _rotationController.value * 2 * pi,
-                        child: const DivineIcon(
+                        child: DivineIcon(
                           icon: DivineIconName.arrowClockwise,
-                          color: VineTheme.whiteText,
+                          color: context.vineColors.onNav,
                         ),
                       ),
                     ),
@@ -576,7 +575,7 @@ class _ShadowedNavIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final glyph = DivineIcon(icon: icon, color: VineTheme.whiteText);
+    final glyph = DivineIcon(icon: icon, color: context.vineColors.onNav);
     if (!showShadow) return glyph;
     return Stack(
       alignment: Alignment.center,
@@ -622,8 +621,8 @@ class _NavIconShadow extends StatelessWidget {
 
 /// Profile tab: 24×24 rounded-8 box with a lime fallback background and
 /// the currently-signed-in user's avatar on top. Selection state is
-/// communicated only by the outer border (1 px `onSurfaceDisabled` →
-/// 2 px white).
+/// communicated only by the outer border (1 px `onNavMuted` →
+/// 2 px `onNav`).
 ///
 /// Falls back to the standard icon-tab treatment with [DivineIconName.userCircle]
 /// when no user is signed in (e.g. during sign-out) or while the profile
@@ -689,8 +688,8 @@ class _ProfileTabButton extends ConsumerWidget {
 
 /// The Figma profile-tab avatar box: 24×24 rounded-8 container with a
 /// lime fallback fill and the user's avatar image on top. The two
-/// variants differ only in the outer border — 1 px `onSurfaceDisabled`
-/// when unselected, 2 px white when selected.
+/// variants differ only in the outer border — 1 px `onNavMuted`
+/// when unselected, 2 px `onNav` when selected.
 class _ProfileAvatarBox extends StatelessWidget {
   const _ProfileAvatarBox({required this.imageUrl, required this.isSelected});
 
@@ -718,8 +717,8 @@ class _ProfileAvatarBox extends StatelessWidget {
               child: VineCachedImage(imageUrl: imageUrl, width: 24, height: 24),
             ),
           ),
-          // Border on top — 1 px `onSurfaceDisabled` when unselected,
-          // 2 px white when selected. (No inset shadow / opacity / blend
+          // Border on top — 1 px `onNavMuted` when unselected,
+          // 2 px `onNav` when selected. (No inset shadow / opacity / blend
           // — the avatar shows in full color in both states.)
           Positioned.fill(
             child: IgnorePointer(
@@ -728,8 +727,8 @@ class _ProfileAvatarBox extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: isSelected
-                        ? VineTheme.whiteText
-                        : VineTheme.onSurfaceDisabled,
+                        ? context.vineColors.onNav
+                        : context.vineColors.onNavMuted,
                     width: isSelected ? 2 : 1,
                   ),
                 ),

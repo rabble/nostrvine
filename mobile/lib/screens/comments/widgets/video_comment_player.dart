@@ -244,9 +244,9 @@ class _PlayOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: VineTheme.scrim50,
           shape: BoxShape.circle,
         ),
@@ -255,7 +255,7 @@ class _PlayOverlay extends StatelessWidget {
           child: Center(
             child: DivineIcon(
               icon: DivineIconName.play,
-              color: context.vineColors.primaryText,
+              color: VineTheme.primaryText,
             ),
           ),
         ),

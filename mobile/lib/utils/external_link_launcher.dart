@@ -74,7 +74,7 @@ Future<bool?> _confirmExternalLink(BuildContext context, Uri uri) {
       backgroundColor: context.vineColors.card,
       title: Text(
         ctx.l10n.messageExternalLinkDialogTitle,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       content: Text(
         ctx.l10n.messageExternalLinkDialogBody(uri.toString()),

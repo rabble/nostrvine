@@ -20,7 +20,9 @@ class CommentsHeader extends StatelessWidget {
         children: [
           Text(
             l10n.commentsHeaderTitle,
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const Spacer(),
           Semantics(

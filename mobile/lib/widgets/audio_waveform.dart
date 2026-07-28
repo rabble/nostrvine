@@ -199,10 +199,10 @@ class _AudioWaveformState extends State<AudioWaveform>
   /// Builds the position text display (e.g., "0:03 / 0:06").
   Widget _buildPositionText() {
     if (widget.duration == null) {
-      return const Text(
+      return Text(
         '--:-- / --:--',
         style: TextStyle(
-          color: VineTheme.lightText,
+          color: context.vineColors.mutedText,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
@@ -214,8 +214,8 @@ class _AudioWaveformState extends State<AudioWaveform>
 
     return Text(
       '$positionText / $durationText',
-      style: const TextStyle(
-        color: VineTheme.whiteText,
+      style: TextStyle(
+        color: context.vineColors.primaryText,
         fontSize: 12,
         fontWeight: FontWeight.w500,
       ),

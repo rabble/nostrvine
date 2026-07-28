@@ -96,7 +96,7 @@ class _VideoLoadingPlaceholderState extends State<VideoLoadingPlaceholder> {
     final boxFit = _resolveBoxFit();
 
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: Stack(
         fit: StackFit.expand,
         children: [

@@ -128,7 +128,7 @@ class _ContentWarningState extends State<ContentWarning>
                         context.l10n.reportReasonTitle(reason),
                         style: const TextStyle(fontSize: 12),
                       ),
-                      backgroundColor: VineTheme.whiteText.withValues(
+                      backgroundColor: context.vineColors.onSurface.withValues(
                         alpha: 0.2,
                       ),
                       labelStyle: TextStyle(
@@ -145,7 +145,7 @@ class _ContentWarningState extends State<ContentWarning>
                 child: OutlinedButton(
                   onPressed: _revealContent,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: VineTheme.whiteText,
+                    foregroundColor: context.vineColors.primaryText,
                     side: BorderSide(color: context.vineColors.primaryText),
                   ),
                   child: Text(context.l10n.contentWarningViewAnyway),
@@ -221,7 +221,7 @@ class _ContentWarningState extends State<ContentWarning>
           Text(
             context.l10n.contentWarningBlockedPolicy,
             style: TextStyle(
-              color: VineTheme.whiteText.withValues(alpha: 0.8),
+              color: context.vineColors.onSurfaceVariant,
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
@@ -407,9 +407,9 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                DivineIcon(
+                const DivineIcon(
                   icon: DivineIconName.warning,
-                  color: context.vineColors.primaryText,
+                  color: VineTheme.primaryText,
                   size: 32,
                 ),
                 const SizedBox(height: 8),

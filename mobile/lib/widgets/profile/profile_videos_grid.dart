@@ -190,7 +190,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       expanded: false,
       title: Text(
         context.l10n.videoGridOptionsTitle,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       body: _OwnVideoActionsSheetBody(
         onEditVideo: () => _editVideo(video),
@@ -599,7 +599,12 @@ class _OwnVideoActionTile extends StatelessWidget {
           ),
           child: DivineIcon(icon: icon, color: iconColor, size: 20),
         ),
-        title: Text(title, style: VineTheme.titleMediumFont()),
+        title: Text(
+          title,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
         subtitle: Text(
           subtitle,
           style: VineTheme.bodySmallFont(

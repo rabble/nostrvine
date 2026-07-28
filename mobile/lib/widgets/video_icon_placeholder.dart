@@ -72,8 +72,8 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.backgroundColor ?? VineTheme.cardBackground;
-    final iconColorValue = widget.iconColor ?? VineTheme.secondaryText;
+    final bgColor = widget.backgroundColor ?? context.vineColors.card;
+    final iconColorValue = widget.iconColor ?? context.vineColors.secondaryText;
 
     return Container(
       width: widget.width,
@@ -81,7 +81,7 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        border: Border.all(color: VineTheme.cardBackground),
+        border: Border.all(color: context.vineColors.card),
       ),
       child: widget.showLoading
           ? AnimatedBuilder(
@@ -141,8 +141,8 @@ class VideoIconPlaceholderCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? VineTheme.cardBackground;
-    final iconColorValue = iconColor ?? VineTheme.secondaryText;
+    final bgColor = backgroundColor ?? context.vineColors.card;
+    final iconColorValue = iconColor ?? context.vineColors.secondaryText;
 
     return Container(
       width: size,

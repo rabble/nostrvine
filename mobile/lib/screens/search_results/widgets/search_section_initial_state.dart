@@ -36,7 +36,9 @@ class SearchSectionInitialState extends StatelessWidget {
             ),
             Text(
               title,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
               textAlign: TextAlign.center,
             ),
             Text(

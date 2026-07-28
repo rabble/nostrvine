@@ -2474,9 +2474,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
             enableZoom: true,
             interactiveViewerClipBehavior: .none,
             safeArea: const EditorSafeArea.none(),
-            style: const MainEditorStyle(
-              uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
-              background: VineTheme.backgroundCamera,
+            style: MainEditorStyle(
+              uiOverlayStyle: VideoEditorConstants.uiOverlayStyleFor(
+                context.vineColors,
+              ),
+              background: context.vineColors.surfaceContainerHigh,
             ),
             captureLayersOnDone: true,
             captureImageOnDone: false,
@@ -2512,7 +2514,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                             }
                             return IgnorePointer(
                               child: ColoredBox(
-                                color: VineTheme.backgroundColor.withAlpha(128),
+                                color: context.vineColors.background.withAlpha(
+                                  128,
+                                ),
                                 child: const SizedBox.expand(),
                               ),
                             );
@@ -2538,8 +2542,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
                 2,
             safeArea: const EditorSafeArea.none(),
             enableEdit: false,
-            style: const PaintEditorStyle(
-              background: VineTheme.backgroundCamera,
+            style: PaintEditorStyle(
+              background: context.vineColors.surfaceContainerHigh,
             ),
             widgets: PaintEditorWidgets(
               appBar: (_, _) => null,
@@ -2550,8 +2554,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           filterEditor: FilterEditorConfigs(
             safeArea: const EditorSafeArea.none(),
             enableMultiSelection: false,
-            style: const FilterEditorStyle(
-              background: VineTheme.backgroundCamera,
+            style: FilterEditorStyle(
+              background: context.vineColors.surfaceContainerHigh,
             ),
             widgets: FilterEditorWidgets(
               appBar: (_, _) => null,
@@ -2561,8 +2565,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor>
           tuneEditor: TuneEditorConfigs(
             safeArea: const EditorSafeArea.none(),
             tuneAdjustmentOptions: VideoEditorConstants.tuneAdjustments,
-            style: const TuneEditorStyle(
-              background: VineTheme.backgroundCamera,
+            style: TuneEditorStyle(
+              background: context.vineColors.surfaceContainerHigh,
             ),
             widgets: TuneEditorWidgets(
               appBar: (_, _) => null,
@@ -3020,7 +3024,11 @@ class _OverlayCutArea extends ConsumerWidget {
     );
     if (targetAspectRatio == null) return const SizedBox.shrink();
 
-    final overlayColor = VineTheme.backgroundCamera.withAlpha(166);
+    // Dims the area outside the target aspect ratio toward the canvas
+    // backdrop, so the two stay in step across appearance modes.
+    final overlayColor = context.vineColors.surfaceContainerHigh.withAlpha(
+      166,
+    );
     final safeArea = MediaQuery.paddingOf(context);
     final scope = VideoEditorScope.of(context);
 

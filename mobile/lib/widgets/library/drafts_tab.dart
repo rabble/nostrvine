@@ -80,7 +80,9 @@ class DraftsTab extends ConsumerWidget {
                   Text(
                     context.l10n.libraryCouldNotLoadDrafts,
                     textAlign: TextAlign.center,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -268,13 +270,17 @@ class DraftsTab extends ConsumerWidget {
         backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.libraryDeleteDraftTitle,
-          style: VineTheme.titleSmallFont(),
+          style: VineTheme.titleSmallFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           context.l10n.libraryDeleteDraftMessage(
             draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
           ),
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         actions: [
           TextButton(
@@ -400,13 +406,13 @@ class DraftListTile extends StatelessWidget {
       ),
       title: Text(
         draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
-        style: VineTheme.titleSmallFont(),
+        style: VineTheme.titleSmallFont(color: context.vineColors.primaryText),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         _formatDraftSubtitle(context, draft.lastModified),
-        style: VineTheme.bodySmallFont(),
+        style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
       ),
       trailing: onOpenMore == null
           ? null

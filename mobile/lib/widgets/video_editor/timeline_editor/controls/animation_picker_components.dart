@@ -34,7 +34,7 @@ class SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     text,
-    style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
+    style: VineTheme.labelSmallFont(color: context.vineColors.secondaryText),
   );
 }
 
@@ -124,7 +124,7 @@ class CurvePickerRow extends StatelessWidget {
                   curve: flutterCurveFor(AnimationCurve.values[i]),
                   color: AnimationCurve.values[i] == selected
                       ? VineTheme.primary
-                      : VineTheme.secondaryText,
+                      : context.vineColors.secondaryText,
                 ),
               ),
             ),

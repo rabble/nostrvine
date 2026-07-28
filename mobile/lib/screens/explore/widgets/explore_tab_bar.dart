@@ -51,7 +51,9 @@ class ExploreTabBar extends StatelessWidget {
               labelColor: context.vineColors.primaryText,
               unselectedLabelColor: context.vineColors.onSurfaceMuted,
               labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-              labelStyle: VineTheme.titleMediumFont(),
+              labelStyle: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
               unselectedLabelStyle: VineTheme.titleMediumFont(
                 color: context.vineColors.onSurfaceMuted,
               ),
@@ -81,9 +83,14 @@ class ExploreTabBar extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.centerRight,
                       end: Alignment.centerLeft,
+                      // Both stops are the same surface at different alpha.
+                      // Fading to a hardcoded transparent *black* instead
+                      // muddies the midpoint once the surface is light.
                       colors: [
                         context.vineColors.surfaceContainerHigh,
-                        const Color(0x00000A06),
+                        context.vineColors.surfaceContainerHigh.withValues(
+                          alpha: 0,
+                        ),
                       ],
                     ),
                   ),

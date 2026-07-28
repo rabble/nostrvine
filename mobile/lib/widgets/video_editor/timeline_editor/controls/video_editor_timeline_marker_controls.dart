@@ -33,9 +33,10 @@ class TimelineMarkerControls extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.backgroundCamera,
+        color: context.vineColors.surfaceContainerHigh,
         boxShadow: [
           BoxShadow(
+            // A cast shadow, not a surface: stays dark in both modes.
             color: VineTheme.backgroundColor.withValues(alpha: 0.4),
             blurRadius: 8,
             offset: const Offset(0, -4),
@@ -160,7 +161,10 @@ class _ControlButton extends StatelessWidget {
           type: type,
           size: .small,
         ),
-        Text(label, style: VineTheme.bodySmallFont()),
+        Text(
+          label,
+          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        ),
       ],
     );
   }

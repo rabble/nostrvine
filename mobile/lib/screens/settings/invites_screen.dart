@@ -33,7 +33,8 @@ class _InvitesScreenState extends State<InvitesScreen> {
     return Scaffold(
       backgroundColor: context.vineColors.background,
       appBar: AppBar(
-        backgroundColor: VineTheme.navGreen,
+        // No override: appBarTheme already paints the nav surface, which is
+        // the dark brand green this used to hardcode.
         title: Text(context.l10n.invitesTitle),
       ),
       body: const InvitesView(),
@@ -154,7 +155,9 @@ class _GenerateInviteCard extends StatelessWidget {
           children: [
             Text(
               l10n.invitesGenerateCardTitle(remaining),
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             Text(
               l10n.invitesGenerateCardSubtitle,
@@ -192,7 +195,14 @@ class _InviteCodeCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Expanded(child: Text(code.code, style: VineTheme.titleLargeFont())),
+            Expanded(
+              child: Text(
+                code.code,
+                style: VineTheme.titleLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+            ),
             IconButton(
               icon: const DivineIcon(
                 icon: DivineIconName.copy,

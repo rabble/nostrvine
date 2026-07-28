@@ -10,10 +10,10 @@ class VideoMetadataClassicStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: VineTheme.surfaceContainerHigh,
-      appBar: VideoMetadataClassicAppBar(),
-      body: Column(
+    return Scaffold(
+      backgroundColor: context.vineColors.surfaceContainerHigh,
+      appBar: const VideoMetadataClassicAppBar(),
+      body: const Column(
         spacing: 12,
         children: [
           Expanded(

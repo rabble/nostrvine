@@ -12,9 +12,9 @@ class TimelineDropIndicatorLine extends StatelessWidget {
       left: 0,
       right: 0,
       top: lineY - 0.5,
-      child: const ColoredBox(
-        color: VineTheme.onSurfaceMuted,
-        child: SizedBox(height: 1),
+      child: ColoredBox(
+        color: context.vineColors.onSurfaceMuted,
+        child: const SizedBox(height: 1),
       ),
     );
   }

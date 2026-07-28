@@ -473,6 +473,10 @@ class _InvitePlayBadge extends StatelessWidget {
   }
 }
 
+/// Invite copy laid over the video thumbnail's dark gradient.
+///
+/// Both call sites paint a fixed dark scrim behind this column, so the text
+/// stays light-on-dark in either appearance mode.
 class _InviteCopy extends StatelessWidget {
   const _InviteCopy({
     required this.previewTitle,
@@ -499,16 +503,14 @@ class _InviteCopy extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           title,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(color: VineTheme.primaryText),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 4),
         Text(
           consequence,
-          style: VineTheme.bodySmallFont(
-            color: context.vineColors.onSurfaceMuted,
-          ),
+          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
         ),
       ],
     );

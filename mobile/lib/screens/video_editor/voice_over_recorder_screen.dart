@@ -69,7 +69,7 @@ class VoiceOverRecorderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       body: MultiBlocListener(
         listeners: [
           // Announce when a take starts recording.
@@ -173,20 +173,24 @@ class _PermissionDenied extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 12,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: .microphone,
               size: 48,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             Text(
               l10n.videoEditorVoiceOverPermissionTitle,
               textAlign: .center,
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             Text(
               l10n.videoEditorVoiceOverPermissionBody,
               textAlign: .center,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
             const SizedBox(height: 4),
             DivineButton(
@@ -232,7 +236,9 @@ class _WaveformPanel extends StatelessWidget {
             padding: _textPadding,
             child: Text(
               l10n.videoEditorVoiceOverRecordingsCount(recordingCount),
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           if (!isRecording && recordingCount == 0)
@@ -241,7 +247,9 @@ class _WaveformPanel extends StatelessWidget {
               child: Text(
                 l10n.videoEditorVoiceOverHint,
                 textAlign: .center,
-                style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.mutedText,
+                ),
               ),
             ),
         ],
@@ -336,7 +344,7 @@ class _TimeReadout extends StatelessWidget {
     final readout = Text(
       '${_formatClock(total)} / ${_formatClock(available)}',
       style: VineTheme.titleLargeFont(
-        color: isOver ? VineTheme.error : VineTheme.onSurface,
+        color: isOver ? VineTheme.error : context.vineColors.onSurface,
       ),
     );
     if (!isOver) return readout;
@@ -396,7 +404,7 @@ class _RecordControls extends StatelessWidget {
                       child: Text(
                         context.l10n.videoEditorVoiceOverDeleteLast,
                         style: VineTheme.labelLargeFont(
-                          color: VineTheme.secondaryText,
+                          color: context.vineColors.secondaryText,
                         ),
                       ),
                     )
@@ -432,7 +440,7 @@ class _RecordButton extends StatelessWidget {
           height: _size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: VineTheme.onSurface, width: 4),
+            border: Border.all(color: context.vineColors.onSurface, width: 4),
           ),
           child: Center(
             child: AnimatedContainer(

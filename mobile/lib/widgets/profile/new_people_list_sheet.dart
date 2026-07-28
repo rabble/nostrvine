@@ -191,13 +191,17 @@ class _CollaboratorsRow extends StatelessWidget {
                           collaborators
                               .map((p) => p.bestDisplayName)
                               .join(', '),
-                          style: VineTheme.titleMediumFont(),
+                          style: VineTheme.titleMediumFont(
+                            color: context.vineColors.primaryText,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         )
                       : Text(
                           l10n.listCollaboratorsNone,
-                          style: VineTheme.titleMediumFont(),
+                          style: VineTheme.titleMediumFont(
+                            color: context.vineColors.primaryText,
+                          ),
                         ),
                 ),
                 const DivineIcon(
