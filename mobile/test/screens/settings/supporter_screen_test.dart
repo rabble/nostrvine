@@ -2,7 +2,6 @@
 
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,8 @@ import 'package:openvine/blocs/supporter/supporter_state.dart';
 import 'package:openvine/providers/supporter_providers.dart';
 import 'package:openvine/screens/settings/supporter_screen.dart';
 import 'package:openvine/services/supporter_repository.dart';
+
+import '../../helpers/l10n.dart';
 
 /// A minimal fake repository exposing the surface the screen reads.
 class _FakeRepository extends Fake implements SupporterRepository {
@@ -94,7 +95,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
-        child: const MaterialApp(home: SupporterScreen()),
+        child: buildLocalizedWidget(const SupporterScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -118,7 +119,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
-        child: const MaterialApp(home: SupporterScreen()),
+        child: buildLocalizedWidget(const SupporterScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -134,7 +135,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [supporterRepositoryProvider.overrideWithValue(repo)],
-        child: const MaterialApp(home: SupporterScreen()),
+        child: buildLocalizedWidget(const SupporterScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -154,8 +155,8 @@ void main() {
             _FakeRepository(controller),
           ),
         ],
-        child: MaterialApp(
-          home: BlocProvider<SupporterCubit>(
+        child: buildLocalizedWidget(
+          BlocProvider<SupporterCubit>(
             create: (_) {
               cubit = SupporterCubit(repository: _FakeRepository(controller));
               return cubit;

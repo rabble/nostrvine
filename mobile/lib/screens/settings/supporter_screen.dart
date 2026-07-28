@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/supporter/supporter_cubit.dart';
 import 'package:openvine/blocs/supporter/supporter_state.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/supporter_providers.dart';
 
 class SupporterScreen extends ConsumerWidget {
@@ -49,7 +50,7 @@ class _SupporterScreenViewState extends State<SupporterScreenView> {
       builder: (context, state) {
         return Scaffold(
           appBar: DiVineAppBar(
-            title: 'Divine Supporters',
+            title: context.l10n.supporterTitle,
             showBackButton: true,
             onBackPressed: context.pop,
           ),
@@ -114,15 +115,13 @@ class _Hero extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          'Keep Divine running',
+          context.l10n.supporterHeroTitle,
           style: Theme.of(context).textTheme.headlineSmall,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Divine is free and always will be. If you want to help us keep the '
-          'loops going, become a monthly supporter. Nothing is locked — it just '
-          'keeps the lights on and earns our thanks.',
+          context.l10n.supporterHeroBody,
           style: Theme.of(context).textTheme.bodyMedium,
           textAlign: TextAlign.center,
         ),
@@ -151,7 +150,7 @@ class _ActiveBadge extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              "You're a Divine Supporter. Thank you for keeping this going.",
+              context.l10n.supporterActiveBadge,
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
@@ -170,8 +169,8 @@ class _PurchaseStatusNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       status == SupporterStatus.pending
-          ? 'Your purchase is pending approval.'
-          : 'Confirming your support…',
+          ? context.l10n.supporterPurchasePending
+          : context.l10n.supporterPurchaseConfirming,
       style: Theme.of(context).textTheme.bodyLarge,
       textAlign: TextAlign.center,
     );
@@ -213,8 +212,8 @@ class _UnavailableNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       loading
-          ? 'Checking the store…'
-          : 'Supporter subscriptions are not available here right now.',
+          ? context.l10n.supporterStoreChecking
+          : context.l10n.supporterUnavailable,
       style: Theme.of(context).textTheme.bodyMedium,
       textAlign: TextAlign.center,
     );
@@ -233,7 +232,7 @@ class _RestoreButton extends StatelessWidget {
       onPressed: state.isBusy
           ? null
           : () => context.read<SupporterCubit>().restore(),
-      label: 'Restore purchases',
+      label: context.l10n.supporterRestorePurchases,
     );
   }
 }
@@ -253,33 +252,34 @@ class _FailureBanner extends StatelessWidget {
           color: VineTheme.accentOrange,
         ),
         const SizedBox(width: 8),
-        Expanded(child: Text(_message(failure))),
+        Expanded(child: Text(_message(context, failure))),
         DivineIconButton(
           icon: DivineIconName.x,
           type: DivineIconButtonType.ghostSecondary,
           onPressed: onDismiss,
-          semanticLabel: 'Dismiss error',
+          semanticLabel: context.l10n.supporterDismissError,
         ),
       ],
     );
   }
 
-  String _message(SupporterFailure failure) {
+  String _message(BuildContext context, SupporterFailure failure) {
+    final l10n = context.l10n;
     switch (failure) {
       case SupporterFailure.storeUnavailable:
-        return 'The store is unavailable on this device.';
+        return l10n.supporterErrorStoreUnavailable;
       case SupporterFailure.purchaseFailed:
-        return 'The purchase did not complete. You were not charged.';
+        return l10n.supporterErrorPurchaseFailed;
       case SupporterFailure.purchasePending:
-        return 'Your purchase is pending approval.';
+        return l10n.supporterErrorPurchasePending;
       case SupporterFailure.restoreFailed:
-        return 'No supporter subscription was found to restore.';
+        return l10n.supporterErrorRestoreFailed;
       case SupporterFailure.ownershipConflict:
-        return 'This purchase belongs to another Divine account.';
+        return l10n.supporterErrorOwnershipConflict;
       case SupporterFailure.verificationUnavailable:
-        return 'Divine could not confirm supporter status right now.';
+        return l10n.supporterErrorVerificationUnavailable;
       case SupporterFailure.unknown:
-        return 'Something went wrong. Please try again.';
+        return l10n.supporterErrorUnknown;
     }
   }
 }
@@ -288,8 +288,7 @@ class _Disclaimer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'Divine confirms supporter status after the store verifies your purchase. '
-      'Recognition is optional, and the halo is not verification.',
+      context.l10n.supporterDisclaimer,
       style: Theme.of(context).textTheme.bodySmall,
       textAlign: TextAlign.center,
     );

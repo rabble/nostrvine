@@ -273,10 +273,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 if (divineSupportersEnabled)
                   _SettingsTile(
-                    title: 'Divine Supporters',
+                    title: context.l10n.supporterTitle,
                     divineIcon: DivineIconName.heart,
-                    subtitle:
-                        'Support Divine with an optional monthly subscription.',
+                    subtitle: context.l10n.supporterTileSubtitle,
                     onTap: () => context.push(SupporterScreen.path),
                   ),
                 _SettingsTile(

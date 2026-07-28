@@ -10380,4 +10380,72 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
       'Vertraue Divine-Relays, prüfe den Rest.';
+
+  @override
+  String get supporterTitle => 'Divine Supporters';
+
+  @override
+  String get supporterTileSubtitle =>
+      'Support Divine with an optional monthly subscription.';
+
+  @override
+  String get supporterHeroTitle => 'Keep Divine running';
+
+  @override
+  String get supporterHeroBody =>
+      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+
+  @override
+  String get supporterActiveBadge =>
+      'You\'re a Divine Supporter. Thank you for keeping this going.';
+
+  @override
+  String get supporterPurchasePending => 'Your purchase is pending approval.';
+
+  @override
+  String get supporterPurchaseConfirming => 'Confirming your support…';
+
+  @override
+  String get supporterStoreChecking => 'Checking the store…';
+
+  @override
+  String get supporterUnavailable =>
+      'Supporter subscriptions are not available here right now.';
+
+  @override
+  String get supporterRestorePurchases => 'Restore purchases';
+
+  @override
+  String get supporterDismissError => 'Dismiss error';
+
+  @override
+  String get supporterErrorStoreUnavailable =>
+      'The store is unavailable on this device.';
+
+  @override
+  String get supporterErrorPurchaseFailed =>
+      'The purchase did not complete. You were not charged.';
+
+  @override
+  String get supporterErrorPurchasePending =>
+      'Your purchase is pending approval.';
+
+  @override
+  String get supporterErrorRestoreFailed =>
+      'No supporter subscription was found to restore.';
+
+  @override
+  String get supporterErrorOwnershipConflict =>
+      'This purchase belongs to another Divine account.';
+
+  @override
+  String get supporterErrorVerificationUnavailable =>
+      'Divine could not confirm supporter status right now.';
+
+  @override
+  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+
+  @override
+  String get supporterDisclaimer =>
+      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
 }
