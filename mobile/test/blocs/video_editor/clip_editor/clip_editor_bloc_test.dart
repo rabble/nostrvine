@@ -2,6 +2,7 @@
 // ABOUTME: trimming, and split operations.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui';
 
@@ -12,9 +13,11 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:openvine/services/video_editor/chroma_key_bake_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -299,6 +302,7 @@ void main() {
       SplitClipFn? splitClip,
       ReverseClipFn? reverseClip,
       TransformClipFn? transformClip,
+      ChromaKeyBakeFn? bakeChromaKey,
       MergeClipsFn? mergeClips,
       FlattenClipForLibraryFn? flattenClipForLibrary,
       CleanupFlattenedClipFn? cleanupFlattenedClip,
@@ -310,6 +314,7 @@ void main() {
         splitClip: splitClip,
         reverseClip: reverseClip,
         transformClip: transformClip,
+        bakeChromaKey: bakeChromaKey,
         mergeClips: mergeClips,
         flattenClipForLibrary: flattenClipForLibrary,
         // Defaults to a no-op so tests that don't exercise the non-landing
@@ -2257,6 +2262,272 @@ void main() {
 
           await bloc.close();
         },
+      );
+    });
+
+    group('ClipEditorChromaKeyRequested', () {
+      const key = ClipChromaKey(key: ChromaKey.greenScreen());
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'swaps the clip video for the keyed render',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async => (
+                video: EditorVideo.file('/path/keyed.mp4'),
+                source: sourceClip.chromaKeySourcePath ?? '/path/clip-1.mp4',
+              ),
+        ),
+        seed: () => ClipEditorState(clips: [_createClip()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isChromaKeying,
+            'isChromaKeying',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.clips.single.video?.file?.path,
+                'video',
+                '/path/keyed.mp4',
+              )
+              .having((s) => s.isChromaKeying, 'isChromaKeying', isFalse)
+              .having(
+                (s) => s.lastChromaKeyResult,
+                'lastChromaKeyResult',
+                isA<ChromaKeySuccess>(),
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'records the settings and the footage they were applied to',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async => (
+                video: EditorVideo.file('/path/keyed.mp4'),
+                source: '/path/clip-1.mp4',
+              ),
+        ),
+        seed: () => ClipEditorState(clips: [_createClip()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
+        ),
+        verify: (bloc) {
+          // Re-opening the editor restores these instead of starting over, and
+          // re-keying renders from the recorded source rather than stacking a
+          // second key on already-baked pixels.
+          expect(bloc.state.clips.single.chromaKey, key);
+          expect(
+            bloc.state.clips.single.chromaKeySourcePath,
+            '/path/clip-1.mp4',
+          );
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        're-keys from the recorded source, not the baked video',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async {
+                // The service resolves this itself; asserting the clip carries
+                // it is what proves the second pass starts from clean footage.
+                expect(sourceClip.chromaKeySourcePath, '/path/original.mp4');
+                return (
+                  video: EditorVideo.file('/path/keyed-again.mp4'),
+                  source: '/path/original.mp4',
+                );
+              },
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip().copyWith(
+              video: EditorVideo.file('/path/keyed.mp4'),
+              chromaKey: key,
+              chromaKeySourcePath: '/path/original.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
+        ),
+        verify: (bloc) => expect(
+          bloc.state.clips.single.chromaKeySourcePath,
+          '/path/original.mp4',
+        ),
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clears the cached reverse paths so a later reverse keeps the key',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async => (
+                video: EditorVideo.file('/path/keyed.mp4'),
+                source: sourceClip.chromaKeySourcePath ?? '/path/clip-1.mp4',
+              ),
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip().copyWith(
+              forwardVideoPath: '/path/forward.mp4',
+              reversedVideoPath: '/path/reversed.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
+        ),
+        verify: (bloc) {
+          // Those files still have the screen in them; restoring one would
+          // silently undo the key.
+          expect(bloc.state.clips.single.forwardVideoPath, isNull);
+          expect(bloc.state.clips.single.reversedVideoPath, isNull);
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'keeps the original clip when the render fails',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async => throw Exception('render failed'),
+        ),
+        seed: () => ClipEditorState(clips: [_createClip()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
+        ),
+        errors: () => [isA<Exception>()],
+        verify: (bloc) {
+          expect(bloc.state.clips.single.video?.file?.path, '/path/clip-1.mp4');
+          expect(bloc.state.isChromaKeying, isFalse);
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyFailure>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'discards the render when the clip is gone',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async {
+                await Future<void>.delayed(const Duration(milliseconds: 10));
+                return (
+                  video: EditorVideo.file('/path/keyed.mp4'),
+                  source: '/path/clip-1.mp4',
+                );
+              },
+        ),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClip(),
+            _createClip(id: 'clip-2'),
+          ],
+        ),
+        act: (bloc) async {
+          bloc.add(
+            const ClipEditorChromaKeyRequested(
+              clipId: 'clip-1',
+              chromaKey: key,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const ClipEditorClipRemoved('clip-1'));
+        },
+        // Outlast the fake render so `verify` sees the settled state.
+        wait: const Duration(milliseconds: 50),
+        verify: (bloc) => expect(
+          bloc.state.lastChromaKeyResult,
+          isA<ChromaKeyDiscarded>(),
+        ),
+      );
+    });
+
+    group('ClipEditorChromaKeyRemoved', () {
+      late Directory tempDir;
+      late String sourcePath;
+
+      setUp(() async {
+        tempDir = await Directory.systemTemp.createTemp('chroma_remove_test');
+        sourcePath = '${tempDir.path}/original.mp4';
+        await File(sourcePath).writeAsBytes(const [0]);
+      });
+
+      tearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+
+      DivineVideoClip keyedClip() => _createClip().copyWith(
+        video: EditorVideo.file('/path/keyed.mp4'),
+        chromaKey: const ClipChromaKey(key: ChromaKey.greenScreen()),
+        chromaKeySourcePath: sourcePath,
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'restores the pre-key footage without rendering',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async => throw StateError('removal must not render'),
+        ),
+        seed: () => ClipEditorState(clips: [keyedClip()]),
+        act: (bloc) => bloc.add(const ClipEditorChromaKeyRemoved('clip-1')),
+        verify: (bloc) {
+          final clip = bloc.state.clips.single;
+          expect(clip.video?.file?.path, sourcePath);
+          expect(clip.chromaKey, isNull);
+          expect(clip.chromaKeySourcePath, isNull);
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeySuccess>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'reports a failure when the pre-key footage is gone',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [keyedClip().copyWith(chromaKeySourcePath: '/gone.mp4')],
+        ),
+        act: (bloc) => bloc.add(const ClipEditorChromaKeyRemoved('clip-1')),
+        verify: (bloc) {
+          // Nothing to restore, so the clip must keep the keyed video rather
+          // than be pointed at a file that does not exist.
+          expect(bloc.state.clips.single.video?.file?.path, '/path/keyed.mp4');
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyFailure>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'ignores a clip that carries no key',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: [_createClip()]),
+        act: (bloc) => bloc.add(const ClipEditorChromaKeyRemoved('clip-1')),
+        expect: () => <ClipEditorState>[],
       );
     });
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,10 +7,12 @@ import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/models/video_editor/composition_duration.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:openvine/services/video_editor/chroma_key_bake_service.dart';
 import 'package:openvine/services/video_editor/video_editor_clip_library_save_service.dart';
 import 'package:openvine/services/video_editor/video_editor_merge_service.dart';
 import 'package:openvine/services/video_editor/video_editor_reverse_service.dart';
@@ -115,6 +119,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     SplitClipFn? splitClip,
     ReverseClipFn? reverseClip,
     TransformClipFn? transformClip,
+    ChromaKeyBakeFn? bakeChromaKey,
     MergeClipsFn? mergeClips,
     FlattenClipForLibraryFn? flattenClipForLibrary,
     CleanupFlattenedClipFn? cleanupFlattenedClip,
@@ -124,6 +129,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
        _reverseClip = reverseClip ?? VideoEditorReverseService.reverseClip,
        _transformClip =
            transformClip ?? VideoEditorTransformService.transformClip,
+       _bakeChromaKey = bakeChromaKey ?? ChromaKeyBakeService.bakeClip,
        _mergeClips = mergeClips ?? VideoEditorMergeService.mergeClips,
        _flattenClipForLibrary =
            flattenClipForLibrary ??
@@ -194,6 +200,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       transformer: droppable(),
     );
 
+    // Burn a green screen into the clip's file
+    on<ClipEditorChromaKeyRequested>(
+      _onChromaKeyRequested,
+      transformer: droppable(),
+    );
+    on<ClipEditorChromaKeyRemoved>(_onChromaKeyRemoved);
+
     // Save a single clip to the persistent clip library
     on<ClipEditorSaveClipToLibraryRequested>(
       _onSaveClipToLibraryRequested,
@@ -216,6 +229,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final SplitClipFn _splitClip;
   final ReverseClipFn _reverseClip;
   final TransformClipFn _transformClip;
+  final ChromaKeyBakeFn _bakeChromaKey;
   final MergeClipsFn _mergeClips;
   final FlattenClipForLibraryFn _flattenClipForLibrary;
   final CleanupFlattenedClipFn _cleanupFlattenedClip;
@@ -1188,6 +1202,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         trimStart: clip.trimEnd,
         trimEnd: clip.trimStart,
         reversed: false,
+        // A different file is now the clip's video, so a recorded chroma-key
+        // source no longer describes it. The key stays baked in; only
+        // re-tuning it is lost.
+        clearChromaKey: true,
       );
       final newClips = List<DivineVideoClip>.of(state.clips)
         ..[index] = restoredClip;
@@ -1207,6 +1225,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         trimStart: clip.trimEnd,
         trimEnd: clip.trimStart,
         reversed: true,
+        // See the forward branch above.
+        clearChromaKey: true,
       );
       final newClips = List<DivineVideoClip>.of(state.clips)
         ..[index] = restoredClip;
@@ -1289,6 +1309,9 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         reversedVideoPath: reversedVideoPath,
         clearForwardVideoPath: forwardVideoPath == null,
         clearReversedVideoPath: reversedVideoPath == null,
+        // The reversed render is a new file; re-keying from the un-reversed
+        // chroma source would undo the reverse.
+        clearChromaKey: true,
       );
       final newClips = List<DivineVideoClip>.of(currentClips)
         ..[currentIndex] = updatedClip;
@@ -1327,6 +1350,138 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   }
 
   // === TRANSFORM ===
+
+  void _onChromaKeyRemoved(
+    ClipEditorChromaKeyRemoved event,
+    Emitter<ClipEditorState> emit,
+  ) {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+
+    final clip = state.clips[index];
+    final source = clip.chromaKeySourcePath;
+    if (clip.chromaKey == null || source == null) return;
+
+    // The clip kept the footage the key was applied to, so undoing it is a
+    // file swap rather than another render. Without that file there is nothing
+    // to go back to — report it instead of leaving the key on screen.
+    if (!File(source).existsSync()) {
+      Log.warning(
+        '⚠️ Cannot drop the green screen on clip ${clip.id}: '
+        'its pre-key video $source is gone',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(state.copyWith(lastChromaKeyResult: ChromaKeyFailure()));
+      return;
+    }
+
+    final restored = clip.copyWith(
+      video: EditorVideo.file(source),
+      clearChromaKey: true,
+      // The cached reverse files were rendered from the keyed video, so they
+      // no longer match the footage this clip is going back to.
+      clearForwardVideoPath: true,
+      clearReversedVideoPath: true,
+    );
+    final newClips = List<DivineVideoClip>.of(state.clips)..[index] = restored;
+
+    emit(
+      state.copyWith(
+        clips: List.unmodifiable(newClips),
+        lastChromaKeyResult: ChromaKeySuccess(),
+      ),
+    );
+
+    onFinalClipInvalidated.call();
+  }
+
+  Future<void> _onChromaKeyRequested(
+    ClipEditorChromaKeyRequested event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final index = state.clips.indexWhere((c) => c.id == event.clipId);
+    if (index == -1) return;
+
+    final clip = state.clips[index];
+
+    final renderId = ChromaKeyBakeService.renderIdFor(clip.id);
+    emit(state.copyWith(isChromaKeying: true, chromaKeyingClipId: renderId));
+
+    try {
+      final baked = await _bakeChromaKey(
+        sourceClip: clip,
+        chromaKey: event.chromaKey,
+        renderId: renderId,
+      );
+
+      final currentClips = state.clips;
+      final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
+      if (currentIndex == -1) {
+        Log.warning(
+          '⚠️ Chroma-key result discarded: clip ${clip.id} no longer exists',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isChromaKeying: false,
+            clearChromaKeyingClipId: true,
+            lastChromaKeyResult: ChromaKeyDiscarded(),
+          ),
+        );
+        return;
+      }
+
+      // Remember the settings and the footage they were applied to, so
+      // re-opening the editor restores what the user set and re-keys from the
+      // clean original instead of stacking a second key on baked pixels.
+      //
+      // The cached forward/reversed paths now point at stale (unkeyed) files —
+      // clear them so a later reverse re-renders from the keyed video instead
+      // of restoring footage that still has the screen in it.
+      final updatedClip = currentClips[currentIndex].copyWith(
+        video: baked.video,
+        chromaKey: event.chromaKey,
+        chromaKeySourcePath: baked.source,
+        clearForwardVideoPath: true,
+        clearReversedVideoPath: true,
+      );
+      final newClips = List<DivineVideoClip>.of(currentClips)
+        ..[currentIndex] = updatedClip;
+
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          isChromaKeying: false,
+          clearChromaKeyingClipId: true,
+          lastChromaKeyResult: ChromaKeySuccess(),
+        ),
+      );
+
+      onFinalClipInvalidated.call();
+    } catch (e, stackTrace) {
+      final error = switch (e) {
+        StateError() ||
+        TypeError() ||
+        RangeError() => Reportable(e, context: '_onChromaKeyRequested'),
+        _ => e,
+      };
+      addError(error, stackTrace);
+      Log.error(
+        '❌ Failed to bake the green screen into clip ${clip.id}: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          isChromaKeying: false,
+          clearChromaKeyingClipId: true,
+          lastChromaKeyResult: ChromaKeyFailure(),
+        ),
+      );
+    }
+  }
 
   Future<void> _onClipTransformRequested(
     ClipEditorClipTransformRequested event,
@@ -1387,6 +1542,11 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         video: transformedVideo,
         clearForwardVideoPath: true,
         clearReversedVideoPath: true,
+        // The transform re-renders the clip's geometry, so a recorded
+        // chroma-key source no longer matches it — re-keying from that file
+        // would silently drop the crop. The key stays baked into the video;
+        // only the ability to re-tune it is lost.
+        clearChromaKey: true,
       );
       final newClips = List<DivineVideoClip>.of(currentClips)
         ..[currentIndex] = updatedClip;

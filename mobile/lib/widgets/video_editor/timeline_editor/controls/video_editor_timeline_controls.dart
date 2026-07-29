@@ -13,6 +13,9 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onAnimate,
     this.onSpeed,
     this.onTransform,
+    this.onChromaKey,
+    this.isChromaKeying = false,
+    this.hasChromaKey = false,
     this.onReversed,
     this.isReversed = false,
     this.onExtractAudio,
@@ -40,6 +43,18 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onAnimate;
   final VoidCallback? onSpeed;
   final VoidCallback? onTransform;
+
+  /// Opens the green-screen editor for the active clip.
+  final VoidCallback? onChromaKey;
+
+  /// Whether the active clip's green screen is currently being baked into its
+  /// file. Shows the action as a spinner, matching the other render actions.
+  final bool isChromaKeying;
+
+  /// Whether the active clip already carries a baked green screen, which
+  /// highlights the action so the effect is visible from the timeline.
+  final bool hasChromaKey;
+
   final VoidCallback? onReversed;
   final bool isReversed;
   final VoidCallback? onExtractAudio;
@@ -157,6 +172,16 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .l10n
                           .videoEditorTransformSelectedClipSemanticLabel,
                       onPressed: onTransform,
+                    ),
+                  if (onChromaKey != null)
+                    _ControlButton(
+                      icon: .selection,
+                      label: context.l10n.videoEditorChromaKeyLabel,
+                      semanticLabel:
+                          context.l10n.videoEditorChromaKeySemanticLabel,
+                      onPressed: isChromaKeying ? null : onChromaKey,
+                      isLoading: isChromaKeying,
+                      type: hasChromaKey ? .primary : .secondary,
                     ),
                   if (onReversed != null)
                     _ControlButton(

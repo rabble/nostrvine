@@ -8778,6 +8778,104 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Deslize para ajustar';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Fundo verde';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Fundo verde';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Configurar o fundo verde deste clipe';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Descartar as alterações do fundo verde';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Aplicar o fundo verde';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Detetar automaticamente';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Verde';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Azul';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Cor do fundo';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Intensidade';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Quanto da cor do fundo desaparece';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Contorno';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Suaviza o recorte para o cabelo não ficar serrilhado';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Derrame';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Tira o tom do fundo do teu motivo';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Substituir por';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Nada';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Cor';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Imagem';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clipe';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'O vídeo não guarda transparência, por isso isto é exportado a preto.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Não encontrámos nenhum fundo. Tem de chegar às margens da imagem — caso contrário, escolhe a cor à mão.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Escolher um clipe';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'A tua biblioteca está vazia. Guarda primeiro um clipe e depois usa-o como fundo.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Não foi possível carregar essa imagem.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Remover o fundo verde';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Não foi possível aplicar o fundo verde. O teu clipe fica igual.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'A aplicar o fundo verde…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Este dispositivo não consegue mostrar a pré-visualização ao vivo. As tuas definições aplicam-se na mesma ao exportar.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Áudio original';
 
   @override

@@ -8759,6 +8759,104 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Schuif om aan te passen';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Greenscreen';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Greenscreen';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Greenscreen voor deze clip instellen';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Greenscreen-wijzigingen verwerpen';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Greenscreen toepassen';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Automatisch detecteren';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Groen';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Blauw';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Achtergrondkleur';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Sterkte';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Hoeveel van de achtergrondkleur verdwijnt';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Rand';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Maakt de uitsnede zachter zodat haar niet rafelt';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Kleurzweem';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Haalt de kleur van de achtergrond van je onderwerp af';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Vervangen door';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Niets';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Kleur';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Afbeelding';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video kan geen transparantie bevatten, dus dit wordt zwart geëxporteerd.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Geen achtergrond gevonden. Die moet tot aan de rand van het beeld komen — kies anders de kleur met de hand.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Kies een clip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Je bibliotheek is leeg. Bewaar eerst een clip en gebruik die dan als achtergrond.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Kon die afbeelding niet laden.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Greenscreen verwijderen';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Kon het greenscreen niet toepassen. Je clip blijft ongewijzigd.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Greenscreen wordt toegepast…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Dit toestel kan de live voorbeeldweergave niet tonen. Je instellingen gelden nog steeds bij het exporteren.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Origineel geluid';
 
   @override

@@ -8689,6 +8689,104 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Geser untuk menyesuaikan';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Layar hijau';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Layar hijau';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Atur layar hijau untuk klip ini';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Buang perubahan layar hijau';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Terapkan layar hijau';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Deteksi otomatis';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Hijau';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Biru';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Warna layar';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Kekuatan';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Seberapa banyak warna layar yang hilang';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Tepi';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Melembutkan potongan agar rambut tidak bergerigi';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Rembesan';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Menarik warna layar dari subjekmu';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Ganti dengan';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Tidak ada';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Warna';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Gambar';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Klip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video tidak bisa menyimpan transparansi, jadi hasil ekspornya hitam.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Layar tidak ditemukan. Layar harus mencapai tepi bingkai — kalau tidak, pilih warnanya secara manual.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Pilih klip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Pustakamu kosong. Simpan klip dulu, lalu pakai sebagai latar.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Gambar itu tidak bisa dimuat.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Hapus layar hijau';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Layar hijau tidak bisa diterapkan. Klipmu tidak berubah.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Menerapkan layar hijau…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Perangkat ini tidak bisa menampilkan pratinjau langsung. Pengaturanmu tetap berlaku saat ekspor.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Audio asli';
 
   @override

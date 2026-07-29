@@ -353,6 +353,40 @@ class ClipEditorClipTransformRequested extends ClipEditorEvent {
   List<Object?> get props => [clipId, transform];
 }
 
+// === CHROMA KEY ===
+
+/// Request that the clip with [clipId] be re-rendered with [chromaKey] (its
+/// green screen and whatever replaces it) baked into a new file.
+///
+/// Baking on confirm rather than carrying the key on the clip keeps one source
+/// of truth: afterwards the clip is ordinary footage, so preview, timeline
+/// thumbnails and export all agree.
+class ClipEditorChromaKeyRequested extends ClipEditorEvent {
+  const ClipEditorChromaKeyRequested({
+    required this.clipId,
+    required this.chromaKey,
+  });
+
+  final String clipId;
+  final ClipChromaKey chromaKey;
+
+  @override
+  List<Object?> get props => [clipId, chromaKey];
+}
+
+/// Request that the clip with [clipId] drop its baked green screen.
+///
+/// Restores the footage the key was applied to, which the clip kept — so this
+/// costs no render, unlike applying one.
+class ClipEditorChromaKeyRemoved extends ClipEditorEvent {
+  const ClipEditorChromaKeyRemoved(this.clipId);
+
+  final String clipId;
+
+  @override
+  List<Object?> get props => [clipId];
+}
+
 // === VOLUME ===
 
 /// Update the volume of a clip by its ID.

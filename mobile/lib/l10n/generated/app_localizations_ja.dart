@@ -8381,6 +8381,97 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'スライドして調整';
 
   @override
+  String get videoEditorChromaKeyLabel => 'グリーンバック';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'グリーンバック';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel => 'このクリップのグリーンバックを設定';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel => 'グリーンバックの変更を破棄';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'グリーンバックを適用';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => '自動検出';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'グリーン';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'ブルー';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => '背景の色';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => '強さ';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => '背景の色をどれだけ消すか';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'エッジ';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint => '切り抜きをなめらかにして髪のギザつきを防ぎます';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => '色かぶり';
+
+  @override
+  String get videoEditorChromaKeySpillHint => '背景の色みを被写体から取り除きます';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => '置き換える';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'なし';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => '色';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => '画像';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'クリップ';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      '動画は透明を保持できないため、書き出すと黒くなります。';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      '背景が見つかりませんでした。画面の端まで届いている必要があります。届いていない場合は手動で色を選んでください。';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'クリップを選ぶ';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'ライブラリが空です。先にクリップを保存すると、背景として使えます。';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => 'その画像を読み込めませんでした。';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'グリーンバックを削除';
+
+  @override
+  String get videoEditorChromaKeyFailed => 'グリーンバックを適用できませんでした。クリップは変更されていません。';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'グリーンバックを適用しています…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'この端末ではライブプレビューを表示できません。設定は書き出し時にきちんと反映されます。';
+
+  @override
   String get videoEditorOriginalAudioLabel => '元の音声';
 
   @override

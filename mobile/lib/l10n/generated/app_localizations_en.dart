@@ -8703,6 +8703,104 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Slide to adjust';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Set up the green screen for this clip';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Discard green screen changes';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Apply the green screen';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Auto-detect';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Green';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Blue';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Screen color';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Amount';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'How much of the screen color disappears';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Edge';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Softens the cutout so hair doesn\'t turn jagged';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Spill';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Pulls the screen\'s color back off your subject';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Replace with';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Nothing';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Color';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Image';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video can\'t hold transparency, so this exports as black.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Couldn\'t find a screen. It has to reach the edges of the frame — pick the color by hand instead.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Pick a clip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Your library is empty. Save a clip first, then use it as a background.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Couldn\'t load that image.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Remove green screen';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Couldn\'t apply the green screen. Your clip is unchanged.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Applying the green screen…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'This device can\'t show the live preview. Your settings still apply when you export.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Original audio';
 
   @override

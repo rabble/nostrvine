@@ -31,6 +31,9 @@ class ClipEditorState extends Equatable {
     this.isTransforming = false,
     this.transformingClipId,
     this.lastTransformResult,
+    this.isChromaKeying = false,
+    this.chromaKeyingClipId,
+    this.lastChromaKeyResult,
     this.isMultiSelectMode = false,
     this.selectedClipIds = const {},
     this.isMerging = false,
@@ -160,6 +163,16 @@ class ClipEditorState extends Equatable {
   /// the canvas player-sync listener that reacts to the swapped clip file.
   final ClipTransformResult? lastTransformResult;
 
+  /// Whether a green screen is currently being baked into a clip's file.
+  final bool isChromaKeying;
+
+  /// Render id of the clip whose green screen is baking, or `null`.
+  final String? chromaKeyingClipId;
+
+  /// Outcome of the last chroma-key bake. Compared by identity so the same
+  /// outcome twice in a row still surfaces.
+  final ChromaKeyResult? lastChromaKeyResult;
+
   /// Whether the timeline is in multi-select mode — tapping a clip toggles its
   /// membership in [selectedClipIds] instead of entering single-clip editing.
   final bool isMultiSelectMode;
@@ -244,6 +257,10 @@ class ClipEditorState extends Equatable {
     ClipReverseResult? lastReverseResult,
     bool? isTransforming,
     String? transformingClipId,
+    bool? isChromaKeying,
+    String? chromaKeyingClipId,
+    bool clearChromaKeyingClipId = false,
+    ChromaKeyResult? lastChromaKeyResult,
     bool clearTransformingClipId = false,
     ClipTransformResult? lastTransformResult,
     bool? isMultiSelectMode,
@@ -297,6 +314,11 @@ class ClipEditorState extends Equatable {
           ? null
           : (transformingClipId ?? this.transformingClipId),
       lastTransformResult: lastTransformResult ?? this.lastTransformResult,
+      isChromaKeying: isChromaKeying ?? this.isChromaKeying,
+      chromaKeyingClipId: clearChromaKeyingClipId
+          ? null
+          : (chromaKeyingClipId ?? this.chromaKeyingClipId),
+      lastChromaKeyResult: lastChromaKeyResult ?? this.lastChromaKeyResult,
       isMultiSelectMode: isMultiSelectMode ?? this.isMultiSelectMode,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
       isMerging: isMerging ?? this.isMerging,
@@ -346,6 +368,9 @@ class ClipEditorState extends Equatable {
     isTransforming,
     transformingClipId,
     identityHashCode(lastTransformResult),
+    isChromaKeying,
+    chromaKeyingClipId,
+    identityHashCode(lastChromaKeyResult),
     isMultiSelectMode,
     selectedClipIds,
     isMerging,
@@ -447,6 +472,18 @@ final class ClipReverseFailure extends ClipReverseResult {}
 // === TRANSFORM RESULT ===
 
 /// One-shot signal describing the outcome of a transform-render operation.
+/// Outcome of baking a green screen into a clip.
+sealed class ChromaKeyResult {}
+
+/// The clip's file was re-rendered with the key burned in.
+final class ChromaKeySuccess extends ChromaKeyResult {}
+
+/// The clip disappeared while the bake ran, so the result was dropped.
+final class ChromaKeyDiscarded extends ChromaKeyResult {}
+
+/// The bake failed; the clip keeps its original video.
+final class ChromaKeyFailure extends ChromaKeyResult {}
+
 sealed class ClipTransformResult {}
 
 /// Transform render succeeded; the clip file has been swapped in state.

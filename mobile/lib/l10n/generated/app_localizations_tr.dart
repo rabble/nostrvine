@@ -8691,6 +8691,103 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Ayarlamak için kaydır';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Yeşil perde';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Yeşil perde';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Bu klip için yeşil perdeyi ayarla';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Yeşil perde değişikliklerini iptal et';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Yeşil perdeyi uygula';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Otomatik algıla';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Yeşil';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Mavi';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Perde rengi';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Miktar';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Perde renginin ne kadarı kaybolacak';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Kenar';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Kesiti yumuşatır, saçlar tırtıklı çıkmaz';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Renk taşması';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Perdenin rengini öznenin üzerinden çeker';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Şununla değiştir';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Hiçbir şey';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Renk';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Görsel';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Klip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video saydamlık tutamaz, bu yüzden dışa aktarımda siyah olur.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Perde bulunamadı. Karenin kenarlarına kadar ulaşması gerekir — yoksa rengi elle seç.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Bir klip seç';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Kitaplığın boş. Önce bir klip kaydet, sonra onu arka plan olarak kullan.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => 'Bu görsel yüklenemedi.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Yeşil perdeyi kaldır';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Yeşil perde uygulanamadı. Klibin değişmedi.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Yeşil perde uygulanıyor…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Bu cihaz canlı önizlemeyi gösteremiyor. Ayarların dışa aktarımda yine de geçerli.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Orijinal ses';
 
   @override

@@ -53,11 +53,13 @@ class VideoEditorScaffold extends StatelessWidget {
         body: _SplitFailureListener(
           child: _ClipReverseResultListener(
             child: _ClipTransformResultListener(
-              child: _ClipMergeResultListener(
-                child: _ClipsRemovedResultListener(
-                  child: _AudioExtractionResultListener(
-                    child: _ClipLibrarySaveResultListener(
-                      child: _ScaffoldBody(isLoading: isLoading),
+              child: _ChromaKeyResultListener(
+                child: _ClipMergeResultListener(
+                  child: _ClipsRemovedResultListener(
+                    child: _AudioExtractionResultListener(
+                      child: _ClipLibrarySaveResultListener(
+                        child: _ScaffoldBody(isLoading: isLoading),
+                      ),
                     ),
                   ),
                 ),
@@ -186,6 +188,46 @@ class _ClipReverseResultListener extends StatelessWidget {
         // Player sync is handled by the canvas listener; nothing to do here.
         break;
     }
+  }
+}
+
+/// Listens to [ClipEditorBloc.state.lastChromaKeyResult] and surfaces a
+/// snackbar when baking a green screen into a clip fails.
+///
+/// Success needs no message: the clip's video is swapped and the canvas
+/// reloads it, which is the confirmation. Kept at the scaffold level (always
+/// mounted) so the snackbar fires even when the timeline controls are hidden
+/// while the render is in flight.
+class _ChromaKeyResultListener extends StatelessWidget {
+  const _ChromaKeyResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastChromaKeyResult, curr.lastChromaKeyResult) &&
+          curr.lastChromaKeyResult != null,
+      listener: (context, state) {
+        switch (state.lastChromaKeyResult) {
+          case ChromaKeyFailure():
+            ScaffoldMessenger.of(context).showSnackBar(
+              DivineSnackbarContainer.snackBar(
+                context.l10n.videoEditorChromaKeyFailed,
+              ),
+            );
+          case ChromaKeyDiscarded():
+          // The clip was removed during the render — nothing to attach the
+          // result to, and no user action that warrants a snackbar.
+          case ChromaKeySuccess():
+          // The swapped clip file is the confirmation.
+          case null:
+            break;
+        }
+      },
+      child: child,
+    );
   }
 }
 
