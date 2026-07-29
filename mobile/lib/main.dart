@@ -2791,11 +2791,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
               create: (_) => BackgroundPublishBloc(
                 videoPublishServiceFactory: createPublishService,
                 draftStorageService: ref.read(draftStorageServiceProvider),
-                // draftStorageServiceProvider bakes ownerPubkey in and rebuilds
-                // on every account change, but this create runs once (#6480).
-                draftStorageStream: ref.read(
-                  draftStorageServiceIdentityStreamProvider,
-                ),
                 foregroundSession: ref.read(publishForegroundSessionProvider),
               ),
             ),
