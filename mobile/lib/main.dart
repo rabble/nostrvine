@@ -2829,11 +2829,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
             // conditional entry changes this provider chain's shape, so
             // flipping the flag re-inflated everything below it — the whole
             // MaterialApp.router subtree, feed state, video controllers, and
-            // the upload-listener dedupe sets with it. The reported symptom
-            // was landing back on Settings from the imperatively pushed
-            // feature-flag screen (#6477); only the re-inflation is
-            // reproduced, the Navigator-level step from there to route loss
-            // is not, and the re-inflation alone justifies this shape.
+            // the upload-listener dedupe sets with it. Users were thrown back
+            // to Settings from the imperatively pushed feature-flag screen;
+            // both the symptom and its disappearance under this shape are
+            // verified on device (#6477). What is not pinned is the
+            // Navigator-level step in between — a synthetic probe of the same
+            // shape kept the pushed route — so do not read the chain below
+            // re-inflation as established.
             //
             // Laziness does the gating instead: every entry point into the
             // people-lists UI checks FeatureFlag.curatedLists before reading
