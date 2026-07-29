@@ -149,12 +149,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return proceed ?? false;
   }
 
-  /// Draft ids of uploads that have not finished yet.
-  static List<String> _inFlightDraftIds(BackgroundPublishBloc bloc) => [
-    for (final upload in bloc.state.uploads)
-      if (upload.result == null) upload.draft.id,
-  ];
-
   Future<void> _handleSwitchAccount() async {
     final accountState = _accountCubit.state;
     final publishBloc = context.read<BackgroundPublishBloc>();
@@ -164,7 +158,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // videos are parked back as drafts of the account they were recorded on
     // only once a target account is actually picked, since confirming this
     // sheet still leaves the user free to back out of the picker below.
-    final inFlightCount = _inFlightDraftIds(publishBloc).length;
+    final inFlightCount = publishBloc.state.uploads
+        .where((upload) => upload.result == null)
+        .length;
     if (inFlightCount > 0) {
       final proceed = await _confirmSwitchAnyway(
         title: context.l10n.settingsUploadInProgressTitle,
@@ -194,13 +190,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.of(context).pop();
               if (account.pubkeyHex == accountState.currentPubkey) return;
 
-              // Park now that a switch is actually committed. Re-read the
-              // queue instead of reusing the ids the warning was built from,
-              // so an upload that finished while the picker was open is left
-              // alone.
-              for (final draftId in _inFlightDraftIds(publishBloc)) {
-                publishBloc.add(BackgroundPublishVanished(draftId: draftId));
-              }
+              // Park now that a switch is actually committed, and await it:
+              // `swapAccount` disposes the container this bloc lives in, so a
+              // fire-and-forget event would race the teardown and lose the
+              // video. Parking reads the queue now rather than reusing the ids
+              // the warning was built from, so an upload that finished while
+              // the picker was open is left alone.
+              await publishBloc.parkInFlight();
+              if (!mounted) return;
 
               final deviceScope = ref.read(deviceScopeProvider);
               try {

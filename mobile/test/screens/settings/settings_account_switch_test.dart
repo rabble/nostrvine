@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for the account-switch confirmation in Settings.
 // ABOUTME: Covers the in-flight-upload warning that supersedes the drafts one.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -123,14 +125,6 @@ void main() {
     selectedApproach: 'test',
   ).copyWith(id: id);
 
-  /// Draft ids the screen asked the bloc to park, in dispatch order.
-  List<String> parkedDraftIds() => verify(() => publishBloc.add(captureAny()))
-      .captured
-      .cast<BackgroundPublishEvent>()
-      .whereType<BackgroundPublishVanished>()
-      .map((event) => event.draftId)
-      .toList();
-
   /// The account picker renders each tile with a generated display name, since
   /// `profileRepositoryProvider` is null in these tests. The settings header
   /// shows the current account under the same name, so take the match inside
@@ -138,9 +132,7 @@ void main() {
   Finder accountTile(String pubkeyHex) =>
       find.text(models.UserProfile.defaultDisplayNameFor(pubkeyHex)).last;
 
-  void expectNothingParked() => verifyNever(
-    () => publishBloc.add(any(that: isA<BackgroundPublishVanished>())),
-  );
+  void expectNothingParked() => verifyNever(() => publishBloc.parkInFlight());
 
   void seedPublishState(BackgroundPublishState state) {
     whenListen(
@@ -149,10 +141,6 @@ void main() {
       initialState: state,
     );
   }
-
-  setUpAll(() {
-    registerFallbackValue(BackgroundPublishVanished(draftId: 'fallback'));
-  });
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -181,6 +169,7 @@ void main() {
       initialState: const InviteStatusState(),
     );
     when(() => inviteStatusCubit.load()).thenAnswer((_) async {});
+    when(() => publishBloc.parkInFlight()).thenAnswer((_) async {});
     seedPublishState(const BackgroundPublishState());
 
     when(() => authService.isAuthenticated).thenReturn(true);
@@ -334,11 +323,11 @@ void main() {
     await tester.tap(find.text(l10n.settingsCancel));
     await tester.pumpAndSettle();
 
-    verifyNever(() => publishBloc.add(any()));
+    expectNothingParked();
     expect(find.text(l10n.settingsUploadInProgressTitle), findsNothing);
   });
 
-  testWidgets('picking another account parks each in-flight upload', (
+  testWidgets('picking another account parks the in-flight uploads', (
     tester,
   ) async {
     seedPublishState(
@@ -346,7 +335,7 @@ void main() {
         uploads: [
           BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
           BackgroundUpload(draft: draftWithId('d2'), result: null, progress: 0),
-          // Already finished — must not be parked or counted.
+          // Already finished — must not be counted in the warning.
           BackgroundUpload(
             draft: draftWithId('d3'),
             result: const PublishError(PublishErrorKind.generic),
@@ -364,7 +353,37 @@ void main() {
     await tester.tap(accountTile(otherPubkey));
     await tester.pumpAndSettle();
 
-    expect(parkedDraftIds(), equals(['d1', 'd2']));
+    // Which uploads parking covers is pinned on the bloc.
+    verify(() => publishBloc.parkInFlight()).called(1);
+  });
+
+  testWidgets('waits for the park to land before swapping the account', (
+    tester,
+  ) async {
+    final parked = Completer<void>();
+    when(() => publishBloc.parkInFlight()).thenAnswer((_) => parked.future);
+    seedPublishState(
+      BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
+        ],
+      ),
+    );
+
+    final l10n = await pumpAndTapSwitch(tester);
+    await tester.tap(find.text(l10n.settingsSwitchAnyway));
+    await tester.pumpAndSettle();
+    await tester.tap(accountTile(otherPubkey));
+    await tester.pumpAndSettle();
+
+    // `swapAccount` disposes the container the publish bloc lives in, so it
+    // must not start while the park write is still outstanding.
+    verifyNever(() => deviceScope.switchController);
+
+    parked.complete();
+    await tester.pumpAndSettle();
+
+    verify(() => deviceScope.switchController).called(1);
   });
 
   testWidgets('confirming the warning alone parks nothing', (tester) async {

@@ -183,25 +183,60 @@ class BackgroundPublishBloc
     }).toList();
     emit(state.copyWith(uploads: remainingUploads));
 
-    final vanishedDraft = uploadToVanish?.draft;
-    final sourceDraftId = vanishedDraft?.sourceDraftId;
-    // Dropping the publish copy is only safe while the draft it was copied
-    // from is still there to fall back on. A fresh recording's source is the
-    // autosave draft, which `clearAll` reaps ~600ms after the publish handoff,
-    // so by the time an upload is parked the copy is usually all that is left —
-    // deleting it would discard the video instead of saving it. Park the copy
-    // as a draft in that case.
+    await _park(draftId: event.draftId, draft: uploadToVanish?.draft);
+  }
+
+  /// Parks every upload that has not finished yet back as a draft, awaiting
+  /// the writes.
+  ///
+  /// A caller that is about to tear down the container this bloc lives in —
+  /// the account switch — must use this instead of adding one
+  /// [BackgroundPublishVanished] per upload: `add` is fire-and-forget, so the
+  /// handler's writes would race the teardown and the video would be lost on
+  /// anything slower than a single fast write. The events are still dispatched
+  /// afterwards, for the in-memory cleanup only; re-parking an already parked
+  /// upload is a no-op.
+  Future<void> parkInFlight() async {
+    final inFlight = state.uploads
+        .where((upload) => upload.result == null)
+        .toList();
+    if (inFlight.isEmpty) return;
+
+    for (final upload in inFlight) {
+      await _park(draftId: upload.draft.id, draft: upload.draft);
+    }
+    for (final upload in inFlight) {
+      add(BackgroundPublishVanished(draftId: upload.draft.id));
+    }
+  }
+
+  /// Keeps an abandoned upload's video reachable.
+  ///
+  /// Dropping the publish copy is only safe while the draft it was copied from
+  /// is still there to fall back on. A fresh recording's source is the autosave
+  /// draft, which `clearAll` reaps ~600ms after the publish handoff, so by the
+  /// time an upload is parked the copy is usually all that is left — deleting
+  /// it would discard the video instead of saving it. Park the copy as a draft
+  /// in that case.
+  ///
+  /// Idempotent: a repeat call finds the copy already deleted, or rewrites the
+  /// same draft status. Ownership-neutral by design — every write it makes is
+  /// keyed on the draft's primary key and none of them touch `ownerPubkey`, so
+  /// the row stays with the account that recorded it no matter which account
+  /// the service handed here belongs to.
+  Future<void> _park({
+    required String draftId,
+    required DivineVideoDraft? draft,
+  }) async {
+    final sourceDraftId = draft?.sourceDraftId;
     if (sourceDraftId != null &&
-        sourceDraftId != vanishedDraft!.id &&
+        sourceDraftId != draft!.id &&
         await _draftStorageService.draftExists(sourceDraftId)) {
-      await _deleteDraft(vanishedDraft.id);
+      await _deleteDraft(draft.id);
       return;
     }
 
-    await _persistPublishStatus(
-      draftId: event.draftId,
-      status: PublishStatus.draft,
-    );
+    await _persistPublishStatus(draftId: draftId, status: PublishStatus.draft);
   }
 
   Future<void> _onBackgroundPublishRetryRequested(

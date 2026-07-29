@@ -560,15 +560,44 @@ void main() {
         expect(await serviceFor(pubkeyB).draftExists('nope'), isFalse);
       });
 
+      test('updatePublishStatus leaves the row with its owner', () async {
+        await serviceFor(pubkeyA).saveDraft(draftWithId('draft_a'));
+        await serviceFor(
+          pubkeyA,
+        ).updatePublishStatus(draftId: 'draft_a', status: PublishStatus.failed);
+
+        // Parking an abandoned upload runs through whichever service the
+        // BackgroundPublishBloc captured, which is not necessarily the one
+        // that owns the row. The write is keyed on the primary key and must
+        // never re-attribute the draft — otherwise parking a video would move
+        // it to the account that happened to be signed in.
+        await serviceFor(
+          pubkeyB,
+        ).updatePublishStatus(draftId: 'draft_a', status: PublishStatus.draft);
+
+        expect(
+          await serviceFor(pubkeyA).getDraftsByPublishStatuses({
+            PublishStatus.draft,
+          }),
+          hasLength(1),
+        );
+        expect(
+          await serviceFor(pubkeyB).getDraftsByPublishStatuses({
+            PublishStatus.draft,
+          }),
+          isEmpty,
+        );
+      });
+
       test(
         'isDraftOwnedByAnotherAccount is false for a legacy draft',
         () async {
           await serviceFor(null).saveDraft(draftWithId('draft_legacy'));
 
           expect(
-            await serviceFor(pubkeyA).isDraftOwnedByAnotherAccount(
-              'draft_legacy',
-            ),
+            await serviceFor(
+              pubkeyA,
+            ).isDraftOwnedByAnotherAccount('draft_legacy'),
             isFalse,
           );
         },
@@ -733,61 +762,52 @@ void main() {
         },
       );
 
-      test(
-        'deleting a draft removes its unreferenced frame files',
-        () async {
-          final frame0 = writeFrame('draft_only_frame0.jpg');
-          final frame1 = writeFrame('draft_only_frame1.jpg');
-          final clip = framesOnlyClip(frames: [frame0, frame1]);
+      test('deleting a draft removes its unreferenced frame files', () async {
+        final frame0 = writeFrame('draft_only_frame0.jpg');
+        final frame1 = writeFrame('draft_only_frame1.jpg');
+        final clip = framesOnlyClip(frames: [frame0, frame1]);
 
-          await service.saveDraft(
-            DivineVideoDraft.create(
-              id: 'draft_only_stop_motion',
-              clips: [clip],
-              title: 'Stop motion',
-              description: '',
-              hashtags: const {},
-              selectedApproach: 'stop_motion',
-            ),
-          );
+        await service.saveDraft(
+          DivineVideoDraft.create(
+            id: 'draft_only_stop_motion',
+            clips: [clip],
+            title: 'Stop motion',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'stop_motion',
+          ),
+        );
 
-          await service.deleteDraft('draft_only_stop_motion');
+        await service.deleteDraft('draft_only_stop_motion');
 
-          // No surviving row references the stills, so the frames are reaped.
-          // Before deleteDraft removed the draft's clip rows, they lingered
-          // (the FK cascade never fires) and kept the frames pinned on disk.
-          expect(frame0.existsSync(), isFalse);
-          expect(frame1.existsSync(), isFalse);
-        },
-      );
+        // No surviving row references the stills, so the frames are reaped.
+        // Before deleteDraft removed the draft's clip rows, they lingered
+        // (the FK cascade never fires) and kept the frames pinned on disk.
+        expect(frame0.existsSync(), isFalse);
+        expect(frame1.existsSync(), isFalse);
+      });
 
-      test(
-        'clearing all drafts removes unreferenced frame files',
-        () async {
-          final frame0 = writeFrame('clear_frame0.jpg');
-          final frame1 = writeFrame('clear_frame1.jpg');
-          final clip = framesOnlyClip(
-            frames: [frame0, frame1],
-            id: 'clear_clip',
-          );
+      test('clearing all drafts removes unreferenced frame files', () async {
+        final frame0 = writeFrame('clear_frame0.jpg');
+        final frame1 = writeFrame('clear_frame1.jpg');
+        final clip = framesOnlyClip(frames: [frame0, frame1], id: 'clear_clip');
 
-          await service.saveDraft(
-            DivineVideoDraft.create(
-              id: 'draft_clear_stop_motion',
-              clips: [clip],
-              title: 'Stop motion',
-              description: '',
-              hashtags: const {},
-              selectedApproach: 'stop_motion',
-            ),
-          );
+        await service.saveDraft(
+          DivineVideoDraft.create(
+            id: 'draft_clear_stop_motion',
+            clips: [clip],
+            title: 'Stop motion',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'stop_motion',
+          ),
+        );
 
-          await service.clearAllDrafts();
+        await service.clearAllDrafts();
 
-          expect(frame0.existsSync(), isFalse);
-          expect(frame1.existsSync(), isFalse);
-        },
-      );
+        expect(frame0.existsSync(), isFalse);
+        expect(frame1.existsSync(), isFalse);
+      });
 
       test('validated autosave keeps frame-only stop-motion clips', () async {
         final frame0 = writeFrame('autosave_frame0.jpg');
@@ -2070,10 +2090,7 @@ void main() {
       test('still deletes the target ghost frame when a sibling clip row has a '
           'corrupt data blob', () async {
         final ghost = writeGhost('ghost_target.jpg');
-        final draft = draftWithGhost(
-          id: 'draft_target',
-          ghostPath: ghost.path,
-        );
+        final draft = draftWithGhost(id: 'draft_target', ghostPath: ghost.path);
         await service.saveDraft(draft);
 
         // A sibling clip row whose data blob can't be parsed. The ghost-frame
