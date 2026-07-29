@@ -2621,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} delade din video",
+    "notificationPostedNewVine": "{actorName} publicerade en ny vine",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

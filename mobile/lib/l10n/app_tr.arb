@@ -2620,6 +2620,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} videonu paylaştı",
+    "notificationPostedNewVine": "{actorName} yeni bir vine paylaştı",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

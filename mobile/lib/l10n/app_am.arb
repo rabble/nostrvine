@@ -3292,6 +3292,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} ቪዲዮህን በድጋሚ ለጥፏል",
+    "notificationPostedNewVine": "{actorName} አዲስ ቫይን ለጠፈ",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

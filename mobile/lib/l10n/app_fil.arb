@@ -1692,6 +1692,7 @@
     "notificationStartedFollowing": "Sinimulan kang i-follow ni {actorName}",
     "notificationMentionedYou": "Binanggit ka ni {actorName}",
     "notificationRepostedYourVideo": "Na-repost ni {actorName} ang video mo",
+    "notificationPostedNewVine": "Nag-post si {actorName} ng bagong vine",
     "notificationSystemUpdate": "May bago kang update",
     "notificationSomeoneLikedYourVideo": "May nag-like sa video mo",
     "commentReplyToPrefix": "Re:",

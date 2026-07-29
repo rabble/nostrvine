@@ -2621,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} a repartagé ta vidéo",
+    "notificationPostedNewVine": "{actorName} a publié une nouvelle vine",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

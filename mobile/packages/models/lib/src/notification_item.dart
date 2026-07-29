@@ -18,6 +18,13 @@ enum NotificationKind {
   repost,
   mention,
   system,
+
+  /// A creator the user subscribed to ("belled") posted a new video.
+  ///
+  /// Video-anchored, but unlike the others it is not a reaction to the
+  /// user's own content — it comes from a subscription list the user
+  /// publishes. See `Nip51PeopleListCodec.notifyDTag`.
+  newPost,
 }
 
 /// Base for all displayable notifications.

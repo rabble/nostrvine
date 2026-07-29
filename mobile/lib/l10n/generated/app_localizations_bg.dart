@@ -8059,6 +8059,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName публикува ново видео';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName Отговори на коментара ти';
   }

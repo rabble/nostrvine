@@ -8022,6 +8022,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName heeft een nieuwe vine gepost';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName heeft op je reactie gereageerd';
   }

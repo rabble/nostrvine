@@ -2613,6 +2613,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName}さんがあなたの動画をリポストしました",
+    "notificationPostedNewVine": "{actorName}が新しい動画を投稿しました",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

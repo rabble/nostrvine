@@ -4600,6 +4600,15 @@
       }
     }
   },
+  "notificationPostedNewVine": "{actorName} posted a new vine",
+  "@notificationPostedNewVine": {
+    "description": "Shown when a creator the user subscribed to (belled) publishes a new video. Unlike the other notification verbs this is not a reaction to the user's own content.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
   "notificationRepliedToYourComment": "{actorName} replied to your comment",
   "@notificationRepliedToYourComment": {
     "description": "Full sentence shown for a reply notification.",

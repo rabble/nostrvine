@@ -2613,6 +2613,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} أعاد نشر فيديوك",
+    "notificationPostedNewVine": "{actorName} نشر مقطعًا جديدًا",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

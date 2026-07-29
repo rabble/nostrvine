@@ -53,6 +53,24 @@ void main() {
       expect(notificationKindFromPushType('repost'), NotificationKind.repost);
     });
 
+    test('maps the camelCase newPost type', () {
+      // Matches divine-push-service's NotificationType::display_name()
+      // exactly — the string is a wire contract, so a casing drift here
+      // silently degrades the tap target.
+      expect(notificationKindFromPushType('newPost'), NotificationKind.newPost);
+    });
+
+    test('routes a newPost tap to the video, not the profile', () {
+      expect(
+        resolveNotificationTapTarget(
+          kind: NotificationKind.newPost,
+          hasVideoTarget: true,
+          actorPubkey: 'creator_pubkey_hex',
+        ),
+        const OpenVideoTarget(autoOpenComments: false),
+      );
+    });
+
     test('returns null for values the push service never sends', () {
       // The backend emits lowercase only and has no reply/likeComment/system.
       expect(notificationKindFromPushType('Like'), isNull);

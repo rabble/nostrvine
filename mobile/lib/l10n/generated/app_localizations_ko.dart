@@ -7678,6 +7678,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName님이 새 영상을 게시했습니다';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName님이 회원님의 댓글에 답글을 남겼습니다';
   }

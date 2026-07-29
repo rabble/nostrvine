@@ -7983,6 +7983,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName publicerade en ny vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName svarade på din kommentar';
   }

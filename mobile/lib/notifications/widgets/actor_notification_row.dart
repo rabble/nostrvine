@@ -241,9 +241,12 @@ String _messageFor(
       actorName,
     ),
     NotificationKind.reply => l10n.notificationRepliedToYourComment(actorName),
+    // newPost is video-anchored and never renders through the actor row;
+    // listed here for switch exhaustivity only.
     NotificationKind.system ||
     NotificationKind.like ||
     NotificationKind.comment ||
-    NotificationKind.repost => '',
+    NotificationKind.repost ||
+    NotificationKind.newPost => '',
   };
 }

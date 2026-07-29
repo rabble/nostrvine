@@ -13796,6 +13796,12 @@ abstract class AppLocalizations {
   /// **'{actorName} reposted your video'**
   String notificationRepostedYourVideo(String actorName);
 
+  /// Shown when a creator the user subscribed to (belled) publishes a new video. Unlike the other notification verbs this is not a reaction to the user's own content.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} posted a new vine'**
+  String notificationPostedNewVine(String actorName);
+
   /// Full sentence shown for a reply notification.
   ///
   /// In en, this message translates to:

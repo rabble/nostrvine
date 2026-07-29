@@ -2621,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} heeft je video gedeeld",
+    "notificationPostedNewVine": "{actorName} heeft een nieuwe vine gepost",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

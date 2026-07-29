@@ -2962,6 +2962,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} сподели видеото ти пак",
+    "notificationPostedNewVine": "{actorName} публикува ново видео",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

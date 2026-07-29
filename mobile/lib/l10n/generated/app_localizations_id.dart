@@ -7948,6 +7948,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName memposting vine baru';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName membalas komentar Anda';
   }

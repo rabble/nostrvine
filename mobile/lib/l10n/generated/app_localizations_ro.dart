@@ -8161,6 +8161,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName a postat un videoclip nou';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName a răspuns la comentariul tău';
   }

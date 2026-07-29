@@ -8088,6 +8088,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName a publié une nouvelle vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName a répondu à ton commentaire';
   }

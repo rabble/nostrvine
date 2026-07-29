@@ -31,9 +31,10 @@ class VideoNotification extends NotificationItem {
              type == NotificationKind.likeComment ||
              type == NotificationKind.comment ||
              type == NotificationKind.mention ||
-             type == NotificationKind.repost,
+             type == NotificationKind.repost ||
+             type == NotificationKind.newPost,
          'VideoNotification only supports like, likeComment, comment, '
-         'mention, repost',
+         'mention, repost, newPost',
        ),
        assert(actors.length > 0, 'must have at least one actor'),
        assert(

@@ -2621,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} a redistribuit videoclipul tău",
+    "notificationPostedNewVine": "{actorName} a postat un videoclip nou",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

@@ -7656,6 +7656,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorNameが新しい動画を投稿しました';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorNameさんがあなたのコメントに返信しました';
   }

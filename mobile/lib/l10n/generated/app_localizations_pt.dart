@@ -8040,6 +8040,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName postou um novo vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName respondeu ao teu comentário';
   }

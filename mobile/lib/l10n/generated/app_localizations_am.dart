@@ -7829,6 +7829,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName አዲስ ቫይን ለጠፈ';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName ለአስተያየትዎ ምላሽ ሰጥተዋል';
   }

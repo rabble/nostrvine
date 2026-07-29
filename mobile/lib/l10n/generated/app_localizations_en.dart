@@ -7977,6 +7977,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName posted a new vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName replied to your comment';
   }

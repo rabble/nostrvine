@@ -763,6 +763,7 @@ class NotificationRepository {
         'comment' => NotificationKind.comment,
         'videoMention' => NotificationKind.mention,
         'repost' => NotificationKind.repost,
+        'newPost' => NotificationKind.newPost,
         _ => null,
       };
 
@@ -872,6 +873,7 @@ class NotificationRepository {
     NotificationKind.likeComment => 'likeComment',
     NotificationKind.reply => 'reply',
     NotificationKind.system => 'system',
+    NotificationKind.newPost => 'newPost',
   };
 
   static List<String>? _serverTypesForFilter(NotificationKind? filter) =>
@@ -885,6 +887,7 @@ class NotificationRepository {
         NotificationKind.likeComment => const ['reaction', 'zap'],
         NotificationKind.reply => const ['reply'],
         NotificationKind.system => const ['list_add'],
+        NotificationKind.newPost => const ['newPost'],
       };
 
   static final math.Random _jitter = math.Random();
@@ -1664,7 +1667,8 @@ class NotificationRepository {
   static bool _isVideoAnchoredKind(NotificationKind kind) =>
       kind == NotificationKind.like ||
       kind == NotificationKind.comment ||
-      kind == NotificationKind.repost;
+      kind == NotificationKind.repost ||
+      kind == NotificationKind.newPost;
 
   static bool _isVideoAnchoredNotification(
     NotificationKind kind,
@@ -1684,10 +1688,7 @@ class NotificationRepository {
     for (final n in raw) {
       final kind = _mapNotificationKind(n);
       // Skip kinds that became VideoNotifications.
-      if (kind == NotificationKind.like ||
-          kind == NotificationKind.comment ||
-          kind == NotificationKind.repost ||
-          _isVideoSourcedMention(n)) {
+      if (_isVideoAnchoredKind(kind) || _isVideoSourcedMention(n)) {
         continue;
       }
       // ActorNotification supports follow/mention/system/likeComment/reply;
@@ -2193,6 +2194,7 @@ class NotificationRepository {
       'comment' => NotificationKind.comment,
       'repost' => NotificationKind.repost,
       'mention' => NotificationKind.mention,
+      'newPost' => NotificationKind.newPost,
       'follow' || 'contact' => NotificationKind.follow,
       _ when n.sourceKind == 6 => NotificationKind.repost,
       _ when n.sourceKind == 16 => NotificationKind.repost,

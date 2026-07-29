@@ -1944,6 +1944,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName}님이 회원님의 동영상을 리포스트했어요",
+    "notificationPostedNewVine": "{actorName}님이 새 영상을 게시했습니다",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {

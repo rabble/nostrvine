@@ -7947,6 +7947,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName yeni bir vine paylaştı';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName yorumuna yanıt verdi';
   }

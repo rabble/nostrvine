@@ -8077,6 +8077,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return 'Nag-post si $actorName ng bagong vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return 'nag-reply si $actorName sa comment mo';
   }

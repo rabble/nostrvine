@@ -7935,6 +7935,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName نشر مقطعًا جديدًا';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName ردّ على تعليقك';
   }

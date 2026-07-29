@@ -59,6 +59,11 @@ NotificationTypeIconSpec notificationTypeIconSpec(
       background: VineTheme.accentYellowBackground,
       foreground: VineTheme.accentYellow,
     ),
+    NotificationKind.newPost => const NotificationTypeIconSpec(
+      icon: DivineIconName.bellSimple,
+      background: VineTheme.accentBlueBackground,
+      foreground: VineTheme.accentBlue,
+    ),
     NotificationKind.system => const NotificationTypeIconSpec(
       icon: DivineIconName.logo,
       background: VineTheme.onPrimaryButton,

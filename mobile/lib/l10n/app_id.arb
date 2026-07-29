@@ -2620,6 +2620,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} membagikan ulang videomu",
+    "notificationPostedNewVine": "{actorName} memposting vine baru",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
