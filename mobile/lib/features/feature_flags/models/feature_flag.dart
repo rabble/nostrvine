@@ -55,7 +55,8 @@ enum FeatureFlag {
   ),
   lightMode(
     'Light Mode',
-    'Enable the System, Light, and Dark appearance settings.',
+    'Enable the experimental System, Light, and Dark appearance settings. '
+        'Accent pills and category tiles still render dark on a light page.',
   ),
   adaptiveMediaChrome(
     'Adaptive Media Chrome',
