@@ -542,6 +542,24 @@ void main() {
         );
       });
 
+      test('deleteDraft removes a row whoever owns it', () async {
+        await serviceFor(pubkeyA).saveDraft(draftWithId('draft_a'));
+
+        // Deletion is keyed on the primary key, so it must not depend on the
+        // caller's ownerPubkey — a service holding a stale one (e.g. captured
+        // before sign-in) would otherwise silently leak every row it deletes.
+        await serviceFor(pubkeyB).deleteDraft('draft_a');
+
+        expect(await serviceFor(pubkeyA).getDraftById('draft_a'), isNull);
+      });
+
+      test('draftExists sees a row owned by another account', () async {
+        await serviceFor(pubkeyA).saveDraft(draftWithId('draft_a'));
+
+        expect(await serviceFor(pubkeyB).draftExists('draft_a'), isTrue);
+        expect(await serviceFor(pubkeyB).draftExists('nope'), isFalse);
+      });
+
       test(
         'isDraftOwnedByAnotherAccount is false for a legacy draft',
         () async {

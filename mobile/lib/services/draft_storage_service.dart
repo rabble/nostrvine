@@ -171,8 +171,11 @@ class DraftStorageService {
 
     // Check for orphaned files before overwriting. Delete them only after the
     // new row is committed, so this draft's old indexed file references no
-    // longer protect files it just stopped using.
-    final existingDraft = await getDraftById(draft.id);
+    // longer protect files it just stopped using. Read across accounts: the
+    // upsert below is keyed on `id` alone and destroys whatever row is there,
+    // so an owner-scoped read here would skip the cleanup for the very files
+    // it just orphaned.
+    final existingDraft = await _loadDraftAcrossAccounts(draft.id);
     var orphanedFiles = const <String?>[];
     if (existingDraft != null) {
       final newFilePaths = <String?>{
@@ -365,8 +368,28 @@ class DraftStorageService {
     return owner != ownerPubkey;
   }
 
-  Future<DivineVideoDraft?> getDraftById(String id) async {
-    final row = await _draftsDao.getDraftById(id, ownerPubkey: ownerPubkey);
+  Future<DivineVideoDraft?> getDraftById(String id) =>
+      _loadDraft(id, scopedToOwner: true);
+
+  /// Reads the draft [id] regardless of who owns it.
+  ///
+  /// Row bookkeeping — deleting a row by primary key, or diffing the row an
+  /// upsert is about to overwrite — is not an account-facing read: the write it
+  /// pairs with (`DraftsDao.deleteDraft`, `saveDraftWithClips`) is keyed on
+  /// `id` alone, so scoping only the read would leave the two disagreeing and
+  /// silently skip the file cleanup. Anything the user sees goes through
+  /// [getDraftById] instead.
+  Future<DivineVideoDraft?> _loadDraftAcrossAccounts(String id) =>
+      _loadDraft(id, scopedToOwner: false);
+
+  Future<DivineVideoDraft?> _loadDraft(
+    String id, {
+    required bool scopedToOwner,
+  }) async {
+    final row = await _draftsDao.getDraftById(
+      id,
+      ownerPubkey: scopedToOwner ? ownerPubkey : null,
+    );
     if (row == null) {
       Log.debug('📝 Draft not found: $id', category: LogCategory.video);
       return null;
@@ -380,6 +403,12 @@ class DraftStorageService {
       documentsPath: documentsPath,
     );
   }
+
+  /// Whether a draft row with [id] exists at all, whoever owns it.
+  ///
+  /// Bookkeeping probe, same rationale as [_loadDraftAcrossAccounts].
+  Future<bool> draftExists(String id) async =>
+      await _draftsDao.getDraftById(id) != null;
 
   /// Deserialize a single draft [row] with its [clipRows], returning `null`
   /// (and logging) when the row is corrupt so one bad draft can't abort a
@@ -564,8 +593,11 @@ class DraftStorageService {
       category: LogCategory.video,
     );
 
-    // Fetch draft before deleting so we can clean up files
-    final draft = await getDraftById(id);
+    // Fetch draft before deleting so we can clean up files. Read across
+    // accounts to stay consistent with DraftsDao.deleteDraft, which deletes by
+    // primary key — an owner-scoped read would turn every deletion issued by a
+    // service whose ownerPubkey no longer matches the row into a silent no-op.
+    final draft = await _loadDraftAcrossAccounts(id);
     if (draft == null) return;
 
     // Delete the draft and its clip rows first, then delete files — so the

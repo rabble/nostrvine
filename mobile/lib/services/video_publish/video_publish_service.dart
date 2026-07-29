@@ -765,49 +765,6 @@ class VideoPublishService {
     }
   }
 
-  /// Retry a failed upload and continue publishing.
-  Future<PublishResult> retryUpload(DivineVideoDraft draft) async {
-    // Same ownership guard as [publishVideo] — checked here too so a retry
-    // never re-uploads another account's video before reaching that check.
-    if (await draftService.isDraftOwnedByAnotherAccount(draft.id)) {
-      Log.warning(
-        '🚫 Refusing to retry draft ${draft.id}: it belongs to another account',
-        category: .video,
-      );
-      _backgroundUploadId = null;
-      return const PublishError(PublishErrorKind.accountChanged);
-    }
-
-    if (_backgroundUploadId == null) {
-      Log.warning('⚠️ No background upload to retry', category: .video);
-
-      _backgroundUploadId = null; // Clear any stale upload ID
-      return const PublishError(PublishErrorKind.noRetry);
-    }
-
-    Log.info('🔄 Retrying upload: $_backgroundUploadId', category: .video);
-    try {
-      await uploadManager.retryUpload(_backgroundUploadId!);
-      final success = await _pollUploadProgress(draft.id, _backgroundUploadId!);
-
-      if (!success) {
-        final upload = uploadManager.getUpload(_backgroundUploadId!);
-        _backgroundUploadId = null;
-        return await _handleUploadError(
-          upload?.errorMessage ?? 'Retry failed',
-          StackTrace.current,
-          draft,
-        );
-      }
-
-      // Continue with publishing
-      return await publishVideo(draft: draft);
-    } catch (e, stackTrace) {
-      Log.error('📝 Failed to retry: $e', category: LogCategory.video);
-      return _handleUploadError(e, stackTrace, draft);
-    }
-  }
-
   /// Handles upload errors by logging, updating draft status, and returning
   /// a user-friendly message.
   Future<PublishError> _handleUploadError(

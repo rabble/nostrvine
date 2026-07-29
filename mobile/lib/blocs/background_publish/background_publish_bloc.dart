@@ -184,8 +184,17 @@ class BackgroundPublishBloc
     emit(state.copyWith(uploads: remainingUploads));
 
     final vanishedDraft = uploadToVanish?.draft;
-    if (vanishedDraft?.sourceDraftId != null) {
-      await _deleteDraft(vanishedDraft!.id);
+    final sourceDraftId = vanishedDraft?.sourceDraftId;
+    // Dropping the publish copy is only safe while the draft it was copied
+    // from is still there to fall back on. A fresh recording's source is the
+    // autosave draft, which `clearAll` reaps ~600ms after the publish handoff,
+    // so by the time an upload is parked the copy is usually all that is left —
+    // deleting it would discard the video instead of saving it. Park the copy
+    // as a draft in that case.
+    if (sourceDraftId != null &&
+        sourceDraftId != vanishedDraft!.id &&
+        await _draftStorageService.draftExists(sourceDraftId)) {
+      await _deleteDraft(vanishedDraft.id);
       return;
     }
 

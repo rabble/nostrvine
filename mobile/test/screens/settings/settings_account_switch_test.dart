@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -84,6 +86,11 @@ class _MockVideoEventService extends Mock implements VideoEventService {
   int filterAdultContentFromExistingVideos() => 0;
 }
 
+/// Unstubbed on purpose: reading `switchController` throws inside the tile's
+/// try/catch, so the tap exercises the parking loop and the "couldn't switch"
+/// path without a real container swap.
+class _MockDeviceScope extends Mock implements DeviceScope {}
+
 void main() {
   const currentPubkey =
       'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
@@ -106,6 +113,7 @@ void main() {
   late _MockContentBlocklistRepository blocklistRepository;
   late _MockVideoEventService videoEventService;
   late DivineHostFilterService divineHostFilterService;
+  late _MockDeviceScope deviceScope;
 
   DivineVideoDraft draftWithId(String id) => DivineVideoDraft.create(
     clips: const [],
@@ -114,6 +122,25 @@ void main() {
     hashtags: const {},
     selectedApproach: 'test',
   ).copyWith(id: id);
+
+  /// Draft ids the screen asked the bloc to park, in dispatch order.
+  List<String> parkedDraftIds() => verify(() => publishBloc.add(captureAny()))
+      .captured
+      .cast<BackgroundPublishEvent>()
+      .whereType<BackgroundPublishVanished>()
+      .map((event) => event.draftId)
+      .toList();
+
+  /// The account picker renders each tile with a generated display name, since
+  /// `profileRepositoryProvider` is null in these tests. The settings header
+  /// shows the current account under the same name, so take the match inside
+  /// the picker — it is pushed last.
+  Finder accountTile(String pubkeyHex) =>
+      find.text(models.UserProfile.defaultDisplayNameFor(pubkeyHex)).last;
+
+  void expectNothingParked() => verifyNever(
+    () => publishBloc.add(any(that: isA<BackgroundPublishVanished>())),
+  );
 
   void seedPublishState(BackgroundPublishState state) {
     whenListen(
@@ -145,6 +172,7 @@ void main() {
     blocklistRepository = _MockContentBlocklistRepository();
     videoEventService = _MockVideoEventService();
     divineHostFilterService = DivineHostFilterService(sharedPreferences);
+    deviceScope = _MockDeviceScope();
 
     when(() => localeCubit.state).thenReturn(const LocaleState());
     whenListen(
@@ -210,6 +238,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         authServiceProvider.overrideWithValue(authService),
+        deviceScopeProvider.overrideWithValue(deviceScope),
         currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
         // Null repository keeps userProfileReactiveProvider on an empty stream,
         // so the account header renders from fallbacks without any network.
@@ -309,7 +338,7 @@ void main() {
     expect(find.text(l10n.settingsUploadInProgressTitle), findsNothing);
   });
 
-  testWidgets('switching anyway parks each in-flight upload as a draft', (
+  testWidgets('picking another account parks each in-flight upload', (
     tester,
   ) async {
     seedPublishState(
@@ -332,13 +361,70 @@ void main() {
 
     await tester.tap(find.text(l10n.settingsSwitchAnyway));
     await tester.pumpAndSettle();
+    await tester.tap(accountTile(otherPubkey));
+    await tester.pumpAndSettle();
 
-    final parked = verify(() => publishBloc.add(captureAny())).captured
-        .cast<BackgroundPublishEvent>()
-        .whereType<BackgroundPublishVanished>()
-        .map((event) => event.draftId)
-        .toList();
-    expect(parked, equals(['d1', 'd2']));
+    expect(parkedDraftIds(), equals(['d1', 'd2']));
+  });
+
+  testWidgets('confirming the warning alone parks nothing', (tester) async {
+    seedPublishState(
+      BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
+        ],
+      ),
+    );
+
+    final l10n = await pumpAndTapSwitch(tester);
+    await tester.tap(find.text(l10n.settingsSwitchAnyway));
+    await tester.pumpAndSettle();
+
+    // The account picker is open but nothing has been chosen yet — backing out
+    // here must leave the upload running, not tear it down for nothing.
+    expectNothingParked();
+  });
+
+  testWidgets('dismissing the account picker leaves the upload running', (
+    tester,
+  ) async {
+    seedPublishState(
+      BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
+        ],
+      ),
+    );
+
+    final l10n = await pumpAndTapSwitch(tester);
+    await tester.tap(find.text(l10n.settingsSwitchAnyway));
+    await tester.pumpAndSettle();
+
+    Navigator.of(
+      tester.element(find.byType(SettingsScreen)),
+      rootNavigator: true,
+    ).pop();
+    await tester.pumpAndSettle();
+
+    expectNothingParked();
+  });
+
+  testWidgets('re-picking the current account parks nothing', (tester) async {
+    seedPublishState(
+      BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
+        ],
+      ),
+    );
+
+    final l10n = await pumpAndTapSwitch(tester);
+    await tester.tap(find.text(l10n.settingsSwitchAnyway));
+    await tester.pumpAndSettle();
+    await tester.tap(accountTile(currentPubkey));
+    await tester.pumpAndSettle();
+
+    expectNothingParked();
   });
 
   testWidgets('falls back to the drafts warning when nothing is uploading', (

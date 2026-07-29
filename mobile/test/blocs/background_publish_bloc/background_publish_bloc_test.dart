@@ -59,6 +59,10 @@ void main() {
     when(
       () => mockDraftStorageService.deleteDraft(any()),
     ).thenAnswer((_) async {});
+    // Default: the draft a publish copy was made from is still on disk.
+    when(
+      () => mockDraftStorageService.draftExists(any()),
+    ).thenAnswer((_) async => true);
   });
 
   group('BackgroundPublishState', () {
@@ -504,6 +508,66 @@ void main() {
               publishError: any(named: 'publishError'),
             ),
           );
+        },
+      );
+
+      blocTest(
+        'parks the publish copy when the draft it was copied from is gone',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          // A fresh recording publishes a copy of `draft_autosave`, which
+          // `clearAll` reaps shortly after the handoff — so the copy is the
+          // only row left holding the video.
+          when(() => draft.sourceDraftId).thenReturn('draft_autosave');
+          when(
+            () => mockDraftStorageService.draftExists('draft_autosave'),
+          ).thenAnswer((_) async => false);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest(
+        'parks a self-referencing publish row instead of deleting it',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(() => draft.sourceDraftId).thenReturn(draftId);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
         },
       );
     });

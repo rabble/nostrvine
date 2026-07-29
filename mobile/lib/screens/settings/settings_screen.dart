@@ -149,30 +149,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return proceed ?? false;
   }
 
+  /// Draft ids of uploads that have not finished yet.
+  static List<String> _inFlightDraftIds(BackgroundPublishBloc bloc) => [
+    for (final upload in bloc.state.uploads)
+      if (upload.result == null) upload.draft.id,
+  ];
+
   Future<void> _handleSwitchAccount() async {
     final accountState = _accountCubit.state;
     final publishBloc = context.read<BackgroundPublishBloc>();
-    final inFlightDraftIds = [
-      for (final upload in publishBloc.state.uploads)
-        if (upload.result == null) upload.draft.id,
-    ];
 
     // An in-flight upload cannot survive the switch — the leaving account's
-    // container owns the UploadManager and is torn down. Say so, and park the
-    // videos back as drafts of the account they were recorded on rather than
-    // leaving them as failures.
-    if (inFlightDraftIds.isNotEmpty) {
+    // container owns the UploadManager and is torn down. Say so here; the
+    // videos are parked back as drafts of the account they were recorded on
+    // only once a target account is actually picked, since confirming this
+    // sheet still leaves the user free to back out of the picker below.
+    final inFlightCount = _inFlightDraftIds(publishBloc).length;
+    if (inFlightCount > 0) {
       final proceed = await _confirmSwitchAnyway(
         title: context.l10n.settingsUploadInProgressTitle,
-        message: context.l10n.settingsUploadInProgressMessage(
-          inFlightDraftIds.length,
-        ),
+        message: context.l10n.settingsUploadInProgressMessage(inFlightCount),
       );
       if (!proceed) return;
-
-      for (final draftId in inFlightDraftIds) {
-        publishBloc.add(BackgroundPublishVanished(draftId: draftId));
-      }
     } else if (accountState.hasDrafts) {
       final proceed = await _confirmSwitchAnyway(
         title: context.l10n.settingsUnsavedDraftsTitle,
@@ -195,6 +193,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () async {
               Navigator.of(context).pop();
               if (account.pubkeyHex == accountState.currentPubkey) return;
+
+              // Park now that a switch is actually committed. Re-read the
+              // queue instead of reusing the ids the warning was built from,
+              // so an upload that finished while the picker was open is left
+              // alone.
+              for (final draftId in _inFlightDraftIds(publishBloc)) {
+                publishBloc.add(BackgroundPublishVanished(draftId: draftId));
+              }
+
               final deviceScope = ref.read(deviceScopeProvider);
               try {
                 // In-place swap: no sign-out, no welcome-screen bounce. On
