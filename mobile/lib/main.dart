@@ -2827,19 +2827,25 @@ class _DivineAppState extends ConsumerState<DivineApp>
             //
             // Deliberately not wrapped in `if (curatedLists enabled)`: a
             // conditional entry changes this provider chain's shape, so
-            // flipping the flag re-inflated everything below it — including
-            // the Navigator, which silently dropped imperatively pushed
-            // routes (users toggling the flag were thrown back to Settings).
+            // flipping the flag re-inflated everything below it — the whole
+            // MaterialApp.router subtree, feed state, video controllers, and
+            // the upload-listener dedupe sets with it. The reported symptom
+            // was landing back on Settings from the imperatively pushed
+            // feature-flag screen (#6477); only the re-inflation is
+            // reproduced, the Navigator-level step from there to route loss
+            // is not, and the re-inflation alone justifies this shape.
+            //
             // Laziness does the gating instead: every entry point into the
             // people-lists UI checks FeatureFlag.curatedLists before reading
             // the bloc — the lists routes redirect home, the profile and
             // search affordances stay hidden, and both sheets refuse to
             // open — so nothing constructs it while the flag is off.
             //
-            // ref.read in `create` is safe here: peopleListsRepositoryProvider
-            // is keepAlive over the equally stable nostrServiceProvider, and
-            // without the conditional entry this bloc lives for the whole app
-            // run, so there is no rebuild that could strand the capture.
+            // Known gap (#6480): peopleListsRepositoryProvider is keepAlive
+            // but not identity-stable — it watches nostrServiceProvider,
+            // which recreates its client on auth change. With no conditional
+            // entry `create` never re-runs, so the captured repository is
+            // stale by construction after an account switch.
             BlocProvider(
               create: (_) {
                 final authService = ref.read(authServiceProvider);
