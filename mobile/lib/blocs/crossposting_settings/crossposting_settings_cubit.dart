@@ -1,6 +1,7 @@
 // ABOUTME: Orchestrates repository-backed crossposting settings actions
 // ABOUTME: Serializes operations and validates native OAuth callbacks
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -31,9 +32,11 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     required CrosspostingRepository repository,
     required CrosspostingOAuthLauncher launchOAuth,
     CrosspostingNonceGenerator nonceGenerator = generateCrosspostingOAuthNonce,
+    Duration oauthCallbackTimeout = const Duration(minutes: 3),
   }) : _repository = repository,
        _launchOAuth = launchOAuth,
        _nonceGenerator = nonceGenerator,
+       _oauthCallbackTimeout = oauthCallbackTimeout,
        super(CrosspostingSettingsState());
 
   static final Uri callbackBaseUrl = Uri.parse(
@@ -43,6 +46,15 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   final CrosspostingRepository _repository;
   final CrosspostingOAuthLauncher _launchOAuth;
   final CrosspostingNonceGenerator _nonceGenerator;
+
+  /// Bound on the wait for an OAuth browser session's callback.
+  ///
+  /// On Android devices where app-link verification fails (a signing cert
+  /// missing from assetlinks.json, OEM verification disabled), the callback
+  /// URL opens in the browser and the session never completes. The timeout
+  /// turns that silent hang into an explicit error. Three minutes is
+  /// generous for a real consent round trip, including account creation.
+  final Duration _oauthCallbackTimeout;
 
   bool _operationInProgress = false;
 
@@ -126,7 +138,25 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       );
       if (isClosed) return;
 
-      final callback = await _launchOAuth(start.authorizationUrl);
+      Uri? callback;
+      try {
+        callback = await _launchOAuth(
+          start.authorizationUrl,
+        ).timeout(_oauthCallbackTimeout);
+      } on TimeoutException {
+        // The browser session produced no callback: on Android without
+        // verified app links the redirect dies in the browser and the
+        // session hangs. The connection may still have completed
+        // server-side, so refresh before telling the user we stopped
+        // listening.
+        final entries = await _repository.loadSettings();
+        if (isClosed) return;
+        _emitActionError(
+          CrosspostingSettingsError.callbackTimeout,
+          entries: entries,
+        );
+        return;
+      }
       if (isClosed) return;
 
       CrosspostingOAuthOutcome? outcome;

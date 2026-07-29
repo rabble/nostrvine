@@ -6062,6 +6062,8 @@
   "@crosspostingNotConnectedError": {"description": "Error shown when a posting mode is set on a platform that isn't connected."},
   "crosspostingGenericError": "Something went wrong. Try again.",
   "@crosspostingGenericError": {"description": "Generic error for failed crossposting actions."},
+  "crosspostingCallbackTimeoutError": "We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.",
+  "@crosspostingCallbackTimeoutError": {"description": "Error shown when the crossposting OAuth browser session ends without a validated callback (for example when Android app-link verification fails)."},
   "crosspostingConnectionSuccess": "{platform} connected",
   "@crosspostingConnectionSuccess": {
     "description": "Snackbar after returning from a successful platform connection.",

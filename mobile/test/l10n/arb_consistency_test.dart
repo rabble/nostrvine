@@ -240,6 +240,7 @@ const _knownUntranslatedDebt = <String>{
   'crosspostingModeAutomaticSubtitle',
   'crosspostingNotConnectedError',
   'crosspostingGenericError',
+  'crosspostingCallbackTimeoutError',
   'crosspostingConnectionSuccess',
   'crosspostingConnectionFailed',
   'crosspostingConnectionDenied',

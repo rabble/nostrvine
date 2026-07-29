@@ -17656,6 +17656,12 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Try again.'**
   String get crosspostingGenericError;
 
+  /// Error shown when the crossposting OAuth browser session ends without a validated callback (for example when Android app-link verification fails).
+  ///
+  /// In en, this message translates to:
+  /// **'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.'**
+  String get crosspostingCallbackTimeoutError;
+
   /// Snackbar after returning from a successful platform connection.
   ///
   /// In en, this message translates to:

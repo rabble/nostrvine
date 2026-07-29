@@ -18,6 +18,7 @@ class _RecordingCrosspostingSettingsCubit extends CrosspostingSettingsCubit {
     required super.repository,
     required super.launchOAuth,
     super.nonceGenerator,
+    super.oauthCallbackTimeout,
   });
 
   final reportedErrors = <Object>[];
@@ -104,10 +105,13 @@ void main() {
 
     _RecordingCrosspostingSettingsCubit buildCubit({
       Future<Uri?> Function(Uri)? launcher,
+      Duration? oauthCallbackTimeout,
     }) {
       return _RecordingCrosspostingSettingsCubit(
         repository: repository,
         nonceGenerator: () => 'test-nonce',
+        oauthCallbackTimeout:
+            oauthCallbackTimeout ?? const Duration(minutes: 3),
         launchOAuth:
             launcher ??
             (url) async {
@@ -561,6 +565,45 @@ void main() {
         expect(cubit.reportedErrors, [failure]);
         verifyNever(() => repository.loadSettings());
       });
+
+      test(
+        'a no-callback OAuth session times out with an explicit error',
+        () async {
+          // On Android devices where app-link verification fails, the callback
+          // URL opens in the browser and the OAuth session never completes.
+          // Without a bound the connect flow silently waits forever.
+          final cubit = buildCubit(
+            oauthCallbackTimeout: const Duration(milliseconds: 50),
+            launcher: (_) => Completer<Uri?>().future,
+          );
+          addTearDown(cubit.close);
+
+          await cubit.connect(CrosspostingPlatform.instagram);
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+
+          expect(cubit.state.error, CrosspostingSettingsError.callbackTimeout);
+          expect(cubit.state.hasPendingAction, isFalse);
+          // The connection may have completed server-side in the browser, so
+          // the state refreshes before the error surfaces.
+          verify(() => repository.loadSettings()).called(1);
+        },
+      );
+
+      test(
+        'a completed callback within the window reports no timeout error',
+        () async {
+          // Guards against the timeout firing on healthy sessions.
+          final cubit = buildCubit(
+            oauthCallbackTimeout: const Duration(seconds: 30),
+          );
+          addTearDown(cubit.close);
+
+          await cubit.connect(CrosspostingPlatform.instagram);
+
+          expect(cubit.state.error, isNull);
+          expect(cubit.state.outcome, CrosspostingOAuthOutcome.connected);
+        },
+      );
 
       test('supports reconnecting a needs-reauth connection', () async {
         when(

@@ -133,6 +133,8 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
       final message = switch (state.error!) {
         CrosspostingSettingsError.notConnected =>
           context.l10n.crosspostingNotConnectedError,
+        CrosspostingSettingsError.callbackTimeout =>
+          context.l10n.crosspostingCallbackTimeoutError,
         CrosspostingSettingsError.generic =>
           context.l10n.crosspostingGenericError,
       };

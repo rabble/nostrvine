@@ -14,7 +14,7 @@ enum CrosspostingPlatformAction {
 }
 
 /// Transient error category surfaced by the settings UI.
-enum CrosspostingSettingsError { generic, notConnected }
+enum CrosspostingSettingsError { generic, notConnected, callbackTimeout }
 
 /// Transient result of a completed OAuth browser round trip.
 enum CrosspostingOAuthOutcome { connected, denied, failed }

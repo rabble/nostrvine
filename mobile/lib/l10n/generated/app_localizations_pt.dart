@@ -10314,6 +10314,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get crosspostingGenericError => 'Something went wrong. Try again.';
 
   @override
+  String get crosspostingCallbackTimeoutError =>
+      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+
+  @override
   String crosspostingConnectionSuccess(String platform) {
     return '$platform connected';
   }
