@@ -582,6 +582,48 @@ void main() {
     );
 
     test(
+      'loadAwardedBadges uses lowest event id when same-kind timestamps tie',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(46),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final higherIdWithAward = _profileBadgesEvent(
+          id: _eventId(48),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(46)],
+          ],
+        );
+        final lowerIdWithoutAward = _profileBadgesEvent(
+          id: _eventId(47),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(49)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [
+            higherIdWithAward,
+            lowerIdWithoutAward,
+          ],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.isAccepted, isFalse);
+      },
+    );
+
+    test(
       'loadIssuedBadges caps recipient checks at recipientCheckLimit',
       () async {
         final award = _awardEvent(
@@ -697,28 +739,43 @@ void main() {
       );
     });
 
-    test('acceptAward throws a StateError when no relay accepts', () async {
-      when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
-        invocation,
-      ) async {
-        final event = invocation.positionalArguments.single as Event;
-        return _rejectedPublishOutcome(event);
-      });
-      final award = _awardEvent(
-        id: _eventId(45),
-        issuerPubkey: _pubkey(2),
-        definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
-        recipients: [_pubkey(1)],
-      );
+    test(
+      'acceptAward throws a BadgePublishException when no relay accepts',
+      () async {
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          final event = invocation.positionalArguments.single as Event;
+          return _rejectedPublishOutcome(event);
+        });
+        final award = _awardEvent(
+          id: _eventId(45),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+          recipients: [_pubkey(1)],
+        );
 
-      await expectLater(
-        repository.acceptAward(
-          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
-        ),
-        throwsA(isA<StateError>()),
-      );
-      verifyNever(() => nostrClient.publishEvent(any()));
-    });
+        await expectLater(
+          repository.acceptAward(
+            BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+          ),
+          throwsA(
+            isA<BadgePublishException>()
+                .having(
+                  (error) => error.outcome.acceptedBy,
+                  'acceptedBy',
+                  isEmpty,
+                )
+                .having(
+                  (error) => error.toString(),
+                  'toString',
+                  contains('Could not publish profile badges event'),
+                ),
+          ),
+        );
+        verifyNever(() => nostrClient.publishEvent(any()));
+      },
+    );
 
     test('acceptAward throws a StateError without a current pubkey', () async {
       // A WORKING signer is injected so the only possible StateError source is

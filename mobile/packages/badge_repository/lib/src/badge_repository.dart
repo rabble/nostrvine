@@ -94,6 +94,16 @@ class IssuedBadgeRecipientViewData {
   final bool isAccepted;
 }
 
+class BadgePublishException implements Exception {
+  const BadgePublishException(this.message, {required this.outcome});
+
+  final String message;
+  final PublishOutcome outcome;
+
+  @override
+  String toString() => 'BadgePublishException: $message';
+}
+
 class BadgeRepository {
   BadgeRepository({
     required NostrClient nostrClient,
@@ -279,6 +289,9 @@ class BadgeRepository {
     return {for (var i = 0; i < unique.length; i++) unique[i]: loaded[i]};
   }
 
+  /// Accepts [award] by publishing the current user's profile badge list.
+  ///
+  /// Throws [BadgePublishException] when no relay confirms the published list.
   Future<void> acceptAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
@@ -303,6 +316,9 @@ class BadgeRepository {
     await _publishProfileBadges(refs);
   }
 
+  /// Removes [award] from the current user's profile badge list.
+  ///
+  /// Throws [BadgePublishException] when no relay confirms the published list.
   Future<void> removeAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
@@ -419,8 +435,9 @@ class BadgeRepository {
 
     final outcome = await _nostrClient.publishEventAwaitOk(event);
     if (outcome.failed) {
-      throw StateError(
+      throw BadgePublishException(
         'Could not publish profile badges event: ${outcome.summary}',
+        outcome: outcome,
       );
     }
   }
@@ -459,7 +476,10 @@ class BadgeRepository {
         final leftIsCurrent = left.event.kind == EventKind.profileBadges
             ? 1
             : 0;
-        return rightIsCurrent.compareTo(leftIsCurrent);
+        final byKind = rightIsCurrent.compareTo(leftIsCurrent);
+        if (byKind != 0) return byKind;
+
+        return left.event.id.compareTo(right.event.id);
       });
     return sorted.first;
   }
