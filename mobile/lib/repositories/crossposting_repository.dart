@@ -40,13 +40,7 @@ class CrosspostingPlatformSettings extends Equatable {
   List<Object?> get props => [
     platform,
     supportsAutomatic,
-    connection != null,
-    connection?.id,
-    connection?.platform,
-    connection?.status,
-    connection?.externalAccountId,
-    connection?.externalAccountName,
-    connection?.tokenExpiresAt,
+    connection,
     mode,
   ];
 }

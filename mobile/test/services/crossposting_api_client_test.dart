@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
 
@@ -17,6 +18,7 @@ void main() {
     late _MockHttpClient httpClient;
     late CrosspostingApiClient client;
     late String? currentAccessToken;
+    late Object? accessTokenError;
 
     const accessToken = 'session-access-token';
 
@@ -27,8 +29,13 @@ void main() {
     setUp(() {
       httpClient = _MockHttpClient();
       currentAccessToken = accessToken;
+      accessTokenError = null;
       client = CrosspostingApiClient(
-        accessTokenReader: () async => currentAccessToken,
+        accessTokenReader: () async {
+          final error = accessTokenError;
+          if (error != null) throw error;
+          return currentAccessToken;
+        },
         httpClient: httpClient,
       );
     });
@@ -155,40 +162,49 @@ void main() {
       });
 
       for (final booleanField in const ['enabled', 'supportsAutomatic']) {
-        test('rejects a non-boolean $booleanField', () async {
-          stubGet(
-            jsonEncode({
-              'platforms': [
-                {
-                  'platform': 'instagram',
-                  'enabled': true,
-                  'supportsAutomatic': true,
-                  booleanField: 'not-a-boolean',
-                },
-              ],
-            }),
-          );
+        test(
+          'skips a platform entry with a non-boolean $booleanField',
+          () async {
+            stubGet(
+              jsonEncode({
+                'platforms': [
+                  {
+                    'platform': 'instagram',
+                    'enabled': true,
+                    'supportsAutomatic': true,
+                    booleanField: 'not-a-boolean',
+                  },
+                  {
+                    'platform': 'x',
+                    'enabled': true,
+                    'supportsAutomatic': false,
+                  },
+                ],
+              }),
+            );
 
-          await expectLater(
-            client.getPlatforms(),
-            throwsA(isA<CrosspostingApiException>()),
-          );
-        });
+            final platforms = await client.getPlatforms();
+
+            expect(platforms, hasLength(1));
+            expect(platforms.single.platform, CrosspostingPlatform.x);
+          },
+        );
       }
 
-      test('rejects a non-string platform field', () async {
+      test('skips a platform entry with a non-string platform field', () async {
         stubGet(
           jsonEncode({
             'platforms': [
               {'platform': 42, 'enabled': true},
+              {'platform': 'x', 'enabled': true, 'supportsAutomatic': false},
             ],
           }),
         );
 
-        await expectLater(
-          client.getPlatforms(),
-          throwsA(isA<CrosspostingApiException>()),
-        );
+        final platforms = await client.getPlatforms();
+
+        expect(platforms, hasLength(1));
+        expect(platforms.single.platform, CrosspostingPlatform.x);
       });
 
       test('skips malformed fields on an unknown platform', () async {
@@ -339,6 +355,33 @@ void main() {
         );
       });
 
+      test(
+        'translates token refresh network failures to unauthorized',
+        () async {
+          accessTokenError = OAuthNetworkException('offline');
+
+          expect(
+            () => client.getConnections(),
+            throwsA(
+              isA<CrosspostingApiException>()
+                  .having(
+                    (e) => e.kind,
+                    'kind',
+                    CrosspostingApiErrorKind.unauthorized,
+                  )
+                  .having(
+                    (e) => e.cause,
+                    'cause',
+                    isA<OAuthNetworkException>(),
+                  ),
+            ),
+          );
+          verifyNever(
+            () => httpClient.get(any(), headers: any(named: 'headers')),
+          );
+        },
+      );
+
       test('rejects a malformed connections collection', () async {
         stubGet(jsonEncode({'connections': 'not-a-list'}));
 
@@ -363,25 +406,29 @@ void main() {
         'externalAccountId': 42,
         'externalAccountName': <String>[],
       }.entries) {
-        test('rejects a malformed ${malformedField.key}', () async {
-          stubGet(
-            jsonEncode({
-              'connections': [
-                {
-                  'id': 'conn-1',
-                  'platform': 'instagram',
-                  'status': 'connected',
-                  malformedField.key: malformedField.value,
-                },
-              ],
-            }),
-          );
+        test(
+          'skips a connection with a malformed ${malformedField.key}',
+          () async {
+            stubGet(
+              jsonEncode({
+                'connections': [
+                  {
+                    'id': 'conn-1',
+                    'platform': 'instagram',
+                    'status': 'connected',
+                    malformedField.key: malformedField.value,
+                  },
+                  {'id': 'conn-2', 'platform': 'x', 'status': 'connected'},
+                ],
+              }),
+            );
 
-          await expectLater(
-            client.getConnections(),
-            throwsA(isA<CrosspostingApiException>()),
-          );
-        });
+            final connections = await client.getConnections();
+
+            expect(connections, hasLength(1));
+            expect(connections.single.platform, CrosspostingPlatform.x);
+          },
+        );
       }
     });
 
@@ -462,7 +509,7 @@ void main() {
         ('empty', <String, dynamic>{'state': ''}),
         ('wrong type', <String, dynamic>{'state': 42}),
       ]) {
-        test('rejects a ${stateCase.$1} state', () async {
+        test('accepts a ${stateCase.$1} state', () async {
           when(
             () => httpClient.post(
               any(),
@@ -479,13 +526,15 @@ void main() {
             ),
           );
 
-          await expectLater(
-            client.startConnection(
-              CrosspostingPlatform.instagram,
-              returnUrl: Uri.parse('https://divine.video/app/callback'),
-            ),
-            throwsA(isA<CrosspostingApiException>()),
+          final start = await client.startConnection(
+            CrosspostingPlatform.instagram,
+            returnUrl: Uri.parse('https://divine.video/app/callback'),
           );
+          expect(
+            start.authorizationUrl,
+            Uri.parse('https://instagram.example/oauth'),
+          );
+          expect(start.state, isNull);
         });
       }
 
@@ -734,24 +783,28 @@ void main() {
         'mode': 42,
         'connectionId': false,
       }.entries) {
-        test('rejects a malformed preference ${malformedField.key}', () async {
-          stubGet(
-            jsonEncode({
-              'preferences': [
-                {
-                  'platform': 'x',
-                  'mode': 'manual',
-                  malformedField.key: malformedField.value,
-                },
-              ],
-            }),
-          );
+        test(
+          'skips a preference with malformed ${malformedField.key}',
+          () async {
+            stubGet(
+              jsonEncode({
+                'preferences': [
+                  {
+                    'platform': 'x',
+                    'mode': 'manual',
+                    malformedField.key: malformedField.value,
+                  },
+                  {'platform': 'instagram', 'mode': 'automatic'},
+                ],
+              }),
+            );
 
-          await expectLater(
-            client.getPreferences(),
-            throwsA(isA<CrosspostingApiException>()),
-          );
-        });
+            final preferences = await client.getPreferences();
+
+            expect(preferences, hasLength(1));
+            expect(preferences.single.platform, CrosspostingPlatform.instagram);
+          },
+        );
       }
     });
 

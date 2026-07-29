@@ -101,17 +101,8 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
           CrosspostingSettingsStatus.failure => const _LoadFailed(),
           CrosspostingSettingsStatus.loaded when state.entries.isEmpty =>
             const _NoPlatforms(),
-          CrosspostingSettingsStatus.loaded => ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: state.entries.length,
-            separatorBuilder: (_, _) => const Divider(
-              height: 1,
-              color: VineTheme.surfaceBackground,
-            ),
-            itemBuilder: (context, index) => _PlatformSection(
-              entry: state.entries[index],
-              state: state,
-            ),
+          CrosspostingSettingsStatus.loaded => _LoadedSettingsList(
+            state: state,
           ),
         },
       ),
@@ -140,10 +131,7 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
       };
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: VineTheme.error,
-        ),
+        SnackBar(content: Text(message), backgroundColor: VineTheme.error),
       );
       cubit.acknowledgeError();
       return;
@@ -170,6 +158,53 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
       ),
     );
     cubit.acknowledgeOutcome();
+  }
+}
+
+class _LoadedSettingsList extends StatelessWidget {
+  const _LoadedSettingsList({required this.state});
+
+  final CrosspostingSettingsState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final refreshLabel = MaterialLocalizations.of(
+      context,
+    ).refreshIndicatorSemanticLabel;
+    return RefreshIndicator(
+      color: VineTheme.vineGreen,
+      backgroundColor: VineTheme.surfaceContainer,
+      onRefresh: context.read<CrosspostingSettingsCubit>().refresh,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        itemCount: state.entries.length + 1,
+        separatorBuilder: (_, _) =>
+            const Divider(height: 1, color: VineTheme.surfaceBackground),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: DivineButton(
+                  label: refreshLabel,
+                  size: DivineButtonSize.small,
+                  type: DivineButtonType.secondary,
+                  leadingIcon: DivineIconName.arrowClockwise,
+                  onPressed: state.hasPendingAction
+                      ? null
+                      : context.read<CrosspostingSettingsCubit>().refresh,
+                ),
+              ),
+            );
+          }
+          return _PlatformSection(
+            entry: state.entries[index - 1],
+            state: state,
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -424,10 +459,7 @@ class _ModeSelector extends StatelessWidget {
       (CrosspostingMode.disabled, context.l10n.crosspostingModeOff),
       (CrosspostingMode.manual, context.l10n.crosspostingModeManual),
       if (entry.supportsAutomatic)
-        (
-          CrosspostingMode.automatic,
-          context.l10n.crosspostingModeAutomatic,
-        ),
+        (CrosspostingMode.automatic, context.l10n.crosspostingModeAutomatic),
     ];
 
     return Row(

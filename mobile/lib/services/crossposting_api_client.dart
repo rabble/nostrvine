@@ -4,7 +4,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/keycast_flutter.dart';
 
 /// Reads an account-bound Divine OAuth access token.
 typedef CrosspostingAccessTokenReader = Future<String?> Function();
@@ -120,7 +122,7 @@ class CrosspostingPlatformInfo {
 
 /// A connected (or previously connected) external account, from
 /// `GET /connections`.
-class CrosspostingConnection {
+class CrosspostingConnection extends Equatable {
   const CrosspostingConnection({
     required this.id,
     required this.platform,
@@ -166,6 +168,16 @@ class CrosspostingConnection {
   final String? externalAccountId;
   final String? externalAccountName;
   final DateTime? tokenExpiresAt;
+
+  @override
+  List<Object?> get props => [
+    id,
+    platform,
+    status,
+    externalAccountId,
+    externalAccountName,
+    tokenExpiresAt,
+  ];
 }
 
 /// A per-platform posting preference, from `GET /preferences`.
@@ -183,13 +195,15 @@ class CrosspostingPreference {
 
 /// Result of `POST /connections/{platform}/start` — the OAuth page to open.
 class CrosspostingStart {
-  const CrosspostingStart({
-    required this.authorizationUrl,
-    required this.state,
-  });
+  const CrosspostingStart({required this.authorizationUrl, this.state});
 
   final Uri authorizationUrl;
-  final String state;
+
+  /// Server-side OAuth state value, when the crossposter includes one.
+  ///
+  /// The app validates its own `app_state` nonce on the HTTPS callback, so this
+  /// value is informational only and must not fail an otherwise valid flow.
+  final String? state;
 }
 
 /// The actionable category of a crossposter API failure.
@@ -266,7 +280,17 @@ class CrosspostingApiClient {
   void close() => _httpClient.close();
 
   Future<Map<String, String>> _authHeaders() async {
-    final token = await _accessTokenReader();
+    final String? token;
+    try {
+      token = await _accessTokenReader();
+    } on OAuthNetworkException catch (error) {
+      throw CrosspostingApiException(
+        'Not authenticated',
+        statusCode: 401,
+        code: 'unauthorized',
+        cause: error,
+      );
+    }
     if (token == null) {
       throw const CrosspostingApiException(
         'Not authenticated',
@@ -291,19 +315,23 @@ class CrosspostingApiClient {
     final entries = _requiredJsonField<List<dynamic>>(json, 'platforms');
     final platforms = <CrosspostingPlatformInfo>[];
     for (final rawEntry in entries) {
-      final entry = _jsonObject(rawEntry, 'platform entry');
-      final platform = CrosspostingPlatform.fromWireName(
-        _optionalJsonField<String>(entry, 'platform') ?? '',
-      );
-      if (platform == null) continue;
-      platforms.add(
-        CrosspostingPlatformInfo(
-          platform: platform,
-          enabled: _optionalJsonField<bool>(entry, 'enabled') ?? false,
-          supportsAutomatic:
-              _optionalJsonField<bool>(entry, 'supportsAutomatic') ?? false,
-        ),
-      );
+      try {
+        final entry = _jsonObject(rawEntry, 'platform entry');
+        final platform = CrosspostingPlatform.fromWireName(
+          _optionalJsonField<String>(entry, 'platform') ?? '',
+        );
+        if (platform == null) continue;
+        platforms.add(
+          CrosspostingPlatformInfo(
+            platform: platform,
+            enabled: _optionalJsonField<bool>(entry, 'enabled') ?? false,
+            supportsAutomatic:
+                _optionalJsonField<bool>(entry, 'supportsAutomatic') ?? false,
+          ),
+        );
+      } on CrosspostingApiException {
+        continue;
+      }
     }
     return platforms;
   }
@@ -316,12 +344,16 @@ class CrosspostingApiClient {
     final entries = _requiredJsonField<List<dynamic>>(json, 'connections');
     final connections = <CrosspostingConnection>[];
     for (final rawEntry in entries) {
-      final entry = _jsonObject(rawEntry, 'connection entry');
-      final platform = CrosspostingPlatform.fromWireName(
-        _optionalJsonField<String>(entry, 'platform') ?? '',
-      );
-      if (platform == null) continue;
-      connections.add(CrosspostingConnection.fromJson(entry, platform));
+      try {
+        final entry = _jsonObject(rawEntry, 'connection entry');
+        final platform = CrosspostingPlatform.fromWireName(
+          _optionalJsonField<String>(entry, 'platform') ?? '',
+        );
+        if (platform == null) continue;
+        connections.add(CrosspostingConnection.fromJson(entry, platform));
+      } on CrosspostingApiException {
+        continue;
+      }
     }
     return connections;
   }
@@ -349,9 +381,7 @@ class CrosspostingApiClient {
       json,
       'authorizationUrl',
     );
-    final authorizationUrl = Uri.tryParse(
-      authorizationUrlValue ?? '',
-    );
+    final authorizationUrl = Uri.tryParse(authorizationUrlValue ?? '');
     if (authorizationUrl == null ||
         authorizationUrl.scheme != 'https' ||
         !authorizationUrl.hasAuthority) {
@@ -359,16 +389,9 @@ class CrosspostingApiClient {
         'Malformed authorization URL in start response',
       );
     }
-    final state = _requiredJsonField<String>(json, 'state');
-    if (state.isEmpty) {
-      throw const CrosspostingApiException(
-        'Empty state in start response',
-      );
-    }
-    return CrosspostingStart(
-      authorizationUrl: authorizationUrl,
-      state: state,
-    );
+    final rawState = json['state'];
+    final state = rawState is String && rawState.isNotEmpty ? rawState : null;
+    return CrosspostingStart(authorizationUrl: authorizationUrl, state: state);
   }
 
   /// Disconnects [connectionId] on [platform].
@@ -393,20 +416,24 @@ class CrosspostingApiClient {
     final entries = _requiredJsonField<List<dynamic>>(json, 'preferences');
     final preferences = <CrosspostingPreference>[];
     for (final rawEntry in entries) {
-      final entry = _jsonObject(rawEntry, 'preference entry');
-      final platform = CrosspostingPlatform.fromWireName(
-        _optionalJsonField<String>(entry, 'platform') ?? '',
-      );
-      if (platform == null) continue;
-      preferences.add(
-        CrosspostingPreference(
-          platform: platform,
-          mode: CrosspostingMode.fromWireName(
-            _optionalJsonField<String>(entry, 'mode'),
+      try {
+        final entry = _jsonObject(rawEntry, 'preference entry');
+        final platform = CrosspostingPlatform.fromWireName(
+          _optionalJsonField<String>(entry, 'platform') ?? '',
+        );
+        if (platform == null) continue;
+        preferences.add(
+          CrosspostingPreference(
+            platform: platform,
+            mode: CrosspostingMode.fromWireName(
+              _optionalJsonField<String>(entry, 'mode'),
+            ),
+            connectionId: _optionalJsonField<String>(entry, 'connectionId'),
           ),
-          connectionId: _optionalJsonField<String>(entry, 'connectionId'),
-        ),
-      );
+        );
+      } on CrosspostingApiException {
+        continue;
+      }
     }
     return preferences;
   }

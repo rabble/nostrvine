@@ -853,6 +853,18 @@ void main() {
       );
     });
 
+    testWidgets('loaded state exposes an in-screen refresh action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, 'Refresh'));
+      await tester.pumpAndSettle();
+
+      verify(repository.loadSettings).called(2);
+    });
+
     testWidgets('refreshes settings when the app resumes', (tester) async {
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();

@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/features/crossposting/crossposting_callback.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
 
@@ -58,8 +59,6 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   /// turns that silent hang into an explicit error. Three minutes is
   /// generous for a real consent round trip, including account creation.
   final Duration _oauthCallbackTimeout;
-
-  bool _operationInProgress = false;
 
   /// Loads settings unless another load, refresh, or mutation already owns the
   /// operation gate.
@@ -115,8 +114,6 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
         stackTrace,
         status: showLoading ? CrosspostingSettingsStatus.failure : null,
       );
-    } finally {
-      _releaseOperation();
     }
   }
 
@@ -130,7 +127,10 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     try {
       final nonce = _nonceGenerator();
       if (nonce.isEmpty) {
-        throw StateError('Crossposting OAuth nonce must not be empty');
+        throw Reportable(
+          StateError('Crossposting OAuth nonce must not be empty'),
+          context: '_connect',
+        );
       }
       final returnUrl = callbackBaseUrl.replace(
         queryParameters: {'app_state': nonce},
@@ -181,10 +181,7 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       final entries = await _repository.loadSettings();
       if (isClosed) return;
       if (callbackError != null) {
-        _emitActionError(
-          CrosspostingSettingsError.generic,
-          entries: entries,
-        );
+        _emitActionError(CrosspostingSettingsError.generic, entries: entries);
         return;
       }
 
@@ -212,8 +209,6 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       );
     } catch (error, stackTrace) {
       _reportError(error, stackTrace);
-    } finally {
-      _releaseOperation();
     }
   }
 
@@ -255,23 +250,14 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
       final entries = await _repository.loadSettings();
       if (isClosed) return;
       _emitIfOpen(
-        state.copyWith(
-          entries: entries,
-          clearPending: true,
-          clearError: true,
-        ),
+        state.copyWith(entries: entries, clearPending: true, clearError: true),
       );
     } catch (error, stackTrace) {
       _reportError(error, stackTrace);
-    } finally {
-      _releaseOperation();
     }
   }
 
-  Future<void> setMode(
-    CrosspostingPlatform platform,
-    CrosspostingMode mode,
-  ) {
+  Future<void> setMode(CrosspostingPlatform platform, CrosspostingMode mode) {
     if (!_tryAcquireOperation()) return Future<void>.value();
     return _setMode(platform, mode);
   }
@@ -280,61 +266,54 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
     CrosspostingPlatform platform,
     CrosspostingMode mode,
   ) async {
+    if (_entryFor(platform) == null) return;
+
+    final previousEntries = state.entries;
+    _beginAction(
+      CrosspostingPlatformAction.savingMode,
+      platform,
+      entries: [
+        for (final entry in state.entries)
+          if (entry.platform == platform) entry.copyWith(mode: mode) else entry,
+      ],
+    );
+
     try {
-      if (_entryFor(platform) == null) return;
-
-      final previousEntries = state.entries;
-      _beginAction(
-        CrosspostingPlatformAction.savingMode,
-        platform,
-        entries: [
-          for (final entry in state.entries)
-            if (entry.platform == platform)
-              entry.copyWith(mode: mode)
-            else
-              entry,
-        ],
-      );
-
-      try {
-        await _repository.setMode(platform, mode);
-        if (isClosed) return;
-        _emitIfOpen(state.copyWith(clearPending: true, clearError: true));
-      } on CrosspostingApiException catch (error, stackTrace) {
-        if (isClosed) return;
-        addError(error, stackTrace);
-        if (error.kind == CrosspostingApiErrorKind.notConnected) {
-          try {
-            final entries = await _repository.loadSettings();
-            if (isClosed) return;
-            _emitActionError(
-              CrosspostingSettingsError.notConnected,
-              entries: entries,
-            );
-          } catch (reloadError, reloadStackTrace) {
-            if (isClosed) return;
-            addError(reloadError, reloadStackTrace);
-            _emitActionError(
-              CrosspostingSettingsError.generic,
-              entries: previousEntries,
-            );
-          }
-          return;
+      await _repository.setMode(platform, mode);
+      if (isClosed) return;
+      _emitIfOpen(state.copyWith(clearPending: true, clearError: true));
+    } on CrosspostingApiException catch (error, stackTrace) {
+      if (isClosed) return;
+      addError(error, stackTrace);
+      if (error.kind == CrosspostingApiErrorKind.notConnected) {
+        try {
+          final entries = await _repository.loadSettings();
+          if (isClosed) return;
+          _emitActionError(
+            CrosspostingSettingsError.notConnected,
+            entries: entries,
+          );
+        } catch (reloadError, reloadStackTrace) {
+          if (isClosed) return;
+          addError(reloadError, reloadStackTrace);
+          _emitActionError(
+            CrosspostingSettingsError.generic,
+            entries: previousEntries,
+          );
         }
-        _emitActionError(
-          CrosspostingSettingsError.generic,
-          entries: previousEntries,
-        );
-      } catch (error, stackTrace) {
-        if (isClosed) return;
-        addError(error, stackTrace);
-        _emitActionError(
-          CrosspostingSettingsError.generic,
-          entries: previousEntries,
-        );
+        return;
       }
-    } finally {
-      _releaseOperation();
+      _emitActionError(
+        CrosspostingSettingsError.generic,
+        entries: previousEntries,
+      );
+    } catch (error, stackTrace) {
+      if (isClosed) return;
+      addError(error, stackTrace);
+      _emitActionError(
+        CrosspostingSettingsError.generic,
+        entries: previousEntries,
+      );
     }
   }
 
@@ -349,13 +328,9 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
   }
 
   bool _tryAcquireOperation() {
-    if (isClosed || _operationInProgress) return false;
-    _operationInProgress = true;
-    return true;
-  }
-
-  void _releaseOperation() {
-    _operationInProgress = false;
+    return !isClosed &&
+        state.status != CrosspostingSettingsStatus.loading &&
+        state.pendingAction == null;
   }
 
   bool _emitIfOpen(CrosspostingSettingsState nextState) {
