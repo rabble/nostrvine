@@ -33,6 +33,7 @@ class ClipEditorState extends Equatable {
     this.lastTransformResult,
     this.isChromaKeying = false,
     this.chromaKeyingClipId,
+    this.chromaKeyingRenderId,
     this.lastChromaKeyResult,
     this.isMultiSelectMode = false,
     this.selectedClipIds = const {},
@@ -166,8 +167,16 @@ class ClipEditorState extends Equatable {
   /// Whether a green screen is currently being baked into a clip's file.
   final bool isChromaKeying;
 
-  /// Render id of the clip whose green screen is baking, or `null`.
+  /// Id of the clip whose green screen is baking, or `null`.
+  ///
+  /// Lets a clip's own editor tell "my bake is running" from "some other
+  /// clip's bake is running" without reaching for the service that named it.
   final String? chromaKeyingClipId;
+
+  /// Render id of the bake in flight, or `null`.
+  ///
+  /// The UI subscribes to the renderer's progress stream under this id.
+  final String? chromaKeyingRenderId;
 
   /// Outcome of the last chroma-key bake. Compared by identity so the same
   /// outcome twice in a row still surfaces.
@@ -259,6 +268,7 @@ class ClipEditorState extends Equatable {
     String? transformingClipId,
     bool? isChromaKeying,
     String? chromaKeyingClipId,
+    String? chromaKeyingRenderId,
     bool clearChromaKeyingClipId = false,
     ChromaKeyResult? lastChromaKeyResult,
     bool clearTransformingClipId = false,
@@ -318,6 +328,9 @@ class ClipEditorState extends Equatable {
       chromaKeyingClipId: clearChromaKeyingClipId
           ? null
           : (chromaKeyingClipId ?? this.chromaKeyingClipId),
+      chromaKeyingRenderId: clearChromaKeyingClipId
+          ? null
+          : (chromaKeyingRenderId ?? this.chromaKeyingRenderId),
       lastChromaKeyResult: lastChromaKeyResult ?? this.lastChromaKeyResult,
       isMultiSelectMode: isMultiSelectMode ?? this.isMultiSelectMode,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
@@ -370,6 +383,7 @@ class ClipEditorState extends Equatable {
     identityHashCode(lastTransformResult),
     isChromaKeying,
     chromaKeyingClipId,
+    chromaKeyingRenderId,
     identityHashCode(lastChromaKeyResult),
     isMultiSelectMode,
     selectedClipIds,

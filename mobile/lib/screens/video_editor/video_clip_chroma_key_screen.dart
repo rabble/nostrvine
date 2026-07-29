@@ -16,7 +16,6 @@ import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/clip_chroma_key.dart';
-import 'package:openvine/services/video_editor/chroma_key_bake_service.dart';
 import 'package:openvine/utils/image_orientation.dart';
 import 'package:openvine/utils/loop_restarts.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -218,20 +217,22 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
     }
   }
 
-  /// Whether *this* clip's bake is the one currently rendering.
+  /// The render id of *this* clip's bake, or `null` when the bake in flight
+  /// belongs to another clip.
   ///
-  /// Scoped to the render id rather than the bloc-wide flag so a bake started
-  /// on another clip never locks this screen.
-  bool _isBakingThisClip(ClipEditorState state) =>
-      state.isChromaKeying &&
-      state.chromaKeyingClipId ==
-          ChromaKeyBakeService.renderIdFor(widget.clip.id);
+  /// Scoped to the clip rather than the bloc-wide flag so a bake started
+  /// elsewhere never locks this screen.
+  String? _bakeInFlight(ClipEditorState state) =>
+      state.isChromaKeying && state.chromaKeyingClipId == widget.clip.id
+      ? state.chromaKeyingRenderId
+      : null;
 
   @override
   Widget build(BuildContext context) {
-    final isBaking = context.select<ClipEditorBloc, bool>(
-      (bloc) => _isBakingThisClip(bloc.state),
+    final bakingRenderId = context.select<ClipEditorBloc, String?>(
+      (bloc) => _bakeInFlight(bloc.state),
     );
+    final isBaking = bakingRenderId != null;
 
     return BlocProvider<ChromaKeyEditorCubit>.value(
       value: _cubit,
@@ -324,12 +325,8 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
                       ),
                     ],
                   ),
-                  if (isBaking)
-                    _BakingOverlay(
-                      renderId: ChromaKeyBakeService.renderIdFor(
-                        widget.clip.id,
-                      ),
-                    ),
+                  if (bakingRenderId != null)
+                    _BakingOverlay(renderId: bakingRenderId),
                 ],
               ),
             ),

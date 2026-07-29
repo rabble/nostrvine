@@ -2286,11 +2286,18 @@ void main() {
           const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
         ),
         expect: () => [
-          isA<ClipEditorState>().having(
-            (s) => s.isChromaKeying,
-            'isChromaKeying',
-            isTrue,
-          ),
+          // The clip id and the render id are separate on purpose: the screen
+          // matches the first against its own clip to decide whether to block,
+          // and subscribes to the renderer's progress under the second.
+          // Collapsing them leaves the overlay watching the wrong id.
+          isA<ClipEditorState>()
+              .having((s) => s.isChromaKeying, 'isChromaKeying', isTrue)
+              .having((s) => s.chromaKeyingClipId, 'clipId', 'clip-1')
+              .having(
+                (s) => s.chromaKeyingRenderId,
+                'renderId',
+                ChromaKeyBakeService.renderIdFor('clip-1'),
+              ),
           isA<ClipEditorState>()
               .having(
                 (s) => s.clips.single.video?.file?.path,

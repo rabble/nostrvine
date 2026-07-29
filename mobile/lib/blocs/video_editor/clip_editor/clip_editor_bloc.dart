@@ -1406,7 +1406,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     final clip = state.clips[index];
 
     final renderId = ChromaKeyBakeService.renderIdFor(clip.id);
-    emit(state.copyWith(isChromaKeying: true, chromaKeyingClipId: renderId));
+    emit(
+      state.copyWith(
+        isChromaKeying: true,
+        chromaKeyingClipId: clip.id,
+        chromaKeyingRenderId: renderId,
+      ),
+    );
 
     try {
       final baked = await _bakeChromaKey(
