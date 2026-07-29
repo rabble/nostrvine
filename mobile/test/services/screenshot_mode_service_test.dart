@@ -95,5 +95,40 @@ void main() {
         await expectLater(buildService().prepare(), completes);
       });
     });
+
+    group('fixtures', () {
+      test('OG Viner fixtures have avatars and unique pubkeys', () {
+        final fixtures = screenshotOgVinersFixtures();
+
+        expect(fixtures, isNotEmpty);
+        expect(
+          fixtures,
+          everyElement(
+            isA<dynamic>().having(
+              (viner) => viner.authorAvatar,
+              'authorAvatar',
+              isNotEmpty,
+            ),
+          ),
+        );
+        expect(
+          fixtures.map((viner) => viner.pubkey).toSet(),
+          hasLength(fixtures.length),
+        );
+      });
+
+      test('discover-list fixtures are deterministic and on-brand', () {
+        final fixtures = screenshotDiscoverListsFixtures();
+
+        expect(fixtures, hasLength(6));
+        expect(fixtures.map((list) => list.id).toSet(), hasLength(6));
+        expect(fixtures.map((list) => list.name), everyElement(isNotEmpty));
+        expect(
+          fixtures.map((list) => list.videoEventIds),
+          everyElement(isNotEmpty),
+        );
+        expect(fixtures.map((list) => list.pubkey), everyElement(isNull));
+      });
+    });
   });
 }

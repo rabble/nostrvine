@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
+import 'package:openvine/constants/semantic_ids.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/categories_tab.dart';
 
@@ -106,6 +107,37 @@ void main() {
 
       expect(animalsTopLeft.dy, lessThan(styleTopLeft.dy));
       expect(styleTopLeft.dy, lessThan(technologyTopLeft.dy));
+    });
+
+    testWidgets('exposes stable category tile identifiers', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          state: const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [
+              VideoCategory(name: 'animals', videoCount: 1500),
+              VideoCategory(name: 'music', videoCount: 900),
+            ],
+          ),
+        ),
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.identifier == SemanticIds.categoryTile(0),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics &&
+              widget.properties.identifier == SemanticIds.categoryTile(1),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows a linear refresh indicator over cached categories', (

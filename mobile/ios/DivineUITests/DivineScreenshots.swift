@@ -36,11 +36,6 @@ final class DivineScreenshots: XCTestCase {
     static let profileNpub =
         "npub1x5ses3yutlmw0e62v6j469a6flz2pgqc5tt4dmjcndj4mq3ldsns93jzec"
 
-    /// Video whose share sheet is captured for 09 (andrinG — "i said
-    /// DRIVE!!!!"), so Lele isn't the subject of every screen.
-    static let shareVideoId =
-        "5de2fb46103e57ff8ee27d6d4fc667ad1d7b2b7c3081814a3edad7e6ac680f93"
-
     // MARK: - Launch helpers
 
     /// First-launch account creation + relay warm-up can be slow.
@@ -153,9 +148,7 @@ final class DivineScreenshots: XCTestCase {
         let app = launchApp(
             route: "/video/\(DivineScreenshots.creatorPostVideoId)"
         )
-        // Short settle: capture the flattering opening/poster frame, not a
-        // mid-clip expression (Lele needs to look great on the hero shot).
-        waitForVideoLoaded(app, settle: 0.4)
+        waitForVideoLoaded(app)
         // The on-video caption ("VINE IS BACK!") is the reliable anchor;
         // the loop-count badge renders on the same screen but isn't a
         // stable wait target.
@@ -234,18 +227,6 @@ final class DivineScreenshots: XCTestCase {
         )
         waitFor(app, "editor_timeline")
         snapshot("08_editor")
-    }
-
-    func test09Share() {
-        let app = launchApp(
-            route: "/video/\(DivineScreenshots.shareVideoId)"
-        )
-        waitForVideoLoaded(app)
-        waitFor(app, "share_button")
-        element(app, "share_button").tap()
-        waitFor(app, "share_with_section")
-        waitFor(app, "share_contact_0")
-        snapshot("09_share")
     }
 
     // MARK: - Preview-video recordings

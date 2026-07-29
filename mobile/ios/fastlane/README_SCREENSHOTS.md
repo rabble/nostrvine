@@ -1,7 +1,7 @@
 # App Store screenshot pipeline
 
 Automated, caption-overlaid App Store screenshots for Divine. One command
-captures all 9 screens on both required device sizes and composites the
+captures the required screenshots on all App Store device sizes and composites the
 marketing captions on top.
 
 ## How to run
@@ -28,10 +28,12 @@ recapturing (e.g. after editing caption copy), run
 The `screenshots` lane verifies step 1 ran (it checks `Generated.xcconfig`
 for the `SCREENSHOT_MODE` define) and fails fast with instructions if not.
 
-Output lands in `mobile/ios/fastlane/screenshots/<locale>/` — raw captures
+Output lands in `mobile/ios/fastlane/screenshots/<locale>/` - raw captures
 as `<device>-<name>.png`, framed + captioned versions as
-`*_framed.png`. Nothing is ever uploaded; the `upload_screenshots` lane is
-deliberately disabled.
+`*_framed.png`. The exported framed set is controlled by `SLIDES` in
+`frame_screenshots.py`: eight captured screens plus the generated
+`09_endcard` brand card. Nothing is ever uploaded; the `upload_screenshots`
+lane is deliberately disabled.
 
 Partial runs while iterating:
 
@@ -52,23 +54,33 @@ bundle exec fastlane frame     # re-frame existing captures (fast)
   creators (see `ScreenshotModeService.creatorPubkeysHex`) so the share
   sheet and feeds have real content. The account persists on the
   simulator between runs.
+- Screenshot mode also overrides `topClassicVinersProvider` and seeds
+  `discoveredListsProvider` with deterministic fixtures so the classics row
+  and list-discovery capture do not depend on live relay ordering or
+  avatar-less public profiles.
 - `ios/DivineUITests/DivineScreenshots.swift` launches the app once per
   screen with `SCREENSHOT_INITIAL_ROUTE` in the launch environment; the
   screenshot startup hook reads that value from `SharedPreferences` and
-  drives the router after first-frame startup. Every step waits on an
-  accessibility identifier from `lib/constants/semantic_ids.dart` — no
-  sleeps.
+  drives the router after first-frame startup. Each screen has an
+  accessibility identifier from `lib/constants/semantic_ids.dart`; a few
+  captures also use bounded sleeps where native media/image loading has no
+  reliable accessibility signal.
 - The camera preview is a bundled still (simulators have no camera); the
   editor timeline is seeded from bundled clips when
   `SCREENSHOT_SEED_CLIPS=1` is in the launch environment.
 - `snapshot` overrides the status bar (9:41, full signal/battery) via
-  `override_status_bar` in the `Snapfile`.
+  `override_status_bar` in the `Snapfile`. The same scheme contains
+  recording-only `testRec*` methods for App Store preview video B-roll; those
+  are skipped by the scheme during regular `snapshot` runs and should be run
+  one at a time with Xcode's `-only-testing` while `simctl io recordVideo`
+  records the simulator.
 - `frame_screenshots.py` composites the dark-green brand canvas
-  (`#00150D`), the caption in Bricolage Grotesque — headline in brand
+  (`#00150D`), the caption in Bricolage Grotesque - headline in brand
   green `#27C58B` (from `<locale>/keyword.strings`), subhead in white
   (from `<locale>/title.strings`) — and the rounded device capture below.
-  `02_creator_post` intentionally has no caption entry — the creator's
-  on-video caption carries it.
+  `03_creator_post` intentionally has no subhead entry; the creator's
+  on-video caption carries extra context. The generated `09_endcard` uses the
+  official white wordmark from `fastlane/endcard_assets/`.
 
 ## How to change caption copy
 
@@ -99,16 +111,18 @@ size: `sips -Z 200 <framed>.png --out /tmp/thumb.png` and eyeball it.
 2. Add a `testNN...` method to
    `ios/DivineUITests/DivineScreenshots.swift`: launch with the route,
    `waitFor(...)` the identifier, then `snapshot("NN_name")`.
-3. Add caption entries to `keyword.strings` / `title.strings` in every
-   locale directory.
+3. Add the export entry to `SLIDES` in `frame_screenshots.py`.
+4. Add caption entries to `keyword.strings` / `title.strings` in every
+   locale directory. Every exported slide must have a headline; framing fails
+   if a required capture or headline is missing.
 
 ## Pinned content (change when needed)
 
 Constants at the top of `DivineScreenshots.swift`:
 
-- `creatorPostVideoId` — Lele Pons' "VINE IS BACK!" event id (02, 09).
+- `creatorPostVideoId` — Lele Pons' "VINE IS BACK!" event id (03).
 - `verifiedVideoId` — a video whose About sheet shows the Human-Made
-  badge and all four verification checks (03).
+  badge and all four verification checks (02).
 - `profileNpub` — the profile captured for 07.
 
 ## Environment / credentials
@@ -121,9 +135,9 @@ credentials.
 
 ## Notes
 
-- Content screens (01, 02, 05, 07, 09) render live production data —
+- Content screens (02, 03, 07) render live production data -
   loop counts and thumbnails will differ between runs; the framing is
   deterministic.
-- Both simulators (`iPhone 16 Pro Max`, `iPhone 11 Pro Max`) must exist;
-  create them with `xcrun simctl create` if `snapshot` reports a missing
-  device.
+- All three simulators (`iPhone 16 Pro Max`, `iPhone 11 Pro Max`, and
+  `iPad Pro 13-inch (M5)`) must exist; create them with `xcrun simctl create`
+  if `snapshot` reports a missing device.
