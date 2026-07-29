@@ -29,6 +29,7 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.io.IOException
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -58,6 +59,7 @@ class DivineVideoPlayerInstanceTest {
 
     @Before
     fun setUp() {
+        DivineVideoPlayerInstance.clearTrackDurationsCacheForTesting()
         messenger = mockk(relaxed = true)
         context = mockk(relaxed = true)
         mockPlayer = mockk(relaxed = true)
@@ -84,6 +86,11 @@ class DivineVideoPlayerInstanceTest {
             audioOverlayManagerFactory = { _ -> mockAudioManager },
             metadataExecutor = DirectExecutorService(),
         )
+    }
+
+    @After
+    fun tearDown() {
+        DivineVideoPlayerInstance.clearTrackDurationsCacheForTesting()
     }
 
     /**
@@ -730,7 +737,7 @@ class DivineVideoPlayerInstanceTest {
     fun `setClips waits for the track lengths before touching the player`() {
         val result = mockk<MethodChannel.Result>(relaxed = true)
 
-        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/a.mp4"), result)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/a.mp4"), result)
 
         // The metadata read ran, but applying is posted back to the platform
         // thread — nothing may reach the player until that lands.
@@ -746,10 +753,10 @@ class DivineVideoPlayerInstanceTest {
         val stale = mockk<MethodChannel.Result>(relaxed = true)
         val fresh = mockk<MethodChannel.Result>(relaxed = true)
 
-        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/stale.mp4"), stale)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/stale.mp4"), stale)
         val afterStale = capturePostedRunnables().size
 
-        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/fresh.mp4"), fresh)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/fresh.mp4"), fresh)
         val posted = capturePostedRunnables()
 
         // Run the newer continuation first, then the superseded one: the
@@ -765,8 +772,8 @@ class DivineVideoPlayerInstanceTest {
         val stale = mockk<MethodChannel.Result>(relaxed = true)
         val fresh = mockk<MethodChannel.Result>(relaxed = true)
 
-        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/one.mp4"), stale)
-        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/two.mp4"), fresh)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/one.mp4"), stale)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/two.mp4"), fresh)
         capturePostedRunnables().forEach { it.run() }
 
         // Dropping the superseded result leaves `await setClips()` pending for
@@ -781,7 +788,7 @@ class DivineVideoPlayerInstanceTest {
     fun `dispose answers a setClips still waiting on the track lengths`() {
         val result = mockk<MethodChannel.Result>(relaxed = true)
 
-        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/gone.mp4"), result)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/gone.mp4"), result)
         instance.dispose()
         capturePostedRunnables().forEach { it.run() }
 
@@ -791,9 +798,8 @@ class DivineVideoPlayerInstanceTest {
     @Test
     fun `clips are applied unclamped when the track lengths never arrive`() {
         val result = mockk<MethodChannel.Result>(relaxed = true)
-        // An executor that accepts work and never runs it: a remote read that
-        // connects and then stalls. MediaHTTPConnection has no read timeout,
-        // so nothing below this bounds the wait.
+        // An executor that accepts work and never runs it: a metadata read that
+        // never returns. Nothing below this bounds the wait.
         val stalled = DivineVideoPlayerInstance(
             messenger = messenger,
             context = context,
@@ -804,7 +810,7 @@ class DivineVideoPlayerInstanceTest {
             metadataExecutor = StalledExecutorService(),
         )
 
-        stalled.onMethodCall(trimmingSetClipsCall("https://cdn.example/stalled.mp4"), result)
+        stalled.onMethodCall(trimmingSetClipsCall("file:///tmp/stalled.mp4"), result)
         verify(exactly = 0) { mockPlayer.setMediaItems(any(), any(), any()) }
 
         val deadline = mutableListOf<Runnable>()
@@ -819,6 +825,25 @@ class DivineVideoPlayerInstanceTest {
         // A seam is worse than a load that never finishes is worse.
         verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
         verify(exactly = 0) { result.error(any(), any(), any()) }
+
+        stalled.onMethodCall(trimmingSetClipsCall("file:///tmp/next.mp4"), mockk(relaxed = true))
+        // Once a read times out, the instance stops queueing metadata work and
+        // future loads play immediately instead of paying the same deadline.
+        verify(exactly = 2) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a remote source starts immediately while track lengths warm in the background`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/remote.mp4"), result)
+
+        // Remote MediaExtractor reads add a second connection to the feed's
+        // first-frame path, so they must not sit in front of the playlist swap.
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        // The same read still runs and posts a continuation that can tighten
+        // the current playlist if the metadata lands before the first loop.
+        verify(exactly = 1) { mockHandler.post(any()) }
     }
 
     @Test

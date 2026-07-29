@@ -635,7 +635,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                         timeRange: CMTimeRange(start: flatStart, end: flatEnd)
                     )
                 }
-                if i == lastIndex, fadeOutTicks > 0 {
+                if i == lastIndex, fadeOutTicks > 0,
+                    CMTimeCompare(flatEnd, flatStart) >= 0
+                {
                     params.setVolumeRamp(
                         fromStartVolume: vol,
                         toEndVolume: 0,

@@ -170,10 +170,7 @@ internal class DivineVideoPlayerInstance(
 
     private val audioOverlayManager = audioOverlayManagerFactory(context)
 
-    /**
-     * Bumped by every [handleSetClips]. A resolution that finishes after a
-     * newer call started is dropped rather than applied over it.
-     */
+    /** Bumped by every [handleSetClips] so late background work can be dropped. */
     private var setClipsGeneration = 0L
 
     /**
@@ -197,14 +194,25 @@ internal class DivineVideoPlayerInstance(
      */
     private val deferredSetClipsTimeout = Runnable {
         deferredSetClips?.let { deferred ->
+            trackDurationProbingDisabled = true
             DivineVideoPlayerLog.warning(
                 "Player $playerId applied clips unclamped: track lengths not " +
-                    "read within ${TRACK_DURATION_RESOLVE_TIMEOUT_MS}ms",
+                    "read within ${TRACK_DURATION_RESOLVE_TIMEOUT_MS}ms; " +
+                    "metadata probing disabled for this instance",
                 name = "DivineVideoPlayer.Load",
             )
             settleDeferredSetClips(deferred, apply = true)
         }
     }
+
+    /**
+     * True after a metadata read misses its deadline on this instance.
+     *
+     * `MediaExtractor` remote reads are native I/O and may not be interruptible.
+     * Once the single metadata thread is plausibly pinned, queuing more work only
+     * makes later loads wait for a deadline before playing unclamped anyway.
+     */
+    private var trackDurationProbingDisabled = false
 
     /**
      * Fades the outer edges of a looping video so its loop join is not a click
@@ -456,24 +464,36 @@ internal class DivineVideoPlayerInstance(
         val generation = ++setClipsGeneration
         deferredSetClips?.let { settleDeferredSetClips(it, apply = false) }
 
-        val unresolved = clipsRaw.mapNotNull { map ->
-            val uri = map["uri"] as? String ?: return@mapNotNull null
-            if (map["trimToCommonTrackEnd"] as? Boolean != true) return@mapNotNull null
-            if (!canReadTrackDurations(uri)) return@mapNotNull null
-            if (trackDurationsCache.containsKey(uri)) return@mapNotNull null
-            uri to httpHeadersOf(map)
+        val unresolved = if (trackDurationProbingDisabled) {
+            emptyList()
+        } else {
+            clipsRaw.mapNotNull { map ->
+                val uri = map["uri"] as? String ?: return@mapNotNull null
+                if (map["trimToCommonTrackEnd"] as? Boolean != true) return@mapNotNull null
+                if (!canReadTrackDurations(uri)) return@mapNotNull null
+                if (trackDurationsCache.containsKey(uri)) return@mapNotNull null
+                uri to httpHeadersOf(map)
+            }
         }
-        if (unresolved.isEmpty()) {
+        val blockingUnresolved = unresolved.filter { (uri, _) ->
+            shouldBlockSetClipsForTrackDurations(uri)
+        }
+        val backgroundUnresolved = unresolved.filterNot { (uri, _) ->
+            shouldBlockSetClipsForTrackDurations(uri)
+        }
+        if (blockingUnresolved.isEmpty()) {
+            if (backgroundUnresolved.isNotEmpty()) {
+                warmTrackDurationsInBackground(generation, clipsRaw, backgroundUnresolved)
+            }
             applyClips(call, clipsRaw, result)
             return
         }
 
-        // Where each track really ends is only in the source's metadata, and
-        // reading it blocks. Resolve off the platform thread, then apply on
-        // it — the alternative is looping to the container duration, which is
-        // the *longest* track, and leaving the shorter one's tail as a frozen
-        // frame before every restart.
-        val deferred = DeferredSetClips(generation, call, clipsRaw, result)
+        // Where each track really ends is only in the source's metadata. Local
+        // files can be read before the playlist swap without adding a network
+        // round trip to first frame; remote sources warm in the background and
+        // tighten the current playlist when they land.
+        val deferred = DeferredSetClips(call, clipsRaw, result)
         deferredSetClips = deferred
         mainHandler.postDelayed(
             deferredSetClipsTimeout,
@@ -486,11 +506,20 @@ internal class DivineVideoPlayerInstance(
                 // playing to the container duration is a seam, not playing at
                 // all is a dead player.
                 try {
-                    unresolved.forEach { (uri, headers) ->
+                    blockingUnresolved.forEach { (uri, headers) ->
                         resolveTrackDurations(uri, headers)
                     }
                 } finally {
-                    mainHandler.post { settleDeferredSetClips(deferred, apply = true) }
+                    mainHandler.post {
+                        if (backgroundUnresolved.isNotEmpty()) {
+                            warmTrackDurationsInBackground(
+                                generation,
+                                clipsRaw,
+                                backgroundUnresolved,
+                            )
+                        }
+                        settleDeferredSetClips(deferred, apply = true)
+                    }
                 }
             }
         } catch (e: RejectedExecutionException) {
@@ -502,6 +531,68 @@ internal class DivineVideoPlayerInstance(
             if (claimDeferredSetClips(deferred)) {
                 result.error("DISPOSED", "Player was disposed", null)
             }
+        }
+    }
+
+    private fun warmTrackDurationsInBackground(
+        generation: Long,
+        clipsRaw: List<Map<String, Any?>>,
+        unresolved: List<Pair<String, Map<String, String>>>,
+    ) {
+        try {
+            metadataExecutor.execute {
+                try {
+                    unresolved.forEach { (uri, headers) ->
+                        resolveTrackDurations(uri, headers)
+                    }
+                } finally {
+                    mainHandler.post {
+                        applyResolvedCommonTrackEnds(generation, clipsRaw)
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            DivineVideoPlayerLog.warning(
+                "Player $playerId dropped background track-duration read: $e",
+                name = "DivineVideoPlayer.Load",
+            )
+        }
+    }
+
+    private fun applyResolvedCommonTrackEnds(
+        generation: Long,
+        clipsRaw: List<Map<String, Any?>>,
+    ) {
+        if (generation != setClipsGeneration) return
+        val exoPlayer = player ?: return
+        if (exoPlayer.mediaItemCount != clipsRaw.size) return
+
+        var changed = false
+        clipsRaw.forEachIndexed loop@{ index, map ->
+            val uri = map["uri"] as? String ?: return@loop
+            if (map["trimToCommonTrackEnd"] as? Boolean != true) return@loop
+            val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
+            val requestedEndMs = (map["endMs"] as? Number)?.toLong()
+            val commonEndMs = boundedCommonTrackEndMs(uri, startMs, requestedEndMs)
+                ?: return@loop
+            val effectiveEndMs = listOfNotNull(requestedEndMs, commonEndMs).minOrNull()
+                ?: return@loop
+            val currentItem = exoPlayer.getMediaItemAt(index)
+            if (currentItem.clippingConfiguration.endPositionMs == effectiveEndMs) {
+                return@loop
+            }
+            exoPlayer.replaceMediaItem(
+                index,
+                buildMediaItem(uri, startMs, effectiveEndMs),
+            )
+            changed = true
+        }
+        if (changed) {
+            refreshClipOffsets(exoPlayer)
+            DivineVideoPlayerLog.info(
+                "Player $playerId applied resolved track-end clamp",
+                name = "DivineVideoPlayer.Load",
+            )
         }
     }
 
@@ -533,7 +624,7 @@ internal class DivineVideoPlayerInstance(
      */
     private fun settleDeferredSetClips(deferred: DeferredSetClips, apply: Boolean) {
         if (!claimDeferredSetClips(deferred)) return
-        if (apply && deferred.generation == setClipsGeneration) {
+        if (apply) {
             applyClips(deferred.call, deferred.clipsRaw, deferred.result)
         } else {
             // Same contract [applyClips] uses for a superseded in-flight call:
@@ -593,17 +684,7 @@ internal class DivineVideoPlayerInstance(
                 blobHashFromUrl(uri)?.let { headersByHash[it] = httpHeaders }
             }
 
-            val builder = MediaItem.Builder().setUri(uri)
-                .setClippingConfiguration(
-                    MediaItem.ClippingConfiguration.Builder()
-                        .setStartPositionMs(startMs)
-                        .apply {
-                            if (effectiveEndMs != null) setEndPositionMs(effectiveEndMs)
-                        }
-                        .build(),
-                )
-
-            mediaItems.add(builder.build())
+            mediaItems.add(buildMediaItem(uri, startMs, effectiveEndMs))
             offsets.add(accumulated)
             volumes.add(clipVol)
             speeds.add(clipSpeed)
@@ -702,6 +783,22 @@ internal class DivineVideoPlayerInstance(
         mainHandler.postDelayed(setClipsTimeoutRunnable, SET_CLIPS_TIMEOUT_MS)
     }
 
+    private fun buildMediaItem(
+        uri: String,
+        startMs: Long,
+        endMs: Long?,
+    ): MediaItem =
+        MediaItem.Builder().setUri(uri)
+            .setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs(startMs)
+                    .apply {
+                        if (endMs != null) setEndPositionMs(endMs)
+                    }
+                    .build(),
+            )
+            .build()
+
     /**
      * The point up to which *every* track of [uri] still has content, in
      * milliseconds, or `null` when the source's track lengths are not known.
@@ -742,12 +839,24 @@ internal class DivineVideoPlayerInstance(
      */
     private fun canReadTrackDurations(uri: String): Boolean {
         val path = uri.substringBefore('?').substringBefore('#')
-        if (path.endsWith(".m3u8", ignoreCase = true)) return false
+        if (path.endsWith(".m3u8", ignoreCase = true) ||
+            path.contains("/hls/", ignoreCase = true)
+        ) {
+            return false
+        }
         return uri.startsWith("/") ||
             uri.startsWith("file://") ||
             uri.startsWith("http://") ||
             uri.startsWith("https://")
     }
+
+    /**
+     * Local files are cheap enough to resolve before the playlist swap. Remote
+     * metadata reads add a second connection to the first-frame path, so they
+     * warm the cache without blocking playback.
+     */
+    private fun shouldBlockSetClipsForTrackDurations(uri: String): Boolean =
+        uri.startsWith("/") || uri.startsWith("file://")
 
     /**
      * Reads [uri]'s video and audio track lengths into [trackDurationsCache].
@@ -1564,7 +1673,6 @@ internal class DivineVideoPlayerInstance(
      * something supersedes it.
      */
     private class DeferredSetClips(
-        val generation: Long,
         val call: MethodCall,
         val clipsRaw: List<Map<String, Any?>>,
         val result: MethodChannel.Result,
@@ -1614,6 +1722,10 @@ internal class DivineVideoPlayerInstance(
             )
 
         private const val TRACK_DURATION_CACHE_ENTRIES = 256
+
+        internal fun clearTrackDurationsCacheForTesting() {
+            trackDurationsCache.clear()
+        }
 
         /**
          * Names the metadata thread and marks it a daemon.

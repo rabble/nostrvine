@@ -7,8 +7,8 @@ import androidx.media3.common.util.UnstableApi
 import java.nio.ByteBuffer
 
 /**
- * Fades the first and last few milliseconds of a looping video's audio so the
- * loop restart is not audible as a click (#6468).
+ * Fades the first and last few milliseconds of a single-clip video's audio so
+ * a loop restart is not audible as a click (#6468).
  *
  * `REPEAT_MODE_ALL` cuts from the video's last sample straight back to its
  * first. That cut has never been tied to a zero crossing — it comes from a
@@ -60,10 +60,12 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
     var videoDurationUs: Long = DURATION_UNKNOWN
 
     /**
-     * Whether to fade at all. Off for multi-clip timelines, where a stream is
-     * one clip of the video rather than the whole of it, so fading every
-     * stream would notch the audio at each cut. Off also holds nothing back,
-     * so those players keep their audio latency.
+     * Whether to fade at all. Configured from clip count rather than repeat
+     * mode because looping is a separate channel call that can arrive after
+     * `setClips`. Off for multi-clip timelines, where a stream is one clip of
+     * the video rather than the whole of it, so fading every stream would notch
+     * the audio at each cut. Off also holds nothing back, so those players keep
+     * their audio latency.
      */
     @Volatile
     var enabled: Boolean = false

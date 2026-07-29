@@ -70,7 +70,7 @@ void main() {
       );
       expect(
         source,
-        contains('setEndPositionMs(effectiveEndMs)'),
+        contains('buildMediaItem(uri, startMs, effectiveEndMs)'),
         reason:
             'The clamped end must reach ExoPlayer; setting the raw endMs '
             'would leave the seam in place.',
@@ -116,6 +116,13 @@ void main() {
         reason:
             'The probe blocks on I/O, so it may never run on the platform '
             'thread — which is why it used to be skipped for remote sources.',
+      );
+      expect(
+        source,
+        contains('warmTrackDurationsInBackground'),
+        reason:
+            'Uncached remote probes must warm the cache without serializing '
+            'the feed first-frame path ahead of ExoPlayer.',
       );
       expect(
         source,
