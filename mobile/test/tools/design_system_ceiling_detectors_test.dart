@@ -195,6 +195,30 @@ final b = VineTheme.bodyLargeFont(color: colors.primaryText);
       expect(baselineRows(), isEmpty);
     });
 
+    test('font detector follows the color through a chained call', () {
+      libFile('a.dart').writeAsStringSync('''
+final a = VineTheme.bodyLargeFont().copyWith(color: colors.primaryText);
+final b = VineTheme.titleSmallFont()
+    .copyWith(decoration: TextDecoration.underline)
+    .apply(color: colors.onSurface);
+final c = VineTheme.labelSmallFont().copyWith(decorationColor: colors.primary);
+''');
+
+      final res = run(
+        'check_implicit_font_color_ceiling.sh',
+        'IMPLICIT_FONT_COLOR',
+        update: true,
+      );
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        baselineRows().single,
+        endsWith('\t1'),
+        reason:
+            'A color passed to a cascade still colors the style, so only the '
+            'call whose chain sets decorationColor counts as implicit.',
+      );
+    });
+
     test('material-button detector catches generic and FAB call sites', () {
       libFile('a.dart').writeAsStringSync('''
 final a = PopupMenuButton<String>(itemBuilder: (_) => []);
