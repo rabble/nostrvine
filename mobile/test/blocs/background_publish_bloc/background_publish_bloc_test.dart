@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -520,13 +521,50 @@ void main() {
           draftStorageService: mockDraftStorageService,
         ),
         setUp: () {
-          // A fresh recording publishes a copy of `draft_autosave`, which
-          // `clearAll` reaps shortly after the handoff — so the copy is the
-          // only row left holding the video.
-          when(() => draft.sourceDraftId).thenReturn('draft_autosave');
+          when(() => draft.sourceDraftId).thenReturn('draft_source');
           when(
-            () => mockDraftStorageService.draftExists('draft_autosave'),
+            () => mockDraftStorageService.draftExists('draft_source'),
           ).thenAnswer((_) async => false);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest(
+        'parks a copy of the autosave slot even while a row under that id '
+        'exists — regression: the shared slot is not a usable fallback',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          // A fresh recording's source is the fixed autosave id, which
+          // `clearAll` reaps right after the publish handoff. Whatever sits
+          // under that id by the time this upload is parked belongs to a
+          // *later* editor session (or, since `draftExists` is unscoped, to
+          // another account) — never to this video, so it is not a fallback.
+          when(
+            () => draft.sourceDraftId,
+          ).thenReturn(VideoEditorConstants.autoSaveId);
+          when(
+            () => mockDraftStorageService.draftExists(
+              VideoEditorConstants.autoSaveId,
+            ),
+          ).thenAnswer((_) async => true);
         },
         seed: () => BackgroundPublishState(
           uploads: [

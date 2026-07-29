@@ -2,6 +2,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -213,11 +214,20 @@ class BackgroundPublishBloc
   /// Keeps an abandoned upload's video reachable.
   ///
   /// Dropping the publish copy is only safe while the draft it was copied from
-  /// is still there to fall back on. A fresh recording's source is the autosave
-  /// draft, which `clearAll` reaps ~600ms after the publish handoff, so by the
-  /// time an upload is parked the copy is usually all that is left — deleting
-  /// it would discard the video instead of saving it. Park the copy as a draft
-  /// in that case.
+  /// is still there to fall back on; otherwise the copy is the last row holding
+  /// the video and deleting it would discard the video instead of saving it.
+  /// Park the copy as a draft in that case.
+  ///
+  /// [VideoEditorConstants.autoSaveId] never counts as a surviving source, even
+  /// when a row under that id is on disk. A fresh recording's source *is* that
+  /// autosave draft, which `clearAll` reaps ~600ms after the publish handoff —
+  /// and it is a single slot every later editor session recycles, so whatever
+  /// sits there by the time this upload is parked belongs to a different
+  /// session, or (since [DraftStorageService.draftExists] is deliberately
+  /// unscoped) to another account. Reading that as "the source survived" would
+  /// delete the only copy of the video. Parking a copy whose autosave row does
+  /// still hold the same video costs a duplicate draft; the other way round
+  /// costs the video.
   ///
   /// Idempotent: a repeat call finds the copy already deleted, or rewrites the
   /// same draft status. Ownership-neutral by design — every write it makes is
@@ -231,6 +241,7 @@ class BackgroundPublishBloc
     final sourceDraftId = draft?.sourceDraftId;
     if (sourceDraftId != null &&
         sourceDraftId != draft!.id &&
+        sourceDraftId != VideoEditorConstants.autoSaveId &&
         await _draftStorageService.draftExists(sourceDraftId)) {
       await _deleteDraft(draft.id);
       return;

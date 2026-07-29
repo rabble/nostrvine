@@ -228,6 +228,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _AddAccountTile(
           onTap: () async {
             Navigator.of(context).pop();
+
+            // Adding an account ends this session too — `addNewAccount` signs
+            // out to reach the sign-in flow. It keeps the local rows, but an
+            // in-flight upload's copy would be stranded at
+            // `PublishStatus.publishing`, which the drafts library filters out,
+            // so the video would be missing from both the queue and the library
+            // until a later launch swept it up. Park it for the same reason the
+            // switch above does, under the same warning this sheet opened with.
+            await publishBloc.parkInFlight();
             await _accountCubit.addNewAccount();
           },
         ),
