@@ -150,32 +150,23 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
 
   /// Re-points the bloc at a freshly built repository.
   ///
-  /// Deliberately does not emit [PeopleListsStatus.loading] and does not clear
-  /// [PeopleListsState.lists]: the swap fires on every cold-start auth flip,
-  /// and blanking the state would flicker `PeopleListMembershipIndicator` on
-  /// every profile header. The re-opened `watchLists` subscription re-emits the
-  /// current snapshot immediately from the shared cache.
+  /// Swaps the field only, then hands the actual re-subscription to
+  /// [_onOwnerChanged] via [PeopleListsOwnerChanged.rewire]. Doing the swap
+  /// inline instead would give [_listsSubscription] a second writer in a
+  /// different event bucket — `sequential()` orders events only within a
+  /// bucket, so a re-subscription landing inside `_onOwnerChanged`'s `await`
+  /// would be orphaned and outlive [close].
+  ///
+  /// Routing through the owner bucket also queues the re-wire *behind* any
+  /// pending owner change, so a swap that arrives mid-account-switch resolves
+  /// against the owner that is arriving rather than the one that is leaving.
   void _onRepositoryChanged(
     PeopleListsRepositoryChanged event,
     Emitter<PeopleListsState> emit,
   ) {
     if (identical(_repository, event.repository)) return;
     _repository = event.repository;
-
-    final owner = state.ownerPubkey;
-    if (owner == null || owner.isEmpty) return;
-
-    // Not awaited: cancel() stops event delivery to this listener
-    // synchronously; its future only reports resource cleanup. Awaiting it
-    // would stall the sequential() queue behind something no later step
-    // depends on.
-    unawaited(_listsSubscription?.cancel());
-    _listsSubscription = _watchOwner(owner);
-
-    // The reason this event exists. On the old repository this call reached a
-    // disposed NostrClient, whose queryEvents returns an empty list, so the
-    // owner's lists silently stopped syncing from relays.
-    unawaited(_repository.syncOwner(ownerPubkey: owner));
+    add(const PeopleListsOwnerChanged.rewire());
   }
 
   /// Subscribes to [ownerPubkey]'s lists on the current repository.
@@ -195,33 +186,54 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         );
   }
 
-  Future<void> _onOwnerChanged(
+  /// Owns [_listsSubscription] — the only handler that writes it.
+  ///
+  /// Deliberately synchronous. Suspending here would let another handler run
+  /// between the read and the write of [_listsSubscription] and orphan a
+  /// subscription that then outlives [close]; staying synchronous makes this
+  /// the sole, uninterruptible writer. `cancel()` stops delivery to the
+  /// listener synchronously — its future only reports resource cleanup, so
+  /// nothing below depends on awaiting it.
+  ///
+  /// A re-wire ([PeopleListsOwnerChanged.rewire]) reuses the owner already in
+  /// state and deliberately emits nothing: the repository swap fires on every
+  /// cold-start auth flip, and blanking the state would flicker
+  /// `PeopleListMembershipIndicator` on every profile header. The re-opened
+  /// `watchLists` subscription re-emits the current snapshot immediately from
+  /// the shared cache.
+  void _onOwnerChanged(
     PeopleListsOwnerChanged event,
     Emitter<PeopleListsState> emit,
-  ) async {
-    final newOwner = event.ownerPubkey;
-    if (newOwner == state.ownerPubkey &&
+  ) {
+    final newOwner = event.isRewire ? state.ownerPubkey : event.ownerPubkey;
+    if (!event.isRewire &&
+        newOwner == state.ownerPubkey &&
         state.status != PeopleListsStatus.initial) {
       return;
     }
 
-    await _listsSubscription?.cancel();
+    unawaited(_listsSubscription?.cancel());
     _listsSubscription = null;
 
     if (newOwner == null || newOwner.isEmpty) {
-      emit(const PeopleListsState());
+      if (!event.isRewire) emit(const PeopleListsState());
       return;
     }
 
-    emit(
-      PeopleListsState(
-        status: PeopleListsStatus.loading,
-        ownerPubkey: newOwner,
-      ),
-    );
+    if (!event.isRewire) {
+      emit(
+        PeopleListsState(
+          status: PeopleListsStatus.loading,
+          ownerPubkey: newOwner,
+        ),
+      );
+    }
 
     _listsSubscription = _watchOwner(newOwner);
 
+    // On the old repository this reached a disposed NostrClient, whose
+    // queryEvents returns an empty list, so the owner's lists silently stopped
+    // syncing from relays (#6480).
     unawaited(_repository.syncOwner(ownerPubkey: newOwner));
   }
 

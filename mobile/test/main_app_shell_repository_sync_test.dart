@@ -1,7 +1,7 @@
-// ABOUTME: Pins the app-shell wiring that keeps PeopleListsBloc and
-// ABOUTME: BackgroundPublishBloc pointed at live dependencies (#6480) — the
-// ABOUTME: bloc subscribes to a repository stream, and a dependency flip must
-// ABOUTME: not remount anything below the provider (the #4918 regression).
+// ABOUTME: Pins the app-shell wiring that keeps PeopleListsBloc pointed at a
+// ABOUTME: live repository (#6480) — the bloc subscribes to a repository
+// ABOUTME: stream, and a dependency flip must not remount anything below the
+// ABOUTME: provider (the #4918 regression).
 
 import 'dart:async';
 
@@ -42,18 +42,17 @@ int _mountCount = 0;
 
 /// Drains the bloc's event queue.
 ///
-/// `PeopleListsRepositoryChanged` deliberately emits no state (a swap must not
-/// flicker the UI), so it schedules no frame and `pumpAndSettle` alone returns
-/// before the handler has run.
+/// A swap deliberately emits no state (it must not flicker the UI) and hops
+/// two event buckets — `PeopleListsRepositoryChanged` re-dispatches a
+/// `PeopleListsOwnerChanged.rewire()`. Neither schedules a frame, so
+/// `pumpAndSettle` returns before the handlers have run; explicit pumps flush
+/// the microtasks that carry the events.
 Future<void> _flipTo(
   WidgetTester tester,
   ProviderContainer container,
   PeopleListsRepository next,
 ) async {
   container.read(_selector.notifier).state = next;
-  // The swap handler awaits a subscription cancel and emits no state, so it
-  // schedules no frame. pumpAndSettle would return before it resumes; explicit
-  // pumps flush the microtasks it is suspended on.
   for (var i = 0; i < 10; i++) {
     await tester.pump();
   }

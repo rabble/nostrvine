@@ -1157,6 +1157,49 @@ void main() {
         expect(nextOwnerBLists.hasListener, isTrue);
         expect(ownerBListsController.hasListener, isFalse);
       });
+
+      // An account switch fires both streams at once. `sequential()` orders
+      // events only within a bucket, so an owner change and a repository swap
+      // land in different buckets and can interleave. When the swap re-opened
+      // the subscription itself, that interleave left the previous owner's
+      // subscription live on the incoming account's repository — and it
+      // outlived close(), because close() cancels only whatever happens to sit
+      // in the field at the time.
+      test(
+        'a same-turn owner change and repository swap leave no orphan',
+        () async {
+          final bloc = await startedWithOwnerA();
+          addTearDown(bloc.close);
+          final nextOwnerBLists = StreamController<List<UserList>>.broadcast();
+          addTearDown(nextOwnerBLists.close);
+          when(
+            () => nextRepository.watchLists(ownerPubkey: _ownerB),
+          ).thenAnswer((_) => nextOwnerBLists.stream);
+          clearInteractions(nextRepository);
+
+          ownerPubkeyController.add(_ownerB);
+          repositoryController.add(nextRepository);
+          await _flush();
+          await _flush();
+          await _flush();
+
+          // The account being left is never queried on the incoming account's
+          // client.
+          verifyNever(() => nextRepository.syncOwner(ownerPubkey: _ownerA));
+          expect(nextOwnerAListsController.hasListener, isFalse);
+          expect(nextOwnerBLists.hasListener, isTrue);
+
+          await bloc.close();
+          await _flush();
+
+          // close() cancels every subscription the bloc opened, not just the one
+          // that happened to win the field.
+          expect(ownerAListsController.hasListener, isFalse);
+          expect(ownerBListsController.hasListener, isFalse);
+          expect(nextOwnerAListsController.hasListener, isFalse);
+          expect(nextOwnerBLists.hasListener, isFalse);
+        },
+      );
     });
   });
 }
