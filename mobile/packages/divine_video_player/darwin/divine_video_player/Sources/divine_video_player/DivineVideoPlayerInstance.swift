@@ -47,12 +47,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// Timescale the audio mix's ramps are laid out in.
     private static let audioMixTimescale: CMTimeScale = 600
 
-    /// [seconds] as whole [audioMixTimescale] ticks.
+    /// [seconds] as whole [audioMixTimescale] ticks, truncated.
     ///
-    /// Every bound in the mix goes through here so that the fade and the clip
-    /// it sits in are quantised the same way — a ramp may not cross another,
-    /// and comparing a rounded half against an independently rounded whole
-    /// does not guarantee it does not.
+    /// Used to bound the fade against the clip it has to fit inside twice.
+    /// `CMTimeMakeWithSeconds` documents no rounding *direction*, only that it
+    /// may round at all, so the halving is done once in ticks rather than in
+    /// seconds — a half that rounded up while the whole rounded down would put
+    /// the two fades over each other, and AVFoundation rejects overlapping
+    /// ramps with an Objective-C exception.
     private static func ticks(_ seconds: Double) -> Int64 {
         CMTime(seconds: seconds, preferredTimescale: audioMixTimescale).value
     }
@@ -348,6 +350,11 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         var insertTime = CMTime.zero
         var offsets: [Double] = []
         var durations: [Double] = []
+        // The same durations the composition is actually built from, kept as
+        // CMTime. Seconds are lossy here: the audio mix's last ramp has to end
+        // exactly where the composition ends, and a round trip through Double
+        // moves that edge by up to one tick of the mix's timescale.
+        var scaledDurations: [CMTime] = []
         var videoComposition: AVMutableVideoComposition?
         var layerInstruction: AVMutableVideoCompositionLayerInstruction?
         var clipVolumes: [Float] = []
@@ -524,6 +531,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
             offsets.append(CMTimeGetSeconds(insertTime))
             durations.append(CMTimeGetSeconds(scaledDuration))
+            scaledDurations.append(scaledDuration)
             clipVolumes.append(clipVol)
             insertTime = CMTimeAdd(insertTime, scaledDuration)
         }
@@ -555,24 +563,24 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         var audioMix: AVMutableAudioMix?
         if let audioTrack {
             let params = AVMutableAudioMixInputParameters(track: audioTrack)
-            // Measured in whole timescale ticks against the same quantisation
-            // the clip bounds get, so that halving a clip cannot round back up
-            // past it. Taking the minimum in seconds and quantising afterwards
-            // does not hold: a 15 ms clip is 9 ticks, and half of it rounds to
-            // 5, which would put the two fades over each other.
+            // The cap keeps the two fades of a very short video apart. It is
+            // taken in whole ticks of the fade's own timescale, and [ticks]
+            // truncates, so the cap can only ever understate the clip — a
+            // fade that fits twice in the truncated length fits twice in the
+            // real one.
             let fadeTicks = min(
                 Int64((Self.edgeDeclickFadeSeconds * Double(Self.audioMixTimescale)).rounded()),
                 Self.ticks(durations.first ?? 0) / 2,
                 Self.ticks(durations.last ?? 0) / 2
             )
             let fade = CMTime(value: fadeTicks, timescale: Self.audioMixTimescale)
-            let lastIndex = durations.count - 1
+            let lastIndex = scaledDurations.count - 1
             var t = CMTime.zero
-            for (i, dur) in durations.enumerated() {
-                let clipEnd = CMTimeAdd(
-                    t,
-                    CMTime(value: Self.ticks(dur), timescale: Self.audioMixTimescale)
-                )
+            for (i, clipDuration) in scaledDurations.enumerated() {
+                // Exactly the duration the composition was built from, so the
+                // last clip's end is the composition's end and the fade out
+                // reaches zero on the sample the loop actually joins.
+                let clipEnd = CMTimeAdd(t, clipDuration)
                 let vol = clipVolumes[i]
                 var flatStart = t
                 var flatEnd = clipEnd

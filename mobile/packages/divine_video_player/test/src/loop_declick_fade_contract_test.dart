@@ -18,28 +18,39 @@ void main() {
         source,
         matches(
           RegExp(
-            r'if i == 0, fadeTicks > 0 \{\s*'
-            r'flatStart = CMTimeAdd\(t, fade\)\s*'
-            r'params\.setVolumeRamp\(\s*'
+            r'if i == 0, fadeTicks > 0 \{[\s\S]{0,120}?'
+            r'flatStart = CMTimeAdd\(t, fade\)[\s\S]{0,120}?'
+            r'params\.setVolumeRamp\([\s\S]{0,120}?'
             r'fromStartVolume: 0,\s*toEndVolume: vol,',
           ),
         ),
         reason:
             'Only the first clip carries the fade in — fading every clip '
-            'would notch the audio at each cut inside the video.',
+            'would notch the audio at each cut inside the video. The slack '
+            'is bounded rather than bare whitespace so an interleaved '
+            'comment does not read as a missing fade.',
       );
       expect(
         source,
         matches(
           RegExp(
-            r'if i == lastIndex, fadeTicks > 0 \{\s*'
-            r'params\.setVolumeRamp\(\s*'
+            r'if i == lastIndex, fadeTicks > 0 \{[\s\S]{0,120}?'
+            r'params\.setVolumeRamp\([\s\S]{0,120}?'
             r'fromStartVolume: vol,\s*toEndVolume: 0,',
           ),
         ),
         reason:
             'The last clip carries the fade out; fading only the start '
             'still leaves the step at the join.',
+      );
+      expect(
+        source,
+        contains('let clipEnd = CMTimeAdd(t, clipDuration)'),
+        reason:
+            'The ramps must be laid out on the CMTimes the composition was '
+            'built from. Round-tripping them through seconds moves the last '
+            "clip's end off the composition's end by up to a tick, and the "
+            'fade out then stops short of the sample the loop joins.',
       );
     });
 
@@ -83,6 +94,24 @@ void main() {
             'An unknown length has to stay unknown rather than become a '
             'negative duration the fade would wrap on.',
       );
+
+      // Both anchors occur exactly once, so their order in the file is the
+      // order they run in.
+      final publishIndex = source.indexOf(
+        'declickProcessor.nextStreamStartUs = startLocalMs * 1000L',
+      );
+      final swapIndex = source.indexOf('exoPlayer.setMediaItems(');
+      expect(publishIndex, isNonNegative);
+      expect(swapIndex, isNonNegative);
+      expect(
+        publishIndex,
+        lessThan(swapIndex),
+        reason:
+            'The playlist swap disables the audio renderer, which flushes the '
+            'pipeline on the playback thread. A start position published after '
+            'it is read too late, and the lap after a resume loses its fade '
+            'out. Presence assertions alone do not catch the reordering.',
+      );
     });
 
     test('Apple never writes ramps that overlap', () {
@@ -108,10 +137,10 @@ void main() {
         ),
         reason:
             'A video shorter than the two fades combined must get shorter '
-            'ones, and the halving has to happen in the same whole ticks the '
-            'clip bounds are quantised to. Taking the minimum in seconds and '
-            'rounding afterwards lets half a 9-tick clip round back up to 5, '
-            'which puts the two fades over each other.',
+            'ones. CMTimeMakeWithSeconds documents no rounding direction, so '
+            'the halving is done once in whole ticks — a half that rounded up '
+            'while the whole rounded down would put the two fades over each '
+            'other, and AVFoundation rejects overlapping ramps.',
       );
     });
   });
