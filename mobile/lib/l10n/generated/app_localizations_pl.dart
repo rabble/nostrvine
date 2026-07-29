@@ -2541,6 +2541,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Gdy ktoś repostuje twoje filmy';
 
   @override
+  String get notificationSettingsNewPosts => 'Nowe vine\'y';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Gdy ktoś, kogo obserwujesz, publikuje';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

@@ -1446,6 +1446,8 @@
   "notificationSettingsMentionsSubtitle": "When you are mentioned",
   "notificationSettingsReposts": "Reposts",
   "notificationSettingsRepostsSubtitle": "When someone reposts your videos",
+  "notificationSettingsNewPosts": "New vines",
+  "notificationSettingsNewPostsSubtitle": "When someone you're watching posts",
   "notificationSettingsSystem": "System",
   "notificationSettingsSystemSubtitle": "App updates and system messages",
   "notificationSettingsPushNotificationsSection": "Push Notifications",

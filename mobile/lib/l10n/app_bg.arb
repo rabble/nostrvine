@@ -1069,6 +1069,8 @@
     "notificationSettingsMentionsSubtitle": "Когато те споменат",
     "notificationSettingsReposts": "Репостове",
     "notificationSettingsRepostsSubtitle": "Когато някой препубликува видеата ти",
+    "notificationSettingsNewPosts": "Нови видеа",
+    "notificationSettingsNewPostsSubtitle": "Когато някой, когото следиш, публикува",
     "notificationSettingsActions": "Действия",
     "notificationSettingsMarkAllAsRead": "Маркирай всички като прочетени",
     "notificationSettingsMarkAllAsReadSubtitle": "Маркирай всички известия като прочетени",

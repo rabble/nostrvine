@@ -156,6 +156,17 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(repostsEnabled: value),
                       ),
                     ),
+                    _NotificationCard(
+                      icon: DivineIconName.bellSimple,
+                      iconColor: VineTheme.vineGreen,
+                      title: context.l10n.notificationSettingsNewPosts,
+                      subtitle:
+                          context.l10n.notificationSettingsNewPostsSubtitle,
+                      value: prefs.newPostsEnabled,
+                      onChanged: (value) => cubit.setPreferences(
+                        prefs.copyWith(newPostsEnabled: value),
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     _SectionHeader(context.l10n.notificationSettingsActions),
                     const SizedBox(height: 8),

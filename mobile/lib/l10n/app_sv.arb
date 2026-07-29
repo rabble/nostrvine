@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "När du omnämns",
     "notificationSettingsReposts": "Återpubliceringar",
     "notificationSettingsRepostsSubtitle": "När någon återpublicerar dina videor",
+    "notificationSettingsNewPosts": "Nya vines",
+    "notificationSettingsNewPostsSubtitle": "När någon du bevakar publicerar",
     "notificationSettingsActions": "Åtgärder",
     "notificationSettingsMarkAllAsRead": "Markera alla som lästa",
     "notificationSettingsMarkAllAsReadSubtitle": "Markera alla aviseringar som lästa",

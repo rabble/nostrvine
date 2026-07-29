@@ -990,6 +990,8 @@
     "notificationSettingsMentionsSubtitle": "Saat kamu disebut",
     "notificationSettingsReposts": "Repost",
     "notificationSettingsRepostsSubtitle": "Saat ada yang me-repost videomu",
+    "notificationSettingsNewPosts": "Vine Baru",
+    "notificationSettingsNewPostsSubtitle": "Saat orang yang kamu pantau memposting",
     "notificationSettingsActions": "Aksi",
     "notificationSettingsMarkAllAsRead": "Tandai Semua Sudah Dibaca",
     "notificationSettingsMarkAllAsReadSubtitle": "Tandai semua notifikasi sudah dibaca",

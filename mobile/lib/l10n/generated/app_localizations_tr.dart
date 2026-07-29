@@ -2429,6 +2429,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Biri videolarını yeniden paylaştığında';
 
   @override
+  String get notificationSettingsNewPosts => 'Yeni vine\'lar';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'İzlediğin biri paylaştığında';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

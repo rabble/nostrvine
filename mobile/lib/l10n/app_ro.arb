@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Când ești menționat",
     "notificationSettingsReposts": "Redistribuiri",
     "notificationSettingsRepostsSubtitle": "Când cineva âți redistribuie videoclipurile",
+    "notificationSettingsNewPosts": "Videoclipuri noi",
+    "notificationSettingsNewPostsSubtitle": "Când cineva pe care îl urmărești postează",
     "notificationSettingsActions": "Acțiuni",
     "notificationSettingsMarkAllAsRead": "Marchează toate ca citite",
     "notificationSettingsMarkAllAsReadSubtitle": "Marchează toate notificările ca citite",

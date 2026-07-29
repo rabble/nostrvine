@@ -2472,6 +2472,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wanneer iemand je video\'s repost';
 
   @override
+  String get notificationSettingsNewPosts => 'Nieuwe vines';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Wanneer iemand die je volgt post';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

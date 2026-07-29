@@ -2487,6 +2487,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Cuando alguien repostea tus videos';
 
   @override
+  String get notificationSettingsNewPosts => 'Nuevos vines';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Cuando alguien que sigues publica';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

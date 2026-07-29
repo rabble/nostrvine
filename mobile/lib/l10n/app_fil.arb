@@ -646,6 +646,8 @@
     "notificationSettingsMentionsSubtitle": "Kapag na-mention ka",
     "notificationSettingsReposts": "Mga Repost",
     "notificationSettingsRepostsSubtitle": "Kapag may nag-repost ng iyong mga video",
+    "notificationSettingsNewPosts": "Mga Bagong Vine",
+    "notificationSettingsNewPostsSubtitle": "Kapag nag-post ang taong binabantayan mo",
     "notificationSettingsActions": "Mga Aksyon",
     "notificationSettingsMarkAllAsRead": "Markahang Lahat Bilang Nabasa",
     "notificationSettingsMarkAllAsReadSubtitle": "Markahan lahat ng notification bilang nabasa na",

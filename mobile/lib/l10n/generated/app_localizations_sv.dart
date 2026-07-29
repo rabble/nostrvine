@@ -2456,6 +2456,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'När någon återpublicerar dina videor';
 
   @override
+  String get notificationSettingsNewPosts => 'Nya vines';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'När någon du bevakar publicerar';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

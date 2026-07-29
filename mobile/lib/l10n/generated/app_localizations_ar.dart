@@ -2444,6 +2444,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'عندما يعيد أحدهم نشر فيديوهاتك';
 
   @override
+  String get notificationSettingsNewPosts => 'مقاطع جديدة';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => 'عندما ينشر شخص تتابعه';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

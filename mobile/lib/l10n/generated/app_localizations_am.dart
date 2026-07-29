@@ -2422,6 +2422,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => 'አንድ ሰው ቪዲዮዎችህን በድጋሚ ሲለጥፍ';
 
   @override
+  String get notificationSettingsNewPosts => 'አዲስ ቫይኖች';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => 'የምትከታተለው ሰው ሲለጥፍ';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

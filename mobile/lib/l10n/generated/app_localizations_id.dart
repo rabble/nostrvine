@@ -2423,6 +2423,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat ada yang me-repost videomu';
 
   @override
+  String get notificationSettingsNewPosts => 'Vine Baru';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Saat orang yang kamu pantau memposting';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

@@ -4286,6 +4286,18 @@ abstract class AppLocalizations {
   /// **'When someone reposts your videos'**
   String get notificationSettingsRepostsSubtitle;
 
+  /// No description provided for @notificationSettingsNewPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'New vines'**
+  String get notificationSettingsNewPosts;
+
+  /// No description provided for @notificationSettingsNewPostsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone you\'re watching posts'**
+  String get notificationSettingsNewPostsSubtitle;
+
   /// No description provided for @notificationSettingsSystem.
   ///
   /// In en, this message translates to:

@@ -2329,6 +2329,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '誰かがあなたの動画をリポストした時';
 
   @override
+  String get notificationSettingsNewPosts => '新しい動画';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => 'フォロー中の人が投稿した時';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

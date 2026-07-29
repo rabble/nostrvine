@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Quando você é mencionado",
     "notificationSettingsReposts": "Reposts",
     "notificationSettingsRepostsSubtitle": "Quando alguém reposta seus vídeos",
+    "notificationSettingsNewPosts": "Novos vines",
+    "notificationSettingsNewPostsSubtitle": "Quando alguém que você acompanha posta",
     "notificationSettingsActions": "Ações",
     "notificationSettingsMarkAllAsRead": "Marcar tudo como lido",
     "notificationSettingsMarkAllAsReadSubtitle": "Marcar todas as notificações como lidas",

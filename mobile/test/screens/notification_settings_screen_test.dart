@@ -183,5 +183,34 @@ void main() {
         ).called(1);
       },
     );
+
+    testWidgets('toggling new vines off persists newPostsEnabled false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(repo: mockRepo));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(NotificationSettingsScreen)),
+      );
+
+      final newPostsSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text(l10n.notificationSettingsNewPosts),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.scrollUntilVisible(newPostsSwitch, 100);
+
+      await tester.tap(newPostsSwitch);
+      await tester.pump();
+
+      verify(
+        () => mockPrefsService.updatePreferences(
+          const NotificationPreferences(newPostsEnabled: false),
+        ),
+      ).called(1);
+    });
   });
 }

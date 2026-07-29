@@ -2500,6 +2500,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Когато някой препубликува видеата ти';
 
   @override
+  String get notificationSettingsNewPosts => 'Нови видеа';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Когато някой, когото следиш, публикува';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

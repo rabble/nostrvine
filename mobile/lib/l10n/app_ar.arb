@@ -990,6 +990,8 @@
     "notificationSettingsMentionsSubtitle": "عندما تتم الإشارة إليك",
     "notificationSettingsReposts": "إعادات النشر",
     "notificationSettingsRepostsSubtitle": "عندما يعيد أحدهم نشر فيديوهاتك",
+    "notificationSettingsNewPosts": "مقاطع جديدة",
+    "notificationSettingsNewPostsSubtitle": "عندما ينشر شخص تتابعه",
     "notificationSettingsActions": "الإجراءات",
     "notificationSettingsMarkAllAsRead": "وسم الكل كمقروء",
     "notificationSettingsMarkAllAsReadSubtitle": "وسم جميع الإشعارات كمقروءة",

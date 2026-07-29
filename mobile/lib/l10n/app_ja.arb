@@ -990,6 +990,8 @@
     "notificationSettingsMentionsSubtitle": "あなたがメンションされた時",
     "notificationSettingsReposts": "リポスト",
     "notificationSettingsRepostsSubtitle": "誰かがあなたの動画をリポストした時",
+    "notificationSettingsNewPosts": "新しい動画",
+    "notificationSettingsNewPostsSubtitle": "フォロー中の人が投稿した時",
     "notificationSettingsActions": "アクション",
     "notificationSettingsMarkAllAsRead": "すべて既読にする",
     "notificationSettingsMarkAllAsReadSubtitle": "すべての通知を既読にするよ",

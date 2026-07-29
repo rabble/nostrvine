@@ -2551,6 +2551,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când cineva âți redistribuie videoclipurile';
 
   @override
+  String get notificationSettingsNewPosts => 'Videoclipuri noi';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Când cineva pe care îl urmărești postează';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

@@ -2498,6 +2498,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kapag may nag-repost ng iyong mga video';
 
   @override
+  String get notificationSettingsNewPosts => 'Mga Bagong Vine';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Kapag nag-post ang taong binabantayan mo';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

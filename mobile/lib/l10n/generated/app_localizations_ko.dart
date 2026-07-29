@@ -2340,6 +2340,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '누군가 내 영상을 리포스트할 때';
 
   @override
+  String get notificationSettingsNewPosts => '새 영상';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => '지켜보는 사람이 게시할 때';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override

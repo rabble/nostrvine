@@ -990,6 +990,8 @@
     "notificationSettingsMentionsSubtitle": "Senden bahsedildiğinde",
     "notificationSettingsReposts": "Yeniden Paylaşımlar",
     "notificationSettingsRepostsSubtitle": "Biri videolarını yeniden paylaştığında",
+    "notificationSettingsNewPosts": "Yeni vine'lar",
+    "notificationSettingsNewPostsSubtitle": "İzlediğin biri paylaştığında",
     "notificationSettingsActions": "İşlemler",
     "notificationSettingsMarkAllAsRead": "Tümünü Okundu Olarak İşaretle",
     "notificationSettingsMarkAllAsReadSubtitle": "Tüm bildirimleri okundu olarak işaretle",

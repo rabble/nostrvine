@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Gdy zostaniesz wspomniany",
     "notificationSettingsReposts": "Reposty",
     "notificationSettingsRepostsSubtitle": "Gdy ktoś repostuje twoje filmy",
+    "notificationSettingsNewPosts": "Nowe vine'y",
+    "notificationSettingsNewPostsSubtitle": "Gdy ktoś, kogo obserwujesz, publikuje",
     "notificationSettingsActions": "Akcje",
     "notificationSettingsMarkAllAsRead": "Oznacz wszystkie jako przeczytane",
     "notificationSettingsMarkAllAsReadSubtitle": "Oznacz wszystkie powiadomienia jako przeczytane",
