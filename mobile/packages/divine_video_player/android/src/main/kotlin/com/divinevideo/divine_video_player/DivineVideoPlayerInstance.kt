@@ -640,8 +640,10 @@ internal class DivineVideoPlayerInstance(
     }
 
     /**
-     * Hands the declick fade the current video's length, so it knows where the
-     * loop join it has to fade into actually is.
+     * Hands the declick fade the current video's length, which bounds how long
+     * the fade may be on a video too short to carry two of them. Where the
+     * fade out sits is not derived from this — the processor holds the last
+     * few milliseconds back and releases them at the real end of the stream.
      */
     private fun updateDeclickDuration() {
         val durationMs = player?.duration ?: C.TIME_UNSET
@@ -1036,8 +1038,8 @@ internal class DivineVideoPlayerInstance(
                 syncAudioOverlays()
             }
             if (playbackState == Player.STATE_READY) {
-                // The video's length is only known once the timeline is
-                // populated, and the fade out has to know where the join is.
+                // The video's length is only readable once the timeline is
+                // populated, and it bounds how long the fade may be.
                 updateDeclickDuration()
                 // Seek complete — switch from reporting target to actual position.
                 pendingGlobalStartMs = 0L

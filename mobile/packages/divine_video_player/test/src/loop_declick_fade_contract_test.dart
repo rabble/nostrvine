@@ -80,10 +80,10 @@ void main() {
           ),
         ),
         reason:
-            'The fade out has to know where the loop join is, and the length '
-            'is only readable once the timeline is populated. Naming the '
-            'field alone is not enough — setClips also writes it, with '
-            'DURATION_UNKNOWN.',
+            'The length bounds how long the fade may be on a video too short '
+            'to carry two of them, and it is only readable once the timeline '
+            'is populated. Naming the field alone is not enough — setClips '
+            'also writes it, with DURATION_UNKNOWN.',
       );
       expect(
         source,

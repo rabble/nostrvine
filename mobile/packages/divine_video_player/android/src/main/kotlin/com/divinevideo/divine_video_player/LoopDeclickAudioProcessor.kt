@@ -16,13 +16,29 @@ import java.nio.ByteBuffer
  * the step is a click. Fading both edges to zero makes the join
  * silence-to-silence.
  *
- * ExoPlayer gives an [AudioProcessor] no position of its own. The pipeline is
- * flushed often enough — on seek, on reconfiguration, and once more at the
- * loop join itself — but never with a position: `StreamMetadata`'s
- * `positionOffsetUs` is 0 on every one of those paths in media3 1.10. Position
- * is therefore reconstructed from a frame count that [LoopDeclickAudioSink]
- * anchors from outside, on the same playback thread, at the stream change a
- * loop restart produces.
+ * The two edges are found in opposite ways.
+ *
+ * The start is a counting problem. ExoPlayer gives an [AudioProcessor] no
+ * position of its own — `StreamMetadata`'s `positionOffsetUs` is 0 on every
+ * playback-path flush in media3 1.10 — so the first frames of a stream are
+ * counted from the flush, with [LoopDeclickAudioSink] retiring the seek offset
+ * at the join so a seek does not fade in mid-video.
+ *
+ * The end cannot be counted towards, because nothing on this side of the
+ * pipeline knows where it is until it arrives: `player.duration` is the
+ * container's, in whole milliseconds, and the decoded audio track ends up to
+ * an AAC frame away from it — wider than the fade itself. So the last
+ * [FADE_US] of audio is held back instead, and released faded once media3
+ * signals the end of the stream. That signal is exact and arrives at every
+ * loop restart: `handleDiscontinuity` sets `startMediaTimeUsNeedsSync`, and
+ * the next buffer makes `DefaultAudioSink` run `drainToEndOfStream()`, which
+ * queues end-of-stream into the pipeline before any frame of the new lap is.
+ * `TrimmingAudioProcessor` holds its own tail back the same way, one slot
+ * upstream in this same chain.
+ *
+ * The cost is that audio runs [FADE_US] behind the position the player
+ * reports. Ten milliseconds is an order of magnitude inside the threshold
+ * where a viewer notices audio trailing video.
  *
  * Configuration is written from the main thread and read on the playback
  * thread, hence the volatile fields.
@@ -32,35 +48,30 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
 
     /**
      * Length of the video in microseconds, or [DURATION_UNKNOWN] while it is
-     * not known. Only a video whose end is known can be faded out.
+     * not known.
      *
-     * Writing a different length means a different video, so it also drops
-     * [measuredLoopFrames]. A player is reused across videos — a
-     * `setMediaItems` swap disables the audio renderer, which flushes the sink
-     * but never resets it, so [onReset] does not run between two videos and
-     * nothing else would clear the previous one's measurement.
+     * It only bounds how long the fade may be, never where it sits — a video
+     * shorter than two fades gets shorter ones. Being wrong here costs a
+     * couple of milliseconds of ramp on a video no longer than that, which is
+     * why the container's millisecond figure is good enough for it and was
+     * never good enough to place the fade out.
      */
     @Volatile
     var videoDurationUs: Long = DURATION_UNKNOWN
-        set(value) {
-            if (field != value) {
-                measuredLoopFrames = 0
-            }
-            field = value
-        }
 
     /**
      * Whether to fade at all. Off for multi-clip timelines, where a stream is
      * one clip of the video rather than the whole of it, so fading every
-     * stream would notch the audio at each cut.
+     * stream would notch the audio at each cut. Off also holds nothing back,
+     * so those players keep their audio latency.
      */
     @Volatile
     var enabled: Boolean = false
 
     /**
      * Media position the next stream starts at, in microseconds. Set before an
-     * explicit seek so the fade stays anchored to the video rather than to the
-     * seek target.
+     * explicit seek so the fade in stays anchored to the video rather than to
+     * the seek target.
      *
      * It has to survive a flush rather than be consumed by one: media3 flushes
      * the pipeline twice per seek before a single frame is queued — once from
@@ -80,24 +91,6 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
     private var anchorFrames: Long = 0
 
     /**
-     * Frames the last completed loop actually delivered, or 0 before one has
-     * been measured, together with the sample rate it was counted at.
-     *
-     * The declared duration is the container's, which is the longest track and
-     * is cut on whole access units; the counter here is decoded audio frames.
-     * The two disagree by up to an AAC frame — twice the fade — so the fade out
-     * would land early or late until a real loop has been measured.
-     *
-     * Volatile because [videoDurationUs]'s setter drops it from the main
-     * thread while the playback thread reads it. A lost write costs the
-     * accuracy of one lap, which is what the measurement buys in the first
-     * place.
-     */
-    @Volatile
-    private var measuredLoopFrames: Long = 0
-    private var measuredLoopSampleRate: Int = 0
-
-    /**
      * Whether any input arrived since the last anchor. Guards against the
      * decode-only buffers a seek discards, which `MediaCodecAudioRenderer`
      * reports as a discontinuity each without ever reaching [queueInput].
@@ -105,10 +98,13 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
     private var sawInputSinceAnchor: Boolean = false
 
     /**
-     * Whether a flush landed mid-lap, which makes the frames counted since
-     * then a fragment rather than a loop. See [onFlush].
+     * The most recent frames, interleaved, held back so they are still here to
+     * be faded when the stream turns out to have ended. Empty while the fade
+     * is off, which is what keeps those players at zero added latency.
      */
-    private var lapInterrupted: Boolean = false
+    private var tail: ShortArray = ShortArray(0)
+    private var tailCapacityFrames: Int = 0
+    private var tailFrames: Int = 0
 
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat,
@@ -122,36 +118,20 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
         return inputAudioFormat
     }
 
-    /** Anchors the next stream at the start of the video (a loop restart). */
+    /** Re-arms the fade in at the start of the next stream (a loop restart). */
     fun onStreamChanged() {
         // A seek discards the buffers before its target and reports each one
-        // as a discontinuity. Those are not loop restarts.
+        // as a discontinuity. Those are not loop restarts, and retiring the
+        // seek offset on one would fade in at the seek target.
         if (!sawInputSinceAnchor) {
             return
-        }
-        // The loop that just ended ran from the anchor to here, so this is the
-        // one exact measurement of its length there is — unless a flush cut
-        // the count in the middle of it, in which case what reaches here is a
-        // fragment and the previous estimate is the better of the two.
-        val loopFrames = readFrames - anchorFrames
-        if (!lapInterrupted && loopFrames > 0) {
-            measuredLoopFrames = loopFrames
-            measuredLoopSampleRate = inputAudioFormat.sampleRate
         }
         anchorFrames = readFrames
         nextStreamStartUs = 0
         sawInputSinceAnchor = false
-        lapInterrupted = false
     }
 
     override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
-        // A flush that arrives after frames have already been counted is not
-        // the resync media3 runs at a stream change — that one lands before
-        // the first buffer of the new stream. It is a route change or an
-        // underrun, and the count it restarts no longer spans a whole lap.
-        if (sawInputSinceAnchor) {
-            lapInterrupted = true
-        }
         // streamMetadata.positionOffsetUs is always 0 on the playback path in
         // media3 1.10 — DefaultAudioSink flushes the pipeline without one — so
         // the start position comes from [nextStreamStartUs] instead. It stays
@@ -164,16 +144,29 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
             0
         }
         sawInputSinceAnchor = false
+
+        // Whatever is held back belongs to a stream that is not going to end
+        // where it was about to.
+        tailFrames = 0
+        tailCapacityFrames = if (enabled && sampleRate > 0) {
+            durationUsToFrames(FADE_US, sampleRate).toInt()
+        } else {
+            0
+        }
+        val samples = tailCapacityFrames * inputAudioFormat.channelCount
+        if (tail.size != samples) {
+            tail = ShortArray(samples)
+        }
     }
 
     override fun onReset() {
         readFrames = 0
         anchorFrames = 0
         nextStreamStartUs = 0
-        measuredLoopFrames = 0
-        measuredLoopSampleRate = 0
         sawInputSinceAnchor = false
-        lapInterrupted = false
+        tail = ShortArray(0)
+        tailCapacityFrames = 0
+        tailFrames = 0
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
@@ -185,26 +178,46 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
         }
         sawInputSinceAnchor = true
 
-        val sampleRate = inputAudioFormat.sampleRate
-        val fadeFrames = fadeFrames(sampleRate)
-        val output = replaceOutputBuffer(byteCount)
-        if (fadeFrames <= 0) {
+        val bytesPerFrame = inputAudioFormat.bytesPerFrame
+        val frameCount = byteCount / bytesPerFrame
+        if (tailCapacityFrames <= 0) {
+            val output = replaceOutputBuffer(byteCount)
             output.put(inputBuffer)
-            readFrames += byteCount / inputAudioFormat.bytesPerFrame
+            readFrames += frameCount
             output.flip()
             return
         }
 
         val channelCount = inputAudioFormat.channelCount
-        val frameCount = byteCount / inputAudioFormat.bytesPerFrame
-        val durationFrames = durationFrames(sampleRate)
+        val fadeFrames = fadeFrames(inputAudioFormat.sampleRate)
+        // Keep the tail as full as it holds; everything older than that leaves
+        // now, oldest first.
+        val emitFrames = (tailFrames + frameCount - tailCapacityFrames).coerceAtLeast(0)
+        val output = replaceOutputBuffer(emitFrames * bytesPerFrame)
+
+        val fromTail = minOf(emitFrames, tailFrames)
+        for (sample in 0 until fromTail * channelCount) {
+            output.putShort(tail[sample])
+        }
+        tail.copyInto(tail, 0, fromTail * channelCount, tailFrames * channelCount)
+        tailFrames -= fromTail
+
+        // The fade in is applied as frames arrive, so a frame still in the
+        // tail when the stream ends carries both ramps.
+        val fromInput = emitFrames - fromTail
         for (frame in 0 until frameCount) {
-            val gain = gainAt(readFrames + frame - anchorFrames, fadeFrames, durationFrames)
+            val gain = fadeInGainAt(readFrames + frame - anchorFrames, fadeFrames)
             for (channel in 0 until channelCount) {
-                val sample = inputBuffer.getShort(position + (frame * channelCount + channel) * 2)
-                output.putShort(if (gain >= 1f) sample else (sample * gain).toInt().toShort())
+                val raw = inputBuffer.getShort(position + (frame * channelCount + channel) * 2)
+                val faded = if (gain >= 1f) raw else (raw * gain).toInt().toShort()
+                if (frame < fromInput) {
+                    output.putShort(faded)
+                } else {
+                    tail[(tailFrames + frame - fromInput) * channelCount + channel] = faded
+                }
             }
         }
+        tailFrames += frameCount - fromInput
 
         readFrames += frameCount
         inputBuffer.position(limit)
@@ -212,32 +225,44 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
     }
 
     /**
+     * Releases the held-back tail, faded out, once media3 reports the stream
+     * has ended — which at a loop restart is the join itself.
+     */
+    override fun getOutput(): ByteBuffer {
+        if (super.isEnded() && tailFrames > 0) {
+            val channelCount = inputAudioFormat.channelCount
+            val ramp = minOf(tailFrames.toLong(), fadeFrames(inputAudioFormat.sampleRate)).toInt()
+            val output = replaceOutputBuffer(tailFrames * inputAudioFormat.bytesPerFrame)
+            for (frame in 0 until tailFrames) {
+                // Distance from the last frame, so the last one reaches zero.
+                val remaining = tailFrames - 1 - frame
+                val gain = if (ramp <= 0 || remaining >= ramp) 1f else remaining.toFloat() / ramp
+                for (channel in 0 until channelCount) {
+                    val held = tail[frame * channelCount + channel]
+                    output.putShort(if (gain >= 1f) held else (held * gain).toInt().toShort())
+                }
+            }
+            output.flip()
+            tailFrames = 0
+        }
+        return super.getOutput()
+    }
+
+    override fun isEnded(): Boolean = super.isEnded() && tailFrames == 0
+
+    /**
      * Gain to apply [frame] frames into the video, in `[0f, 1f]`.
+     *
+     * Only the way in — the way out is the tail, which needs no position.
      *
      * Visible for testing: the shape of the fade is worth pinning on its own,
      * separately from where the anchor bookkeeping decides to put it.
      */
-    internal fun gainAt(frame: Long, fadeFrames: Long, durationFrames: Long): Float {
-        if (fadeFrames <= 0 || frame < 0) {
+    internal fun fadeInGainAt(frame: Long, fadeFrames: Long): Float {
+        if (fadeFrames <= 0 || frame < 0 || frame >= fadeFrames) {
             return 1f
         }
-        // Wrap rather than run off the end. A stream change that never arrives
-        // would otherwise leave the position past the end of the video for
-        // good, and clamping there would silence the rest of playback. Wrapping
-        // degrades to a fade that drifts instead of one that mutes.
-        val position = if (durationFrames > 0) frame % durationFrames else frame
-        if (position < fadeFrames) {
-            return position.toFloat() / fadeFrames
-        }
-        if (durationFrames <= 0) {
-            // The end is unknown, so only the start can be faded.
-            return 1f
-        }
-        val framesLeft = durationFrames - position
-        if (framesLeft < fadeFrames) {
-            return framesLeft.toFloat() / fadeFrames
-        }
-        return 1f
+        return frame.toFloat() / fadeFrames
     }
 
     /**
@@ -249,30 +274,11 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
             return 0
         }
         val fade = durationUsToFrames(FADE_US, sampleRate)
-        val durationFrames = durationFrames(sampleRate)
-        if (durationFrames <= 0) {
-            return fade
-        }
-        return minOf(fade, durationFrames / 2)
-    }
-
-    /**
-     * Frames one loop of the video lasts: the measurement of the last one if
-     * there is one, otherwise the container's duration as an estimate.
-     */
-    private fun durationFrames(sampleRate: Int): Long {
-        // A frame count only means the same length at the rate it was counted
-        // at, and an adaptive stream can switch from 44.1 kHz to 48 kHz
-        // without the declared duration moving.
-        val measured = measuredLoopFrames
-        if (measured > 0 && measuredLoopSampleRate == sampleRate) {
-            return measured
-        }
         val durationUs = videoDurationUs
         if (durationUs <= 0) {
-            return 0
+            return fade
         }
-        return durationUsToFrames(durationUs, sampleRate)
+        return minOf(fade, durationUsToFrames(durationUs, sampleRate) / 2)
     }
 
     private fun durationUsToFrames(durationUs: Long, sampleRate: Int): Long =
