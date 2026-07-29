@@ -17,6 +17,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_clip_speed_sheet.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
@@ -290,6 +291,70 @@ void main() {
         );
         expect(controls.onSpeed, isNotNull);
         expect(controls.isExtractingAudio, isFalse);
+      },
+    );
+
+    testWidgets('Green screen shows as busy while the current clip bakes', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1'), clip('clip-2')],
+          isChromaKeying: true,
+          chromaKeyingClipId: 'clip-1',
+          chromaKeyingRenderId: 'clip-1_chromakey',
+        ),
+      );
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      // `chromaKeyingClipId` is the clip's own id, not the render id the bake
+      // runs under — comparing against the latter silently never matches.
+      expect(controls.isChromaKeying, isTrue);
+    });
+
+    testWidgets('Green screen stays enabled while a different clip bakes', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        ClipEditorState(
+          clips: [clip('clip-1'), clip('clip-2')],
+          currentClipIndex: 1,
+          isChromaKeying: true,
+          chromaKeyingClipId: 'clip-1',
+          chromaKeyingRenderId: 'clip-1_chromakey',
+        ),
+      );
+      await tester.pumpWidget(build());
+
+      final controls = tester.widget<VideoEditorTimelineControls>(
+        find.byType(VideoEditorTimelineControls),
+      );
+      expect(controls.onChromaKey, isNotNull);
+      expect(controls.isChromaKeying, isFalse);
+    });
+
+    testWidgets(
+      'Green screen is highlighted when the clip already carries one',
+      (tester) async {
+        when(() => bloc.state).thenReturn(
+          ClipEditorState(
+            clips: [
+              clip('clip-1').copyWith(
+                chromaKey: const ClipChromaKey(key: ChromaKey.greenScreen()),
+                chromaKeySourcePath: '/tmp/original.mp4',
+              ),
+            ],
+          ),
+        );
+        await tester.pumpWidget(build());
+
+        final controls = tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+        expect(controls.hasChromaKey, isTrue);
       },
     );
 

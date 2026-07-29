@@ -9,7 +9,6 @@ import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/screens/video_editor/video_clip_chroma_key_screen.dart';
 import 'package:openvine/screens/video_editor/video_clip_transform_screen.dart';
-import 'package:openvine/services/video_editor/chroma_key_bake_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/stop_motion/stop_motion_frame_commands.dart';
@@ -84,8 +83,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
         hasClip && state.clips[index].reversed,
         state.isChromaKeying &&
             currentClipId != null &&
-            state.chromaKeyingClipId ==
-                ChromaKeyBakeService.renderIdFor(currentClipId),
+            state.chromaKeyingClipId == currentClipId,
         hasClip && state.clips[index].chromaKey != null,
       );
     });
