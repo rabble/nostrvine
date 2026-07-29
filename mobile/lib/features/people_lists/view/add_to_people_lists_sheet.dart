@@ -56,7 +56,7 @@ class AddToPeopleListsSheet extends StatelessWidget {
   ///
   /// Does nothing when [FeatureFlag.curatedLists] is off. The global
   /// [PeopleListsBloc] is registered unconditionally and lazily, so opening
-  /// this sheet is what would construct it — starting a repository and relay
+  /// this sheet is what would construct it — starting a relay query and cache
   /// subscription for a feature the user turned off.
   ///
   /// Returns a [Future] that completes when the sheet is dismissed.

@@ -17,6 +17,7 @@ class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
 
 void main() {
   group('showNewPeopleListSheet', () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     late _MockPeopleListsBloc bloc;
 
     setUp(() {
@@ -35,7 +36,7 @@ void main() {
     // The global PeopleListsBloc is registered unconditionally in main.dart
     // (a conditional entry re-inflated the Navigator on every flag flip), so
     // BlocProvider laziness is what keeps it unbuilt while curated lists are
-    // off. `create` firing means a repository and relay subscription started
+    // off. `create` firing means a relay query and cache subscription started
     // for a disabled feature.
     testWidgets(
       'does not open or construct $PeopleListsBloc when curatedLists is off',
@@ -56,7 +57,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(blocCreated, isFalse);
-        expect(find.text('New people list'), findsNothing);
+        expect(find.text(l10n.listNewPeopleList), findsNothing);
       },
     );
 
@@ -68,7 +69,7 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('New people list'), findsOneWidget);
+      expect(find.text(l10n.listNewPeopleList), findsOneWidget);
     });
   });
 }

@@ -21,7 +21,8 @@ import 'package:openvine/widgets/user_picker_sheet.dart';
 ///
 /// Does nothing when [FeatureFlag.curatedLists] is off: the global
 /// [PeopleListsBloc] is registered lazily, so opening this sheet is what
-/// would construct it for a feature the user turned off.
+/// would start a relay query and cache subscription for a feature the user
+/// turned off.
 Future<void> showNewPeopleListSheet(
   BuildContext context, {
   UserProfile? initialCollaborator,
@@ -33,9 +34,7 @@ Future<void> showNewPeopleListSheet(
   return VineBottomSheet.show<void>(
     context: context,
     scrollable: false,
-    title: Builder(
-      builder: (context) => Text(context.l10n.listNewPeopleList),
-    ),
+    title: Builder(builder: (context) => Text(context.l10n.listNewPeopleList)),
     onComplete: () async {
       await bodyKey.currentState?._createList();
     },
@@ -47,10 +46,7 @@ Future<void> showNewPeopleListSheet(
 }
 
 class _NewPeopleListSheetBody extends StatefulWidget {
-  const _NewPeopleListSheetBody({
-    this.initialCollaborator,
-    super.key,
-  });
+  const _NewPeopleListSheetBody({this.initialCollaborator, super.key});
 
   final UserProfile? initialCollaborator;
 

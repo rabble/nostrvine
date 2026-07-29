@@ -71,6 +71,7 @@ void main() {
   });
 
   group(AddToPeopleListsSheet, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     late _MockPeopleListsBloc bloc;
 
     setUp(() {
@@ -110,13 +111,11 @@ void main() {
             name: 'Divine Team',
             isEditable: false,
           );
-          when(() => bloc.state).thenReturn(
-            _stateWith(lists: [editable, readOnly]),
-          );
+          when(
+            () => bloc.state,
+          ).thenReturn(_stateWith(lists: [editable, readOnly]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
           expect(find.text('Close Friends'), findsOneWidget);
           expect(find.text('Divine Team'), findsNothing);
@@ -133,13 +132,11 @@ void main() {
             pubkeys: [_targetPubkey],
           );
           final nonMemberList = _buildList(id: 'list-2', name: 'Work');
-          when(() => bloc.state).thenReturn(
-            _stateWith(lists: [memberList, nonMemberList]),
-          );
+          when(
+            () => bloc.state,
+          ).thenReturn(_stateWith(lists: [memberList, nonMemberList]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
           final checkboxes = tester
               .widgetList<DivineSpriteCheckbox>(
@@ -149,14 +146,8 @@ void main() {
           expect(checkboxes, hasLength(2));
           // Sheet renders lists in the bloc's declared order; first list
           // contains the target pubkey so its checkbox is selected.
-          expect(
-            checkboxes[0].state,
-            equals(DivineCheckboxState.selected),
-          );
-          expect(
-            checkboxes[1].state,
-            equals(DivineCheckboxState.unselected),
-          );
+          expect(checkboxes[0].state, equals(DivineCheckboxState.selected));
+          expect(checkboxes[1].state, equals(DivineCheckboxState.unselected));
         },
       );
     });
@@ -169,9 +160,7 @@ void main() {
           final list = _buildList(id: 'list-42', name: 'Close Friends');
           when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
           await tester.tap(find.byType(PeopleListRow));
           await tester.pump();
@@ -194,11 +183,9 @@ void main() {
         (tester) async {
           when(() => bloc.state).thenReturn(_stateWith(lists: const []));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
-          expect(find.text('No lists yet'), findsOneWidget);
+          expect(find.text(l10n.peopleListsEmptyTitle), findsOneWidget);
           // The Create list button lives in the VineBottomSheet bottomInput
           // slot, not inside the sheet body widget — so it is not present
           // when rendering AddToPeopleListsSheet directly.
@@ -217,11 +204,9 @@ void main() {
           );
           when(() => bloc.state).thenReturn(_stateWith(lists: [readOnly]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
-          expect(find.text('No lists yet'), findsOneWidget);
+          expect(find.text(l10n.peopleListsEmptyTitle), findsOneWidget);
           expect(find.byType(DivineButton), findsNothing);
         },
       );
@@ -275,10 +260,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // The new list sheet is shown — identified by its title key.
-          expect(
-            find.text('New people list'),
-            findsOneWidget,
-          );
+          expect(find.text(l10n.listNewPeopleList), findsOneWidget);
         },
       );
     });
@@ -286,7 +268,7 @@ void main() {
     // The global PeopleListsBloc is registered unconditionally in main.dart
     // (a conditional entry re-inflated the Navigator on every flag flip), so
     // BlocProvider laziness is what keeps it unbuilt while curated lists are
-    // off. These pin that: `create` firing means a repository and relay
+    // off. These pin that: `create` firing means a relay query and cache
     // subscription started for a disabled feature.
     group('curatedLists gate', () {
       testWidgetsWithSurfaceSize(
@@ -345,9 +327,7 @@ void main() {
     group('theming', () {
       testWidgetsWithSurfaceSize(
         'renders inside $VineBottomSheet when shown as a modal',
-        (
-          tester,
-        ) async {
+        (tester) async {
           final list = _buildList(id: 'list-1', name: 'Close Friends');
           when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 

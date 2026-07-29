@@ -62,23 +62,22 @@ void main() {
 
     // curatedLists is the master switch. The action opens a sheet that reads
     // the lazily-registered global PeopleListsBloc, so showing it here would
-    // spin up a repository and relay subscription for a disabled feature.
-    testWidgets(
-      'hides add-to-list action when curatedLists is disabled',
-      (tester) async {
-        await tester.pumpWidget(
-          _buildSubject(
-            authService: authService,
-            profileListFeaturesEnabled: true,
-            curatedListsEnabled: false,
-          ),
-        );
+    // spin up a relay query and cache subscription for a disabled feature.
+    testWidgets('hides add-to-list action when curatedLists is disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          authService: authService,
+          profileListFeaturesEnabled: true,
+          curatedListsEnabled: false,
+        ),
+      );
 
-        await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-        expect(_divineIcon(DivineIconName.listPlus), findsNothing);
-      },
-    );
+      expect(_divineIcon(DivineIconName.listPlus), findsNothing);
+    });
 
     testWidgets('tile responds when tapping the avatar-name gap', (
       tester,
@@ -100,12 +99,7 @@ void main() {
 
       final avatarRect = tester.getRect(avatar);
 
-      await tester.tapAt(
-        Offset(
-          avatarRect.right + 6,
-          avatarRect.center.dy,
-        ),
-      );
+      await tester.tapAt(Offset(avatarRect.right + 6, avatarRect.center.dy));
       await tester.pump();
 
       expect(tapped, isTrue);

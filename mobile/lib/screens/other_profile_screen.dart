@@ -294,6 +294,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
         final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
         await ClipboardUtils.copyPubkey(context, npub);
       case MoreSheetResult.addToList:
+        if (!ref.read(isFeatureEnabledProvider(FeatureFlag.curatedLists))) {
+          return;
+        }
+
         final profile = ref
             .read(userProfileReactiveProvider(widget.pubkey))
             .value;

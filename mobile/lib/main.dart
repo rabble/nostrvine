@@ -2837,17 +2837,22 @@ class _DivineAppState extends ConsumerState<DivineApp>
             // shape kept the pushed route — so do not read the chain below
             // re-inflation as established.
             //
-            // Laziness does the gating instead: every entry point into the
-            // people-lists UI checks FeatureFlag.curatedLists before reading
-            // the bloc — the lists routes redirect home, the profile and
-            // search affordances stay hidden, and both sheets refuse to
-            // open — so nothing constructs it while the flag is off.
+            // Laziness does the creation gate instead: every entry point into
+            // the people-lists UI checks FeatureFlag.curatedLists before
+            // reading the bloc — the lists routes redirect home, the profile
+            // and search affordances stay hidden, and both sheets refuse to
+            // open — so a disabled feature does not construct the bloc.
             //
-            // Known gap (#6480): peopleListsRepositoryProvider is keepAlive
-            // but not identity-stable — it watches nostrServiceProvider,
-            // which recreates its client on auth change. With no conditional
-            // entry `create` never re-runs, so the captured repository is
-            // stale by construction after an account switch.
+            // Once constructed while the flag is on, the bloc remains session-
+            // lifetime even if the flag flips off. Stopping already-started
+            // repository work on a flag-off transition is tracked in #6494.
+            //
+            // peopleListsRepositoryProvider is keepAlive but not identity-
+            // stable: it watches nostrServiceProvider, which recreates its
+            // client on auth change. This provider is intentionally still not
+            // keyed; repositoryStream keeps the app-lifetime bloc pointed at
+            // the current repository without re-inflating MaterialApp.router
+            // (#6480, #6482).
             BlocProvider(
               create: (_) {
                 final authService = ref.read(authServiceProvider);
@@ -2856,11 +2861,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
                     .distinct();
                 return PeopleListsBloc(
                   repository: ref.read(peopleListsRepositoryProvider),
-                  // peopleListsRepositoryProvider is keepAlive but not
-                  // identity-stable: it watches nostrServiceProvider, which
-                  // disposes its client on every identity change. This create
-                  // runs once, so the bloc subscribes to the successive
-                  // instances rather than keeping its capture (#6480).
                   repositoryStream: ref.read(
                     peopleListsRepositoryIdentityStreamProvider,
                   ),
