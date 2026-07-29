@@ -1438,27 +1438,28 @@ class AppLocalizationsFil extends AppLocalizations {
       'Itatago na namin ang ganitong post mula ngayon.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Tulungang i-classify ito';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'May kulang na content warning? Public, naka-sign, at hindi na mababawi ang suggestion mo.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'I-suggest';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess =>
+      'Salamat. Naipadala na ang suggestion mo.';
 
   @override
   String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+      'Hindi naipadala ang suggestion mo. Subukan ulit.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Na-suggest mo na ito';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'I-classify';
 
   @override
   String get videoErrorNotFound => 'Hindi nakita ang video';
@@ -3085,28 +3086,28 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'O ilagay ang 6-digit na code mula sa email mo';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6-digit na code';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'I-verify ang code';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Hindi mo natanggap?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Ipadala ulit';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'Ipadala ulit pagkalipas ng $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'Hindi namin naipadala ulit ang email. Subukan ulit.';
 
   @override
   String get authWelcomeToDivine => 'Welcome sa Divine!';
@@ -3409,23 +3410,23 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Hindi tumugma ang code. I-double check ito at subukan ulit.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Nag-expire na ang code. I-tap ang Ipadala ulit para kumuha ng bago.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'Masyadong maraming tries. I-tap ang Ipadala ulit para kumuha ng bagong code.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'Hindi namin na-verify ang code. Pakisubukan ulit.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Hindi available ang paglalagay ng code ngayon. I-tap ang link sa email mo, o ipadala ulit para kumuha ng bago.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3504,78 +3505,79 @@ class AppLocalizationsFil extends AppLocalizations {
   String get shareSheetMoreActions => 'Iba pang aksyon';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'I-crosspost';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'I-crosspost ang video na ito';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Ipadala ito sa mga naka-connect mong platform. Maaaring tumagal nang ilang minuto ang pag-post.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'I-crosspost';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'Naka-queue';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Ina-upload';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'Pinoproseso';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Nai-post';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Nabigo';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Nilaktawan';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Kailangang i-reconnect';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Tingnan ang post';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'I-reconnect ang $platform sa crossposting settings para makapag-post pa rin.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'I-reconnect';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'Mga sarili mong video lang ang puwedeng i-crosspost.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'Hindi eligible ang video na ito para sa crossposting.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected =>
+      'Hindi naka-connect ang platform na iyon.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'I-reconnect ang account mo, tapos subukan ulit.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Hindi maabot ang crossposter. Pakisubukan ulit mamaya.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Nabigo ang crosspost.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Pinoproseso pa. Puwede mo nang isara ito — tuloy ang pag-post sa background.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Tapos na';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Na-save sa Camera Roll';
@@ -7058,34 +7060,34 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Nagpalit ka ng account, kaya walang na-delete. Buksan ulit ang pag-delete para sa account na gusto mong alisin.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Hindi ma-release ang username mo. Hindi na-delete ang account mo. Subukan ulit, o alisin ang check sa option.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'Permanenteng na-release ang username mong $username, pero hindi namin natapos ang pag-delete ng account mo. I-tap ulit ang Burahin para matapos.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'Isuko na rin nang permanente ang $username';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'Para kumpirmahin, i-type:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'Para kumpirmahin, i-type ang username mo:';
 
   @override
   String get deleteAccountConfirmationHint => 'I-type ang DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername => 'I-type ang username mo';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -7096,7 +7098,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'Hindi namin natapos ang pag-delete ng account mo. Subukan ulit.';
 
   @override
   String get deleteAccountFinalConfirmationTitle =>
@@ -10847,72 +10849,74 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Mga Divine Supporter';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'Suportahan ang Divine gamit ang optional na monthly subscription.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Panatilihing tumatakbo ang Divine';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Libre ang Divine at laging magiging libre. Kung gusto mo kaming tulungang panatilihing umaandar ang mga loop, maging monthly supporter ka. Walang naka-lock — pinapanatili lang nitong bukas ang ilaw at taos-puso kaming nagpapasalamat.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Isa kang Divine Supporter. Salamat sa pagpapanatili nito.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending =>
+      'Naghihintay ng approval ang purchase mo.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Kinukumpirma ang suporta mo…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'Tinitingnan ang store…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Hindi available ang mga supporter subscription dito ngayon.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'I-restore ang mga purchase';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'I-dismiss ang error';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'Hindi available ang store sa device na ito.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'Hindi natapos ang purchase. Hindi ka siningil.';
 
   @override
   String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+      'Naghihintay ng approval ang purchase mo.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Walang nahanap na supporter subscription na puwedeng i-restore.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Ang purchase na ito ay pag-aari ng ibang Divine account.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Hindi makumpirma ng Divine ang supporter status mo ngayon.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown =>
+      'May nangyaring problema. Pakisubukan ulit.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Kinukumpirma ng Divine ang supporter status pagkatapos i-verify ng store ang purchase mo. Optional ang recognition, at hindi verification ang halo.';
 
   @override
   String get profileNotifyBellOff => 'Ipaalam ang mga bagong vine';

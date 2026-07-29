@@ -1398,27 +1398,26 @@ class AppLocalizationsAr extends AppLocalizations {
       'سنخفي المنشورات المشابهة من الآن فصاعدًا.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'ساعد في تصنيف هذا';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'تحذير محتوى مفقود؟ اقتراحك علني وموقَّع ولا يمكن التراجع عنه.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'اقترح';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => 'شكرًا. تم إرسال اقتراحك.';
 
   @override
-  String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+  String get communitySuggestFailure => 'تعذّر إرسال اقتراحك. حاول مرّة أخرى.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'لقد اقترحت هذا';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'صنّف';
 
   @override
   String get videoErrorNotFound => 'لم يُعثر على الفيديو';
@@ -3015,28 +3014,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'أو أدخل الرمز المكوّن من 6 أرقام من بريدك الإلكتروني';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => 'الرمز المكوّن من 6 أرقام';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'تحقّق من الرمز';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'لم يصلك؟';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'إعادة الإرسال';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'إعادة الإرسال بعد $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'تعذّر علينا إعادة إرسال البريد الإلكتروني. حاول مرّة أخرى.';
 
   @override
   String get authWelcomeToDivine => 'أهلاً بك في Divine!';
@@ -3328,23 +3327,23 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'هذا الرمز غير مطابق. تحقّق منه مجددًا وحاول مرّة أخرى.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'انتهت صلاحية هذا الرمز. اضغط «إعادة الإرسال» للحصول على رمز جديد.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'محاولات كثيرة جدًا. اضغط «إعادة الإرسال» للحصول على رمز جديد.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'تعذّر علينا التحقق من هذا الرمز. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'إدخال الرمز غير متاح حاليًا. اضغط على الرابط في بريدك الإلكتروني، أو أعد الإرسال للحصول على رمز جديد.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3423,78 +3422,77 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareSheetMoreActions => 'إجراءات إضافية';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'نشر متقاطع';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'النشر المتقاطع لهذا الفيديو';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'أرسله إلى منصّاتك المرتبطة. قد يستغرق النشر بضع دقائق.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'نشر متقاطع';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'في الانتظار';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'جارٍ الرفع';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'جارٍ المعالجة';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'تم النشر';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'فشل';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'تم التخطّي';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'يتطلّب إعادة الربط';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'عرض المنشور';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'أعد ربط $platform في إعدادات النشر المتقاطع لمواصلة النشر.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'إعادة الربط';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'النشر المتقاطع متاح فقط لفيديوهاتك الخاصة.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'هذا الفيديو غير مؤهّل للنشر المتقاطع.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'تلك المنصّة غير مرتبطة.';
 
   @override
-  String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+  String get crosspostErrorUnauthorized => 'أعد ربط حسابك، ثم حاول مرّة أخرى.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'تعذّر الوصول إلى خدمة النشر المتقاطع. حاول مرّة أخرى بعد قليل.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'فشل النشر المتقاطع.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'ما زال العمل جاريًا. يمكنك إغلاق هذا — سيستمر النشر في الخلفية.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'تم';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'تم الحفظ في ألبوم الكاميرا';
@@ -6933,34 +6931,35 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'لقد بدّلت الحسابات، لذا لم يُحذف أي شيء. أعد فتح الحذف للحساب الذي تريد إزالته.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'تعذّر تحرير اسم المستخدم الخاص بك. لم يُحذف حسابك. حاول مرّة أخرى، أو ألغِ تحديد الخيار.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'تم تحرير اسم المستخدم $username نهائيًا، لكن تعذّر علينا إكمال حذف حسابك. اضغط «حذف» مرّة أخرى للإنهاء.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'تخلَّ نهائيًا أيضًا عن $username';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'للتأكيد، اكتب:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'للتأكيد، اكتب اسم المستخدم الخاص بك:';
 
   @override
   String get deleteAccountConfirmationHint => 'اكتب DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername =>
+      'اكتب اسم المستخدم الخاص بك';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -6971,7 +6970,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'تعذّر علينا إكمال حذف حسابك. حاول مرّة أخرى.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ التأكيد النهائي';
@@ -10659,72 +10658,69 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'داعمو Divine';
 
   @override
-  String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+  String get supporterTileSubtitle => 'ادعم Divine باشتراك شهري اختياري.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'ساعد Divine على الاستمرار';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine مجاني وسيبقى كذلك دائمًا. إذا أردت مساعدتنا في إبقاء التكرارات مستمرة، فكن داعمًا شهريًا. لا شيء مقفل — هذا فقط يُبقي الأنوار مضاءة ويكسبك شكرنا.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'أنت داعم لـ Divine. شكرًا لإبقائك هذا مستمرًا.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'عملية شرائك في انتظار الموافقة.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'جارٍ تأكيد دعمك…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'جارٍ التحقق من المتجر…';
 
   @override
-  String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+  String get supporterUnavailable => 'اشتراكات الدعم غير متاحة هنا حاليًا.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'استعادة المشتريات';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'تجاهل الخطأ';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'المتجر غير متاح على هذا الجهاز.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'لم تكتمل عملية الشراء. لم يُخصم منك أي مبلغ.';
 
   @override
-  String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+  String get supporterErrorPurchasePending => 'عملية شرائك في انتظار الموافقة.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'لم يتم العثور على اشتراك دعم لاستعادته.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'عملية الشراء هذه تخص حساب Divine آخر.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'تعذّر على Divine تأكيد حالة الداعم حاليًا.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'حدث خطأ ما. يرجى المحاولة مرّة أخرى.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'يؤكّد Divine حالة الداعم بعد أن يتحقّق المتجر من عملية شرائك. التقدير اختياري، والهالة ليست توثيقًا.';
 
   @override
   String get profileNotifyBellOff => 'أبلغني عن المقاطع الجديدة';

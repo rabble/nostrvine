@@ -1433,27 +1433,28 @@ class AppLocalizationsBg extends AppLocalizations {
       'Отсега нататък ще скриваме публикации като тази.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Помогни да класираме това';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'Липсва предупреждение за съдържание? Предложението ти е публично, подписано и не може да бъде отменено.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'Предложи';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess =>
+      'Благодарим. Предложението ти е изпратено.';
 
   @override
   String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+      'Предложението ти не можа да бъде изпратено. Опитай пак.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Вече предложи това';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'Класирай';
 
   @override
   String get videoErrorNotFound => 'Видеото не е намерено';
@@ -3085,28 +3086,28 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'Или въведи 6-цифрения код от имейла си';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6-цифрен код';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'Потвърди кода';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Не го получи?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Изпрати отново';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'Изпрати отново след $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'Не успяхме да изпратим имейла отново. Опитай пак.';
 
   @override
   String get authWelcomeToDivine => 'Радваме се, че си в Divine!';
@@ -3404,23 +3405,23 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Този код не съвпада. Провери го отново и опитай пак.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Този код е изтекъл. Натисни Изпрати отново, за да получиш нов.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'Твърде много опити. Натисни Изпрати отново, за да получиш нов код.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'Не успяхме да потвърдим този код. Опитай пак.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Въвеждането на код не е налично в момента. Натисни връзката в имейла си или изпрати отново, за да получиш нова.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3499,78 +3500,78 @@ class AppLocalizationsBg extends AppLocalizations {
   String get shareSheetMoreActions => 'Още действия';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'Публикувай кръстосано';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'Кръстосано публикуване на това видео';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Изпрати го до свързаните си платформи. Публикуването може да отнеме няколко минути.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'Публикувай кръстосано';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'В опашката';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Качва се';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'Обработва се';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Публикувано';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Неуспешно';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Пропуснато';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Изисква повторно свързване';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Виж публикацията';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'Свържи отново $platform в настройките за кръстосано публикуване, за да продължиш да публикуваш.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'Свържи отново';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'Само твои видеа могат да се публикуват кръстосано.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'Това видео не може да се публикува кръстосано.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'Тази платформа не е свързана.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'Свържи отново акаунта си и опитай пак.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Не успяхме да достигнем услугата за кръстосано публикуване. Опитай пак след малко.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Кръстосаното публикуване не успя.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Още се работи. Можеш да затвориш това — публикуването продължава във фонов режим.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Готово';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Запазено в галерията';
@@ -7049,34 +7050,35 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Смени акаунта, затова нищо не беше изтрито. Отвори отново изтриването за акаунта, който искаш да премахнеш.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Не успяхме да освободим потребителското ти име. Акаунтът ти не беше изтрит. Опитай пак или махни отметката от опцията.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'Потребителското ти име $username е окончателно освободено, но не успяхме да довършим изтриването на акаунта ти. Натисни Изтрий отново, за да завършиш.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'Също окончателно се откажи от $username';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'За потвърждение напиши:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'За потвърждение напиши потребителското си име:';
 
   @override
   String get deleteAccountConfirmationHint => 'Напиши DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername =>
+      'Напиши потребителското си име';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -7087,7 +7089,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'Не успяхме да довършим изтриването на акаунта ти. Опитай пак.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Последно потвърждение';
@@ -10837,72 +10839,71 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Поддръжници на Divine';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'Подкрепи Divine с незадължителен месечен абонамент.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Помогни на Divine да продължава';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine е безплатен и винаги ще бъде. Ако искаш да ни помогнеш да поддържаме луповете, стани месечен поддръжник. Нищо не е заключено — просто държиш лампите запалени и печелиш благодарността ни.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Ти си поддръжник на Divine. Благодарим ти, че караш това да продължава.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'Покупката ти чака одобрение.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Потвърждаваме подкрепата ти…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'Проверяваме магазина…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Абонаментите за поддръжници не са налични тук в момента.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'Възстанови покупките';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'Отхвърли грешката';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'Магазинът не е наличен на това устройство.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'Покупката не завърши. Не ти е начислено нищо.';
 
   @override
-  String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+  String get supporterErrorPurchasePending => 'Покупката ти чака одобрение.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Не е намерен абонамент на поддръжник за възстановяване.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Тази покупка принадлежи на друг Divine акаунт.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine не можа да потвърди статуса на поддръжник в момента.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'Нещо се обърка. Опитай пак.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Divine потвърждава статуса на поддръжник, след като магазинът провери покупката ти. Признанието е по желание, а ореолът не е потвърждение.';
 
   @override
   String get profileNotifyBellOff => 'Получавай известия за нови видеа';

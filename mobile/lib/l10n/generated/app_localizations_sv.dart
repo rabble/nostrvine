@@ -1408,27 +1408,27 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vi döljer inlägg som det här från och med nu.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Hjälp till att klassificera det här';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'Saknas en innehållsvarning? Ditt förslag är offentligt, signerat och kan inte återtas.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'Föreslå';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => 'Tack. Ditt förslag har skickats.';
 
   @override
   String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+      'Kunde inte skicka ditt förslag. Försök igen.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Du har föreslagit det här';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'Klassificera';
 
   @override
   String get videoErrorNotFound => 'Videon hittades inte';
@@ -3037,28 +3037,28 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'Eller ange den 6-siffriga koden från din e-post';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6-siffrig kod';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'Verifiera kod';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Fick du den inte?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Skicka igen';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'Skicka igen om $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'Vi kunde inte skicka mejlet igen. Försök igen.';
 
   @override
   String get authWelcomeToDivine => 'Välkommen till Divine!';
@@ -3353,23 +3353,23 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Koden stämde inte. Dubbelkolla den och försök igen.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Koden har gått ut. Tryck på Skicka igen för att få en ny.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'För många försök. Tryck på Skicka igen för att få en ny kod.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'Vi kunde inte verifiera koden. Försök igen.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Kodinmatning är inte tillgänglig just nu. Tryck på länken i din e-post eller skicka igen för att få en ny.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3448,78 +3448,76 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareSheetMoreActions => 'Fler åtgärder';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'Korsposta';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'Korsposta den här videon';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Skicka den till dina anslutna plattformar. Publicering kan ta några minuter.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'Korsposta';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'I kö';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Laddar upp';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'Bearbetar';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Publicerad';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Misslyckades';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Överhoppad';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Behöver återanslutas';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Visa inlägg';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'Återanslut $platform i korspostningsinställningarna för att fortsätta publicera.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'Återanslut';
 
   @override
-  String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+  String get crosspostErrorNotOwner => 'Bara dina egna videor kan korspostas.';
 
   @override
-  String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+  String get crosspostErrorNotEligible => 'Den här videon kan inte korspostas.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'Den plattformen är inte ansluten.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'Återanslut ditt konto och försök sedan igen.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Kunde inte nå korspostningstjänsten. Försök igen om en stund.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Korspostningen misslyckades.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Jobbar fortfarande. Du kan stänga det här – publiceringen fortsätter i bakgrunden.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Klar';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Sparad i kamerarullen';
@@ -6978,34 +6976,34 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Du bytte konto, så ingenting raderades. Öppna raderingen igen för kontot du vill ta bort.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Kunde inte frigöra ditt användarnamn. Ditt konto raderades inte. Försök igen eller avmarkera alternativet.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'Ditt användarnamn $username har frigetts permanent, men vi kunde inte slutföra raderingen av ditt konto. Tryck på Radera igen för att slutföra.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'Ge även permanent upp $username';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'Bekräfta genom att skriva:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'Bekräfta genom att skriva ditt användarnamn:';
 
   @override
   String get deleteAccountConfirmationHint => 'Skriv DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername => 'Skriv ditt användarnamn';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -7016,7 +7014,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'Vi kunde inte slutföra raderingen av ditt konto. Försök igen.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Slutgiltig bekräftelse';
@@ -10737,72 +10735,71 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Divine-supportrar';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'Stöd Divine med en valfri månadsprenumeration.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Håll Divine igång';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine är gratis och kommer alltid att vara det. Om du vill hjälpa oss att hålla looparna igång, bli månadssupporter. Inget är låst – det håller bara ljusen tända och ger dig vår tacksamhet.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Du är Divine-supporter. Tack för att du håller det här igång.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'Ditt köp väntar på godkännande.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Bekräftar ditt stöd…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'Kollar butiken…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Supporter-prenumerationer är inte tillgängliga här just nu.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'Återställ köp';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'Stäng felmeddelandet';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'Butiken är inte tillgänglig på den här enheten.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'Köpet slutfördes inte. Du har inte debiterats.';
 
   @override
-  String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+  String get supporterErrorPurchasePending => 'Ditt köp väntar på godkännande.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Ingen supporter-prenumeration hittades att återställa.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Det här köpet tillhör ett annat Divine-konto.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine kunde inte bekräfta supporterstatus just nu.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'Något gick fel. Försök igen.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Divine bekräftar supporterstatus efter att butiken verifierat ditt köp. Erkännande är valfritt, och glorian är ingen verifiering.';
 
   @override
   String get profileNotifyBellOff => 'Meddela om nya vines';

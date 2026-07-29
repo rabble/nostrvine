@@ -1319,27 +1319,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get contentWarningHiddenConfirmation => '앞으로 이런 게시물은 숨길게요.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => '이 영상의 분류를 도와주세요';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      '콘텐츠 경고가 빠져 있나요? 제안은 공개되고 서명이 붙으며, 되돌릴 수 없어요.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => '제안하기';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => '고마워요. 제안을 보냈어요.';
 
   @override
-  String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+  String get communitySuggestFailure => '제안을 보내지 못했어요. 다시 시도해주세요.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => '이미 제안함';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => '분류하기';
 
   @override
   String get videoErrorNotFound => '영상을 찾을 수 없어요';
@@ -2894,29 +2893,27 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authOpenEmailApp => '이메일 앱 열기';
 
   @override
-  String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+  String get authVerificationPinPrompt => '또는 이메일로 받은 6자리 코드를 입력하세요';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6자리 코드';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => '코드 확인';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => '못 받으셨나요?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => '다시 보내기';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return '$time 후 다시 보내기';
   }
 
   @override
-  String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+  String get authVerificationResendFailed => '이메일을 다시 보내지 못했어요. 다시 시도해주세요.';
 
   @override
   String get authWelcomeToDivine => 'Divine에 오신 걸 환영해요!';
@@ -3195,24 +3192,22 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 이메일은 이미 등록되어 있어요. 대신 로그인해 주세요.';
 
   @override
-  String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+  String get authVerificationErrorPinInvalid => '코드가 일치하지 않아요. 다시 확인하고 시도해주세요.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      '코드가 만료됐어요. 다시 보내기를 탭해서 새 코드를 받으세요.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      '시도 횟수가 너무 많아요. 다시 보내기를 탭해서 새 코드를 받으세요.';
 
   @override
-  String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+  String get authVerificationErrorPinFailed => '코드를 확인할 수 없어요. 다시 시도해주세요.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      '지금은 코드 입력을 사용할 수 없어요. 이메일의 링크를 탭하거나 다시 보내기로 새 코드를 받으세요.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3290,78 +3285,73 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareSheetMoreActions => '더 많은 작업';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => '크로스 포스팅';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => '이 영상 크로스 포스팅하기';
 
   @override
-  String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+  String get crosspostSheetSubtitle => '연결된 플랫폼으로 보내요. 게시까지 몇 분 걸릴 수 있어요.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => '크로스 포스팅';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => '대기 중';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => '업로드 중';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => '처리 중';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => '게시됨';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => '실패';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => '건너뜀';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => '재연결 필요';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => '게시물 보기';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return '계속 게시하려면 크로스 포스팅 설정에서 $platform 계정을 다시 연결해주세요.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => '다시 연결';
 
   @override
-  String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+  String get crosspostErrorNotOwner => '내 영상만 크로스 포스팅할 수 있어요.';
 
   @override
-  String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+  String get crosspostErrorNotEligible => '이 영상은 크로스 포스팅 대상이 아니에요.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => '해당 플랫폼이 연결되어 있지 않아요.';
 
   @override
-  String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+  String get crosspostErrorUnauthorized => '계정을 다시 연결하고 다시 시도해주세요.';
 
   @override
-  String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+  String get crosspostErrorNetwork => '크로스 포스팅 서버에 연결할 수 없어요. 잠시 후 다시 시도해주세요.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => '크로스 포스팅에 실패했어요.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      '아직 작업 중이에요. 닫아도 괜찮아요 — 게시는 백그라운드에서 계속돼요.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => '완료';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => '카메라 롤에 저장했어요';
@@ -6706,34 +6696,33 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      '계정이 전환돼서 아무것도 삭제되지 않았어요. 삭제할 계정에서 삭제 화면을 다시 열어주세요.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      '사용자명을 해제하지 못했어요. 계정은 삭제되지 않았어요. 다시 시도하거나 옵션 선택을 해제해주세요.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return '사용자명 $username는 영구적으로 해제됐지만, 계정 삭제를 완료하지 못했어요. 삭제를 다시 탭해서 마무리해주세요.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return '$username도 영구적으로 포기하기';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => '확인하려면 다음을 입력해주세요:';
 
   @override
-  String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+  String get deleteAccountConfirmUsernamePrompt => '확인하려면 사용자명을 입력해주세요:';
 
   @override
   String get deleteAccountConfirmationHint => 'DELETE 입력';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername => '사용자명 입력';
 
   @override
   String get deleteAccountContentDeletionFailed => '릴레이에서 콘텐츠를 삭제하지 못했어요';
@@ -6742,8 +6731,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get deleteAccountDeleteAllContentButton => '모든 콘텐츠 삭제';
 
   @override
-  String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+  String get deleteAccountDeletionIncomplete => '계정 삭제를 완료하지 못했어요. 다시 시도해주세요.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ 최종 확인';
@@ -10336,72 +10324,64 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Divine 서포터';
 
   @override
-  String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+  String get supporterTileSubtitle => '선택형 월간 구독으로 Divine을 후원해요.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Divine이 계속 돌아가게 해주세요';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine은 무료이고 앞으로도 그럴 거예요. 루프가 계속 돌아가는 걸 돕고 싶다면 월간 서포터가 되어주세요. 잠기는 건 아무것도 없어요 — 그냥 불을 켜두는 데 보탬이 되고, 저희의 감사를 받아요.';
 
   @override
-  String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+  String get supporterActiveBadge => 'Divine 서포터예요. 계속 이어가 주셔서 고마워요.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => '구매가 승인 대기 중이에요.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => '후원 확인 중…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => '스토어 확인 중…';
 
   @override
-  String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+  String get supporterUnavailable => '지금은 여기서 서포터 구독을 사용할 수 없어요.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => '구매 복원';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => '오류 닫기';
 
   @override
-  String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+  String get supporterErrorStoreUnavailable => '이 기기에서 스토어를 사용할 수 없어요.';
 
   @override
-  String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+  String get supporterErrorPurchaseFailed => '구매가 완료되지 않았어요. 결제되지 않았어요.';
 
   @override
-  String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+  String get supporterErrorPurchasePending => '구매가 승인 대기 중이에요.';
 
   @override
-  String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+  String get supporterErrorRestoreFailed => '복원할 서포터 구독을 찾지 못했어요.';
 
   @override
-  String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+  String get supporterErrorOwnershipConflict => '이 구매는 다른 Divine 계정에 속해 있어요.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      '지금은 Divine에서 서포터 상태를 확인할 수 없어요.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => '문제가 생겼어요. 다시 시도해주세요.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      '스토어에서 구매를 확인한 후 Divine이 서포터 상태를 확정해요. 표시는 선택 사항이고, 후광은 인증 표시가 아니에요.';
 
   @override
   String get profileNotifyBellOff => '새 영상 알림 받기';
