@@ -71,6 +71,11 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   final _playheadPosition = ValueNotifier<Duration>(Duration.zero);
   final _volumePreviewNotifier = ValueNotifier<double?>(null);
 
+  /// Scope notifier for the fine editor play time, cached in
+  /// [didChangeDependencies]. Driven from the scroll offset while the user
+  /// scrubs so canvas overlays (the CC caption pill) follow the scrub live.
+  ValueNotifier<Duration>? _scopePlayTimeNotifier;
+
   /// Active pointer positions — when ≥ 2 we compute pinch scale.
   final Map<int, Offset> _pointerPositions = {};
 
@@ -98,6 +103,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     _scrollController = ScrollController()..addListener(_updatePlayheadTime);
     _verticalScrollController = ScrollController();
     _overlayStripsScrollController = ScrollController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _scopePlayTimeNotifier = VideoEditorScope.of(context).playTimeNotifier;
   }
 
   @override
@@ -189,7 +200,10 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
             // shortening while a trim gesture is active.
             final overlayBloc = context.read<TimelineOverlayBloc>();
             overlayBloc.add(
-              TimelineOverlayTotalDurationChanged(state.totalDuration),
+              TimelineOverlayTotalDurationChanged(
+                state.totalDuration,
+                isClipTrimDragging: state.isTrimDragging,
+              ),
             );
             final rebasedMarkers = _rebasedClipTrimMarkers(state.clips);
             if (rebasedMarkers != null) {
@@ -542,8 +556,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
       overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
       clipEditorBloc.add(const ClipEditorTrimDragEnded());
 
-      editor.setClipState(
-        clipEditorBloc.state.clips,
+      // Dragging a trim handle back out lengthens the composition, so a sound
+      // that covered the old end has to grow with it (#6401); a trim that
+      // only shortened the clip passes through unchanged.
+      editor.setLengthenedClipState(
+        previousClips: _clipTrimStartClips ?? clipEditorBloc.state.clips,
+        clips: clipEditorBloc.state.clips,
         timelineMarkers: rebasedMarkers,
       );
       _clipTrimStartClips = null;
@@ -686,6 +704,17 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         );
 
         _reorderEditorList(audioTracks, audioIdx, targetIdx);
+
+      case .captions:
+        // Overlapping cues stack rows via the bloc's generic lane packing;
+        // there is no editor list to reorder for captions. The cue timeline
+        // write also syncs the burned-in layer when present.
+        editor.setCaptionCueTimeline(
+          cueId: item.id,
+          startTime: startTime,
+          endTime: startTime + duration,
+          skipUpdateHistory: true,
+        );
     }
 
     context.read<TimelineOverlayBloc>().add(
@@ -803,6 +832,14 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           endTime: endTime,
           startOffset: trimResult?.startOffset,
           clearAnchor: trimResult?.anchorStillValid == false,
+          skipUpdateHistory: true,
+        );
+
+      case .captions:
+        editor.setCaptionCueTimeline(
+          cueId: item.id,
+          startTime: startTime,
+          endTime: endTime,
           skipUpdateHistory: true,
         );
     }
@@ -925,6 +962,14 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
           endTime: startTime + item.duration,
           skipUpdateHistory: true,
         );
+
+      case .captions:
+        editor.setCaptionCueTimeline(
+          cueId: item.id,
+          startTime: startTime,
+          endTime: startTime + item.duration,
+          skipUpdateHistory: true,
+        );
     }
   }
 
@@ -1030,7 +1075,18 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   /// Derives the time at the playhead from scroll offset.
   void _updatePlayheadTime() {
     if (!_scrollController.hasClients) return;
-    _playheadPosition.value = _scrollOffsetToPosition(_scrollController.offset);
+    final position = _scrollOffsetToPosition(_scrollController.offset);
+    _playheadPosition.value = position;
+
+    // While scrubbing (video paused) the scroll offset is the source of truth
+    // for the play time, so drive the scope notifier straight from it —
+    // unthrottled — and canvas overlays like the CC caption pill follow the
+    // scrub live instead of waiting on the throttled seek round-trip (which a
+    // paused/seeking player can stall). During playback the canvas playhead
+    // ticker owns this notifier, so leave it untouched.
+    if (!context.read<VideoEditorMainBloc>().state.isPlaying) {
+      _scopePlayTimeNotifier?.value = position;
+    }
   }
 
   /// Converts a composite playback [position] to the corresponding scroll

@@ -1515,6 +1515,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Оригинален звук';
 
   @override
+  String get audioAttributionUnavailableSound => 'Звукът е недостъпен';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Вдъхновен от @$creatorName';
   }
@@ -3461,6 +3464,80 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get shareSheetMoreActions => 'Още действия';
+
+  @override
+  String get shareSheetCrosspost => 'Crosspost';
+
+  @override
+  String get crosspostSheetTitle => 'Crosspost this video';
+
+  @override
+  String get crosspostSheetSubtitle =>
+      'Send it to your connected platforms. Posting can take a few minutes.';
+
+  @override
+  String get crosspostSubmit => 'Crosspost';
+
+  @override
+  String get crosspostStatusQueued => 'Queued';
+
+  @override
+  String get crosspostStatusUploading => 'Uploading';
+
+  @override
+  String get crosspostStatusProcessing => 'Processing';
+
+  @override
+  String get crosspostStatusPosted => 'Posted';
+
+  @override
+  String get crosspostStatusFailed => 'Failed';
+
+  @override
+  String get crosspostStatusSkipped => 'Skipped';
+
+  @override
+  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+
+  @override
+  String get crosspostViewPost => 'View post';
+
+  @override
+  String crosspostReconnectPrompt(String platform) {
+    return 'Reconnect $platform in crossposting settings to keep posting.';
+  }
+
+  @override
+  String get crosspostReconnect => 'Reconnect';
+
+  @override
+  String get crosspostErrorNotOwner =>
+      'Only your own videos can be crossposted.';
+
+  @override
+  String get crosspostErrorNotEligible =>
+      'This video isn\'t eligible for crossposting.';
+
+  @override
+  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+
+  @override
+  String get crosspostErrorUnauthorized =>
+      'Reconnect your account, then try again.';
+
+  @override
+  String get crosspostErrorNetwork =>
+      'Couldn\'t reach the crossposter. Try again in a moment.';
+
+  @override
+  String get crosspostFailedGeneric => 'Crosspost failed.';
+
+  @override
+  String get crosspostStillWorking =>
+      'Still working. You can close this — posting continues in the background.';
+
+  @override
+  String get crosspostDone => 'Done';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Запазено в галерията';
@@ -5592,6 +5669,17 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxRemovedConversation => 'Премахнат разговор';
 
   @override
+  String get inboxRestorePausedTitle =>
+      'Някои чатове не са възстановени докрай';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Този чат още не е възстановен докрай';
+
+  @override
+  String get inboxRestoreRetryAction => 'Опитай пак';
+
+  @override
   String get inboxRestoringMessages => 'Възстановяваме съобщенията ти…';
 
   @override
@@ -5621,6 +5709,13 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get inboxSearchHint => 'Търсене в съобщенията';
+
+  @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Бъгове, модерация, проблеми с акаунта — слушаме.';
 
   @override
   String get inboxSearchEmptyTitle => 'Няма съвпадения';
@@ -6028,6 +6123,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get commonClose => 'Затвори';
+
+  @override
+  String get commonLoading => 'Зарежда се';
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
@@ -6943,12 +7041,24 @@ class AppLocalizationsBg extends AppLocalizations {
       'Да премахнем този акаунт от това устройство?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Влез отново, за да изтриеш акаунта си. Още нищо не е изтрито.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Не успяхме да изтрием акаунта ти от сървъра. Провери връзката си и опитай пак.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Заявките за изтриване на публикациите ти са изпратени, но не успяхме да довършим изтриването на акаунта ти. Влез отново, за да завършиш.';
+
+  @override
   String get deleteAccountSuccess =>
       'Заявките за изтриване са изпратени. Отписан си на това устройство.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Заявено е изтриване на акаунта. Изтриването на някои съществуващи публикации не можа да бъде потвърдено поотделно.';
 
   @override
   String get deleteAccountWarningBody =>
@@ -7559,6 +7669,14 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get blueskyUsernameRequiredSubtitle =>
       'Bluesky publishing needs a claimed username.divine.video handle.';
+
+  @override
+  String get blueskyUsernameSyncPending =>
+      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+
+  @override
+  String get blueskyStatusUnavailableRetry =>
+      'We could not check your Divine handle. Try again.';
 
   @override
   String get blueskySetUpHandle => 'Set up';
@@ -8188,9 +8306,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'Добавете аудио преди запис';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'Създаване на видеото…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'Видеото не можа да се създаде. Опитайте отново.';
 
@@ -8317,6 +8432,171 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Отвори аудио редактора';
+
+  @override
+  String get videoEditorCaptionsLabel => 'Субтитри';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Отвори редактора на субтитри';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'Вграждане във видеото';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Собствен';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Собствен стил';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Приложи';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Шрифт';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Цвят на текста';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Фон';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Цвят на фона';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Анимация';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Няма';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Избледняване';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Поп';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Пружина';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Субтитри';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Слушаме…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Превръщаме аудиото ти в предложения за субтитри.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Не чухме реч. Все пак можеш да напишеш субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Разпознаването на реч не е налично на това устройство. Можеш да напишеш субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Разпознаването на реч не е разрешено. Включи го в Настройки или напиши субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Транскрипцията не се получи този път. Можеш да напишеш субтитрите сам.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'Ще напиша субтитрите сам';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Добави субтитър';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Текст на субтитъра';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'Изтрий субтитъра';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Премахни всички субтитри';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Да премахнем ли субтитрите?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Целият текст и времената ще бъдат загубени.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Затвори редактора на субтитри';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'Потвърди субтитрите';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Стил на субтитрите';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Класически';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Поп';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Спринг';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Моно';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Заглавие';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Пишеща машина';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Маркер';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Калиграфия';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Ретро';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Елегантен';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Балонче';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Неон';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Удебелен';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Мечтателен';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Океан';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Слънчев';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Ръкописен';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Серифен';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Печат';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Отвори текстовия редактор';
@@ -9876,12 +10156,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'divine.space';
-
-  @override
-  String get profileCreatorSiteOwnLabel => 'моят divine.space';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
@@ -10368,4 +10642,72 @@ class AppLocalizationsBg extends AppLocalizations {
   String crosspostingConnectionDenied(String platform) {
     return 'Connection was canceled on $platform';
   }
+
+  @override
+  String get supporterTitle => 'Divine Supporters';
+
+  @override
+  String get supporterTileSubtitle =>
+      'Support Divine with an optional monthly subscription.';
+
+  @override
+  String get supporterHeroTitle => 'Keep Divine running';
+
+  @override
+  String get supporterHeroBody =>
+      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+
+  @override
+  String get supporterActiveBadge =>
+      'You\'re a Divine Supporter. Thank you for keeping this going.';
+
+  @override
+  String get supporterPurchasePending => 'Your purchase is pending approval.';
+
+  @override
+  String get supporterPurchaseConfirming => 'Confirming your support…';
+
+  @override
+  String get supporterStoreChecking => 'Checking the store…';
+
+  @override
+  String get supporterUnavailable =>
+      'Supporter subscriptions are not available here right now.';
+
+  @override
+  String get supporterRestorePurchases => 'Restore purchases';
+
+  @override
+  String get supporterDismissError => 'Dismiss error';
+
+  @override
+  String get supporterErrorStoreUnavailable =>
+      'The store is unavailable on this device.';
+
+  @override
+  String get supporterErrorPurchaseFailed =>
+      'The purchase did not complete. You were not charged.';
+
+  @override
+  String get supporterErrorPurchasePending =>
+      'Your purchase is pending approval.';
+
+  @override
+  String get supporterErrorRestoreFailed =>
+      'No supporter subscription was found to restore.';
+
+  @override
+  String get supporterErrorOwnershipConflict =>
+      'This purchase belongs to another Divine account.';
+
+  @override
+  String get supporterErrorVerificationUnavailable =>
+      'Divine could not confirm supporter status right now.';
+
+  @override
+  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+
+  @override
+  String get supporterDisclaimer =>
+      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
 }

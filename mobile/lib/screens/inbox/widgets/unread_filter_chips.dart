@@ -25,6 +25,9 @@ class UnreadFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Deliberately no MediaQuery.withNoTextScaling: these are controls to read
+    // and tap, not fixed overlay badges. The pinned header hosting this row
+    // declares a text-scale-aware extent so the row has room to grow into.
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(

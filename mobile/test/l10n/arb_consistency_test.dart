@@ -179,6 +179,30 @@ void main() {
 
 // Add keys here only when a translation pass is intentionally deferred.
 const _knownUntranslatedDebt = <String>{
+  // #6366: manual crossposting from the share sheet; translation deferred
+  // to the next l10n pass.
+  'shareSheetCrosspost',
+  'crosspostSheetTitle',
+  'crosspostSheetSubtitle',
+  'crosspostSubmit',
+  'crosspostStatusQueued',
+  'crosspostStatusUploading',
+  'crosspostStatusProcessing',
+  'crosspostStatusPosted',
+  'crosspostStatusFailed',
+  'crosspostStatusSkipped',
+  'crosspostStatusNeedsReauth',
+  'crosspostViewPost',
+  'crosspostReconnectPrompt',
+  'crosspostReconnect',
+  'crosspostErrorNotOwner',
+  'crosspostErrorNotEligible',
+  'crosspostErrorNotConnected',
+  'crosspostErrorUnauthorized',
+  'crosspostErrorNetwork',
+  'crosspostFailedGeneric',
+  'crosspostStillWorking',
+  'crosspostDone',
   // #6217: light-mode experiment copy; translation deferred until rollout.
   'appearanceSettingsTitle',
   'appearanceSettingsSubtitle',
@@ -244,6 +268,27 @@ const _knownUntranslatedDebt = <String>{
   'crosspostingConnectionSuccess',
   'crosspostingConnectionFailed',
   'crosspostingConnectionDenied',
+  // #6413: supporter subscription screen copy; translation deferred to the
+  // next l10n pass. Non-English locales fall back to English.
+  'supporterTitle',
+  'supporterTileSubtitle',
+  'supporterHeroTitle',
+  'supporterHeroBody',
+  'supporterActiveBadge',
+  'supporterPurchasePending',
+  'supporterPurchaseConfirming',
+  'supporterStoreChecking',
+  'supporterUnavailable',
+  'supporterRestorePurchases',
+  'supporterDismissError',
+  'supporterErrorStoreUnavailable',
+  'supporterErrorPurchaseFailed',
+  'supporterErrorPurchasePending',
+  'supporterErrorRestoreFailed',
+  'supporterErrorOwnershipConflict',
+  'supporterErrorVerificationUnavailable',
+  'supporterErrorUnknown',
+  'supporterDisclaimer',
 };
 
 const _signatureVerificationKeys = <String>{

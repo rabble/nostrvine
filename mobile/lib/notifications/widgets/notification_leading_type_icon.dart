@@ -20,6 +20,7 @@ class NotificationLeadingTypeIcon extends StatelessWidget {
   const NotificationLeadingTypeIcon({
     required this.type,
     required this.isRead,
+    this.isVideoSourcedMention = false,
     super.key,
   });
 
@@ -30,9 +31,15 @@ class NotificationLeadingTypeIcon extends StatelessWidget {
   /// dot overlays the badge's top-right corner.
   final bool isRead;
 
+  /// Whether a mention row is sourced from a video rather than a note/comment.
+  final bool isVideoSourcedMention;
+
   @override
   Widget build(BuildContext context) {
-    final spec = notificationTypeIconSpec(type);
+    final spec = notificationTypeIconSpec(
+      type,
+      isVideoSourcedMention: isVideoSourcedMention,
+    );
     return NotificationTypeIcon(
       icon: spec.icon,
       backgroundColor: spec.background,

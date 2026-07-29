@@ -3,12 +3,15 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -47,6 +50,24 @@ void main() {
       lastMessageTimestamp: lastMessageTimestamp,
       isRead: isRead,
     );
+  }
+
+  /// The [SemanticsProperties] of the tile's own outermost Semantics wrapper.
+  ///
+  /// `onLongPressHint` lands in `SemanticsHintOverrides`, which `SemanticsData`
+  /// does not expose, so the widget's declared properties are the accessible
+  /// assertion point.
+  SemanticsProperties tileSemantics(WidgetTester tester) {
+    return tester
+        .widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(ConversationTile),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        )
+        .properties;
   }
 
   group(ConversationTile, () {
@@ -648,6 +669,240 @@ void main() {
         );
         final decoration = decoratedBox.decoration as BoxDecoration;
         expect(decoration.color, isNull);
+      });
+    });
+
+    group('fixed-identity overrides (#6283)', () {
+      testWidgets('displayNameOverride wins over the resolved profile', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                displayNameOverride: 'Divine Moderation',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Divine Moderation'), findsOneWidget);
+        expect(find.text('Alice'), findsNothing);
+      });
+
+      testWidgets('displayNameOverride also wins before the profile '
+          'repository is ready', (tester) async {
+        // profileRepositoryProvider is null until the relay client is ready,
+        // so the tile's fallback is a generated "Adjective Animal N" name.
+        // A pinned, known account must never render that.
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                displayNameOverride: 'Divine Moderation',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Divine Moderation'), findsOneWidget);
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(otherPubkey)),
+          findsNothing,
+        );
+      });
+
+      testWidgets('subtitleOverride replaces the message preview', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(
+                  lastMessageContent: 'Hello',
+                ),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                subtitleOverride: 'Bugs, moderation, account stuff.',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Bugs, moderation, account stuff.'), findsOneWidget);
+        expect(find.text('Hello'), findsNothing);
+      });
+
+      testWidgets('advertises no long-press hint when no handler is given', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // The hint is a promise to assistive tech; without onLongPress there
+        // is no action sheet to open, so promising one is a lie.
+        expect(tileSemantics(tester).hintOverrides?.onLongPressHint, isNull);
+      });
+
+      testWidgets('keeps the long-press hint when a handler IS given', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+                onLongPress: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tileSemantics(tester).hintOverrides?.onLongPressHint,
+          isNotNull,
+        );
+      });
+    });
+
+    group('moderation avatar (#6283)', () {
+      final moderationPubkey = kPinnedOfficialAccounts
+          .firstWhere((account) => account.role == 'moderation')
+          .pubkeyHex;
+
+      Finder wordmarkFinder() => find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
+        description: 'bundled Divine wordmark',
+      );
+
+      Future<void> pumpTileFor(
+        WidgetTester tester,
+        String counterparty, {
+        String? picture,
+      }) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(counterparty).overrideWith(
+                (ref) async => UserProfile(
+                  pubkey: counterparty,
+                  displayName: 'Divine Moderation',
+                  picture: picture,
+                  rawData: const {},
+                  createdAt: now,
+                  eventId:
+                      'cccccccccccccccccccccccccccccccccccccccccccccccccc'
+                      'cccccccccccccc',
+                ),
+              ),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: DmConversation(
+                  id:
+                      'dddddddddddddddddddddddddddddddddddddddddddddddddd'
+                      'dddddddddddddd',
+                  participantPubkeys: [currentPubkey, counterparty],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                ),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('an ordinary account keeps its kind-0 picture', (
+        tester,
+      ) async {
+        await pumpTileFor(
+          tester,
+          otherPubkey,
+          picture: 'https://divine.video/avatar.png',
+        );
+
+        expect(find.byType(VineCachedImage), findsOneWidget);
+        expect(wordmarkFinder(), findsNothing);
+      });
+
+      testWidgets('the moderation account renders the bundled wordmark instead '
+          'of its kind-0 picture', (tester) async {
+        // divine-logo.svg colours itself through a <style> block that
+        // flutter_svg's parser discards, so the account's own picture paints
+        // opaque black on the dark inbox surface.
+        await pumpTileFor(
+          tester,
+          moderationPubkey,
+          picture: 'https://divine.video/divine-logo.svg',
+        );
+
+        expect(wordmarkFinder(), findsOneWidget);
+        expect(find.byType(VineCachedImage), findsNothing);
+        // The wordmark is 3.8:1. Contain would letterbox the whole lockup
+        // into an illegible sliver; cover crops it to the middle "Vi", which
+        // is how divine-web frames the same artwork.
+        expect(tester.widget<DivineIcon>(wordmarkFinder()).fit, BoxFit.cover);
+      });
+
+      testWidgets('a retired moderation pubkey is covered too', (tester) async {
+        // A thread opened before the #2321 rotation stays keyed on the old
+        // pubkey, and it is the same team on the other end of it.
+        await pumpTileFor(tester, kLegacyModerationPubkeys.first);
+
+        expect(wordmarkFinder(), findsOneWidget);
       });
     });
   });

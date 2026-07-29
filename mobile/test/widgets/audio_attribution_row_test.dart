@@ -19,6 +19,8 @@ void main() {
         'pubkey123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
     const testVideoId =
         'video0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
+    const sourceCreatorPubkey =
+        'source123456789abcdef0123456789abcdef0123456789abcdef0123456789ab';
 
     late AudioEvent testAudio;
 
@@ -34,7 +36,7 @@ void main() {
       );
     });
 
-    VideoEvent createVideoWithAudio() {
+    VideoEvent createVideoWithAudio({InspiredByInfo? inspiredByVideo}) {
       final now = DateTime.now();
       return VideoEvent(
         id: testVideoId,
@@ -45,6 +47,7 @@ void main() {
         timestamp: now,
         title: 'Test Video',
         audioEventId: testAudioEventId,
+        inspiredByVideo: inspiredByVideo,
       );
     }
 
@@ -64,13 +67,16 @@ void main() {
     Widget buildTestWidget({
       required VideoEvent video,
       AudioEvent? audioOverride,
+      bool resolvesAudio = true,
+      Object? audioError,
       List<dynamic> additionalOverrides = const [],
     }) {
       return ProviderScope(
         overrides: [
           if (video.hasAudioReference)
             soundByIdProvider(testAudioEventId).overrideWith((ref) async {
-              return audioOverride ?? testAudio;
+              if (audioError != null) throw audioError;
+              return resolvesAudio ? audioOverride ?? testAudio : null;
             }),
           ...additionalOverrides,
         ],
@@ -187,31 +193,124 @@ void main() {
         );
         expect(text.style?.color, equals(VineTheme.whiteText));
       });
+    });
 
-      testWidgets('renders nothing when audio event is null', (tester) async {
-        final video = createVideoWithAudio();
+    // The video carries an audio reference, so it did reuse a sound. When the
+    // referenced event can't be fetched the credit must degrade rather than
+    // vanish (#6185).
+    group('Unresolvable audio reference', () {
+      testWidgets('shows a neutral label when the audio event is null', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
 
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              soundByIdProvider(testAudioEventId).overrideWith((ref) async {
-                return null;
-              }),
-            ],
-            child: MaterialApp(
-              theme: VineTheme.theme,
-              home: Scaffold(
-                backgroundColor: Colors.black,
-                body: AudioAttributionRow(video: video),
-              ),
-            ),
-          ),
+          buildTestWidget(video: createVideoWithAudio(), resolvesAudio: false),
         );
-
         await tester.pumpAndSettle();
 
-        // Should render nothing when audio can't be found
-        expect(find.textContaining('Original sound'), findsNothing);
+        expect(
+          find.textContaining(l10n.audioAttributionUnavailableSound),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(l10n.audioAttributionOriginalSound),
+          findsNothing,
+        );
+      });
+
+      testWidgets('credits the reused sound creator when inspired-by is set', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            video: createVideoWithAudio(
+              inspiredByVideo: const InspiredByInfo(
+                addressableId: '34236:$sourceCreatorPubkey:vine-xyz',
+              ),
+            ),
+            resolvesAudio: false,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(
+            UserProfile.defaultDisplayNameFor(sourceCreatorPubkey),
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('uses the same display-only fallback on provider errors', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            video: createVideoWithAudio(),
+            audioError: StateError('relay unavailable'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining(l10n.audioAttributionUnavailableSound),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(GestureDetector),
+          ),
+          findsNothing,
+        );
+      });
+
+      testWidgets('is not a reuse entry point', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(video: createVideoWithAudio(), resolvesAudio: false),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(GestureDetector),
+          ),
+          findsNothing,
+        );
+
+        final semantics = tester.widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(AudioAttributionRow),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        );
+        expect(semantics.properties.button, isFalse);
+      });
+
+      testWidgets('renders no caret, since there is nowhere to navigate', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(video: createVideoWithAudio(), resolvesAudio: false),
+        );
+        await tester.pumpAndSettle();
+
+        final divineIcons = tester.widgetList<DivineIcon>(
+          find.descendant(
+            of: find.byType(AudioAttributionRow),
+            matching: find.byType(DivineIcon),
+          ),
+        );
+        expect(
+          divineIcons.any((icon) => icon.icon == DivineIconName.caretRight),
+          isFalse,
+        );
       });
     });
 

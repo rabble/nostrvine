@@ -133,7 +133,11 @@ void main() {
       // read has to go through the reactive provider chain.
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final prefs = await SharedPreferences.getInstance();
-      final service = FeatureFlagService(prefs, const BuildConfiguration());
+      final service = FeatureFlagService(
+        prefs,
+        const BuildConfiguration(),
+        canOverrideInternalFlags: () => true,
+      );
       await service.initialize();
       addTearDown(service.dispose);
 

@@ -1,0 +1,180 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'supporter_providers.dart';
+
+// **************************************************************************
+// RiverpodGenerator
+// **************************************************************************
+
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// ignore_for_file: type=lint, type=warning
+/// The NIP-98 authenticated supporter Worker client, when configured.
+
+@ProviderFor(supporterApiClient)
+final supporterApiClientProvider = SupporterApiClientProvider._();
+
+/// The NIP-98 authenticated supporter Worker client, when configured.
+
+final class SupporterApiClientProvider
+    extends
+        $FunctionalProvider<
+          SupporterApiClient?,
+          SupporterApiClient?,
+          SupporterApiClient?
+        >
+    with $Provider<SupporterApiClient?> {
+  /// The NIP-98 authenticated supporter Worker client, when configured.
+  SupporterApiClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'supporterApiClientProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$supporterApiClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<SupporterApiClient?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SupporterApiClient? create(Ref ref) {
+    return supporterApiClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SupporterApiClient? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SupporterApiClient?>(value),
+    );
+  }
+}
+
+String _$supporterApiClientHash() =>
+    r'd57bf39319ce0f97bd63fcd9e2706a26deb2c8e0';
+
+/// The store-backed [EntitlementValidator] for the current platform.
+///
+/// Returns an [InAppPurchaseValidator] on iOS/Android and a
+/// [StubEntitlementValidator] elsewhere so the rest of the app can treat the
+/// supporter feature uniformly.
+
+@ProviderFor(entitlementValidator)
+final entitlementValidatorProvider = EntitlementValidatorProvider._();
+
+/// The store-backed [EntitlementValidator] for the current platform.
+///
+/// Returns an [InAppPurchaseValidator] on iOS/Android and a
+/// [StubEntitlementValidator] elsewhere so the rest of the app can treat the
+/// supporter feature uniformly.
+
+final class EntitlementValidatorProvider
+    extends
+        $FunctionalProvider<
+          EntitlementValidator,
+          EntitlementValidator,
+          EntitlementValidator
+        >
+    with $Provider<EntitlementValidator> {
+  /// The store-backed [EntitlementValidator] for the current platform.
+  ///
+  /// Returns an [InAppPurchaseValidator] on iOS/Android and a
+  /// [StubEntitlementValidator] elsewhere so the rest of the app can treat the
+  /// supporter feature uniformly.
+  EntitlementValidatorProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'entitlementValidatorProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$entitlementValidatorHash();
+
+  @$internal
+  @override
+  $ProviderElement<EntitlementValidator> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EntitlementValidator create(Ref ref) {
+    return entitlementValidator(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EntitlementValidator value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EntitlementValidator>(value),
+    );
+  }
+}
+
+String _$entitlementValidatorHash() =>
+    r'8e01226ddfb565538f6d0e1512371490b1ce85ac';
+
+/// The account-scoped [SupporterRepository] that owns the cached entitlement.
+
+@ProviderFor(supporterRepository)
+final supporterRepositoryProvider = SupporterRepositoryProvider._();
+
+/// The account-scoped [SupporterRepository] that owns the cached entitlement.
+
+final class SupporterRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SupporterRepository,
+          SupporterRepository,
+          SupporterRepository
+        >
+    with $Provider<SupporterRepository> {
+  /// The account-scoped [SupporterRepository] that owns the cached entitlement.
+  SupporterRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'supporterRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$supporterRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SupporterRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SupporterRepository create(Ref ref) {
+    return supporterRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SupporterRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SupporterRepository>(value),
+    );
+  }
+}
+
+String _$supporterRepositoryHash() =>
+    r'5064f725ec5fa201ef693a5eee13a95602360834';

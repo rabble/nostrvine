@@ -3171,4 +3171,543 @@ void main() {
       expect(repo.currentState.blockedPubkeys, contains('persisted-hex'));
     });
   });
+
+  group('ContentBlocklistRepository - a lifted block reaches the blockee', () {
+    // Real pubkeys from the reported incident, untruncated.
+    const ourPubkey =
+        '613cb00feb0ecd7648a62740771cf60efaead56a0d19b2ac3d7b4f3c589e6fa3';
+    const blockerPubkey =
+        '9be8bd90d818407bcf574d11b1c57f104fd53f40fa767abc4a631ee2694b43a3';
+
+    late _FilterAwareRelay relay;
+    late _MockNostrClient mockNostrService;
+    late _MockBlockListSigner mockSigner;
+    late ContentBlocklistRepository service;
+
+    setUp(() {
+      relay = _FilterAwareRelay();
+      mockNostrService = _MockNostrClient();
+      mockSigner = _MockBlockListSigner();
+
+      when(
+        () => mockNostrService.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      ).thenAnswer(
+        (invocation) => relay.subscribe(
+          invocation.positionalArguments.first as List<Filter>,
+        ),
+      );
+      when(() => mockNostrService.unsubscribe(any())).thenAnswer((_) async {});
+
+      service = ContentBlocklistRepository();
+    });
+
+    tearDown(() async {
+      await relay.close();
+    });
+
+    Event listEvent(
+      int kind,
+      List<List<String>> tags, {
+      required int createdAt,
+      required String id,
+      String author = blockerPubkey,
+    }) => Event(author, kind, tags, '', createdAt: createdAt)
+      ..id = id
+      ..sig = 'signature';
+
+    test(
+      'hasBlockedUs clears when the blocker republishes a kind-30000 list '
+      'that no longer tags us',
+      () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: 'block-event',
+          ),
+        );
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+
+        // The unblock replaces the list with one that has no 'p' tag at all,
+        // so it can never match the `#p = us` discovery filter. Only a
+        // by-author watch can deliver it.
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['title', 'Block List'],
+            ],
+            createdAt: now + 60,
+            id: 'unblock-event',
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+        expect(service.shouldFilterFromFeeds(blockerPubkey), isFalse);
+      },
+    );
+
+    test(
+      "the blocker's DM conversation reappears once the block is lifted",
+      () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        final conversations = [
+          DmConversation(
+            id: 'conv-with-blocker',
+            participantPubkeys: const [ourPubkey, blockerPubkey],
+            isGroup: false,
+            createdAt: now,
+          ),
+        ];
+
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: 'block-event',
+          ),
+        );
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(
+          service.filterBlockedConversations(
+            conversations,
+            userPubkey: ourPubkey,
+          ),
+          isEmpty,
+          reason: 'while blocked, the conversation is hidden',
+        );
+
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+            ],
+            createdAt: now + 60,
+            id: 'unblock-event',
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(
+          service.filterBlockedConversations(
+            conversations,
+            userPubkey: ourPubkey,
+          ),
+          hasLength(1),
+          reason: 'the lifted block must un-hide the DM conversation',
+        );
+      },
+    );
+
+    test(
+      'hasMutedUs clears when the muter republishes a kind-10000 list that '
+      'no longer tags us',
+      () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        relay.publish(
+          listEvent(
+            10000,
+            [
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: 'mute-event',
+          ),
+        );
+
+        await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+        await pumpEventQueue();
+        expect(service.hasMutedUs(blockerPubkey), isTrue);
+
+        relay.publish(
+          listEvent(10000, [], createdAt: now + 60, id: 'unmute-event'),
+        );
+        await pumpEventQueue();
+
+        expect(service.hasMutedUs(blockerPubkey), isFalse);
+        expect(service.shouldFilterFromFeeds(blockerPubkey), isFalse);
+      },
+    );
+
+    test(
+      'a stale older list event does not resurrect a lifted block',
+      () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: 'block-event',
+          ),
+        );
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+            ],
+            createdAt: now + 60,
+            id: 'unblock-event',
+          ),
+        );
+        await pumpEventQueue();
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+
+        // A second relay replaying the superseded block must not win.
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now - 30,
+            id: 'stale-block-event',
+          ),
+        );
+        await pumpEventQueue();
+
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+      },
+    );
+
+    test(
+      'recovers on a cold start when the relay serves a superseded block '
+      'list to the #p filter',
+      () async {
+        // Reproduces relay.divine.video as measured: both versions of
+        // (author, kind 30000, d=block) stay stored, so the #p discovery
+        // filter keeps returning the last version that still tagged us
+        // while the author filter returns the current, empty one.
+        final staleRelay = _FilterAwareRelay(retainSuperseded: true);
+        addTearDown(staleRelay.close);
+
+        final staleClient = _MockNostrClient();
+        when(
+          () => staleClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer(
+          (invocation) => staleRelay.subscribe(
+            invocation.positionalArguments.first as List<Filter>,
+          ),
+        );
+        when(() => staleClient.unsubscribe(any())).thenAnswer((_) async {});
+
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        staleRelay
+          ..publish(
+            listEvent(
+              30000,
+              [
+                ['d', 'block'],
+                ['p', ourPubkey],
+              ],
+              createdAt: now,
+              id: 'block-event',
+            ),
+          )
+          // The unblock supersedes it, but the old row is retained.
+          ..publish(
+            listEvent(
+              30000,
+              [
+                ['d', 'block'],
+                ['title', 'Block List'],
+              ],
+              createdAt: now + 600,
+              id: 'unblock-event',
+            ),
+          );
+
+        // Cold start: nothing in memory, everything re-derived from relay.
+        final coldService = ContentBlocklistRepository();
+        await coldService.syncBlockListsInBackground(
+          staleClient,
+          mockSigner,
+          ourPubkey,
+        );
+        await pumpEventQueue();
+
+        expect(
+          coldService.hasBlockedUs(blockerPubkey),
+          isFalse,
+          reason:
+              'the by-author watch must correct the stale #p delivery, or '
+              'the blockee stays blocked forever across restarts',
+        );
+        expect(coldService.shouldFilterFromFeeds(blockerPubkey), isFalse);
+      },
+    );
+
+    test('the by-author watch follows a recreated NostrClient', () async {
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      relay.publish(
+        listEvent(
+          30000,
+          [
+            ['d', 'block'],
+            ['p', ourPubkey],
+          ],
+          createdAt: now,
+          id: 'block-event',
+        ),
+      );
+      // Start both syncs the way blocklistSyncBridge does. Mute sync runs
+      // first and neither body awaits, so a per-path client check is the
+      // only thing that can still see the swap on the block side.
+      await Future.wait([
+        service.syncMuteListsInBackground(mockNostrService, ourPubkey),
+        service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        ),
+      ]);
+      await pumpEventQueue();
+      expect(service.hasBlockedUs(blockerPubkey), isTrue);
+
+      // The app recreates the NostrClient on auth flips and reconnects, so
+      // the existing watch is left holding a disposed client.
+      final newRelay = _FilterAwareRelay();
+      addTearDown(newRelay.close);
+      final newClient = _MockNostrClient();
+      when(
+        () => newClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      ).thenAnswer(
+        (invocation) => newRelay.subscribe(
+          invocation.positionalArguments.first as List<Filter>,
+        ),
+      );
+      when(() => newClient.unsubscribe(any())).thenAnswer((_) async {});
+
+      await Future.wait([
+        service.syncMuteListsInBackground(newClient, ourPubkey),
+        service.syncBlockListsInBackground(newClient, mockSigner, ourPubkey),
+      ]);
+      await pumpEventQueue();
+
+      // The watch on the old client is released rather than leaked.
+      verify(() => mockNostrService.unsubscribe(any())).called(1);
+
+      // Only the new relay carries the unblock, so it can arrive solely
+      // through a watch that followed the client swap.
+      newRelay.publish(
+        listEvent(
+          30000,
+          [
+            ['d', 'block'],
+          ],
+          createdAt: now + 60,
+          id: 'unblock-event',
+        ),
+      );
+      await pumpEventQueue();
+
+      expect(service.hasBlockedUs(blockerPubkey), isFalse);
+    });
+
+    test('a burst of discovered blockers opens a single watch', () async {
+      const otherBlockerPubkey =
+          '7f2a4c6e8b0d1f3a5c7e9b1d3f5a7c9e1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a';
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+
+      // Both arrive in the same replay, as they do on a cold start.
+      for (final (author, id) in [
+        (blockerPubkey, 'block-event'),
+        (otherBlockerPubkey, 'other-block-event'),
+      ]) {
+        relay.publish(
+          listEvent(
+            30000,
+            [
+              ['d', 'block'],
+              ['p', ourPubkey],
+            ],
+            createdAt: now,
+            id: id,
+            author: author,
+          ),
+        );
+      }
+
+      await service.syncBlockListsInBackground(
+        mockNostrService,
+        mockSigner,
+        ourPubkey,
+      );
+      await pumpEventQueue();
+
+      expect(service.hasBlockedUs(blockerPubkey), isTrue);
+      expect(service.hasBlockedUs(otherBlockerPubkey), isTrue);
+
+      // The discovery subscription passes two filters; the by-author watch
+      // is the single-filter one.
+      final watchRequests =
+          verify(
+                () => mockNostrService.subscribe(
+                  captureAny(),
+                  subscriptionId: any(named: 'subscriptionId'),
+                ),
+              ).captured
+              .cast<List<Filter>>()
+              .where((filters) => filters.length == 1)
+              .toList();
+
+      expect(
+        watchRequests,
+        hasLength(1),
+        reason: 'both blockers must land in one REQ, not one each',
+      );
+      expect(
+        watchRequests.single.single.authors,
+        containsAll([blockerPubkey, otherBlockerPubkey]),
+      );
+    });
+  });
+}
+
+/// A relay stub that honours filters: a subscription only ever receives
+/// events it actually matches.
+///
+/// This is the whole point of the group above. A stub that pipes every
+/// event into every listener cannot see the defect being guarded — the
+/// production filter is `#p = <us>`, and a lifted block publishes a list
+/// with no `p` tag, so the update stops matching. With [retainSuperseded]
+/// the stub goes further and reproduces what the deployed relay actually
+/// does: it keeps re-serving the last version that *did* carry the tag.
+class _FilterAwareRelay {
+  /// [retainSuperseded] reproduces the behaviour observed on
+  /// relay.divine.video: superseded versions of a replaceable/addressable
+  /// event stay stored, and "latest wins" is resolved *after* the filter
+  /// predicate. A tag query therefore returns the newest version that still
+  /// carries the tag — which, for a lifted block, is the stale one. NIP-01
+  /// says a relay should not do this, but the deployed relay does, so the
+  /// fix has to survive it.
+  _FilterAwareRelay({this.retainSuperseded = false});
+
+  final bool retainSuperseded;
+
+  final List<({List<Filter> filters, StreamController<Event> controller})>
+  _subscriptions = [];
+  final List<Event> _stored = [];
+
+  Stream<Event> subscribe(List<Filter> filters) {
+    final controller = StreamController<Event>.broadcast();
+    _subscriptions.add((filters: filters, controller: controller));
+    // Relays replay stored matches on REQ. Deliver them asynchronously:
+    // the caller attaches its listener after this returns, and a broadcast
+    // controller discards anything added while it has no subscribers.
+    final replay = _newestPerCoordinate(
+      _stored.where((e) => _matchesAny(filters, e)),
+    );
+    scheduleMicrotask(() {
+      for (final event in replay) {
+        if (!controller.isClosed) controller.add(event);
+      }
+    });
+    return controller.stream;
+  }
+
+  /// Stores [event] and fans it out to every matching subscription.
+  ///
+  /// Unless [retainSuperseded] is set, prior versions of the same
+  /// (author, kind) are dropped. Every test here uses a single `d` value
+  /// per kind, so that stands in for NIP-01's per-(author, kind, d)
+  /// replacement rule without needing the finer key.
+  void publish(Event event) {
+    if (!retainSuperseded) {
+      _stored.removeWhere(
+        (e) => e.pubkey == event.pubkey && e.kind == event.kind,
+      );
+    }
+    _stored.add(event);
+    for (final subscription in _subscriptions) {
+      if (_matchesAny(subscription.filters, event) &&
+          !subscription.controller.isClosed) {
+        subscription.controller.add(event);
+      }
+    }
+  }
+
+  Future<void> close() async {
+    for (final subscription in _subscriptions) {
+      await subscription.controller.close();
+    }
+    _subscriptions.clear();
+  }
+
+  /// Collapses [events] to the newest version per (author, kind, d-tag).
+  ///
+  /// Applied *after* the filter predicate, which is precisely how the
+  /// deployed relay resolves replaceable events — and why a `#p` query can
+  /// surface a superseded list.
+  static List<Event> _newestPerCoordinate(Iterable<Event> events) {
+    final newest = <String, Event>{};
+    for (final event in events) {
+      var dTag = '';
+      for (final tag in event.tags) {
+        if (tag.length >= 2 && tag[0] == 'd') {
+          dTag = tag[1];
+          break;
+        }
+      }
+      final coordinate = '${event.pubkey}:${event.kind}:$dTag';
+      final current = newest[coordinate];
+      if (current == null || event.createdAt > current.createdAt) {
+        newest[coordinate] = event;
+      }
+    }
+    return newest.values.toList();
+  }
+
+  static bool _matchesAny(List<Filter> filters, Event event) =>
+      filters.any((filter) => filter.checkEvent(event));
 }

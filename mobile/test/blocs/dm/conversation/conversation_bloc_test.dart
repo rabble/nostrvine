@@ -105,6 +105,11 @@ void main() {
           rumorId: any(named: 'rumorId'),
         ),
       ).thenAnswer((_) async => 0);
+      // Opening a conversation arms the one-time history drain, same as the
+      // inbox does.
+      when(
+        () => mockDmRepository.backfillHistoryIfNeeded(),
+      ).thenAnswer((_) async {});
     });
 
     ConversationBloc buildBloc() => ConversationBloc(
@@ -159,6 +164,30 @@ void main() {
           verify(
             () => mockDmRepository.watchMessages(conversationId),
           ).called(1);
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'arms the one-time history drain, so profile -> Message on a '
+        'reinstall does not report an empty thread as complete',
+        setUp: () {
+          when(
+            () => mockDmRepository.markConversationAsRead(conversationId),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDmRepository.watchMessages(conversationId),
+          ).thenAnswer((_) => const Stream.empty());
+          when(
+            () => mockDmRepository.watchOutgoing(any()),
+          ).thenAnswer((_) => Stream.value(const <OutgoingDm>[]));
+        },
+        build: buildBloc,
+        act: (bloc) => bloc.add(const ConversationStarted()),
+        verify: (_) {
+          // Reaching a thread without passing through Messages must still
+          // stamp hasAttemptedHistoryRecovery, or an empty conversation
+          // claims completeness while history is still on the relay (#4953).
+          verify(() => mockDmRepository.backfillHistoryIfNeeded()).called(1);
         },
       );
 

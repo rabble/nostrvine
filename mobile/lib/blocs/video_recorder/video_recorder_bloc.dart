@@ -33,6 +33,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/video_editor/clip_media_duration.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as p;
@@ -1089,9 +1090,10 @@ class VideoRecorderBloc
       final metadata = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(File(workCopyPath)),
       );
-      clipManager.updateClipDuration(clip.id, metadata.duration);
+      final clipDuration = commonTrackEnd(metadata) ?? metadata.duration;
+      clipManager.updateClipDuration(clip.id, clipDuration);
       Log.debug(
-        '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
+        '📊 Video duration: ${clipDuration.inMilliseconds}ms',
         name: 'VideoRecorderBloc',
         category: LogCategory.video,
       );
@@ -1509,14 +1511,10 @@ class VideoRecorderBloc
     VideoRecorderMode mode, {
     required bool keepAutosavedDraft,
   }) {
-    // An assemble owns the captured stills until it resolves: it saves them to
-    // the library across an await, while this method deletes them and clears
-    // the clip manager. Switching mode mid-assemble would delete the stills out
-    // from under the save and leave the library row pointing at missing files,
-    // so the switch is dropped instead. The mode wheel is already gated while
-    // assembling; this keeps the invariant if anything else ever dispatches.
-    if (state.stopMotionStatus == StopMotionStatus.assembling) return;
-
+    // No assembling-status guard: the assemble is synchronous, so a mode switch
+    // cannot land inside it, and the `ready` it leaves behind already carries an
+    // empty frame list — so the discard below is a no-op and the queued library
+    // write has nothing to lose.
     final previousMode = state.recorderMode;
     final previousFrames = state.stopMotionFrames;
     emit(
@@ -1612,13 +1610,15 @@ class VideoRecorderBloc
 
   // === Stop-motion handlers ===
 
-  /// Hold duration of one captured still: the editor's default
-  /// frames-per-image at the render frame rate, so the library preview, the
-  /// timeline, and the assembled clip all agree.
-  static final Duration _stopMotionPerFrame =
-      StopMotionFrameOps.framesPerImageToDuration(
-        StopMotionFrameOps.defaultFramesPerImage,
-      );
+  /// Hold duration of one captured still in a session of [frameCount] stills,
+  /// at the render frame rate, so the library preview, the timeline, and the
+  /// assembled clip all agree.
+  ///
+  /// A session too short to fill a second on its own is stretched to it
+  /// ([StopMotionFrameOps.initialHold]): three stills at the default hold play
+  /// in an eighth of a second, which the editor only shows as a flicker.
+  static Duration _stopMotionHold(int frameCount) =>
+      StopMotionFrameOps.initialHold(frameCount);
 
   /// Stable library-clip id for the capture session that begins with
   /// [firstFramePath]. The first frame's filename is unique per session and
@@ -1643,16 +1643,14 @@ class VideoRecorderBloc
       return;
     }
 
-    // An assemble owns the captured stills once it starts: it reads the frame
-    // list, saves it, then clears it. A still added to that list mid-assemble
-    // is either missed by the save or re-persisted afterwards as a phantom
-    // one-frame session, so the capture is dropped instead. `ready` (assemble
-    // done, navigation pending) is dropped here too so a tap in that ~1-frame
-    // window skips the native capture the after-await guard would only delete.
-    if (state.stopMotionStatus == StopMotionStatus.assembling ||
-        state.stopMotionStatus == StopMotionStatus.ready) {
-      return;
-    }
+    // An assemble hands the captured stills to the clip manager and clears
+    // them; a still appended after that would be re-persisted as a phantom
+    // one-frame session. `ready` (assemble done, navigation pending) is what
+    // catches it — no assembling-status check, because the assemble is
+    // synchronous, so it is never the current state while this runs. Dropping
+    // the tap here also skips a native capture the after-await guard below
+    // would only delete.
+    if (state.stopMotionStatus == StopMotionStatus.ready) return;
 
     unawaited(HapticService.recordingFeedback());
     // Shutter feedback must fire NOW — the native capture below takes
@@ -1687,16 +1685,16 @@ class VideoRecorderBloc
     }
 
     // The recorder can move off this session across the await above. "Next"
-    // stays tappable, so an assemble can claim it (status → assembling, then
-    // ready); the mode wheel stays live during an idle capture, so a swipe can
-    // discard it (_applyRecorderMode clears the frames and leaves stop-motion,
-    // status idle). In every case the session this still belonged to is gone,
-    // so appending it now would race the in-flight save or re-persist a phantom
-    // one-frame session — on the new mode, for a swipe — so it is dropped with
-    // its file. Only idle (still shooting) and failure (assemble bailed, stills
-    // retained) while still in stop-motion own the session here.
+    // stays tappable, so an assemble can claim it — synchronously, so `ready`
+    // is what it leaves behind, never `assembling`; the mode wheel stays live
+    // during an idle capture, so a swipe can discard it (_applyRecorderMode
+    // clears the frames and leaves stop-motion, status idle). Either way the
+    // session this still belonged to is gone, so appending it now would
+    // re-persist a phantom one-frame session — on the new mode, for a swipe —
+    // so it is dropped with its file. Only idle (still shooting) and failure
+    // (assemble bailed, stills retained) while still in stop-motion own the
+    // session here.
     if (!state.recorderMode.capturesStills ||
-        state.stopMotionStatus == StopMotionStatus.assembling ||
         state.stopMotionStatus == StopMotionStatus.ready) {
       unawaited(_deleteFrameFile(photo.filePath));
       return;
@@ -1782,16 +1780,17 @@ class VideoRecorderBloc
   /// where a still that goes missing mid-session gets dropped.
   Future<void> _persistStopMotionSession(List<String> framePaths) async {
     if (framePaths.isEmpty) return;
+    final hold = _stopMotionHold(framePaths.length);
     final frames = [
       for (final path in framePaths)
-        StopMotionClipFrame(path: path, duration: _stopMotionPerFrame),
+        StopMotionClipFrame(path: path, duration: hold),
     ];
     final saved = await _readClipManager().saveStopMotionSessionToLibrary(
       id: _stopMotionSessionId(framePaths.first),
       frames: frames,
       originalAspectRatio: state.aspectRatio.value,
       targetAspectRatio: state.aspectRatio,
-      duration: _stopMotionPerFrame * frames.length,
+      duration: StopMotionFrameOps.totalDuration(frames),
       thumbnailPath: frames.first.path,
       lensMetadata: _cameraService.currentLensMetadata,
     );
@@ -1805,22 +1804,28 @@ class VideoRecorderBloc
   }
 
   /// Saves the captured frames as a frames-based stop-motion clip in the clip
-  /// manager (and the library), then emits [StopMotionStatus.ready].
+  /// manager, then emits [StopMotionStatus.ready] for the editor handoff.
   ///
   /// The frames are the source of truth; no mp4 is rendered here. The editor
   /// previews the frames via the stop-motion player and only renders an mp4 at
-  /// publish.
-  Future<void> _onStopMotionAssembleRequested(
+  /// publish. Synchronous by design: nothing here is worth making the user wait
+  /// for (the library save is queued, see [_ingestStopMotionClip]), so no
+  /// progress UI ever gets a frame to paint in.
+  void _onStopMotionAssembleRequested(
     VideoRecorderStopMotionAssembleRequested event,
     Emitter<VideoRecorderBlocState> emit,
-  ) async {
+  ) {
     final frames = state.stopMotionFrames;
     if (frames.isEmpty) return;
 
+    // Never painted (the handler is synchronous, so this is superseded before
+    // the next frame) — but required: without a distinct state in between, a
+    // second assemble of the same failing frame list emits a state equal to the
+    // current one, which `emit` drops, and the failure snackbar never re-fires.
     emit(state.copyWith(stopMotionStatus: StopMotionStatus.assembling));
 
     try {
-      await _ingestStopMotionClip(frames);
+      _ingestStopMotionClip(frames);
     } catch (e, stackTrace) {
       Log.warning(
         '⚠️ Stop-motion ingest failed',
@@ -1841,30 +1846,41 @@ class VideoRecorderBloc
   }
 
   /// Adds the captured [framePaths] to the clip manager as a frames-based
-  /// stop-motion clip and saves it to the library. Frame files are kept (not
+  /// stop-motion clip and queues its library save. Frame files are kept (not
   /// deleted) since they are the clip's source of truth.
   ///
   /// Reuses the capture session's library id so the row already written during
-  /// capture is updated in place rather than duplicated.
-  Future<void> _ingestStopMotionClip(List<String> framePaths) async {
+  /// capture is updated in place rather than duplicated. That row exists by the
+  /// time the user taps "Next" (capture upserts it on every still) and the
+  /// editor reads the clip from the clip manager, not the library — so the save
+  /// is queued behind the capture-time writes rather than awaited, and the
+  /// handoff to the editor stays instant.
+  void _ingestStopMotionClip(List<String> framePaths) {
     final clipManager = _readClipManager();
 
     // Drop unreadable captures; a session with no readable still is a failed
-    // assemble (surfaced by the caller's failure snackbar).
-    final frames = StopMotionFrameOps.existingFrames([
+    // assemble (surfaced by the caller's failure snackbar). Filtered before the
+    // hold is computed so the stretch to a minimum length counts only the
+    // stills that actually make it into the clip.
+    final readablePaths = [
       for (final path in framePaths)
-        StopMotionClipFrame(path: path, duration: _stopMotionPerFrame),
-    ]);
-    if (frames.isEmpty) {
+        if (StopMotionFrameOps.isReadableImage(path)) path,
+    ];
+    if (readablePaths.isEmpty) {
       throw StateError('No readable stop-motion stills to assemble');
     }
+    final hold = _stopMotionHold(readablePaths.length);
+    final frames = [
+      for (final path in readablePaths)
+        StopMotionClipFrame(path: path, duration: hold),
+    ];
 
     final clip = clipManager.addStopMotionClip(
       id: _stopMotionSessionId(framePaths.first),
       frames: frames,
       originalAspectRatio: state.aspectRatio.value,
       targetAspectRatio: state.aspectRatio,
-      duration: _stopMotionPerFrame * frames.length,
+      duration: StopMotionFrameOps.totalDuration(frames),
       thumbnailPath: frames.first.path,
       lensMetadata: _cameraService.currentLensMetadata,
     );
@@ -1873,14 +1889,18 @@ class VideoRecorderBloc
       (c) => c.id == clip.id,
       orElse: () => clip,
     );
-    final saved = await clipManager.saveClipToLibrary(updatedClip);
-    if (!saved) {
-      Log.warning(
-        '⚠️ Stop-motion clip save to library failed for ${clip.id}',
-        name: 'VideoRecorderBloc',
-        category: LogCategory.video,
-      );
-    }
+    unawaited(
+      _enqueueStopMotionSessionWrite(() async {
+        final saved = await clipManager.saveClipToLibrary(updatedClip);
+        if (!saved) {
+          Log.warning(
+            '⚠️ Stop-motion clip save to library failed for ${clip.id}',
+            name: 'VideoRecorderBloc',
+            category: LogCategory.video,
+          );
+        }
+      }),
+    );
   }
 
   /// Discards an abandoned capture session: deletes its frame files and drops

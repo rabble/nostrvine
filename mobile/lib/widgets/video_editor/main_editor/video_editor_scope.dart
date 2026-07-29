@@ -26,9 +26,11 @@ class VideoEditorScope extends InheritedWidget {
     required this.onAddEditTextLayer,
     required this.onOpenMusicLibrary,
     required this.onOpenVoiceOver,
+    required this.onOpenCaptions,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
     required this.zoomMatrixNotifier,
+    required this.playTimeNotifier,
     required this.fromLibrary,
     this.editorOverride,
     this.awaitPushCoverTransition,
@@ -63,6 +65,9 @@ class VideoEditorScope extends InheritedWidget {
   /// Callback to open the voice-over recorder.
   final VoidCallback onOpenVoiceOver;
 
+  /// Callback to open the captions flow (mode prompt + captions editor).
+  final VoidCallback onOpenCaptions;
+
   /// Original aspect ratio of the clip being edited.
   final double originalClipAspectRatio;
 
@@ -77,6 +82,12 @@ class VideoEditorScope extends InheritedWidget {
   /// transform so the bars move/scale with the magnified frame instead of
   /// dimming it.
   final ValueNotifier<Matrix4> zoomMatrixNotifier;
+
+  /// Notifier for the fine-grained editor play time (timeline space), updated
+  /// every playhead tick — the same value that drives the burned-in layers.
+  /// Canvas overlays (e.g. the CC caption pill) listen to this so they track
+  /// playback smoothly instead of the coarse `VideoEditorMainBloc` position.
+  final ValueNotifier<Duration> playTimeNotifier;
 
   /// Callback to open the text editor.
   final Future<TextLayer?> Function([TextLayer? layer]) onAddEditTextLayer;

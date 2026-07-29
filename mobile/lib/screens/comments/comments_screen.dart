@@ -26,7 +26,6 @@ import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
 /// Maps any of the three per-bloc errors to a localized user-facing string.
 ///
@@ -325,9 +324,7 @@ abstract final class CommentsScreen {
 ///
 /// Public-by-test only: production callers should use [CommentsScreen.show].
 @visibleForTesting
-void disposeCommentsSheetController(
-  DraggableScrollableController controller,
-) {
+void disposeCommentsSheetController(DraggableScrollableController controller) {
   if (controller.isAttached) {
     controller.jumpTo(controller.size);
   }

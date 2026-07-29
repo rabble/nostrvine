@@ -8,11 +8,13 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -167,6 +169,9 @@ void main() {
     // files ran first, so leaving it unstubbed fails only on some orderings.
     when(
       () => videoEventService.isVideoEventLocallyDeleted(any()),
+    ).thenReturn(false);
+    when(
+      () => videoEventService.isVideoEventKnownDeleted(any()),
     ).thenReturn(false);
     when(() => videoEventService.addListener(any())).thenReturn(null);
     when(() => videoEventService.removeListener(any())).thenReturn(null);
@@ -411,4 +416,65 @@ void main() {
       ).called(1);
     },
   );
+
+  testWidgets('Message routes to the canonical conversation id', (
+    tester,
+  ) async {
+    // Regression: this screen pushed `pathForId(widget.pubkey)` — the raw peer
+    // pubkey — while every other entry point and `DmRepository.sendMessage`
+    // use the sha256 of the sorted participants. Both are 64-char hex, so
+    // nothing caught the mismatch: the thread's id matched no stored row, so
+    // history never rendered and messages sent from it never appeared.
+    final restrictedProvider = StateProvider<bool>((ref) => false);
+    final container = createContainer(restrictedProvider);
+    addTearDown(container.dispose);
+
+    String? pushedId;
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, _) => MultiBlocProvider(
+            providers: [
+              BlocProvider<OtherProfileBloc>.value(value: otherProfileBloc),
+              BlocProvider<PeopleListsBloc>.value(value: peopleListsBloc),
+            ],
+            child: const OtherProfileView(pubkey: targetPubkey),
+          ),
+        ),
+        GoRoute(
+          path: '/inbox/conversation/:id',
+          builder: (_, state) {
+            pushedId = state.pathParameters['id'];
+            return const Scaffold(body: SizedBox.shrink());
+          },
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    await tester.tap(find.text(l10n.profileMessageLabel));
+    await tester.pumpAndSettle();
+
+    expect(
+      pushedId,
+      DmRepository.computeConversationId([viewerPubkey, targetPubkey]),
+    );
+    expect(pushedId, isNot(targetPubkey));
+  });
 }

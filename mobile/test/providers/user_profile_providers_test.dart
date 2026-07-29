@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:db_client/db_client.dart' hide ProfileStats;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -47,6 +48,203 @@ void main() {
   const pubkey =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
+  group('userProfileReactiveProvider', () {
+    late _MockProfileRepository profileRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      profileRepository = _MockProfileRepository();
+      container = ProviderContainer(
+        overrides: [
+          profileRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test(
+      'does not touch a disposed Ref after immediate invalidation',
+      () async {
+        when(
+          () => profileRepository.getCachedProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => profileRepository.watchProfile(pubkey: pubkey),
+        ).thenAnswer((_) => const Stream<UserProfile?>.empty());
+
+        final uncaughtErrors = await _captureUncaughtErrors(() async {
+          final sub = container.listen(
+            userProfileReactiveProvider(pubkey),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          container.invalidate(userProfileReactiveProvider(pubkey));
+          sub.close();
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        expect(uncaughtErrors, isEmpty);
+      },
+    );
+
+    test('emits cached stream value before live updates', () async {
+      final liveController = StreamController<UserProfile?>();
+      addTearDown(liveController.close);
+      final cachedProfile = _profile(pubkey, name: 'cached');
+      final liveProfile = _profile(pubkey, name: 'live');
+
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => cachedProfile);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => liveController.stream);
+
+      final emitted = <AsyncValue<UserProfile?>>[];
+      final sub = container.listen(
+        userProfileReactiveProvider(pubkey),
+        (_, next) => emitted.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+
+      await untilCalled(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      );
+      await Future<void>.delayed(Duration.zero);
+      liveController.add(cachedProfile);
+      await Future<void>.delayed(Duration.zero);
+      liveController.add(liveProfile);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emitted.where((value) => value.hasValue).map((v) => v.value), [
+        cachedProfile,
+        liveProfile,
+      ]);
+      verifyNever(() => profileRepository.fetchFreshProfile(pubkey: pubkey));
+    });
+
+    test('fetches fresh profile once when cache is empty', () async {
+      final liveController = StreamController<UserProfile?>();
+      addTearDown(liveController.close);
+
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => liveController.stream);
+
+      final sub = container.listen(
+        userProfileReactiveProvider(pubkey),
+        (_, _) {},
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+
+      await Future<void>.delayed(Duration.zero);
+
+      verify(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).called(1);
+    });
+
+    test('cancels the underlying profile stream when disposed', () async {
+      var wasCancelled = false;
+      final liveController = StreamController<UserProfile?>(
+        onCancel: () {
+          wasCancelled = true;
+        },
+      );
+      addTearDown(liveController.close);
+
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => _profile(pubkey));
+      when(
+        () => profileRepository.watchProfile(pubkey: pubkey),
+      ).thenAnswer((_) => liveController.stream);
+
+      final sub = container.listen(
+        userProfileReactiveProvider(pubkey),
+        (_, _) {},
+        fireImmediately: true,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      sub.close();
+      container.invalidate(userProfileReactiveProvider(pubkey));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(wasCancelled, isTrue);
+    });
+
+    test('completes safely when profile repository is unavailable', () async {
+      final emptyContainer = ProviderContainer(
+        overrides: [
+          profileRepositoryProvider.overrideWithValue(null),
+        ],
+      );
+      addTearDown(emptyContainer.dispose);
+
+      final emitted = <AsyncValue<UserProfile?>>[];
+      final sub = emptyContainer.listen(
+        userProfileReactiveProvider(pubkey),
+        (_, next) => emitted.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(emitted, isNotEmpty);
+      expect(emitted.last, isA<AsyncLoading<UserProfile?>>());
+    });
+  });
+
+  group('userProfileStatsReactiveProvider lifecycle', () {
+    test(
+      'does not touch a disposed Ref after immediate invalidation',
+      () async {
+        final profileRepository = _MockProfileRepository();
+        final container = ProviderContainer(
+          overrides: [
+            profileStatsRepositoryProvider.overrideWithValue(profileRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        when(
+          () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => profileRepository.watchProfileStats(pubkey: pubkey),
+        ).thenAnswer((_) => const Stream<ProfileStats?>.empty());
+
+        final uncaughtErrors = await _captureUncaughtErrors(() async {
+          final sub = container.listen(
+            userProfileStatsReactiveProvider(pubkey),
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          container.invalidate(userProfileStatsReactiveProvider(pubkey));
+          sub.close();
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        expect(uncaughtErrors, isEmpty);
+      },
+    );
+  });
+
   group('userProfileStatsReactiveProvider', () {
     late _MockProfileRepository profileRepository;
     late StreamController<ProfileStats?> statsController;
@@ -79,7 +277,6 @@ void main() {
         (_, next) => emitted.add(next),
         fireImmediately: true,
       );
-      addTearDown(sub.close);
 
       await Future<void>.delayed(Duration.zero);
 
@@ -101,6 +298,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(emitted.last.value, stats);
+      sub.close();
+      container.invalidate(userProfileStatsReactiveProvider(pubkey));
+      await Future<void>.delayed(Duration.zero);
+      await statsController.close();
     });
 
     test(
@@ -143,7 +344,6 @@ void main() {
           (_, _) {},
           fireImmediately: true,
         );
-        addTearDown(sub.close);
 
         await Future<void>.delayed(Duration.zero);
         expect(fetchCount, 1);
@@ -159,6 +359,10 @@ void main() {
         await Future<void>.delayed(Duration.zero);
 
         expect(fetchCount, 1);
+        sub.close();
+        streamContainer.invalidate(userProfileStatsReactiveProvider(pubkey));
+        await Future<void>.delayed(Duration.zero);
+        await statsController.close();
       },
     );
   });
@@ -253,4 +457,42 @@ void main() {
       },
     );
   });
+}
+
+UserProfile _profile(String pubkey, {String name = 'profile'}) {
+  final eventId = switch (name) {
+    'cached' =>
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    'live' =>
+      'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+    _ => 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+  };
+
+  return UserProfile(
+    pubkey: pubkey,
+    name: name,
+    rawData: {'name': name},
+    createdAt: DateTime.utc(2026),
+    eventId: eventId,
+  );
+}
+
+Future<List<Object>> _captureUncaughtErrors(
+  Future<void> Function() body,
+) async {
+  final errors = <Object>[];
+  final previousFlutterError = FlutterError.onError;
+  FlutterError.onError = (details) {
+    errors.add(details.exception);
+  };
+
+  try {
+    await runZonedGuarded(body, (error, _) {
+      errors.add(error);
+    });
+  } finally {
+    FlutterError.onError = previousFlutterError;
+  }
+
+  return errors;
 }

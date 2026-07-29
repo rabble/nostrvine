@@ -11,6 +11,8 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/tune_adjustment_matrix_extensions.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'timeline_overlay_event.dart';
@@ -160,15 +162,33 @@ class TimelineOverlayBloc
         ),
     ];
 
+    // Burned-in caption cues are real layers but live in their own captions
+    // strip, so they are partitioned out of the layer strip here.
     final layers = <TimelineOverlayItem>[
       for (final layer in event.layers)
+        if (!isCaptionCueLayer(layer))
+          TimelineOverlayItem(
+            id: layer.id,
+            type: .layer,
+            startTime: layer.startTime ?? .zero,
+            endTime: _clampEnd(layer.endTime ?? total, total),
+            label: _labelForLayer(layer),
+            layer: layer,
+          ),
+    ];
+
+    // Caption cues are always addressed by cue id from the track meta — the
+    // single source of truth. When burned in, the matching text layers are a
+    // derived render (excluded from the layer strip above) kept in time-sync
+    // by `setCaptionCueTimeline`; they are never separate timeline items.
+    final captions = <TimelineOverlayItem>[
+      for (final cue in event.captionTrack?.cues ?? const <CaptionCue>[])
         TimelineOverlayItem(
-          id: layer.id,
-          type: .layer,
-          startTime: layer.startTime ?? .zero,
-          endTime: _clampEnd(layer.endTime ?? total, total),
-          label: _labelForLayer(layer),
-          layer: layer,
+          id: cue.id,
+          type: .captions,
+          startTime: cue.start,
+          endTime: _clampEnd(cue.end, total),
+          label: cue.text,
         ),
     ];
 
@@ -177,6 +197,7 @@ class TimelineOverlayBloc
       ..._assignRows(filters),
       ..._assignRows(tunes),
       ..._assignRows(layers),
+      ..._assignRows(captions),
     ];
 
     // Only clear selection if the selected item no longer exists.
@@ -227,6 +248,7 @@ class TimelineOverlayBloc
         isLayerMultiSelectMode:
             state.isLayerMultiSelectMode && prunedMultiSelect.isNotEmpty,
         multiSelectedLayerIds: prunedMultiSelect,
+        captionsBurnIn: event.captionTrack?.burnIn ?? false,
       ),
     );
   }
@@ -270,7 +292,7 @@ class TimelineOverlayBloc
       startTime: hasWindow ? track.startTime : .zero,
       // No valid window → span the whole video. [total] is guaranteed > 0 by
       // _onUpdateItems (transient-zero is substituted with maxDuration there).
-      endTime: hasWindow ? _clampEnd(endTime, total) : total,
+      endTime: _clampEnd(_soundWindowEnd(track, total), total),
       label: track.title ?? track.pubkey,
       maxDuration: sourceDuration != null
           ? sourceDuration - track.startOffset
@@ -627,6 +649,14 @@ class TimelineOverlayBloc
   /// Clamp every overlay item so its visible region fits within
   /// [0, totalDuration]. Items that end up with zero visible duration
   /// are removed.
+  ///
+  /// A sound bar is re-derived from its [AudioEvent] rather than only clamped,
+  /// because a clamp cannot undo itself. Undo/redo builds the bars against the
+  /// total that was current *before* the navigation — the restored clips only
+  /// reach [ClipEditorBloc] afterwards — so redoing an edit that lengthened the
+  /// composition hands this handler a bar already truncated to the old, shorter
+  /// end. Clamping it again would leave the sound playing short under a longer
+  /// video (#6401).
   void _onTotalDurationChanged(
     TimelineOverlayTotalDurationChanged event,
     Emitter<TimelineOverlayState> emit,
@@ -634,22 +664,47 @@ class TimelineOverlayBloc
     final totalDuration = event.totalDuration;
     if (totalDuration <= Duration.zero) return;
 
+    final tracksById = {for (final track in state.audioTracks) track.id: track};
+
+    // The preview player builds each sound's window from the overlay item, and
+    // only re-reads it when audioTracksPlayerRevision moves — the track list
+    // itself is untouched here, so Equatable would otherwise let the player
+    // keep the window it was handed before this re-clamp.
+    var soundWindowChanged = false;
     final updated = <TimelineOverlayItem>[];
     for (final item in state.items) {
-      if (item.startTime >= totalDuration) continue;
+      final isSound = item.type == TimelineOverlayType.sound;
+      if (item.startTime >= totalDuration) {
+        soundWindowChanged = soundWindowChanged || isSound;
+        continue;
+      }
 
-      final clampedEnd = _clampEnd(item.endTime, totalDuration);
-      if (clampedEnd <= item.startTime) continue;
-
-      updated.add(
-        clampedEnd == item.endTime ? item : item.copyWith(endTime: clampedEnd),
+      final track = isSound ? tracksById[item.id] : null;
+      final clampedEnd = _clampEnd(
+        track == null ? item.endTime : _soundWindowEnd(track, totalDuration),
+        totalDuration,
       );
+      if (clampedEnd <= item.startTime) {
+        soundWindowChanged = soundWindowChanged || isSound;
+        continue;
+      }
+
+      if (clampedEnd == item.endTime) {
+        updated.add(item);
+        continue;
+      }
+      soundWindowChanged = soundWindowChanged || isSound;
+      updated.add(item.copyWith(endTime: clampedEnd));
     }
 
     emit(
       state.copyWith(
         items: _recalculateRows(updated),
         timelineMarkers: _clampMarkers(state.timelineMarkers, totalDuration),
+        audioTracksPlayerRevision:
+            soundWindowChanged && !event.isClipTrimDragging
+            ? state.audioTracksPlayerRevision + 1
+            : state.audioTracksPlayerRevision,
       ),
     );
   }
@@ -723,6 +778,14 @@ class TimelineOverlayBloc
   /// Returns [endTime] clamped to [totalDuration].
   static Duration _clampEnd(Duration endTime, Duration totalDuration) =>
       endTime > totalDuration ? totalDuration : endTime;
+
+  /// Unclamped end a sound bar for [track] should span to: the track's own
+  /// composition window, or the whole video when that window is missing or
+  /// inverted (see [_soundItem] for why a persisted track can carry one).
+  static Duration _soundWindowEnd(AudioEvent track, Duration total) {
+    final endTime = track.endTime;
+    return endTime != null && endTime > track.startTime ? endTime : total;
+  }
 
   void _onWaveformLoaded(
     TimelineOverlayWaveformLoaded event,

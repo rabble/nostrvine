@@ -15,33 +15,56 @@ jobs:
   changes:
     name: Detect App CI Scope
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       app: ${{ steps.scope.outputs.app }}
+      native: ${{ steps.scope.outputs.native }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      # No checkout: the changed-file list comes from the REST API. A
+      # `fetch-depth: 0` clone cost ~23s of this workflow's critical path
+      # (every other job `needs: changes`) to produce a list the API already
+      # has.
       - name: Detect whether app CI is required
         id: scope
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
             echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "native=true" >> "$GITHUB_OUTPUT"
             echo "Non-PR event; running full app CI."
             exit 0
           fi
 
-          git diff --name-only "$BASE_SHA" "$HEAD_SHA" > /tmp/mobile-ci-changed-files.txt
+          # The files endpoint caps at 3000 entries. A PR that large is not a
+          # scoped change, so fall open to the full matrix rather than
+          # under-running CI on a truncated list.
+          changed_total=$(gh api "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.changed_files')
+          if [ "$changed_total" -gt 3000 ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "PR touches $changed_total files (> 3000 API cap); running full app CI."
+            exit 0
+          fi
+
+          gh api --method GET --paginate -F per_page=100 "/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename' > /tmp/mobile-ci-changed-files.txt
           echo "Changed files:"
           cat /tmp/mobile-ci-changed-files.txt
 
           app=false
+          native=false
           while IFS= read -r path; do
             case "$path" in
+              .github/ci-timing-budgets.json)
+                app=true
+                ;;
               .github/workflows/*)
                 app=true
+                native=true
                 ;;
               *.md|docs/*|brand-guidelines/*|mobile/docs/*)
                 # Docs-only changes do not need the full app test matrix.
@@ -59,14 +82,26 @@ jobs:
                 app=true
                 ;;
             esac
+            # The transport-security guard reads one Android XML plus three
+            # Info.plists and nothing else, so its verdict cannot change
+            # unless a native config or the guard itself changed. Matched at
+            # directory level (a superset of the guard's inputs) so the gate
+            # can't silently drift when the guard gains a fourth plist.
+            case "$path" in
+              mobile/android/*|mobile/ios/*|mobile/macos/*|mobile/scripts/check_native_transport_security.sh)
+                native=true
+                ;;
+            esac
           done < /tmp/mobile-ci-changed-files.txt
 
           echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "native=$native" >> "$GITHUB_OUTPUT"
           if [ "$app" = "true" ]; then
             echo "App CI required."
           else
             echo "Package-only/docs-only change; app CI jobs may be skipped."
           fi
+          echo "Native transport-security inputs changed: $native"
 
   generated-files:
     name: Generated Files
@@ -92,6 +127,13 @@ jobs:
       - name: 📦 Install dependencies
         run: flutter pub get
       - name: 🔒 Verify native transport security
+        # Skipped when no native config changed. The guard's only inputs are
+        # mobile/android/**, mobile/ios/**, mobile/macos/** and its own
+        # script; if none of those moved, its verdict is identical to the one
+        # main already recorded. Gating it also skips the apt install of
+        # libxml2-utils (~42s, of which `apt-get update` alone is ~28s), which
+        # is the single most expensive step in this job after codegen.
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.native == 'true' }}
         run: |
           if ! command -v xmllint >/dev/null 2>&1; then
             sudo apt-get update -qq
@@ -238,6 +280,10 @@ jobs:
           channel: "stable"
           cache: true
       - name: 📦 Install dependencies
+        # Required: `dart format` reads page width from analysis_options.yaml,
+        # which `include`s package:very_good_analysis. Without a resolved
+        # package config that include fails and the formatter silently falls
+        # back to its defaults, reformatting 529 files.
         run: flutter pub get
       - name: ✨ Check formatting
         run: dart format --output=none --set-exit-if-changed lib test integration_test
@@ -262,10 +308,16 @@ jobs:
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
   tests:
-    name: Tests
+    name: Tests (shard ${{ strategy.job-index }}/${{ strategy.job-total }})
     needs: changes
     if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-24.04
+    strategy:
+      # Every shard must report. Stopping the others on one failure hides
+      # additional failures and forces a second full round-trip to find them.
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     defaults:
       run:
         working-directory: mobile/
@@ -284,6 +336,15 @@ jobs:
         # is the current latest; 1.1.1≡1.2.0≡1.3.0 for all test/optimizer
         # mechanics (package workflows pin 1.1.1 via very_good_workflows). #5738.
         run: dart pub global activate very_good_cli 1.3.0
+      - name: 🔪 Reduce test/ to this shard
+        # --optimization bundles every untagged test file into ONE suite, so
+        # --concurrency=4 has nothing left to schedule once the 18 tagged files
+        # finish and the bulk of the run is single-core. Splitting the file set
+        # across 4 runners gives each one a smaller bundle and puts the four
+        # vCPUs of four machines on the problem instead of one core of one.
+        # The script is a pure partition of test/**/*_test.dart — see
+        # test/tools/select_test_shard_test.dart.
+        run: bash scripts/ci/select_test_shard.sh --total ${{ strategy.job-total }} --index ${{ strategy.job-index }}
       - name: 🚀 Run Flutter tests
         # concurrency=4 matches the ubuntu runner's 4 vCPUs. The merged runner
         # alongside the tagged files runs race-free at 4 (verified locally at 4
@@ -416,3 +477,25 @@ jobs:
             echo "Could not determine Mobile CI scope."
             exit 1
           fi
+      - name: Checkout timing budget inputs
+        uses: actions/checkout@v4
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        with:
+          sparse-checkout: |
+            .github/ci-timing-budgets.json
+            mobile/scripts/ci
+          sparse-checkout-cone-mode: false
+      - name: ⏱️ Check CI timing budget
+        # This job only starts once every other job has finished, so the run's
+        # job durations are final here. Budgets live in
+        # .github/ci-timing-budgets.json; over-warn annotates the PR, over-fail
+        # fails this gate. Guards the wins recorded in PERF_BASELINE.md from
+        # eroding silently.
+        if: ${{ github.event_name != 'pull_request' || needs.changes.outputs.app == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 mobile/scripts/ci/check_ci_timing_budget.py \
+            --budgets .github/ci-timing-budgets.json \
+            --repo "${GITHUB_REPOSITORY}" \
+            --run-id "${GITHUB_RUN_ID}"

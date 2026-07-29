@@ -131,8 +131,8 @@ class CrosspostApiClient {
 /// without pattern-matching on raw status codes or message strings.
 enum CrosspostApiErrorKind {
   /// The user has not claimed a `.divine.video` username yet, so crossposting
-  /// cannot be enabled. keycast surfaces this as `404 UserNotFound` (no
-  /// username row) or, defensively, `400` ("Username must be claimed").
+  /// cannot be enabled. keycast surfaces this as `400` ("Username must be
+  /// claimed").
   usernameNotClaimed,
 
   /// Provisioning is temporarily unavailable (`503`); the caller should offer
@@ -145,7 +145,6 @@ enum CrosspostApiErrorKind {
   factory CrosspostApiErrorKind.fromStatusCode(int statusCode) {
     switch (statusCode) {
       case 400:
-      case 404:
         return CrosspostApiErrorKind.usernameNotClaimed;
       case 503:
         return CrosspostApiErrorKind.unavailable;

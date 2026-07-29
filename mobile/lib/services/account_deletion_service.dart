@@ -16,12 +16,29 @@ class DeleteAccountResult {
     this.deleteEventId,
     this.deletedEventsCount = 0,
     this.accountChanged = false,
+    this.contentQueryFailed = false,
+    this.contentDeletionIncomplete = false,
   });
 
   final bool success;
   final String? error;
   final String? deleteEventId;
+
+  /// Number of events a relay actually confirmed (`OK true`) a kind-5 deletion
+  /// request for — not merely the number we managed to write to a socket.
   final int deletedEventsCount;
+
+  /// True when the relay query that enumerates the user's existing content
+  /// failed, so the kind-5 sweep covered nothing.
+  ///
+  /// The vanish request may still have been published, so the caller must tell
+  /// the user their existing content was *not* individually requested for
+  /// deletion rather than reporting an unqualified success.
+  final bool contentQueryFailed;
+
+  /// True when at least one queried event did not get an OK-confirmed kind-5
+  /// deletion request.
+  final bool contentDeletionIncomplete;
 
   /// True when the deletion aborted because the signed-in account no longer
   /// matches the account the user confirmed. Lets the UI localize the outcome
@@ -31,10 +48,14 @@ class DeleteAccountResult {
   static DeleteAccountResult createSuccess(
     String deleteEventId, {
     int deletedEventsCount = 0,
+    bool contentQueryFailed = false,
+    bool contentDeletionIncomplete = false,
   }) => DeleteAccountResult(
     success: true,
     deleteEventId: deleteEventId,
     deletedEventsCount: deletedEventsCount,
+    contentQueryFailed: contentQueryFailed,
+    contentDeletionIncomplete: contentDeletionIncomplete,
   );
 
   static DeleteAccountResult failure(
@@ -66,6 +87,20 @@ class AccountDeletionService {
 
   final NostrClient _nostrService;
   final AuthService _authService;
+
+  /// Kinds this flow's own deletion machinery produces, excluded from the sweep.
+  ///
+  /// NIP-09: "Publishing a deletion request event against a deletion request has
+  /// no effect." NIP-62 states the same for a request to vanish. Sweeping them
+  /// asks relays to delete this flow's own kind-5 requests and the vanish
+  /// request itself, which grows the `e`-tag list on every retry for no
+  /// protocol effect — and asks the network to retract a legally-framed vanish.
+  static const _kindsExcludedFromSweep = {5, 62};
+
+  /// Inclusive lower bound of the NIP-01 addressable (parameterized replaceable)
+  /// range. Deletions for these kinds need an `a` tag, not just `e`.
+  static const _addressableKindMin = 30000;
+  static const _addressableKindMax = 39999;
 
   /// Aborts (via [AccountChangedDuringDeletion]) if [expectedPubkey] is set and
   /// no longer matches the live signer. Called immediately before every
@@ -111,10 +146,12 @@ class AccountDeletionService {
         category: LogCategory.system,
       );
 
-      final allUserEvents = await _fetchAllUserEvents(pubkey);
+      final sweep = await _fetchSweepTargets(pubkey);
+      final allUserEvents = sweep.events;
 
       Log.info(
-        'Found ${allUserEvents.length} events to delete',
+        'Found ${allUserEvents.length} events to delete'
+        '${sweep.queryFailed ? ' (relay query FAILED — sweep will cover nothing)' : ''}',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
@@ -146,12 +183,15 @@ class AccountDeletionService {
 
       // Final guard immediately before the network-wide kind-62 publish.
       _assertSignerMatches(expectedPubkey);
-      final sentEvent = await _nostrService.publishEvent(event);
+      // Await the relay `OK` rather than the socket write: this event is
+      // irreversible and legally framed, so "a WebSocket accepted the frame" is
+      // not good enough evidence to report deletion to the user.
+      final outcome = await _nostrService.publishEventAwaitOk(event);
 
-      final failureReason = sentEvent.failureReason;
-      if (failureReason != null) {
+      if (outcome.failed) {
         Log.error(
-          'Failed to publish NIP-62 deletion request: $failureReason',
+          'NIP-62 deletion request not confirmed by any relay: '
+          '${outcome.summary}',
           name: 'AccountDeletionService',
           category: LogCategory.system,
         );
@@ -161,7 +201,7 @@ class AccountDeletionService {
       }
 
       Log.info(
-        'NIP-62 deletion request published to relays',
+        'NIP-62 deletion request confirmed by relay(s): ${outcome.acceptedBy}',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
@@ -169,6 +209,9 @@ class AccountDeletionService {
       return DeleteAccountResult.createSuccess(
         event.id,
         deletedEventsCount: deletedCount,
+        contentQueryFailed: sweep.queryFailed,
+        contentDeletionIncomplete:
+            allUserEvents.isNotEmpty && deletedCount < allUserEvents.length,
       );
     } on AccountChangedDuringDeletion {
       Log.warning(
@@ -190,30 +233,76 @@ class AccountDeletionService {
     }
   }
 
-  /// Fetch all events authored by the user from relays
-  Future<List<Event>> _fetchAllUserEvents(String pubkey) async {
-    final allEvents = <Event>[];
+  /// The value of an event's first `d` tag, or `null` when it has none.
+  ///
+  /// An addressable event's coordinate is `kind:pubkey:d-tag`, so a missing `d`
+  /// tag means the event has no addressable coordinate to delete.
+  static String? _dTagOf(Event event) {
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'd') {
+        return tag[1];
+      }
+    }
+    return null;
+  }
 
-    try {
-      final filter = Filter(authors: [pubkey], limit: 10000);
-      final events = await _nostrService.queryEvents([filter]);
-
-      allEvents.addAll(events);
-
-      Log.debug(
-        'Fetched ${events.length} events for user $pubkey',
+  /// Fetch the user's events that are valid targets for the kind-5 sweep.
+  ///
+  /// NIP-01 filters cannot express "every kind except these", so the query stays
+  /// broad and [_kindsExcludedFromSweep] is applied here.
+  ///
+  /// Returns `queryFailed: true` when the relay query itself failed. The caller
+  /// must not treat that as "this account has no content" — the previous
+  /// behaviour of swallowing the error into an empty list silently skipped the
+  /// entire sweep while still publishing the vanish.
+  Future<({List<Event> events, bool queryFailed})> _fetchSweepTargets(
+    String pubkey,
+  ) async {
+    if (_nostrService.isDisposed) {
+      Log.error(
+        'Failed to fetch user events: Nostr client is disposed',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
+      return (events: const <Event>[], queryFailed: true);
+    }
+
+    try {
+      final filter = Filter(authors: [pubkey], limit: 10000);
+      final query = await _nostrService.queryEventsDetailed([filter]);
+      final events = query.events;
+      final queryFailed = query.timedOut || query.noRelays;
+
+      final targets = events
+          .where((event) => !_kindsExcludedFromSweep.contains(event.kind))
+          .toList(growable: false);
+
+      Log.debug(
+        'Fetched ${events.length} events for user $pubkey '
+        '(${targets.length} sweep targets after excluding kinds '
+        '${_kindsExcludedFromSweep.join(', ')})',
+        name: 'AccountDeletionService',
+        category: LogCategory.system,
+      );
+
+      if (queryFailed) {
+        Log.error(
+          'Relay query did not complete reliably for user $pubkey '
+          '(timedOut=${query.timedOut}, noRelays=${query.noRelays})',
+          name: 'AccountDeletionService',
+          category: LogCategory.system,
+        );
+      }
+
+      return (events: targets, queryFailed: queryFailed);
     } catch (e) {
       Log.error(
         'Failed to fetch user events: $e',
         name: 'AccountDeletionService',
         category: LogCategory.system,
       );
+      return (events: const <Event>[], queryFailed: true);
     }
-
-    return allEvents;
   }
 
   /// Publish NIP-09 kind 5 deletion events for all user events
@@ -243,17 +332,18 @@ class AccountDeletionService {
       );
 
       if (deleteEvent != null) {
-        final sentEvent = await _nostrService.publishEvent(deleteEvent);
-        if (sentEvent.isSuccess) {
+        final outcome = await _nostrService.publishEventAwaitOk(deleteEvent);
+        if (outcome.confirmed) {
           successCount += kindEvents.length;
           Log.debug(
-            'Published batch deletion for ${kindEvents.length} kind $kind events',
+            'Batch deletion for ${kindEvents.length} kind $kind events '
+            'confirmed by ${outcome.acceptedBy}',
             name: 'AccountDeletionService',
             category: LogCategory.system,
           );
         } else {
           Log.warning(
-            'Batch deletion for kind $kind skipped: ${sentEvent.failureReason}',
+            'Batch deletion for kind $kind not confirmed: ${outcome.summary}',
             name: 'AccountDeletionService',
             category: LogCategory.system,
           );
@@ -280,8 +370,28 @@ class AccountDeletionService {
 
       final tags = <List<String>>[];
 
+      // Addressable kinds need an `a` tag as well as `e`. NIP-09: "When an `a`
+      // tag is used, relays SHOULD delete all versions of the replaceable event
+      // up to the `created_at`." With `e` alone, every prior version of an
+      // edited video survives on a relay that implements NIP-09 but not NIP-62
+      // — which is exactly the population this sweep exists to serve.
+      final isAddressable =
+          kind >= _addressableKindMin && kind <= _addressableKindMax;
+      final addressableIds = <String>{};
+
       for (final event in events) {
         tags.add(['e', event.id]);
+
+        if (isAddressable) {
+          final dTag = _dTagOf(event);
+          if (dTag != null && dTag.isNotEmpty) {
+            addressableIds.add('$kind:${event.pubkey}:$dTag');
+          }
+        }
+      }
+
+      for (final addressableId in addressableIds) {
+        tags.add(['a', addressableId]);
       }
 
       tags.add(['k', kind.toString()]);

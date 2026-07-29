@@ -11,6 +11,7 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/widgets/video_feed_item/audio_attribution_credit.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -57,7 +58,9 @@ class _SharedAudioSection extends ConsumerWidget {
           // reusing user.
           return _OriginalSoundSection(
             video: video,
-            reusedCreatorPubkey: _reusedCreatorPubkey,
+            reusedCreatorPubkey: AudioAttributionCredit.reusedCreatorPubkeyFor(
+              video,
+            ),
           );
         }
         return MetadataSection(
@@ -77,18 +80,12 @@ class _SharedAudioSection extends ConsumerWidget {
         );
         return _OriginalSoundSection(
           video: video,
-          reusedCreatorPubkey: _reusedCreatorPubkey,
+          reusedCreatorPubkey: AudioAttributionCredit.reusedCreatorPubkeyFor(
+            video,
+          ),
         );
       },
     );
-  }
-
-  /// The reused sound's original creator, carried on the video via its
-  /// inspired-by source (a reused sound auto-populates inspired-by from the
-  /// source video). Null when absent, so the fallback keeps its default.
-  String? get _reusedCreatorPubkey {
-    final pubkey = video.inspiredByVideo?.creatorPubkey;
-    return (pubkey != null && pubkey.isNotEmpty) ? pubkey : null;
   }
 }
 
@@ -115,12 +112,11 @@ class _OriginalSoundSection extends ConsumerWidget {
     final creatorProfile = ref
         .watch(userProfileReactiveProvider(creatorPubkey))
         .value;
-    final creatorName =
-        creatorProfile?.bestDisplayName ??
-        (reusedCreatorPubkey != null
-            ? UserProfile.defaultDisplayNameFor(creatorPubkey)
-            : video.displayAuthorName ??
-                  UserProfile.generatedNameFor(video.pubkey));
+    final creatorName = AudioAttributionCredit.creatorNameFor(
+      video: video,
+      creatorProfile: creatorProfile,
+      reusedCreatorPubkey: reusedCreatorPubkey,
+    );
 
     return MetadataSection(
       label: context.l10n.metadataSoundsLabel,

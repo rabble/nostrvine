@@ -1567,11 +1567,17 @@ class FollowRepository {
 
         if (cached != null) {
           final decoded = jsonDecode(cached) as List<dynamic>;
-          _followingPubkeys = _sanitizePubkeys(
-            decoded.cast<String>(),
+          final cachedPubkeys = decoded.cast<String>();
+          final sanitizedPubkeys = _sanitizePubkeys(
+            cachedPubkeys,
             source: 'LocalStorage',
           );
+          _followingPubkeys = sanitizedPubkeys;
           _emitFollowingList();
+
+          if (sanitizedPubkeys.length != cachedPubkeys.length) {
+            await _saveToLocalStorage();
+          }
 
           Log.info(
             'Loaded cached following list: '

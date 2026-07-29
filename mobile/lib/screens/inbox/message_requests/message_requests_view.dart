@@ -14,6 +14,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/message_requests/request_preview_page.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/request_bulk_actions_sheet.dart';
 import 'package:openvine/screens/inbox/message_requests/widgets/request_tile.dart';
+import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 
 /// View for the message requests inbox.
 ///
@@ -86,6 +87,8 @@ class _RequestList extends StatelessWidget {
     return BlocBuilder<ConversationListBloc, ConversationListState>(
       buildWhen: (prev, curr) =>
           prev.requestConversations != curr.requestConversations ||
+          prev.requestsWithheld != curr.requestsWithheld ||
+          prev.isRestoringHistory != curr.isRestoringHistory ||
           prev.status != curr.status,
       builder: (context, state) {
         if (state.status == ConversationListStatus.initial ||
@@ -97,6 +100,28 @@ class _RequestList extends StatelessWidget {
 
         final requests = state.requestConversations;
         if (requests.isEmpty) {
+          if (state.requestsWithheld && state.isRestoringHistory) {
+            return Center(
+              child: Semantics(
+                label: context.l10n.inboxRestoringMessages,
+                child: const CircularProgressIndicator(
+                  color: VineTheme.primary,
+                ),
+              ),
+            );
+          }
+
+          if (state.requestsWithheld) {
+            return Align(
+              alignment: Alignment.topCenter,
+              child: RestorePausedBanner(
+                onRetry: () => context.read<ConversationListBloc>().add(
+                  const ConversationListRestoreRetryRequested(),
+                ),
+              ),
+            );
+          }
+
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 48),

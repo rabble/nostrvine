@@ -24,6 +24,14 @@ class VideoEditorThumbnail extends ConsumerWidget {
       child: clip.thumbnailPath != null
           ? ClipThumbnailImage(
               path: clip.thumbnailPath!,
+              // A stop-motion clip's thumbnail is a raw full-resolution camera
+              // still (several MB decoded), and the stop-motion player decodes
+              // the same file at this height right after — bounding the decode
+              // keeps the placeholder from stalling on it, and both share one
+              // image-cache entry instead of decoding twice.
+              cacheHeight:
+                  (contentSize.height * MediaQuery.devicePixelRatioOf(context))
+                      .round(),
               placeholder: SizedBox.fromSize(size: contentSize),
             )
           : SizedBox.fromSize(

@@ -8,7 +8,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
 /// Horizontal stats row displaying engagement counts for a video.
 ///

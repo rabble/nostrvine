@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart'
     show LocalizedText, StickerData, StickerPackData;
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -27,8 +28,10 @@ CompleteParameters _makeParams({
   List<Layer>? layers,
   List<VideoClip>? videoClips,
   List<AudioTrack>? audioTracks,
+  Map<String, dynamic>? meta,
 }) {
   return CompleteParameters(
+    meta: meta ?? const {},
     blur: blur,
     originalImageSize: const Size(1080, 1920),
     temporaryDecodedImageSize: const Size(1080, 1920),
@@ -468,6 +471,45 @@ void main() {
       expect(restored.rotateTurns, equals(2));
       expect(restored.cropWidth, equals(720));
       expect(restored.layers, hasLength(1));
+    });
+  });
+
+  group('captionTrackFromMeta', () {
+    const track = CaptionTrack(
+      presetId: 'classic',
+      languageTag: 'en-US',
+      cues: [
+        CaptionCue(
+          id: 'cue-1',
+          text: 'Hello.',
+          start: Duration.zero,
+          end: Duration(seconds: 1),
+        ),
+      ],
+    );
+
+    test('restores the caption track from meta', () {
+      final params = _makeParams(
+        meta: {'captions': track.toJson()},
+      );
+
+      expect(params.captionTrackFromMeta, equals(track));
+    });
+
+    test('returns null without a captions key or on malformed data', () {
+      expect(_makeParams().captionTrackFromMeta, isNull);
+      expect(
+        _makeParams(meta: {'captions': 42}).captionTrackFromMeta,
+        isNull,
+      );
+      expect(
+        _makeParams(
+          meta: {
+            'captions': {'presetId': 42},
+          },
+        ).captionTrackFromMeta,
+        isNull,
+      );
     });
   });
 }

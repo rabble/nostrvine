@@ -4619,6 +4619,82 @@ void main() {
       });
     });
 
+    group('lookupUsernameByPubkey', () {
+      const pubkey =
+          '156dd13a1f8a488037fa1b43ad934a5e58644a1d6e1ad6697a02c2e93b8b013b';
+
+      test('returns DivineUsernameFound when found', () async {
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(
+            Response(
+              '{"ok":true,"found":true,"name":"Alice","canonical":"alice"}',
+              200,
+            ),
+          ),
+        );
+
+        final result = await profileRepository.lookupUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+
+        expect(result, isA<DivineUsernameFound>());
+        final found = result as DivineUsernameFound;
+        expect(found.name, 'Alice');
+        expect(found.canonical, 'alice');
+      });
+
+      test('returns DivineUsernameNotFound for a confirmed miss', () async {
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(Response('{"ok":true,"found":false}', 200)),
+        );
+
+        final result = await profileRepository.lookupUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+
+        expect(result, isA<DivineUsernameNotFound>());
+      });
+
+      test('returns DivineUsernameUnknown for a 400 response', () async {
+        when(() => mockHttpClient.get(any())).thenAnswer(
+          (_) => Future.value(
+            Response('{"ok":false,"error":"Invalid pubkey format"}', 400),
+          ),
+        );
+
+        final result = await profileRepository.lookupUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+
+        expect(result, isA<DivineUsernameUnknown>());
+      });
+
+      test('returns DivineUsernameUnknown on network exception', () async {
+        when(() => mockHttpClient.get(any())).thenThrow(Exception('socket'));
+
+        final result = await profileRepository.lookupUsernameByPubkey(
+          pubkeyHex: pubkey,
+        );
+
+        expect(result, isA<DivineUsernameUnknown>());
+      });
+
+      test(
+        'returns DivineUsernameUnknown on a wrong-shaped 200 body',
+        () async {
+          when(
+            () => mockHttpClient.get(any()),
+          ).thenAnswer((_) => Future.value(Response('123', 200)));
+
+          final result = await profileRepository.lookupUsernameByPubkey(
+            pubkeyHex: pubkey,
+          );
+
+          expect(result, isA<DivineUsernameUnknown>());
+        },
+      );
+    });
+
     group('claimUsername', () {
       test('returns UsernameClaimSuccess when response is 200', () async {
         when(

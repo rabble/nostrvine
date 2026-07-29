@@ -17,6 +17,7 @@ class TimelineOverlayState extends Equatable {
     this.timelineMarkers = const [],
     this.isLayerMultiSelectMode = false,
     this.multiSelectedLayerIds = const {},
+    this.captionsBurnIn = false,
   });
 
   /// All overlay items across all strip types.
@@ -94,6 +95,14 @@ class TimelineOverlayState extends Equatable {
   /// [isLayerMultiSelectMode] is `true`.
   final Set<String> multiSelectedLayerIds;
 
+  /// Whether the caption track is burned into the video.
+  ///
+  /// When `true`, the burned-in caption layers render on the canvas and the
+  /// CC preview pill is suppressed. Tracked in state (rather than read live
+  /// from the editor) so the pill hides reactively the moment burn-in is
+  /// toggled, not on the next scroll-driven rebuild.
+  final bool captionsBurnIn;
+
   TimelineOverlayState copyWith({
     List<TimelineOverlayItem>? items,
     List<AudioEvent>? audioTracks,
@@ -114,6 +123,7 @@ class TimelineOverlayState extends Equatable {
     List<Duration>? timelineMarkers,
     bool? isLayerMultiSelectMode,
     Set<String>? multiSelectedLayerIds,
+    bool? captionsBurnIn,
   }) {
     return TimelineOverlayState(
       items: items ?? this.items,
@@ -144,6 +154,7 @@ class TimelineOverlayState extends Equatable {
           isLayerMultiSelectMode ?? this.isLayerMultiSelectMode,
       multiSelectedLayerIds:
           multiSelectedLayerIds ?? this.multiSelectedLayerIds,
+      captionsBurnIn: captionsBurnIn ?? this.captionsBurnIn,
     );
   }
 
@@ -163,5 +174,6 @@ class TimelineOverlayState extends Equatable {
     timelineMarkers,
     isLayerMultiSelectMode,
     multiSelectedLayerIds,
+    captionsBurnIn,
   ];
 }

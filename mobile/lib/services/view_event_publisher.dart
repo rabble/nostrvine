@@ -39,6 +39,39 @@ enum ViewTrafficSource {
   unknown,
 }
 
+extension ViewTrafficSourceTags on ViewTrafficSource {
+  String get tagValue {
+    return switch (this) {
+      ViewTrafficSource.home => 'home',
+      ViewTrafficSource.discoveryNew => 'discovery:new',
+      ViewTrafficSource.discoveryClassic => 'discovery:classic',
+      ViewTrafficSource.discoveryForYou => 'discovery:foryou',
+      ViewTrafficSource.discoveryPopular => 'discovery:popular',
+      ViewTrafficSource.profile => 'profile',
+      ViewTrafficSource.share => 'share',
+      ViewTrafficSource.search => 'search',
+      ViewTrafficSource.unknown => 'unknown',
+    };
+  }
+}
+
+ViewTrafficSource viewTrafficSourceFromTag(String raw) {
+  return switch (raw) {
+    'home' => ViewTrafficSource.home,
+    'profile' => ViewTrafficSource.profile,
+    'search' => ViewTrafficSource.search,
+    'share' => ViewTrafficSource.share,
+    'discovery:new' || 'discovery_new' => ViewTrafficSource.discoveryNew,
+    'discovery:popular' ||
+    'discovery_popular' => ViewTrafficSource.discoveryPopular,
+    'discovery:classic' ||
+    'discovery_classic' => ViewTrafficSource.discoveryClassic,
+    'discovery:foryou' ||
+    'discovery_for_you' => ViewTrafficSource.discoveryForYou,
+    _ => ViewTrafficSource.unknown,
+  };
+}
+
 /// Service for publishing video view events to Nostr relays.
 ///
 /// View events are ephemeral (kind 22236) and are processed by analytics
@@ -103,16 +136,6 @@ class ViewEventPublisher {
       return false;
     }
 
-    // Skip self-views (relay would reject them anyway)
-    if (_authService.currentPublicKeyHex == video.pubkey) {
-      Log.debug(
-        'Skipping view event: self-view',
-        name: 'ViewEventPublisher',
-        category: LogCategory.video,
-      );
-      return false;
-    }
-
     try {
       // Build the addressable coordinate (a tag)
       // Format: "<kind>:author_pubkey:d_tag"
@@ -137,9 +160,9 @@ class ViewEventPublisher {
         ['viewed', startSeconds.toString(), endSeconds.toString()],
         // Traffic source (optional but recommended)
         if (sourceDetail != null && sourceDetail.isNotEmpty)
-          ['source', _sourceToString(source), sourceDetail]
+          ['source', source.tagValue, sourceDetail]
         else
-          ['source', _sourceToString(source)],
+          ['source', source.tagValue],
         // Loop count (optional, omitted if 0 or null)
         if (loopCount != null && loopCount > 0) ['loops', loopCount.toString()],
       ];
@@ -150,7 +173,7 @@ class ViewEventPublisher {
         category: LogCategory.video,
       );
       Log.verbose(
-        'View data: watched ${endSeconds - startSeconds}s, source=${_sourceToString(source)}',
+        'View data: watched ${endSeconds - startSeconds}s, source=${source.tagValue}',
         name: 'ViewEventPublisher',
         category: LogCategory.video,
       );
@@ -232,16 +255,6 @@ class ViewEventPublisher {
       return false;
     }
 
-    // Skip self-views (relay would reject them anyway)
-    if (_authService.currentPublicKeyHex == video.pubkey) {
-      Log.debug(
-        'Skipping view event: self-view (segments)',
-        name: 'ViewEventPublisher',
-        category: LogCategory.video,
-      );
-      return false;
-    }
-
     try {
       final dTag = video.vineId ?? video.id;
       final aTag =
@@ -260,9 +273,9 @@ class ViewEventPublisher {
         for (final segment in validSegments)
           ['viewed', segment.$1.toString(), segment.$2.toString()],
         if (sourceDetail != null && sourceDetail.isNotEmpty)
-          ['source', _sourceToString(source), sourceDetail]
+          ['source', source.tagValue, sourceDetail]
         else
-          ['source', _sourceToString(source)],
+          ['source', source.tagValue],
       ];
 
       final event = await _authService.createAndSignEvent(
@@ -298,20 +311,5 @@ class ViewEventPublisher {
       );
       return false;
     }
-  }
-
-  /// Convert traffic source enum to string for the tag.
-  String _sourceToString(ViewTrafficSource source) {
-    return switch (source) {
-      ViewTrafficSource.home => 'home',
-      ViewTrafficSource.discoveryNew => 'discovery:new',
-      ViewTrafficSource.discoveryClassic => 'discovery:classic',
-      ViewTrafficSource.discoveryForYou => 'discovery:foryou',
-      ViewTrafficSource.discoveryPopular => 'discovery:popular',
-      ViewTrafficSource.profile => 'profile',
-      ViewTrafficSource.share => 'share',
-      ViewTrafficSource.search => 'search',
-      ViewTrafficSource.unknown => 'unknown',
-    };
   }
 }

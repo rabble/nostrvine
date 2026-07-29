@@ -1,6 +1,9 @@
 // ABOUTME: Tests for VideoPublishService
 // ABOUTME: Uses mocked dependencies to test publish flow without real uploads
 
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,6 +12,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -58,6 +62,7 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for mocktail
+    registerFallbackValue(Uint8List(0));
     registerFallbackValue(
       DivineVideoDraft.create(
         clips: [_createTestClip()],
@@ -129,6 +134,372 @@ void main() {
         // Assert
         expect(result, isA<PublishSuccess>());
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
+      });
+
+      group('caption publishing', () {
+        const overlayTrack = CaptionTrack(
+          presetId: 'classic',
+          languageTag: 'de-CH',
+          cues: [
+            CaptionCue(
+              id: 'cue-0',
+              text: 'Hallo.',
+              start: Duration.zero,
+              end: Duration(seconds: 1),
+            ),
+          ],
+        );
+
+        Map<String, dynamic> editingParamsFor(CaptionTrack track) => {
+          'meta': {'captions': track.toJson()},
+        };
+
+        test(
+          'uploads VTT, publishes 39307, and passes text-track refs',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer(
+              (_) async => const BlossomUploadResult(
+                success: true,
+                url: 'https://media.divine.video/vtt123',
+              ),
+            );
+            when(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            ).thenAnswer((_) async => '39307:pk:subtitles:test_video_id');
+
+            final result = await service.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            // The 39307 targets the upload's vineId with the bare language.
+            verify(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: 'test_video_id',
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: 'https://media.divine.video/vtt123',
+                lang: 'de',
+              ),
+            ).called(1);
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: captureAny(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(
+              captured.first,
+              equals([
+                'https://media.divine.video/vtt123',
+                '39307:pk:subtitles:test_video_id',
+              ]),
+            );
+            expect(captured.last, equals('de'));
+          },
+        );
+
+        test(
+          'publishes the video without refs when the VTT upload fails',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer(
+              (_) async => const BlossomUploadResult(
+                success: false,
+                errorMessage: 'boom',
+              ),
+            );
+
+            final result = await service.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            verifyNever(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            );
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(captured.single, isEmpty);
+          },
+        );
+
+        test(
+          'publishes without refs when the VTT upload never completes',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            // A stalled Dio upload never resolves; the bounded deadline must
+            // still let the primary video publish proceed without caption refs.
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer((_) => Completer<BlossomUploadResult>().future);
+
+            final boundedService = VideoPublishService(
+              uploadManager: mockUploadManager,
+              authService: mockAuthService,
+              videoEventPublisher: mockVideoEventPublisher,
+              blossomService: mockBlossomService,
+              draftService: mockDraftService,
+              collaboratorInviteService: mockCollaboratorInviteService,
+              mentionResolutionService: mockMentionResolutionService,
+              subtitlePublishTimeout: const Duration(milliseconds: 20),
+              onProgressChanged:
+                  ({required double progress, required String draftId}) =>
+                      progressChanges.add(progress),
+            );
+
+            final result = await boundedService.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            verifyNever(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            );
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(captured.single, isEmpty);
+          },
+        );
+
+        test(
+          'passes the uploaded VTT URL when subtitle event publish times out',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer(
+              (_) async => const BlossomUploadResult(
+                success: true,
+                url: 'https://media.divine.video/vtt123',
+              ),
+            );
+            when(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            ).thenAnswer((_) => Completer<String?>().future);
+
+            final boundedService = VideoPublishService(
+              uploadManager: mockUploadManager,
+              authService: mockAuthService,
+              videoEventPublisher: mockVideoEventPublisher,
+              blossomService: mockBlossomService,
+              draftService: mockDraftService,
+              collaboratorInviteService: mockCollaboratorInviteService,
+              mentionResolutionService: mockMentionResolutionService,
+              subtitlePublishTimeout: const Duration(milliseconds: 20),
+              onProgressChanged:
+                  ({required double progress, required String draftId}) =>
+                      progressChanges.add(progress),
+            );
+
+            final result = await boundedService.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(
+              captured.single,
+              equals(['https://media.divine.video/vtt123']),
+            );
+          },
+        );
+
+        test(
+          'passes the uploaded VTT URL when subtitle event publish throws',
+          () async {
+            _setupSuccessfulPublish(
+              mockAuthService: mockAuthService,
+              mockUploadManager: mockUploadManager,
+              mockDraftService: mockDraftService,
+              mockVideoEventPublisher: mockVideoEventPublisher,
+            );
+            when(
+              () => mockBlossomService.uploadSubtitleVtt(
+                bytes: any(named: 'bytes'),
+              ),
+            ).thenAnswer(
+              (_) async => const BlossomUploadResult(
+                success: true,
+                url: 'https://media.divine.video/vtt123',
+              ),
+            );
+            when(
+              () => mockVideoEventPublisher.publishSubtitleTrack(
+                vineId: any(named: 'vineId'),
+                vttContent: any(named: 'vttContent'),
+                blossomUrl: any(named: 'blossomUrl'),
+                lang: any(named: 'lang'),
+              ),
+            ).thenThrow(StateError('relay unavailable'));
+
+            final result = await service.publishVideo(
+              draft: _createTestDraft(
+                editorEditingParameters: editingParamsFor(overlayTrack),
+              ),
+            );
+
+            expect(result, isA<PublishSuccess>());
+            final captured = verify(
+              () => _verifyPublishVideoEvent(
+                mockVideoEventPublisher,
+                textTrackRefs: captureAny(named: 'textTrackRefs'),
+                textTrackLang: any(named: 'textTrackLang'),
+              ),
+            ).captured;
+            expect(
+              captured.single,
+              equals(['https://media.divine.video/vtt123']),
+            );
+          },
+        );
+
+        test('publishes CC for burned-in caption tracks too', () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+          when(
+            () => mockBlossomService.uploadSubtitleVtt(
+              bytes: any(named: 'bytes'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: 'https://media.divine.video/vtt123',
+            ),
+          );
+          when(
+            () => mockVideoEventPublisher.publishSubtitleTrack(
+              vineId: any(named: 'vineId'),
+              vttContent: any(named: 'vttContent'),
+              blossomUrl: any(named: 'blossomUrl'),
+              lang: any(named: 'lang'),
+            ),
+          ).thenAnswer((_) async => '39307:pk:subtitles:test_video_id');
+
+          final result = await service.publishVideo(
+            draft: _createTestDraft(
+              editorEditingParameters: editingParamsFor(
+                overlayTrack.copyWith(burnIn: true),
+              ),
+            ),
+          );
+
+          expect(result, isA<PublishSuccess>());
+          verify(
+            () => mockBlossomService.uploadSubtitleVtt(
+              bytes: any(named: 'bytes'),
+            ),
+          ).called(1);
+        });
+
+        test('publishes no CC when there are no cues', () async {
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
+
+          final result = await service.publishVideo(
+            draft: _createTestDraft(
+              editorEditingParameters: editingParamsFor(
+                const CaptionTrack(
+                  burnIn: true,
+                  presetId: 'pop',
+                  languageTag: 'en-US',
+                ),
+              ),
+            ),
+          );
+
+          expect(result, isA<PublishSuccess>());
+          verifyNever(
+            () => mockBlossomService.uploadSubtitleVtt(
+              bytes: any(named: 'bytes'),
+            ),
+          );
+        });
       });
 
       test(
@@ -1663,10 +2034,42 @@ DivineVideoClip _createStopMotionClip() {
   );
 }
 
+/// A full-argument `publishVideoEvent` matcher for `verify`, so tests only
+/// spell out the arguments they capture. Mocktail's verify needs every named
+/// argument of the actual invocation to be matched.
+Future<bool> _verifyPublishVideoEvent(
+  MockVideoEventPublisher publisher, {
+  required List<String> textTrackRefs,
+  required String textTrackLang,
+}) => publisher.publishVideoEvent(
+  upload: any(named: 'upload'),
+  title: any(named: 'title'),
+  description: any(named: 'description'),
+  hashtags: any(named: 'hashtags'),
+  expirationTimestamp: any(named: 'expirationTimestamp'),
+  allowAudioReuse: any(named: 'allowAudioReuse'),
+  collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+  mentionedPubkeys: any(named: 'mentionedPubkeys'),
+  inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+  inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+  inspiredByNpub: any(named: 'inspiredByNpub'),
+  selectedAudio: any(named: 'selectedAudio'),
+  selectedAudioEventId: any(named: 'selectedAudioEventId'),
+  selectedAudioRelay: any(named: 'selectedAudioRelay'),
+  language: any(named: 'language'),
+  contentWarning: any(named: 'contentWarning'),
+  thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+  replyContext: any(named: 'replyContext'),
+  addReplyToFeed: any(named: 'addReplyToFeed'),
+  textTrackRefs: textTrackRefs,
+  textTrackLang: textTrackLang,
+);
+
 DivineVideoDraft _createTestDraft({
   String description = 'Test description',
   Map<String, dynamic> editorStateHistory = const {},
   Set<String> collaboratorPubkeys = const {},
+  Map<String, dynamic>? editorEditingParameters,
 }) {
   return DivineVideoDraft.create(
     clips: [_createTestClip()],
@@ -1677,6 +2080,7 @@ DivineVideoDraft _createTestDraft({
     id: 'test_draft_id',
     editorStateHistory: editorStateHistory,
     collaboratorPubkeys: collaboratorPubkeys,
+    editorEditingParameters: editorEditingParameters,
   );
 }
 
@@ -1744,6 +2148,8 @@ void _setupSuccessfulPublish({
       thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
       replyContext: any(named: 'replyContext'),
       addReplyToFeed: any(named: 'addReplyToFeed'),
+      textTrackRefs: any(named: 'textTrackRefs'),
+      textTrackLang: any(named: 'textTrackLang'),
     ),
   ).thenAnswer((_) async => true);
 }

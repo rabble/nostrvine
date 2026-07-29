@@ -24,7 +24,7 @@ class BuildGiftWrapRequest {
   /// Hex-encoded sender private key used for NIP-44 ECDH and Schnorr signing.
   final String privateKeyHex;
 
-  /// The unsigned kind-14 rumor as `Event.toJson`; its id is preserved.
+  /// The unsigned kind-14 rumor; receivers derive its id after unwrap.
   final Map<String, dynamic> rumorJson;
 
   /// Recipient public keys (hex) to wrap [rumorJson] for, one wrap each.

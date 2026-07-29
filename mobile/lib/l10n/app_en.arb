@@ -739,6 +739,10 @@
   "videoFollowButtonFollowing": "Following",
   "videoFollowButtonFollow": "Follow",
   "audioAttributionOriginalSound": "Original sound",
+  "audioAttributionUnavailableSound": "Sound unavailable",
+  "@audioAttributionUnavailableSound": {
+    "description": "Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound."
+  },
   "videoInspiredByAttribution": "Inspired by @{creatorName}",
   "@videoInspiredByAttribution": {
     "placeholders": {
@@ -1919,6 +1923,31 @@
   "shareSheetEventJson": "Event JSON",
   "shareSheetEventId": "Event ID",
   "shareSheetMoreActions": "More actions",
+  "shareSheetCrosspost": "Crosspost",
+  "crosspostSheetTitle": "Crosspost this video",
+  "crosspostSheetSubtitle": "Send it to your connected platforms. Posting can take a few minutes.",
+  "crosspostSubmit": "Crosspost",
+  "crosspostStatusQueued": "Queued",
+  "crosspostStatusUploading": "Uploading",
+  "crosspostStatusProcessing": "Processing",
+  "crosspostStatusPosted": "Posted",
+  "crosspostStatusFailed": "Failed",
+  "crosspostStatusSkipped": "Skipped",
+  "crosspostStatusNeedsReauth": "Needs reconnecting",
+  "crosspostViewPost": "View post",
+  "crosspostReconnectPrompt": "Reconnect {platform} in crossposting settings to keep posting.",
+  "@crosspostReconnectPrompt": {
+    "placeholders": { "platform": { "type": "String" } }
+  },
+  "crosspostReconnect": "Reconnect",
+  "crosspostErrorNotOwner": "Only your own videos can be crossposted.",
+  "crosspostErrorNotEligible": "This video isn't eligible for crossposting.",
+  "crosspostErrorNotConnected": "That platform isn't connected.",
+  "crosspostErrorUnauthorized": "Reconnect your account, then try again.",
+  "crosspostErrorNetwork": "Couldn't reach the crossposter. Try again in a moment.",
+  "crosspostFailedGeneric": "Crosspost failed.",
+  "crosspostStillWorking": "Still working. You can close this — posting continues in the background.",
+  "crosspostDone": "Done",
   "watermarkDownloadSavedToCameraRoll": "Saved to Camera Roll",
   "watermarkDownloadShare": "Share",
   "watermarkDownloadDone": "Done",
@@ -3082,6 +3111,18 @@
     }
   },
   "inboxRemovedConversation": "Removed conversation",
+  "inboxRestorePausedTitle": "Some chats haven't finished restoring",
+  "conversationRestorePausedTitle": "This chat hasn't finished restoring",
+  "inboxRestoreRetryAction": "Retry",
+  "@inboxRestorePausedTitle": {
+    "description": "Title of the inbox banner shown when the one-time DM history recovery stopped before finishing, so conversations that would appear as message requests are still hidden. Paired with a Retry action."
+  },
+  "@conversationRestorePausedTitle": {
+    "description": "Short note shown in a single empty DM conversation when history recovery has run but stopped before finishing, so this chat may still receive restored messages."
+  },
+  "@inboxRestoreRetryAction": {
+    "description": "Label of the action on the inbox restore-paused banner that re-runs the DM history recovery."
+  },
   "inboxRestoringMessages": "Restoring your messages…",
   "@inboxRestoringMessages": {
     "description": "Accessibility label on the progress bar shown at the top of the Messages list while a one-time DM history recovery (after reinstall) is still running, so the user knows older chats are still being restored."
@@ -3106,6 +3147,14 @@
   "inboxSearchHint": "Search messages",
   "@inboxSearchHint": {
     "description": "Hint text in the inbox Messages search field."
+  },
+  "inboxSupportRowTitle": "Divine Moderation",
+  "@inboxSupportRowTitle": {
+    "description": "Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale."
+  },
+  "inboxSupportRowSubtitle": "Bugs, moderation, account stuff — we're listening.",
+  "@inboxSupportRowSubtitle": {
+    "description": "One-line summary under the pinned Divine Moderation support row, describing what the moderation team can help with."
   },
   "inboxSearchEmptyTitle": "No matches",
   "@inboxSearchEmptyTitle": {
@@ -3556,6 +3605,10 @@
   "commonCancel": "Cancel",
   "commonBack": "Back",
   "commonClose": "Close",
+  "commonLoading": "Loading",
+  "@commonLoading": {
+    "description": "Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up."
+  },
   "videoMetadataEditCoverFailedSnackbar": "Couldn't update the cover. Try again.",
   "@videoMetadataEditCoverFailedSnackbar": {
     "description": "Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again."
@@ -3955,9 +4008,15 @@
   "deleteAccountRemoveKeysBody": "This removes the local login for this account from this device. It won't delete your Divine account or Nostr identity.\n\nYour drafts and clips stay saved on this device for this account. If this is your last local account, you'll return to the login screen.",
   "deleteAccountRemoveKeysConfirm": "Remove from device",
   "deleteAccountRemoveKeysTitle": "Remove this account from this device?",
+  "deleteAccountReauthRequired": "Sign in again to delete your account. Nothing has been deleted yet.",
+  "@deleteAccountReauthRequired": {"description": "Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted."},
   "deleteAccountServerDeletionFailed": "Could not delete your account from the server. Please check your connection and try again.",
+  "deleteAccountServerDeletionRequiresReauth": "Deletion requests sent for your posts, but we couldn't finish deleting your account. Sign in again to finish.",
+  "@deleteAccountServerDeletionRequiresReauth": {"description": "Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays."},
   "deleteAccountSuccess": "Deletion requests sent. You're signed out on this device.",
   "@deleteAccountSuccess": {"description": "Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device."},
+  "deleteAccountSuccessContentUnverified": "Account deletion requested. Some existing posts could not be individually confirmed for deletion.",
+  "@deleteAccountSuccessContentUnverified": {"description": "Snackbar when the account-wide vanish request was published but the relay query failed or at least one per-item deletion request was not confirmed. Must not imply every existing post was individually requested or confirmed for deletion."},
   "deleteAccountWarningBody": "This sends deletion requests for your account and content, deletes your Divine account when possible, and signs you out on this device. Some relays, clients, and search indexes may keep copies. Other signed-in devices stay active until you remove the keys there.",
   "@deleteAccountWarningBody": {"description": "Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account."},
   "exportProgressStageApplyingTextOverlay": "Adding text overlay...",
@@ -4197,6 +4256,8 @@
   "blueskyStatusNotLinked": "No Bluesky account linked",
   "blueskyUsernameRequired": "Set up a divine.video handle before publishing to Bluesky",
   "blueskyUsernameRequiredSubtitle": "Bluesky publishing needs a claimed username.divine.video handle.",
+  "blueskyUsernameSyncPending": "Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.",
+  "blueskyStatusUnavailableRetry": "We could not check your Divine handle. Try again.",
   "blueskySetUpHandle": "Set up",
   "blueskyTemporarilyUnavailable": "Bluesky publishing is temporarily unavailable. Please try again.",
   "invitesTitle": "Invite Friends",
@@ -4748,10 +4809,6 @@
   "@videoRecorderLipSyncAddAudioFirst": {
     "description": "Snackbar shown when the user taps the record button in lip-sync mode without first selecting a sound."
   },
-  "videoRecorderStopMotionAssembling": "Creating your video…",
-  "@videoRecorderStopMotionAssembling": {
-    "description": "Loading label shown while captured stop-motion frames are being encoded into one video."
-  },
   "videoRecorderStopMotionAssembleFailed": "Couldn't create the video. Try again.",
   "@videoRecorderStopMotionAssembleFailed": {
     "description": "Snackbar shown when assembling captured stop-motion frames into a video failed."
@@ -4805,6 +4862,61 @@
   "videoEditorAddTitle": "Add",
   "videoEditorOpenLibrarySemanticLabel": "Open Library",
   "videoEditorOpenAudioSemanticLabel": "Open audio editor",
+  "videoEditorCaptionsLabel": "Captions",
+  "videoEditorOpenCaptionsSemanticLabel": "Open captions editor",
+  "videoEditorCaptionsBurnInLabel": "Burn into video",
+  "videoEditorCaptionsPresetCustom": "Custom",
+  "videoEditorCaptionsCustomStyleTitle": "Custom style",
+  "videoEditorCaptionsCustomApply": "Apply",
+  "videoEditorCaptionsCustomFont": "Font",
+  "videoEditorCaptionsCustomTextColor": "Text color",
+  "videoEditorCaptionsCustomBackground": "Background",
+  "videoEditorCaptionsCustomBackgroundColor": "Background color",
+  "videoEditorCaptionsCustomAnimation": "Animation",
+  "videoEditorCaptionsAnimationNone": "None",
+  "videoEditorCaptionsAnimationFade": "Fade",
+  "videoEditorCaptionsAnimationPop": "Pop",
+  "videoEditorCaptionsAnimationSpring": "Spring",
+  "@videoEditorCaptionsBurnInLabel": {
+    "description": "Checkbox label in the captions sheet to additionally burn the captions into the exported video (closed captions are always published)."
+  },
+  "videoEditorCaptionsEditTitle": "Captions",
+  "videoEditorCaptionsGeneratingTitle": "Listening for speech…",
+  "videoEditorCaptionsGeneratingSubtitle": "Turning your audio into caption suggestions.",
+  "videoEditorCaptionsNoSpeechMessage": "We couldn't hear any speech. You can still write captions yourself.",
+  "videoEditorCaptionsUnavailableMessage": "Speech recognition isn't available on this device. You can write captions yourself.",
+  "videoEditorCaptionsNotAuthorizedMessage": "Speech recognition isn't allowed. Enable it in Settings or write captions yourself.",
+  "videoEditorCaptionsFailedMessage": "Transcription didn't work this time. You can write captions yourself.",
+  "videoEditorCaptionsStartEmptyButton": "Write captions myself",
+  "videoEditorCaptionsAddCue": "Add caption",
+  "videoEditorCaptionsCueTextHint": "Caption text",
+  "videoEditorCaptionsCueDeleteSemanticLabel": "Delete caption",
+  "videoEditorCaptionsDeleteTrack": "Remove all captions",
+  "videoEditorCaptionsDeleteTrackConfirmTitle": "Remove captions?",
+  "videoEditorCaptionsDeleteTrackConfirmSubtitle": "All caption text and timing will be gone.",
+  "videoEditorCaptionsCloseSemanticLabel": "Close captions editor",
+  "videoEditorCaptionsDoneSemanticLabel": "Confirm captions",
+  "videoEditorCaptionsPresetTitle": "Caption style",
+  "videoEditorCaptionsPresetClassic": "Classic",
+  "videoEditorCaptionsPresetPop": "Pop",
+  "videoEditorCaptionsPresetZoom": "Zoom",
+  "videoEditorCaptionsPresetSpring": "Spring",
+  "videoEditorCaptionsPresetMono": "Mono",
+  "videoEditorCaptionsPresetHeadline": "Headline",
+  "videoEditorCaptionsPresetTypewriter": "Typewriter",
+  "videoEditorCaptionsPresetMarker": "Marker",
+  "videoEditorCaptionsPresetScript": "Script",
+  "videoEditorCaptionsPresetRetro": "Retro",
+  "videoEditorCaptionsPresetElegant": "Elegant",
+  "videoEditorCaptionsPresetBubble": "Bubble",
+  "videoEditorCaptionsPresetNeon": "Neon",
+  "videoEditorCaptionsPresetBold": "Bold",
+  "videoEditorCaptionsPresetDreamy": "Dreamy",
+  "videoEditorCaptionsPresetOcean": "Ocean",
+  "videoEditorCaptionsPresetSunny": "Sunny",
+  "videoEditorCaptionsPresetHandwritten": "Handwritten",
+  "videoEditorCaptionsPresetSerif": "Serif",
+  "videoEditorCaptionsPresetStamp": "Stamp",
   "videoEditorOpenTextSemanticLabel": "Open text editor",
   "videoEditorOpenDrawSemanticLabel": "Open draw editor",
   "videoEditorOpenFilterSemanticLabel": "Open filter editor",
@@ -5750,14 +5862,6 @@
   "@profileCouldNotOpenWebsite": {
     "description": "Snackbar message shown when url_launcher fails to open the profile website link."
   },
-  "profileCreatorSiteVisitLabel": "divine.space",
-  "@profileCreatorSiteVisitLabel": {
-    "description": "Label on the profile pill that opens another creator's public Divine Space site. 'divine.space' is a domain name and must not be translated."
-  },
-  "profileCreatorSiteOwnLabel": "my divine.space",
-  "@profileCreatorSiteOwnLabel": {
-    "description": "Label on the profile pill that opens the current user's own public Divine Space site. Only the possessive determiner is translated; 'divine.space' is a domain name and must not be translated."
-  },
   "videoMetadataEditCoverTitle": "Edit cover",
   "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
@@ -6078,5 +6182,43 @@
   "@crosspostingConnectionDenied": {
     "description": "Snackbar when the user denied the connection on the provider's page.",
     "placeholders": {"platform": {"type": "String"}}
-  }
+  },
+  "supporterTitle": "Divine Supporters",
+  "@supporterTitle": {"description": "Title of the supporter subscription settings screen and its settings tile."},
+  "supporterTileSubtitle": "Support Divine with an optional monthly subscription.",
+  "@supporterTileSubtitle": {"description": "Subtitle of the supporter subscription settings tile."},
+  "supporterHeroTitle": "Keep Divine running",
+  "@supporterHeroTitle": {"description": "Headline at the top of the supporter subscription screen."},
+  "supporterHeroBody": "Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.",
+  "@supporterHeroBody": {"description": "Introductory copy on the supporter subscription screen explaining the optional monthly support."},
+  "supporterActiveBadge": "You're a Divine Supporter. Thank you for keeping this going.",
+  "@supporterActiveBadge": {"description": "Confirmation shown to users with an active supporter subscription."},
+  "supporterPurchasePending": "Your purchase is pending approval.",
+  "@supporterPurchasePending": {"description": "Status note shown while a supporter purchase awaits store approval."},
+  "supporterPurchaseConfirming": "Confirming your support…",
+  "@supporterPurchaseConfirming": {"description": "Status note shown while the server verifies a supporter purchase."},
+  "supporterStoreChecking": "Checking the store…",
+  "@supporterStoreChecking": {"description": "Loading note shown while supporter subscription tiers are fetched from the store."},
+  "supporterUnavailable": "Supporter subscriptions are not available here right now.",
+  "@supporterUnavailable": {"description": "Note shown when no supporter subscription tiers are available on this device or storefront."},
+  "supporterRestorePurchases": "Restore purchases",
+  "@supporterRestorePurchases": {"description": "Button label that re-checks the store for an existing supporter subscription."},
+  "supporterDismissError": "Dismiss error",
+  "@supporterDismissError": {"description": "Accessibility label for the button that dismisses the supporter error banner."},
+  "supporterErrorStoreUnavailable": "The store is unavailable on this device.",
+  "@supporterErrorStoreUnavailable": {"description": "Error shown when the device cannot reach the app store billing client."},
+  "supporterErrorPurchaseFailed": "The purchase did not complete. You were not charged.",
+  "@supporterErrorPurchaseFailed": {"description": "Error shown when a supporter purchase fails or is cancelled."},
+  "supporterErrorPurchasePending": "Your purchase is pending approval.",
+  "@supporterErrorPurchasePending": {"description": "Error-banner variant shown when a supporter purchase is left in a pending state."},
+  "supporterErrorRestoreFailed": "No supporter subscription was found to restore.",
+  "@supporterErrorRestoreFailed": {"description": "Error shown when restoring purchases finds no supporter subscription."},
+  "supporterErrorOwnershipConflict": "This purchase belongs to another Divine account.",
+  "@supporterErrorOwnershipConflict": {"description": "Error shown when the store purchase is already claimed by a different Divine account."},
+  "supporterErrorVerificationUnavailable": "Divine could not confirm supporter status right now.",
+  "@supporterErrorVerificationUnavailable": {"description": "Error shown when the server-side verification of a supporter purchase is temporarily unavailable."},
+  "supporterErrorUnknown": "Something went wrong. Please try again.",
+  "@supporterErrorUnknown": {"description": "Generic supporter flow error shown when no more specific message applies."},
+  "supporterDisclaimer": "Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.",
+  "@supporterDisclaimer": {"description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."}
 }

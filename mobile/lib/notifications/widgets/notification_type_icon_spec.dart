@@ -24,7 +24,17 @@ class NotificationTypeIconSpec {
 }
 
 /// Returns the spec for [type] used by both row widgets.
-NotificationTypeIconSpec notificationTypeIconSpec(NotificationKind type) {
+NotificationTypeIconSpec notificationTypeIconSpec(
+  NotificationKind type, {
+  bool isVideoSourcedMention = false,
+}) {
+  if (type == NotificationKind.mention && isVideoSourcedMention) {
+    return const NotificationTypeIconSpec(
+      icon: DivineIconName.videoCamera,
+      background: VineTheme.accentVioletBackground,
+      foreground: VineTheme.accentViolet,
+    );
+  }
   return switch (type) {
     NotificationKind.like ||
     NotificationKind.likeComment => const NotificationTypeIconSpec(

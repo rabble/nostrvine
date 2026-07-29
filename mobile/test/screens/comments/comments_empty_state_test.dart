@@ -50,6 +50,31 @@ void main() {
 
         expect(find.byType(Center), findsOneWidget);
       });
+
+      testWidgets(
+        'does not overflow when the open keyboard squeezes the sheet',
+        (tester) async {
+          // The comments sheet's list area shrinks to almost nothing when the
+          // keyboard is up on a small sheet fraction; the empty state must
+          // shrink with it instead of overflowing (RenderFlex overflow fails
+          // the test automatically via FlutterError).
+          await tester.pumpWidget(
+            const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: SizedBox(
+                  height: 40,
+                  child: CommentsEmptyState(isClassicVine: false),
+                ),
+              ),
+            ),
+          );
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.commentsEmptyTitle), findsOneWidget);
+        },
+      );
     });
 
     group('Classic Vine state', () {

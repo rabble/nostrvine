@@ -43,9 +43,9 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Builds a minimal harness that wraps [UploadFailureListener] inside a
-/// [ProviderScope] (with [authServiceProvider] overridden) and a
-/// [BlocProvider] for [BackgroundPublishBloc].
+/// Builds a minimal harness matching production topology: [UploadFailureListener]
+/// wraps [MaterialApp], while [ProviderScope] and [BlocProvider] remain above
+/// the listener.
 ///
 /// The [MaterialApp] is keyed to [NavigatorKeys.root] so that
 /// [_showPublishSuccessSnackbar] can resolve its [ScaffoldMessenger] via
@@ -53,19 +53,21 @@ class _FakeDraft extends Fake implements DivineVideoDraft {
 Widget _buildHarness({
   required _MockBackgroundPublishBloc publishBloc,
   required _MockAuthService authService,
+  bool wireRootNavigatorKey = true,
 }) {
   return ProviderScope(
     overrides: [authServiceProvider.overrideWithValue(authService)],
-    child: MaterialApp(
-      // Wire the real NavigatorKeys.root so the snackbar helper can find the
-      // ScaffoldMessenger ancestor from NavigatorKeys.root.currentContext.
-      navigatorKey: NavigatorKeys.root,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: BlocProvider<BackgroundPublishBloc>.value(
-        value: publishBloc,
-        child: const app.UploadFailureListener(
-          child: Scaffold(body: SizedBox.shrink()),
+    child: BlocProvider<BackgroundPublishBloc>.value(
+      value: publishBloc,
+      child: app.UploadFailureListener(
+        child: MaterialApp(
+          // Wire the real NavigatorKeys.root so the snackbar helper can find
+          // the ScaffoldMessenger and Localizations ancestors from
+          // NavigatorKeys.root.currentContext.
+          navigatorKey: wireRootNavigatorKey ? NavigatorKeys.root : null,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: SizedBox.shrink()),
         ),
       ),
     ),
@@ -73,17 +75,15 @@ Widget _buildHarness({
 }
 
 /// Creates a [BackgroundUpload] with result == null (in-progress).
-BackgroundUpload _inProgress(String id) => BackgroundUpload(
-  draft: _FakeDraft(id),
-  result: null,
-  progress: 0.5,
-);
+BackgroundUpload _inProgress(String id) =>
+    BackgroundUpload(draft: _FakeDraft(id), result: null, progress: 0.5);
 
-/// A [BackgroundPublishState] that carries a success signal for [id], with no
-/// remaining uploads — mirrors what the bloc emits on [PublishSuccess].
-BackgroundPublishState _succeededState(String id) => BackgroundPublishState(
-  recentlySucceededIds: {id},
-);
+/// A [BackgroundPublishState] that carries success signals, with no remaining
+/// uploads — mirrors what the bloc emits on [PublishSuccess].
+BackgroundPublishState _succeededState(String id, [String? secondId]) =>
+    BackgroundPublishState(
+      recentlySucceededIds: {id, ?secondId},
+    );
 
 /// A [BackgroundPublishState] where upload [id] disappeared without a success
 /// signal — mirrors what the bloc emits on [BackgroundPublishVanished].
@@ -130,13 +130,30 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
+        expect(tester.takeException(), isNull);
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.uploadPublishedCountMessage(1)),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
       },
     );
+
+    testWidgets('shows plural snackbar when multiple uploads succeed', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+
+      await tester.pumpWidget(
+        _buildHarness(publishBloc: publishBloc, authService: authService),
+      );
+
+      publishStream.add(_succeededState('draft-1', 'draft-2'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.takeException(), isNull);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(2)), findsOneWidget);
+    });
 
     testWidgets(
       'buffers success while unauthenticated then flushes on re-auth',
@@ -163,13 +180,137 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
 
+        expect(tester.takeException(), isNull);
         // Buffered success must now be flushed.
-        expect(
-          find.text(l10n.uploadPublishedCountMessage(1)),
-          findsOneWidget,
-        );
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
       },
     );
+
+    testWidgets('keeps buffered success when root navigator is unavailable', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(false);
+
+      await tester.pumpWidget(
+        _buildHarness(
+          publishBloc: publishBloc,
+          authService: authService,
+          wireRootNavigatorKey: false,
+        ),
+      );
+
+      publishStream.add(_succeededState('draft-buffered'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+
+      when(() => authService.isAuthenticated).thenReturn(true);
+      publishStream.add(const BackgroundPublishState());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+
+      await tester.pumpWidget(
+        _buildHarness(publishBloc: publishBloc, authService: authService),
+      );
+      publishStream.add(const BackgroundPublishState());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+    });
+
+    testWidgets(
+      'buffers success shown while authenticated when root navigator is '
+      'unavailable, then replays it once the context appears',
+      (tester) async {
+        stubPublishBloc(const BackgroundPublishState());
+        when(() => authService.isAuthenticated).thenReturn(true);
+
+        await tester.pumpWidget(
+          _buildHarness(
+            publishBloc: publishBloc,
+            authService: authService,
+            wireRootNavigatorKey: false,
+          ),
+        );
+
+        // Success arrives while authenticated, but the root navigator
+        // context is unavailable — the snackbar cannot be shown yet.
+        publishStream.add(_succeededState('draft-authed-no-root'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+
+        // Root navigator context appears; the buffered success replays on
+        // the next state emission.
+        await tester.pumpWidget(
+          _buildHarness(publishBloc: publishBloc, authService: authService),
+        );
+        publishStream.add(const BackgroundPublishState());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not throw or show snackbar when root navigator is unavailable',
+      (tester) async {
+        stubPublishBloc(const BackgroundPublishState());
+        when(() => authService.isAuthenticated).thenReturn(true);
+
+        await tester.pumpWidget(
+          _buildHarness(
+            publishBloc: publishBloc,
+            authService: authService,
+            wireRootNavigatorKey: false,
+          ),
+        );
+
+        publishStream.add(_succeededState('draft-no-root'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(tester.takeException(), isNull);
+        expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
+      },
+    );
+
+    testWidgets('does not duplicate snackbar for replayed success state', (
+      tester,
+    ) async {
+      stubPublishBloc(const BackgroundPublishState());
+      when(() => authService.isAuthenticated).thenReturn(true);
+
+      await tester.pumpWidget(
+        _buildHarness(publishBloc: publishBloc, authService: authService),
+      );
+
+      final succeeded = _succeededState('draft-replayed');
+      publishStream.add(succeeded);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      publishStream.add(succeeded);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(tester.takeException(), isNull);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.uploadPublishedCountMessage(1)), findsOneWidget);
+    });
 
     testWidgets(
       'does not show snackbar when upload vanishes via BackgroundPublishVanished',
@@ -192,6 +333,7 @@ void main() {
 
         // No snackbar must appear for a vanished upload.
         final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(tester.takeException(), isNull);
         expect(find.text(l10n.uploadPublishedCountMessage(1)), findsNothing);
         expect(find.text(l10n.uploadPublishedCountMessage(2)), findsNothing);
       },

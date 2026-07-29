@@ -27,15 +27,7 @@ import 'package:unified_logger/unified_logger.dart';
 @visibleForTesting
 class NotificationsView extends ConsumerStatefulWidget {
   /// Creates a [NotificationsView].
-  const NotificationsView({this.kindFilter, super.key});
-
-  /// When non-null, only notifications whose [NotificationItem.type] matches
-  /// the filter are rendered. Used by the inbox tabs scaffold.
-  ///
-  /// `like` matches both [VideoNotification]s of kind `like` and
-  /// [ActorNotification]s of kind `likeComment` so the Likes tab surfaces
-  /// reactions on both videos and comments.
-  final NotificationKind? kindFilter;
+  const NotificationsView({super.key});
 
   @override
   ConsumerState<NotificationsView> createState() => _NotificationsViewState();
@@ -74,31 +66,12 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
-  /// Returns [items] filtered by [NotificationsView.kindFilter].
-  ///
-  /// `like` matches both video likes and comment likes so the Likes tab
-  /// surfaces reactions on either target.
-  List<NotificationItem> _applyFilter(List<NotificationItem> items) {
-    final filter = widget.kindFilter;
-    if (filter == null) return items;
-    return items.where((n) {
-      if (n.type == filter) return true;
-      if (filter == NotificationKind.like &&
-          n.type == NotificationKind.likeComment) {
-        return true;
-      }
-      return false;
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
       color: VineTheme.surfaceContainerHigh,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
-          final visible = _applyFilter(state.notifications);
-
           // Hard failure path. The bloc gates `failure` on
           // `notifications.isEmpty`, so we only land here when the cache
           // is also empty.
@@ -116,7 +89,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           // background refresh never blanks the cached list. The inline
           // refresh-error banner handles the soft-failure affordance via
           // `state.refreshError`.
-          if (visible.isNotEmpty) {
+          if (state.notifications.isNotEmpty) {
             return Stack(
               children: [
                 RefreshIndicator(
@@ -128,7 +101,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                     );
                   },
                   child: _NotificationList(
-                    notifications: visible,
+                    notifications: state.notifications,
                     isLoadingMore: state.isLoadingMore,
                     hasMore: state.hasMore,
                     scrollController: _scrollController,
@@ -184,7 +157,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                     const NotificationFeedRefreshed(),
                   );
                 },
-                child: const _ScrollableEmptyState(),
+                child: _ScrollableEmptyState(controller: _scrollController),
               ),
               Positioned(
                 top: 0,
@@ -244,12 +217,14 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         :final type,
         :final targetEventId,
         :final videoAddressableId,
+        :final hasCommentTarget,
       ):
         final hasVideoTarget =
             targetEventId != null && targetEventId.isNotEmpty;
         final target = resolveNotificationTapTarget(
           kind: type,
           hasVideoTarget: hasVideoTarget,
+          hasCommentTarget: hasCommentTarget,
           actorPubkey: actor.pubkey,
         );
         switch (target) {
@@ -265,6 +240,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
               targetEventId!,
               videoAddressableId: videoAddressableId,
               notificationKind: type,
+              hasCommentTarget: hasCommentTarget,
+              resolveTargetToVideo: true,
             );
             if (!navigated && context.mounted) {
               Log.warning(
@@ -299,6 +276,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     String videoEventId, {
     String? videoAddressableId,
     NotificationKind? notificationKind,
+    bool hasCommentTarget = false,
+    bool resolveTargetToVideo = false,
   }) async {
     Log.info(
       'Navigating to video from notification: '
@@ -310,6 +289,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final videoEventService = ref.read(videoEventServiceProvider);
     final shouldAutoOpenComments = notificationKindOpensComments(
       notificationKind,
+      hasCommentTarget: hasCommentTarget,
     );
 
     // Resolve the navigation target.
@@ -326,8 +306,11 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       if (videoEventId.isNotEmpty && videoEventId != videoAddressableId) {
         fallbackVideoIds = [videoEventId];
       }
-    } else if (shouldAutoOpenComments) {
-      // Comment/mention path: walk E/e tags to find the root video event ID.
+    } else if (resolveTargetToVideo) {
+      // Actor notification path: walk E/e/A tags to find the root video event
+      // ID. Auto-opening comments is a separate presentation choice; plain
+      // mentions still need this resolution so unresolvable note mentions can
+      // fall back to the actor profile instead of routing to /video/<note-id>.
       routeId = await NotificationTargetResolver(
         videoEventService: videoEventService,
         nostrService: ref.read(nostrServiceProvider),
@@ -427,12 +410,15 @@ class _RevalidationBar extends StatelessWidget {
 }
 
 class _ScrollableEmptyState extends StatelessWidget {
-  const _ScrollableEmptyState();
+  const _ScrollableEmptyState({required this.controller});
+
+  final ScrollController controller;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
+        controller: controller,
         physics: const AlwaysScrollableScrollPhysics(),
         child: SizedBox(
           height: constraints.maxHeight,

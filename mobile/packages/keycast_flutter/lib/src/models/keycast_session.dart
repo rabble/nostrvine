@@ -16,9 +16,13 @@ class KeycastSession {
     this.userPubkey,
     this.authorizationHandle,
     this.refreshToken,
+    this.grantType,
   });
 
-  factory KeycastSession.fromTokenResponse(TokenResponse response) {
+  factory KeycastSession.fromTokenResponse(
+    TokenResponse response, {
+    String grantType = authorizationCodeGrant,
+  }) {
     return KeycastSession(
       bunkerUrl: response.bunkerUrl,
       accessToken: response.accessToken,
@@ -28,6 +32,7 @@ class KeycastSession {
       scope: response.scope,
       authorizationHandle: response.authorizationHandle,
       refreshToken: response.refreshToken,
+      grantType: grantType,
     );
   }
 
@@ -42,8 +47,12 @@ class KeycastSession {
       userPubkey: json['user_pubkey'] as String?,
       authorizationHandle: json['authorization_handle'] as String?,
       refreshToken: json['refresh_token'] as String?,
+      grantType: json['grant_type'] as String?,
     );
   }
+  static const authorizationCodeGrant = 'authorization_code';
+  static const refreshTokenGrant = 'refresh_token';
+
   final String bunkerUrl;
   final String? accessToken;
   final DateTime? expiresAt;
@@ -56,9 +65,14 @@ class KeycastSession {
   /// Refresh token for obtaining new access tokens
   final String? refreshToken;
 
+  /// OAuth grant that minted this access token.
+  final String? grantType;
+
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   bool get hasRpcAccess => accessToken != null && !isExpired;
+
+  bool get wasMintedByRefresh => grantType == refreshTokenGrant;
 
   KeycastSession copyWith({
     String? bunkerUrl,
@@ -68,6 +82,7 @@ class KeycastSession {
     String? userPubkey,
     String? authorizationHandle,
     String? refreshToken,
+    String? grantType,
   }) {
     return KeycastSession(
       bunkerUrl: bunkerUrl ?? this.bunkerUrl,
@@ -77,6 +92,7 @@ class KeycastSession {
       userPubkey: userPubkey ?? this.userPubkey,
       authorizationHandle: authorizationHandle ?? this.authorizationHandle,
       refreshToken: refreshToken ?? this.refreshToken,
+      grantType: grantType ?? this.grantType,
     );
   }
 
@@ -89,6 +105,7 @@ class KeycastSession {
       'user_pubkey': userPubkey,
       'authorization_handle': authorizationHandle,
       'refresh_token': refreshToken,
+      'grant_type': grantType,
     };
   }
 

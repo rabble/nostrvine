@@ -12,10 +12,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -76,6 +78,14 @@ class _MockVideoEditorFilterBloc
     extends MockBloc<VideoEditorFilterEvent, VideoEditorFilterState>
     implements VideoEditorFilterBloc {}
 
+class _MockProImageEditorState extends Mock implements ProImageEditorState {
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
+      '_MockProImageEditorState';
+}
+
+class _MockStateManager extends Mock implements StateManager {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -128,6 +138,7 @@ void main() {
     Widget buildWidget({
       VideoEditorMainState? mainState,
       ClipEditorState? clipState,
+      ProImageEditorState? editor,
     }) {
       if (mainState != null) {
         when(() => mockMainBloc.state).thenReturn(mainState);
@@ -143,16 +154,19 @@ void main() {
           home: Scaffold(
             body: VideoEditorScope(
               editorKey: GlobalKey<ProImageEditorState>(),
+              editorOverride: editor,
               removeAreaKey: GlobalKey(),
               originalClipAspectRatio: 9 / 16,
               bodySizeNotifier: ValueNotifier(const Size(400, 600)),
               zoomMatrixNotifier: ValueNotifier(Matrix4.identity()),
+              playTimeNotifier: ValueNotifier(Duration.zero),
               fromLibrary: false,
               onOpenCamera: () {},
               onOpenClipsEditor: () {},
               onAddStickers: () {},
               onOpenMusicLibrary: () {},
               onOpenVoiceOver: () {},
+              onOpenCaptions: () {},
               onAddEditTextLayer: ([layer]) async => null,
               child: MultiBlocProvider(
                 providers: [
@@ -658,6 +672,107 @@ void main() {
           find.byType(VideoEditorTimelineInteractiveBody),
         );
         expect(body.pixelsPerSecond, TimelineConstants.pixelsPerSecond);
+      });
+    });
+
+    // #6401 on the trim path: dragging a trim handle back out lengthens the
+    // composition, and a sound clamped to the trimmed end has to follow it.
+    group('trim-extension sound growth', () {
+      late _MockProImageEditorState editor;
+      late _MockStateManager stateManager;
+
+      const coveringSound = AudioEvent(
+        id: 'sound-1',
+        pubkey: 'bundled',
+        createdAt: 0,
+        url: 'asset://sounds/loop.mp3',
+        duration: 30,
+        endTime: Duration(seconds: 2),
+      );
+
+      setUp(() {
+        editor = _MockProImageEditorState();
+        stateManager = _MockStateManager();
+
+        when(() => editor.stateManager).thenReturn(stateManager);
+        when(() => stateManager.activeMeta).thenReturn({
+          VideoEditorConstants.audioStateHistoryKey: [coveringSound.toJson()],
+        });
+        when(
+          () => editor.addHistory(
+            layers: any(named: 'layers'),
+            filters: any(named: 'filters'),
+            meta: any(named: 'meta'),
+            newLayer: any(named: 'newLayer'),
+            transformConfigs: any(named: 'transformConfigs'),
+            tuneAdjustments: any(named: 'tuneAdjustments'),
+            blur: any(named: 'blur'),
+            heroScreenshotRequired: any(named: 'heroScreenshotRequired'),
+            blockCaptureScreenshot: any(named: 'blockCaptureScreenshot'),
+          ),
+        ).thenAnswer((_) {});
+        when(() => editor.setState(any())).thenAnswer((invocation) {
+          (invocation.positionalArguments.single as VoidCallback)();
+        });
+      });
+
+      testWidgets('extending a trim grows a sound that covered the trimmed '
+          'end onto the restored end', (tester) async {
+        // A 3s clip trimmed to 2s; the sound covers the 2s composition.
+        final trimmed = _createTestClip(
+          id: 'a',
+          seconds: 3,
+        ).copyWith(trimEnd: const Duration(seconds: 1));
+        when(
+          () => mockClipBloc.state,
+        ).thenReturn(ClipEditorState(clips: [trimmed]));
+
+        await tester.pumpWidget(buildWidget(editor: editor));
+        await tester.pump();
+
+        final strip = tester.widget<VideoEditorTimelineClipStrip>(
+          find.byType(VideoEditorTimelineClipStrip),
+        );
+
+        // Drag start captures the trimmed composition as the previous clips.
+        strip.onTrimDragChanged!(true);
+        await tester.pump();
+
+        // The user drags the end handle back out to the full 3s; the bloc
+        // state now carries the restored clip.
+        when(() => mockClipBloc.state).thenReturn(
+          ClipEditorState(clips: [_createTestClip(id: 'a', seconds: 3)]),
+        );
+        strip.onTrimDragChanged!(false);
+        await tester.pump();
+
+        final meta =
+            verify(
+                  () => editor.addHistory(
+                    layers: any(named: 'layers'),
+                    filters: any(named: 'filters'),
+                    meta: captureAny(named: 'meta'),
+                    newLayer: any(named: 'newLayer'),
+                    transformConfigs: any(named: 'transformConfigs'),
+                    tuneAdjustments: any(named: 'tuneAdjustments'),
+                    blur: any(named: 'blur'),
+                    heroScreenshotRequired: any(
+                      named: 'heroScreenshotRequired',
+                    ),
+                    blockCaptureScreenshot: any(
+                      named: 'blockCaptureScreenshot',
+                    ),
+                  ),
+                ).captured.single
+                as Map<String, dynamic>;
+        final raw =
+            meta[VideoEditorConstants.audioStateHistoryKey] as List<dynamic>;
+        final audio = raw
+            .cast<Map<String, dynamic>>()
+            .map(AudioEvent.fromJson)
+            .toList();
+
+        expect(audio.single.endTime, const Duration(seconds: 3));
       });
     });
   });

@@ -20,6 +20,29 @@ class ConversationNavigationTarget extends Equatable {
   List<Object?> get props => [conversationId, participantPubkeys];
 }
 
+/// The pinned Divine Moderation support row (#6283).
+///
+/// Composed inside the same pipeline that applies the blocklist filter and the
+/// protected-minor inbound gate, so a user who blocked the moderation account —
+/// or a restricted minor whose approval was revoked — gets no pin at all rather
+/// than a row the conversation route guard would bounce.
+class PinnedSupport extends Equatable {
+  const PinnedSupport({required this.conversation, required this.isPersisted});
+
+  /// Either the adopted moderation thread — carrying its real unread state and
+  /// last message — or a synthetic stand-in on the same conversation id.
+  final DmConversation conversation;
+
+  /// Whether [conversation] is a row that actually exists in the database.
+  ///
+  /// Gates the row's long-press actions: muting or removing a thread that has
+  /// never been written is a no-op the confirmation snackbar would misreport.
+  final bool isPersisted;
+
+  @override
+  List<Object?> get props => [conversation, isPersisted];
+}
+
 class ConversationListState extends Equatable {
   const ConversationListState({
     this.status = ConversationListStatus.initial,
@@ -32,8 +55,10 @@ class ConversationListState extends Equatable {
     this.potentialRequests = const [],
     this.hasMore = true,
     this.isRestoringHistory = false,
+    this.requestsWithheld = false,
     this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
+    this.pinnedSupport,
   });
 
   /// Number of conversations loaded per page.
@@ -87,6 +112,19 @@ class ConversationListState extends Equatable {
   /// indicator at the top of the Messages list. See #5202.
   final bool isRestoringHistory;
 
+  /// Whether the #5304 recovery gate is currently hiding conversations that
+  /// would otherwise appear as message requests.
+  ///
+  /// Distinct from [isRestoringHistory] on purpose. That flag tracks whether a
+  /// drain is *actively running* (`_activeRecoveryOps > 0`), but the gate reads
+  /// the *persisted* `historyDrainComplete`, which only ever flips on a clean
+  /// exhaustion. A drain that stops at the page cap, hits an exception, or
+  /// finds no connected relay clears the running flag while leaving the gate
+  /// shut — so the progress bar vanished while requests stayed hidden, with no
+  /// banner, no badge and no spinner to show anything was missing. Drives the
+  /// restore-paused banner, which offers the retry that reopens the gate.
+  final bool requestsWithheld;
+
   /// Size of the render window over [conversations] — grows as the user pages.
   ///
   /// Not a fetch bound: the conversations are already loaded in full, so
@@ -96,6 +134,11 @@ class ConversationListState extends Equatable {
   /// Set when the user requests navigation to a specific conversation.
   /// Consumed and cleared by the UI after navigating.
   final ConversationNavigationTarget? navigationTarget;
+
+  /// The pinned Divine Moderation support row, or null when it should not
+  /// render (#6283). An adopted thread is removed from [conversations] and
+  /// [requestConversations], so the inbox never shows moderation twice.
+  final PinnedSupport? pinnedSupport;
 
   /// Number of unread message requests.
   int get requestUnreadCount =>
@@ -121,9 +164,12 @@ class ConversationListState extends Equatable {
     List<DmConversation>? potentialRequests,
     bool? hasMore,
     bool? isRestoringHistory,
+    bool? requestsWithheld,
     int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
     bool clearNavigationTarget = false,
+    PinnedSupport? pinnedSupport,
+    bool clearPinnedSupport = false,
   }) {
     return ConversationListState(
       status: status ?? this.status,
@@ -136,10 +182,14 @@ class ConversationListState extends Equatable {
       potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
       isRestoringHistory: isRestoringHistory ?? this.isRestoringHistory,
+      requestsWithheld: requestsWithheld ?? this.requestsWithheld,
       currentLimit: currentLimit ?? this.currentLimit,
       navigationTarget: clearNavigationTarget
           ? null
           : navigationTarget ?? this.navigationTarget,
+      pinnedSupport: clearPinnedSupport
+          ? null
+          : pinnedSupport ?? this.pinnedSupport,
     );
   }
 
@@ -155,7 +205,9 @@ class ConversationListState extends Equatable {
     potentialRequests,
     hasMore,
     isRestoringHistory,
+    requestsWithheld,
     currentLimit,
     navigationTarget,
+    pinnedSupport,
   ];
 }

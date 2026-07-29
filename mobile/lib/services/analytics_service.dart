@@ -347,7 +347,7 @@ class AnalyticsService implements BackgroundAwareService {
           watchDurationMs: watchDuration.inMilliseconds,
           totalDurationMs: totalDuration?.inMilliseconds,
           loopCount: loopCount,
-          trafficSource: _trafficSourceToString(trafficSource),
+          trafficSource: trafficSource.tagValue,
           sourceDetail: sourceDetail,
           status: PendingViewEventStatus.pending,
           createdAt: createdAt,
@@ -372,20 +372,6 @@ class AnalyticsService implements BackgroundAwareService {
       );
     }
     return true;
-  }
-
-  String _trafficSourceToString(ViewTrafficSource source) {
-    return switch (source) {
-      ViewTrafficSource.home => 'home',
-      ViewTrafficSource.discoveryNew => 'discovery:new',
-      ViewTrafficSource.discoveryClassic => 'discovery:classic',
-      ViewTrafficSource.discoveryForYou => 'discovery:foryou',
-      ViewTrafficSource.discoveryPopular => 'discovery:popular',
-      ViewTrafficSource.profile => 'profile',
-      ViewTrafficSource.share => 'share',
-      ViewTrafficSource.search => 'search',
-      ViewTrafficSource.unknown => 'unknown',
-    };
   }
 
   /// Publish Kind 22236 ephemeral view event to Nostr relays.

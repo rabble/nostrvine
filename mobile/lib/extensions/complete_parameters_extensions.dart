@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -39,6 +40,25 @@ extension CompleteParametersEquality on CompleteParameters {
         stackTrace: stackTrace,
       );
       return [];
+    }
+  }
+
+  /// Restores the caption track from the completion metadata, or `null` when
+  /// the session has no captions (or the stored value is malformed).
+  CaptionTrack? get captionTrackFromMeta {
+    try {
+      final raw = meta[VideoEditorConstants.captionsStateHistoryKey];
+      if (raw is! Map<Object?, Object?>) return null;
+      return CaptionTrack.fromJson(raw);
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to parse captionTrack from meta',
+        name: 'CompleteParametersEquality',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 

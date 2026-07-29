@@ -312,7 +312,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
 
     if (_video == null ||
         videoEventService.shouldHideVideo(_video!) ||
-        videoEventService.isVideoEventLocallyDeleted(_video!)) {
+        videoEventService.isVideoEventKnownDeleted(_video!)) {
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         appBar: _buildExitAppBar(context),

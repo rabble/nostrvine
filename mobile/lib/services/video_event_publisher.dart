@@ -828,6 +828,8 @@ class VideoEventPublisher {
     String? contentWarning,
     VideoReplyContext? replyContext,
     bool addReplyToFeed = false,
+    List<String> textTrackRefs = const [],
+    String textTrackLang = 'en',
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -853,6 +855,8 @@ class VideoEventPublisher {
       thumbnailTimestamp: thumbnailTimestamp,
       replyContext: replyContext,
       addReplyToFeed: addReplyToFeed,
+      textTrackRefs: textTrackRefs,
+      textTrackLang: textTrackLang,
     );
   }
 
@@ -881,6 +885,8 @@ class VideoEventPublisher {
     String? contentWarning,
     VideoReplyContext? replyContext,
     bool addReplyToFeed = false,
+    List<String> textTrackRefs = const [],
+    String textTrackLang = 'en',
   }) async {
     final videoId = upload.videoId;
     if (videoId == null || upload.cdnUrl == null) {
@@ -920,6 +926,8 @@ class VideoEventPublisher {
       contentWarning: contentWarning,
       replyContext: replyContext,
       addReplyToFeed: addReplyToFeed,
+      textTrackRefs: textTrackRefs,
+      textTrackLang: textTrackLang,
     );
     _inFlightDirectPublishes[videoId] = publish;
     try {
@@ -952,6 +960,8 @@ class VideoEventPublisher {
     String? contentWarning,
     VideoReplyContext? replyContext,
     bool addReplyToFeed = false,
+    List<String> textTrackRefs = const [],
+    String textTrackLang = 'en',
   }) async {
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
     // This prevents local file paths from being published to Nostr
@@ -997,6 +1007,19 @@ class VideoEventPublisher {
             videoReplyVisibilityFeedValue,
           ]);
         }
+      }
+
+      // Closed-caption refs (same tag shape as republishWithSubtitles), so a
+      // video edited with CC overlay captions carries them from the first
+      // publish on.
+      for (final ref in textTrackRefs) {
+        tags.add([
+          'text-track',
+          ref,
+          'wss://relay.divine.video',
+          'captions',
+          textTrackLang,
+        ]);
       }
 
       // Build imeta tag components
@@ -1376,11 +1399,18 @@ class VideoEventPublisher {
       }
 
       // Handle audio reuse: extract audio, upload, publish Kind 1063 event
-      // Then add e tag linking video to audio event
-      // Skip if we already referenced a selected audio event above
+      // Then add e tag linking video to audio event.
+      //
+      // Skip when the selected audio was actually referenced above. Bundled
+      // sounds yield no Nostr reference, so opting into reuse should publish the
+      // rendered video audio as the user's reusable Kind 1063. External-provider
+      // catalog sounds are also not referenceable, but they carry their own
+      // provider/license metadata and must not be republished as the user's
+      // reusable sound.
       String? audioEventId;
       if (allowAudioReuse &&
-          !hasSelectedAudioEventId &&
+          reusableSelectedAudioEventId == null &&
+          selectedAudio?.isExternalProviderSound != true &&
           upload.localVideoPath.isNotEmpty) {
         tags.add(['allow_audio_reuse', 'true']);
         Log.info(
@@ -1753,9 +1783,31 @@ class VideoEventPublisher {
     required String blossomUrl,
     String lang = 'en',
   }) async {
-    final pubkey = _authService?.currentPublicKeyHex;
     final vineId = video.vineId;
-    if (pubkey == null || vineId == null || vineId.isEmpty) return null;
+    if (vineId == null || vineId.isEmpty) return null;
+    return publishSubtitleTrack(
+      vineId: vineId,
+      vttContent: vttContent,
+      blossomUrl: blossomUrl,
+      lang: lang,
+    );
+  }
+
+  /// Publishes a Kind 39307 subtitle event for the video with [vineId] and
+  /// returns its addressable ref `39307:<pubkey>:subtitles:<vineId>`, or
+  /// `null` on failure.
+  ///
+  /// Unlike [publishSubtitleEvent] this needs no published [VideoEvent], so
+  /// the initial publish can attach captions before the video event exists —
+  /// addressable `a` refs make the forward reference safe.
+  Future<String?> publishSubtitleTrack({
+    required String vineId,
+    required String vttContent,
+    required String blossomUrl,
+    String lang = 'en',
+  }) async {
+    final pubkey = _authService?.currentPublicKeyHex;
+    if (pubkey == null || vineId.isEmpty) return null;
 
     final dTag = 'subtitles:$vineId';
     final videoKind = NIP71VideoKinds.getPreferredAddressableKind();

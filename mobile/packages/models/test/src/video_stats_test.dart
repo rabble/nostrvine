@@ -1351,6 +1351,40 @@ void main() {
         },
       );
 
+      test(
+        'maps Funnelcake top-level proof fields into rawTags for list rows',
+        () {
+          final stats = VideoStats.fromJson(const {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag': 'video-1',
+            'title': 'Test',
+            'tags': [
+              ['d', 'video-1'],
+              ['imeta', 'url https://example.com/video.mp4'],
+            ],
+            'verification': 'verified_mobile',
+            'proofmode':
+                '{"videoHash":"abc","pgpSignature":"sig",'
+                '"deviceAttestation":"att","c2paManifestId":"urn:c2pa:1"}',
+            'device_attestation': '{"keyID":"k"}',
+            'c2pa_manifest_id': 'urn:c2pa:1',
+          });
+
+          final video = stats.toVideoEvent();
+
+          expect(video.rawTags['verification'], equals('verified_mobile'));
+          expect(video.rawTags['c2pa_manifest_id'], equals('urn:c2pa:1'));
+          expect(video.hasProofMode, isTrue);
+          expect(video.hasProofModeC2paManifestId, isTrue);
+          expect(video.hasProofModeDeviceAttestation, isTrue);
+          expect(video.hasProofModePgpFingerprint, isTrue);
+          expect(video.hasProofModeManifest, isTrue);
+        },
+      );
+
       test('converts to VideoEvent with all fields', () {
         final stats = VideoStats(
           id: 'test-id',

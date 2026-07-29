@@ -1,12 +1,14 @@
 // ABOUTME: Tests that DeviceScope shares device singletons across containers so
 // ABOUTME: an account switch does not open a second DB connection.
 
+import 'package:app_update_repository/app_update_repository.dart';
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/device_scope.dart';
+import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,6 +27,7 @@ void main() {
       database: database,
       sharedPreferences: prefs,
       switchController: AccountSwitchController(),
+      installSource: InstallSource.playStore,
     );
   });
 
@@ -52,24 +55,31 @@ void main() {
     expect(b.read(sharedPreferencesProvider), same(prefs));
   });
 
-  test(
-    'disposing a container does not close the shared database',
-    () async {
-      final a = buildAccountContainer(deviceScope);
-      // Touch the DB through the container to prove it is live.
-      await a.read(databaseProvider).notificationsDao.getAllNotifications();
+  test('every container reads the same install source override', () {
+    final a = buildAccountContainer(deviceScope);
+    addTearDown(a.dispose);
+    final b = buildAccountContainer(deviceScope);
+    addTearDown(b.dispose);
 
-      a.dispose();
+    expect(a.read(installSourceProvider), InstallSource.playStore);
+    expect(b.read(installSourceProvider), InstallSource.playStore);
+  });
 
-      // The shared DB must still be usable from a new container after the
-      // old one was disposed — the override-with-value path never registered
-      // the factory's onDispose(db.close).
-      final b = buildAccountContainer(deviceScope);
-      addTearDown(b.dispose);
-      await expectLater(
-        b.read(databaseProvider).notificationsDao.getAllNotifications(),
-        completes,
-      );
-    },
-  );
+  test('disposing a container does not close the shared database', () async {
+    final a = buildAccountContainer(deviceScope);
+    // Touch the DB through the container to prove it is live.
+    await a.read(databaseProvider).notificationsDao.getAllNotifications();
+
+    a.dispose();
+
+    // The shared DB must still be usable from a new container after the
+    // old one was disposed — the override-with-value path never registered
+    // the factory's onDispose(db.close).
+    final b = buildAccountContainer(deviceScope);
+    addTearDown(b.dispose);
+    await expectLater(
+      b.read(databaseProvider).notificationsDao.getAllNotifications(),
+      completes,
+    );
+  });
 }

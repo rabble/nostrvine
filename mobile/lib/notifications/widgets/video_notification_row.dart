@@ -76,6 +76,8 @@ class VideoNotificationRow extends StatelessWidget {
                   NotificationLeadingTypeIcon(
                     type: notification.type,
                     isRead: notification.isRead,
+                    isVideoSourcedMention:
+                        notification.type == NotificationKind.mention,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -278,11 +280,11 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
       l10n.notificationCommentedOnYourVideo('').trimLeft(),
     NotificationKind.repost =>
       l10n.notificationRepostedYourVideo('').trimLeft(),
-    // VideoNotification asserts type ∈ {like, likeComment, comment,
+    NotificationKind.mention => l10n.notificationMentionedYou('').trimLeft(),
+    // VideoNotification asserts type ∈ {like, likeComment, comment, mention,
     // repost}; the remaining cases satisfy switch exhaustivity only.
     NotificationKind.reply ||
     NotificationKind.follow ||
-    NotificationKind.mention ||
     NotificationKind.system => '',
   };
 }
@@ -301,9 +303,9 @@ String _messageFor(
       actorName,
     ),
     NotificationKind.repost => l10n.notificationRepostedYourVideo(actorName),
+    NotificationKind.mention => l10n.notificationMentionedYou(actorName),
     NotificationKind.reply ||
     NotificationKind.follow ||
-    NotificationKind.mention ||
     NotificationKind.system => '',
   };
 }

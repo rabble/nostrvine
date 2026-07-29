@@ -1,12 +1,12 @@
 // ABOUTME: Overlay widget displaying subtitle text on video playback.
 // ABOUTME: Uses subtitleCuesProvider for dual-fetch (REST embedded or relay).
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/services/subtitle_service.dart';
+import 'package:openvine/widgets/caption_pill.dart';
 
 /// Streams playback position into the shared caption pill renderer.
 class SubtitleCueStreamPill extends ConsumerStatefulWidget {
@@ -64,7 +64,7 @@ class _SubtitleCueStreamPillState extends ConsumerState<SubtitleCueStreamPill> {
           builder: (context, snapshot) {
             final display = snapshot.data ?? const _SubtitleCueDisplay.hidden();
             if (display.text == null) return const SizedBox.shrink();
-            return _CaptionPill(text: display.text!);
+            return CaptionPill(text: display.text!);
           },
         );
       },
@@ -185,28 +185,5 @@ class _SubtitleCueDisplayTracker {
       }
     }
     return null;
-  }
-}
-
-class _CaptionPill extends StatelessWidget {
-  const _CaptionPill({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: VineTheme.scrim65,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        text,
-        style: VineTheme.captionPillFont().copyWith(
-          shadows: const [Shadow(blurRadius: 4, color: VineTheme.shadow25)],
-        ),
-      ),
-    );
   }
 }

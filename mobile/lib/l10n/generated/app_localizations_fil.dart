@@ -1520,6 +1520,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get audioAttributionOriginalSound => 'Original sound';
 
   @override
+  String get audioAttributionUnavailableSound => 'Hindi available ang sound';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'Inspirasyon mula kay @$creatorName';
   }
@@ -3465,6 +3468,80 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get shareSheetMoreActions => 'Iba pang aksyon';
+
+  @override
+  String get shareSheetCrosspost => 'Crosspost';
+
+  @override
+  String get crosspostSheetTitle => 'Crosspost this video';
+
+  @override
+  String get crosspostSheetSubtitle =>
+      'Send it to your connected platforms. Posting can take a few minutes.';
+
+  @override
+  String get crosspostSubmit => 'Crosspost';
+
+  @override
+  String get crosspostStatusQueued => 'Queued';
+
+  @override
+  String get crosspostStatusUploading => 'Uploading';
+
+  @override
+  String get crosspostStatusProcessing => 'Processing';
+
+  @override
+  String get crosspostStatusPosted => 'Posted';
+
+  @override
+  String get crosspostStatusFailed => 'Failed';
+
+  @override
+  String get crosspostStatusSkipped => 'Skipped';
+
+  @override
+  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+
+  @override
+  String get crosspostViewPost => 'View post';
+
+  @override
+  String crosspostReconnectPrompt(String platform) {
+    return 'Reconnect $platform in crossposting settings to keep posting.';
+  }
+
+  @override
+  String get crosspostReconnect => 'Reconnect';
+
+  @override
+  String get crosspostErrorNotOwner =>
+      'Only your own videos can be crossposted.';
+
+  @override
+  String get crosspostErrorNotEligible =>
+      'This video isn\'t eligible for crossposting.';
+
+  @override
+  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+
+  @override
+  String get crosspostErrorUnauthorized =>
+      'Reconnect your account, then try again.';
+
+  @override
+  String get crosspostErrorNetwork =>
+      'Couldn\'t reach the crossposter. Try again in a moment.';
+
+  @override
+  String get crosspostFailedGeneric => 'Crosspost failed.';
+
+  @override
+  String get crosspostStillWorking =>
+      'Still working. You can close this — posting continues in the background.';
+
+  @override
+  String get crosspostDone => 'Done';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Na-save sa Camera Roll';
@@ -5607,6 +5684,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get inboxRemovedConversation => 'Inalis ang conversation';
 
   @override
+  String get inboxRestorePausedTitle => 'May mga chat na hindi pa tapos ibalik';
+
+  @override
+  String get conversationRestorePausedTitle =>
+      'Hindi pa tapos ibalik ang chat na ito';
+
+  @override
+  String get inboxRestoreRetryAction => 'Subukan ulit';
+
+  @override
   String get inboxRestoringMessages => 'Ibinabalik ang mga message mo…';
 
   @override
@@ -5636,6 +5723,13 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get inboxSearchHint => 'Maghanap ng mga mensahe';
+
+  @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle =>
+      'Mga bug, moderation, usaping account — nakikinig kami.';
 
   @override
   String get inboxSearchEmptyTitle => 'Walang tugma';
@@ -6046,6 +6140,9 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get commonClose => 'Isara';
+
+  @override
+  String get commonLoading => 'Naglo-load';
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
@@ -6952,12 +7049,24 @@ class AppLocalizationsFil extends AppLocalizations {
       'Alisin ang account na ito sa device na ito?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'Mag-sign in ulit para i-delete ang account mo. Wala pang na-delete.';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'Hindi nabura ang iyong account sa server. Pakitsek ang iyong koneksyon at subukan ulit.';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'Naipadala na ang mga request na burahin ang iyong mga post, pero hindi namin natapos ang pagbura ng iyong account. Mag-sign in ulit para tapusin.';
+
+  @override
   String get deleteAccountSuccess =>
       'Naipadala na ang mga deletion request. Naka-log out ka na sa device na ito.';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'Na-request na ang pag-delete ng account. May ilang existing na post na hindi makumpirma nang isa-isa para sa pag-delete.';
 
   @override
   String get deleteAccountWarningBody =>
@@ -7572,6 +7681,14 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get blueskyUsernameRequiredSubtitle =>
       'Bluesky publishing needs a claimed username.divine.video handle.';
+
+  @override
+  String get blueskyUsernameSyncPending =>
+      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+
+  @override
+  String get blueskyStatusUnavailableRetry =>
+      'We could not check your Divine handle. Try again.';
 
   @override
   String get blueskySetUpHandle => 'Set up';
@@ -8207,9 +8324,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Magdagdag ng audio bago mag-record';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'Ginagawa ang iyong video…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'Hindi magawa ang video. Subukan ulit.';
 
@@ -8333,6 +8447,174 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'Buksan ang audio editor';
+
+  @override
+  String get videoEditorCaptionsLabel => 'Mga subtitle';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel =>
+      'Buksan ang subtitle editor';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'I-burn sa video';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'Custom';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'Custom na estilo';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'Ilapat';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'Font';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'Kulay ng teksto';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'Background';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'Kulay ng background';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'Animation';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'Wala';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'Fade';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'Mga subtitle';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'Nakikinig…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'Ginagawang mga suhestiyong subtitle ang audio mo.';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'Wala kaming narinig na boses. Puwede mo pa ring isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'Hindi available ang speech recognition sa device na ito. Puwede mong isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'Hindi pinapayagan ang speech recognition. I-enable ito sa Settings o isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'Hindi gumana ang transcription ngayon. Puwede mong isulat ang mga subtitle.';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton =>
+      'Ako na ang magsusulat ng mga subtitle';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'Magdagdag ng subtitle';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'Teksto ng subtitle';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel =>
+      'Burahin ang subtitle';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'Alisin ang lahat ng subtitle';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle =>
+      'Alisin ang mga subtitle?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'Mawawala ang lahat ng teksto at timing.';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel =>
+      'Isara ang subtitle editor';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel =>
+      'Kumpirmahin ang mga subtitle';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'Istilo ng subtitle';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'Klasiko';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'Pop';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'Spring';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'Mono';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'Headline';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'Makinilya';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'Marker';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'Kaligrapiya';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'Retro';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'Elegante';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'Bula';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'Neon';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'Makapal';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'Panaginip';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'Karagatan';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'Maaraw';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'Sulat-kamay';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'Serif';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'Selyo';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'Buksan ang text editor';
@@ -9886,12 +10168,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'divine.space';
-
-  @override
-  String get profileCreatorSiteOwnLabel => 'aking divine.space';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
@@ -10373,4 +10649,72 @@ class AppLocalizationsFil extends AppLocalizations {
   String crosspostingConnectionDenied(String platform) {
     return 'Connection was canceled on $platform';
   }
+
+  @override
+  String get supporterTitle => 'Divine Supporters';
+
+  @override
+  String get supporterTileSubtitle =>
+      'Support Divine with an optional monthly subscription.';
+
+  @override
+  String get supporterHeroTitle => 'Keep Divine running';
+
+  @override
+  String get supporterHeroBody =>
+      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+
+  @override
+  String get supporterActiveBadge =>
+      'You\'re a Divine Supporter. Thank you for keeping this going.';
+
+  @override
+  String get supporterPurchasePending => 'Your purchase is pending approval.';
+
+  @override
+  String get supporterPurchaseConfirming => 'Confirming your support…';
+
+  @override
+  String get supporterStoreChecking => 'Checking the store…';
+
+  @override
+  String get supporterUnavailable =>
+      'Supporter subscriptions are not available here right now.';
+
+  @override
+  String get supporterRestorePurchases => 'Restore purchases';
+
+  @override
+  String get supporterDismissError => 'Dismiss error';
+
+  @override
+  String get supporterErrorStoreUnavailable =>
+      'The store is unavailable on this device.';
+
+  @override
+  String get supporterErrorPurchaseFailed =>
+      'The purchase did not complete. You were not charged.';
+
+  @override
+  String get supporterErrorPurchasePending =>
+      'Your purchase is pending approval.';
+
+  @override
+  String get supporterErrorRestoreFailed =>
+      'No supporter subscription was found to restore.';
+
+  @override
+  String get supporterErrorOwnershipConflict =>
+      'This purchase belongs to another Divine account.';
+
+  @override
+  String get supporterErrorVerificationUnavailable =>
+      'Divine could not confirm supporter status right now.';
+
+  @override
+  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+
+  @override
+  String get supporterDisclaimer =>
+      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
 }

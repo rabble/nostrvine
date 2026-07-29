@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
@@ -53,6 +54,10 @@ class AppShellBadgeScope extends ConsumerWidget {
               contentBlocklistRepositoryProvider,
             ),
             protectedMinorInboxGate: ref.read(protectedMinorInboxGateProvider),
+            // Same pin wiring as InboxPage (#6283) — the badge partitions the
+            // moderation thread out of the list exactly as the inbox does, so
+            // the count stays equal to the rows that render an unread dot.
+            supportRowPubkey: kModerationPubkeyHex,
           ),
         ),
         // Keep the provider identity stable so repository readiness / account

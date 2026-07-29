@@ -16,9 +16,10 @@ import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timel
 /// Commits a new stop-motion frame list for the single stop-motion clip
 /// [clipId].
 ///
-/// Updates the [ClipEditorBloc], rebases timeline markers, and writes the change
-/// to editor history (undo/redo) — mirroring the clip-level edit commit in
-/// `TimelineClipControls` (`_deleteClip` / `_setPlaybackSpeed`). A no-op edit
+/// Updates the [ClipEditorBloc], rebases timeline markers, stretches audio that
+/// ran to the end of the composition onto the new (longer) end, and writes the
+/// change to editor history (undo/redo) — mirroring the clip-level edit commit
+/// in `TimelineClipControls` (`_deleteClip` / `_setPlaybackSpeed`). A no-op edit
 /// (the frame-ops helpers return the source list unchanged) is skipped so it
 /// never records an empty history entry.
 ///
@@ -55,7 +56,13 @@ void commitStopMotionFrames(
 
   bloc.add(ClipEditorClipUpdated(clipId: clipId, clip: updated));
   overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-  editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
+  // A hold change restretches the whole composition, so a sound that covered it
+  // has to grow with it (#6401).
+  editor.setLengthenedClipState(
+    previousClips: state.clips,
+    clips: newClips,
+    timelineMarkers: rebasedMarkers,
+  );
 }
 
 List<StopMotionClipFrame>? _stopMotionFrames(

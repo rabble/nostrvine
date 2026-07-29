@@ -4,6 +4,7 @@
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -20,10 +21,24 @@ BuildConfiguration buildConfiguration(Ref ref) {
 FeatureFlagService featureFlagService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final buildConfig = ref.watch(buildConfigurationProvider);
+  final environmentService = ref.watch(environmentServiceProvider);
 
-  final service = FeatureFlagService(prefs, buildConfig);
+  final service = FeatureFlagService(
+    prefs,
+    buildConfig,
+    canOverrideInternalFlags: () => environmentService.isDeveloperModeEnabled,
+  );
   // Load persisted overrides from SharedPreferences
   service.initialize();
+
+  // Re-resolve every flag when developer mode flips, rather than watching it
+  // and rebuilding: this provider's instance is captured by ref.read in
+  // SettingsScreen.initState, and a new identity here would strand that
+  // capture on an orphaned service.
+  void onEnvironmentChanged() => service.initialize();
+  environmentService.addListener(onEnvironmentChanged);
+  ref.onDispose(() => environmentService.removeListener(onEnvironmentChanged));
+
   return service;
 }
 

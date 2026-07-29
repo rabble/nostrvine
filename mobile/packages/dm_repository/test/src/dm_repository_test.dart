@@ -315,6 +315,7 @@ class _FakeDmSyncState implements DmSyncState {
   final List<String> markedCompletePubkeys = <String>[];
   final List<int> persistedDrainCursors = <int>[];
   final List<String> upgradedPubkeys = <String>[];
+  final List<String> repairedPubkeys = <String>[];
   final List<({String pubkey, int createdAt})> recorded =
       <({String pubkey, int createdAt})>[];
 
@@ -349,6 +350,18 @@ class _FakeDmSyncState implements DmSyncState {
     drainCompleteOverride = false;
     drainCursorOverride = null;
     drainVersionOverride = DmSyncState.currentDrainVersion;
+  }
+
+  @override
+  Future<void> repairPoisonedBoundaries(String pubkey) async {
+    repairedPubkeys.add(pubkey);
+    final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final newest = newestOverride;
+    if (newest != null && newest > nowSec + DmSyncState.maxFutureSkewSeconds) {
+      newestOverride = nowSec;
+      drainCompleteOverride = false;
+      drainCursorOverride = null;
+    }
   }
 
   @override
@@ -2965,6 +2978,175 @@ void main() {
         },
       );
 
+      test(
+        'a gift wrap whose decrypt THROWS is queued for retry, not dropped',
+        () async {
+          // Regression: only a null return reached the retry queue. A
+          // decryptor that raised — a remote-signer (Keycast RPC) failure, the
+          // exact case #5202's queue exists for — was logged and dropped, so
+          // that inbound DM was lost permanently with no retry.
+          final giftWrap = createGiftWrapEvent();
+          final pendingDao = _MockPendingGiftWrapsDao();
+
+          when(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              rawJson: any(named: 'rawJson'),
+              createdAt: any(named: 'createdAt'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+
+          final controller = StreamController<Event>();
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final repository = createRepository(
+            rumorDecryptor: (_, _) async =>
+                throw StateError('remote signer unavailable'),
+            pendingGiftWrapsDao: pendingDao,
+          );
+
+          await repository.startListening();
+          controller.add(giftWrap);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => pendingDao.recordFailedDecrypt(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+              rawJson: any(named: 'rawJson'),
+              createdAt: 1700000000,
+            ),
+          ).called(1);
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'reports once with an aggregate count when gift wraps are abandoned '
+        'at the decrypt retry cap',
+        () async {
+          // These are inbound DMs the user will never see, and the wrap
+          // carries no decryptable sender or conversation, so nothing can be
+          // surfaced in the UI. A local warning is invisible in triage, so
+          // this report is the only signal that permanent message loss
+          // happened. One report per drain pass, not per wrap, so a spam
+          // burst cannot flood the dashboard.
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 3);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => <PendingGiftWrap>[]);
+
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
+
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.pendingDecryptExhausted,
+          );
+          expect(reporterCalls.single.error.toString(), contains('3'));
+        },
+      );
+
+      test(
+        'does not report when nothing hit the decrypt retry cap',
+        () async {
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => <PendingGiftWrap>[]);
+
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
+
+          expect(reporterCalls, isEmpty);
+        },
+      );
+
+      test(
+        'reports and drops a pending wrap with corrupt stored JSON',
+        () async {
+          // We wrote that JSON ourselves, so a parse failure is an invariant
+          // violation — and it costs the user an inbound message.
+          final pendingDao = _MockPendingGiftWrapsDao();
+          when(
+            () => pendingDao.deleteExhausted(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => pendingDao.getRetryable(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxAttempts: any(named: 'maxAttempts'),
+            ),
+          ).thenAnswer(
+            (_) async => const [
+              PendingGiftWrap(
+                giftWrapId: _giftWrapEventId,
+                ownerPubkey: _validPubkeyA,
+                rawJson: 'not valid json {{{',
+                createdAt: 1700000000,
+                attempts: 1,
+              ),
+            ],
+          );
+          when(
+            () => pendingDao.deletePending(
+              giftWrapId: any(named: 'giftWrapId'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockDirectMessagesDao.hasGiftWrap(_giftWrapEventId),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(pendingGiftWrapsDao: pendingDao);
+          await repository.retryPendingDecryptions();
+
+          expect(reporterCalls, hasLength(1));
+          expect(
+            reporterCalls.single.site,
+            DmRepositoryReportableSites.pendingDecryptCorruptPayload,
+          );
+          verify(
+            () => pendingDao.deletePending(
+              giftWrapId: _giftWrapEventId,
+              ownerPubkey: _validPubkeyA,
+            ),
+          ).called(1);
+        },
+      );
+
       test('skips events with wrong kind', () async {
         final giftWrap = createGiftWrapEvent();
         // kind 1 instead of kind 14
@@ -4535,6 +4717,41 @@ void main() {
         'isHistoryRecoveryComplete is true when no sync state is wired (#5304)',
         () {
           expect(createRepository().isHistoryRecoveryComplete, isTrue);
+        },
+      );
+
+      test(
+        'hasAttemptedHistoryRecovery distinguishes a fresh install from a '
+        'stopped-short drain',
+        () {
+          final fresh = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = 0;
+          expect(
+            createRepository(syncState: fresh).hasAttemptedHistoryRecovery,
+            isFalse,
+          );
+
+          final attempted = _FakeDmSyncState()
+            ..drainCompleteOverride = false
+            ..drainVersionOverride = DmSyncState.currentDrainVersion;
+          expect(
+            createRepository(syncState: attempted).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+
+          final complete = _FakeDmSyncState()..drainCompleteOverride = true;
+          expect(
+            createRepository(syncState: complete).hasAttemptedHistoryRecovery,
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'hasAttemptedHistoryRecovery is true when no sync state is wired',
+        () {
+          expect(createRepository().hasAttemptedHistoryRecovery, isTrue);
         },
       );
 
@@ -10156,6 +10373,193 @@ void main() {
       });
     });
 
+    group('extractPinnedSupport', () {
+      // The support account and a key it rotated away from. Kept as literals:
+      // this package cannot import the app's official-accounts config, and the
+      // partition is keyed on whatever the caller injects anyway.
+      const support = _validPubkeyB;
+      const retired = _validPubkeyC;
+
+      final currentId = DmRepository.computeConversationId([
+        _validPubkeyA,
+        support,
+      ]);
+      final retiredId = DmRepository.computeConversationId([
+        _validPubkeyA,
+        retired,
+      ]);
+
+      DmConversation makeConversation({
+        required String id,
+        required List<String> participantPubkeys,
+        bool isGroup = false,
+      }) => DmConversation(
+        id: id,
+        participantPubkeys: participantPubkeys,
+        isGroup: isGroup,
+        createdAt: 1700000000,
+      );
+
+      ({
+        DmConversation? pinned,
+        String? supportConversationId,
+        List<DmConversation> inbox,
+        List<DmConversation> requests,
+      })
+      extract({
+        List<DmConversation> inbox = const [],
+        List<DmConversation> requests = const [],
+        String userPubkey = _validPubkeyA,
+        String? supportPubkey = support,
+      }) => DmRepository.extractPinnedSupport(
+        userPubkey: userPubkey,
+        supportPubkey: supportPubkey,
+        inbox: inbox,
+        requests: requests,
+      );
+
+      test('adopts the current-key thread and removes it from the inbox', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(inbox: [thread]);
+
+        expect(result.pinned, equals(thread));
+        expect(result.inbox, isEmpty);
+        expect(result.supportConversationId, equals(currentId));
+      });
+
+      test('adopts an inbound-only thread out of the requests bucket', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(requests: [thread]);
+
+        expect(result.pinned, equals(thread));
+        expect(result.requests, isEmpty);
+      });
+
+      test('preserves a retired-key thread WITHOUT adopting it', () {
+        final thread = makeConversation(
+          id: retiredId,
+          participantPubkeys: const [_validPubkeyA, retired],
+        );
+
+        final result = extract(inbox: [thread]);
+
+        // Nothing remaps the recipient downstream, so returning this as the
+        // pin would address replies to a key the account rotated away from.
+        expect(result.pinned, isNull);
+        expect(result.inbox, equals([thread]));
+        expect(result.supportConversationId, equals(currentId));
+      });
+
+      test('removes the current-key thread and preserves retired history', () {
+        final retiredThread = makeConversation(
+          id: retiredId,
+          participantPubkeys: const [_validPubkeyA, retired],
+        );
+        final currentThread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(inbox: [retiredThread, currentThread]);
+
+        expect(result.pinned, equals(currentThread));
+        expect(result.inbox, equals([retiredThread]));
+      });
+
+      test('prefers the inbox copy when the thread is in both buckets', () {
+        final accepted = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+        final request = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+          isGroup: true,
+        );
+
+        final result = extract(inbox: [accepted], requests: [request]);
+
+        expect(result.pinned, same(accepted));
+        expect(result.inbox, isEmpty);
+        expect(result.requests, isEmpty);
+      });
+
+      test('leaves unrelated conversations untouched', () {
+        final other = makeConversation(
+          id: 'other',
+          participantPubkeys: const [_validPubkeyA, _validPubkeyC],
+        );
+
+        final result = extract(inbox: [other]);
+
+        expect(result.inbox, equals([other]));
+        expect(result.pinned, isNull);
+      });
+
+      test('leaves a group containing the support account in the list', () {
+        final group = makeConversation(
+          id: 'group',
+          participantPubkeys: const [_validPubkeyA, support, _validPubkeyC],
+          isGroup: true,
+        );
+
+        final result = extract(inbox: [group]);
+
+        // The id hashes ALL sorted participants, so a group can never collide
+        // with the 1:1 support thread.
+        expect(result.inbox, equals([group]));
+        expect(result.pinned, isNull);
+      });
+
+      test('is inert when no support pubkey is injected', () {
+        final thread = makeConversation(
+          id: currentId,
+          participantPubkeys: const [_validPubkeyA, support],
+        );
+
+        final result = extract(inbox: [thread], supportPubkey: null);
+
+        expect(result.pinned, isNull);
+        expect(result.supportConversationId, isNull);
+        expect(result.inbox, equals([thread]));
+      });
+
+      test('is inert for an empty support pubkey', () {
+        final result = extract(supportPubkey: '');
+
+        expect(result.supportConversationId, isNull);
+      });
+
+      test('is inert before an identity is known', () {
+        final result = extract(userPubkey: '');
+
+        expect(result.supportConversationId, isNull);
+      });
+
+      test('is inert when the user IS the support account', () {
+        final selfThread = makeConversation(
+          id: DmRepository.computeConversationId([support, support]),
+          participantPubkeys: const [support, support],
+        );
+
+        final result = extract(inbox: [selfThread], userPubkey: support);
+
+        // A self-keyed pin routes with an empty counterparty list, and the
+        // maintenance pass deletes self-conversations out from under it.
+        expect(result.pinned, isNull);
+        expect(result.supportConversationId, isNull);
+        expect(result.inbox, equals([selfThread]));
+      });
+    });
+
     group('getConversations', () {
       test('returns mapped $DmConversation list from DAO', () async {
         final participants = [_validPubkeyA, _validPubkeyB]..sort();
@@ -11046,6 +11450,172 @@ void main() {
 
           expect(decryptCount, 2);
           expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by
+      // whoever sent the wrap. Left unbounded, one such rumor advances the
+      // sync cursor past now and every later subscription returns nothing —
+      // the inbox is silently blackholed until reinstall.
+      Event futureDatedRumor() => Event.fromJson({
+        'id': _rumorEventId,
+        'pubkey': _validPubkeyB,
+        // Year 2100 — unconditionally beyond the local ordering clamp.
+        'created_at': 4102444800,
+        'kind': EventKind.privateDirectMessage,
+        'tags': [
+          ['p', _validPubkeyA],
+        ],
+        'content': 'blackhole',
+        'sig': '',
+      });
+
+      test(
+        'a future-dated rumor is persisted with a clamped timestamp and never '
+        'advances the sync cursor past now',
+        () async {
+          final syncState = _FakeDmSyncState();
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              tagsJson: any(named: 'tagsJson'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            syncState: syncState,
+            rumorDecryptor: (_, _) async => futureDatedRumor(),
+          );
+          await repository.startListening();
+
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          final insertCall = verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: captureAny(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              tagsJson: any(named: 'tagsJson'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          )..called(1);
+          final insertedCreatedAt = insertCall.captured.single as int;
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          expect(insertedCreatedAt, closeTo(nowSec, 5));
+          expect(syncState.recorded.single.createdAt, closeTo(nowSec, 5));
+          expect(ledger.recorded, isNot(contains(_giftWrapEventId)));
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'the skew guard does not reject an honestly-dated rumor',
+        () async {
+          // Same wrap, same pipeline — only the rumor timestamp differs. The
+          // rumor must reach its kind handler instead of being short-circuited.
+          final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final honest = Event.fromJson({
+            'id': _rumorEventId,
+            'pubkey': _validPubkeyB,
+            'created_at': nowSec - 60,
+            'kind': EventKind.reaction,
+            'tags': [
+              ['e', _giftWrapEventId2],
+              ['p', _validPubkeyA],
+            ],
+            'content': '❤️',
+            'sig': '',
+          });
+          when(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).thenAnswer((_) async => DmReactionWrapOutcome.processed);
+
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            reactionsRepository: mockReactionsRepository,
+            rumorDecryptor: (_, _) async => honest,
+          );
+          await repository.startListening();
+
+          controller.add(giftWrap());
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+
+          verify(
+            () => mockReactionsRepository.persistIncoming(
+              rumorEvent: any(named: 'rumorEvent'),
+              giftWrapId: _giftWrapEventId,
+            ),
+          ).called(1);
 
           await controller.close();
           await repository.stopListening();

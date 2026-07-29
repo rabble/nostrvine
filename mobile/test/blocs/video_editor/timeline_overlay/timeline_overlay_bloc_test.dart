@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 TimelineOverlayItem _item({
@@ -104,6 +105,73 @@ void main() {
             ],
           ),
         ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'drives the captions strip from cues and keeps burned layers off '
+        'both strips',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          TimelineOverlayItemsUpdate(
+            layers: [
+              TextLayer(
+                id: 'text-1',
+                text: 'Plain text',
+                startTime: Duration.zero,
+                endTime: const Duration(seconds: 2),
+              ),
+              // A burned-in caption layer is a derived render, not a timeline
+              // item: excluded from the layer strip and never a caption item.
+              TextLayer(
+                id: 'caption-layer-1',
+                text: 'Burned cue',
+                startTime: const Duration(seconds: 3),
+                endTime: const Duration(seconds: 4),
+                meta: const {
+                  VideoEditorConstants.captionCueMetaKey: true,
+                  VideoEditorConstants.captionCueIdMetaKey: 'cue-1',
+                },
+              ),
+            ],
+            filters: const <FilterState>[],
+            audioTracks: const [],
+            totalVideoDuration: const Duration(seconds: 6),
+            captionTrack: const CaptionTrack(
+              burnIn: true,
+              presetId: 'classic',
+              languageTag: 'en-US',
+              cues: [
+                CaptionCue(
+                  id: 'cue-1',
+                  text: 'The cue',
+                  start: Duration(seconds: 3),
+                  end: Duration(seconds: 4),
+                ),
+              ],
+            ),
+          ),
+        ),
+        verify: (bloc) {
+          final items = bloc.state.items;
+          final layerItems = items
+              .where((i) => i.type == TimelineOverlayType.layer)
+              .toList();
+          final captionItems = items
+              .where((i) => i.type == TimelineOverlayType.captions)
+              .toList();
+
+          // The plain text layer stays a layer item; the burned caption layer
+          // appears on neither strip.
+          expect(layerItems.map((i) => i.id), equals(['text-1']));
+          // Caption items come only from the track cues, addressed by cue id.
+          expect(captionItems.map((i) => i.id), equals(['cue-1']));
+          expect(captionItems.single.layer, isNull);
+          expect(captionItems.single.label, equals('The cue'));
+          expect(
+            captionItems.single.startTime,
+            equals(const Duration(seconds: 3)),
+          );
+        },
       );
 
       blocTest<TimelineOverlayBloc, TimelineOverlayState>(
@@ -1534,6 +1602,132 @@ void main() {
             (i) => i.id == 'tail-layer',
           );
           expect(layer.endTime, const Duration(seconds: 27));
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'restores a sound bar the redo reconcile clamped against a stale total',
+        build: TimelineOverlayBloc.new,
+        // Redo of a stop-motion hold change: the history entry carries the
+        // grown 4.5s window, but the reconcile reads the total off
+        // ClipEditorBloc *before* the restored clips land there, so the bar is
+        // built against the pre-redo 3s. The timeline then reports the real
+        // total — the bar has to follow it back out, or the sound plays 3s
+        // under a 4.5s video (#6401).
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(milliseconds: 4500),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 3),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(milliseconds: 4500),
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(milliseconds: 4500));
+          // The bar alone is not enough: the preview player builds its window
+          // from the item and is only re-synced when this counter moves, so
+          // without the bump the sound keeps playing the truncated 3s.
+          expect(bloc.state.audioTracksPlayerRevision, 1);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not re-sync the player mid clip-trim drag',
+        build: TimelineOverlayBloc.new,
+        // The total changes every frame of the drag, so bumping here would
+        // tear down and reschedule native audio per frame. The bar still
+        // follows; only the player bump waits.
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(seconds: 6),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 6),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(seconds: 3),
+              isClipTrimDragging: true,
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(seconds: 3));
+          expect(bloc.state.audioTracksPlayerRevision, 0);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not re-sync the player when no sound window moved',
+        build: TimelineOverlayBloc.new,
+        // A layer clamp must not churn the native audio tracks.
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'layer-1',
+              type: TimelineOverlayType.layer,
+              start: const Duration(seconds: 2),
+              end: const Duration(seconds: 10),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayTotalDurationChanged(Duration(seconds: 5)),
+        ),
+        verify: (bloc) {
+          expect(bloc.state.audioTracksPlayerRevision, 0);
+        },
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'does not stretch a sound past the window the user trimmed it to',
+        build: TimelineOverlayBloc.new,
+        // Same growth, but this track's own window is 1.5s. Following the
+        // total must never invent coverage the AudioEvent does not have.
+        act: (bloc) => bloc
+          ..add(
+            TimelineOverlayItemsUpdate(
+              layers: const <Layer>[],
+              filters: const <FilterState>[],
+              audioTracks: [
+                _audioEvent(
+                  id: 'sound-1',
+                  start: Duration.zero,
+                  end: const Duration(milliseconds: 1500),
+                ),
+              ],
+              totalVideoDuration: const Duration(seconds: 3),
+            ),
+          )
+          ..add(
+            const TimelineOverlayTotalDurationChanged(
+              Duration(milliseconds: 4500),
+            ),
+          ),
+        verify: (bloc) {
+          final sound = bloc.state.items.firstWhere((i) => i.id == 'sound-1');
+          expect(sound.endTime, const Duration(milliseconds: 1500));
         },
       );
 

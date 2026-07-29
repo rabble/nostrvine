@@ -4,6 +4,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 part 'crosspost_settings_state.dart';
 
@@ -14,36 +15,47 @@ part 'crosspost_settings_state.dart';
 class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   CrosspostSettingsCubit({
     required CrosspostApiClient apiClient,
+    required ProfileRepository profileRepository,
     required String pubkey,
   }) : _apiClient = apiClient,
+       _profileRepository = profileRepository,
        _pubkey = pubkey,
        super(const CrosspostSettingsState()) {
     loadStatus();
   }
 
   final CrosspostApiClient _apiClient;
+  final ProfileRepository _profileRepository;
   final String _pubkey;
 
   /// Load the current crosspost status from keycast.
   Future<void> loadStatus() async {
     emit(state.copyWith(status: CrosspostSettingsStatus.loading));
+    final claimLookup = await _lookupUsernameClaimStatus();
     try {
       final result = await _apiClient.getStatus();
+      final displayUsername = result.username ?? claimLookup.username;
       emit(
         CrosspostSettingsState(
           status: CrosspostSettingsStatus.loaded,
           enabled: result.crosspostEnabled,
-          username: result.username,
-          handle: result.handle,
+          username: displayUsername,
+          handle: _handleFor(displayUsername),
           provisioningState: result.provisioningState,
+          usernameClaimStatus: claimLookup.status,
           attempt: state.attempt,
         ),
       );
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(
-        state.copyWith(
+        CrosspostSettingsState(
           status: CrosspostSettingsStatus.failure,
+          enabled: state.enabled,
+          username: claimLookup.username,
+          handle: _handleFor(claimLookup.username),
+          provisioningState: state.provisioningState,
+          usernameClaimStatus: claimLookup.status,
           error: CrosspostSettingsError.generic,
           attempt: state.attempt + 1,
         ),
@@ -53,8 +65,12 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
 
   /// Toggle crossposting with optimistic update.
   ///
-  /// Enabling requires a claimed `.divine.video` username; without one, the
-  /// keycast call is guaranteed to fail, so short-circuit to a
+  /// Enabling requires a confirmed missing `.divine.video` username to
+  /// short-circuit. Unknown claim status is allowed through so the API can
+  /// report the current crosspost precondition instead of sending users into a
+  /// claim flow after a transient lookup failure.
+  ///
+  /// A confirmed missing username short-circuits to a
   /// [CrosspostSettingsError.usernameNotClaimed] failure and let the UI route
   /// the user into the claim flow instead of optimistically flipping a toggle
   /// that will snap back.
@@ -62,7 +78,8 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   /// Otherwise emits the new value optimistically, calls the API, and reverts
   /// with a categorized [CrosspostSettingsError] on failure.
   Future<void> toggleCrosspost({required bool enabled}) async {
-    if (enabled && !state.usernameClaimed) {
+    if (enabled &&
+        state.usernameClaimStatus == UsernameClaimStatus.notClaimed) {
       emit(
         state.copyWith(
           status: CrosspostSettingsStatus.failure,
@@ -91,8 +108,8 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
         state.copyWith(
           status: CrosspostSettingsStatus.loaded,
           enabled: result.crosspostEnabled,
-          username: result.username,
-          handle: result.handle,
+          username: result.username ?? state.username,
+          handle: result.handle ?? state.handle,
           provisioningState: result.provisioningState,
           clearError: true,
         ),
@@ -103,7 +120,7 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
       emit(
         previousState.copyWith(
           status: CrosspostSettingsStatus.failure,
-          error: _errorFromException(e),
+          error: _errorFromException(e, previousState.usernameClaimStatus),
           attempt: previousState.attempt + 1,
         ),
       );
@@ -119,11 +136,46 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     );
   }
 
-  CrosspostSettingsError _errorFromException(Object exception) {
+  Future<({UsernameClaimStatus status, String? username})>
+  _lookupUsernameClaimStatus() async {
+    final lookup = await _profileRepository.lookupUsernameByPubkey(
+      pubkeyHex: _pubkey,
+    );
+    return switch (lookup) {
+      DivineUsernameFound(:final canonical) => (
+        status: UsernameClaimStatus.claimed,
+        username: canonical,
+      ),
+      DivineUsernameNotFound() => (
+        status: UsernameClaimStatus.notClaimed,
+        username: null,
+      ),
+      DivineUsernameUnknown() => (
+        status: UsernameClaimStatus.unknown,
+        username: null,
+      ),
+    };
+  }
+
+  String? _handleFor(String? username) {
+    if (username == null || username.isEmpty) return null;
+    return '$username.divine.video';
+  }
+
+  CrosspostSettingsError _errorFromException(
+    Object exception,
+    UsernameClaimStatus claimStatus,
+  ) {
     if (exception is CrosspostApiException) {
       switch (exception.kind) {
         case CrosspostApiErrorKind.usernameNotClaimed:
-          return CrosspostSettingsError.usernameNotClaimed;
+          return switch (claimStatus) {
+            UsernameClaimStatus.claimed =>
+              CrosspostSettingsError.usernameNotSynced,
+            UsernameClaimStatus.notClaimed =>
+              CrosspostSettingsError.usernameNotClaimed,
+            UsernameClaimStatus.unknown => CrosspostSettingsError.unavailable,
+          };
         case CrosspostApiErrorKind.unavailable:
           return CrosspostSettingsError.unavailable;
         case CrosspostApiErrorKind.generic:

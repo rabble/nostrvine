@@ -174,7 +174,7 @@ VideoEventService videoEventService(Ref ref) {
       stackTrace: stackTrace,
     );
   }
-  service.seedLocalDeletionTombstones(
+  service.seedKnownDeletionTombstones(
     eventIds: persistedDeletions.map((deletion) => deletion.originalEventId),
     addressableIds: persistedDeletions
         .map((deletion) => deletion.addressableId)

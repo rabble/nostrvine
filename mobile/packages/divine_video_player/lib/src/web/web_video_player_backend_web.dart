@@ -10,6 +10,7 @@ import 'dart:ui_web' as ui_web;
 import 'package:divine_video_player/src/audio_track.dart' as divine;
 import 'package:divine_video_player/src/video_clip.dart';
 import 'package:divine_video_player/src/video_player_state.dart';
+import 'package:divine_video_player/src/web/web_clip_duration.dart';
 import 'package:divine_video_player/src/web/web_video_player_backend.dart';
 import 'package:flutter/widgets.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -419,17 +420,14 @@ class HtmlVideoElementBackend implements WebVideoPlayerBackend {
     final position = Duration(
       microseconds: math.max(0, (positionSeconds * 1e6).round()),
     );
-    final rawDurationSeconds = element.duration;
-    final hasDuration =
-        !rawDurationSeconds.isNaN && rawDurationSeconds.isFinite;
     final clipEnd = _clipEnd;
-    final effectiveDurationSeconds = clipEnd != null
-        ? _toSeconds(clipEnd) - _toSeconds(_clipStart)
-        : hasDuration
-        ? rawDurationSeconds - _toSeconds(_clipStart)
-        : 0.0;
+    final effectiveDurationSeconds = resolveClipDurationSeconds(
+      clipStartSeconds: _toSeconds(_clipStart),
+      clipEndSeconds: clipEnd == null ? null : _toSeconds(clipEnd),
+      sourceDurationSeconds: element.duration,
+    );
     final duration = Duration(
-      microseconds: math.max(0, (effectiveDurationSeconds * 1e6).round()),
+      microseconds: (effectiveDurationSeconds * 1e6).round(),
     );
 
     var bufferedPosition = position;

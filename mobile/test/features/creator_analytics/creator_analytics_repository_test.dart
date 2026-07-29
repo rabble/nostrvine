@@ -31,6 +31,9 @@ VideoStats _videoStats({
   required String pubkey,
   String? dTag,
   int createdAtSeconds = 1739350000,
+  int reactions = 2,
+  int comments = 1,
+  int reposts = 0,
   int? loops,
   int? views,
   Map<String, String> rawTags = const {},
@@ -44,10 +47,10 @@ VideoStats _videoStats({
     title: id,
     thumbnail: 'thumb',
     videoUrl: 'videoUrl',
-    reactions: 2,
-    comments: 1,
-    reposts: 0,
-    engagementScore: 0,
+    reactions: reactions,
+    comments: comments,
+    reposts: reposts,
+    engagementScore: reactions + comments + reposts,
     loops: loops,
     views: views,
     rawTags: rawTags,
@@ -78,7 +81,7 @@ void main() {
   });
 
   group('FunnelcakeCreatorAnalyticsRepository', () {
-    test('hydrates views from bulk stats when available', () async {
+    test('hydrates views and live engagement from bulk stats', () async {
       const pubkey = 'pubkey';
       final api = MockFunnelcakeApiClient();
 
@@ -112,7 +115,14 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => VideosByAuthorResponse(
-          videos: [_videoStats(id: 'a', pubkey: pubkey)],
+          videos: [
+            _videoStats(
+              id: 'a',
+              pubkey: pubkey,
+              reactions: 0,
+              comments: 0,
+            ),
+          ],
         ),
       );
 
@@ -125,6 +135,12 @@ void main() {
       expect(snapshot.diagnostics.videosWithAnyViews, 1);
       expect(snapshot.diagnostics.videosMissingViews, 0);
       expect(snapshot.videos.first.rawTags['views'], '15');
+      expect(snapshot.videos.first.originalLikes, isNull);
+      expect(snapshot.videos.first.originalComments, isNull);
+      expect(snapshot.videos.first.originalReposts, isNull);
+      expect(snapshot.videos.first.nostrLikeCount, 4);
+      expect(snapshot.videos.first.nostrCommentCount, 2);
+      expect(snapshot.videos.first.nostrRepostCount, 1);
     });
 
     test(
@@ -312,6 +328,107 @@ void main() {
       // surviving-id list rather than the (unreachable) single-leak list.
       verify(() => api.getBulkVideoStats(['authored'])).called(1);
       verifyNever(() => api.getVideoViews('collaborator-leak'));
+    });
+
+    test(
+      'continues pagination when a full raw page contains expired videos',
+      () async {
+        const pubkey = 'pubkey';
+        final api = MockFunnelcakeApiClient();
+        var calls = 0;
+        final expiredAt =
+            (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 3600;
+
+        when(() => api.isAvailable).thenReturn(true);
+        when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+        when(
+          () => api.getBulkVideoStats(any()),
+        ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+        when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+        when(
+          () => api.getVideosByAuthor(
+            pubkey: pubkey,
+            limit: 100,
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          calls++;
+          if (calls == 1) {
+            return VideosByAuthorResponse(
+              videos: [
+                for (var i = 0; i < 99; i++)
+                  _videoStats(
+                    id: 'page-1-$i',
+                    pubkey: pubkey,
+                    createdAtSeconds: 1739350000 - i,
+                    views: 1,
+                  ),
+                _videoStats(
+                  id: 'expired',
+                  pubkey: pubkey,
+                  createdAtSeconds: 1739349900,
+                  views: 1,
+                  rawTags: {'expiration': '$expiredAt'},
+                ),
+              ],
+            );
+          }
+          return VideosByAuthorResponse(
+            videos: [_videoStats(id: 'page-2', pubkey: pubkey, views: 1)],
+            hasMore: false,
+          );
+        });
+
+        final repo = FunnelcakeCreatorAnalyticsRepository(api);
+        final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+        expect(snapshot.diagnostics.totalVideos, 100);
+        expect(snapshot.videos.map((video) => video.id), contains('page-2'));
+        expect(
+          snapshot.videos.map((video) => video.id),
+          isNot(contains('expired')),
+        );
+        expect(snapshot.diagnostics.videoCatalogTruncated, isFalse);
+      },
+    );
+
+    test('marks diagnostics truncated when the page cap is reached', () async {
+      const pubkey = 'pubkey';
+      final api = MockFunnelcakeApiClient();
+      var calls = 0;
+
+      when(() => api.isAvailable).thenReturn(true);
+      when(() => api.getSocialCounts(pubkey)).thenAnswer((_) async => null);
+      when(
+        () => api.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(() => api.getVideoViews(any())).thenAnswer((_) async => 0);
+      when(
+        () => api.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+          before: any(named: 'before'),
+        ),
+      ).thenAnswer((_) async {
+        final page = calls++;
+        return VideosByAuthorResponse(
+          videos: [
+            for (var i = 0; i < 100; i++)
+              _videoStats(
+                id: 'page-$page-$i',
+                pubkey: pubkey,
+                createdAtSeconds: 1739350000 - (page * 100) - i,
+                views: 1,
+              ),
+          ],
+        );
+      });
+
+      final repo = FunnelcakeCreatorAnalyticsRepository(api);
+      final snapshot = await repo.fetchCreatorAnalytics(pubkey);
+
+      expect(snapshot.diagnostics.totalVideos, 400);
+      expect(snapshot.diagnostics.videoCatalogTruncated, isTrue);
     });
   });
 }

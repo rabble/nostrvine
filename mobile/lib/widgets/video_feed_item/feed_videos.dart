@@ -15,6 +15,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -38,7 +39,6 @@ import 'package:openvine/widgets/video_feed_item/blurred_video_backdrop.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_like_helpers.dart';
-import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -364,9 +364,12 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           _resumeAutoAdvanceAfterSwipe();
           widget.onActiveVideoChanged?.call(video, index);
         },
-        // Do not pass maxLoopDuration here. Feed playback should loop at the
-        // asset boundary; restarting with a Dart seek at the 6.3s recording
-        // limit creates an audible seam.
+        // Nothing in the feed plays longer than a Vine, not even a 60s file a
+        // foreign Nostr client points at. The cap is a native clip end, so the
+        // loop point stays in the platform player — deliberately NOT
+        // maxLoopDuration, whose Dart seek at the 6.3s recording limit both
+        // truncated classic Vines and created an audible seam (#5544, #6421).
+        maxPlaybackDuration: AppConstants.maxFeedPlaybackDuration,
         onVideoLoopCompleted: _handleAutoAdvanceCompleted,
         shouldPortraitExpand: widget.shouldPortraitExpand,
         canAutoPlay: _canAutoPlayVideo,

@@ -69,6 +69,37 @@ class _MockProVideoEditor extends ProVideoEditor {
     await file.writeAsBytes([0x00, 0x01, 0x02, 0x03]);
     return filePath;
   }
+
+  bool shouldThrowOnMerge = false;
+  AudioMergeConfigs? lastMergeConfigs;
+
+  @override
+  Future<AudioMergeResult> mergeAudioToFile(
+    String filePath,
+    AudioMergeConfigs value, {
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    lastMergeConfigs = value;
+    if (shouldThrowOnMerge) throw Exception('merge failed');
+    await File(filePath).writeAsBytes([0x00, 0x01]);
+    // Concatenate each segment's contribution with no gaps, mirroring native.
+    var start = Duration.zero;
+    final offsets = <AudioMergeSegmentOffset>[];
+    for (final segment in value.segments) {
+      offsets.add(
+        AudioMergeSegmentOffset(
+          outputStart: start,
+          outputDuration: segment.outputDuration,
+        ),
+      );
+      start += segment.outputDuration;
+    }
+    return AudioMergeResult(
+      outputPath: filePath,
+      segments: offsets,
+      totalDuration: start,
+    );
+  }
 }
 
 void main() {
@@ -398,6 +429,78 @@ void main() {
       if (outputFile.existsSync()) {
         await outputFile.delete();
       }
+    });
+
+    test(
+      'mergeClipAudio returns per-segment offsets and forwards format',
+      () async {
+        final result = await service.mergeClipAudio(
+          segments: [
+            AudioMergeSegment(
+              video: EditorVideo.file('/tmp/a.mp4'),
+              startTime: Duration.zero,
+              endTime: const Duration(seconds: 2),
+            ),
+            AudioMergeSegment(
+              video: EditorVideo.file('/tmp/b.mp4'),
+              startTime: Duration.zero,
+              endTime: const Duration(seconds: 2),
+              speed: 2,
+            ),
+          ],
+          sampleRate: 16000,
+          channels: 1,
+        );
+
+        expect(result.outputPath, contains('merged_audio_'));
+        expect(result.outputPath, endsWith('.wav'));
+        expect(result.segments, hasLength(2));
+        expect(result.segments[0].outputStart, equals(Duration.zero));
+        expect(
+          result.segments[0].outputDuration,
+          equals(const Duration(seconds: 2)),
+        );
+        // The 2x segment contributes half its window length.
+        expect(
+          result.segments[1].outputStart,
+          equals(const Duration(seconds: 2)),
+        );
+        expect(
+          result.segments[1].outputDuration,
+          equals(const Duration(seconds: 1)),
+        );
+        expect(result.totalDuration, equals(const Duration(seconds: 3)));
+        expect(mockEditor.lastMergeConfigs?.sampleRate, equals(16000));
+        expect(mockEditor.lastMergeConfigs?.channels, equals(1));
+
+        final outputFile = File(result.outputPath);
+        if (outputFile.existsSync()) {
+          await outputFile.delete();
+        }
+      },
+    );
+
+    test('mergeClipAudio wraps failures in AudioExtractionException', () async {
+      mockEditor.shouldThrowOnMerge = true;
+
+      expect(
+        () => service.mergeClipAudio(
+          segments: [
+            AudioMergeSegment(
+              video: EditorVideo.file('/tmp/a.mp4'),
+              startTime: Duration.zero,
+              endTime: const Duration(seconds: 2),
+            ),
+          ],
+        ),
+        throwsA(
+          isA<AudioExtractionException>().having(
+            (e) => e.message,
+            'message',
+            'Failed to merge audio',
+          ),
+        ),
+      );
     });
   });
 }

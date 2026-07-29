@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/cache_recovery_service.dart';
 
 class FeatureFlagScreen extends ConsumerWidget {
@@ -17,6 +18,10 @@ class FeatureFlagScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(featureFlagServiceProvider);
     final state = ref.watch(featureFlagStateProvider);
+    final showInternalFlags = ref.watch(isDeveloperModeEnabledProvider);
+    final visibleFlags = FeatureFlag.values
+        .where((flag) => !flag.isInternal || showInternalFlags)
+        .toList(growable: false);
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -48,9 +53,9 @@ class FeatureFlagScreen extends ConsumerWidget {
                 // Feature Flags List
                 Expanded(
                   child: ListView.builder(
-                    itemCount: FeatureFlag.values.length,
+                    itemCount: visibleFlags.length,
                     itemBuilder: (context, index) {
-                      final flag = FeatureFlag.values[index];
+                      final flag = visibleFlags[index];
                       final isEnabled = state[flag] ?? false;
                       final hasUserOverride = service.hasUserOverride(flag);
 

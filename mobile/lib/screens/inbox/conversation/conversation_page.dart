@@ -11,6 +11,7 @@ import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/blocs/dm/minor_dm_approval.dart';
 import 'package:openvine/blocs/dm/reactions/conversation_reactions_cubit.dart';
+import 'package:openvine/blocs/dm/restore_status/dm_restore_status_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
@@ -93,6 +94,14 @@ class ConversationPage extends ConsumerWidget {
             dmRepository: dmRepository,
             conversationId: conversationId,
           )..add(const ConversationStarted()),
+        ),
+        // Qualifies the empty state: `watchMessages` is a local DB stream, so
+        // an unsynced thread reaches `loaded` with zero rows and would
+        // otherwise assert "no messages" while gift wraps are still arriving
+        // or decrypting. Same identity-keying as ConversationBloc.
+        BlocProvider<DmRestoreStatusCubit>(
+          key: ValueKey((dmRepository, currentPubkey, 'restoreStatus')),
+          create: (_) => DmRestoreStatusCubit(dmRepository: dmRepository),
         ),
         // Reactions cubit; same identity-keying as ConversationBloc.
         BlocProvider<ConversationReactionsCubit>(

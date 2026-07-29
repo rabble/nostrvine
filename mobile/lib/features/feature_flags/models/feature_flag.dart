@@ -1,6 +1,8 @@
 // ABOUTME: Feature flag enum defining available feature flags for Divine
 // ABOUTME: Provides type-safe flag definitions with display names and descriptions
 
+enum FeatureFlagAudience { user, internal }
+
 enum FeatureFlag {
   enhancedAnalytics(
     'Enhanced Analytics',
@@ -39,6 +41,7 @@ enum FeatureFlag {
     'Self-advertise your NIP-17 kind-10050 DM inbox relays on login so '
         'compliant senders deliver where divine reads. Keep off until the '
         'backend relay accepts kind-10050.',
+    audience: FeatureFlagAudience.internal,
   ),
   feedTuning(
     'Feed Tuning Swipes',
@@ -53,25 +56,41 @@ enum FeatureFlag {
   lightMode(
     'Light Mode',
     'Enable the experimental System, Light, and Dark appearance settings.',
+    audience: FeatureFlagAudience.internal,
   ),
   adaptiveMediaChrome(
     'Adaptive Media Chrome',
     'Use light controls around fullscreen video when Light Mode is enabled.',
+    audience: FeatureFlagAudience.internal,
   ),
   communityContentWarnings(
     'Community Content Warnings',
     'Suggest content-warning labels on videos and blur videos whose labels '
         'crossed the community threshold. Off by default pending T&S '
         'rollout sign-off.',
+    audience: FeatureFlagAudience.internal,
   ),
   emailVerificationPinFallback(
     'Email Verification PIN Fallback',
     'Show the in-app email verification PIN and resend fallback. Off by '
         'default until keycast verify-pin support is deployed.',
+    audience: FeatureFlagAudience.internal,
+  ),
+  divineSupporters(
+    'Divine Supporters',
+    'Optional monthly supporter subscription via in-app purchase. '
+        'Nothing is gated — it keeps Divine running and recognizes supporters.',
   );
 
-  const FeatureFlag(this.displayName, this.description);
+  const FeatureFlag(
+    this.displayName,
+    this.description, {
+    this.audience = FeatureFlagAudience.user,
+  });
 
   final String displayName;
   final String description;
+  final FeatureFlagAudience audience;
+
+  bool get isInternal => audience == FeatureFlagAudience.internal;
 }

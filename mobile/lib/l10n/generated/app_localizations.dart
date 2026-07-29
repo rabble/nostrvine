@@ -2668,6 +2668,12 @@ abstract class AppLocalizations {
   /// **'Original sound'**
   String get audioAttributionOriginalSound;
 
+  /// Neutral label shown when a video references a shared sound event that cannot currently be fetched. Must not imply the video author's original sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound unavailable'**
+  String get audioAttributionUnavailableSound;
+
   /// No description provided for @videoInspiredByAttribution.
   ///
   /// In en, this message translates to:
@@ -5963,6 +5969,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More actions'**
   String get shareSheetMoreActions;
+
+  /// No description provided for @shareSheetCrosspost.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost'**
+  String get shareSheetCrosspost;
+
+  /// No description provided for @crosspostSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost this video'**
+  String get crosspostSheetTitle;
+
+  /// No description provided for @crosspostSheetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send it to your connected platforms. Posting can take a few minutes.'**
+  String get crosspostSheetSubtitle;
+
+  /// No description provided for @crosspostSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost'**
+  String get crosspostSubmit;
+
+  /// No description provided for @crosspostStatusQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get crosspostStatusQueued;
+
+  /// No description provided for @crosspostStatusUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get crosspostStatusUploading;
+
+  /// No description provided for @crosspostStatusProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing'**
+  String get crosspostStatusProcessing;
+
+  /// No description provided for @crosspostStatusPosted.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted'**
+  String get crosspostStatusPosted;
+
+  /// No description provided for @crosspostStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get crosspostStatusFailed;
+
+  /// No description provided for @crosspostStatusSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get crosspostStatusSkipped;
+
+  /// No description provided for @crosspostStatusNeedsReauth.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs reconnecting'**
+  String get crosspostStatusNeedsReauth;
+
+  /// No description provided for @crosspostViewPost.
+  ///
+  /// In en, this message translates to:
+  /// **'View post'**
+  String get crosspostViewPost;
+
+  /// No description provided for @crosspostReconnectPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect {platform} in crossposting settings to keep posting.'**
+  String crosspostReconnectPrompt(String platform);
+
+  /// No description provided for @crosspostReconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get crosspostReconnect;
+
+  /// No description provided for @crosspostErrorNotOwner.
+  ///
+  /// In en, this message translates to:
+  /// **'Only your own videos can be crossposted.'**
+  String get crosspostErrorNotOwner;
+
+  /// No description provided for @crosspostErrorNotEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'This video isn\'t eligible for crossposting.'**
+  String get crosspostErrorNotEligible;
+
+  /// No description provided for @crosspostErrorNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'That platform isn\'t connected.'**
+  String get crosspostErrorNotConnected;
+
+  /// No description provided for @crosspostErrorUnauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect your account, then try again.'**
+  String get crosspostErrorUnauthorized;
+
+  /// No description provided for @crosspostErrorNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the crossposter. Try again in a moment.'**
+  String get crosspostErrorNetwork;
+
+  /// No description provided for @crosspostFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosspost failed.'**
+  String get crosspostFailedGeneric;
+
+  /// No description provided for @crosspostStillWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Still working. You can close this — posting continues in the background.'**
+  String get crosspostStillWorking;
+
+  /// No description provided for @crosspostDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get crosspostDone;
 
   /// No description provided for @watermarkDownloadSavedToCameraRoll.
   ///
@@ -9726,6 +9864,24 @@ abstract class AppLocalizations {
   /// **'Removed conversation'**
   String get inboxRemovedConversation;
 
+  /// Title of the inbox banner shown when the one-time DM history recovery stopped before finishing, so conversations that would appear as message requests are still hidden. Paired with a Retry action.
+  ///
+  /// In en, this message translates to:
+  /// **'Some chats haven\'t finished restoring'**
+  String get inboxRestorePausedTitle;
+
+  /// Short note shown in a single empty DM conversation when history recovery has run but stopped before finishing, so this chat may still receive restored messages.
+  ///
+  /// In en, this message translates to:
+  /// **'This chat hasn\'t finished restoring'**
+  String get conversationRestorePausedTitle;
+
+  /// Label of the action on the inbox restore-paused banner that re-runs the DM history recovery.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get inboxRestoreRetryAction;
+
   /// Accessibility label on the progress bar shown at the top of the Messages list while a one-time DM history recovery (after reinstall) is still running, so the user knows older chats are still being restored.
   ///
   /// In en, this message translates to:
@@ -9785,6 +9941,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search messages'**
   String get inboxSearchHint;
+
+  /// Title of the pinned Divine Moderation support row at the top of the Messages inbox. A brand account name, so it is intentionally identical in every locale.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Moderation'**
+  String get inboxSupportRowTitle;
+
+  /// One-line summary under the pinned Divine Moderation support row, describing what the moderation team can help with.
+  ///
+  /// In en, this message translates to:
+  /// **'Bugs, moderation, account stuff — we\'re listening.'**
+  String get inboxSupportRowSubtitle;
 
   /// Shown in place of the conversation list when an inbox search matches nothing.
   ///
@@ -10481,6 +10649,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get commonClose;
+
+  /// Screen-reader label for a blocking progress spinner that covers the screen while an action is being prepared. Announced instead of the content behind it, which is not reachable while the spinner is up.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading'**
+  String get commonLoading;
 
   /// Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again.
   ///
@@ -11961,17 +12135,35 @@ abstract class AppLocalizations {
   /// **'Remove this account from this device?'**
   String get deleteAccountRemoveKeysTitle;
 
+  /// Shown when account deletion is blocked before anything is published because the session cannot authorize the server-side account deletion. Tells the user to sign in again and makes clear nothing was deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again to delete your account. Nothing has been deleted yet.'**
+  String get deleteAccountReauthRequired;
+
   /// No description provided for @deleteAccountServerDeletionFailed.
   ///
   /// In en, this message translates to:
   /// **'Could not delete your account from the server. Please check your connection and try again.'**
   String get deleteAccountServerDeletionFailed;
 
+  /// Snackbar shown when the Nostr deletion requests were already published but the server-side Divine account deletion was refused for a credential reason only a fresh sign-in can clear. Must not claim that nothing was deleted, because the vanish request has already reached relays.
+  ///
+  /// In en, this message translates to:
+  /// **'Deletion requests sent for your posts, but we couldn\'t finish deleting your account. Sign in again to finish.'**
+  String get deleteAccountServerDeletionRequiresReauth;
+
   /// Snackbar after the account deletion flow publishes Nostr deletion requests, deletes the Divine account when applicable, and signs out locally. Do not imply guaranteed deletion from every relay, client, cache, search index, or other signed-in device.
   ///
   /// In en, this message translates to:
   /// **'Deletion requests sent. You\'re signed out on this device.'**
   String get deleteAccountSuccess;
+
+  /// Snackbar when the account-wide vanish request was published but the relay query failed or at least one per-item deletion request was not confirmed. Must not imply every existing post was individually requested or confirmed for deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Account deletion requested. Some existing posts could not be individually confirmed for deletion.'**
+  String get deleteAccountSuccessContentUnverified;
 
   /// Warning body in the delete-account confirmation dialog, shown above the type-to-confirm field. Be clear that Nostr deletion is request-based, not a guarantee that every relay, client, cache, search index, or other signed-in device will forget the account.
   ///
@@ -12971,6 +13163,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bluesky publishing needs a claimed username.divine.video handle.'**
   String get blueskyUsernameRequiredSubtitle;
+
+  /// No description provided for @blueskyUsernameSyncPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.'**
+  String get blueskyUsernameSyncPending;
+
+  /// No description provided for @blueskyStatusUnavailableRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not check your Divine handle. Try again.'**
+  String get blueskyStatusUnavailableRetry;
 
   /// No description provided for @blueskySetUpHandle.
   ///
@@ -14034,12 +14238,6 @@ abstract class AppLocalizations {
   /// **'Add audio before recording'**
   String get videoRecorderLipSyncAddAudioFirst;
 
-  /// Loading label shown while captured stop-motion frames are being encoded into one video.
-  ///
-  /// In en, this message translates to:
-  /// **'Creating your video…'**
-  String get videoRecorderStopMotionAssembling;
-
   /// Snackbar shown when assembling captured stop-motion frames into a video failed.
   ///
   /// In en, this message translates to:
@@ -14249,6 +14447,318 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open audio editor'**
   String get videoEditorOpenAudioSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get videoEditorCaptionsLabel;
+
+  /// No description provided for @videoEditorOpenCaptionsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open captions editor'**
+  String get videoEditorOpenCaptionsSemanticLabel;
+
+  /// Checkbox label in the captions sheet to additionally burn the captions into the exported video (closed captions are always published).
+  ///
+  /// In en, this message translates to:
+  /// **'Burn into video'**
+  String get videoEditorCaptionsBurnInLabel;
+
+  /// No description provided for @videoEditorCaptionsPresetCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get videoEditorCaptionsPresetCustom;
+
+  /// No description provided for @videoEditorCaptionsCustomStyleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom style'**
+  String get videoEditorCaptionsCustomStyleTitle;
+
+  /// No description provided for @videoEditorCaptionsCustomApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get videoEditorCaptionsCustomApply;
+
+  /// No description provided for @videoEditorCaptionsCustomFont.
+  ///
+  /// In en, this message translates to:
+  /// **'Font'**
+  String get videoEditorCaptionsCustomFont;
+
+  /// No description provided for @videoEditorCaptionsCustomTextColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Text color'**
+  String get videoEditorCaptionsCustomTextColor;
+
+  /// No description provided for @videoEditorCaptionsCustomBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get videoEditorCaptionsCustomBackground;
+
+  /// No description provided for @videoEditorCaptionsCustomBackgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Background color'**
+  String get videoEditorCaptionsCustomBackgroundColor;
+
+  /// No description provided for @videoEditorCaptionsCustomAnimation.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation'**
+  String get videoEditorCaptionsCustomAnimation;
+
+  /// No description provided for @videoEditorCaptionsAnimationNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get videoEditorCaptionsAnimationNone;
+
+  /// No description provided for @videoEditorCaptionsAnimationFade.
+  ///
+  /// In en, this message translates to:
+  /// **'Fade'**
+  String get videoEditorCaptionsAnimationFade;
+
+  /// No description provided for @videoEditorCaptionsAnimationPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop'**
+  String get videoEditorCaptionsAnimationPop;
+
+  /// No description provided for @videoEditorCaptionsAnimationSpring.
+  ///
+  /// In en, this message translates to:
+  /// **'Spring'**
+  String get videoEditorCaptionsAnimationSpring;
+
+  /// No description provided for @videoEditorCaptionsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Captions'**
+  String get videoEditorCaptionsEditTitle;
+
+  /// No description provided for @videoEditorCaptionsGeneratingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening for speech…'**
+  String get videoEditorCaptionsGeneratingTitle;
+
+  /// No description provided for @videoEditorCaptionsGeneratingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning your audio into caption suggestions.'**
+  String get videoEditorCaptionsGeneratingSubtitle;
+
+  /// No description provided for @videoEditorCaptionsNoSpeechMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t hear any speech. You can still write captions yourself.'**
+  String get videoEditorCaptionsNoSpeechMessage;
+
+  /// No description provided for @videoEditorCaptionsUnavailableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition isn\'t available on this device. You can write captions yourself.'**
+  String get videoEditorCaptionsUnavailableMessage;
+
+  /// No description provided for @videoEditorCaptionsNotAuthorizedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech recognition isn\'t allowed. Enable it in Settings or write captions yourself.'**
+  String get videoEditorCaptionsNotAuthorizedMessage;
+
+  /// No description provided for @videoEditorCaptionsFailedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcription didn\'t work this time. You can write captions yourself.'**
+  String get videoEditorCaptionsFailedMessage;
+
+  /// No description provided for @videoEditorCaptionsStartEmptyButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Write captions myself'**
+  String get videoEditorCaptionsStartEmptyButton;
+
+  /// No description provided for @videoEditorCaptionsAddCue.
+  ///
+  /// In en, this message translates to:
+  /// **'Add caption'**
+  String get videoEditorCaptionsAddCue;
+
+  /// No description provided for @videoEditorCaptionsCueTextHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption text'**
+  String get videoEditorCaptionsCueTextHint;
+
+  /// No description provided for @videoEditorCaptionsCueDeleteSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete caption'**
+  String get videoEditorCaptionsCueDeleteSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsDeleteTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all captions'**
+  String get videoEditorCaptionsDeleteTrack;
+
+  /// No description provided for @videoEditorCaptionsDeleteTrackConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove captions?'**
+  String get videoEditorCaptionsDeleteTrackConfirmTitle;
+
+  /// No description provided for @videoEditorCaptionsDeleteTrackConfirmSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All caption text and timing will be gone.'**
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle;
+
+  /// No description provided for @videoEditorCaptionsCloseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close captions editor'**
+  String get videoEditorCaptionsCloseSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsDoneSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm captions'**
+  String get videoEditorCaptionsDoneSemanticLabel;
+
+  /// No description provided for @videoEditorCaptionsPresetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Caption style'**
+  String get videoEditorCaptionsPresetTitle;
+
+  /// No description provided for @videoEditorCaptionsPresetClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get videoEditorCaptionsPresetClassic;
+
+  /// No description provided for @videoEditorCaptionsPresetPop.
+  ///
+  /// In en, this message translates to:
+  /// **'Pop'**
+  String get videoEditorCaptionsPresetPop;
+
+  /// No description provided for @videoEditorCaptionsPresetZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom'**
+  String get videoEditorCaptionsPresetZoom;
+
+  /// No description provided for @videoEditorCaptionsPresetSpring.
+  ///
+  /// In en, this message translates to:
+  /// **'Spring'**
+  String get videoEditorCaptionsPresetSpring;
+
+  /// No description provided for @videoEditorCaptionsPresetMono.
+  ///
+  /// In en, this message translates to:
+  /// **'Mono'**
+  String get videoEditorCaptionsPresetMono;
+
+  /// No description provided for @videoEditorCaptionsPresetHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Headline'**
+  String get videoEditorCaptionsPresetHeadline;
+
+  /// No description provided for @videoEditorCaptionsPresetTypewriter.
+  ///
+  /// In en, this message translates to:
+  /// **'Typewriter'**
+  String get videoEditorCaptionsPresetTypewriter;
+
+  /// No description provided for @videoEditorCaptionsPresetMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'Marker'**
+  String get videoEditorCaptionsPresetMarker;
+
+  /// No description provided for @videoEditorCaptionsPresetScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get videoEditorCaptionsPresetScript;
+
+  /// No description provided for @videoEditorCaptionsPresetRetro.
+  ///
+  /// In en, this message translates to:
+  /// **'Retro'**
+  String get videoEditorCaptionsPresetRetro;
+
+  /// No description provided for @videoEditorCaptionsPresetElegant.
+  ///
+  /// In en, this message translates to:
+  /// **'Elegant'**
+  String get videoEditorCaptionsPresetElegant;
+
+  /// No description provided for @videoEditorCaptionsPresetBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubble'**
+  String get videoEditorCaptionsPresetBubble;
+
+  /// No description provided for @videoEditorCaptionsPresetNeon.
+  ///
+  /// In en, this message translates to:
+  /// **'Neon'**
+  String get videoEditorCaptionsPresetNeon;
+
+  /// No description provided for @videoEditorCaptionsPresetBold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get videoEditorCaptionsPresetBold;
+
+  /// No description provided for @videoEditorCaptionsPresetDreamy.
+  ///
+  /// In en, this message translates to:
+  /// **'Dreamy'**
+  String get videoEditorCaptionsPresetDreamy;
+
+  /// No description provided for @videoEditorCaptionsPresetOcean.
+  ///
+  /// In en, this message translates to:
+  /// **'Ocean'**
+  String get videoEditorCaptionsPresetOcean;
+
+  /// No description provided for @videoEditorCaptionsPresetSunny.
+  ///
+  /// In en, this message translates to:
+  /// **'Sunny'**
+  String get videoEditorCaptionsPresetSunny;
+
+  /// No description provided for @videoEditorCaptionsPresetHandwritten.
+  ///
+  /// In en, this message translates to:
+  /// **'Handwritten'**
+  String get videoEditorCaptionsPresetHandwritten;
+
+  /// No description provided for @videoEditorCaptionsPresetSerif.
+  ///
+  /// In en, this message translates to:
+  /// **'Serif'**
+  String get videoEditorCaptionsPresetSerif;
+
+  /// No description provided for @videoEditorCaptionsPresetStamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Stamp'**
+  String get videoEditorCaptionsPresetStamp;
 
   /// No description provided for @videoEditorOpenTextSemanticLabel.
   ///
@@ -16834,18 +17344,6 @@ abstract class AppLocalizations {
   /// **'Could not open website'**
   String get profileCouldNotOpenWebsite;
 
-  /// Label on the profile pill that opens another creator's public Divine Space site. 'divine.space' is a domain name and must not be translated.
-  ///
-  /// In en, this message translates to:
-  /// **'divine.space'**
-  String get profileCreatorSiteVisitLabel;
-
-  /// Label on the profile pill that opens the current user's own public Divine Space site. Only the possessive determiner is translated; 'divine.space' is a domain name and must not be translated.
-  ///
-  /// In en, this message translates to:
-  /// **'my divine.space'**
-  String get profileCreatorSiteOwnLabel;
-
   /// No description provided for @videoMetadataEditCoverTitle.
   ///
   /// In en, this message translates to:
@@ -17679,6 +18177,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection was canceled on {platform}'**
   String crosspostingConnectionDenied(String platform);
+
+  /// Title of the supporter subscription settings screen and its settings tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Supporters'**
+  String get supporterTitle;
+
+  /// Subtitle of the supporter subscription settings tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Support Divine with an optional monthly subscription.'**
+  String get supporterTileSubtitle;
+
+  /// Headline at the top of the supporter subscription screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Divine running'**
+  String get supporterHeroTitle;
+
+  /// Introductory copy on the supporter subscription screen explaining the optional monthly support.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.'**
+  String get supporterHeroBody;
+
+  /// Confirmation shown to users with an active supporter subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re a Divine Supporter. Thank you for keeping this going.'**
+  String get supporterActiveBadge;
+
+  /// Status note shown while a supporter purchase awaits store approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchase is pending approval.'**
+  String get supporterPurchasePending;
+
+  /// Status note shown while the server verifies a supporter purchase.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming your support…'**
+  String get supporterPurchaseConfirming;
+
+  /// Loading note shown while supporter subscription tiers are fetched from the store.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the store…'**
+  String get supporterStoreChecking;
+
+  /// Note shown when no supporter subscription tiers are available on this device or storefront.
+  ///
+  /// In en, this message translates to:
+  /// **'Supporter subscriptions are not available here right now.'**
+  String get supporterUnavailable;
+
+  /// Button label that re-checks the store for an existing supporter subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get supporterRestorePurchases;
+
+  /// Accessibility label for the button that dismisses the supporter error banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss error'**
+  String get supporterDismissError;
+
+  /// Error shown when the device cannot reach the app store billing client.
+  ///
+  /// In en, this message translates to:
+  /// **'The store is unavailable on this device.'**
+  String get supporterErrorStoreUnavailable;
+
+  /// Error shown when a supporter purchase fails or is cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'The purchase did not complete. You were not charged.'**
+  String get supporterErrorPurchaseFailed;
+
+  /// Error-banner variant shown when a supporter purchase is left in a pending state.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchase is pending approval.'**
+  String get supporterErrorPurchasePending;
+
+  /// Error shown when restoring purchases finds no supporter subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'No supporter subscription was found to restore.'**
+  String get supporterErrorRestoreFailed;
+
+  /// Error shown when the store purchase is already claimed by a different Divine account.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase belongs to another Divine account.'**
+  String get supporterErrorOwnershipConflict;
+
+  /// Error shown when the server-side verification of a supporter purchase is temporarily unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine could not confirm supporter status right now.'**
+  String get supporterErrorVerificationUnavailable;
+
+  /// Generic supporter flow error shown when no more specific message applies.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get supporterErrorUnknown;
+
+  /// Footnote on the supporter screen explaining server-side confirmation and that recognition is optional.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.'**
+  String get supporterDisclaimer;
 }
 
 class _AppLocalizationsDelegate

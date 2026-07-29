@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "Wall-clock budgets for Mobile CI jobs, in seconds. Enforced by the",
+    "'Check CI timing budget' step in the mobile-ci gate job.",
+    "",
+    "Keys match a job name exactly, or as a prefix — 'Tests' covers both",
+    "'Tests' and a future 'Tests (shard N/4)'. A budgeted job that did not",
+    "run (skipped, or renamed) is reported and skipped, never inferred as a",
+    "pass. A job with no budget entry is ignored.",
+    "",
+    "warn  - exceeded => GitHub warning annotation on the PR. Set near the",
+    "        job's observed p90 so ordinary drift surfaces early.",
+    "fail  - exceeded => the gate job fails. Set well above p90 so normal",
+    "        runner variance cannot redden an unrelated PR; this is meant to",
+    "        catch a real regression, not a slow afternoon on Azure.",
+    "",
+    "Values below are calibrated against recent successful main runs. A budget",
+    "is a ceiling on regression, not a target. Any PR that materially changes",
+    "Mobile CI timing should update the affected budget in the same diff.",
+    "Re-measure before changing one:",
+    "  python3 mobile/scripts/ci/report_mobile_ci_run.py --run-id <id>",
+    "and state the measurement and the reason in the PR body."
+  ],
+  "jobs": {
+    "Detect App CI Scope": { "warn": 40, "fail": 90 },
+    "Tests": { "warn": 600, "fail": 780 },
+    "Generated Files": { "warn": 260, "fail": 420 },
+    "Analyze": { "warn": 150, "fail": 300 },
+    "Format": { "warn": 90, "fail": 180 },
+    "VGV Tag Gate": { "warn": 30, "fail": 90 }
+  }
+}

@@ -1236,6 +1236,206 @@ void main() {
     });
   });
 
+  group(growAudioToCompositionEnd, () {
+    // The #6401 shape: nine stills at the default 1/24s hold (375ms) with a
+    // sound clamped to that end, then a hold change stretching them to 6.375s.
+    const shortComposition = Duration(milliseconds: 375);
+    const longComposition = Duration(milliseconds: 6375);
+    const maxDuration = Duration(seconds: 6, milliseconds: 300);
+
+    List<AudioEvent> grow(
+      List<AudioEvent> tracks, {
+      Duration previousDuration = shortComposition,
+      Duration duration = longComposition,
+    }) => growAudioToCompositionEnd(
+      tracks,
+      previousDuration: previousDuration,
+      duration: duration,
+      maxDuration: maxDuration,
+    );
+
+    test('stretches a window that ran to the old composition end', () {
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: shortComposition,
+        duration: 30,
+      );
+
+      expect(grow([track]).single.endTime, maxDuration);
+    });
+
+    test('follows the end across the millisecond the window persists at', () {
+      // Nine 1/24s holds are 375003µs, but the window round-trips through
+      // editor history as whole milliseconds. Comparing it against the exact
+      // composition end would read the truncation as a deliberate trim.
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: const Duration(milliseconds: 375),
+        duration: 30,
+      );
+
+      expect(
+        grow(
+          [track],
+          previousDuration: const Duration(microseconds: 375003),
+        ).single.endTime,
+        maxDuration,
+      );
+    });
+
+    test('stops where the sound runs out of source content', () {
+      // A 2s sound cannot cover the 6.375s composition.
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: shortComposition,
+        duration: 2,
+      );
+
+      expect(grow([track]).single.endTime, const Duration(seconds: 2));
+    });
+
+    test('measures the remaining source from the track start and offset', () {
+      // A 2s sound, 0.5s of it already trimmed off the head, dropped 1s into
+      // the timeline: it can play until 1s + (2s - 0.5s) = 2.5s.
+      final track = _audio(
+        id: 'sound',
+        startTime: const Duration(seconds: 1),
+        endTime: shortComposition + const Duration(seconds: 1),
+        startOffset: const Duration(milliseconds: 500),
+        duration: 2,
+      );
+
+      expect(
+        grow(
+          [track],
+          previousDuration: shortComposition + const Duration(seconds: 1),
+        ).single.endTime,
+        const Duration(milliseconds: 2500),
+      );
+    });
+
+    test('leaves a window the user trimmed shorter than the composition', () {
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: const Duration(milliseconds: 200),
+        duration: 30,
+      );
+
+      final tracks = [track];
+      expect(identical(grow(tracks), tracks), isTrue);
+    });
+
+    test('leaves an unbounded window to the render clamp', () {
+      const track = AudioEvent(
+        id: 'sound',
+        pubkey: '',
+        createdAt: 0,
+        url: '/tmp/sound.wav',
+        duration: 30,
+      );
+
+      final tracks = [track];
+      expect(identical(grow(tracks), tracks), isTrue);
+    });
+
+    test('never shortens a window when the composition shrank', () {
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: longComposition,
+        duration: 30,
+      );
+
+      final tracks = [track];
+      expect(
+        identical(
+          grow(
+            tracks,
+            previousDuration: longComposition,
+            duration: shortComposition,
+          ),
+          tracks,
+        ),
+        isTrue,
+      );
+    });
+
+    test('keeps a trimmed window after the composition shrank under it', () {
+      // Trim to 1.5s over a 3s composition, drop the hold so the composition
+      // is 1.125s (the window now overhangs, because nothing shortens it),
+      // then raise the hold to 4.5s. The overhang is not coverage — reading it
+      // as "reached the old end" would grow the window and eat the trim.
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: const Duration(milliseconds: 1500),
+        duration: 30,
+      );
+
+      final tracks = [track];
+      expect(
+        identical(
+          grow(
+            tracks,
+            previousDuration: const Duration(milliseconds: 1125),
+            duration: const Duration(milliseconds: 4500),
+          ),
+          tracks,
+        ),
+        isTrue,
+      );
+    });
+
+    test('stops where the source ends without clawing the window back', () {
+      // A 1s sound with 0.8s trimmed off its head runs out at 200ms — behind
+      // the window's 375ms end, e.g. after the duration-heal path corrected a
+      // too-long source length. Growing must not shorten the window to 200ms.
+      final track = _audio(
+        id: 'sound',
+        startTime: Duration.zero,
+        endTime: shortComposition,
+        startOffset: const Duration(milliseconds: 800),
+        duration: 1,
+      );
+
+      final tracks = [track];
+      expect(identical(grow(tracks), tracks), isTrue);
+    });
+
+    test('carries skipped tracks through in order while one grows', () {
+      final covering = _audio(
+        id: 'music',
+        startTime: Duration.zero,
+        endTime: shortComposition,
+        duration: 30,
+      );
+      final trimmed = _audio(
+        id: 'voice-over',
+        startTime: Duration.zero,
+        endTime: const Duration(milliseconds: 200),
+        duration: 30,
+      );
+      const unbounded = AudioEvent(
+        id: 'ambience',
+        pubkey: '',
+        createdAt: 0,
+        url: '/tmp/ambience.wav',
+        duration: 30,
+      );
+
+      final result = grow([covering, trimmed, unbounded]);
+
+      expect(result, hasLength(3));
+      expect(result[0].endTime, maxDuration);
+      expect(identical(result[1], trimmed), isTrue);
+      expect(identical(result[2], unbounded), isTrue);
+    });
+  });
+
   group(stopMotionInitialPixelsPerSecond, () {
     List<StopMotionClipFrame> framesOf(int count, Duration hold) => [
       for (var i = 0; i < count; i++)

@@ -218,7 +218,7 @@ void main() {
 
         expect(
           capturedCalls,
-          hasLength(2),
+          hasLength(3),
           reason:
               'Each subscription filter is probed separately so the local '
               'cache is consulted (queryEvents only reads cache for '
@@ -245,13 +245,23 @@ void main() {
           probeFilters.map((filter) => filter.authors).toList(),
           everyElement(equals([_profileAuthor])),
         );
-        expect(
-          probeFilters.first.kinds,
-          equals(NIP71VideoKinds.getAllVideoKinds()),
+        final videoFilter = probeFilters.singleWhere(
+          (filter) =>
+              filter.kinds != null &&
+              filter.kinds!.length ==
+                  NIP71VideoKinds.getAllVideoKinds().length &&
+              filter.kinds!.every(NIP71VideoKinds.getAllVideoKinds().contains),
         );
-        expect(probeFilters.first.limit, 100);
-        expect(probeFilters.last.kinds, equals([16]));
-        expect(probeFilters.last.limit, 50);
+        final repostFilter = probeFilters.singleWhere(
+          (filter) => filter.kinds != null && filter.kinds!.singleOrNull == 16,
+        );
+        final deletionFilter = probeFilters.singleWhere(
+          (filter) => filter.kinds != null && filter.kinds!.singleOrNull == 5,
+        );
+
+        expect(videoFilter.limit, 100);
+        expect(repostFilter.limit, 50);
+        expect(deletionFilter.limit, 100);
       },
     );
 

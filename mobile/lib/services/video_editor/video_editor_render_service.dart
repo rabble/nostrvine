@@ -1140,8 +1140,9 @@ class VideoEditorRenderService {
   /// encoder-init failures (`RenderEncoderException`).
   ///
   /// The exception signals that `pro_video_editor`'s own in-process fallback
-  /// chain (operating-rate cap/removal, software encoder, profile downgrade)
-  /// could not initialise an encoder. On codec-limited devices that is usually
+  /// chain (operating-rate cap/removal, profile downgrade, and a conditional
+  /// software encoder when the device has one usable for the target MIME) could
+  /// not initialise an encoder. On codec-limited devices that is usually
   /// transient contention rather than a true format incompatibility: the
   /// preview decoder the editor just released (the #5522 decoder-release gate)
   /// — or another app codec — has not been reclaimed by the OS media server

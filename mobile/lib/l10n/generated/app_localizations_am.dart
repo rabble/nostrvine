@@ -1456,6 +1456,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get audioAttributionOriginalSound => 'ኦሪጅናል ድምጽ';
 
   @override
+  String get audioAttributionUnavailableSound => 'ድምጽ አይገኝም';
+
+  @override
   String videoInspiredByAttribution(String creatorName) {
     return 'በ@$creatorName የተነሳሳ';
   }
@@ -3349,6 +3352,80 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get shareSheetMoreActions => 'ተጨማሪ ድርጊቶች';
+
+  @override
+  String get shareSheetCrosspost => 'Crosspost';
+
+  @override
+  String get crosspostSheetTitle => 'Crosspost this video';
+
+  @override
+  String get crosspostSheetSubtitle =>
+      'Send it to your connected platforms. Posting can take a few minutes.';
+
+  @override
+  String get crosspostSubmit => 'Crosspost';
+
+  @override
+  String get crosspostStatusQueued => 'Queued';
+
+  @override
+  String get crosspostStatusUploading => 'Uploading';
+
+  @override
+  String get crosspostStatusProcessing => 'Processing';
+
+  @override
+  String get crosspostStatusPosted => 'Posted';
+
+  @override
+  String get crosspostStatusFailed => 'Failed';
+
+  @override
+  String get crosspostStatusSkipped => 'Skipped';
+
+  @override
+  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+
+  @override
+  String get crosspostViewPost => 'View post';
+
+  @override
+  String crosspostReconnectPrompt(String platform) {
+    return 'Reconnect $platform in crossposting settings to keep posting.';
+  }
+
+  @override
+  String get crosspostReconnect => 'Reconnect';
+
+  @override
+  String get crosspostErrorNotOwner =>
+      'Only your own videos can be crossposted.';
+
+  @override
+  String get crosspostErrorNotEligible =>
+      'This video isn\'t eligible for crossposting.';
+
+  @override
+  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+
+  @override
+  String get crosspostErrorUnauthorized =>
+      'Reconnect your account, then try again.';
+
+  @override
+  String get crosspostErrorNetwork =>
+      'Couldn\'t reach the crossposter. Try again in a moment.';
+
+  @override
+  String get crosspostFailedGeneric => 'Crosspost failed.';
+
+  @override
+  String get crosspostStillWorking =>
+      'Still working. You can close this — posting continues in the background.';
+
+  @override
+  String get crosspostDone => 'Done';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'ወደ ካሜራ ጥቅል ተቀምጧል';
@@ -5428,6 +5505,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxRemovedConversation => 'ውይይት ተወግዷል';
 
   @override
+  String get inboxRestorePausedTitle => 'አንዳንድ ውይይቶች ወደነበሩበት መመለስ አላጠናቀቁም';
+
+  @override
+  String get conversationRestorePausedTitle => 'ይህ ውይይት ወደነበረበት መመለስ አላጠናቀቀም';
+
+  @override
+  String get inboxRestoreRetryAction => 'እንደገና ሞክር';
+
+  @override
   String get inboxRestoringMessages => 'መልዕክቶችዎን ወደነበሩበት በመመለስ ላይ…';
 
   @override
@@ -5456,6 +5542,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get inboxSearchHint => 'መልዕክቶችን ፈልግ';
+
+  @override
+  String get inboxSupportRowTitle => 'Divine Moderation';
+
+  @override
+  String get inboxSupportRowSubtitle => 'ሳንካዎች፣ ማጣራት፣ የመለያ ጉዳዮች — እያዳመጥን ነው።';
 
   @override
   String get inboxSearchEmptyTitle => 'ምንም አልተገኘም';
@@ -5859,6 +5951,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get commonClose => 'ዝጋ';
+
+  @override
+  String get commonLoading => 'በመጫን ላይ';
 
   @override
   String get videoMetadataEditCoverFailedSnackbar =>
@@ -6736,11 +6831,23 @@ class AppLocalizationsAm extends AppLocalizations {
   String get deleteAccountRemoveKeysTitle => 'ይህን መለያ ከዚህ መሣሪያ ማስወገድ?';
 
   @override
+  String get deleteAccountReauthRequired =>
+      'መለያዎን ለመሰረዝ እንደገና ይግቡ። እስካሁን ምንም አልተሰረዘም።';
+
+  @override
   String get deleteAccountServerDeletionFailed =>
       'መለያዎን ከአገልጋዩ መሰረዝ አልተቻለም። እባክዎ ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
+  String get deleteAccountServerDeletionRequiresReauth =>
+      'የልጥፎችዎ የመሰረዝ ጥያቄዎች ተልከዋል፣ ነገር ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ እንደገና ይግቡ።';
+
+  @override
   String get deleteAccountSuccess => 'የመሰረዝ ጥያቄዎች ተልከዋል። ከዚህ መሣሪያ ወጥተዋል።';
+
+  @override
+  String get deleteAccountSuccessContentUnverified =>
+      'የመለያ ስረዛ ተጠይቋል። የአንዳንድ ነባር ልጥፎች ስረዛ በተናጠል ማረጋገጥ አልተቻለም።';
 
   @override
   String get deleteAccountWarningBody =>
@@ -7331,6 +7438,14 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get blueskyUsernameRequiredSubtitle =>
       'Bluesky publishing needs a claimed username.divine.video handle.';
+
+  @override
+  String get blueskyUsernameSyncPending =>
+      'Your Divine handle is claimed. We are linking it to Bluesky - try again in a moment.';
+
+  @override
+  String get blueskyStatusUnavailableRetry =>
+      'We could not check your Divine handle. Try again.';
 
   @override
   String get blueskySetUpHandle => 'Set up';
@@ -7950,9 +8065,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoRecorderLipSyncAddAudioFirst => 'ከመቅረጽ በፊት ኦዲዮ ያክሉ';
 
   @override
-  String get videoRecorderStopMotionAssembling => 'ቪዲዮዎን በመፍጠር ላይ…';
-
-  @override
   String get videoRecorderStopMotionAssembleFailed =>
       'ቪዲዮውን መፍጠር አልተቻለም። እንደገና ይሞክሩ።';
 
@@ -8074,6 +8186,168 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorOpenAudioSemanticLabel => 'የድምጽ አርታዒን ክፈት';
+
+  @override
+  String get videoEditorCaptionsLabel => 'የግርጌ ጽሑፎች';
+
+  @override
+  String get videoEditorOpenCaptionsSemanticLabel => 'የግርጌ ጽሑፍ አርታዒን ክፈት';
+
+  @override
+  String get videoEditorCaptionsBurnInLabel => 'በቪዲዮ ውስጥ አስገባ';
+
+  @override
+  String get videoEditorCaptionsPresetCustom => 'ብጁ';
+
+  @override
+  String get videoEditorCaptionsCustomStyleTitle => 'ብጁ ቅጥ';
+
+  @override
+  String get videoEditorCaptionsCustomApply => 'ተግብር';
+
+  @override
+  String get videoEditorCaptionsCustomFont => 'ቅርጸ-ቁምፊ';
+
+  @override
+  String get videoEditorCaptionsCustomTextColor => 'የጽሑፍ ቀለም';
+
+  @override
+  String get videoEditorCaptionsCustomBackground => 'ዳራ';
+
+  @override
+  String get videoEditorCaptionsCustomBackgroundColor => 'የዳራ ቀለም';
+
+  @override
+  String get videoEditorCaptionsCustomAnimation => 'እነማ';
+
+  @override
+  String get videoEditorCaptionsAnimationNone => 'የለም';
+
+  @override
+  String get videoEditorCaptionsAnimationFade => 'መደብዘዝ';
+
+  @override
+  String get videoEditorCaptionsAnimationPop => 'ፖፕ';
+
+  @override
+  String get videoEditorCaptionsAnimationSpring => 'ስፕሪንግ';
+
+  @override
+  String get videoEditorCaptionsEditTitle => 'የግርጌ ጽሑፎች';
+
+  @override
+  String get videoEditorCaptionsGeneratingTitle => 'እያዳመጥን ነው…';
+
+  @override
+  String get videoEditorCaptionsGeneratingSubtitle =>
+      'ድምጽህን ወደ የግርጌ ጽሑፍ ሐሳቦች እየቀየርን ነው።';
+
+  @override
+  String get videoEditorCaptionsNoSpeechMessage =>
+      'ምንም ንግግር አልሰማንም። አሁንም የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsUnavailableMessage =>
+      'በዚህ መሣሪያ ላይ የንግግር ማወቂያ አይገኝም። የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsNotAuthorizedMessage =>
+      'የንግግር ማወቂያ አልተፈቀደም። በቅንብሮች ውስጥ አብራው ወይም የግርጌ ጽሑፎቹን ራስህ ጻፍ።';
+
+  @override
+  String get videoEditorCaptionsFailedMessage =>
+      'ወደ ጽሑፍ መቀየሩ በዚህ ጊዜ አልሰራም። የግርጌ ጽሑፎቹን ራስህ መጻፍ ትችላለህ።';
+
+  @override
+  String get videoEditorCaptionsStartEmptyButton => 'የግርጌ ጽሑፎቹን ራሴ እጽፋለሁ';
+
+  @override
+  String get videoEditorCaptionsAddCue => 'የግርጌ ጽሑፍ ጨምር';
+
+  @override
+  String get videoEditorCaptionsCueTextHint => 'የግርጌ ጽሑፍ';
+
+  @override
+  String get videoEditorCaptionsCueDeleteSemanticLabel => 'የግርጌ ጽሑፉን ሰርዝ';
+
+  @override
+  String get videoEditorCaptionsDeleteTrack => 'ሁሉንም የግርጌ ጽሑፎች አስወግድ';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmTitle => 'የግርጌ ጽሑፎቹ ይወገዱ?';
+
+  @override
+  String get videoEditorCaptionsDeleteTrackConfirmSubtitle =>
+      'ሁሉም ጽሑፍ እና ጊዜዎች ይጠፋሉ።';
+
+  @override
+  String get videoEditorCaptionsCloseSemanticLabel => 'የግርጌ ጽሑፍ አርታዒን ዝጋ';
+
+  @override
+  String get videoEditorCaptionsDoneSemanticLabel => 'የግርጌ ጽሑፎችን አረጋግጥ';
+
+  @override
+  String get videoEditorCaptionsPresetTitle => 'የግርጌ ጽሑፍ ቅጥ';
+
+  @override
+  String get videoEditorCaptionsPresetClassic => 'ክላሲክ';
+
+  @override
+  String get videoEditorCaptionsPresetPop => 'ፖፕ';
+
+  @override
+  String get videoEditorCaptionsPresetZoom => 'Zoom';
+
+  @override
+  String get videoEditorCaptionsPresetSpring => 'ስፕሪንግ';
+
+  @override
+  String get videoEditorCaptionsPresetMono => 'ሞኖ';
+
+  @override
+  String get videoEditorCaptionsPresetHeadline => 'አርዕስት';
+
+  @override
+  String get videoEditorCaptionsPresetTypewriter => 'የጽሕፈት መኪና';
+
+  @override
+  String get videoEditorCaptionsPresetMarker => 'ማርከር';
+
+  @override
+  String get videoEditorCaptionsPresetScript => 'ካሊግራፊ';
+
+  @override
+  String get videoEditorCaptionsPresetRetro => 'ሬትሮ';
+
+  @override
+  String get videoEditorCaptionsPresetElegant => 'ቄንጠኛ';
+
+  @override
+  String get videoEditorCaptionsPresetBubble => 'አረፋ';
+
+  @override
+  String get videoEditorCaptionsPresetNeon => 'ኒዮን';
+
+  @override
+  String get videoEditorCaptionsPresetBold => 'ደማቅ';
+
+  @override
+  String get videoEditorCaptionsPresetDreamy => 'ህልማዊ';
+
+  @override
+  String get videoEditorCaptionsPresetOcean => 'ውቅያኖስ';
+
+  @override
+  String get videoEditorCaptionsPresetSunny => 'ፀሐያማ';
+
+  @override
+  String get videoEditorCaptionsPresetHandwritten => 'የእጅ ጽሑፍ';
+
+  @override
+  String get videoEditorCaptionsPresetSerif => 'ሴሪፍ';
+
+  @override
+  String get videoEditorCaptionsPresetStamp => 'ማህተም';
 
   @override
   String get videoEditorOpenTextSemanticLabel => 'የጽሑፍ አርታዒን ክፈት';
@@ -9575,12 +9849,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileCouldNotOpenWebsite => 'Could not open website';
 
   @override
-  String get profileCreatorSiteVisitLabel => 'divine.space';
-
-  @override
-  String get profileCreatorSiteOwnLabel => 'የእኔ divine.space';
-
-  @override
   String get videoMetadataEditCoverTitle => 'Edit cover';
 
   @override
@@ -10051,4 +10319,72 @@ class AppLocalizationsAm extends AppLocalizations {
   String crosspostingConnectionDenied(String platform) {
     return 'Connection was canceled on $platform';
   }
+
+  @override
+  String get supporterTitle => 'Divine Supporters';
+
+  @override
+  String get supporterTileSubtitle =>
+      'Support Divine with an optional monthly subscription.';
+
+  @override
+  String get supporterHeroTitle => 'Keep Divine running';
+
+  @override
+  String get supporterHeroBody =>
+      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+
+  @override
+  String get supporterActiveBadge =>
+      'You\'re a Divine Supporter. Thank you for keeping this going.';
+
+  @override
+  String get supporterPurchasePending => 'Your purchase is pending approval.';
+
+  @override
+  String get supporterPurchaseConfirming => 'Confirming your support…';
+
+  @override
+  String get supporterStoreChecking => 'Checking the store…';
+
+  @override
+  String get supporterUnavailable =>
+      'Supporter subscriptions are not available here right now.';
+
+  @override
+  String get supporterRestorePurchases => 'Restore purchases';
+
+  @override
+  String get supporterDismissError => 'Dismiss error';
+
+  @override
+  String get supporterErrorStoreUnavailable =>
+      'The store is unavailable on this device.';
+
+  @override
+  String get supporterErrorPurchaseFailed =>
+      'The purchase did not complete. You were not charged.';
+
+  @override
+  String get supporterErrorPurchasePending =>
+      'Your purchase is pending approval.';
+
+  @override
+  String get supporterErrorRestoreFailed =>
+      'No supporter subscription was found to restore.';
+
+  @override
+  String get supporterErrorOwnershipConflict =>
+      'This purchase belongs to another Divine account.';
+
+  @override
+  String get supporterErrorVerificationUnavailable =>
+      'Divine could not confirm supporter status right now.';
+
+  @override
+  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+
+  @override
+  String get supporterDisclaimer =>
+      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
 }

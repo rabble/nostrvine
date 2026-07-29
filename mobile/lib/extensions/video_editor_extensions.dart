@@ -2,6 +2,9 @@ import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
+import 'package:openvine/models/video_editor/composition_duration.dart';
 import 'package:openvine/models/video_editor/editor_overlay_snapshot.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline_geometry.dart';
 import 'package:pro_image_editor/pro_image_editor.dart' hide AudioTrack;
@@ -99,6 +102,152 @@ extension VideoEditorExtensions on ProImageEditorState {
     setState(() {});
   }
 
+  /// Persists the caption track in the editor's history metadata.
+  ///
+  /// Creates a new undo point. Passing `null` removes the track (the user
+  /// deleted their captions).
+  void setCaptionState(CaptionTrack? track) {
+    final meta = {...stateManager.activeMeta};
+    if (track == null) {
+      meta.remove(VideoEditorConstants.captionsStateHistoryKey);
+    } else {
+      meta[VideoEditorConstants.captionsStateHistoryKey] = track.toJson();
+    }
+    addHistory(meta: meta);
+    setState(() {});
+  }
+
+  /// Commits a whole captions session as one history entry (one undo step):
+  /// replaces all existing caption layers with [captionLayers] and stores
+  /// [track] in the `captions` meta key (`null` removes the track).
+  ///
+  /// Overlay sessions pass no layers; burn-in sessions pass one layer per
+  /// cue; delete passes neither.
+  void commitCaptionState({
+    required CaptionTrack? track,
+    List<Layer> captionLayers = const [],
+  }) {
+    final meta = {...stateManager.activeMeta};
+    if (track == null) {
+      meta.remove(VideoEditorConstants.captionsStateHistoryKey);
+    } else {
+      meta[VideoEditorConstants.captionsStateHistoryKey] = track.toJson();
+    }
+    addHistory(
+      layers: [
+        ...activeLayers.where((layer) => !isCaptionCueLayer(layer)),
+        ...captionLayers,
+      ],
+      meta: meta,
+    );
+    setState(() {});
+  }
+
+  /// Removes one caption cue and, when it's burned in, its matching text layer
+  /// — in a single history entry, so the track metadata and the
+  /// rendered/exported layers can never drift apart. Callable from either the
+  /// timeline (by cue id) or the canvas (by the removed layer's cue id).
+  ///
+  /// No-op when there is no caption track or nothing matches [cueId].
+  void removeCaptionCue(String cueId) {
+    final track = stateManager.captionTrack;
+    if (track == null) return;
+
+    final remainingCues = [
+      for (final cue in track.cues)
+        if (cue.id != cueId) cue,
+    ];
+    final remainingLayers = [
+      for (final layer in activeLayers)
+        if (captionCueIdOf(layer) != cueId) layer,
+    ];
+    final removedCue = remainingCues.length != track.cues.length;
+    final removedLayer = remainingLayers.length != activeLayers.length;
+    if (!removedCue && !removedLayer) return;
+
+    addHistory(
+      layers: remainingLayers,
+      meta: {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.captionsStateHistoryKey: track
+            .copyWith(cues: remainingCues)
+            .toJson(),
+      },
+    );
+    setState(() {});
+  }
+
+  /// Updates one caption cue's timing.
+  ///
+  /// Mirrors [setSoundTimeline]: with [skipUpdateHistory] the current meta is
+  /// mutated in-place (ongoing trim drag), otherwise a new undo point is
+  /// created. The given range is stored verbatim — cues may freely overlap;
+  /// the interaction layer owns the minimum-duration policy. When the track
+  /// is burned in, the matching caption layer is retimed in the same step so
+  /// the canvas render and the exported video stay in sync. No-op when the
+  /// session has no caption track or [cueId] is unknown.
+  void setCaptionCueTimeline({
+    required String cueId,
+    Duration? startTime,
+    Duration? endTime,
+    bool skipUpdateHistory = false,
+  }) {
+    final track = stateManager.captionTrack;
+    if (track == null) return;
+    final index = track.cues.indexWhere((cue) => cue.id == cueId);
+    if (index < 0) return;
+
+    final cue = track.cues[index];
+    final newStart = startTime ?? cue.start;
+    final newEnd = endTime ?? cue.end;
+    final cues = List<CaptionCue>.from(track.cues);
+    cues[index] = cue.copyWith(start: newStart, end: newEnd);
+    final updated = track.copyWith(cues: cues).toJson();
+
+    final layerIndex = activeLayers.indexWhere(
+      (layer) =>
+          isCaptionCueLayer(layer) &&
+          layer.meta?[VideoEditorConstants.captionCueIdMetaKey] == cueId,
+    );
+
+    if (!skipUpdateHistory) {
+      final meta = {
+        ...stateManager.activeMeta,
+        VideoEditorConstants.captionsStateHistoryKey: updated,
+      };
+      if (layerIndex >= 0) {
+        // Build the retimed layers list without mutating the current history
+        // entry, then write layers + meta as one atomic undo point — like
+        // [removeCaptionCue]. Pre-mutating the shared layer via
+        // setLayerTimeline(skipUpdateHistory: true) would retime the previous
+        // entry's burn-in layer while leaving its caption meta stale, so undo
+        // would drift the CC track and the burned-in text apart.
+        final layers = [...activeLayers];
+        layers[layerIndex] = activeLayers[layerIndex].copyWith(
+          startTime: newStart,
+          endTime: newEnd,
+        );
+        addHistory(layers: layers, meta: meta);
+      } else {
+        addHistory(meta: meta);
+      }
+    } else {
+      // Mutate the meta map in-place so the current history entry is updated
+      // directly — matching setSoundTimeline's drag behavior.
+      stateManager.activeMeta[VideoEditorConstants.captionsStateHistoryKey] =
+          updated;
+      if (layerIndex >= 0) {
+        setLayerTimeline(
+          index: layerIndex,
+          startTime: newStart,
+          endTime: newEnd,
+          skipUpdateHistory: true,
+        );
+      }
+    }
+    setState(() {});
+  }
+
   /// Persists updated audio track volumes in the editor's history metadata.
   ///
   /// Creates a new undo point with the given [audioTracks] list.  Use this
@@ -156,6 +305,48 @@ extension VideoEditorExtensions on ProImageEditorState {
       },
     );
     setState(() {});
+  }
+
+  /// Persists a clip-list change that can make the composition longer, growing
+  /// any audio window that covered the old end onto the new one (#6401).
+  ///
+  /// [previousClips] is the composition as it stood *before* the edit, so the
+  /// grow can tell a window that ran to the end from one the user trimmed
+  /// short. Falls back to a plain [setClipState] when no window moved, so an
+  /// edit over a soundless composition does not start writing an audio key
+  /// into every history entry.
+  ///
+  /// Use this from every commit that can lengthen the composition — the
+  /// stop-motion frame-list commit, the camera/clips-picker sync, duplicating
+  /// a clip, slowing a clip down, and dragging a trim handle back out. The
+  /// grow is one-way: a later shrink leaves the window overhanging, and the
+  /// sound strip's trim handle is the affordance for pulling it back.
+  /// Deliberately *not* folded into [setClipState] itself: that is the
+  /// generic clip writer with no previous-clip list to compare against, and
+  /// the transition path measures its output with `TransitionTimelineMap`
+  /// rather than a plain sum of playback durations.
+  void setLengthenedClipState({
+    required List<DivineVideoClip> previousClips,
+    required List<DivineVideoClip> clips,
+    List<Duration>? timelineMarkers,
+  }) {
+    final currentTracks = stateManager.audioTracks;
+    final grownTracks = growAudioToCompositionEnd(
+      rebaseAnchoredAudioForClipState(clips, currentTracks),
+      previousDuration: compositionDuration(previousClips),
+      duration: compositionDuration(clips),
+      maxDuration: VideoEditorConstants.maxDuration,
+    );
+
+    if (identical(grownTracks, currentTracks)) {
+      setClipState(clips, timelineMarkers: timelineMarkers);
+      return;
+    }
+    setClipAndAudioState(
+      clips: clips,
+      audioTracks: grownTracks,
+      timelineMarkers: timelineMarkers,
+    );
   }
 
   /// Persists clip trim and order state in the editor's history metadata.

@@ -1,11 +1,18 @@
 part of 'video_recorder_bloc.dart';
 
-/// Lifecycle of the stop-motion "assemble captured frames into one video" step.
+/// Lifecycle of the stop-motion "collect captured stills into one clip" step.
 enum StopMotionStatus {
   /// No assembly in progress.
   idle,
 
-  /// Captured frames are being encoded into a single video.
+  /// The assemble has claimed the captured stills.
+  ///
+  /// Transient by construction: the assemble is synchronous (no mp4 is encoded
+  /// — the stills are the clip), so this is emitted and superseded within one
+  /// handler and never survives to a build. It is not a "show a spinner" state;
+  /// it exists so consecutive assembles of the same frame list are distinct
+  /// emissions, since [Bloc.emit] drops a state equal to the current one and a
+  /// repeated failure would otherwise never reach the UI.
   assembling,
 
   /// Assembly finished; the clip is in the manager and the editor can open.

@@ -566,6 +566,22 @@ void main() {
         expect(repository.isFollowing(invalidPubkey), isFalse);
       });
 
+      test('persists the sanitized list after loading invalid local storage '
+          'entries', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey':
+              '["$invalidPubkey", "$testTargetPubkey"]',
+        });
+
+        await repository.initialize();
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('following_list_$testCurrentUserPubkey'),
+          '["$testTargetPubkey"]',
+        );
+      });
+
       test('follow succeeds and publishes a clean list when the cached '
           'list holds an invalid pubkey', () async {
         SharedPreferences.setMockInitialValues({

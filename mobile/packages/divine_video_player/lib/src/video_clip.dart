@@ -22,6 +22,7 @@ class VideoClip {
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
     this.httpHeaders = const {},
+    this.trimToCommonTrackEnd = false,
   });
 
   /// Creates a [VideoClip] from a local file path.
@@ -32,6 +33,7 @@ class VideoClip {
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
     this.httpHeaders = const {},
+    this.trimToCommonTrackEnd = false,
   }) : uri = path;
 
   /// Creates a [VideoClip] from a network URL.
@@ -42,6 +44,7 @@ class VideoClip {
     this.volume = 1.0,
     this.playbackSpeed = 1.0,
     this.httpHeaders = const {},
+    this.trimToCommonTrackEnd = false,
   }) : uri = url;
 
   /// Creates a [VideoClip] from a Flutter asset.
@@ -55,6 +58,7 @@ class VideoClip {
     double volume = 1.0,
     double playbackSpeed = 1.0,
     AssetBundle? bundle,
+    bool trimToCommonTrackEnd = false,
   }) async {
     final (data, dir) = await (
       (bundle ?? rootBundle).load(assetPath),
@@ -70,6 +74,7 @@ class VideoClip {
       end: end,
       volume: volume,
       playbackSpeed: playbackSpeed,
+      trimToCommonTrackEnd: trimToCommonTrackEnd,
     );
   }
 
@@ -84,6 +89,7 @@ class VideoClip {
     Duration? end,
     double volume = 1.0,
     double playbackSpeed = 1.0,
+    bool trimToCommonTrackEnd = false,
   }) async {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/divine_player_memory/$fileName');
@@ -95,6 +101,7 @@ class VideoClip {
       end: end,
       volume: volume,
       playbackSpeed: playbackSpeed,
+      trimToCommonTrackEnd: trimToCommonTrackEnd,
     );
   }
 
@@ -106,7 +113,11 @@ class VideoClip {
 
   /// End position within the source video.
   ///
-  /// When `null`, the clip plays to the end of the source.
+  /// When `null`, the clip plays to the end of the source. On the Android,
+  /// Apple and web backends an [end] past the source duration is clamped to
+  /// it, so a caller capping playback without knowing the source length still
+  /// gets the natural end for shorter sources. The Linux backend does not
+  /// clamp and reports the requested length.
   final Duration? end;
 
   /// Audio volume for this clip (0.0 = muted, 1.0 = full volume).
@@ -118,6 +129,28 @@ class VideoClip {
   /// HTTP headers to attach when [uri] resolves to a network source.
   final Map<String, String> httpHeaders;
 
+  /// Whether to end the clip where *all* of the source's tracks still have
+  /// content, instead of at the container duration.
+  ///
+  /// An mp4's declared duration is the longest of its tracks, and capture and
+  /// export pipelines routinely let the audio and video tracks end tens of
+  /// milliseconds apart. Playing to the container duration therefore ends on a
+  /// stretch where one track has already run out — silence, or a frozen last
+  /// frame. On a looping player that stretch is the loop seam.
+  ///
+  /// Set this for looping playback of a single clip. It shortens the clip only
+  /// when the track mismatch is small (currently at most 500 ms and at most
+  /// 10% of the playable duration), so obviously malformed assets keep their
+  /// container duration instead of collapsing into a tiny loop. It is wrong for
+  /// a clip in the middle of a multi-clip timeline, where it would cut content
+  /// rather than a seam. Clamping only ever shortens: [end], when set, still
+  /// wins if it is earlier.
+  ///
+  /// Support is per-platform: Apple always honours it, Android honours it for
+  /// local files only (a remote source would need a blocking metadata read
+  /// before playback could start), and the web and Linux backends ignore it.
+  final bool trimToCommonTrackEnd;
+
   /// Serializes this clip for platform channel transport.
   Map<String, dynamic> toMap() {
     return {
@@ -127,6 +160,7 @@ class VideoClip {
       'volume': volume,
       'playbackSpeed': playbackSpeed,
       if (httpHeaders.isNotEmpty) 'httpHeaders': httpHeaders,
+      if (trimToCommonTrackEnd) 'trimToCommonTrackEnd': true,
     };
   }
 }

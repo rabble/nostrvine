@@ -12,7 +12,6 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/live_engagement_counts.dart';
 
 /// Repost action button with count display for video overlay.
 ///
@@ -33,12 +32,10 @@ class RepostActionButton extends StatelessWidget {
     this.onInteracted,
   });
 
-  const RepostActionButton.preview({
-    super.key,
-    this.onInteracted,
-  }) : video = null,
-       isPreviewMode = true,
-       isOwnVideo = false;
+  const RepostActionButton.preview({super.key, this.onInteracted})
+    : video = null,
+      isPreviewMode = true,
+      isOwnVideo = false;
 
   final VideoEvent? video;
   final bool isPreviewMode;

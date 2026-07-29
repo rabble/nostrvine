@@ -233,6 +233,11 @@ class Notifications extends Table {
   TextColumn get type => text()(); // like, repost, follow, comment, mention
   TextColumn get fromPubkey => text().named('from_pubkey')();
   TextColumn get targetEventId => text().nullable().named('target_event_id')();
+  TextColumn get videoAddressableId =>
+      text().nullable().named('video_addressable_id')();
+  BoolColumn get hasCommentTarget => boolean()
+      .withDefault(const Constant(false))
+      .named('has_comment_target')();
   TextColumn get targetPubkey => text().nullable().named('target_pubkey')();
   TextColumn get content => text().nullable()();
   IntColumn get timestamp => integer()(); // Unix timestamp

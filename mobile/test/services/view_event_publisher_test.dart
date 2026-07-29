@@ -1,5 +1,5 @@
 // ABOUTME: Unit tests for ViewEventPublisher (Kind 22236 ephemeral view events)
-// ABOUTME: Tests self-view exclusion, vineId fallback, auth checks, and tag
+// ABOUTME: Tests self-view publishing, vineId fallback, auth checks, and tag
 // ABOUTME: construction
 
 import 'package:flutter_test/flutter_test.dart';
@@ -106,15 +106,39 @@ void main() {
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 
-      test('returns false for self-views', () async {
+      test('publishes self-views with video reference tags', () async {
         final result = await publisher.publishViewEvent(
-          video: createTestVideoEvent(pubkey: viewerPubkey),
+          video: createTestVideoEvent(
+            id: 'self_view_event_id',
+            pubkey: viewerPubkey,
+            vineId: 'self_view_vine_id',
+          ),
           startSeconds: 0,
           endSeconds: 5,
+          source: ViewTrafficSource.profile,
         );
 
-        expect(result, isFalse);
-        verifyNever(() => mockNostr.publishEvent(any()));
+        expect(result, isTrue);
+        final captured = verify(
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        verify(() => mockNostr.publishEvent(any())).called(1);
+
+        final tags = captured[0] as List<List<String>>;
+        expect(
+          tags.firstWhere((t) => t[0] == 'a')[1],
+          equals('34236:$viewerPubkey:self_view_vine_id'),
+        );
+        expect(
+          tags.firstWhere((t) => t[0] == 'e')[1],
+          equals('self_view_event_id'),
+        );
+        expect(tags.firstWhere((t) => t[0] == 'viewed'), ['viewed', '0', '5']);
+        expect(tags.firstWhere((t) => t[0] == 'source'), ['source', 'profile']);
       });
 
       test('publishes event successfully', () async {
@@ -409,14 +433,44 @@ void main() {
     });
 
     group('publishViewEventWithSegments', () {
-      test('returns false for self-views', () async {
+      test('publishes self-views with segments', () async {
         final result = await publisher.publishViewEventWithSegments(
-          video: createTestVideoEvent(pubkey: viewerPubkey),
+          video: createTestVideoEvent(
+            id: 'self_view_segments_event_id',
+            pubkey: viewerPubkey,
+            vineId: 'self_view_segments_vine_id',
+          ),
           segments: [(0, 5), (10, 15)],
+          source: ViewTrafficSource.discoveryForYou,
         );
 
-        expect(result, isFalse);
-        verifyNever(() => mockNostr.publishEvent(any()));
+        expect(result, isTrue);
+        final captured = verify(
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
+          ),
+        ).captured;
+        verify(() => mockNostr.publishEvent(any())).called(1);
+
+        final tags = captured[0] as List<List<String>>;
+        expect(
+          tags.firstWhere((t) => t[0] == 'a')[1],
+          equals('34236:$viewerPubkey:self_view_segments_vine_id'),
+        );
+        expect(
+          tags.firstWhere((t) => t[0] == 'e')[1],
+          equals('self_view_segments_event_id'),
+        );
+        expect(tags.where((t) => t[0] == 'viewed'), [
+          ['viewed', '0', '5'],
+          ['viewed', '10', '15'],
+        ]);
+        expect(tags.firstWhere((t) => t[0] == 'source'), [
+          'source',
+          'discovery:foryou',
+        ]);
       });
 
       test('returns false when all segments are invalid', () async {

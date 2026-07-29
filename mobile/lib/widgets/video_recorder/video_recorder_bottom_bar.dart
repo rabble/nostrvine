@@ -18,19 +18,16 @@ class VideoRecorderBottomBar extends StatelessWidget {
       (VideoRecorderBloc b) => (
         isRecording: b.state.isRecording,
         recorderMode: b.state.recorderMode,
-        isAssembling: b.state.stopMotionStatus == StopMotionStatus.assembling,
       ),
     );
-    // The bar fades out while recording, and an assemble is mid-flight over the
-    // captured stills — a mode switch during either would discard work the user
-    // can't get back. Opacity alone still hit-tests, so the gate has to ignore
-    // pointers rather than just fade.
-    final isLocked = state.isRecording || state.isAssembling;
 
     return SafeArea(
       top: false,
+      // The bar fades out while recording — a mode switch there would discard
+      // work the user can't get back. Opacity alone still hit-tests, so the
+      // gate has to ignore pointers rather than just fade.
       child: IgnorePointer(
-        ignoring: isLocked,
+        ignoring: state.isRecording,
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 220),
           opacity: state.isRecording ? 0 : 1,

@@ -202,7 +202,14 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     bloc.add(ClipEditorClipUpdated(clipId: clip.id, clip: updated));
     overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
 
-    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
+    // Slowing a clip down lengthens the composition, so a sound that covered
+    // the old end has to grow with it (#6401); a speed-up passes through
+    // unchanged.
+    editor.setLengthenedClipState(
+      previousClips: currentClips,
+      clips: newClips,
+      timelineMarkers: rebasedMarkers,
+    );
   }
 
   void _requestExtractAudio(BuildContext context) {
@@ -331,7 +338,13 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       ..add(const ClipEditorEditingStopped());
 
     overlayBloc.add(TimelineMarkersRebased(rebasedMarkers));
-    editor.setClipState(newClips, timelineMarkers: rebasedMarkers);
+    // Appending the copy lengthens the composition, so a sound that covered
+    // the old end has to grow with it (#6401).
+    editor.setLengthenedClipState(
+      previousClips: state.clips,
+      clips: newClips,
+      timelineMarkers: rebasedMarkers,
+    );
   }
 
   void _splitClip(BuildContext context) {

@@ -27,8 +27,12 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/codec_heavy_surface_guard.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
+import 'package:openvine/models/video_editor/caption_layer_mapping.dart';
+import 'package:openvine/models/video_editor/caption_style_preset.dart';
+import 'package:openvine/models/video_editor/caption_track.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/upload_media_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/repositories/sticker_repository.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -43,6 +47,7 @@ import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_botto
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_captions_sheet.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -107,6 +112,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
   /// editor's zoom matrix. The letterbox scrim applies the same transform so
   /// the bars move with the magnified frame.
   final _zoomMatrixNotifier = ValueNotifier<Matrix4>(Matrix4.identity());
+
+  /// Fine-grained editor play time (timeline space), updated by the canvas on
+  /// every playhead tick so canvas overlays track playback smoothly.
+  final _playTimeNotifier = ValueNotifier<Duration>(Duration.zero);
 
   /// Tracks the previous audio tracks to detect offset changes.
   List<AudioEvent> _previousAudioTracks = const [];
@@ -252,6 +261,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     _zoomMatrixNotifier.dispose();
+    _playTimeNotifier.dispose();
     super.dispose();
   }
 
@@ -368,8 +378,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     if (capturedFrames.isEmpty) return;
 
     final targetFrames = target.stopMotionFrames ?? const [];
-    // Fresh captures arrive with the app default hold; adopt the session's
-    // global default so they don't drift from the stills already in the clip.
+    // Fresh captures arrive stretched to fill a second on their own
+    // ([StopMotionFrameOps.initialHold]) — one still added from here would
+    // splice into a long clip at a 1s hold — so the session's global default
+    // is re-applied, both to undo that stretch and to keep the new stills from
+    // drifting from the ones already in the clip.
     final newFrames = StopMotionFrameOps.setGlobalHold(
       capturedFrames,
       StopMotionFrameOps.globalDefaultFramesPerImage(targetFrames),
@@ -463,13 +476,27 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
 
   /// Syncs the current clip list from [clipManagerProvider] into the
   /// [ClipEditorBloc] and appends a history entry to the pro_image_editor.
+  ///
+  /// Both callers add content — stills shot from the editor's camera, a
+  /// stop-motion set merged in from the clips picker — so the composition can
+  /// end up longer than the one a sound was clamped to when it was added.
+  /// [VideoEditorExtensions.setLengthenedClipState] carries a window that ran
+  /// to the old end onto the new one (#6401); a window the user trimmed short
+  /// is left alone.
   void _syncClipsToEditor({required ClipEditorBloc clipEditorBloc}) {
+    // Read before the dispatch: this is the composition the audio windows were
+    // last clamped against.
+    final previousClips = clipEditorBloc.state.clips;
+
     // Sync the updated clip list into the editor BLoC.
     final updatedClips = ref.read(clipManagerProvider).clips;
     clipEditorBloc.add(ClipEditorInitialized(updatedClips));
 
     if (_editor != null) {
-      _editor!.setClipState(updatedClips);
+      _editor!.setLengthenedClipState(
+        previousClips: previousClips,
+        clips: updatedClips,
+      );
     }
   }
 
@@ -560,6 +587,102 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     if (result == null || layer != null) return result;
 
     return result.copyWith(scale: 1 / _fittedBoxScale);
+  }
+
+  /// Opens the captions editor sheet. Captions are always published as CC;
+  /// the sheet's burn-in toggle decides whether they are also burned in.
+  Future<void> _openCaptions({
+    required VideoEditorMainBloc mainBloc,
+    required ClipEditorBloc clipEditorBloc,
+  }) async {
+    final editor = _editor;
+    if (editor == null) return;
+
+    final existingTrack = editor.stateManager.captionTrack;
+    final captionLayers = editor.activeLayers.where(isCaptionCueLayer).toList();
+    final hasSession = existingTrack != null || captionLayers.isNotEmpty;
+
+    final burnIn = existingTrack?.burnIn ?? captionLayers.isNotEmpty;
+    final presetId =
+        existingTrack?.presetId ?? CaptionStylePreset.presets.first.id;
+    // Cues are authoritative on the track; only a legacy burn-in draft (cues
+    // stored solely as layers) needs the layer fallback.
+    final List<CaptionCue>? initialCues = hasSession
+        ? (existingTrack != null && existingTrack.cues.isNotEmpty
+              ? existingTrack.cues
+              : captionCuesFromLayers(captionLayers))
+        : null;
+
+    // The app language drives recognition; a stored track keeps the language
+    // it was transcribed with.
+    final languageTag =
+        existingTrack?.languageTag ??
+        Localizations.localeOf(context).toLanguageTag();
+
+    mainBloc.add(const VideoEditorMainOpenSubEditor(.captions));
+
+    // The cubit prefers server-side transcription (higher quality), falling
+    // back to on-device per clip when the request fails.
+    final result = await showCaptionsEditorSheet(
+      context,
+      burnIn: burnIn,
+      presetId: presetId,
+      customStyle: existingTrack?.customStyle,
+      languageTag: languageTag,
+      clips: clipEditorBloc.state.clips,
+      totalDuration: clipEditorBloc.state.totalDuration,
+      initialCues: initialCues,
+      canDeleteTrack: hasSession,
+      blossomUploadService: ref.read(blossomUploadServiceProvider),
+    );
+
+    mainBloc.add(const VideoEditorMainSubEditorClosed());
+    if (result == null) return;
+    _commitCaptionsResult(result);
+  }
+
+  /// Commits a captions-editor result as one history entry (one undo step):
+  /// the track (cues + burn-in flag) goes into the `captions` meta key, and
+  /// when burn-in is on the cues are also materialized as marked caption
+  /// layers. Delete removes both.
+  void _commitCaptionsResult(CaptionsEditorResult result) {
+    final editor = _editor;
+    if (editor == null) return;
+
+    switch (result) {
+      case CaptionsDeleted():
+        editor.commitCaptionState(track: null);
+      case CaptionsConfirmed(:final track) when !track.burnIn:
+        editor.commitCaptionState(track: track);
+      case CaptionsConfirmed(:final track, :final cues):
+        // A custom style wins over the built-in preset for the burned look.
+        final style =
+            track.customStyle?.resolve() ??
+            CaptionStylePreset.byId(track.presetId).style;
+        final bodySize = _bodySizeNotifier.value;
+        final scale = _fittedBoxScale;
+        // Preserve any on-canvas position/rotation/scale the user already
+        // applied to a cue's layer, keyed by cue id, so re-editing captions
+        // doesn't reset their manual adjustments.
+        final existingByCueId = <String, Layer>{
+          for (final layer in editor.activeLayers)
+            ?captionCueIdOf(layer): layer,
+        };
+        editor.commitCaptionState(
+          track: track,
+          captionLayers: [
+            for (final cue in cues)
+              preserveCaptionLayerTransform(
+                style.buildLayer(
+                  cue,
+                  fittedBoxScale: scale,
+                  bodySize: bodySize,
+                ),
+                existingByCueId[cue.id],
+              ),
+          ],
+        );
+    }
   }
 
   Future<void> _openMusicLibrary() async {
@@ -879,6 +1002,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               originalClipAspectRatio: clip?.originalAspectRatio ?? 9 / 16,
               bodySizeNotifier: _bodySizeNotifier,
               zoomMatrixNotifier: _zoomMatrixNotifier,
+              playTimeNotifier: _playTimeNotifier,
               fromLibrary: widget.fromLibrary,
               onOpenCamera: () => _openCamera(
                 clipEditorBloc: context.read<ClipEditorBloc>(),
@@ -910,6 +1034,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
               onOpenVoiceOver: () {
                 final mainBloc = context.read<VideoEditorMainBloc>();
                 _openVoiceOver(mainBloc: mainBloc);
+              },
+              onOpenCaptions: () {
+                final mainBloc = context.read<VideoEditorMainBloc>();
+                final clipEditorBloc = context.read<ClipEditorBloc>();
+                _openCaptions(
+                  mainBloc: mainBloc,
+                  clipEditorBloc: clipEditorBloc,
+                );
               },
               awaitPushCoverTransition: _awaitMetadataCoverTransition,
               child: ValueListenableBuilder<bool>(

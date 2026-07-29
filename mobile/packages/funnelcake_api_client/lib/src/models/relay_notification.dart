@@ -19,7 +19,9 @@ class RelayNotification {
     this.referencedVideoThumbnail,
     this.referencedDTag,
     this.rootEventId,
+    this.rootEventKind,
     this.rootEventPubkey,
+    this.rootDTag,
     this.rootAddressableId,
     this.targetCommentId,
   });
@@ -70,9 +72,11 @@ class RelayNotification {
           : null,
       referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
       rootEventId: _nonEmpty(json['root_event_id'] as String?),
+      rootEventKind: _intValue(json['root_event_kind']),
       rootEventPubkey: _nonEmpty(
         (json['root_event_pubkey'] as String?)?.toLowerCase(),
       ),
+      rootDTag: _nonEmpty(json['root_d_tag'] as String?),
       rootAddressableId: _nonEmpty(json['root_addressable_id'] as String?),
       targetCommentId: _nonEmpty(json['target_comment_id'] as String?),
     );
@@ -128,14 +132,16 @@ class RelayNotification {
   final String? referencedDTag;
 
   /// Root video event ID included by Funnelcake for NIP-22 comment
-  /// notifications.
+  /// notifications and source-video mentions.
   ///
-  /// Some staging payloads report a kind 1111 comment as
-  /// `notification_type: mention` with an empty `referenced_event_id`, but
-  /// still include `root_event_id`. Keeping this field lets app layers anchor
-  /// the notification directly to the video instead of resolving the comment
-  /// event through a relay round-trip.
+  /// For NIP-22 comments this is the video's event id. For kind 34236
+  /// video-sourced mention rows this is the source video event id. App layers
+  /// prefer [rootAddressableId] when present because the coordinate survives
+  /// replaceable video edits.
   final String? rootEventId;
+
+  /// Nostr kind of the root/source event, when Funnelcake includes it.
+  final int? rootEventKind;
 
   /// Pubkey of the root video's author, when Funnelcake can resolve it
   /// (from the reaction's NIP-22 root `P` tag / root coordinate).
@@ -152,6 +158,9 @@ class RelayNotification {
   /// owner — to detect a "liked your comment" that would otherwise be
   /// mislabelled "liked your video" without a metadata round-trip.
   final String? rootEventPubkey;
+
+  /// The root/source video's NIP-33 `d` tag, when Funnelcake includes it.
+  final String? rootDTag;
 
   /// Full NIP-33 coordinate for the root video, when Funnelcake can resolve it.
   ///

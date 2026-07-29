@@ -3,6 +3,7 @@
 
 import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -189,8 +190,16 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Defense-in-depth: the button is hidden when blocked, but a stale tap or
     // programmatic call must not open a conversation the minor can't use.
     if (_messagingBlockedForProtectedMinor()) return;
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    if (currentPubkey == null || currentPubkey.isEmpty) return;
+    // The route id must be the canonical sha256 of the sorted participants —
+    // the same id `sendMessage` persists under. Passing the raw peer pubkey
+    // here opened a thread whose id matched no stored row, so history never
+    // rendered and messages sent from this screen never appeared in it.
     context.push(
-      ConversationPage.pathForId(widget.pubkey),
+      ConversationPage.pathForId(
+        DmRepository.computeConversationId([currentPubkey, widget.pubkey]),
+      ),
       extra: [widget.pubkey],
     );
   }

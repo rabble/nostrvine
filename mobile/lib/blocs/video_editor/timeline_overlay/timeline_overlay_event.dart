@@ -17,6 +17,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
     required this.totalVideoDuration,
     this.tuneAdjustments = const [],
     this.timelineMarkers = const [],
+    this.captionTrack,
   });
 
   final List<Layer> layers;
@@ -24,6 +25,9 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
   final List<TuneAdjustmentMatrix> tuneAdjustments;
   final List<AudioEvent> audioTracks;
   final List<Duration> timelineMarkers;
+
+  /// The session's caption track; overlay-mode cues become captions items.
+  final CaptionTrack? captionTrack;
 
   final Duration totalVideoDuration;
 
@@ -35,6 +39,7 @@ class TimelineOverlayItemsUpdate extends TimelineOverlayEvent {
     audioTracks,
     totalVideoDuration,
     timelineMarkers,
+    captionTrack,
   ];
 }
 
@@ -159,12 +164,24 @@ class TimelineOverlayCollapseToggled extends TimelineOverlayEvent {
 /// Dispatched when clip trimming or removal shortens the total
 /// video duration.
 class TimelineOverlayTotalDurationChanged extends TimelineOverlayEvent {
-  const TimelineOverlayTotalDurationChanged(this.totalDuration);
+  const TimelineOverlayTotalDurationChanged(
+    this.totalDuration, {
+    this.isClipTrimDragging = false,
+  });
 
   final Duration totalDuration;
 
+  /// Whether a clip trim drag is still in flight.
+  ///
+  /// The total changes on every frame of that drag, so a sound bar covering
+  /// the end is re-clamped continuously. Re-scheduling the preview player's
+  /// native audio each time would churn it per frame, so the handler skips the
+  /// player bump while this is set. (Clip trims never re-sync the sound to the
+  /// new composition length, drag or not — a separate, pre-existing gap.)
+  final bool isClipTrimDragging;
+
   @override
-  List<Object?> get props => [totalDuration];
+  List<Object?> get props => [totalDuration, isClipTrimDragging];
 }
 
 /// Add a timeline marker at the given playhead [position].

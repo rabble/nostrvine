@@ -64,8 +64,7 @@ void main() {
       expect(result.target, const OpenVideoTarget(autoOpenComments: false));
     });
 
-    test('mention uses eventId as the video target (no referencedEventId) '
-        'and opens comments', () {
+    test('video mention uses eventId as the video target without comments', () {
       final result = app.pushNotificationTapTarget(
         referencedAddress: null,
         referencedEventId: null,
@@ -74,7 +73,7 @@ void main() {
         senderPubkey: actor,
       );
 
-      expect(result.target, const OpenVideoTarget(autoOpenComments: true));
+      expect(result.target, const OpenVideoTarget(autoOpenComments: false));
       expect(result.targetEventId, equals(sourceEvent));
     });
 

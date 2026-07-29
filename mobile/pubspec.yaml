@@ -16,7 +16,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.17+506
+version: 1.0.19+508
 
 environment:
   sdk: ^3.12.0
@@ -54,6 +54,7 @@ workspace:
   - packages/funnelcake_api_client
   - packages/hashtag_repository
   - packages/image_metadata_stripper
+  - packages/iap_repository
   - packages/invite_api_client
   - packages/keycast_flutter
   - packages/likes_repository
@@ -100,6 +101,9 @@ dependencies:
 
   blossom_upload_service:
 
+  caption_generator:
+    path: packages/caption_generator
+
   # Testable time source — wraps DateTime.now/Stopwatch so fakeAsync can
   # virtualize them in tests.
   clock: ^1.1.2
@@ -137,8 +141,9 @@ dependencies:
   # unrelated third-party FFI rewrite — different author, c2pa-rs 0.75.x, no
   # RemoteSigner.) Pinned by immutable commit (tag 0.0.3) so a moved tag cannot
   # silently change the build.
-  # TODO(#6166): revert to a pub/version dep if guardianproject publishes
-  # c2pa_flutter to pub.dev.
+  # TODO(#6166): moving off this pin needs a differently-named pub package —
+  # guardianproject cannot publish as `c2pa_flutter` (name permanently taken),
+  # so it is a rename plus API migration, not a version-constraint swap.
   c2pa_flutter:
     git:
       url: https://github.com/guardianproject/c2pa-flutter.git
@@ -158,6 +163,9 @@ dependencies:
   image_picker: ^1.2.0 # For selecting images from gallery or camera
   image_metadata_stripper:
     path: packages/image_metadata_stripper
+  in_app_purchase: ^3.2.0
+  iap_repository:
+    path: packages/iap_repository
   invite_api_client:
     path: packages/invite_api_client
   gal: ^2.3.2 # Save videos to device photo gallery
@@ -306,6 +314,10 @@ dependencies:
   flutter_native_splash: ^2.4.7
   flutter_local_notifications: ^21.0.0
   package_info_plus: ^9.0.0
+  # Triggers the OS-native review card (SKStoreReviewController on iOS,
+  # Google Play in-app review on Android). Used by AppReviewCoordinator to
+  # ask engaged, store-installed creators to rate the app — no custom dialog.
+  in_app_review: ^2.0.12
   uuid: ^4.5.1
   app_links: ^6.4.1
   drift: ^2.34.0
@@ -318,7 +330,7 @@ dependencies:
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1
   audio_session: ^0.2.2
-  pro_video_editor: ^2.6.0
+  pro_video_editor: ^2.9.0
   pro_image_editor: ^13.2.3
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7

@@ -32,7 +32,8 @@ class _FakeNotificationRepository extends Fake
   final List<List<String>> markedReadCalls = [];
 
   @override
-  Stream<NotificationPage> watchSnapshot() => _snapshot.stream;
+  Stream<NotificationPage> watchSnapshot({NotificationKind? filter}) =>
+      _snapshot.stream;
 
   @override
   Stream<int> watchUnreadCount() => _snapshot.stream
@@ -56,7 +57,15 @@ class _FakeNotificationRepository extends Fake
   }
 
   @override
-  void resetPaginationDepth() {}
+  void resetPaginationDepth({NotificationKind? filter}) {}
+
+  @override
+  Future<NotificationPage> refreshFeed(NotificationKind? filter) async =>
+      _snapshot.value;
+
+  @override
+  Future<NotificationPage?> loadNextPageFor(NotificationKind? filter) async =>
+      _snapshot.value;
 
   @override
   Future<void> close() => _snapshot.close();
@@ -179,41 +188,35 @@ void main() {
       },
     );
 
-    test(
-      'tapping every unread item converges badge to 0',
-      () async {
-        final bloc = NotificationFeedBloc(
-          notificationRepository: repository,
-          followRepository: followRepository,
-        );
-        addTearDown(bloc.close);
-        final badge = NotificationBadgeCubit(repository: repository);
-        addTearDown(badge.close);
+    test('tapping every unread item converges badge to 0', () async {
+      final bloc = NotificationFeedBloc(
+        notificationRepository: repository,
+        followRepository: followRepository,
+      );
+      addTearDown(bloc.close);
+      final badge = NotificationBadgeCubit(repository: repository);
+      addTearDown(badge.close);
 
-        await Future<void>.delayed(Duration.zero);
-        expect(badge.state, equals(3));
+      await Future<void>.delayed(Duration.zero);
+      expect(badge.state, equals(3));
 
-        bloc.add(const NotificationFeedItemTapped('n1'));
-        await Future<void>.delayed(Duration.zero);
-        bloc.add(const NotificationFeedItemTapped('n2'));
-        await Future<void>.delayed(Duration.zero);
-        bloc.add(const NotificationFeedItemTapped('n3'));
-        await Future<void>.delayed(Duration.zero);
+      bloc.add(const NotificationFeedItemTapped('n1'));
+      await Future<void>.delayed(Duration.zero);
+      bloc.add(const NotificationFeedItemTapped('n2'));
+      await Future<void>.delayed(Duration.zero);
+      bloc.add(const NotificationFeedItemTapped('n3'));
+      await Future<void>.delayed(Duration.zero);
 
-        expect(badge.state, equals(0));
-        expect(
-          repository.markedReadCalls,
-          equals([
-            ['n1'],
-            ['n2'],
-            ['n3'],
-          ]),
-        );
-        expect(
-          bloc.state.notifications.every((n) => n.isRead),
-          isTrue,
-        );
-      },
-    );
+      expect(badge.state, equals(0));
+      expect(
+        repository.markedReadCalls,
+        equals([
+          ['n1'],
+          ['n2'],
+          ['n3'],
+        ]),
+      );
+      expect(bloc.state.notifications.every((n) => n.isRead), isTrue);
+    });
   });
 }

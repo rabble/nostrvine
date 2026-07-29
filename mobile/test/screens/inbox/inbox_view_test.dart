@@ -13,11 +13,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart';
+import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/router/app_router.dart';
@@ -31,6 +34,7 @@ import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_error_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
+import 'package:openvine/screens/inbox/widgets/restore_paused_banner.dart';
 import 'package:openvine/screens/inbox/widgets/unread_filter_chips.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 
@@ -43,6 +47,12 @@ class _MockConversationListBloc
 
 class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
     implements MyFollowingBloc {}
+
+class _MockConversationMuteCubit extends MockCubit<ConversationMuteState>
+    implements ConversationMuteCubit {}
+
+class _MockConversationActionsCubit extends MockCubit<ConversationActionsState>
+    implements ConversationActionsCubit {}
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
@@ -102,6 +112,7 @@ void main() {
       int dmUnreadCount = 0,
       int notificationUnreadCount = 0,
       Stream<int>? notificationStream,
+      TextScaler? textScaler,
     }) {
       if (state != null) {
         whenListen(
@@ -137,6 +148,32 @@ void main() {
         initialState: notificationUnreadCount,
       );
 
+      final mockMuteCubit = _MockConversationMuteCubit();
+      when(() => mockMuteCubit.state).thenReturn(const ConversationMuteState());
+      whenListen(
+        mockMuteCubit,
+        const Stream<ConversationMuteState>.empty(),
+        initialState: const ConversationMuteState(),
+      );
+
+      final mockActionsCubit = _MockConversationActionsCubit();
+      when(
+        () => mockActionsCubit.state,
+      ).thenReturn(const ConversationActionsState());
+      when(() => mockActionsCubit.isBlocked(any())).thenReturn(false);
+      whenListen(
+        mockActionsCubit,
+        const Stream<ConversationActionsState>.empty(),
+        initialState: const ConversationActionsState(),
+      );
+
+      final inbox = textScaler == null
+          ? const InboxView()
+          : MediaQuery(
+              data: MediaQueryData(textScaler: textScaler),
+              child: const InboxView(),
+            );
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
@@ -154,8 +191,14 @@ void main() {
               BlocProvider<NotificationBadgeCubit>.value(
                 value: mockNotifBadgeCubit,
               ),
+              BlocProvider<ConversationMuteCubit>.value(
+                value: mockMuteCubit,
+              ),
+              BlocProvider<ConversationActionsCubit>.value(
+                value: mockActionsCubit,
+              ),
             ],
-            child: const InboxView(),
+            child: inbox,
           ),
         ),
       );
@@ -206,7 +249,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        expect(find.byType(FollowingBar), findsOneWidget);
+        // skipOffstage: false because the bar now lives in a sliver and this
+        // subject follows nobody, so it collapses to SizedBox.shrink() — a
+        // zero-extent sliver, which the default finder treats as offstage.
+        expect(
+          find.byType(FollowingBar, skipOffstage: false),
+          findsOneWidget,
+        );
       });
 
       testWidgets('renders $CircularProgressIndicator when status is initial', (
@@ -979,6 +1028,9 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(MessageRequestsBanner), findsOneWidget);
+          expect(find.byType(InboxEmptyState), findsOneWidget);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.inboxUnreadEmptyTitle), findsNothing);
         },
       );
 
@@ -1069,6 +1121,97 @@ void main() {
           expect(find.byType(LinearProgressIndicator), findsNothing);
         },
       );
+
+      testWidgets(
+        'shows the restore-paused banner when requests are withheld',
+        (tester) async {
+          // The gate can stay shut with no drain running (page cap, exception,
+          // no connected relay), so isRestoringHistory alone left the user with
+          // an inbox that looked complete while requests were hidden.
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(RestorePausedBanner), findsOneWidget);
+          // Static, not a progress bar: nothing is actually running.
+          expect(find.byType(LinearProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides the restore-paused banner while recovery is actively running',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationListState(
+                status: ConversationListStatus.loaded,
+                isRestoringHistory: true,
+                requestsWithheld: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.text('Messages'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(RestorePausedBanner), findsNothing);
+          expect(find.byType(LinearProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets('hides the restore-paused banner when nothing is withheld', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(RestorePausedBanner), findsNothing);
+      });
+
+      testWidgets('restore-paused banner Retry dispatches the retry event', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+              requestsWithheld: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Messages'));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxRestoreRetryAction));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockBloc.add(const ConversationListRestoreRetryRequested()),
+        ).called(1);
+      });
     });
 
     group('navigation', () {
@@ -1102,7 +1245,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.drag(find.byType(ListView), const Offset(0, -5000));
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -5000),
+        );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
@@ -1232,6 +1378,764 @@ void main() {
           () => mockBloc.add(const ConversationListNavigateToUser('user123')),
         ).called(1);
       });
+    });
+
+    group('scroll layout (#6388 review, items 4 + 5)', () {
+      Future<void> openMessages(WidgetTester tester) async {
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      }
+
+      List<DmConversation> manyConversations() => List.generate(
+        30,
+        (index) => DmConversation(
+          id: 'c${index.toString().padLeft(63, '0')}',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix - index,
+          lastMessageContent: 'Message $index',
+          lastMessageTimestamp: nowUnix - index,
+        ),
+      );
+
+      testWidgets('scrolls the search field away and keeps the filter chips '
+          'pinned, so the keyboard cannot squeeze the list', (tester) async {
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.byType(DivineSearchBar), findsOneWidget);
+        final chipsBefore = tester.getTopLeft(find.byType(UnreadFilterChips));
+
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -400),
+        );
+        await tester.pump();
+
+        // The search field is chrome now, not a fixed header: it leaves the
+        // viewport entirely, handing its height back to the conversations.
+        expect(find.byType(DivineSearchBar), findsNothing);
+        // The chips do not — losing the way back to All while filtered by
+        // Unread would be a trap.
+        expect(find.byType(UnreadFilterChips), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.byType(UnreadFilterChips)).dy,
+          lessThanOrEqualTo(chipsBefore.dy),
+        );
+      });
+
+      // A pinned SliverPersistentHeader lays its child out with a TIGHT height
+      // equal to maxExtent, so `getSize(...).height` only ever reports the
+      // extent the delegate declared — asserting it equals a constant measures
+      // that constant against itself and cannot catch an under-declared header.
+      // What can: the chips' own intrinsic height, which is computed from the
+      // content and is independent of the constraint it was laid out under. If
+      // the header declares less than that, the label is silently clipped
+      // (cross-axis overflow in a Row does not throw), which is the failure
+      // these two tests exist to catch.
+      Future<({double laidOut, double needed})> pumpChips(
+        WidgetTester tester, {
+        required TextScaler textScaler,
+      }) async {
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+            textScaler: textScaler,
+          ),
+        );
+        await openMessages(tester);
+
+        final box = tester.renderObject<RenderBox>(
+          find.byType(UnreadFilterChips),
+        );
+        return (
+          laidOut: box.size.height,
+          needed: box.getMaxIntrinsicHeight(box.size.width),
+        );
+      }
+
+      testWidgets('the pinned header fits the chips at the default text scale', (
+        tester,
+      ) async {
+        final size = await pumpChips(
+          tester,
+          textScaler: TextScaler.noScaling,
+        );
+
+        // 48 = 8px padding either side of a DivineButtonSize.tiny chip, which
+        // is itself 6 + a 20px line box + 6. Asserting the chips ASK for 48 is
+        // the half that can fail: if a divine_ui token moves, this breaks here
+        // rather than as a clipped chip on someone's phone.
+        expect(size.needed, equals(48));
+        expect(size.laidOut, equals(48));
+      });
+
+      testWidgets('the pinned header grows with the text scale rather than '
+          'clipping the chips', (tester) async {
+        final size = await pumpChips(
+          tester,
+          textScaler: const TextScaler.linear(2),
+        );
+
+        // Only the 20px line box scales; the two paddings do not. 16 + 12 + 40.
+        expect(size.needed, equals(68));
+        expect(size.laidOut, greaterThanOrEqualTo(size.needed));
+      });
+
+      testWidgets('filter chips honour the system text scale', (tester) async {
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+            textScaler: const TextScaler.linear(2),
+          ),
+        );
+        await openMessages(tester);
+
+        // These are controls the user reads and taps, so they must not be
+        // frozen at 1.0 the way a fixed overlay badge is.
+        final unreadTextContext = tester.element(find.text('Unread'));
+        expect(
+          MediaQuery.textScalerOf(unreadTextContext).scale(20),
+          equals(40),
+        );
+      });
+
+      testWidgets('collapses the following bar when the search field takes '
+          'focus, before any query is typed', (tester) async {
+        // FollowingBar needs real extent to lose, so give it one follow.
+        whenListen(
+          mockFollowingBloc,
+          Stream<MyFollowingState>.value(
+            const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: ['user123'],
+            ),
+          ),
+          initialState: const MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: ['user123'],
+          ),
+        );
+
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(tester.getSize(find.byType(FollowingBar)).height, equals(128));
+        final firstTileBefore = tester.getTopLeft(find.text('Message 0')).dy;
+
+        await tester.tap(find.byType(DivineSearchBar));
+        await tester.pumpAndSettle();
+
+        // Focus alone reclaims the bar — no text needed. minSearchQueryLength
+        // is 2, so a query-driven collapse would still be showing faces here.
+        expect(
+          find.byType(FollowingBar, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          tester.getTopLeft(find.text('Message 0')).dy,
+          lessThan(firstTileBefore - 100),
+        );
+      });
+
+      testWidgets('restores the following bar when search focus is released', (
+        tester,
+      ) async {
+        // FollowingBar needs real extent to lose, so give it one follow.
+        whenListen(
+          mockFollowingBloc,
+          Stream<MyFollowingState>.value(
+            const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: ['user123'],
+            ),
+          ),
+          initialState: const MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: ['user123'],
+          ),
+        );
+
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        await tester.tap(find.byType(DivineSearchBar));
+        await tester.pumpAndSettle();
+        expect(find.byType(FollowingBar, skipOffstage: false), findsNothing);
+
+        // Submitting unfocuses (DivineSearchBar dismisses the keyboard so the
+        // results stay visible), which must bring the bar back.
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+
+        expect(tester.getSize(find.byType(FollowingBar)).height, equals(128));
+      });
+
+      testWidgets('renders the whole pane as one scroll view', (tester) async {
+        final conversations = manyConversations();
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: conversations,
+              visibleConversations: conversations,
+              hasMore: false,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        // One scrollable for the pane — the old layout nested a ListView
+        // inside a Column of fixed-height chrome, which is what left the list
+        // roughly one row tall with the keyboard open.
+        expect(find.byType(CustomScrollView), findsOneWidget);
+      });
+    });
+
+    group('pinned support row (#6283)', () {
+      const moderationPubkey = kModerationPubkeyHex;
+
+      PinnedSupport supportPin({
+        String? lastMessageContent,
+        bool isRead = true,
+        bool isPersisted = false,
+      }) => PinnedSupport(
+        isPersisted: isPersisted,
+        conversation: DmConversation(
+          id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          participantPubkeys: const [currentPubkey, moderationPubkey],
+          isGroup: false,
+          createdAt: 0,
+          lastMessageContent: lastMessageContent,
+          isRead: isRead,
+        ),
+      );
+
+      Future<void> openMessages(WidgetTester tester) async {
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      }
+
+      final wordmarkFinder = find.byWidgetPredicate(
+        (widget) => widget is DivineIcon && widget.icon == DivineIconName.logo,
+        description: 'bundled Divine wordmark',
+      );
+
+      testWidgets('renders the moderation title from l10n, never a '
+          'generated profile name', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowSubtitle), findsOneWidget);
+        // The tile's profile fallback is a deterministic "Adjective Animal N"
+        // string. If the override ever regresses, the moderation row silently
+        // renders as a random user, so pin the exact fallback out.
+        expect(
+          find.text(UserProfile.defaultDisplayNameFor(moderationPubkey)),
+          findsNothing,
+        );
+      });
+
+      // The bloc withholds the pin for a user who blocked moderation, for a
+      // restricted minor whose approval was revoked, and wherever no
+      // moderation pubkey is configured. The view must render nothing at all
+      // in that case, not an empty tile.
+      testWidgets('is absent when the bloc emits no pin', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+
+      testWidgets('renders BESIDE the empty state, not instead of it — the '
+          'user with zero conversations is the one who needs it most', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.byType(InboxEmptyState), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('drops out of a search it does not match', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              searchQuery: 'zzzz',
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        // Now that the row sits inside the list rather than above it, a row
+        // matching neither the query nor anything else would read as a search
+        // hit that isn't one. It is pinned against the sort, not the filters.
+        expect(find.text(l10n.inboxSearchEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+
+      // A real conversation has to be present for the filtered branch to run
+      // at all: an inbox with nothing in it skips the search field and chips
+      // entirely, so there is no filter for the row to be judged against.
+      final realConversation = DmConversation(
+        id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        participantPubkeys: const [currentPubkey, otherPubkey],
+        isGroup: false,
+        createdAt: nowUnix,
+        lastMessageContent: 'Hello',
+        lastMessageTimestamp: nowUnix,
+      );
+
+      testWidgets('stays in a search whose query matches its title', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [realConversation],
+              // 'moderation' matches inboxSupportRowTitle, but no real thread.
+              searchQuery: 'moderation',
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('stays in a search whose query matches the subtitle blurb '
+          'it actually renders', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        // A synthetic pin renders inboxSupportRowSubtitle as its preview, so
+        // a query drawn from that text must keep it — hiding the row while
+        // the matched words are on screen reads as a broken search.
+        const query = 'bugs';
+        expect(
+          l10n.inboxSupportRowSubtitle.toLowerCase(),
+          contains(query),
+          reason: 'query must be drawn from the rendered subtitle',
+        );
+        expect(
+          l10n.inboxSupportRowTitle.toLowerCase(),
+          isNot(contains(query)),
+          reason: 'otherwise the title branch would carry the test',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [realConversation],
+              searchQuery: query,
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('is hidden by the Unread chip once it has been read', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [realConversation],
+              unreadOnly: true,
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsNothing);
+      });
+
+      testWidgets('survives the Unread chip while it still has unread', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [realConversation],
+              unreadOnly: true,
+              hasMore: false,
+              pinnedSupport: supportPin(
+                isRead: false,
+                lastMessageContent: 'We looked into your report.',
+              ),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('is the first tile, ahead of the requests banner and every '
+          'real conversation', (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final conversation = DmConversation(
+          id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          participantPubkeys: const [currentPubkey, otherPubkey],
+          isGroup: false,
+          createdAt: nowUnix,
+          lastMessageContent: 'Hello',
+          lastMessageTimestamp: nowUnix,
+        );
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              conversations: [conversation],
+              visibleConversations: [conversation],
+              requestConversations: [
+                DmConversation(
+                  id:
+                      'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+                      'eeeeeeeeeeeeeeeeeeeeeeee',
+                  participantPubkeys: const [currentPubkey, otherPubkey],
+                  isGroup: false,
+                  createdAt: nowUnix,
+                ),
+              ],
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        // Ordering is asserted geometrically: the conversation list carries no
+        // index the test can read, and the moderation row must outrank both
+        // the requests banner and a conversation with a far newer timestamp.
+        final supportY = tester
+            .getTopLeft(find.text(l10n.inboxSupportRowTitle))
+            .dy;
+        final bannerY = tester
+            .getTopLeft(find.byType(MessageRequestsBanner))
+            .dy;
+        final conversationY = tester.getTopLeft(find.text('Hello')).dy;
+
+        expect(supportY, lessThan(bannerY));
+        expect(bannerY, lessThan(conversationY));
+      });
+
+      testWidgets('still renders for a brand-new user with an empty inbox', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              hasMore: false,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        // The empty-state copy still shows, but the support row is not lost
+        // with it — this is the user who most needs to reach moderation.
+        expect(find.byType(InboxEmptyState), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+      });
+
+      testWidgets('shows the real last message once the team has replied', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(
+                lastMessageContent: 'We looked into your report.',
+                isRead: false,
+              ),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(find.text('We looked into your report.'), findsOneWidget);
+        expect(find.text(l10n.inboxSupportRowSubtitle), findsNothing);
+      });
+
+      testWidgets('opens the conversation with MODERATION, not with self', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final pin = supportPin();
+        when(
+          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: pin,
+            ),
+          ),
+        );
+        await openMessages(tester);
+        await tester.tap(find.text(l10n.inboxSupportRowTitle));
+        await tester.pump();
+
+        // The route reads `extra` as the COUNTERPARTY list. Passing the raw
+        // participants (which include self) opened a conversation with the
+        // signed-in user — caught only by running the app, because a mocked
+        // router happily accepts either list.
+        final captured = verify(
+          () => mockGoRouter.push<Object?>(
+            ConversationPage.pathForId(pin.conversation.id),
+            extra: captureAny(named: 'extra'),
+          ),
+        ).captured.single;
+        expect(captured, equals([moderationPubkey]));
+        expect(captured, isNot(contains(currentPubkey)));
+      });
+
+      testWidgets('exposes a tappable button to assistive tech', (
+        tester,
+      ) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        final data = tester
+            .getSemantics(find.byType(ConversationTile))
+            .getSemanticsData();
+        expect(data.label, contains(l10n.inboxSupportRowTitle));
+        expect(data.flagsCollection.isButton, isTrue);
+        // Nothing is persisted yet, so there is no action sheet to open and
+        // the row must not advertise a long-press it cannot honour.
+        expect(data.hasAction(SemanticsAction.longPress), isFalse);
+      });
+
+      testWidgets(
+        'advertises long-press to assistive tech once a thread is adopted',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(isPersisted: true),
+              ),
+            ),
+          );
+          await openMessages(tester);
+
+          final data = tester
+              .getSemantics(find.byType(ConversationTile))
+              .getSemanticsData();
+          // The adopted thread carries the actions the ordinary row had before
+          // the pin replaced it, so the affordance must be discoverable.
+          expect(data.hasAction(SemanticsAction.longPress), isTrue);
+        },
+      );
+
+      testWidgets('renders the bundled wordmark rather than the account '
+          'picture', (tester) async {
+        // The moderation account's kind-0 picture is divine-logo.svg, which
+        // colours itself through a <style> block. flutter_svg's parser has no
+        // <style> support, discards it, and paints every path opaque black —
+        // 1.1:1 against the inbox surface. The row must not depend on it.
+        await tester.pumpWidget(
+          buildSubject(
+            state: ConversationListState(
+              status: ConversationListStatus.loaded,
+              pinnedSupport: supportPin(),
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(wordmarkFinder, findsOneWidget);
+      });
+
+      testWidgets('renders no wordmark when there is no pin', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            state: const ConversationListState(
+              status: ConversationListStatus.loaded,
+            ),
+          ),
+        );
+        await openMessages(tester);
+
+        expect(wordmarkFinder, findsNothing);
+      });
+
+      testWidgets(
+        'long-press on an adopted thread opens the actions sheet labelled '
+        'Divine Moderation, never a generated profile name',
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+            ),
+          );
+          await openMessages(tester);
+
+          await tester.longPress(find.text(l10n.inboxSupportRowTitle));
+          await tester.pumpAndSettle();
+
+          // The pin replaced an ordinary row that had these actions; losing
+          // them on adoption is the regression this guards (#6388 review).
+          expect(find.text(l10n.inboxActionRemove), findsOneWidget);
+          expect(
+            find.text(l10n.inboxActionBlock(l10n.inboxSupportRowTitle)),
+            findsOneWidget,
+          );
+          // Sourcing the sheet's name from kind-0 would label it with the
+          // deterministic "Adjective Animal N" fallback for this pubkey.
+          expect(
+            find.text(
+              l10n.inboxActionBlock(
+                UserProfile.defaultDisplayNameFor(moderationPubkey),
+              ),
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        "survives a search that matches the adopted pin's last message",
+        (tester) async {
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationListState(
+                status: ConversationListStatus.loaded,
+                searchQuery: 'looked',
+                pinnedSupport: supportPin(
+                  isPersisted: true,
+                  lastMessageContent: 'We looked into your report',
+                ),
+              ),
+            ),
+          );
+          await openMessages(tester);
+
+          // The bloc's own filter matches name OR preview; matching only the
+          // title here hid the row on a query drawn from the team's reply.
+          expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
+        },
+      );
     });
   });
 }

@@ -636,6 +636,117 @@ class NostrClient {
     return outcome;
   }
 
+  /// Queries events with health details for callers that must distinguish an
+  /// empty result from an unreachable relay query.
+  ///
+  /// Query flow: **Cache + WebSocket**
+  ///
+  /// If [useCache] is `true` and cache is available, checks local cache first.
+  /// Then queries via WebSocket and merges results.
+  ///
+  /// Results from websocket are cached for future queries.
+  ///
+  /// Calling this on a disposed client is a no-op that returns an empty
+  /// list. If the client is disposed while a call is in flight, the
+  /// network query is skipped and only cached results are returned.
+  Future<({List<Event> events, bool timedOut, bool noRelays})>
+  queryEventsDetailed(
+    List<Filter> filters, {
+    String? subscriptionId,
+    List<String>? tempRelays,
+    List<int> relayTypes = RelayType.all,
+    bool sendAfterAuth = false,
+    bool useCache = true,
+    bool useQueryPool = true,
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    // A disposed client's query pool is closed; querying it is a no-op
+    // rather than an error. This is the common case (checked upfront to
+    // skip pointless cache/reconnect work below) — the narrower re-check
+    // right before `withResource` (see below) closes the residual race
+    // where dispose() runs during the awaits in between. See #5952.
+    if (_isDisposed) {
+      return (events: <Event>[], timedOut: false, noRelays: true);
+    }
+
+    final effectiveTempRelays = _allowedRelays(tempRelays);
+    final cacheResults = <Event>[];
+
+    // 1. Get cache results (don't return early - we'll merge with network)
+    final dao = _nostrEventsDao;
+    if (useCache && dao != null && filters.length == 1) {
+      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
+    }
+
+    // 2. Query via WebSocket.
+    // A cold query — e.g. the DM history drain firing before the relay
+    // pool has finished connecting — would otherwise short-circuit to an
+    // empty result (RelayPool completes immediately when no relay accepts
+    // the REQ). Reconnect first, mirroring publish()/subscribe(). See #5202.
+    if (_relayManager.connectedRelays.isEmpty &&
+        (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
+      await retryDisconnectedRelays();
+    }
+    final noRelays =
+        _relayManager.connectedRelays.isEmpty &&
+        (effectiveTempRelays == null || effectiveTempRelays.isEmpty);
+    final filtersJson = filters.map((f) => f.toJson()).toList();
+    Future<({List<Event> events, bool timedOut})> runWebSocketQuery() =>
+        _nostr.queryEventsDetailed(
+          filtersJson,
+          id: subscriptionId,
+          tempRelays: effectiveTempRelays,
+          relayTypes: relayTypes,
+          sendAfterAuth: sendAfterAuth,
+          timeout: timeout,
+        );
+    // Throttle concurrent one-shot REQs so high fan-out (a profile with many
+    // videos → per-item like-count/badge/profile/repost fetches) can't trip a
+    // relay's "too many concurrent REQs" limit. `withResource` releases the
+    // slot when the (time-bounded) query completes, so it can't leak.
+    //
+    // Re-check the pool's own closed state immediately before the query,
+    // independent of `useQueryPool`: dispose() can run during the awaits
+    // above, and `_queryPool.close()` flips `isClosed` before `_isDisposed`
+    // is set (dispose() closes the pool first), so it's a reliable
+    // dispose-in-progress sentinel for both paths. The non-pooled path
+    // (`queryUsers`, `useQueryPool: false`) matters here too: a query that
+    // fell through after `_nostr.close()` would re-open fresh WebSockets to
+    // the NIP-50 search relays and leak temp relays nothing would clean up.
+    // This check-then-call has no await before the query, so it closes the
+    // race rather than narrowing it. See #5952.
+    final ({List<Event> events, bool timedOut}) websocketResult;
+    if (_queryPool.isClosed) {
+      websocketResult = (events: <Event>[], timedOut: false);
+    } else {
+      websocketResult = useQueryPool
+          ? await _queryPool.withResource(runWebSocketQuery)
+          : await runWebSocketQuery();
+    }
+    final websocketEvents = websocketResult.events;
+
+    // Cache websocket results (fire-and-forget)
+    if (websocketEvents.isNotEmpty) {
+      try {
+        unawaited(_nostrEventsDao?.upsertEventsBatch(websocketEvents));
+      } on Object {
+        // Ignore cache errors
+      }
+    }
+
+    // Merge cache + websocket and return (respecting original limit)
+    // Only apply limit when using a single filter - with multiple filters,
+    // each filter has its own limit and we shouldn't restrict the combined
+    // result set (e.g., getVideosByAddressableIds sends N filters with limit=1
+    // each, expecting N results total).
+    final limit = filters.length == 1 ? filters.first.limit : null;
+    return (
+      events: _mergeEvents(cacheResults, websocketEvents, limit: limit),
+      timedOut: websocketResult.timedOut,
+      noRelays: noRelays,
+    );
+  }
+
   /// Queries events with given filters
   ///
   /// Query flow: **Cache + WebSocket**
@@ -658,80 +769,17 @@ class NostrClient {
     bool useQueryPool = true,
     Duration timeout = const Duration(seconds: 5),
   }) async {
-    // A disposed client's query pool is closed; querying it is a no-op
-    // rather than an error. This is the common case (checked upfront to
-    // skip pointless cache/reconnect work below) — the narrower re-check
-    // right before `withResource` (see below) closes the residual race
-    // where dispose() runs during the awaits in between. See #5952.
-    if (_isDisposed) return [];
-
-    final effectiveTempRelays = _allowedRelays(tempRelays);
-    final cacheResults = <Event>[];
-
-    // 1. Get cache results (don't return early - we'll merge with network)
-    final dao = _nostrEventsDao;
-    if (useCache && dao != null && filters.length == 1) {
-      cacheResults.addAll(await dao.getEventsByFilter(filters.first));
-    }
-
-    // 2. Query via WebSocket.
-    // A cold query — e.g. the DM history drain firing before the relay
-    // pool has finished connecting — would otherwise short-circuit to an
-    // empty result (RelayPool completes immediately when no relay accepts
-    // the REQ). Reconnect first, mirroring publish()/subscribe(). See #5202.
-    if (_relayManager.connectedRelays.isEmpty &&
-        (effectiveTempRelays == null || effectiveTempRelays.isEmpty)) {
-      await retryDisconnectedRelays();
-    }
-    final filtersJson = filters.map((f) => f.toJson()).toList();
-    Future<List<Event>> runWebSocketQuery() => _nostr.queryEvents(
-      filtersJson,
-      id: subscriptionId,
-      tempRelays: effectiveTempRelays,
+    final result = await queryEventsDetailed(
+      filters,
+      subscriptionId: subscriptionId,
+      tempRelays: tempRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      useCache: useCache,
+      useQueryPool: useQueryPool,
       timeout: timeout,
     );
-    // Throttle concurrent one-shot REQs so high fan-out (a profile with many
-    // videos → per-item like-count/badge/profile/repost fetches) can't trip a
-    // relay's "too many concurrent REQs" limit. `withResource` releases the
-    // slot when the (time-bounded) query completes, so it can't leak.
-    //
-    // Re-check the pool's own closed state immediately before the query,
-    // independent of `useQueryPool`: dispose() can run during the awaits
-    // above, and `_queryPool.close()` flips `isClosed` before `_isDisposed`
-    // is set (dispose() closes the pool first), so it's a reliable
-    // dispose-in-progress sentinel for both paths. The non-pooled path
-    // (`queryUsers`, `useQueryPool: false`) matters here too: a query that
-    // fell through after `_nostr.close()` would re-open fresh WebSockets to
-    // the NIP-50 search relays and leak temp relays nothing would clean up.
-    // This check-then-call has no await before the query, so it closes the
-    // race rather than narrowing it. See #5952.
-    final List<Event> websocketEvents;
-    if (_queryPool.isClosed) {
-      websocketEvents = [];
-    } else {
-      websocketEvents = useQueryPool
-          ? await _queryPool.withResource(runWebSocketQuery)
-          : await runWebSocketQuery();
-    }
-
-    // Cache websocket results (fire-and-forget)
-    if (websocketEvents.isNotEmpty) {
-      try {
-        unawaited(_nostrEventsDao?.upsertEventsBatch(websocketEvents));
-      } on Object {
-        // Ignore cache errors
-      }
-    }
-
-    // Merge cache + websocket and return (respecting original limit)
-    // Only apply limit when using a single filter - with multiple filters,
-    // each filter has its own limit and we shouldn't restrict the combined
-    // result set (e.g., getVideosByAddressableIds sends N filters with limit=1
-    // each, expecting N results total).
-    final limit = filters.length == 1 ? filters.first.limit : null;
-    return _mergeEvents(cacheResults, websocketEvents, limit: limit);
+    return result.events;
   }
 
   /// Counts events matching the given filters using NIP-45.

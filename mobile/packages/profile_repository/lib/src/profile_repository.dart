@@ -1315,36 +1315,53 @@ class ProfileRepository {
     }
   }
 
-  /// Returns the active `@divine.video` name owned by [pubkeyHex] as a
-  /// `(name, canonical)` record — `name` is the display form (for UI labels),
-  /// `canonical` is the round-trip-safe key to send back to `/release` — or
-  /// `null` if the pubkey owns none.
+  /// Looks up the active `@divine.video` name owned by [pubkeyHex].
   ///
-  /// A lookup failure (network, timeout, non-200, or unparseable/wrong-shaped
-  /// body) also returns `null`: callers treat "unknown" as "no owned name" and
-  /// simply do not offer the burn option.
-  Future<({String name, String canonical})?> getUsernameByPubkey({
+  /// Returns [DivineUsernameNotFound] only when divine-name-server returned a
+  /// valid 200 response with `found:false`. Network, timeout, non-200, and
+  /// wrong-shaped responses return [DivineUsernameUnknown] so callers do not
+  /// confuse "could not check" with "no name exists."
+  Future<DivineUsernameLookup> lookupUsernameByPubkey({
     required String pubkeyHex,
   }) async {
     try {
       final response = await _httpClient
           .get(Uri.parse('$_usernameByPubkeyUrl/$pubkeyHex'))
           .timeout(_nameServerHttpTimeout);
-      if (response.statusCode != 200) return null;
+      if (response.statusCode != 200) return const DivineUsernameUnknown();
       final data = jsonDecode(response.body) as Map<String, dynamic>;
-      if (data['found'] != true) return null;
+      if (data['found'] != true) return const DivineUsernameNotFound();
       final name = data['name'] as String?;
       final canonical = data['canonical'] as String?;
-      if (name == null || canonical == null) return null;
-      return (name: name, canonical: canonical);
+      if (name == null || canonical == null) {
+        return const DivineUsernameUnknown();
+      }
+      return DivineUsernameFound(name: name, canonical: canonical);
     } on Object catch (e) {
       Log.warning(
         'by-pubkey lookup failed: $e',
-        name: 'ProfileRepository.getUsernameByPubkey',
+        name: 'ProfileRepository.lookupUsernameByPubkey',
         category: LogCategory.api,
       );
-      return null;
+      return const DivineUsernameUnknown();
     }
+  }
+
+  /// Returns the active `@divine.video` name owned by [pubkeyHex] as a
+  /// `(name, canonical)` record — `name` is the display form (for UI labels),
+  /// `canonical` is the round-trip-safe key to send back to `/release` — or
+  /// `null` if the pubkey owns none or the lookup could not be determined.
+  Future<({String name, String canonical})?> getUsernameByPubkey({
+    required String pubkeyHex,
+  }) async {
+    final lookup = await lookupUsernameByPubkey(pubkeyHex: pubkeyHex);
+    return switch (lookup) {
+      DivineUsernameFound(:final name, :final canonical) => (
+        name: name,
+        canonical: canonical,
+      ),
+      DivineUsernameNotFound() || DivineUsernameUnknown() => null,
+    };
   }
 
   /// Resolves whether [pubkey] is a Divine identity, distinguishing a genuine
