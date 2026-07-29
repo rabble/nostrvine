@@ -48,6 +48,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(File(''));
     registerFallbackValue(<String>[]);
+    registerFallbackValue(RelayAddSource.automatic);
   });
 
   setUp(() async {
@@ -125,7 +126,9 @@ void main() {
       expect(result.success, isTrue);
       expect(result.reportId, equals('test-report-001'));
       expect(result.messageEventId, equals('event-abc123'));
-      verifyNever(() => mockNostrClient.addRelay(any()));
+      verifyNever(
+        () => mockNostrClient.addRelay(any(), source: any(named: 'source')),
+      );
     });
 
     test(

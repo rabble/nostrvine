@@ -4829,5 +4829,14 @@
     "libraryStopMotionClipLabel": "مقطع الحركة الإيقافية",
   "profileNotifyBellOff": "أبلغني عن المقاطع الجديدة",
   "profileNotifyBellOn": "أوقف إشعارات المقاطع الجديدة",
-  "profileNotifyUpdateFailed": "لم نتمكن من الحفظ. أعد المحاولة؟"
+  "profileNotifyUpdateFailed": "لم نتمكن من الحفظ. أعد المحاولة؟",
+  "relaySettingsRemoveDefaultRelayTitle": "Remove Divine Relay?",
+  "relaySettingsRemoveDefaultRelayMessage": "Removing Divine's relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  }
 }

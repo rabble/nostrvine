@@ -158,10 +158,6 @@ void main() {
       );
     });
 
-    test('nostrService getter returns the injected client', () {
-      expect(service.nostrService, same(mockNostrClient));
-    });
-
     group('send policy gate', () {
       test(
         'sendRumor blocked by policy returns failure and never publishes',

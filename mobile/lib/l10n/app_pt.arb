@@ -4829,5 +4829,14 @@
     "libraryStopMotionClipLabel": "Clipe de stop motion",
   "profileNotifyBellOff": "Avisar sobre novos vines",
   "profileNotifyBellOn": "Parar de avisar sobre novos vines",
-  "profileNotifyUpdateFailed": "Não foi possível salvar. Tentar de novo?"
+  "profileNotifyUpdateFailed": "Não foi possível salvar. Tentar de novo?",
+  "relaySettingsRemoveDefaultRelayTitle": "Remove Divine Relay?",
+  "relaySettingsRemoveDefaultRelayMessage": "Removing Divine's relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  }
 }

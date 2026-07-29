@@ -42,6 +42,7 @@ class TestNostrSession extends NostrSession {
 void main() {
   setUpAll(() {
     registerFallbackValue(<String>[]);
+    registerFallbackValue(RelayRemoveSource.user);
   });
 
   group('relaySetChangeBridge', () {
@@ -481,7 +482,10 @@ void main() {
           return relays.length;
         });
         when(
-          () => replacementClient.removeRelay(any()),
+          () => replacementClient.removeRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((call) async {
           final relay = call.positionalArguments.single as String;
           return replacementRelays.remove(relay);
@@ -540,8 +544,18 @@ void main() {
         expect(replacementRelays, contains(defaultRelay));
         expect(replacementRelays, isNot(contains(removedRelay)));
         verify(() => replacementClient.addRelays([addedRelay])).called(1);
-        verify(() => replacementClient.removeRelay(removedRelay)).called(1);
-        verifyNever(() => replacementClient.removeRelay(defaultRelay));
+        verify(
+          () => replacementClient.removeRelay(
+            removedRelay,
+            source: RelayRemoveSource.automatic,
+          ),
+        ).called(1);
+        verifyNever(
+          () => replacementClient.removeRelay(
+            defaultRelay,
+            source: any(named: 'source'),
+          ),
+        );
         verify(replacementClient.forceReconnectAll).called(1);
         verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
         verifyNever(() => mockNostrClient.forceReconnectAll());
@@ -587,7 +601,10 @@ void main() {
           () => replacementClient.addRelays(any()),
         ).thenAnswer((_) async => 1);
         when(
-          () => replacementClient.removeRelay(any()),
+          () => replacementClient.removeRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => true);
         when(replacementClient.forceReconnectAll).thenAnswer((_) async {});
 
@@ -618,7 +635,12 @@ void main() {
 
         expect(replacementRelays, equals({stagingDefault}));
         verifyNever(() => replacementClient.addRelays(any()));
-        verifyNever(() => replacementClient.removeRelay(any()));
+        verifyNever(
+          () => replacementClient.removeRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
+        );
         verifyNever(replacementClient.forceReconnectAll);
         verifyNever(() => mockVideoEventService.resetAndResubscribeAll());
 
@@ -668,7 +690,10 @@ void main() {
           () => replacementClient.addRelays(any()),
         ).thenAnswer((_) async => 1);
         when(
-          () => replacementClient.removeRelay(any()),
+          () => replacementClient.removeRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => true);
         when(replacementClient.forceReconnectAll).thenAnswer((_) async {});
 
@@ -721,7 +746,12 @@ void main() {
 
         expect(replacementRelays, equals({defaultRelay}));
         verifyNever(() => replacementClient.addRelays(any()));
-        verifyNever(() => replacementClient.removeRelay(any()));
+        verifyNever(
+          () => replacementClient.removeRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
+        );
         verifyNever(replacementClient.forceReconnectAll);
         verifyNever(() => mockVideoEventService.resetAndResubscribeAll());
 
@@ -934,7 +964,10 @@ void main() {
           return 1;
         });
         when(
-          () => replacementClient.removeRelay(removedRelay),
+          () => replacementClient.removeRelay(
+            removedRelay,
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async {
           removeAttempts++;
           if (removeAttempts == 1) return false;
@@ -974,7 +1007,12 @@ void main() {
         expect(replacementRelays, containsAll({defaultRelay, editedRelay}));
         expect(replacementRelays, isNot(contains(removedRelay)));
         verify(() => replacementClient.addRelays([editedRelay])).called(1);
-        verify(() => replacementClient.removeRelay(removedRelay)).called(2);
+        verify(
+          () => replacementClient.removeRelay(
+            removedRelay,
+            source: RelayRemoveSource.automatic,
+          ),
+        ).called(2);
         verify(replacementClient.forceReconnectAll).called(1);
         verify(() => mockVideoEventService.resetAndResubscribeAll()).called(1);
 

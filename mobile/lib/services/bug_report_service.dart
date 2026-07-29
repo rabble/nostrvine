@@ -320,7 +320,7 @@ class BugReportService {
       final result = await _nip17MessageService.sendPrivateMessage(
         recipientPubkey: recipientPubkey,
         content: messageContent,
-        targetRelays: const ['wss://relay.nos.social'],
+        targetRelays: BugReportConfig.supportDmTargetRelays,
         awaitRecipientOk: true,
         selfWrapOnSoftUnconfirmed: false,
         additionalTags: [

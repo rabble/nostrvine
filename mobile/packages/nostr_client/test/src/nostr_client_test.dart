@@ -64,9 +64,6 @@ class _FakeRelay extends Fake implements Relay {
 
 const testPublicKey =
     '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2';
-final RelayAddSource automaticRelayAddSource = RelayAddSource.values.byName(
-  'automatic',
-);
 
 Event _createTestEvent({
   String? id,
@@ -112,6 +109,8 @@ void main() {
       registerFallbackValue(<Map<String, dynamic>>[]);
       registerFallbackValue(<String>[]);
       registerFallbackValue(RelayType.all);
+      registerFallbackValue(RelayAddSource.automatic);
+      registerFallbackValue(RelayRemoveSource.user);
       registerFallbackValue(const Duration(seconds: 10));
       registerFallbackValue(const CountResponse(count: 0));
     });
@@ -1824,19 +1823,20 @@ void main() {
         when(
           () => mockRelayManager.addRelay(
             relayUrl,
-            source: automaticRelayAddSource,
+            source: any(named: 'source'),
           ),
         ).thenAnswer((_) async => true);
 
         final result = await client.addRelay(relayUrl);
 
         expect(result, isTrue);
-        verify(
+        final captured = verify(
           () => mockRelayManager.addRelay(
             relayUrl,
-            source: automaticRelayAddSource,
+            source: captureAny(named: 'source'),
           ),
-        ).called(1);
+        ).captured;
+        expect(captured, equals([RelayAddSource.automatic]));
       });
 
       test('forwards explicit add source to RelayManager', () async {
@@ -1863,7 +1863,7 @@ void main() {
         when(
           () => mockRelayManager.addRelay(
             relayUrl,
-            source: automaticRelayAddSource,
+            source: any(named: 'source'),
           ),
         ).thenAnswer((_) async => false);
 
@@ -1886,7 +1886,7 @@ void main() {
           when(
             () => mockRelayManager.addRelay(
               any(),
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).thenAnswer((_) async => true);
 
@@ -1896,19 +1896,19 @@ void main() {
           verify(
             () => mockRelayManager.addRelay(
               relayUrls[0],
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).called(1);
           verify(
             () => mockRelayManager.addRelay(
               relayUrls[1],
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).called(1);
           verify(
             () => mockRelayManager.addRelay(
               relayUrls[2],
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).called(1);
         },
@@ -1947,7 +1947,9 @@ void main() {
         final result = await client.addRelays([]);
 
         expect(result, equals(0));
-        verifyNever(() => mockRelayManager.addRelay(any()));
+        verifyNever(
+          () => mockRelayManager.addRelay(any(), source: any(named: 'source')),
+        );
       });
 
       test(
@@ -1963,19 +1965,19 @@ void main() {
           when(
             () => mockRelayManager.addRelay(
               'wss://relay1.example.com',
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).thenAnswer((_) async => true);
           when(
             () => mockRelayManager.addRelay(
               'wss://relay2.example.com',
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).thenAnswer((_) async => false);
           when(
             () => mockRelayManager.addRelay(
               'wss://relay3.example.com',
-              source: automaticRelayAddSource,
+              source: any(named: 'source'),
             ),
           ).thenAnswer((_) async => true);
 
@@ -1994,7 +1996,7 @@ void main() {
         when(
           () => mockRelayManager.addRelay(
             any(),
-            source: automaticRelayAddSource,
+            source: any(named: 'source'),
           ),
         ).thenAnswer((_) async => false);
 
@@ -2009,7 +2011,7 @@ void main() {
         when(
           () => mockRelayManager.addRelay(
             any(),
-            source: automaticRelayAddSource,
+            source: any(named: 'source'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -2019,7 +2021,7 @@ void main() {
         verify(
           () => mockRelayManager.addRelay(
             'wss://single-relay.example.com',
-            source: automaticRelayAddSource,
+            source: any(named: 'source'),
           ),
         ).called(1);
       });
@@ -2029,13 +2031,45 @@ void main() {
       test('delegates to RelayManager', () async {
         const relayUrl = 'wss://relay.example.com';
         when(
-          () => mockRelayManager.removeRelay(relayUrl),
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => true);
 
         final result = await client.removeRelay(relayUrl);
 
         expect(result, isTrue);
-        verify(() => mockRelayManager.removeRelay(relayUrl)).called(1);
+        final captured = verify(
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: captureAny(named: 'source'),
+          ),
+        ).captured;
+        expect(captured, equals([RelayRemoveSource.user]));
+      });
+
+      test('forwards explicit remove source to RelayManager', () async {
+        const relayUrl = 'wss://relay.example.com';
+        when(
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: RelayRemoveSource.automatic,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await client.removeRelay(
+          relayUrl,
+          source: RelayRemoveSource.automatic,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: RelayRemoveSource.automatic,
+          ),
+        ).called(1);
       });
     });
 

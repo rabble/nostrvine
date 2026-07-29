@@ -1096,11 +1096,15 @@ class NostrClient {
     return allowed.isEmpty ? null : allowed;
   }
 
-  /// Removes a relay connection
+  /// Removes a relay connection.
   ///
-  /// Delegates to RelayManager.
-  Future<bool> removeRelay(String relayUrl) async {
-    return _relayManager.removeRelay(relayUrl);
+  /// User removals are remembered so automatic discovery does not re-add the
+  /// relay. Automatic removals are only reconciliation cleanup.
+  Future<bool> removeRelay(
+    String relayUrl, {
+    RelayRemoveSource source = RelayRemoveSource.user,
+  }) async {
+    return _relayManager.removeRelay(relayUrl, source: source);
   }
 
   /// Whether [url] is admissible under the configured environment lock.
@@ -1109,8 +1113,11 @@ class NostrClient {
   /// for the rule. Non-production builds lock to their own relay host.
   bool isRelayAllowed(String url) => _relayManager.isRelayAllowed(url);
 
-  /// The environment default relay URL that is always included and cannot be
-  /// removed. Resolves per environment (e.g. the staging relay on staging).
+  /// The environment default relay URL.
+  ///
+  /// Resolves per environment (e.g. the staging relay on staging). Users can
+  /// remove it from Settings, but doing so may degrade the app experience until
+  /// it is restored.
   String get defaultRelayUrl => _relayManager.defaultRelayUrl;
 
   /// Gets list of configured relay URLs

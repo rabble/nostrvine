@@ -770,6 +770,74 @@ void main() {
         },
       );
 
+      test(
+        'initialize filters user-removed default relay from polluted storage',
+        () async {
+          final storage = InMemoryRelayStorage(
+            [testDefaultRelayUrl, testCustomRelayUrl],
+            [testDefaultRelayUrl],
+          );
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: storage),
+            relayPool: mockRelayPool,
+          );
+
+          await managerWithStorage.initialize();
+
+          expect(
+            managerWithStorage.configuredRelays,
+            isNot(contains(testDefaultRelayUrl)),
+          );
+          expect(
+            managerWithStorage.configuredRelays,
+            contains(testCustomRelayUrl),
+          );
+          expect(
+            await storage.loadRelays(),
+            isNot(contains(testDefaultRelayUrl)),
+          );
+        },
+      );
+
+      test(
+        'automatic add before initialize honors persisted removal ledger',
+        () async {
+          final storage = InMemoryRelayStorage(
+            const [],
+            [testCustomRelayUrl],
+          );
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: storage),
+            relayPool: mockRelayPool,
+          );
+
+          final result = await managerWithStorage.addRelay(testCustomRelayUrl);
+
+          expect(result, isFalse);
+          expect(
+            managerWithStorage.configuredRelays,
+            isNot(contains(testCustomRelayUrl)),
+          );
+          expect(await storage.loadRelays(), isEmpty);
+        },
+      );
+
+      test('automatic removal does not persist user removal intent', () async {
+        final storage = InMemoryRelayStorage([testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        await managerWithStorage.initialize();
+        await managerWithStorage.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.automatic,
+        );
+
+        expect(await storage.loadRemovedRelays(), isEmpty);
+      });
+
       test('emits status update when relay is removed', () async {
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);

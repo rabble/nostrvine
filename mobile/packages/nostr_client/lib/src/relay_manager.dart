@@ -8,6 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/relay_add_source.dart';
 import 'package:nostr_client/src/models/relay_connection_status.dart';
 import 'package:nostr_client/src/models/relay_manager_config.dart';
+import 'package:nostr_client/src/models/relay_remove_source.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
 
@@ -90,11 +91,14 @@ class RelayManager {
   /// Whether the manager has been initialized
   bool _initialized = false;
 
+  /// Whether persisted user-removal intent has been loaded.
+  bool _userRemovedRelaysLoaded = false;
+
   // ---------------------------------------------------------------------------
   // Public Getters
   // ---------------------------------------------------------------------------
 
-  /// The default relay URL that cannot be removed
+  /// The environment default relay URL.
   String get defaultRelayUrl => _config.defaultRelayUrl;
 
   /// List of relay URLs the user has configured (including default)
@@ -147,24 +151,9 @@ class RelayManager {
 
     _log('Initializing RelayManager');
 
-    // Load persisted relays
     final storage = _config.storage;
     if (storage != null) {
-      final savedRemovedRelays = await storage.loadRemovedRelays();
-      var removedDroppedCount = 0;
-      for (final url in savedRemovedRelays) {
-        final normalized = _normalizeUrl(url);
-        if (normalized == null || !isRelayAllowed(normalized)) {
-          removedDroppedCount++;
-          continue;
-        }
-        _userRemovedRelays.add(normalized);
-      }
-      if (removedDroppedCount > 0 ||
-          _userRemovedRelays.length != savedRemovedRelays.length) {
-        await storage.saveRemovedRelays(_userRemovedRelays.toList());
-        _log('Saved filtered user-removed relay list to storage');
-      }
+      await _ensureUserRemovedRelaysLoaded();
 
       final savedRelays = await storage.loadRelays();
       // Normalize loaded relays and filter out blocked/duplicate/invalid
@@ -198,6 +187,7 @@ class RelayManager {
           _configuredRelays.add(normalized);
         }
       }
+      droppedCount += _dropUserRemovedConfiguredRelays();
       if (blockedCount > 0) {
         _log('Filtered $blockedCount blocked relays from storage');
       }
@@ -213,11 +203,11 @@ class RelayManager {
       _log('Loaded ${_configuredRelays.length} relays from storage');
     }
 
-    // Ensure default relay is always included
-    // (uses normalized URL for comparison)
+    // Add the environment default unless the user explicitly removed it.
     final normalizedDefault = _normalizeUrl(_config.defaultRelayUrl);
     if (normalizedDefault != null &&
         isRelayAllowed(normalizedDefault) &&
+        !_userRemovedRelays.contains(normalizedDefault) &&
         !_configuredRelays.contains(normalizedDefault)) {
       _configuredRelays.insert(0, normalizedDefault);
       _log('Added default relay: $normalizedDefault');
@@ -254,6 +244,8 @@ class RelayManager {
     String url, {
     RelayAddSource source = RelayAddSource.automatic,
   }) async {
+    await _ensureUserRemovedRelaysLoaded();
+
     final normalizedUrl = _normalizeUrl(url);
 
     if (normalizedUrl == null) {
@@ -324,7 +316,12 @@ class RelayManager {
   ///
   /// Returns true if the relay was removed.
   /// Returns false if the relay URL is invalid or not configured.
-  Future<bool> removeRelay(String url) async {
+  Future<bool> removeRelay(
+    String url, {
+    RelayRemoveSource source = RelayRemoveSource.user,
+  }) async {
+    await _ensureUserRemovedRelaysLoaded();
+
     final normalizedUrl = _normalizeUrl(url);
 
     if (normalizedUrl == null) {
@@ -345,11 +342,13 @@ class RelayManager {
     // Remove from configured list and statuses
     _configuredRelays.remove(normalizedUrl);
     _relayStatuses.remove(normalizedUrl);
-    _userRemovedRelays.add(normalizedUrl);
 
     // Persist configuration
     await _saveConfiguration();
-    await _saveUserRemovedRelays();
+    if (source == RelayRemoveSource.user) {
+      _userRemovedRelays.add(normalizedUrl);
+      await _saveUserRemovedRelays();
+    }
 
     _notifyStatusChange();
     return true;
@@ -710,6 +709,45 @@ class RelayManager {
       _log('Saved ${_userRemovedRelays.length} user-removed relays to storage');
     }
   }
+
+  Future<void> _ensureUserRemovedRelaysLoaded() async {
+    if (_userRemovedRelaysLoaded) return;
+
+    final storage = _config.storage;
+    if (storage == null) {
+      _userRemovedRelaysLoaded = true;
+      return;
+    }
+
+    final savedRemovedRelays = await storage.loadRemovedRelays();
+    final normalizedRelays = <String>{};
+    for (final url in savedRemovedRelays) {
+      final normalized = _normalizeUrl(url);
+      if (normalized != null && isRelayAllowed(normalized)) {
+        normalizedRelays.add(normalized);
+      }
+    }
+
+    _userRemovedRelays
+      ..clear()
+      ..addAll(normalizedRelays);
+
+    if (savedRemovedRelays.length != normalizedRelays.length ||
+        !_setsEqual(normalizedRelays, savedRemovedRelays.toSet())) {
+      await storage.saveRemovedRelays(_userRemovedRelays.toList());
+      _log('Saved filtered user-removed relay list to storage');
+    }
+    _userRemovedRelaysLoaded = true;
+  }
+
+  int _dropUserRemovedConfiguredRelays() {
+    final before = _configuredRelays.length;
+    _configuredRelays.removeWhere(_userRemovedRelays.contains);
+    return before - _configuredRelays.length;
+  }
+
+  bool _setsEqual<T>(Set<T> a, Set<T> b) =>
+      a.length == b.length && a.containsAll(b);
 
   Future<void> _clearUserRemovedRelay(String normalizedUrl) async {
     if (_userRemovedRelays.remove(normalizedUrl)) {

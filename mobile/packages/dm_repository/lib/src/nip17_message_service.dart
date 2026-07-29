@@ -109,9 +109,6 @@ class NIP17MessageService {
     BuildGiftWrapRequest request,
   ) => compute(buildGiftWrapBatch, request);
 
-  /// Access to the underlying NostrService for relay management
-  NostrClient get nostrService => _nostrService;
-
   /// Whether the injected [DmSendPolicy] permits delivering to
   /// [recipientPubkey]. Exposed so `DmRepository` can gate BEFORE enqueue
   /// (avoid storing a doomed intent) and enforce group all-or-nothing before
@@ -331,12 +328,15 @@ class NIP17MessageService {
   /// still published when the recipient publish ends soft-unconfirmed (frame
   /// written, no OK). Reactions keep the default `true` — a lost OK may mean
   /// the recipient already has the reaction, and their retry service owns
-  /// the follow-up (#5977). Message sends pass `false`: their durable queue
+  /// the follow-up (#5977). Durable message sends pass `false`: their queue
   /// re-drives the FULL send until the recipient wrap confirms (publishing
   /// both wraps on success), so a soft self-wrap buys no durability — but if
   /// it lands, its round-trip through the receive pipeline persists the
   /// message as a plain sent row, seeding a sent-looking bubble for a
-  /// message the recipient may never have received (#6046).
+  /// message the recipient may never have received (#6046). Non-queued callers
+  /// that also pass `false` are choosing a hard no-self-wrap confirmation
+  /// contract: soft-unconfirmed recipient publishes return retryable failure
+  /// and the caller owns any fallback behavior.
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,

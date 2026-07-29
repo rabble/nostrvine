@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_client/nostr_client.dart'
-    show NostrClient, RelayConnectionStatus, RelayState;
+    show NostrClient, RelayConnectionStatus, RelayRemoveSource, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -323,8 +323,7 @@ class _RelaySetChangeCoordinator {
     required int transactionVersion,
   }) async {
     final client = attachment.client;
-    final targetRelaySet = Set.of(transaction.targetRelaySet)
-      ..add(client.defaultRelayUrl);
+    final targetRelaySet = Set.of(transaction.targetRelaySet);
     try {
       final currentRelaySet = client.configuredRelays.toSet();
       final additions = targetRelaySet.difference(currentRelaySet).toList();
@@ -346,7 +345,10 @@ class _RelaySetChangeCoordinator {
         }
       }
       for (final relay in removals) {
-        final removed = await client.removeRelay(relay);
+        final removed = await client.removeRelay(
+          relay,
+          source: RelayRemoveSource.automatic,
+        );
         if (!_operationIsCurrent(
           attachment,
           transaction,

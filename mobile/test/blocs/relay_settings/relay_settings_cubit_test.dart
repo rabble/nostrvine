@@ -151,7 +151,9 @@ void main() {
       },
       expect: () => const <RelaySettingsState>[],
       verify: (_) {
-        verifyNever(() => nostr.addRelay(any()));
+        verifyNever(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        );
       },
     );
 

@@ -262,6 +262,8 @@ class _RelayTile extends ConsumerWidget {
     final stats = statsAsync.whenData((allStats) => allStats[relayUrl]).value;
     final isConnected = stats?.isConnected ?? false;
     final statusSummary = _relayStatusSummary(context, stats);
+    final isDefaultRelay =
+        relayUrl == context.read<RelaySettingsCubit>().defaultRelayUrl;
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: VineTheme.transparent),
@@ -301,7 +303,11 @@ class _RelayTile extends ConsumerWidget {
               foregroundColor: VineTheme.error,
               showShadow: false,
               tooltip: context.l10n.relaySettingsRemove,
-              onPressed: () => _confirmRemoveRelay(context, relayUrl),
+              onPressed: () => _confirmRemoveRelay(
+                context,
+                relayUrl,
+                isDefaultRelay: isDefaultRelay,
+              ),
             ),
             const SizedBox(width: 8),
             DivineIcon(
@@ -702,7 +708,11 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
   }
 }
 
-Future<void> _confirmRemoveRelay(BuildContext context, String relayUrl) async {
+Future<void> _confirmRemoveRelay(
+  BuildContext context,
+  String relayUrl, {
+  required bool isDefaultRelay,
+}) async {
   final cubit = context.read<RelaySettingsCubit>();
   final messenger = ScaffoldMessenger.of(context);
   final l10n = context.l10n;
@@ -710,12 +720,16 @@ Future<void> _confirmRemoveRelay(BuildContext context, String relayUrl) async {
   final confirm = await VineBottomSheet.show<bool>(
     context: context,
     scrollable: false,
-    contentTitle: l10n.relaySettingsRemoveRelayTitle,
+    contentTitle: isDefaultRelay
+        ? l10n.relaySettingsRemoveDefaultRelayTitle
+        : l10n.relaySettingsRemoveRelayTitle,
     children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child: Text(
-          l10n.relaySettingsRemoveRelayMessage(relayUrl),
+          isDefaultRelay
+              ? l10n.relaySettingsRemoveDefaultRelayMessage(relayUrl)
+              : l10n.relaySettingsRemoveRelayMessage(relayUrl),
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
           ),

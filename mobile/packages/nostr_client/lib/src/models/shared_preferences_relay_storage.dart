@@ -30,11 +30,15 @@ class SharedPreferencesRelayStorage implements RelayStorage {
   /// [removedRelaysKey] stores relays the user explicitly removed so
   /// automatic discovery and fallback paths do not re-add them.
   SharedPreferencesRelayStorage({String? key, String? removedRelaysKey})
-    : _key = key ?? _defaultKey,
-      _removedRelaysKey = removedRelaysKey ?? _defaultRemovedRelaysKey;
+    : _key = key ?? defaultKey,
+      _removedRelaysKey = removedRelaysKey ?? defaultRemovedRelaysKey;
 
-  static const String _defaultKey = 'configured_relays';
-  static const String _defaultRemovedRelaysKey = 'user_removed_relays';
+  /// Default SharedPreferences key for configured relays.
+  static const String defaultKey = 'configured_relays';
+
+  /// Default SharedPreferences key for relays explicitly removed by the user.
+  static const String defaultRemovedRelaysKey = 'user_removed_relays';
+
   final String _key;
   final String _removedRelaysKey;
 

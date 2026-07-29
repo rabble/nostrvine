@@ -9,7 +9,8 @@ import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:nostr_client/nostr_client.dart' show BlockListSigner;
+import 'package:nostr_client/nostr_client.dart'
+    show BlockListSigner, SharedPreferencesRelayStorage;
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage, SecureKeyStorageException;
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -3353,7 +3354,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       }
 
       // Clear configured relays so next login re-discovers from NIP-65
-      await prefs.remove('configured_relays');
+      await prefs.remove(SharedPreferencesRelayStorage.defaultKey);
+      await prefs.remove(SharedPreferencesRelayStorage.defaultRemovedRelaysKey);
 
       // Clear relay discovery cache so next login re-queries indexers
       // (even for same-user re-login, relays may have changed)
@@ -3678,7 +3680,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     await prefs.remove(_kSessionRecoveryAnchorKey);
     await prefs.remove('age_verified_16_plus');
     await prefs.remove('terms_accepted_at');
-    await prefs.remove('configured_relays');
+    await prefs.remove(SharedPreferencesRelayStorage.defaultKey);
+    await prefs.remove(SharedPreferencesRelayStorage.defaultRemovedRelaysKey);
     await prefs.remove('current_user_pubkey_hex');
     await _resetRecoveryAfterLocalAccountRemoval(prefs);
 
