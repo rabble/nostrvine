@@ -540,6 +540,48 @@ void main() {
     );
 
     test(
+      'loadAwardedBadges prefers current profile badges when timestamps tie',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(41),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final currentProfileBadges = _profileBadgesEvent(
+          id: _eventId(42),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(41)],
+          ],
+        );
+        final legacyWithoutAward = _event(
+          id: _eventId(43),
+          pubkey: _pubkey(1),
+          kind: EventKind.badgeSet,
+          createdAt: 3000,
+          tags: [
+            ['d', 'profile_badges'],
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(44)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [currentProfileBadges],
+          'profileLegacy:${_pubkey(1)}': [legacyWithoutAward],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.isAccepted, isTrue);
+      },
+    );
+
+    test(
       'loadIssuedBadges caps recipient checks at recipientCheckLimit',
       () async {
         final award = _awardEvent(

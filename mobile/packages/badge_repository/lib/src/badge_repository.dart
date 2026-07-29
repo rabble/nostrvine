@@ -356,6 +356,8 @@ class BadgeRepository {
         ),
       ]),
     ]);
+    // NIP-58 treats legacy 30008/d=profile_badges as equivalent to 10008,
+    // so resolve both encodings as one newest-wins profile badge list.
     return _newestParsedProfileBadges([...results[0], ...results[1]]);
   }
 
@@ -445,9 +447,20 @@ class BadgeRepository {
     if (parsed.isEmpty) return null;
 
     final sorted = parsed.toList()
-      ..sort(
-        (left, right) => right.event.createdAt.compareTo(left.event.createdAt),
-      );
+      ..sort((left, right) {
+        final byCreatedAt = right.event.createdAt.compareTo(
+          left.event.createdAt,
+        );
+        if (byCreatedAt != 0) return byCreatedAt;
+
+        final rightIsCurrent = right.event.kind == EventKind.profileBadges
+            ? 1
+            : 0;
+        final leftIsCurrent = left.event.kind == EventKind.profileBadges
+            ? 1
+            : 0;
+        return rightIsCurrent.compareTo(leftIsCurrent);
+      });
     return sorted.first;
   }
 
