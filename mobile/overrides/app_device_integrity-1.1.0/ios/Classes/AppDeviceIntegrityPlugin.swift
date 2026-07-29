@@ -33,28 +33,33 @@ public class AppDeviceIntegrityPlugin: NSObject, FlutterPlugin {
 
                 // Directly generate key and attest
                 deviceIntegrity.generateKeyAndAttest { success in
-                    DispatchQueue.main.async {
-                        if success {
-                            // Attestation successful, return the attestationString
-                            let attestationResult = [
-                                "attestationString": deviceIntegrity.attestationString ?? "",
-                                "keyID": deviceIntegrity.keyIdentifier()
-                            ]
+                    // Encode here, still off-main: the attestation string is
+                    // several KB of base64.
+                    let payload: Any
+                    if success {
+                        // Attestation successful, return the attestationString
+                        let attestationResult = [
+                            "attestationString": deviceIntegrity.attestationString ?? "",
+                            "keyID": deviceIntegrity.keyIdentifier()
+                        ]
 
-                            do {
-                                let jsonData = try JSONEncoder().encode(attestationResult)
-                                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                                    result(jsonString)
-                                } else {
-                                    result(FlutterError(code: "-6", message: "Failed to convert JSON data to String", details: nil))
-                                }
-                            } catch {
-                                result(FlutterError(code: "-7", message: "JSON encoding error: \(error.localizedDescription)", details: nil))
+                        do {
+                            let jsonData = try JSONEncoder().encode(attestationResult)
+                            if let jsonString = String(data: jsonData, encoding: .utf8) {
+                                payload = jsonString
+                            } else {
+                                payload = FlutterError(code: "-6", message: "Failed to convert JSON data to String", details: nil)
                             }
-                        } else {
-                            // Attestation or key generation failed
-                            result(FlutterError(code: "-5", message: "Attestation failed", details: nil))
+                        } catch {
+                            payload = FlutterError(code: "-7", message: "JSON encoding error: \(error.localizedDescription)", details: nil)
                         }
+                    } else {
+                        // Attestation or key generation failed
+                        payload = FlutterError(code: "-5", message: "Attestation failed", details: nil)
+                    }
+
+                    DispatchQueue.main.async {
+                        result(payload)
                     }
                 }
             }
