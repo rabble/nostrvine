@@ -43,10 +43,7 @@ class DiVineAppBarStyle extends Equatable {
   DiVineAppBarStyle.solid(VineThemeColors colors)
     : this(
         iconButtonBackgroundColor: colors.surfaceContainer,
-        iconButtonBorderSide: BorderSide(
-          color: colors.outlineMuted,
-          width: 2,
-        ),
+        iconButtonBorderSide: BorderSide(color: colors.outlineMuted, width: 2),
         iconColor: colors.isLight
             ? VineTheme.primaryAccessible
             : VineTheme.primary,
@@ -140,13 +137,6 @@ class DiVineAppBarStyle extends Equatable {
     iconColor: VineTheme.whiteText,
     foregroundColor: VineTheme.whiteText,
   );
-
-  /// Deprecated alias for [overMediaStyle].
-  @Deprecated(
-    'Renamed to overMediaStyle: transparent mode no longer implies '
-    'an over-media treatment. Use overMediaStyle for bars over a player.',
-  )
-  static const DiVineAppBarStyle transparentStyle = overMediaStyle;
 
   /// Creates a copy of this style with the given fields replaced.
   DiVineAppBarStyle copyWith({
