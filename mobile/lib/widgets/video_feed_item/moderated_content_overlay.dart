@@ -61,8 +61,12 @@ class ModeratedContentOverlay extends StatelessWidget {
         ? context.l10n.videoErrorVerifyAgeBody
         : context.l10n.videoErrorContentRestrictedBody;
 
+    // The overlay replaces the video rather than sitting on top of it, so its
+    // content follows the palette instead of staying light-on-dark.
+    final colors = context.vineColors;
+
     return ColoredBox(
-      color: context.vineColors.background,
+      color: colors.background,
       child: SafeArea(
         child: Center(
           child: Padding(
@@ -71,15 +75,15 @@ class ModeratedContentOverlay extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 12,
               children: [
-                DivineIcon(icon: icon, color: VineTheme.whiteText, size: 64),
+                DivineIcon(icon: icon, color: colors.primaryText, size: 64),
                 Text(
                   title,
-                  style: VineTheme.titleMediumFont(color: VineTheme.whiteText),
+                  style: VineTheme.titleMediumFont(color: colors.primaryText),
                   textAlign: TextAlign.center,
                 ),
                 Text(
                   body,
-                  style: VineTheme.bodyMediumFont(color: VineTheme.whiteText),
+                  style: VineTheme.bodyMediumFont(color: colors.primaryText),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),

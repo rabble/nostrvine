@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
@@ -18,11 +19,13 @@ void main() {
       VoidCallback? onSkip,
       VoidCallback? onVerifyAge,
       bool isVerifying = false,
+      ThemeData? theme,
     }) {
       return tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          theme: theme,
           home: Scaffold(
             body: ModeratedContentOverlay(
               status: status,
@@ -140,6 +143,31 @@ void main() {
         find.bySemanticsLabel(RegExp('Video description: .*')),
         findsNothing,
       );
+    });
+
+    testWidgets('reads its explanation from the palette, not fixed white', (
+      tester,
+    ) async {
+      // The overlay replaces the video instead of sitting on it, so its
+      // background follows the palette. Text pinned to white would be
+      // invisible on the light one.
+      await pumpOverlay(
+        tester,
+        status: PlaybackStatus.forbidden,
+        theme: VineTheme.lightTheme,
+      );
+
+      final title = tester.widget<Text>(
+        find.text(enL10n.videoErrorContentRestricted),
+      );
+      final body = tester.widget<Text>(
+        find.text(enL10n.videoErrorContentRestrictedBody),
+      );
+      final icon = tester.widget<DivineIcon>(find.byType(DivineIcon).first);
+
+      expect(title.style?.color, equals(VineTheme.lightColors.primaryText));
+      expect(body.style?.color, equals(VineTheme.lightColors.primaryText));
+      expect(icon.color, equals(VineTheme.lightColors.primaryText));
     });
 
     test('asserts when constructed with a non-restricted status', () {
