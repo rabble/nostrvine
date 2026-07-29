@@ -7,6 +7,10 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
+import java.util.Collections
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -42,6 +46,11 @@ internal class DivineVideoPlayerInstance(
     private val audioOverlayManagerFactory: (Context) -> AudioOverlayManager = { ctx ->
         AudioOverlayManager(ctx)
     },
+    /**
+     * Reads source metadata off the platform thread. Single-threaded, so the
+     * clips of one call resolve in order and two calls cannot interleave.
+     */
+    private val metadataExecutor: ExecutorService = Executors.newSingleThreadExecutor(),
 ) : MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler,
     TextureRegistry.SurfaceProducer.Callback {
@@ -158,6 +167,12 @@ internal class DivineVideoPlayerInstance(
     private var pendingGlobalStartMs: Long = 0L
 
     private val audioOverlayManager = audioOverlayManagerFactory(context)
+
+    /**
+     * Bumped by every [handleSetClips]. A resolution that finishes after a
+     * newer call started is dropped rather than applied over it.
+     */
+    private var setClipsGeneration = 0L
 
     /**
      * Fades the outer edges of a looping video so its loop join is not a click
@@ -405,6 +420,56 @@ internal class DivineVideoPlayerInstance(
             return
         }
 
+        // Any newer call supersedes a resolution still in flight.
+        val generation = ++setClipsGeneration
+
+        val unresolved = clipsRaw.mapNotNull { map ->
+            val uri = map["uri"] as? String ?: return@mapNotNull null
+            if (map["trimToCommonTrackEnd"] as? Boolean != true) return@mapNotNull null
+            if (trackDurationsCache.containsKey(uri)) return@mapNotNull null
+            uri to httpHeadersOf(map)
+        }
+        if (unresolved.isEmpty()) {
+            applyClips(call, clipsRaw, result)
+            return
+        }
+
+        // Where each track really ends is only in the source's metadata, and
+        // reading it blocks. Resolve off the platform thread, then apply on
+        // it — the alternative is looping to the container duration, which is
+        // the *longest* track, and leaving the shorter one's tail as a frozen
+        // frame before every restart.
+        try {
+            metadataExecutor.execute {
+                // The clips must be applied even if resolving blows up —
+                // playing to the container duration is a seam, not playing at
+                // all is a dead player and a Dart call that hangs to timeout.
+                try {
+                    unresolved.forEach { (uri, headers) ->
+                        resolveTrackDurations(uri, headers)
+                    }
+                } finally {
+                    mainHandler.post {
+                        if (generation != setClipsGeneration) return@post
+                        applyClips(call, clipsRaw, result)
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            // Disposed while a call was in flight; nothing left to play into.
+            DivineVideoPlayerLog.warning(
+                "Player $playerId dropped setClips after dispose: $e",
+                name = "DivineVideoPlayer.Load",
+            )
+            result.error("DISPOSED", "Player was disposed", null)
+        }
+    }
+
+    private fun applyClips(
+        call: MethodCall,
+        clipsRaw: List<Map<String, Any?>>,
+        result: MethodChannel.Result,
+    ) {
         val exoPlayer = ensurePlayer()
         val mediaItems = mutableListOf<MediaItem>()
         val offsets = mutableListOf<Long>()
@@ -440,14 +505,7 @@ internal class DivineVideoPlayerInstance(
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
             val clipSpeed = ((map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f)
                 .coerceAtLeast(MIN_PLAYBACK_SPEED)
-            val httpHeaders = (map["httpHeaders"] as? Map<*, *>)
-                ?.mapNotNull { entry ->
-                    val key = entry.key as? String
-                    val value = entry.value as? String
-                    if (key == null || value == null) null else key to value
-                }
-                ?.toMap()
-                ?: emptyMap()
+            val httpHeaders = httpHeadersOf(map)
             if (httpHeaders.isNotEmpty()) {
                 headersByUri[uri] = httpHeaders
                 blobHashFromUrl(uri)?.let { headersByHash[it] = httpHeaders }
@@ -564,27 +622,52 @@ internal class DivineVideoPlayerInstance(
 
     /**
      * The point up to which *every* track of [uri] still has content, in
-     * milliseconds, or `null` when it cannot be determined without I/O that
-     * would delay playback.
+     * milliseconds, or `null` when the source's track lengths are not known.
      *
-     * Only local files are probed. Reading a remote source's metadata means a
-     * network round trip on the platform thread before playback can start, so
-     * remote clips keep the container duration — and the seam — instead.
+     * Reads only [trackDurationsCache] — never I/O, so it is safe on the
+     * platform thread. [resolveTrackDurations] fills the cache first.
      */
     private fun boundedCommonTrackEndMs(
         uri: String,
         startMs: Long,
         requestedEndMs: Long?,
     ): Long? {
-        val path = when {
-            uri.startsWith("/") -> uri
-            uri.startsWith("file://") -> Uri.parse(uri).path
-            else -> null
-        } ?: return null
+        val durations = trackDurationsCache[uri] ?: return null
+        if (durations.size < 2 || durations[0] <= 0 || durations[1] <= 0) {
+            return null
+        }
+        return boundedCommonTrackEndMs(
+            startMs = startMs,
+            requestedEndMs = requestedEndMs,
+            videoEndMs = durations[0] / 1000,
+            audioEndMs = durations[1] / 1000,
+        )
+    }
+
+    /**
+     * Reads [uri]'s video and audio track lengths into [trackDurationsCache].
+     *
+     * Blocks on I/O — a remote source costs a range request for the moov box —
+     * so it must never run on the platform thread. The Apple player pays the
+     * same cost, awaiting `load(.timeRange)` on both tracks before it builds
+     * the composition.
+     *
+     * A source whose lengths cannot be read is cached as [NO_TRACK_PAIR] so
+     * the read is not retried on every failover attempt.
+     */
+    private fun resolveTrackDurations(uri: String, headers: Map<String, String>) {
+        if (trackDurationsCache.containsKey(uri)) return
 
         val extractor = MediaExtractor()
-        return try {
-            extractor.setDataSource(path)
+        val durations = try {
+            when {
+                uri.startsWith("/") -> extractor.setDataSource(uri)
+                uri.startsWith("file://") ->
+                    extractor.setDataSource(Uri.parse(uri).path ?: return)
+                uri.startsWith("http://") || uri.startsWith("https://") ->
+                    extractor.setDataSource(uri, headers)
+                else -> return
+            }
             var videoUs = -1L
             var audioUs = -1L
             for (i in 0 until extractor.trackCount) {
@@ -599,25 +682,32 @@ internal class DivineVideoPlayerInstance(
             }
             // A clip without both track types has no mismatch to trim.
             if (videoUs <= 0 || audioUs <= 0) {
-                null
+                NO_TRACK_PAIR
             } else {
-                boundedCommonTrackEndMs(
-                    startMs = startMs,
-                    requestedEndMs = requestedEndMs,
-                    videoEndMs = videoUs / 1000,
-                    audioEndMs = audioUs / 1000,
-                )
+                longArrayOf(videoUs, audioUs)
             }
         } catch (e: Exception) {
             DivineVideoPlayerLog.warning(
                 "Player $playerId could not read track durations: $e",
                 name = "DivineVideoPlayer.Load",
             )
-            null
+            NO_TRACK_PAIR
         } finally {
             extractor.release()
         }
+        trackDurationsCache[uri] = durations
     }
+
+    /** The per-clip HTTP headers Dart sent, if any. */
+    private fun httpHeadersOf(map: Map<String, Any?>): Map<String, String> =
+        (map["httpHeaders"] as? Map<*, *>)
+            ?.mapNotNull { entry ->
+                val key = entry.key as? String
+                val value = entry.value as? String
+                if (key == null || value == null) null else key to value
+            }
+            ?.toMap()
+            ?: emptyMap()
 
     private fun boundedCommonTrackEndMs(
         startMs: Long,
@@ -1323,6 +1413,10 @@ internal class DivineVideoPlayerInstance(
         mainHandler.removeCallbacks(setClipsTimeoutRunnable)
         mainHandler.removeCallbacks(bufferingWatchdogRunnable)
         cancelDecoderRetry()
+        // A metadata read already in flight finishes into a bumped generation
+        // and is dropped; queued ones never start.
+        setClipsGeneration++
+        metadataExecutor.shutdownNow()
         seekCompletionResult?.success(null)
         seekCompletionResult = null
         pendingSetClipsResult?.success(null)
@@ -1352,6 +1446,27 @@ internal class DivineVideoPlayerInstance(
     companion object {
         private const val POSITION_UPDATE_INTERVAL_MS = 200L
         private const val SET_CLIPS_TIMEOUT_MS = 10_000L
+
+        /** Cached "this source's track lengths cannot be read". */
+        private val NO_TRACK_PAIR = longArrayOf(-1L, -1L)
+
+        /**
+         * Video and audio track lengths in microseconds, keyed by source.
+         *
+         * Shared across instances so a failover to a mirror of the same video,
+         * or a second visit to it in the feed, does not pay the read again.
+         * Bounded, because a long feed session visits a lot of sources.
+         */
+        private val trackDurationsCache: MutableMap<String, LongArray> =
+            Collections.synchronizedMap(
+                object : LinkedHashMap<String, LongArray>(16, 0.75f, true) {
+                    override fun removeEldestEntry(
+                        eldest: MutableMap.MutableEntry<String, LongArray>?,
+                    ): Boolean = size > TRACK_DURATION_CACHE_ENTRIES
+                },
+            )
+
+        private const val TRACK_DURATION_CACHE_ENTRIES = 256
 
         /**
          * How long the player may stay in `STATE_BUFFERING` before it is

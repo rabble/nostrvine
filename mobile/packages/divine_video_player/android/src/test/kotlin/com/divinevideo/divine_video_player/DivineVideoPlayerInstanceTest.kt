@@ -82,6 +82,7 @@ class DivineVideoPlayerInstanceTest {
             playerFactory = { _ -> mockPlayer },
             mainHandler = mockHandler,
             audioOverlayManagerFactory = { _ -> mockAudioManager },
+            metadataExecutor = DirectExecutorService(),
         )
     }
 
@@ -701,4 +702,100 @@ class DivineVideoPlayerInstanceTest {
         // Clip 1's speed must NOT be applied.
         verify(exactly = 0) { mockPlayer.setPlaybackParameters(PlaybackParameters(0.25f)) }
     }
+
+    // -- common-track-end clamp resolution --
+
+    private fun trimmingSetClipsCall(uri: String): MethodCall =
+        MethodCall(
+            "setClips",
+            mapOf(
+                "clips" to listOf(
+                    mapOf(
+                        "uri" to uri,
+                        "startMs" to 0,
+                        "trimToCommonTrackEnd" to true,
+                    ),
+                ),
+            ),
+        )
+
+    /** The [Runnable]s handed to [mockHandler] via `post`, in order. */
+    private fun capturePostedRunnables(): List<Runnable> {
+        val posted = mutableListOf<Runnable>()
+        verify { mockHandler.post(capture(posted)) }
+        return posted
+    }
+
+    @Test
+    fun `setClips waits for the track lengths before touching the player`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/a.mp4"), result)
+
+        // The metadata read ran, but applying is posted back to the platform
+        // thread — nothing may reach the player until that lands.
+        verify(exactly = 0) { mockPlayer.setMediaItems(any(), any(), any()) }
+
+        capturePostedRunnables().forEach { it.run() }
+
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a resolution that lands after a newer setClips is dropped`() {
+        val stale = mockk<MethodChannel.Result>(relaxed = true)
+        val fresh = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/stale.mp4"), stale)
+        val afterStale = capturePostedRunnables().size
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/fresh.mp4"), fresh)
+        val posted = capturePostedRunnables()
+
+        // Run the newer continuation first, then the superseded one: the
+        // stale clips must not be applied over the clips that replaced them.
+        posted.drop(afterStale).forEach { it.run() }
+        posted.take(afterStale).forEach { it.run() }
+
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a source without both track types is applied unclamped`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        // MediaExtractor is stubbed in unit tests, so it reports no tracks —
+        // the same shape as an audio-only or unreadable source. That must
+        // still reach the player rather than stranding the Dart call.
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/b.mp4"), result)
+        capturePostedRunnables().forEach { it.run() }
+
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+    }
+}
+
+/** Runs submitted work on the calling thread so tests stay deterministic. */
+private class DirectExecutorService : java.util.concurrent.AbstractExecutorService() {
+    private var stopped = false
+
+    override fun execute(command: Runnable) = command.run()
+
+    override fun shutdown() {
+        stopped = true
+    }
+
+    override fun shutdownNow(): MutableList<Runnable> {
+        stopped = true
+        return mutableListOf()
+    }
+
+    override fun isShutdown(): Boolean = stopped
+
+    override fun isTerminated(): Boolean = stopped
+
+    override fun awaitTermination(
+        timeout: Long,
+        unit: java.util.concurrent.TimeUnit,
+    ): Boolean = true
 }
