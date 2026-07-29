@@ -431,21 +431,30 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
           return BlocBuilder<OtherProfileBloc, OtherProfileState>(
             builder: (context, state) {
-              final headerProfile = switch (state) {
-                OtherProfileInitial() => null,
-                OtherProfileLoading(:final profile) => profile,
-                OtherProfileLoaded(:final profile) => profile,
-                OtherProfileError(:final profile) => profile,
-              };
+              // Name the state rather than pass a deleted account's identity
+              // downstream. ProfileHeaderWidget applies the same rule to the
+              // avatar and the route hints, which it resolves itself.
+              final isVanished =
+                  ref.watch(profileVanishedProvider(widget.pubkey)).value ??
+                  false;
+              final headerProfile = isVanished
+                  ? null
+                  : switch (state) {
+                      OtherProfileInitial() => null,
+                      OtherProfileLoading(:final profile) => profile,
+                      OtherProfileLoaded(:final profile) => profile,
+                      OtherProfileError(:final profile) => profile,
+                    };
               final statsAsync = ref.watch(
                 userProfileStatsReactiveProvider(widget.pubkey),
               );
               final headerStats = statsAsync.value;
 
-              final displayName =
-                  headerProfile?.bestDisplayName ??
-                  widget.displayNameHint ??
-                  context.l10n.profileTitle;
+              final displayName = isVanished
+                  ? context.l10n.profileDeletedAccountName
+                  : headerProfile?.bestDisplayName ??
+                        widget.displayNameHint ??
+                        context.l10n.profileTitle;
               final isDmRestricted = ref.watch(isDmRestrictedProvider);
               final isMessageRestricted = _messagingBlockedForProtectedMinor(
                 isDmRestricted: isDmRestricted,

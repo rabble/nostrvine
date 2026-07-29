@@ -21,4 +21,5 @@ export 'personal_reposts_dao.dart';
 export 'processed_gift_wraps_dao.dart';
 export 'profile_stats_dao.dart';
 export 'user_profiles_dao.dart';
+export 'vanished_profiles_dao.dart';
 export 'video_metrics_dao.dart';

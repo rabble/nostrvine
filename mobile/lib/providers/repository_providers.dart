@@ -356,6 +356,9 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
     pendingProfileSavesDao: ref.watch(databaseProvider).pendingProfileSavesDao,
     // NIP-39 identity-claims source cache (#3936).
     identityEventsDao: ref.watch(databaseProvider).identityEventsDao,
+    // Durable NIP-62 vanish markers, so a deleted account stays evicted
+    // across restarts.
+    vanishedProfilesDao: ref.watch(databaseProvider).vanishedProfilesDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
     indexerRelays: env.indexerRelays,
@@ -363,6 +366,12 @@ ProfileRepository _buildProfileRepository(Ref ref, {required bool warmCache}) {
         SearchUtils.searchProfiles(query, profiles, limit: 50),
     blockFilter: blockFilter,
   );
+
+  // Unconditional, not gated on warmCache: the write-path guards in
+  // cacheProfile depend on this set, and every construction of the repository
+  // needs them — a relay Kind 0 can resurrect an evicted account regardless of
+  // whether this instance warms the cache.
+  unawaited(repo.loadVanishedPubkeys());
 
   if (warmCache) {
     // Pre-load known cached pubkeys and wire into SubscriptionManager

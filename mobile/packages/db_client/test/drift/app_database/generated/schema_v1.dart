@@ -714,9 +714,7 @@ class Notifications extends Table with TableInfo {
   }
 
   @override
-  List<String> get customConstraints => const [
-    'PRIMARY KEY(id, owner_pubkey)',
-  ];
+  List<String> get customConstraints => const ['PRIMARY KEY(id, owner_pubkey)'];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -3019,6 +3017,52 @@ class IdentityVerifications extends Table with TableInfo {
   bool get dontWriteConstraints => true;
 }
 
+class VanishedProfiles extends Table with TableInfo {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  VanishedProfiles(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<int> detectedAt = GeneratedColumn<int>(
+    'detected_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pubkey, detectedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vanished_profiles';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  Never map(Map<String, dynamic> data, {String? tablePrefix}) {
+    throw UnsupportedError('TableInfo.map in schema verification code');
+  }
+
+  @override
+  VanishedProfiles createAlias(String alias) {
+    return VanishedProfiles(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const ['PRIMARY KEY(pubkey)'];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
 class DatabaseAtV1 extends GeneratedDatabase {
   DatabaseAtV1(QueryExecutor e) : super(e);
   late final Event event = Event(this);
@@ -3050,6 +3094,7 @@ class DatabaseAtV1 extends GeneratedDatabase {
   late final IdentityEvents identityEvents = IdentityEvents(this);
   late final IdentityVerifications identityVerifications =
       IdentityVerifications(this);
+  late final VanishedProfiles vanishedProfiles = VanishedProfiles(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3079,6 +3124,7 @@ class DatabaseAtV1 extends GeneratedDatabase {
     pendingProfileSaves,
     identityEvents,
     identityVerifications,
+    vanishedProfiles,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

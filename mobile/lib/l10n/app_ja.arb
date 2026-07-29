@@ -3310,6 +3310,8 @@
     "profileLikesLabel": "いいね",
     "profileMyLibraryLabel": "マイライブラリ",
     "profileMessageLabel": "メッセージ",
+    "profileDeletedAccountName": "削除されたアカウント",
+    "inboxConversationDeletedAccountSubtitle": "このアカウントは削除されました",
     "profileUserFallback": "ユーザー",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."

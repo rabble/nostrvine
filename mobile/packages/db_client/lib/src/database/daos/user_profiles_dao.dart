@@ -10,7 +10,7 @@ import 'package:models/models.dart';
 
 part 'user_profiles_dao.g.dart';
 
-@DriftAccessor(tables: [UserProfiles])
+@DriftAccessor(tables: [UserProfiles, VanishedProfiles])
 class UserProfilesDao extends DatabaseAccessor<AppDatabase>
     with _$UserProfilesDaoMixin {
   UserProfilesDao(super.attachedDatabase);
@@ -33,12 +33,16 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   ///   complete profile. A genuine field clear rides in on a strictly newer
   ///   event, so it still applies.
   ///
+  /// A pubkey carrying a `vanished_profiles` tombstone is never written —
+  /// see [_isVanished].
+  ///
   /// The read and the conditional write run in a transaction so concurrent
   /// writers cannot race between the compare and the write.
   ///
   /// For simple CRUD operations (get, watch, delete), use AppDbClient instead.
   Future<void> upsertProfile(UserProfile profile) {
     return transaction(() async {
+      if (await _isVanished(profile.pubkey)) return;
       final existing = await getProfile(profile.pubkey);
       if (existing != null && !_incomingWins(profile, existing)) {
         return;
@@ -64,6 +68,43 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
         ),
       );
     });
+  }
+
+  /// Whether [pubkey] carries a NIP-62 vanish tombstone.
+  ///
+  /// A row in `vanished_profiles` means the account asked to be erased, so
+  /// `user_profiles` must not hold a row for it. The guard lives here rather
+  /// than at each call site because every production writer goes through this
+  /// DAO — `AppDbClient.upsertProfile` is the one other way in and has no
+  /// callers outside its own tests — and those writers are spread across
+  /// layers that cannot all reach `ProfileRepository`: relay ingestion
+  /// (`EventRouter`), the classic-viner seed import, and the repository's own
+  /// REST and relay caching. A vanished account whose kind 0 still lives on a
+  /// non-compliant relay would otherwise re-create its row minutes after
+  /// eviction.
+  ///
+  /// The tombstone table is keyed on `pubkey` and holds only vanished
+  /// accounts, so this is a primary-key lookup against a table that is empty
+  /// for practically every install.
+  Future<bool> _isVanished(String pubkey) async {
+    final query = select(vanishedProfiles)
+      ..where((t) => t.pubkey.equals(pubkey))
+      ..limit(1);
+    return await query.getSingleOrNull() != null;
+  }
+
+  /// [profiles] minus any pubkey carrying a vanish tombstone.
+  ///
+  /// Reads the whole tombstone table rather than an `IN (...)` over the batch:
+  /// the table holds only vanished accounts, and a batch import can exceed
+  /// SQLite's bound-variable limit.
+  Future<List<UserProfile>> _dropVanished(List<UserProfile> profiles) async {
+    final rows = await select(vanishedProfiles).get();
+    if (rows.isEmpty) return profiles;
+    final vanished = rows.map((row) => row.pubkey).toSet();
+    return profiles
+        .where((profile) => !vanished.contains(profile.pubkey))
+        .toList();
   }
 
   /// Whether [incoming] should replace [existing] under the newest-wins rule
@@ -169,10 +210,15 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
   /// This is intentionally a blind batch write for uncached bulk imports.
   /// Use [upsertProfile] when writing an already-cached pubkey where
   /// newest-wins clobber protection matters.
+  ///
+  /// Pubkeys carrying a `vanished_profiles` tombstone are dropped from the
+  /// batch — see [_isVanished].
   Future<void> upsertProfiles(List<UserProfile> profiles) async {
     if (profiles.isEmpty) return;
+    final writable = await _dropVanished(profiles);
+    if (writable.isEmpty) return;
     await batch((b) {
-      for (final profile in profiles) {
+      for (final profile in writable) {
         b.insert(
           userProfiles,
           UserProfilesCompanion.insert(

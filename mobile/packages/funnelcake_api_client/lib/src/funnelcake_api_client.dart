@@ -1724,7 +1724,9 @@ class FunnelcakeApiClient {
   ///
   /// Returns [UserProfileFound] if the user has published a Kind 0 profile,
   /// [UserProfileNotPublished] if the user exists in Funnelcake but has never
-  /// published one, or `null` if the user is not found at all (404).
+  /// published one, [UserProfileVanished] if the account asked to be erased and
+  /// the server is serving no profile for it, or `null` if the user is not
+  /// found at all (404).
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
@@ -1750,6 +1752,20 @@ class FunnelcakeApiClient {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final profileJson = data['profile'] as Map<String, dynamic>?;
+
+        // Both halves are required. `has_vanish_request` is read from the
+        // permanent vanish-request record, so it stays true after the erasure
+        // sweep completes and the account publishes again — which the server
+        // then serves as a live profile. It marks a deletion only while the
+        // server is *also* withholding the profile: a pending request
+        // suppresses the Kind 0 server-side, and a completed one erased it.
+        // Reading the flag alone would hide a republished account forever,
+        // because it never goes false again. Absent means the server predates
+        // the field, which preserves the previous behaviour.
+        if (data['has_vanish_request'] == true && profileJson == null) {
+          return UserProfileVanished(pubkey: pubkey);
+        }
+
         final socialJson = data['social'] as Map<String, dynamic>?;
         final statsJson = data['stats'] as Map<String, dynamic>?;
         final engagementJson = data['engagement'] as Map<String, dynamic>?;
@@ -2101,7 +2117,10 @@ class FunnelcakeApiClient {
   ///
   /// Returns a [BulkProfilesResponse] with a map of pubkey to
   /// [UserProfileResult]. Users that exist but have no Kind 0 profile are
-  /// included as [UserProfileNotPublished] entries.
+  /// included as [UserProfileNotPublished] entries, and an account the server
+  /// reports as erased as a [UserProfileVanished] one. A pubkey the server
+  /// omits entirely — which includes an account with a vanish request still
+  /// pending — is simply absent from the map.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
@@ -2135,6 +2154,16 @@ class FunnelcakeApiClient {
             if (pubkey == null || pubkey.isEmpty) continue;
 
             final profileJson = user['profile'] as Map<String, dynamic>?;
+
+            // Same rule as getUserProfile, and narrower here: the server
+            // strips a pending vanish request out of bulk hydration entirely,
+            // so on this path the flag is only ever visible for a request the
+            // erasure sweep already completed.
+            if (user['has_vanish_request'] == true && profileJson == null) {
+              result[pubkey] = UserProfileVanished(pubkey: pubkey);
+              continue;
+            }
+
             final socialJson = user['social'] as Map<String, dynamic>?;
             final statsJson = user['stats'] as Map<String, dynamic>?;
             final engagementJson = user['engagement'] as Map<String, dynamic>?;

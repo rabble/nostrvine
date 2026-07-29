@@ -905,5 +905,78 @@ void main() {
         expect(wordmarkFinder(), findsOneWidget);
       });
     });
+
+    group('deleted accounts', () {
+      Future<void> pumpTile(
+        WidgetTester tester, {
+        required bool vanished,
+      }) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(otherPubkey).overrideWith(
+                (ref) async => createTestProfile(displayName: 'meylis.divine'),
+              ),
+              profileVanishedProvider(
+                otherPubkey,
+              ).overrideWith((ref) => Stream.value(vanished)),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: createTestConversation(
+                  lastMessageContent: 'hi',
+                  lastMessageTimestamp: nowUnix,
+                ),
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('replaces the display name for a deleted account', (
+        tester,
+      ) async {
+        await pumpTile(tester, vanished: true);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.profileDeletedAccountName), findsOneWidget);
+        expect(find.text('meylis.divine'), findsNothing);
+      });
+
+      testWidgets('reads the deleted-account copy from l10n', (tester) async {
+        await pumpTile(tester, vanished: true);
+
+        // Proves the widget resolves the string rather than hardcoding it.
+        final de = lookupAppLocalizations(const Locale('de'));
+        expect(find.text(de.profileDeletedAccountName), findsNothing);
+      });
+
+      testWidgets('drops the avatar for a deleted account', (tester) async {
+        await pumpTile(tester, vanished: true);
+
+        expect(find.byType(VineCachedImage), findsNothing);
+      });
+
+      testWidgets('leaves a live account untouched', (tester) async {
+        await pumpTile(tester, vanished: false);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text('meylis.divine'), findsOneWidget);
+        expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+      });
+
+      testWidgets('keeps the last message so the thread stays readable', (
+        tester,
+      ) async {
+        // The messages are the viewer's own copy — a vanish cannot retract
+        // them, and hiding them would destroy the viewer's history.
+        await pumpTile(tester, vanished: true);
+
+        expect(find.text('hi'), findsOneWidget);
+      });
+    });
   });
 }

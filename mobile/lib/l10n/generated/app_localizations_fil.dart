@@ -751,6 +751,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileMessageLabel => 'Message';
 
   @override
+  String get profileDeletedAccountName => 'Tinanggal na account';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle =>
+      'Tinanggal na ang account na ito';
+
+  @override
   String get profileUserFallback => 'user';
 
   @override

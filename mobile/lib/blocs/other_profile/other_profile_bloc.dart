@@ -83,6 +83,14 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileLoadRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
+    // Known-deleted accounts short-circuit before the cache read: the durable
+    // vanish marker is hydrated at startup, so a cold start on a deleted
+    // profile resolves without touching the network.
+    if (_profileRepository.isVanished(pubkey)) {
+      emit(const OtherProfileError(errorType: OtherProfileErrorType.notFound));
+      return;
+    }
+
     // 1. Get cached profile from repository
     final cachedProfile = await _profileRepository.getCachedProfile(
       pubkey: pubkey,
@@ -113,6 +121,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
           ),
         );
         add(const VerifiedClaimsRequested());
+      } else if (_profileRepository.isVanished(pubkey)) {
+        // The fetch discovered a deletion and evicted the cache. A null result
+        // here is not the same as a network miss, so the stale-cache fallback
+        // below must not run.
+        emit(
+          const OtherProfileError(errorType: OtherProfileErrorType.notFound),
+        );
       } else if (cachedProfile != null) {
         emit(
           OtherProfileLoaded(
@@ -129,7 +144,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       }
     } catch (e) {
       if (isClosed) return;
-      if (cachedProfile != null) {
+      if (cachedProfile != null && !_profileRepository.isVanished(pubkey)) {
         emit(
           OtherProfileLoaded(
             profile: cachedProfile,
@@ -138,6 +153,10 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
           ),
         );
         add(const VerifiedClaimsRequested());
+      } else if (_profileRepository.isVanished(pubkey)) {
+        emit(
+          const OtherProfileError(errorType: OtherProfileErrorType.notFound),
+        );
       } else {
         emit(
           const OtherProfileError(
@@ -152,6 +171,11 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileRefreshRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
+    if (_profileRepository.isVanished(pubkey)) {
+      emit(const OtherProfileError(errorType: OtherProfileErrorType.notFound));
+      return;
+    }
+
     final currentProfile = switch (state) {
       OtherProfileInitial() => null,
       OtherProfileLoading(:final profile) => profile,
@@ -184,7 +208,13 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         emit(
           OtherProfileError(
             errorType: OtherProfileErrorType.notFound,
-            profile: currentProfile,
+            // Deliberately drops the stale profile when the refresh discovered
+            // a deletion. other_profile_screen extracts `profile` out of the
+            // error state and renders it, so carrying it here would keep the
+            // deleted account on screen through every pull-to-refresh.
+            profile: _profileRepository.isVanished(pubkey)
+                ? null
+                : currentProfile,
           ),
         );
       }

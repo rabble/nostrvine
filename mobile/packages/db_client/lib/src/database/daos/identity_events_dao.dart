@@ -35,6 +35,14 @@ class IdentityEventsDao extends DatabaseAccessor<AppDatabase>
     return query.getSingleOrNull();
   }
 
+  /// Deletes the cached identity-claims source for [pubkey].
+  ///
+  /// Used when evicting an account that requested deletion, so its claims do
+  /// not outlive the profile row they belong to.
+  Future<int> deleteEvent(String pubkey) {
+    return (delete(identityEvents)..where((t) => t.pubkey.equals(pubkey))).go();
+  }
+
   /// Clears every cached identity-claims source row.
   Future<int> clearAll() {
     return delete(identityEvents).go();

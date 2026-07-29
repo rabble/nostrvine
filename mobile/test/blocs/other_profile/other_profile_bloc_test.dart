@@ -74,6 +74,8 @@ void main() {
       when(
         () => mockFollowRepository.toggleFollow(any()),
       ).thenAnswer((_) async {});
+      // Default: not a deleted account. The vanish group below overrides this.
+      when(() => mockProfileRepository.isVanished(any())).thenReturn(false);
     });
 
     OtherProfileBloc createBloc({String pubkey = testPubkey}) =>
@@ -90,6 +92,151 @@ void main() {
       expect(bloc.state, isA<OtherProfileInitial>());
       expect(bloc.pubkey, equals(testPubkey));
       bloc.close();
+    });
+
+    group('vanished accounts', () {
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'emits notFound instead of the stale cache when the account vanished',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          // The fetch evicts the cache and returns null, same as a network
+          // miss — only isVanished distinguishes them.
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.isVanished(testPubkey),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
+        expect: () => [
+          isA<OtherProfileError>().having(
+            (s) => s.errorType,
+            'errorType',
+            OtherProfileErrorType.notFound,
+          ),
+        ],
+        verify: (_) {
+          // A known-vanished pubkey short-circuits before the cache read and
+          // before any network call.
+          verifyNever(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          );
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'still falls back to the cache when the fetch merely failed',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.isVanished(testPubkey),
+          ).thenReturn(false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
+        // Identical setup to the test above apart from isVanished. This is
+        // what fails if the gate is widened to every null fetch.
+        expect: () => [
+          isA<OtherProfileLoading>(),
+          isA<OtherProfileLoaded>().having((s) => s.isFresh, 'isFresh', false),
+        ],
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'discovers the vanish mid-fetch and does not use the stale cache',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          var fetched = false;
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async {
+            fetched = true;
+            return null;
+          });
+          when(
+            () => mockProfileRepository.isVanished(testPubkey),
+          ).thenAnswer((_) => fetched);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
+        expect: () => [
+          isA<OtherProfileLoading>(),
+          isA<OtherProfileError>().having(
+            (s) => s.errorType,
+            'errorType',
+            OtherProfileErrorType.notFound,
+          ),
+        ],
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'refresh drops the stale profile from the error state',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.isVanished(testPubkey),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileRefreshRequested()),
+        // other_profile_screen extracts `profile` out of the error state and
+        // renders it, so carrying it here would keep the deleted account on
+        // screen through every pull-to-refresh.
+        expect: () => [
+          isA<OtherProfileError>()
+              .having(
+                (s) => s.errorType,
+                'errorType',
+                OtherProfileErrorType.notFound,
+              )
+              .having((s) => s.profile, 'profile', isNull),
+        ],
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'a throwing fetch on a vanished account does not restore the cache',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => createTestProfile());
+          var fetched = false;
+          when(
+            () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async {
+            fetched = true;
+            throw Exception('relay unreachable');
+          });
+          when(
+            () => mockProfileRepository.isVanished(testPubkey),
+          ).thenAnswer((_) => fetched);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileLoadRequested()),
+        expect: () => [
+          isA<OtherProfileLoading>(),
+          isA<OtherProfileError>().having(
+            (s) => s.errorType,
+            'errorType',
+            OtherProfileErrorType.notFound,
+          ),
+        ],
+      );
     });
 
     group('OtherProfileLoadRequested', () {

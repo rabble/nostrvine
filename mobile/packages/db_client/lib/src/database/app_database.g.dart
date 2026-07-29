@@ -16177,6 +16177,231 @@ class IdentityVerificationsCompanion
   }
 }
 
+class $VanishedProfilesTable extends VanishedProfiles
+    with TableInfo<$VanishedProfilesTable, VanishedProfileRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VanishedProfilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pubkeyMeta = const VerificationMeta('pubkey');
+  @override
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _detectedAtMeta = const VerificationMeta(
+    'detectedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> detectedAt = GeneratedColumn<DateTime>(
+    'detected_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [pubkey, detectedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'vanished_profiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VanishedProfileRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pubkey')) {
+      context.handle(
+        _pubkeyMeta,
+        pubkey.isAcceptableOrUnknown(data['pubkey']!, _pubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pubkeyMeta);
+    }
+    if (data.containsKey('detected_at')) {
+      context.handle(
+        _detectedAtMeta,
+        detectedAt.isAcceptableOrUnknown(data['detected_at']!, _detectedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_detectedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  VanishedProfileRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VanishedProfileRow(
+      pubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pubkey'],
+      )!,
+      detectedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}detected_at'],
+      )!,
+    );
+  }
+
+  @override
+  $VanishedProfilesTable createAlias(String alias) {
+    return $VanishedProfilesTable(attachedDatabase, alias);
+  }
+}
+
+class VanishedProfileRow extends DataClass
+    implements Insertable<VanishedProfileRow> {
+  /// Hex pubkey of the account that requested deletion.
+  final String pubkey;
+
+  /// When this device first learned the account had vanished.
+  ///
+  /// First-seen and stable: re-marking an already-recorded pubkey keeps this
+  /// value rather than refreshing it.
+  final DateTime detectedAt;
+  const VanishedProfileRow({required this.pubkey, required this.detectedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pubkey'] = Variable<String>(pubkey);
+    map['detected_at'] = Variable<DateTime>(detectedAt);
+    return map;
+  }
+
+  VanishedProfilesCompanion toCompanion(bool nullToAbsent) {
+    return VanishedProfilesCompanion(
+      pubkey: Value(pubkey),
+      detectedAt: Value(detectedAt),
+    );
+  }
+
+  factory VanishedProfileRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VanishedProfileRow(
+      pubkey: serializer.fromJson<String>(json['pubkey']),
+      detectedAt: serializer.fromJson<DateTime>(json['detectedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pubkey': serializer.toJson<String>(pubkey),
+      'detectedAt': serializer.toJson<DateTime>(detectedAt),
+    };
+  }
+
+  VanishedProfileRow copyWith({String? pubkey, DateTime? detectedAt}) =>
+      VanishedProfileRow(
+        pubkey: pubkey ?? this.pubkey,
+        detectedAt: detectedAt ?? this.detectedAt,
+      );
+  VanishedProfileRow copyWithCompanion(VanishedProfilesCompanion data) {
+    return VanishedProfileRow(
+      pubkey: data.pubkey.present ? data.pubkey.value : this.pubkey,
+      detectedAt: data.detectedAt.present
+          ? data.detectedAt.value
+          : this.detectedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VanishedProfileRow(')
+          ..write('pubkey: $pubkey, ')
+          ..write('detectedAt: $detectedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pubkey, detectedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VanishedProfileRow &&
+          other.pubkey == this.pubkey &&
+          other.detectedAt == this.detectedAt);
+}
+
+class VanishedProfilesCompanion extends UpdateCompanion<VanishedProfileRow> {
+  final Value<String> pubkey;
+  final Value<DateTime> detectedAt;
+  final Value<int> rowid;
+  const VanishedProfilesCompanion({
+    this.pubkey = const Value.absent(),
+    this.detectedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VanishedProfilesCompanion.insert({
+    required String pubkey,
+    required DateTime detectedAt,
+    this.rowid = const Value.absent(),
+  }) : pubkey = Value(pubkey),
+       detectedAt = Value(detectedAt);
+  static Insertable<VanishedProfileRow> custom({
+    Expression<String>? pubkey,
+    Expression<DateTime>? detectedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pubkey != null) 'pubkey': pubkey,
+      if (detectedAt != null) 'detected_at': detectedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VanishedProfilesCompanion copyWith({
+    Value<String>? pubkey,
+    Value<DateTime>? detectedAt,
+    Value<int>? rowid,
+  }) {
+    return VanishedProfilesCompanion(
+      pubkey: pubkey ?? this.pubkey,
+      detectedAt: detectedAt ?? this.detectedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pubkey.present) {
+      map['pubkey'] = Variable<String>(pubkey.value);
+    }
+    if (detectedAt.present) {
+      map['detected_at'] = Variable<DateTime>(detectedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VanishedProfilesCompanion(')
+          ..write('pubkey: $pubkey, ')
+          ..write('detectedAt: $detectedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -16216,6 +16441,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $IdentityEventsTable identityEvents = $IdentityEventsTable(this);
   late final $IdentityVerificationsTable identityVerifications =
       $IdentityVerificationsTable(this);
+  late final $VanishedProfilesTable vanishedProfiles = $VanishedProfilesTable(
+    this,
+  );
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -16279,6 +16507,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final IdentityVerificationsDao identityVerificationsDao =
       IdentityVerificationsDao(this as AppDatabase);
+  late final VanishedProfilesDao vanishedProfilesDao = VanishedProfilesDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -16308,6 +16539,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingProfileSaves,
     identityEvents,
     identityVerifications,
+    vanishedProfiles,
   ];
 }
 
@@ -23935,6 +24167,161 @@ typedef $$IdentityVerificationsTableProcessedTableManager =
       IdentityVerificationRow,
       PrefetchHooks Function()
     >;
+typedef $$VanishedProfilesTableCreateCompanionBuilder =
+    VanishedProfilesCompanion Function({
+      required String pubkey,
+      required DateTime detectedAt,
+      Value<int> rowid,
+    });
+typedef $$VanishedProfilesTableUpdateCompanionBuilder =
+    VanishedProfilesCompanion Function({
+      Value<String> pubkey,
+      Value<DateTime> detectedAt,
+      Value<int> rowid,
+    });
+
+class $$VanishedProfilesTableFilterComposer
+    extends Composer<_$AppDatabase, $VanishedProfilesTable> {
+  $$VanishedProfilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get detectedAt => $composableBuilder(
+    column: $table.detectedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VanishedProfilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $VanishedProfilesTable> {
+  $$VanishedProfilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get detectedAt => $composableBuilder(
+    column: $table.detectedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VanishedProfilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VanishedProfilesTable> {
+  $$VanishedProfilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get pubkey =>
+      $composableBuilder(column: $table.pubkey, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get detectedAt => $composableBuilder(
+    column: $table.detectedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$VanishedProfilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VanishedProfilesTable,
+          VanishedProfileRow,
+          $$VanishedProfilesTableFilterComposer,
+          $$VanishedProfilesTableOrderingComposer,
+          $$VanishedProfilesTableAnnotationComposer,
+          $$VanishedProfilesTableCreateCompanionBuilder,
+          $$VanishedProfilesTableUpdateCompanionBuilder,
+          (
+            VanishedProfileRow,
+            BaseReferences<
+              _$AppDatabase,
+              $VanishedProfilesTable,
+              VanishedProfileRow
+            >,
+          ),
+          VanishedProfileRow,
+          PrefetchHooks Function()
+        > {
+  $$VanishedProfilesTableTableManager(
+    _$AppDatabase db,
+    $VanishedProfilesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VanishedProfilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VanishedProfilesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VanishedProfilesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> pubkey = const Value.absent(),
+                Value<DateTime> detectedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VanishedProfilesCompanion(
+                pubkey: pubkey,
+                detectedAt: detectedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pubkey,
+                required DateTime detectedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => VanishedProfilesCompanion.insert(
+                pubkey: pubkey,
+                detectedAt: detectedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VanishedProfilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VanishedProfilesTable,
+      VanishedProfileRow,
+      $$VanishedProfilesTableFilterComposer,
+      $$VanishedProfilesTableOrderingComposer,
+      $$VanishedProfilesTableAnnotationComposer,
+      $$VanishedProfilesTableCreateCompanionBuilder,
+      $$VanishedProfilesTableUpdateCompanionBuilder,
+      (
+        VanishedProfileRow,
+        BaseReferences<
+          _$AppDatabase,
+          $VanishedProfilesTable,
+          VanishedProfileRow
+        >,
+      ),
+      VanishedProfileRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -23987,4 +24374,6 @@ class $AppDatabaseManager {
       $$IdentityEventsTableTableManager(_db, _db.identityEvents);
   $$IdentityVerificationsTableTableManager get identityVerifications =>
       $$IdentityVerificationsTableTableManager(_db, _db.identityVerifications);
+  $$VanishedProfilesTableTableManager get vanishedProfiles =>
+      $$VanishedProfilesTableTableManager(_db, _db.vanishedProfiles);
 }

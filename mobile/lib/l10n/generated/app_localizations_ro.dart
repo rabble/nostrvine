@@ -773,6 +773,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileMessageLabel => 'Mesaj';
 
   @override
+  String get profileDeletedAccountName => 'Cont șters';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle =>
+      'Acest cont a fost șters';
+
+  @override
   String get profileUserFallback => 'utilizator';
 
   @override

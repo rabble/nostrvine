@@ -746,6 +746,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileMessageLabel => 'Nachricht';
 
   @override
+  String get profileDeletedAccountName => 'Gelöschtes Konto';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle =>
+      'Dieses Konto wurde gelöscht';
+
+  @override
   String get profileUserFallback => 'Nutzer';
 
   @override

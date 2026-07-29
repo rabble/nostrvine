@@ -688,6 +688,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileMessageLabel => '메시지';
 
   @override
+  String get profileDeletedAccountName => '삭제된 계정';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle => '이 계정은 삭제되었습니다';
+
+  @override
   String get profileUserFallback => '사용자';
 
   @override

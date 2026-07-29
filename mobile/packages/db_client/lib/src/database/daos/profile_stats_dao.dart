@@ -9,7 +9,7 @@ part 'profile_stats_dao.g.dart';
 /// Default cache duration for profile stats (5 minutes)
 const profileStatsCacheDuration = Duration(minutes: 5);
 
-@DriftAccessor(tables: [ProfileStats])
+@DriftAccessor(tables: [ProfileStats, VanishedProfiles])
 class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     with _$ProfileStatsDaoMixin {
   ProfileStatsDao(super.attachedDatabase);
@@ -19,6 +19,12 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
   /// Only overwrites fields that are explicitly provided (non-null).
   /// Null parameters are left unchanged in the existing row, preventing
   /// partial REST responses from zeroing out previously cached values.
+  ///
+  /// No-ops for a pubkey carrying a `vanished_profiles` tombstone, so counters
+  /// cannot be re-cached for an account that asked to be erased. Same rule and
+  /// same reason as `UserProfilesDao.upsertProfile`: the writers span layers
+  /// that cannot all reach `ProfileRepository` — the classic-viner seed import
+  /// re-runs on every manifest bump.
   Future<void> upsertStats({
     required String pubkey,
     int? videoCount,
@@ -27,6 +33,11 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
     int? totalViews,
     int? totalLikes,
   }) async {
+    final tombstone = await (select(
+      vanishedProfiles,
+    )..where((t) => t.pubkey.equals(pubkey))).getSingleOrNull();
+    if (tombstone != null) return;
+
     final existing = await (select(
       profileStats,
     )..where((t) => t.pubkey.equals(pubkey))).getSingleOrNull();

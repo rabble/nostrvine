@@ -162,9 +162,20 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // A deleted account must not render under its own identity. This widget
+    // resolves identity from three independent sources — the profile bloc,
+    // fetchUserProfileProvider, and the route hints — so evicting the cached
+    // row is not enough on its own: the hints are supplied by whoever
+    // navigated here and outlive the cache entirely.
+    final isVanished =
+        ref.watch(profileVanishedProvider(widget.userIdHex)).value ?? false;
+
     final UserProfile? effectiveProfile;
     final bool isLoadingIdentity;
-    if (widget.isOwnProfile) {
+    if (isVanished) {
+      effectiveProfile = null;
+      isLoadingIdentity = false;
+    } else if (widget.isOwnProfile) {
       // Project to (profile, isInitialOrLoading) so this widget rebuilds only
       // when the displayed profile or the genuine "still loading" signal
       // changes. Watching the whole state would also rebuild on isFresh /
@@ -228,13 +239,16 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
-    final profilePictureUrl = (effectiveProfile?.picture?.isNotEmpty == true)
+    final displayNameHint = isVanished ? null : widget.displayNameHint;
+    final profilePictureUrl = isVanished
+        ? null
+        : (effectiveProfile?.picture?.isNotEmpty == true)
         ? effectiveProfile!.picture
         : widget.avatarUrlHint;
     final hasCustomName =
         effectiveProfile?.name?.isNotEmpty == true ||
         effectiveProfile?.displayName?.isNotEmpty == true ||
-        widget.displayNameHint?.isNotEmpty == true;
+        displayNameHint?.isNotEmpty == true;
     final hasAnyProfileInfo =
         hasCustomName ||
         effectiveProfile?.picture?.isNotEmpty == true ||
@@ -362,7 +376,8 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     userIdHex: widget.userIdHex,
                     nip05: nip05,
                     about: about,
-                    displayNameHint: widget.displayNameHint,
+                    displayNameHint: displayNameHint,
+                    isVanished: isVanished,
                     accentColor: profileColor,
                     isOwnProfile: widget.isOwnProfile,
                     monetizationLinks: monetizationLinksForCurrentStorefront(

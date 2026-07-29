@@ -35,6 +35,8 @@ class _MockPendingProfileSavesDao extends Mock
 
 class _MockIdentityEventsDao extends Mock implements IdentityEventsDao {}
 
+class _MockVanishedProfilesDao extends Mock implements VanishedProfilesDao {}
+
 class _TestNostrSession extends NostrSession {
   _TestNostrSession(this._readiness);
 
@@ -206,6 +208,56 @@ void main() {
 
       expect(emitted, isNotEmpty);
       expect(emitted.last, isA<AsyncLoading<UserProfile?>>());
+    });
+  });
+
+  group('fetchUserProfileProvider', () {
+    late _MockProfileRepository profileRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      profileRepository = _MockProfileRepository();
+      container = ProviderContainer(
+        overrides: [
+          profileRepositoryProvider.overrideWithValue(profileRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test('returns cached profile without scheduling a revalidation', () async {
+      final cachedProfile = _profile(pubkey, name: 'cached');
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => cachedProfile);
+
+      final result = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(result, cachedProfile);
+      verifyNever(() => profileRepository.fetchFreshProfile(pubkey: pubkey));
+      verifyNever(() => profileRepository.revalidateVanishOnce(pubkey));
+    });
+
+    test('fetches fresh profile when cache is empty', () async {
+      final freshProfile = _profile(pubkey, name: 'live');
+      when(
+        () => profileRepository.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => freshProfile);
+
+      final result = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(result, freshProfile);
+      verify(
+        () => profileRepository.fetchFreshProfile(pubkey: pubkey),
+      ).called(1);
+      verifyNever(() => profileRepository.revalidateVanishOnce(pubkey));
     });
   });
 
@@ -422,6 +474,15 @@ void main() {
         when(
           () => database.identityEventsDao,
         ).thenReturn(_MockIdentityEventsDao());
+        final vanishedProfilesDao = _MockVanishedProfilesDao();
+        // The repository hydrates its vanish set on construction, so this has
+        // to resolve or the provider throws before it returns an instance.
+        when(vanishedProfilesDao.getAllPubkeys).thenAnswer(
+          (_) async => <String>[],
+        );
+        when(
+          () => database.vanishedProfilesDao,
+        ).thenReturn(vanishedProfilesDao);
 
         final container = ProviderContainer(
           overrides: [

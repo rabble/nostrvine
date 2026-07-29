@@ -749,6 +749,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileMessageLabel => 'Mensaje';
 
   @override
+  String get profileDeletedAccountName => 'Cuenta eliminada';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle =>
+      'Esta cuenta fue eliminada';
+
+  @override
   String get profileUserFallback => 'usuario';
 
   @override

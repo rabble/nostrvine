@@ -202,7 +202,11 @@ void main() {
     when(() => authService.isRpcUpgradeInProgress).thenReturn(false);
   });
 
-  Widget buildSubject({required ProviderContainer container}) {
+  Widget buildSubject({
+    required ProviderContainer container,
+    String? displayNameHint,
+    String? avatarUrlHint,
+  }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -214,13 +218,20 @@ void main() {
             BlocProvider<OtherProfileBloc>.value(value: otherProfileBloc),
             BlocProvider<PeopleListsBloc>.value(value: peopleListsBloc),
           ],
-          child: const OtherProfileView(pubkey: targetPubkey),
+          child: OtherProfileView(
+            pubkey: targetPubkey,
+            displayNameHint: displayNameHint,
+            avatarUrlHint: avatarUrlHint,
+          ),
         ),
       ),
     );
   }
 
-  ProviderContainer createContainer(StateProvider<bool> restrictedProvider) {
+  ProviderContainer createContainer(
+    StateProvider<bool> restrictedProvider, {
+    bool isVanished = false,
+  }) {
     return ProviderContainer(
       overrides: [
         ...getStandardTestOverrides(
@@ -255,9 +266,63 @@ void main() {
         isFeatureEnabledProvider(
           FeatureFlag.curatedLists,
         ).overrideWith((ref) => false),
+        // Element-level, since the standard overrides already claim the
+        // family and Riverpod rejects a second family override.
+        if (isVanished)
+          profileVanishedProvider(
+            targetPubkey,
+          ).overrideWith((ref) => Stream.value(true)),
       ],
     );
   }
+
+  testWidgets('names a deleted account instead of its route hints', (
+    tester,
+  ) async {
+    // The hints outlive the cache: whoever navigated here supplies them, and
+    // the classic-viner slider supplies the archived Vine name and avatar. So
+    // evicting the profile row is not enough to stop the deleted account
+    // rendering under its own identity.
+    final container = createContainer(
+      StateProvider<bool>((ref) => false),
+      isVanished: true,
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      buildSubject(
+        container: container,
+        displayNameHint: 'Archived Viner',
+        avatarUrlHint: 'https://example.com/archived.jpg',
+      ),
+    );
+    await tester.pump();
+    // Second frame: the vanish stream resolves after the first build.
+    await tester.pump();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.profileDeletedAccountName), findsWidgets);
+    expect(find.text('Archived Viner'), findsNothing);
+    expect(find.text('Target User'), findsNothing);
+  });
+
+  testWidgets('renders the profile when the account has not vanished', (
+    tester,
+  ) async {
+    // Pins the gate: the deleted-account treatment must not leak into the
+    // ordinary path.
+    final container = createContainer(StateProvider<bool>((ref) => false));
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      buildSubject(container: container, displayNameHint: 'Archived Viner'),
+    );
+    await tester.pump();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text('Target User'), findsWidgets);
+    expect(find.text(l10n.profileDeletedAccountName), findsNothing);
+  });
 
   testWidgets(
     'updates Message visibility when DM restriction flips while mounted',
@@ -300,6 +365,9 @@ void main() {
       when(
         () => profileRepo.getCachedProfile(pubkey: any(named: 'pubkey')),
       ).thenAnswer((_) async => null);
+      // Not a deleted account — the bloc short-circuits the whole load when
+      // this is true.
+      when(() => profileRepo.isVanished(any())).thenReturn(false);
       when(
         () => profileRepo.watchProfile(pubkey: any(named: 'pubkey')),
       ).thenAnswer((_) => const Stream<UserProfile?>.empty());

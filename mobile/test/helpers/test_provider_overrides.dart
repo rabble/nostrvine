@@ -18,6 +18,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
@@ -382,6 +383,12 @@ List<dynamic> getStandardTestOverrides({
     // CacheSync._dao (uninitialized Drift DAO) when VideoFollowButton calls
     // MyFollowingBloc which calls watchMyFollowingCached().
     followRepositoryProvider.overrideWithValue(mockFollow),
+
+    // Always override the NIP-62 vanish lookup. It reads the Drift database,
+    // which widget tests do not wire, and the inbox surfaces watch it on every
+    // build. Tests that exercise the deleted-account treatment override it
+    // again with `additionalOverrides`.
+    profileVanishedProvider.overrideWith((ref, pubkey) => Stream.value(false)),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)

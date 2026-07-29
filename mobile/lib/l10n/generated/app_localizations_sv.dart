@@ -726,6 +726,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileMessageLabel => 'Meddelande';
 
   @override
+  String get profileDeletedAccountName => 'Raderat konto';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle =>
+      'Det här kontot har raderats';
+
+  @override
   String get profileUserFallback => 'användare';
 
   @override

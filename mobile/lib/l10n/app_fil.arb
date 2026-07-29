@@ -2353,6 +2353,8 @@
     "profileLikesLabel": "Mga Like",
     "profileMyLibraryLabel": "Aking Library",
     "profileMessageLabel": "Message",
+    "profileDeletedAccountName": "Tinanggal na account",
+    "inboxConversationDeletedAccountSubtitle": "Tinanggal na ang account na ito",
     "profileUserFallback": "user",
     "videoSettingsMenuOpen": "Buksan ang playback settings",
     "videoSettingsMenuClose": "Isara ang playback settings",

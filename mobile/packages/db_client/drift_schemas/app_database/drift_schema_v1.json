@@ -2929,6 +2929,43 @@
           "pubkey"
         ]
       }
+    },
+    {
+      "id": 24,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "vanished_profiles",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "pubkey",
+            "getter_name": "pubkey",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "detected_at",
+            "getter_name": "detectedAt",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "pubkey"
+        ]
+      }
     }
   ],
   "fixed_sql": [
@@ -3145,6 +3182,15 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"identity_verifications\" (\"pubkey\" TEXT NOT NULL, \"verified_claims_json\" TEXT NOT NULL, \"checked_at_floor\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
+        }
+      ]
+    },
+    {
+      "name": "vanished_profiles",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"vanished_profiles\" (\"pubkey\" TEXT NOT NULL, \"detected_at\" INTEGER NOT NULL, PRIMARY KEY (\"pubkey\"));"
         }
       ]
     }

@@ -70,6 +70,31 @@ void main() {
       expect(bobProfile?.name, equals('bob'));
     });
 
+    test('does not re-create the profile of an account that requested '
+        'deletion', () async {
+      // This router writes to UserProfilesDao directly rather than through
+      // ProfileRepository, so it is the path a non-compliant relay would use
+      // to resurrect an evicted account minutes after the eviction.
+      final deleted = profileEvent(2, content: jsonEncode({'name': 'alice'}));
+      await db.vanishedProfilesDao.markVanished(deleted.pubkey);
+
+      await flush([deleted]);
+
+      expect(await db.userProfilesDao.getProfile(deleted.pubkey), isNull);
+    });
+
+    test('routes a profile again once the vanish is cleared', () async {
+      final recovered = profileEvent(2, content: jsonEncode({'name': 'alice'}));
+      await db.vanishedProfilesDao.markVanished(recovered.pubkey);
+      await flush([recovered]);
+
+      await db.vanishedProfilesDao.clearVanished(recovered.pubkey);
+      await flush([recovered]);
+
+      final profile = await db.userProfilesDao.getProfile(recovered.pubkey);
+      expect(profile?.name, equals('alice'));
+    });
+
     test('a malformed profile does not abort routing for the rest of the '
         'batch', () async {
       final broken = profileEvent(2, content: 'not-json-{');

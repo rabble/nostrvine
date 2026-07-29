@@ -686,6 +686,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileMessageLabel => 'メッセージ';
 
   @override
+  String get profileDeletedAccountName => '削除されたアカウント';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle => 'このアカウントは削除されました';
+
+  @override
   String get profileUserFallback => 'ユーザー';
 
   @override

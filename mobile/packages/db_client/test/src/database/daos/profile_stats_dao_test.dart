@@ -124,6 +124,27 @@ void main() {
         expect(result!.cachedAt.isAfter(before), isTrue);
         expect(result.cachedAt.isBefore(after), isTrue);
       });
+
+      test('no-ops for a pubkey that requested deletion', () async {
+        // The classic-viner seed import re-runs on every manifest bump and
+        // writes counters straight to this DAO.
+        await database.vanishedProfilesDao.markVanished(testPubkey);
+
+        await dao.upsertStats(pubkey: testPubkey, videoCount: 10);
+
+        expect(await appDbClient.getProfileStatRow(testPubkey), isNull);
+      });
+
+      test('writes resume once the vanish is cleared', () async {
+        await database.vanishedProfilesDao.markVanished(testPubkey);
+        await dao.upsertStats(pubkey: testPubkey, videoCount: 10);
+
+        await database.vanishedProfilesDao.clearVanished(testPubkey);
+        await dao.upsertStats(pubkey: testPubkey, videoCount: 20);
+
+        final result = await appDbClient.getProfileStatRow(testPubkey);
+        expect(result!.videoCount, equals(20));
+      });
     });
 
     group('getStats', () {

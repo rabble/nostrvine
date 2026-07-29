@@ -723,6 +723,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileMessageLabel => 'Mesaj';
 
   @override
+  String get profileDeletedAccountName => 'Silinmiş hesap';
+
+  @override
+  String get inboxConversationDeletedAccountSubtitle => 'Bu hesap silindi';
+
+  @override
   String get profileUserFallback => 'kullanıcı';
 
   @override

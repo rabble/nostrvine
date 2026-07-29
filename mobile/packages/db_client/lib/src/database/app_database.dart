@@ -41,6 +41,7 @@ const _notificationRetentionDays = 7;
     PendingProfileSaves,
     IdentityEvents,
     IdentityVerifications,
+    VanishedProfiles,
   ],
   daos: [
     UserProfilesDao,
@@ -67,6 +68,7 @@ const _notificationRetentionDays = 7;
     PendingProfileSavesDao,
     IdentityEventsDao,
     IdentityVerificationsDao,
+    VanishedProfilesDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -794,6 +796,26 @@ class AppDatabase extends _$AppDatabase {
           pubkey TEXT NOT NULL PRIMARY KEY,
           verified_claims_json TEXT NOT NULL,
           checked_at_floor INTEGER NOT NULL
+        )
+      ''');
+    }
+
+    // Check if vanished_profiles table exists, create if missing.
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS pattern as
+    // identity_events above. Column order/types must match Drift's
+    // m.createAll() output (pinned by the schema-parity tests in
+    // app_database_test.dart). No index: the only access is a primary-key
+    // lookup on pubkey.
+    final vanishedProfilesResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='vanished_profiles'",
+    ).get();
+
+    if (vanishedProfilesResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE vanished_profiles (
+          pubkey TEXT NOT NULL PRIMARY KEY,
+          detected_at INTEGER NOT NULL
         )
       ''');
     }

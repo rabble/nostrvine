@@ -355,6 +355,8 @@
     "profileLikesLabel": "Харесвания",
     "profileMyLibraryLabel": "Моята библиотека",
     "profileMessageLabel": "Съобщение",
+    "profileDeletedAccountName": "Изтрит акаунт",
+    "inboxConversationDeletedAccountSubtitle": "Този акаунт е изтрит",
     "profileUserFallback": "Потребител",
     "@profileUserFallback": {
         "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
