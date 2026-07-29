@@ -62,16 +62,27 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// Timescale the audio mix's ramps are laid out in.
     private static let audioMixTimescale: CMTimeScale = 600
 
-    /// [seconds] as whole [audioMixTimescale] ticks, truncated.
+    /// Half of [duration], in whole [audioMixTimescale] ticks, toward zero.
     ///
-    /// Used to bound the fade against the clip it has to fit inside twice.
-    /// `CMTimeMakeWithSeconds` documents no rounding *direction*, only that it
-    /// may round at all, so the halving is done once in ticks rather than in
-    /// seconds — a half that rounded up while the whole rounded down would put
-    /// the two fades over each other, and AVFoundation rejects overlapping
-    /// ramps with an Objective-C exception.
-    private static func ticks(_ seconds: Double) -> Int64 {
-        CMTime(seconds: seconds, preferredTimescale: audioMixTimescale).value
+    /// Bounds a fade against the clip it has to fit inside twice, so the cap
+    /// must never overstate the clip: a half that rounded up while the clip
+    /// rounded down would put the two fades over each other, and AVFoundation
+    /// rejects overlapping ramps with an Objective-C
+    /// NSInvalidArgumentException, which is not a Swift `Error` and would
+    /// abort the process.
+    ///
+    /// Converted explicitly rather than through `CMTimeMakeWithSeconds`, which
+    /// today truncates but whose rounding *direction* CMTime.h does not
+    /// specify — the header only says the result may be rounded. Taking the
+    /// exact `CMTime` the composition was built from also skips the lossy
+    /// round trip through `Double` seconds.
+    private static func halfFadeTicks(_ duration: CMTime?) -> Int64 {
+        guard let duration, duration.isNumeric, duration.value > 0 else { return 0 }
+        return CMTimeConvertScale(
+            duration,
+            timescale: audioMixTimescale,
+            method: .roundTowardZero
+        ).value / 2
     }
 
     /// AVFoundation's asset-option key for per-asset HTTP request headers.
@@ -578,17 +589,24 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         var audioMix: AVMutableAudioMix?
         if let audioTrack {
             let params = AVMutableAudioMixInputParameters(track: audioTrack)
-            // The cap keeps the two fades of a very short video apart. It is
-            // taken in whole ticks of the fade's own timescale, and [ticks]
-            // truncates, so the cap can only ever understate the clip — a
-            // fade that fits twice in the truncated length fits twice in the
-            // real one.
-            let fadeTicks = min(
-                Int64((Self.edgeDeclickFadeSeconds * Double(Self.audioMixTimescale)).rounded()),
-                Self.ticks(durations.first ?? 0) / 2,
-                Self.ticks(durations.last ?? 0) / 2
-            )
-            let fade = CMTime(value: fadeTicks, timescale: Self.audioMixTimescale)
+            // Each edge is capped by the clip it sits in, and only by that
+            // clip. Capping both by a single minimum would let one short clip
+            // at either end shorten the fade at the *other* end too — and
+            // below the ~25 ms floor described on [edgeDeclickFadeSeconds] a
+            // ramp is stretched and never reaches zero, so the edge that did
+            // not need shortening would silently stop declicking.
+            //
+            // [halfFadeTicks] rounds toward zero, so each cap can only ever
+            // understate its clip — a fade that fits twice in the truncated
+            // length fits twice in the real one. Each cap is half its own
+            // clip, so on a single clip the two fades still cannot meet, and
+            // on several they sit in different clips entirely.
+            let maxFadeTicks =
+                Int64((Self.edgeDeclickFadeSeconds * Double(Self.audioMixTimescale)).rounded())
+            let fadeInTicks = min(maxFadeTicks, Self.halfFadeTicks(scaledDurations.first))
+            let fadeOutTicks = min(maxFadeTicks, Self.halfFadeTicks(scaledDurations.last))
+            let fadeIn = CMTime(value: fadeInTicks, timescale: Self.audioMixTimescale)
+            let fadeOut = CMTime(value: fadeOutTicks, timescale: Self.audioMixTimescale)
             let lastIndex = scaledDurations.count - 1
             var t = CMTime.zero
             for (i, clipDuration) in scaledDurations.enumerated() {
@@ -599,16 +617,16 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 let vol = clipVolumes[i]
                 var flatStart = t
                 var flatEnd = clipEnd
-                if i == 0, fadeTicks > 0 {
-                    flatStart = CMTimeAdd(t, fade)
+                if i == 0, fadeInTicks > 0 {
+                    flatStart = CMTimeAdd(t, fadeIn)
                     params.setVolumeRamp(
                         fromStartVolume: 0,
                         toEndVolume: vol,
                         timeRange: CMTimeRange(start: t, end: flatStart)
                     )
                 }
-                if i == lastIndex, fadeTicks > 0 {
-                    flatEnd = CMTimeSubtract(clipEnd, fade)
+                if i == lastIndex, fadeOutTicks > 0 {
+                    flatEnd = CMTimeSubtract(clipEnd, fadeOut)
                 }
                 if CMTimeCompare(flatEnd, flatStart) > 0 {
                     params.setVolumeRamp(
@@ -617,7 +635,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                         timeRange: CMTimeRange(start: flatStart, end: flatEnd)
                     )
                 }
-                if i == lastIndex, fadeTicks > 0 {
+                if i == lastIndex, fadeOutTicks > 0 {
                     params.setVolumeRamp(
                         fromStartVolume: vol,
                         toEndVolume: 0,

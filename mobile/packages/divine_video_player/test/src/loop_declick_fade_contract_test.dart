@@ -22,8 +22,8 @@ void main() {
         source,
         matches(
           RegExp(
-            r'if i == 0, fadeTicks > 0 \{[\s\S]{0,120}?'
-            r'flatStart = CMTimeAdd\(t, fade\)[\s\S]{0,120}?'
+            r'if i == 0, fadeInTicks > 0 \{[\s\S]{0,120}?'
+            r'flatStart = CMTimeAdd\(t, fadeIn\)[\s\S]{0,120}?'
             r'params\.setVolumeRamp\([\s\S]{0,120}?'
             r'fromStartVolume: 0,\s*toEndVolume: vol,',
           ),
@@ -38,14 +38,15 @@ void main() {
         source,
         matches(
           RegExp(
-            r'if i == lastIndex, fadeTicks > 0 \{[\s\S]{0,120}?'
-            r'params\.setVolumeRamp\([\s\S]{0,120}?'
-            r'fromStartVolume: vol,\s*toEndVolume: 0,',
+            r'params\.setVolumeRamp\([\s\S]{0,80}?'
+            r'fromStartVolume: vol,\s*toEndVolume: 0,\s*'
+            r'timeRange: CMTimeRange\(start: flatEnd, end: clipEnd\)',
           ),
         ),
         reason:
-            'The last clip carries the fade out; fading only the start '
-            'still leaves the step at the join.',
+            'The last clip carries the fade out, and it has to land on the '
+            "composition's own end; fading only the start still leaves the "
+            'step at the join.',
       );
       expect(
         source,
@@ -132,19 +133,38 @@ void main() {
       );
       expect(
         source,
-        matches(
-          RegExp(
-            r'let fadeTicks = min\([\s\S]{0,200}?'
-            r'Self\.ticks\(durations\.first \?\? 0\) / 2,\s*'
-            r'Self\.ticks\(durations\.last \?\? 0\) / 2',
-          ),
+        contains(
+          'let fadeInTicks = min(maxFadeTicks, '
+          'Self.halfFadeTicks(scaledDurations.first))',
         ),
         reason:
             'A video shorter than the two fades combined must get shorter '
-            'ones. CMTimeMakeWithSeconds documents no rounding direction, so '
-            'the halving is done once in whole ticks — a half that rounded up '
-            'while the whole rounded down would put the two fades over each '
-            'other, and AVFoundation rejects overlapping ramps.',
+            'ones, capped by the clip each fade sits in. Capping both by one '
+            'minimum lets a short clip at either end shorten the fade at the '
+            'other — and under the ~25 ms floor AVFoundation stretches the '
+            'ramp so it never reaches zero, silently un-fixing that edge.',
+      );
+      expect(
+        source,
+        contains(
+          'let fadeOutTicks = min(maxFadeTicks, '
+          'Self.halfFadeTicks(scaledDurations.last))',
+        ),
+        reason:
+            'The fade out is capped by the last clip, and by the exact CMTime '
+            'the composition was built from rather than a Double round trip.',
+      );
+      expect(
+        source,
+        contains('method: .roundTowardZero'),
+        reason:
+            'The no-overlap proof rests on the cap understating its clip. '
+            'CMTime.h does not specify which direction CMTimeMakeWithSeconds '
+            'rounds, so the conversion names the direction rather than '
+            'relying on the behaviour that happens to ship — a half that '
+            'rounded up while the clip rounded down would put the two fades '
+            'over each other, and AVFoundation rejects overlapping ramps '
+            'with an Objective-C exception that aborts the process.',
       );
     });
   });
