@@ -17,6 +17,7 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/provider_identity_stream.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -613,6 +614,22 @@ DraftStorageService draftStorageService(Ref ref) {
     ownerPubkey: ownerPubkey,
   );
 }
+
+/// Successive [DraftStorageService] instances, for the app-shell
+/// `BackgroundPublishBloc` that is constructed once and can never re-read
+/// [draftStorageServiceProvider] itself (#6480).
+///
+/// [draftStorageServiceProvider] bakes `ownerPubkey` into the instance and
+/// rebuilds on every account change, so a bloc that captured one keeps writing
+/// drafts under the previous owner.
+///
+/// Re-pointing only fixes where *future* work is written. Refusing work that
+/// belongs to the leaving account stays the job of the owner-scoped draft
+/// queries and the `PublishErrorKind.accountChanged` guard — the two compose,
+/// and neither may be relaxed on the strength of this stream.
+final Provider<Stream<DraftStorageService>>
+draftStorageServiceIdentityStreamProvider =
+    identityStreamOf<DraftStorageService>(draftStorageServiceProvider);
 
 /// Clip library service for persisting individual video clips
 @riverpod

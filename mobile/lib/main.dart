@@ -2791,6 +2791,11 @@ class _DivineAppState extends ConsumerState<DivineApp>
               create: (_) => BackgroundPublishBloc(
                 videoPublishServiceFactory: createPublishService,
                 draftStorageService: ref.read(draftStorageServiceProvider),
+                // draftStorageServiceProvider bakes ownerPubkey in and rebuilds
+                // on every account change, but this create runs once (#6480).
+                draftStorageStream: ref.read(
+                  draftStorageServiceIdentityStreamProvider,
+                ),
                 foregroundSession: ref.read(publishForegroundSessionProvider),
               ),
             ),
@@ -2840,6 +2845,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
                       .distinct();
                   return PeopleListsBloc(
                     repository: ref.read(peopleListsRepositoryProvider),
+                    // peopleListsRepositoryProvider is keepAlive but not
+                    // identity-stable: it watches nostrServiceProvider, which
+                    // disposes its client on every identity change. This create
+                    // runs once, so the bloc subscribes to the successive
+                    // instances rather than keeping its capture (#6480).
+                    repositoryStream: ref.read(
+                      peopleListsRepositoryIdentityStreamProvider,
+                    ),
                     ownerPubkeyStream: ownerPubkeyStream,
                     initialOwnerPubkey: authService.currentPublicKeyHex,
                   )..add(const PeopleListsStarted());

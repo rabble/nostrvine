@@ -17,6 +17,23 @@ class PeopleListsStarted extends PeopleListsEvent {
   const PeopleListsStarted();
 }
 
+/// Internal event emitted when the injected repository stream hands over a
+/// new [PeopleListsRepository] instance.
+///
+/// The app-shell provider rebuilds its repository on every identity change and
+/// the old one's `NostrClient` is disposed, so the bloc must re-point rather
+/// than keep its constructor-time capture (#6480).
+class PeopleListsRepositoryChanged extends PeopleListsEvent {
+  /// Creates a repository-change event.
+  const PeopleListsRepositoryChanged({required this.repository});
+
+  /// The repository instance the bloc should use from now on.
+  final PeopleListsRepository repository;
+
+  @override
+  List<Object?> get props => [repository];
+}
+
 /// Internal event emitted when the owner pubkey stream changes.
 class PeopleListsOwnerChanged extends PeopleListsEvent {
   /// Creates an owner-change event.

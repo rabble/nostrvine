@@ -31,6 +31,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/official_accounts_providers.dart';
+import 'package:openvine/providers/provider_identity_stream.dart';
 import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -467,6 +468,20 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
     blockFilter: createBlockedAuthorFilter(ref),
   );
 }
+
+/// Successive [PeopleListsRepository] instances, for the app-shell
+/// `PeopleListsBloc` that is constructed once and can never re-read
+/// [peopleListsRepositoryProvider] itself (#6480).
+///
+/// [peopleListsRepositoryProvider] is `keepAlive` but **not identity-stable**:
+/// it watches [nostrServiceProvider], which disposes its [NostrClient] and
+/// builds a new one on every identity change. A repository bound to the
+/// disposed client is not merely stale — `queryEvents` returns an empty list
+/// and `publishEvent` returns `PublishFailed`, so `syncOwner` silently stops
+/// pulling the new owner's lists and every mutation fails.
+final Provider<Stream<PeopleListsRepository>>
+peopleListsRepositoryIdentityStreamProvider =
+    identityStreamOf<PeopleListsRepository>(peopleListsRepositoryProvider);
 
 /// Bookmark service for NIP-51 bookmarks
 @riverpod

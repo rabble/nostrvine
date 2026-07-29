@@ -54,13 +54,19 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   PeopleListsBloc({
     required PeopleListsRepository repository,
     required Stream<String?> ownerPubkeyStream,
+    Stream<PeopleListsRepository>? repositoryStream,
     String? initialOwnerPubkey,
     PeopleListsClock? clock,
   }) : _repository = repository,
        _ownerPubkeyStream = ownerPubkeyStream,
+       _repositoryStream = repositoryStream,
        _clock = clock ?? _defaultClock,
        super(PeopleListsState(ownerPubkey: initialOwnerPubkey)) {
     on<PeopleListsStarted>(_onStarted);
+    on<PeopleListsRepositoryChanged>(
+      _onRepositoryChanged,
+      transformer: sequential(),
+    );
     on<PeopleListsOwnerChanged>(_onOwnerChanged, transformer: sequential());
     on<PeopleListsRepositoryListsChanged>(_onRepositoryListsChanged);
     on<PeopleListsCreateRequested>(
@@ -87,17 +93,28 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
 
-  final PeopleListsRepository _repository;
+  /// The repository the bloc currently operates on.
+  ///
+  /// Mutable by design. `state_management.md` bans mutable bloc fields for
+  /// *state*, but an injected dependency is configuration, and this one has to
+  /// be swappable: the app-shell `BlocProvider.create:` runs once while the
+  /// underlying provider rebuilds on every identity change.
+  /// `NotificationBadgeCubit` carries the same mutable-dependency shape for
+  /// the same reason.
+  PeopleListsRepository _repository;
   final Stream<String?> _ownerPubkeyStream;
+  final Stream<PeopleListsRepository>? _repositoryStream;
   final PeopleListsClock _clock;
 
   StreamSubscription<String?>? _ownerSubscription;
   StreamSubscription<List<UserList>>? _listsSubscription;
+  StreamSubscription<PeopleListsRepository>? _repositorySubscription;
 
   @override
   Future<void> close() async {
     await _ownerSubscription?.cancel();
     await _listsSubscription?.cancel();
+    await _repositorySubscription?.cancel();
     return super.close();
   }
 
@@ -117,10 +134,65 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       },
     );
 
+    await _repositorySubscription?.cancel();
+    _repositorySubscription = _repositoryStream?.listen(
+      (repository) => add(PeopleListsRepositoryChanged(repository: repository)),
+      onError: (Object error, StackTrace stackTrace) {
+        addError(error, stackTrace);
+      },
+    );
+
     final currentOwner = state.ownerPubkey;
     if (currentOwner != null && currentOwner.isNotEmpty) {
       add(PeopleListsOwnerChanged(ownerPubkey: currentOwner));
     }
+  }
+
+  /// Re-points the bloc at a freshly built repository.
+  ///
+  /// Deliberately does not emit [PeopleListsStatus.loading] and does not clear
+  /// [PeopleListsState.lists]: the swap fires on every cold-start auth flip,
+  /// and blanking the state would flicker `PeopleListMembershipIndicator` on
+  /// every profile header. The re-opened `watchLists` subscription re-emits the
+  /// current snapshot immediately from the shared cache.
+  void _onRepositoryChanged(
+    PeopleListsRepositoryChanged event,
+    Emitter<PeopleListsState> emit,
+  ) {
+    if (identical(_repository, event.repository)) return;
+    _repository = event.repository;
+
+    final owner = state.ownerPubkey;
+    if (owner == null || owner.isEmpty) return;
+
+    // Not awaited: cancel() stops event delivery to this listener
+    // synchronously; its future only reports resource cleanup. Awaiting it
+    // would stall the sequential() queue behind something no later step
+    // depends on.
+    unawaited(_listsSubscription?.cancel());
+    _listsSubscription = _watchOwner(owner);
+
+    // The reason this event exists. On the old repository this call reached a
+    // disposed NostrClient, whose queryEvents returns an empty list, so the
+    // owner's lists silently stopped syncing from relays.
+    unawaited(_repository.syncOwner(ownerPubkey: owner));
+  }
+
+  /// Subscribes to [ownerPubkey]'s lists on the current repository.
+  StreamSubscription<List<UserList>> _watchOwner(String ownerPubkey) {
+    return _repository
+        .watchLists(ownerPubkey: ownerPubkey)
+        .listen(
+          (lists) => add(
+            PeopleListsRepositoryListsChanged(
+              ownerPubkey: ownerPubkey,
+              lists: lists,
+            ),
+          ),
+          onError: (Object error, StackTrace stackTrace) {
+            addError(error, stackTrace);
+          },
+        );
   }
 
   Future<void> _onOwnerChanged(
@@ -148,19 +220,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       ),
     );
 
-    _listsSubscription = _repository
-        .watchLists(ownerPubkey: newOwner)
-        .listen(
-          (lists) => add(
-            PeopleListsRepositoryListsChanged(
-              ownerPubkey: newOwner,
-              lists: lists,
-            ),
-          ),
-          onError: (Object error, StackTrace stackTrace) {
-            addError(error, stackTrace);
-          },
-        );
+    _listsSubscription = _watchOwner(newOwner);
 
     unawaited(_repository.syncOwner(ownerPubkey: newOwner));
   }

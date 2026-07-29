@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,11 +21,18 @@ class BackgroundPublishBloc
     })
     videoPublishServiceFactory,
     required DraftStorageService draftStorageService,
+    Stream<DraftStorageService>? draftStorageStream,
     PublishForegroundSession? foregroundSession,
   }) : _videoPublishServiceFactory = videoPublishServiceFactory,
        _draftStorageService = draftStorageService,
        _foregroundSession = foregroundSession,
        super(const BackgroundPublishState()) {
+    _draftStorageSubscription = draftStorageStream?.listen(
+      (service) => _draftStorageService = service,
+      onError: (Object error, StackTrace stackTrace) {
+        addError(error, stackTrace);
+      },
+    );
     on<BackgroundPublishRequested>(
       _onBackgroundPublishRequested,
       transformer: sequential(),
@@ -39,12 +48,32 @@ class BackgroundPublishBloc
   })
   _videoPublishServiceFactory;
 
-  final DraftStorageService _draftStorageService;
+  /// The draft store the bloc currently writes through.
+  ///
+  /// Mutable by design: `draftStorageServiceProvider` bakes `ownerPubkey` into
+  /// the instance and rebuilds on every account change, while this bloc's
+  /// app-shell `BlocProvider.create:` runs once. Without the swap the bloc
+  /// keeps writing drafts under the previous owner (#6480).
+  ///
+  /// The swap only decides where *future* work is written. Refusing work that
+  /// belongs to the leaving account remains the job of the owner-scoped draft
+  /// queries and the `PublishErrorKind.accountChanged` guard in
+  /// `VideoPublishService` — this must not be treated as a reason to relax
+  /// either of them.
+  DraftStorageService _draftStorageService;
+
+  StreamSubscription<DraftStorageService>? _draftStorageSubscription;
 
   /// Keeps the process foregrounded for the whole publish so the in-process
   /// steps after the OS-backed upload (signing, relay broadcast) survive app
   /// suspension. Null disables the behaviour (e.g. in tests).
   final PublishForegroundSession? _foregroundSession;
+
+  @override
+  Future<void> close() async {
+    await _draftStorageSubscription?.cancel();
+    return super.close();
+  }
 
   Future<void> _onBackgroundPublishRequested(
     BackgroundPublishRequested event,
