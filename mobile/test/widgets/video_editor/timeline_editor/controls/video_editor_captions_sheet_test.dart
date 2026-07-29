@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for the captions editor bottom sheet.
 // ABOUTME: Covers generation states, cue editing, and the confirm result.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -35,8 +36,10 @@ void main() {
     bool burnIn = false,
     List<CaptionCue>? initialCues,
     void Function(CaptionsEditorResult?)? onResult,
+    ThemeData? theme,
   }) {
     return MaterialApp(
+      theme: theme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Builder(
@@ -224,6 +227,45 @@ void main() {
           clips: any(named: 'clips'),
           localeIdentifier: any(named: 'localeIdentifier'),
         ),
+      );
+    });
+
+    testWidgets('cue chrome follows the light palette', (tester) async {
+      await tester.pumpWidget(
+        buildHost(
+          theme: VineTheme.lightTheme,
+          initialCues: const [
+            CaptionCue(
+              id: 'cue-0',
+              text: 'Existing.',
+              start: Duration.zero,
+              end: Duration(seconds: 1),
+            ),
+          ],
+        ),
+      );
+      await open(tester);
+
+      // The sheet body is `lightColors.surface` (#FFFFFF). A cue timestamp
+      // or input surface still pinned to its dark constant renders at
+      // 1.92:1 / 1.09:1 against it — readable only in dark mode.
+      final timestamp = tester.widget<Text>(find.text('0.0s'));
+      expect(
+        timestamp.style?.color,
+        equals(VineTheme.lightColors.secondaryText),
+      );
+
+      final inputSurface = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: find.byType(DivineTextField),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      expect(
+        (inputSurface.decoration as BoxDecoration).color,
+        equals(VineTheme.lightColors.containerLow),
       );
     });
   });
