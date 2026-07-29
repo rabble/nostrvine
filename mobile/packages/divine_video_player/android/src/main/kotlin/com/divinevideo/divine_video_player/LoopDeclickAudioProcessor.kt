@@ -126,6 +126,10 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
         if (!sawInputSinceAnchor) {
             return
         }
+        // Retiring the offset is the load-bearing part. Re-anchoring here is a
+        // fallback: media3 1.10 always flushes between this call and the next
+        // [queueInput], and [onFlush] recomputes both fields — but a version
+        // that stopped doing so would otherwise fade in mid-video.
         anchorFrames = readFrames
         nextStreamStartUs = 0
         sawInputSinceAnchor = false

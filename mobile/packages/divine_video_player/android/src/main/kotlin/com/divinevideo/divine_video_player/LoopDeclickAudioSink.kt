@@ -15,13 +15,15 @@ import androidx.media3.exoplayer.audio.ForwardingAudioSink
  * *before* the first buffer of the next one, so the anchor lands exactly on
  * the join.
  *
- * In media3 1.10 the sink then flushes the pipeline itself before that first
- * buffer — `handleDiscontinuity` sets `startMediaTimeUsNeedsSync`, and the
- * resync drains and re-runs `setupAudioProcessors` — which happens to reset
- * the frame counter to the same place. Two jobs are still left that the flush
- * cannot do, and both are load-bearing: it is the only point that can tell a
- * loop restart from a seek, so it is where the seek offset is retired and
- * where the true length of the loop that just played is measured.
+ * In media3 1.10 the sink then handles the rest itself before that first
+ * buffer: `handleDiscontinuity` sets `startMediaTimeUsNeedsSync`, and the next
+ * `handleBuffer` runs `drainToEndOfStream()` — which is what releases the
+ * held-back tail, faded — and then `setupAudioProcessors()`, which flushes the
+ * pipeline and re-anchors the frame counter.
+ *
+ * One job is left that the flush cannot do, and it is load-bearing: this is
+ * the only point that can tell a loop restart from a seek, so it is where the
+ * seek offset is retired.
  */
 @UnstableApi
 internal class LoopDeclickAudioSink(

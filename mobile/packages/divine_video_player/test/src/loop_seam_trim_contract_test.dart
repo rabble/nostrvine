@@ -91,7 +91,7 @@ void main() {
       );
     });
 
-    test('Android probes local files only', () {
+    test('Android probes remote sources too, off the platform thread', () {
       final source = _androidSourceFile().readAsStringSync();
 
       expect(
@@ -103,10 +103,33 @@ void main() {
       );
       expect(
         source,
-        contains(RegExp(r'uri\.startsWith\("file://"\)')),
+        contains(RegExp(r'uri\.startsWith\("https://"\)')),
         reason:
-            'Probing a remote source would block playback start on a network '
-            'round trip, so only local files may be read.',
+            'Remote clips are the ones the feed loops. Probing local files '
+            'only left every https source ending at the container duration, '
+            'so 46% of feed videos replayed a frozen last frame at every '
+            'loop restart on Android while iOS looped cleanly.',
+      );
+      expect(
+        source,
+        contains('metadataExecutor.execute'),
+        reason:
+            'The probe blocks on I/O, so it may never run on the platform '
+            'thread — which is why it used to be skipped for remote sources.',
+      );
+      expect(
+        source,
+        matches(
+          RegExp(
+            r'mainHandler\.postDelayed\(\s*deferredSetClipsTimeout,\s*'
+            'TRACK_DURATION_RESOLVE_TIMEOUT_MS',
+          ),
+        ),
+        reason:
+            'MediaHTTPConnection sets a connect timeout and no read timeout, '
+            'so a host that stalls mid-response would hold `await setClips()` '
+            'open forever. The wait has to be bounded, and expiring it plays '
+            'unclamped rather than not at all.',
       );
     });
   });
