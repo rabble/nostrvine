@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
@@ -12,6 +13,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const proofModeChannel = MethodChannel('org.openvine/proofmode');
+  const attestationChannel = MethodChannel('app_attestation');
   const proofHash =
       'bfe97053586981c5d2373625c3ee921d8af88c79fca442e189a82230d99bdc78';
 
@@ -260,6 +262,100 @@ void main() {
       expect(proofData!.c2paManifestId, 'urn:c2pa:generated');
       expect(c2paService.signVideoCallCount, 1);
       expect(c2paService.readManifestCallCount, 1);
+    });
+  });
+
+  group('proofFile iOS device attestation', () {
+    late Directory directory;
+    late File video;
+    late Directory proofDir;
+
+    const generatedProofHash =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+    setUp(() async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+      directory = await Directory.systemTemp.createTemp(
+        'native-proofmode-attest-test-',
+      );
+      video = File('${directory.path}/video.mp4');
+      await video.writeAsBytes(const [1, 2, 3, 4]);
+
+      proofDir = Directory('${directory.path}/$generatedProofHash');
+      await proofDir.create();
+      await File(
+        '${proofDir.path}/$generatedProofHash.asc',
+      ).writeAsString('signature');
+
+      NativeProofModeService.c2paSigningServiceFactoryOverride = () =>
+          _SuccessfulC2paSigningService(video.path);
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(proofModeChannel, (call) async {
+            switch (call.method) {
+              case 'isAvailable':
+                return true;
+              case 'getProofDir':
+                final args = call.arguments as Map<Object?, Object?>;
+                return args['proofHash'] == generatedProofHash
+                    ? proofDir.path
+                    : null;
+              case 'generateProof':
+                return generatedProofHash;
+              default:
+                fail('Unexpected proof mode method call: ${call.method}');
+            }
+          });
+    });
+
+    tearDown(() async {
+      debugDefaultTargetPlatformOverride = null;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(attestationChannel, null);
+      if (directory.existsSync()) {
+        await directory.delete(recursive: true);
+      }
+    });
+
+    test(
+      'persists the attestation token before reading proof metadata',
+      () async {
+        const token = '{"keyID":"k1","attestationString":"a1"}';
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              attestationChannel,
+              (call) async => token,
+            );
+
+        final proofData = await NativeProofModeService.proofFile(video);
+
+        expect(proofData, isNotNull);
+        expect(proofData!.deviceAttestation, token);
+        expect(
+          File(
+            '${proofDir.path}/$generatedProofHash.attest',
+          ).readAsStringSync(),
+          token,
+        );
+      },
+    );
+
+    test('keeps the proof when App Attest is unavailable', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(attestationChannel, (call) async {
+            throw PlatformException(code: '-4', message: 'Attestation failed');
+          });
+
+      final proofData = await NativeProofModeService.proofFile(video);
+
+      expect(proofData, isNotNull);
+      expect(proofData!.videoHash, generatedProofHash);
+      expect(proofData.deviceAttestation, isNull);
+      expect(
+        _latestLogContaining('Device attestation unavailable'),
+        isNotNull,
+      );
     });
   });
 }

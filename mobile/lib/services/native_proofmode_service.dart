@@ -233,17 +233,7 @@ class NativeProofModeService {
 
       //add iOS specific device attestation
       if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        final appAttestationPlugin = AppDeviceIntegrity();
-        final tokenReceived = await appAttestationPlugin
-            .getAttestationServiceSupport(challengeString: proofHash);
-        if (tokenReceived != null) {
-          final String? proofDir = await _channel.invokeMethod('getProofDir', {
-            'proofHash': proofHash,
-          });
-
-          final deviceAttestation = File('$proofDir/$proofHash.attest');
-          deviceAttestation.writeAsString(tokenReceived);
-        }
+        await _writeIosDeviceAttestation(proofHash);
       }
 
       // Read proof metadata from native library
@@ -295,6 +285,39 @@ class NativeProofModeService {
         category: .video,
       );
       return null;
+    }
+  }
+
+  /// Writes the iOS App Attest token for [proofHash] into its proof directory.
+  ///
+  /// App Attest needs Apple's attestation servers on first use, so it fails on
+  /// the Simulator, offline, and whenever Apple throttles the app. None of that
+  /// invalidates the proof itself — the PGP signature and C2PA manifest stand on
+  /// their own — so a failure here only drops the `device_attestation` field
+  /// instead of discarding the whole proof.
+  static Future<void> _writeIosDeviceAttestation(String proofHash) async {
+    try {
+      final tokenReceived = await AppDeviceIntegrity()
+          .getAttestationServiceSupport(challengeString: proofHash);
+      if (tokenReceived == null) return;
+
+      final proofDir = await getProofDir(proofHash);
+      if (proofDir == null) {
+        Log.warning(
+          '🔐 No proof directory to store device attestation',
+          name: 'NativeProofMode',
+          category: LogCategory.system,
+        );
+        return;
+      }
+
+      await File('$proofDir/$proofHash.attest').writeAsString(tokenReceived);
+    } catch (e) {
+      Log.warning(
+        '🔐 Device attestation unavailable, continuing without it: $e',
+        name: 'NativeProofMode',
+        category: LogCategory.system,
+      );
     }
   }
 

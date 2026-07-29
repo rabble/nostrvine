@@ -529,10 +529,13 @@ See `docs/MANUAL_TEST_VIDEO_UPLOAD.md` for manual upload verification procedures
 - Non-blocking (async)
 
 **Device Attestation**:
-- iOS App Attest: ~100-200ms
+- iOS App Attest: one network round trip to Apple on first use (`generateKey` +
+  `attestKey`, both rate limited), then local `generateAssertion` per proof. The
+  key id and attestation object are cached in `UserDefaults` for the lifetime of
+  the install.
 - Android Play Integrity: ~200-500ms
-- Done once at session start
-- Cached for session duration
+- A failed attestation degrades the proof to no `device_attestation` field; it
+  never discards the PGP signature or C2PA manifest.
 
 ## Future Enhancements
 

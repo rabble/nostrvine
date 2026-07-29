@@ -2,16 +2,49 @@ import CryptoKit
 import DeviceCheck
 import Foundation
 
+/// App Attest wrapper that provisions one Secure Enclave key per install and
+/// answers every later challenge with a local assertion.
+///
+/// `DCAppAttestService.generateKey` and `attestKey` are network round trips to
+/// Apple's attestation servers and Apple rate limits them, so both run only on
+/// first use. The key identifier and attestation object are cached in
+/// `UserDefaults`, which is wiped on uninstall — the same lifetime as the
+/// Secure Enclave key itself, so a stale identifier can never outlive its key.
+/// Subsequent challenges go through `generateAssertion`, which stays on device.
 @available(iOS 14.0, *)
 final class AppDeviceIntegrity {
+    /// A provisioned App Attest key plus the attestation object Apple issued
+    /// for it. `isFresh` marks the credential Apple minted during this call —
+    /// its attestation already binds the current challenge, so no separate
+    /// assertion is needed.
+    private struct Credential {
+        let keyID: String
+        let attestation: String
+        let isFresh: Bool
+    }
+
+    private enum StorageKey {
+        static let keyID = "AppAttestKeyIdentifier"
+        static let attestation = "AppAttestAttestationObject"
+    }
+
     let inputString: String
     var attestationString: String?
-    private let keyName = "AppAttestKeyIdentifier"
+    var assertionString: String?
+
     private let attestService = DCAppAttestService.shared
+    private let defaults: UserDefaults
     private var keyID: String?
 
-    init?(challengeString: String) {
+    /// Guards provisioning so concurrent challenges share one key instead of
+    /// racing `generateKey` and burning Apple's rate limit.
+    private static let lock = NSLock()
+    private static var isProvisioning = false
+    private static var pendingProvisioning: [(Credential?) -> Void] = []
+
+    init?(challengeString: String, defaults: UserDefaults = .standard) {
         self.inputString = challengeString
+        self.defaults = defaults
 
         guard attestService.isSupported else {
             print("[!] Attest service not available")
@@ -19,60 +52,190 @@ final class AppDeviceIntegrity {
         }
     }
 
-    func generateKeyAndAttest(completion: @escaping (Bool) -> Void) {
-        attestService.generateKey { [weak self] keyIdentifier, error in
-            guard let self = self else { return }
+    func keyIdentifier() -> String {
+        keyID ?? defaults.string(forKey: StorageKey.keyID) ?? "Error in Key ID"
+    }
 
+    private var challengeHash: Data {
+        Data(SHA256.hash(data: Data(inputString.utf8)))
+    }
+
+    func generateKeyAndAttest(completion: @escaping (Bool) -> Void) {
+        resolveCredential(forceRefresh: false) { [weak self] credential in
+            guard let self = self, let credential = credential else {
+                completion(false)
+                return
+            }
+            self.bind(credential, allowReprovision: true, completion: completion)
+        }
+    }
+
+    /// Ties [credential] to the current challenge, re-provisioning once if the
+    /// cached key turns out to be dead.
+    private func bind(
+        _ credential: Credential,
+        allowReprovision: Bool,
+        completion: @escaping (Bool) -> Void
+    ) {
+        keyID = credential.keyID
+        attestationString = credential.attestation
+
+        if credential.isFresh {
+            completion(true)
+            return
+        }
+
+        makeAssertion(keyID: credential.keyID) { [weak self] assertion, errorCode in
+            guard let self = self else {
+                completion(false)
+                return
+            }
+
+            if let assertion = assertion {
+                self.assertionString = assertion
+                completion(true)
+                return
+            }
+
+            // Anything but a dead key is a transient failure; re-provisioning
+            // would only spend another rate-limited key generation.
+            guard allowReprovision, errorCode == .invalidKey else {
+                completion(false)
+                return
+            }
+
+            print("App Attest key no longer valid, re-provisioning")
+            self.resolveCredential(forceRefresh: true) { refreshed in
+                guard let refreshed = refreshed else {
+                    completion(false)
+                    return
+                }
+                self.bind(refreshed, allowReprovision: false, completion: completion)
+            }
+        }
+    }
+
+    private func makeAssertion(
+        keyID: String,
+        completion: @escaping (String?, DCError.Code?) -> Void
+    ) {
+        attestService.generateAssertion(keyID, clientDataHash: challengeHash) { assertion, error in
+            if let error = error {
+                print("Assertion error: \(error.localizedDescription)")
+                completion(nil, (error as? DCError)?.code)
+                return
+            }
+
+            guard let assertion = assertion else {
+                print("No assertion object received")
+                completion(nil, nil)
+                return
+            }
+
+            completion(assertion.base64EncodedString(), nil)
+        }
+    }
+
+    private func resolveCredential(
+        forceRefresh: Bool,
+        completion: @escaping (Credential?) -> Void
+    ) {
+        Self.lock.lock()
+
+        if forceRefresh {
+            defaults.removeObject(forKey: StorageKey.keyID)
+            defaults.removeObject(forKey: StorageKey.attestation)
+        } else if let keyID = defaults.string(forKey: StorageKey.keyID),
+                  let attestation = defaults.string(forKey: StorageKey.attestation) {
+            Self.lock.unlock()
+            completion(Credential(keyID: keyID, attestation: attestation, isFresh: false))
+            return
+        }
+
+        Self.pendingProvisioning.append(completion)
+
+        if Self.isProvisioning {
+            Self.lock.unlock()
+            return
+        }
+
+        Self.isProvisioning = true
+        Self.lock.unlock()
+
+        provision { credential in
+            self.finishProvisioning(with: credential)
+        }
+    }
+
+    private func provision(completion: @escaping (Credential?) -> Void) {
+        // Captured strongly on purpose: a provisioning round must reach
+        // `finishProvisioning` to release the queued challenges, even if the
+        // instance that started it is already gone.
+        attestService.generateKey { keyIdentifier, error in
             if let error = error {
                 print("Key generation error: \(error.localizedDescription)")
-                completion(false)
+                completion(nil)
                 return
             }
 
             guard let keyIdentifier = keyIdentifier else {
                 print("Failed to generate key identifier")
-                completion(false)
+                completion(nil)
                 return
             }
 
-            self.keyID = keyIdentifier
-            self.preAttestation(completion: completion)
+            self.attestService.attestKey(keyIdentifier, clientDataHash: self.challengeHash) { attestation, error in
+                if let error = error {
+                    print("Attestation error: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
+
+                guard let attestation = attestation else {
+                    print("No attestation object received")
+                    completion(nil)
+                    return
+                }
+
+                completion(
+                    Credential(
+                        keyID: keyIdentifier,
+                        attestation: attestation.base64EncodedString(),
+                        isFresh: true
+                    )
+                )
+            }
         }
     }
 
-    func keyIdentifier() -> String {
-        return ("\(self.keyID ?? "Error in Key ID")")
-    }
+    private func finishProvisioning(with credential: Credential?) {
+        Self.lock.lock()
 
-    // Pre-attestation process
-    private func preAttestation(completion: @escaping (Bool) -> Void) {
-        guard let keyID = self.keyID else {
-            print("No key ID available for attestation")
-            completion(false)
-            return
+        if let credential = credential {
+            defaults.set(credential.keyID, forKey: StorageKey.keyID)
+            defaults.set(credential.attestation, forKey: StorageKey.attestation)
         }
 
-        let challenge = Data(self.inputString.utf8)
-        let hash = Data(SHA256.hash(data: challenge))
+        Self.isProvisioning = false
+        let waiting = Self.pendingProvisioning
+        Self.pendingProvisioning = []
+        Self.lock.unlock()
 
-        attestService.attestKey(keyID, clientDataHash: hash) { [weak self] attestation, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("Attestation error: \(error.localizedDescription)")
-                completion(false)
-                return
+        // Only the caller that triggered provisioning gets the fresh-attestation
+        // shortcut; the queued challenges were not bound by Apple's attestation
+        // and must sign themselves with an assertion.
+        for (index, callback) in waiting.enumerated() {
+            guard let credential = credential else {
+                callback(nil)
+                continue
             }
-
-            guard let attestationObject = attestation else {
-                print("No attestation object received")
-                completion(false)
-                return
-            }
-
-            self.attestationString = attestationObject.base64EncodedString()
-            print("Attestation successful")
-            completion(true)
+            callback(
+                Credential(
+                    keyID: credential.keyID,
+                    attestation: credential.attestation,
+                    isFresh: index == 0
+                )
+            )
         }
     }
 }

@@ -37,11 +37,17 @@ public class AppDeviceIntegrityPlugin: NSObject, FlutterPlugin {
                     // several KB of base64.
                     let payload: Any
                     if success {
-                        // Attestation successful, return the attestationString
-                        let attestationResult = [
+                        // The attestation proves the key came from a genuine
+                        // Apple device; the assertion — present on every
+                        // challenge after the key was provisioned — proves this
+                        // specific challenge was signed by that key.
+                        var attestationResult = [
                             "attestationString": deviceIntegrity.attestationString ?? "",
                             "keyID": deviceIntegrity.keyIdentifier()
                         ]
+                        if let assertion = deviceIntegrity.assertionString {
+                            attestationResult["assertionString"] = assertion
+                        }
 
                         do {
                             let jsonData = try JSONEncoder().encode(attestationResult)
