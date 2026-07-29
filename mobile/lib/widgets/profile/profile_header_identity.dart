@@ -54,7 +54,9 @@ class _ProfileNameAndBio extends StatelessWidget {
                 // generated handle, which is exactly what must not appear.
                 Text(
                   context.l10n.profileDeletedAccountName,
-                  style: VineTheme.titleLargeFont(),
+                  style: VineTheme.titleLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 )
               else if (profile != null)
                 UserName.fromUserProfile(
