@@ -40,10 +40,25 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// A loop restart cuts from the composition's last sample straight back to
     /// its first, and that cut has never been tied to a zero crossing — it
     /// comes from a trim or a recording length. Unless both edges happen to
-    /// sit near silence the step is audible as a click. Ten milliseconds is
-    /// long enough to remove the step even on low-frequency content and short
-    /// enough not to read as a level change.
-    private static let edgeDeclickFadeSeconds = 0.010
+    /// sit near silence the step is audible as a click.
+    ///
+    /// The length is set by AVFoundation, not by taste. A volume ramp shorter
+    /// than about 25 ms is not honoured over its own time range: it is
+    /// stretched to that floor, so it never reaches its end value where it was
+    /// asked to. Rendering a composition through this mix and dividing by the
+    /// same composition rendered without it gives the gain actually applied to
+    /// the last sample — the one the loop joins:
+    ///
+    ///     fade 10 ms -> 0.6034      fade 25 ms -> 0.0037
+    ///     fade 20 ms -> 0.2032      fade 30 ms -> 0.0008
+    ///
+    /// At 10 ms the join still carries 60% of full amplitude, which is the
+    /// click this was meant to remove. The floor measured 24.8 ms at both
+    /// 44.1 kHz and 48 kHz, so it is a duration rather than a block of frames;
+    /// 30 ms clears it and is still short enough not to read as a level
+    /// change. The Android player has no such floor — it fades decoded frames
+    /// — and stays at 10 ms, where its fade doubles as its audio latency.
+    private static let edgeDeclickFadeSeconds = 0.030
     /// Timescale the audio mix's ramps are laid out in.
     private static let audioMixTimescale: CMTimeScale = 600
 

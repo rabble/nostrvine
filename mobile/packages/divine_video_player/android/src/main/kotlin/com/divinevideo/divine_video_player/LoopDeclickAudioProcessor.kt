@@ -289,9 +289,16 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
         const val DURATION_UNKNOWN = -1L
 
         /**
-         * Length of each fade. Long enough to remove the step even on
-         * low-frequency content, short enough not to read as a level change.
-         * Matches the Apple player's `edgeDeclickFadeSeconds`.
+         * Length of each fade, and therefore also how far this processor puts
+         * audio behind the reported position. Long enough to remove the step
+         * even on low-frequency content, short enough not to read as a level
+         * change or to be noticed as audio trailing video.
+         *
+         * Deliberately shorter than the Apple player's
+         * `edgeDeclickFadeSeconds`. A fade here is applied to decoded frames
+         * and lands exactly where it is asked to; AVFoundation's volume ramps
+         * are stretched to a floor of about 25 ms, so that side has to spend
+         * 30 ms to reach silence at all.
          */
         const val FADE_US = 10_000L
     }

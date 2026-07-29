@@ -135,7 +135,7 @@ class LoopDeclickAudioProcessorTest {
     }
 
     @Test
-    fun `fade length matches the Apple player`() {
+    fun `the fade is ten milliseconds, which is also the added latency`() {
         assertEquals(fadeFrames, processor().fadeFrames(sampleRate))
     }
 

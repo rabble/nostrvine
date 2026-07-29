@@ -9,10 +9,14 @@ void main() {
 
       expect(
         source,
-        contains('edgeDeclickFadeSeconds = 0.010'),
+        contains('edgeDeclickFadeSeconds = 0.030'),
         reason:
             'AVPlayerLooper joins the video end to its start on every '
-            'restart. Without a fade that step is audible as a click.',
+            'restart. Without a fade that step is audible as a click — and '
+            'AVFoundation stretches any volume ramp shorter than about 25 ms '
+            'to that floor, so it never reaches zero where it was asked to. '
+            'Measured on the last sample: 10 ms leaves gain 0.60, 30 ms '
+            'leaves 0.0008. Shortening this back re-introduces the click.',
       );
       expect(
         source,
