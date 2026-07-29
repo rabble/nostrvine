@@ -681,9 +681,6 @@ class VineTheme {
   /// Muted content color on surfaces (50% white).
   static const Color onSurfaceMuted = Color(0x80FFFFFF);
 
-  /// Muted content color on surfaces (55% white).
-  static const Color onSurfaceMuted55 = Color(0x8CFFFFFF);
-
   /// Variant content color on surfaces (75% white).
   static const Color onSurfaceVariant = Color(0xBFFFFFFF);
 
@@ -714,9 +711,6 @@ class VineTheme {
   /// Border color (25% white).
   static const Color borderWhite25 = Color(0x40FFFFFF);
 
-  /// Disabled outline color.
-  static const Color outlinedDisabled = Color(0xFF032017);
-
   /// Disabled outline color for separators.
   static const Color outlineDisabled = Color(0xFF001A12);
 
@@ -746,12 +740,6 @@ class VineTheme {
 
   /// Base color for skeleton shimmer effects.
   static const Color skeletonBase = iconButtonBackground;
-
-  /// Highlight color for skeleton shimmer sweep (60% alpha of base).
-  static const Color skeletonHighlight = Color(0x99032017);
-
-  /// Surface color for skeleton placeholder shapes.
-  static const Color skeletonSurface = outlinedDisabled;
 
   /// Duration of a single skeleton shimmer sweep.
   static const Duration skeletonDuration = Duration(milliseconds: 1500);
