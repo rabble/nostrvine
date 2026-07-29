@@ -47,6 +47,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(File(''));
+    registerFallbackValue(<String>[]);
   });
 
   setUp(() async {
@@ -79,10 +80,6 @@ void main() {
       },
     );
 
-    // Mock nostrService getter and addRelay for backup relay connection
-    when(() => mockNip17.nostrService).thenReturn(mockNostrClient);
-    when(() => mockNostrClient.addRelay(any())).thenAnswer((_) async => true);
-
     service = BugReportService(
       nip17MessageService: mockNip17,
       blossomUploadService: mockBlossom,
@@ -107,6 +104,9 @@ void main() {
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
+          targetRelays: any(named: 'targetRelays'),
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer(
@@ -125,6 +125,7 @@ void main() {
       expect(result.success, isTrue);
       expect(result.reportId, equals('test-report-001'));
       expect(result.messageEventId, equals('event-abc123'));
+      verifyNever(() => mockNostrClient.addRelay(any()));
     });
 
     test(
@@ -140,6 +141,9 @@ void main() {
           () => mockNip17.sendPrivateMessage(
             recipientPubkey: any(named: 'recipientPubkey'),
             content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer(
@@ -186,6 +190,9 @@ void main() {
           () => mockNip17.sendPrivateMessage(
             recipientPubkey: any(named: 'recipientPubkey'),
             content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer((invocation) async {
@@ -220,6 +227,9 @@ void main() {
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
+          targetRelays: any(named: 'targetRelays'),
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer((invocation) async {
@@ -243,6 +253,9 @@ void main() {
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
+          targetRelays: const ['wss://relay.nos.social'],
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);

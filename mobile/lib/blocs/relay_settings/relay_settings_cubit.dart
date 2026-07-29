@@ -100,7 +100,10 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
     if (!isRelayUrlAllowed(trimmed)) return AddRelayOutcome.insecureUrl;
 
     try {
-      final success = await _nostrClient.addRelay(trimmed);
+      final success = await _nostrClient.addRelay(
+        trimmed,
+        source: RelayAddSource.user,
+      );
       if (!success) return AddRelayOutcome.failed;
       refreshRelays();
       return AddRelayOutcome.added;
@@ -124,7 +127,10 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
 
   Future<RestoreDefaultRelayOutcome> restoreDefaultRelay() async {
     try {
-      final success = await _nostrClient.addRelay(defaultRelayUrl);
+      final success = await _nostrClient.addRelay(
+        defaultRelayUrl,
+        source: RelayAddSource.user,
+      );
       if (!success) return RestoreDefaultRelayOutcome.failed;
       refreshRelays();
       return RestoreDefaultRelayOutcome.restored;

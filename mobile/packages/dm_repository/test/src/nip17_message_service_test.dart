@@ -1437,6 +1437,49 @@ void main() {
         expect(result.success, isTrue);
         expect(result.rumorEventId, isNotNull);
       });
+
+      test(
+        'sendPrivateMessage forwards target relay confirmation options',
+        () async {
+          const targetRelays = ['wss://relay.nos.social'];
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: any(named: 'targetRelays'),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => const PublishOutcome(
+              eventId: 'gift-wrap-id',
+              acceptedBy: ['wss://relay.nos.social'],
+              rejectedBy: {},
+              noResponseFrom: [],
+            ),
+          );
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'targeted message',
+            targetRelays: targetRelays,
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              targetRelays: targetRelays,
+              timeout: any(named: 'timeout'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('publishSelfWrap', () {

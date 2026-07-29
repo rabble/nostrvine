@@ -19,6 +19,10 @@ class _MockRelayCapabilityService extends Mock
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(RelayAddSource.automatic);
+  });
+
   group(RelaySettingsCubit, () {
     late _MockNostrClient nostr;
     late _MockRelayCapabilityService capabilities;
@@ -30,7 +34,9 @@ void main() {
       videos = _MockVideoEventService();
       when(() => nostr.configuredRelays).thenReturn(const []);
       when(() => nostr.connectedRelayCount).thenReturn(0);
-      when(() => nostr.addRelay(any())).thenAnswer((_) async => true);
+      when(
+        () => nostr.addRelay(any(), source: any(named: 'source')),
+      ).thenAnswer((_) async => true);
       when(() => nostr.removeRelay(any())).thenAnswer((_) async => true);
       when(nostr.forceReconnectAll).thenAnswer((_) async {});
       when(videos.resetAndResubscribeAll).thenAnswer((_) async {});
@@ -45,10 +51,9 @@ void main() {
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'load snapshots configured relays',
       setUp: () {
-        when(() => nostr.configuredRelays).thenReturn([
-          'wss://a.example',
-          'wss://b.example',
-        ]);
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://a.example', 'wss://b.example']);
       },
       build: buildCubit,
       act: (cubit) => cubit.load(),
@@ -88,11 +93,10 @@ void main() {
           isA<RelayCapabilityEntry>()
               .having((e) => e.loading, 'loading', isFalse)
               .having((e) => e.fetched, 'fetched', isTrue)
-              .having(
-                (e) => e.capabilities?.supportedNips,
-                'supportedNips',
-                [1, 11],
-              ),
+              .having((e) => e.capabilities?.supportedNips, 'supportedNips', [
+                1,
+                11,
+              ]),
         ),
       ],
     );
@@ -100,9 +104,7 @@ void main() {
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'fetchCapabilities short-circuits on second call',
       seed: () => const RelaySettingsState(
-        capabilities: {
-          'wss://a.example': RelayCapabilityEntry(fetched: true),
-        },
+        capabilities: {'wss://a.example': RelayCapabilityEntry(fetched: true)},
       ),
       build: buildCubit,
       act: (cubit) => cubit.fetchCapabilities('wss://a.example'),
@@ -156,9 +158,7 @@ void main() {
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'addRelay accepts wss:// and re-snapshots relays',
       setUp: () {
-        when(
-          () => nostr.configuredRelays,
-        ).thenReturn(['wss://added.example']);
+        when(() => nostr.configuredRelays).thenReturn(['wss://added.example']);
       },
       build: buildCubit,
       act: (cubit) async {
@@ -169,14 +169,21 @@ void main() {
         const RelaySettingsState(relays: ['wss://added.example']),
       ],
       verify: (_) {
-        verify(() => nostr.addRelay('wss://added.example')).called(1);
+        verify(
+          () => nostr.addRelay(
+            'wss://added.example',
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
       },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'addRelay returns failed when service returns false',
       setUp: () {
-        when(() => nostr.addRelay(any())).thenAnswer((_) async => false);
+        when(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
       },
       build: buildCubit,
       act: (cubit) async {
@@ -189,7 +196,9 @@ void main() {
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'addRelay surfaces service throw via addError + failed outcome',
       setUp: () {
-        when(() => nostr.addRelay(any())).thenThrow(StateError('boom'));
+        when(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        ).thenThrow(StateError('boom'));
       },
       build: buildCubit,
       act: (cubit) async {
@@ -255,7 +264,10 @@ void main() {
       },
       verify: (_) {
         verify(
-          () => nostr.addRelay('wss://relay.staging.divine.video'),
+          () => nostr.addRelay(
+            'wss://relay.staging.divine.video',
+            source: RelayAddSource.user,
+          ),
         ).called(1);
       },
     );

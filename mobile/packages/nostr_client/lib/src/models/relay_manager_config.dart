@@ -14,6 +14,12 @@ abstract class RelayStorage {
 
   /// Saves the list of configured relay URLs to storage
   Future<void> saveRelays(List<String> relayUrls);
+
+  /// Loads the list of relays the user explicitly removed.
+  Future<List<String>> loadRemovedRelays();
+
+  /// Saves the list of relays the user explicitly removed.
+  Future<void> saveRemovedRelays(List<String> relayUrls);
 }
 
 /// {@template in_memory_relay_storage}
@@ -21,10 +27,14 @@ abstract class RelayStorage {
 /// {@endtemplate}
 class InMemoryRelayStorage implements RelayStorage {
   /// {@macro in_memory_relay_storage}
-  InMemoryRelayStorage([List<String>? initialRelays])
-    : _relays = initialRelays ?? [];
+  InMemoryRelayStorage([
+    List<String>? initialRelays,
+    List<String>? removedRelays,
+  ]) : _relays = initialRelays ?? [],
+       _removedRelays = removedRelays ?? [];
 
   final List<String> _relays;
+  final List<String> _removedRelays;
 
   @override
   Future<List<String>> loadRelays() async => List.from(_relays);
@@ -32,6 +42,16 @@ class InMemoryRelayStorage implements RelayStorage {
   @override
   Future<void> saveRelays(List<String> relayUrls) async {
     _relays
+      ..clear()
+      ..addAll(relayUrls);
+  }
+
+  @override
+  Future<List<String>> loadRemovedRelays() async => List.from(_removedRelays);
+
+  @override
+  Future<void> saveRemovedRelays(List<String> relayUrls) async {
+    _removedRelays
       ..clear()
       ..addAll(relayUrls);
   }

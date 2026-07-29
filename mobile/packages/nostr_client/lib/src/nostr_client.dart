@@ -496,9 +496,14 @@ class NostrClient {
       _cacheEvent(event);
     }
 
+    final hasExplicitTargets =
+        effectiveTargets != null && effectiveTargets.isNotEmpty;
+
     // Checks health of relays, attempts reconnection if none connected,
-    // and exits if reconnect is unsuccessful
-    if (_relayManager.connectedRelays.isEmpty) {
+    // and exits if reconnect is unsuccessful. Explicit target relays use
+    // temporary SDK connections, so they do not require the configured pool
+    // to already have a connected relay.
+    if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
       await retryDisconnectedRelays();
       if (_relayManager.connectedRelays.isEmpty) {
         // Rollback optimistic cache on failure
@@ -1051,8 +1056,11 @@ class NostrClient {
   /// Adds a relay connection
   ///
   /// Delegates to RelayManager for persistence and status tracking.
-  Future<bool> addRelay(String relayUrl) async {
-    return _relayManager.addRelay(relayUrl);
+  Future<bool> addRelay(
+    String relayUrl, {
+    RelayAddSource source = RelayAddSource.automatic,
+  }) async {
+    return _relayManager.addRelay(relayUrl, source: source);
   }
 
   /// Adds multiple relay connections
@@ -1061,10 +1069,13 @@ class NostrClient {
   /// all relays are connected before the client starts making requests.
   ///
   /// Returns the number of relays successfully added.
-  Future<int> addRelays(List<String> relayUrls) async {
+  Future<int> addRelays(
+    List<String> relayUrls, {
+    RelayAddSource source = RelayAddSource.automatic,
+  }) async {
     var addedCount = 0;
     for (final relayUrl in relayUrls) {
-      final added = await addRelay(relayUrl);
+      final added = await addRelay(relayUrl, source: source);
       if (added) {
         addedCount++;
       }

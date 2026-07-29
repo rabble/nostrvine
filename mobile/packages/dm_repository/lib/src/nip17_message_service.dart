@@ -802,6 +802,9 @@ class NIP17MessageService {
     required String content,
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
+    List<String>? targetRelays,
+    bool awaitRecipientOk = false,
+    bool selfWrapOnSoftUnconfirmed = true,
   }) async {
     final rumor = buildRumor(
       recipientPubkey: recipientPubkey,
@@ -809,7 +812,13 @@ class NIP17MessageService {
       eventKind: eventKind,
       additionalTags: additionalTags,
     );
-    return sendRumor(rumorEvent: rumor, recipientPubkey: recipientPubkey);
+    return sendRumor(
+      rumorEvent: rumor,
+      recipientPubkey: recipientPubkey,
+      targetRelays: targetRelays,
+      awaitRecipientOk: awaitRecipientOk,
+      selfWrapOnSoftUnconfirmed: selfWrapOnSoftUnconfirmed,
+    );
   }
 
   /// Dummy relay generator - we don't use relays in this Nostr instance

@@ -28,6 +28,10 @@ class _MockRelayStatisticsService extends Mock
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(RelayAddSource.automatic);
+  });
+
   testWidgets(
     'RelaySettingsScreen constrains menu content width on wide screens',
     (tester) async {
@@ -180,28 +184,42 @@ void main() {
       tester,
     ) async {
       final nostrService = _MockNostrService();
-      when(() => nostrService.addRelay(any())).thenAnswer((_) async => true);
+      when(
+        () => nostrService.addRelay(any(), source: any(named: 'source')),
+      ).thenAnswer((_) async => true);
 
       await pumpScreen(tester, nostrService: nostrService);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       await openAddSheetAndSubmit(tester, 'wss://relay.example.com', l10n);
 
-      verify(() => nostrService.addRelay('wss://relay.example.com')).called(1);
+      verify(
+        () => nostrService.addRelay(
+          'wss://relay.example.com',
+          source: RelayAddSource.user,
+        ),
+      ).called(1);
     });
 
     testWidgets('accepts uppercase WSS:// URL and forwards to NostrClient', (
       tester,
     ) async {
       final nostrService = _MockNostrService();
-      when(() => nostrService.addRelay(any())).thenAnswer((_) async => true);
+      when(
+        () => nostrService.addRelay(any(), source: any(named: 'source')),
+      ).thenAnswer((_) async => true);
 
       await pumpScreen(tester, nostrService: nostrService);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       await openAddSheetAndSubmit(tester, 'WSS://relay.example.com', l10n);
 
-      verify(() => nostrService.addRelay('WSS://relay.example.com')).called(1);
+      verify(
+        () => nostrService.addRelay(
+          'WSS://relay.example.com',
+          source: RelayAddSource.user,
+        ),
+      ).called(1);
     });
 
     testWidgets('shows malformed-URL message for empty-host wss://', (
@@ -262,14 +280,15 @@ void main() {
 
     testWidgets(
       'restore-default snackbar names the environment default relay',
-      (
-        tester,
-      ) async {
+      (tester) async {
         const envDefaultRelay = 'wss://relay.staging.divine.video';
         final nostrService = _MockNostrService();
         when(() => nostrService.defaultRelayUrl).thenReturn(envDefaultRelay);
         when(
-          () => nostrService.addRelay(envDefaultRelay),
+          () => nostrService.addRelay(
+            envDefaultRelay,
+            source: RelayAddSource.user,
+          ),
         ).thenAnswer((_) async => true);
 
         await pumpScreen(tester, nostrService: nostrService);
@@ -292,7 +311,12 @@ void main() {
           ),
           findsNothing,
         );
-        verify(() => nostrService.addRelay(envDefaultRelay)).called(1);
+        verify(
+          () => nostrService.addRelay(
+            envDefaultRelay,
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
       },
     );
   });

@@ -316,26 +316,13 @@ class BugReportService {
         bugReportUrl,
       );
 
-      // Ensure backup relay is connected for bug reports
-      try {
-        await _nip17MessageService.nostrService.addRelay(
-          'wss://relay.nos.social',
-        );
-        Log.info(
-          'Added relay.nos.social as backup for bug report',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          'Failed to add backup relay, continuing anyway: $e',
-          category: LogCategory.system,
-        );
-      }
-
       // Send via NIP-17 encrypted message
       final result = await _nip17MessageService.sendPrivateMessage(
         recipientPubkey: recipientPubkey,
         content: messageContent,
+        targetRelays: const ['wss://relay.nos.social'],
+        awaitRecipientOk: true,
+        selfWrapOnSoftUnconfirmed: false,
         additionalTags: [
           Nip89ClientTag.tag,
           ['report_id', data.reportId],

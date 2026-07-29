@@ -95,6 +95,46 @@ void main() {
       });
     });
 
+    group('removed relays', () {
+      test(
+        'loadRemovedRelays returns empty list when no relays stored',
+        () async {
+          final storage = SharedPreferencesRelayStorage();
+
+          final relays = await storage.loadRemovedRelays();
+
+          expect(relays, isEmpty);
+        },
+      );
+
+      test('saveRemovedRelays saves relay URLs to SharedPreferences', () async {
+        final storage = SharedPreferencesRelayStorage();
+
+        await storage.saveRemovedRelays([
+          'wss://relay1.example.com',
+          'wss://relay2.example.com',
+        ]);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getStringList('user_removed_relays'),
+          equals(['wss://relay1.example.com', 'wss://relay2.example.com']),
+        );
+        expect(prefs.getStringList('configured_relays'), isNull);
+      });
+
+      test('loadRemovedRelays returns stored relays', () async {
+        SharedPreferences.setMockInitialValues({
+          'user_removed_relays': ['wss://removed.example.com'],
+        });
+        final storage = SharedPreferencesRelayStorage();
+
+        final relays = await storage.loadRemovedRelays();
+
+        expect(relays, equals(['wss://removed.example.com']));
+      });
+    });
+
     group('round-trip', () {
       test('load returns what was saved', () async {
         final storage = SharedPreferencesRelayStorage();
@@ -134,6 +174,23 @@ void main() {
         final relays = await storage.loadRelays();
 
         expect(relays, equals(['wss://relay.example.com']));
+      });
+
+      test('uses custom removed-relays key when provided', () async {
+        final storage = SharedPreferencesRelayStorage(
+          key: 'custom_relay_key',
+          removedRelaysKey: 'custom_removed_relay_key',
+        );
+
+        await storage.saveRemovedRelays(['wss://removed.example.com']);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getStringList('custom_removed_relay_key'),
+          equals(['wss://removed.example.com']),
+        );
+        expect(prefs.getStringList('user_removed_relays'), isNull);
+        expect(prefs.getStringList('custom_relay_key'), isNull);
       });
     });
   });
