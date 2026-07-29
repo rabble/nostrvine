@@ -296,6 +296,9 @@ void main() {
     });
 
     group('context.vineColors', () {
+      setUp(() => VineThemeColors.debugFallbackCount = 0);
+      tearDown(() => VineThemeColors.debugFallbackCount = 0);
+
       testWidgets('resolves the palette of the active theme', (tester) async {
         late VineThemeColors light;
         late VineThemeColors dark;
@@ -322,6 +325,7 @@ void main() {
 
         expect(light, VineTheme.lightColors);
         expect(dark, VineTheme.darkColors);
+        expect(VineThemeColors.debugFallbackCount, 0);
       });
 
       testWidgets('falls back to the dark palette without the extension', (
@@ -342,6 +346,71 @@ void main() {
         );
 
         expect(colors, VineTheme.darkColors);
+        expect(
+          VineThemeColors.debugFallbackCount,
+          1,
+          reason: 'A themeless resolution has to be observable in debug.',
+        );
+      });
+
+      testWidgets('survives routes pushed over the light theme', (
+        tester,
+      ) async {
+        // The realistic production leak: a route or dialog builds its subtree
+        // from a fresh ThemeData, the extension is gone, and every widget in
+        // it renders dark tokens on a light page with nothing to detect it.
+        late VineThemeColors dialogColors;
+        late VineThemeColors sheetColors;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.lightTheme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Column(
+                  children: [
+                    TextButton(
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (context) {
+                          dialogColors = context.vineColors;
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      child: const Text('dialog'),
+                    ),
+                    TextButton(
+                      onPressed: () => showModalBottomSheet<void>(
+                        context: context,
+                        builder: (context) {
+                          sheetColors = context.vineColors;
+                          return const SizedBox.shrink();
+                        },
+                      ),
+                      child: const Text('sheet'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('dialog'));
+        await tester.pumpAndSettle();
+        tester.state<NavigatorState>(find.byType(Navigator).first).pop();
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('sheet'));
+        await tester.pumpAndSettle();
+
+        expect(dialogColors, VineTheme.lightColors);
+        expect(sheetColors, VineTheme.lightColors);
+        expect(
+          VineThemeColors.debugFallbackCount,
+          0,
+          reason: 'Overlay routes must keep the light palette.',
+        );
       });
     });
 

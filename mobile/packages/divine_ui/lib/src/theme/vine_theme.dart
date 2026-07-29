@@ -41,6 +41,20 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     required this.mediaChromeForeground,
   });
 
+  /// How often [VineThemeColorsContext.vineColors] resolved the dark fallback
+  /// because the ambient [Theme] carried no [VineThemeColors] extension.
+  ///
+  /// Counted in debug builds only — the increment sits inside an `assert`.
+  /// A bare `assert(colors != null)` is not an option: hundreds of widget
+  /// tests pump a plain `MaterialApp`, which is precisely the case the
+  /// fallback exists to serve. Counting instead lets a test that *does* pump
+  /// the Divine theme prove the fallback never fired, which is what catches a
+  /// nested `Theme`, a dialog builder with its own `ThemeData`, or an
+  /// `Overlay` route silently dropping the extension on a light page.
+  ///
+  /// Tests that read this must reset it to `0` in `setUp` and `tearDown`.
+  static int debugFallbackCount = 0;
+
   /// App background.
   final Color background;
 
@@ -222,11 +236,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
         t,
       ),
       containerLow: Color.lerp(containerLow, other.containerLow, t),
-      primaryContainer: Color.lerp(
-        primaryContainer,
-        other.primaryContainer,
-        t,
-      ),
+      primaryContainer: Color.lerp(primaryContainer, other.primaryContainer, t),
       nav: Color.lerp(nav, other.nav, t),
       onNav: Color.lerp(onNav, other.onNav, t),
       onNavMuted: Color.lerp(onNavMuted, other.onNavMuted, t),
@@ -243,17 +253,9 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       disabled: Color.lerp(disabled, other.disabled, t),
       skeleton: Color.lerp(skeleton, other.skeleton, t),
       errorContainer: Color.lerp(errorContainer, other.errorContainer, t),
-      onErrorContainer: Color.lerp(
-        onErrorContainer,
-        other.onErrorContainer,
-        t,
-      ),
+      onErrorContainer: Color.lerp(onErrorContainer, other.onErrorContainer, t),
       inverseSurface: Color.lerp(inverseSurface, other.inverseSurface, t),
-      inverseOnSurface: Color.lerp(
-        inverseOnSurface,
-        other.inverseOnSurface,
-        t,
-      ),
+      inverseOnSurface: Color.lerp(inverseOnSurface, other.inverseOnSurface, t),
       mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
       mediaChromeForeground: Color.lerp(
         mediaChromeForeground,
@@ -338,8 +340,21 @@ extension VineThemeColorsContext on BuildContext {
   /// Falls back to [VineTheme.darkColors] so widgets pumped without the
   /// Divine theme (older widget tests, isolated previews) keep the
   /// pre-light-mode appearance instead of Material defaults.
-  VineThemeColors get vineColors =>
-      Theme.of(this).extension<VineThemeColors>() ?? VineTheme.darkColors;
+  ///
+  /// The fallback is silent by design, so a light-mode page whose ambient
+  /// [Theme] lost the extension renders dark tokens with nothing to notice
+  /// it. Debug builds count those resolutions in
+  /// [VineThemeColors.debugFallbackCount] so a test can assert the fallback
+  /// never fires on a themed tree.
+  VineThemeColors get vineColors {
+    final colors = Theme.of(this).extension<VineThemeColors>();
+    if (colors != null) return colors;
+    assert(() {
+      VineThemeColors.debugFallbackCount++;
+      return true;
+    }(), 'counter-only assert; never fails');
+    return VineTheme.darkColors;
+  }
 }
 
 /// Vine-inspired theme with characteristic green colors and clean design.
