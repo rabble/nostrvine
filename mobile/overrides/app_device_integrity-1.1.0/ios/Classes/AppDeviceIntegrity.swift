@@ -8,9 +8,12 @@ import Foundation
 /// `DCAppAttestService.generateKey` and `attestKey` are network round trips to
 /// Apple's attestation servers and Apple rate limits them, so both run only on
 /// first use. The key identifier and attestation object are cached in
-/// `UserDefaults`, which is wiped on uninstall — the same lifetime as the
-/// Secure Enclave key itself, so a stale identifier can never outlive its key.
-/// Subsequent challenges go through `generateAssertion`, which stays on device.
+/// `UserDefaults` rather than the Keychain, which survives uninstall: a wiped
+/// cache cannot strand a reinstall on a key that is already gone. A restored
+/// device backup can still hand back an identifier without its Secure Enclave
+/// key, since those keys never leave the device — that is what the
+/// `DCError.invalidKey` re-provisioning path below exists for. Subsequent
+/// challenges go through `generateAssertion`, which stays on device.
 @available(iOS 14.0, *)
 final class AppDeviceIntegrity {
     /// A provisioned App Attest key plus the attestation object Apple issued
@@ -33,18 +36,18 @@ final class AppDeviceIntegrity {
     var assertionString: String?
 
     private let attestService = DCAppAttestService.shared
-    private let defaults: UserDefaults
     private var keyID: String?
 
     /// Guards provisioning so concurrent challenges share one key instead of
-    /// racing `generateKey` and burning Apple's rate limit.
+    /// racing `generateKey` and burning Apple's rate limit. The cache is static
+    /// alongside it: the queue is shared, so the store it drains into has to be.
+    private static let defaults = UserDefaults.standard
     private static let lock = NSLock()
     private static var isProvisioning = false
     private static var pendingProvisioning: [(Credential?) -> Void] = []
 
-    init?(challengeString: String, defaults: UserDefaults = .standard) {
+    init?(challengeString: String) {
         self.inputString = challengeString
-        self.defaults = defaults
 
         guard attestService.isSupported else {
             print("[!] Attest service not available")
@@ -53,7 +56,7 @@ final class AppDeviceIntegrity {
     }
 
     func keyIdentifier() -> String {
-        keyID ?? defaults.string(forKey: StorageKey.keyID) ?? "Error in Key ID"
+        keyID ?? Self.defaults.string(forKey: StorageKey.keyID) ?? "Error in Key ID"
     }
 
     private var challengeHash: Data {
@@ -143,10 +146,10 @@ final class AppDeviceIntegrity {
         Self.lock.lock()
 
         if forceRefresh {
-            defaults.removeObject(forKey: StorageKey.keyID)
-            defaults.removeObject(forKey: StorageKey.attestation)
-        } else if let keyID = defaults.string(forKey: StorageKey.keyID),
-                  let attestation = defaults.string(forKey: StorageKey.attestation) {
+            Self.defaults.removeObject(forKey: StorageKey.keyID)
+            Self.defaults.removeObject(forKey: StorageKey.attestation)
+        } else if let keyID = Self.defaults.string(forKey: StorageKey.keyID),
+                  let attestation = Self.defaults.string(forKey: StorageKey.attestation) {
             Self.lock.unlock()
             completion(Credential(keyID: keyID, attestation: attestation, isFresh: false))
             return
@@ -212,8 +215,8 @@ final class AppDeviceIntegrity {
         Self.lock.lock()
 
         if let credential = credential {
-            defaults.set(credential.keyID, forKey: StorageKey.keyID)
-            defaults.set(credential.attestation, forKey: StorageKey.attestation)
+            Self.defaults.set(credential.keyID, forKey: StorageKey.keyID)
+            Self.defaults.set(credential.attestation, forKey: StorageKey.attestation)
         }
 
         Self.isProvisioning = false
