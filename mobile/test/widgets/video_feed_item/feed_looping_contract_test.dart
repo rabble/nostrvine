@@ -21,6 +21,13 @@ void main() {
     // guard covers all three rather than the one the deleted wiring sat in:
     // the subscription service owns the position stream the old seek fired
     // from, and the app-side call site configures both.
+    //
+    // It matches the spelling, not the value. `_seekKick` already seeks with
+    // a computed duration for stale recovery, so widening to a `seekTo(`
+    // regex would collide with it — the cost is that `seekTo(const
+    // Duration())` reaches zero unseen. Read this as a tripwire for the
+    // regression that shipped three times, not as proof no Dart seek can
+    // reach zero.
     const subscriptionsPath =
         'packages/infinite_video_feed/lib/src/services/'
         'controller_subscriptions.dart';
