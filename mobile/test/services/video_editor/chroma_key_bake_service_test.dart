@@ -32,8 +32,8 @@ void main() {
           chromaKey: key,
         );
 
-        // A colour, image or transparent key needs no second track, so it must
-        // not pay for a composition render.
+        // A colour or image key needs no second track, so it must not pay for a
+        // composition render.
         expect(task.composition, isNull);
         expect(task.videoSegments, hasLength(1));
         expect(task.videoSegments!.single.chromaKey, key.key);
@@ -94,7 +94,7 @@ void main() {
             inputVideo: inputVideo,
             chromaKey: key,
           ),
-          throwsA(isA<StateError>()),
+          throwsA(isA<ChromaKeyBackdropMissingException>()),
         );
       });
     });

@@ -68,7 +68,8 @@ class ClipChromaKey {
   /// Whether baking this key needs a two-layer composition rather than a
   /// single keyed segment.
   bool get needsComposition =>
-      backgroundType == ClipChromaKeyBackgroundType.video;
+      backgroundType == ClipChromaKeyBackgroundType.video ||
+      backgroundType == ClipChromaKeyBackgroundType.transparent;
 
   /// A copy with the background replaced by [videoPath].
   ///

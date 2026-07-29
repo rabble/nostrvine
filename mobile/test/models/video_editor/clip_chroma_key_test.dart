@@ -10,7 +10,7 @@ void main() {
       test('is transparent when nothing fills the keyed area', () {
         const key = ClipChromaKey(key: ChromaKey.greenScreen());
         expect(key.backgroundType, ClipChromaKeyBackgroundType.transparent);
-        expect(key.needsComposition, isFalse);
+        expect(key.needsComposition, isTrue);
       });
 
       test('is color when the key carries a fill colour', () {
@@ -36,7 +36,7 @@ void main() {
         );
         expect(key.backgroundType, ClipChromaKeyBackgroundType.video);
         // The single-track segment path cannot put a video behind the subject,
-        // so this is the one background that must be pre-rendered.
+        // so this background must be pre-rendered.
         expect(key.needsComposition, isTrue);
       });
     });

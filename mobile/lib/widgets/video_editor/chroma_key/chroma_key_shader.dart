@@ -97,11 +97,4 @@ abstract class ChromaKeyShader {
       ..setFloat(7, key.smoothness)
       ..setFloat(8, key.spill);
   }
-
-  /// Resets the cached program. Tests only.
-  static void resetForTesting() {
-    _program = null;
-    _loading = null;
-    _loggedUnsupported = false;
-  }
 }

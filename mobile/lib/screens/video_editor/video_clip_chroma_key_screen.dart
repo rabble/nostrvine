@@ -196,6 +196,7 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
       case ClipChromaKeyBackgroundType.video:
         if (!mounted) return;
         final path = await showChromaKeyClipPicker(context);
+        if (!mounted) return;
         if (path != null) _cubit.useVideoBackground(path);
     }
   }
@@ -224,6 +225,10 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
         await File(picked.path).readAsBytes(),
       );
       await File(target).writeAsBytes(normalized, flush: true);
+      if (!mounted) {
+        await _deleteCreatedImage(target);
+        return;
+      }
       _createdImagePaths.add(target);
       _cubit.useImageBackground(target);
       // Trying five photos before settling on one should not cost five files.
@@ -253,16 +258,20 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
     final stale = _createdImagePaths.where((path) => path != keep).toList();
     _createdImagePaths.removeWhere((path) => path != keep);
     for (final path in stale) {
-      try {
-        final file = File(path);
-        if (file.existsSync()) await file.delete();
-      } catch (error) {
-        Log.warning(
-          '⚠️ Failed to delete unused chroma-key background $path: $error',
-          name: 'VideoClipChromaKeyScreen',
-          category: LogCategory.video,
-        );
-      }
+      await _deleteCreatedImage(path);
+    }
+  }
+
+  Future<void> _deleteCreatedImage(String path) async {
+    try {
+      final file = File(path);
+      if (file.existsSync()) await file.delete();
+    } catch (error) {
+      Log.warning(
+        '⚠️ Failed to delete unused chroma-key background $path: $error',
+        name: 'VideoClipChromaKeyScreen',
+        category: LogCategory.video,
+      );
     }
   }
 

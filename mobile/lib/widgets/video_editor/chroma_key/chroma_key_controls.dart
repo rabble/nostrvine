@@ -64,12 +64,34 @@ class _Gutter extends StatelessWidget {
 ///
 /// Without this the preview just quietly shows the unkeyed video, which reads
 /// as "the green screen does nothing" rather than "you can't see it yet".
-class _PreviewUnavailableNotice extends StatelessWidget {
+class _PreviewUnavailableNotice extends StatefulWidget {
   const _PreviewUnavailableNotice();
 
   @override
+  State<_PreviewUnavailableNotice> createState() =>
+      _PreviewUnavailableNoticeState();
+}
+
+class _PreviewUnavailableNoticeState extends State<_PreviewUnavailableNotice> {
+  bool _loadAttempted = ChromaKeyShader.isSupported;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!ChromaKeyShader.isBackendSupported || ChromaKeyShader.isSupported) {
+      return;
+    }
+    ChromaKeyShader.ensureLoaded().then((_) {
+      if (mounted) setState(() => _loadAttempted = true);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (ChromaKeyShader.isBackendSupported) return const SizedBox.shrink();
+    if (ChromaKeyShader.isBackendSupported &&
+        (!_loadAttempted || ChromaKeyShader.isSupported)) {
+      return const SizedBox.shrink();
+    }
 
     return Row(
       spacing: 8,

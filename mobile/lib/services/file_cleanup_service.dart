@@ -99,6 +99,25 @@ class FileCleanupService {
     }
   }
 
+  static List<String?> _recordingClipFilePaths(DivineVideoClip clip) => [
+    clip.video?.file?.path,
+    ...?clip.stopMotionFrames?.map((frame) => frame.path),
+    clip.thumbnailPath,
+    clip.chromaKeySourcePath,
+    clip.chromaKey?.backgroundImagePath,
+  ];
+
+  static Future<List<String?>> _savedClipFilePaths(
+    DivineVideoClip clip,
+  ) async => [
+    if (clip.video != null) await clip.video!.safeFilePath(),
+    ...?clip.stopMotionFrames?.map((frame) => frame.path),
+    clip.thumbnailPath,
+    clip.ghostFramePath,
+    clip.chromaKeySourcePath,
+    clip.chromaKey?.backgroundImagePath,
+  ];
+
   /// Deletes draft-local audio files in [audioFilePaths], skipping any still
   /// referenced elsewhere.
   ///
@@ -190,11 +209,7 @@ class FileCleanupService {
     Set<String> referencedGhostFrameFilenames = const {},
   }) async {
     await deleteFilesIfUnreferenced(
-      [
-        clip.video?.file?.path,
-        ...?clip.stopMotionFrames?.map((frame) => frame.path),
-        clip.thumbnailPath,
-      ],
+      _recordingClipFilePaths(clip),
       draftsDao: draftsDao,
       clipsDao: clipsDao,
     );
@@ -217,15 +232,7 @@ class FileCleanupService {
     required ClipsDao clipsDao,
     Set<String> referencedGhostFrameFilenames = const {},
   }) async {
-    final indexedPaths = clips
-        .expand(
-          (clip) => [
-            clip.video?.file?.path,
-            ...?clip.stopMotionFrames?.map((frame) => frame.path),
-            clip.thumbnailPath,
-          ],
-        )
-        .toList();
+    final indexedPaths = clips.expand(_recordingClipFilePaths).toList();
 
     await deleteFilesIfUnreferenced(
       indexedPaths,
@@ -247,12 +254,7 @@ class FileCleanupService {
     required ClipsDao clipsDao,
   }) async {
     final paths = <String?>[
-      for (final clip in clips) ...[
-        if (clip.video != null) await clip.video!.safeFilePath(),
-        ...?clip.stopMotionFrames?.map((frame) => frame.path),
-        clip.thumbnailPath,
-        clip.ghostFramePath,
-      ],
+      for (final clip in clips) ...await _savedClipFilePaths(clip),
     ];
 
     await deleteFilesIfUnreferenced(

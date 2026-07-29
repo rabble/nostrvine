@@ -104,6 +104,10 @@ class _ClipTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final thumbnailPath = clip.thumbnailPath;
     final videoPath = clip.video?.file?.path;
+    final canUseBackdrop =
+        videoPath != null &&
+        videoPath.isNotEmpty &&
+        File(videoPath).existsSync();
 
     return Semantics(
       button: true,
@@ -112,7 +116,7 @@ class _ClipTile extends StatelessWidget {
       child: InkWell(
         // A clip whose file went missing can't be a backdrop; leave it
         // untappable rather than failing after the sheet closes.
-        onTap: videoPath == null
+        onTap: !canUseBackdrop
             ? null
             : () => Navigator.of(context).pop(videoPath),
         borderRadius: BorderRadius.circular(12),

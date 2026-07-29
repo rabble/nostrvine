@@ -89,6 +89,11 @@ typedef CleanupFlattenedClipFn =
       String? keepThumbnailPath,
     });
 
+/// Queues files that became unreachable when chroma-key metadata was cleared.
+typedef CleanupChromaKeyFilesFn = void Function(Iterable<String?> paths);
+
+void _noopCleanupChromaKeyFiles(Iterable<String?> paths) {}
+
 /// Persists an already-flattened clip to the device's clip library, returning
 /// whether it was stored.
 ///
@@ -123,6 +128,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     MergeClipsFn? mergeClips,
     FlattenClipForLibraryFn? flattenClipForLibrary,
     CleanupFlattenedClipFn? cleanupFlattenedClip,
+    CleanupChromaKeyFilesFn? cleanupChromaKeyFiles,
   }) : _audioExtractionService =
            audioExtractionService ?? AudioExtractionService(),
        _splitClip = splitClip ?? VideoEditorSplitService.splitClip,
@@ -137,6 +143,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
        _cleanupFlattenedClip =
            cleanupFlattenedClip ??
            VideoEditorClipLibrarySaveService.cleanupFlattenedClip,
+       _cleanupChromaKeyFiles =
+           cleanupChromaKeyFiles ?? _noopCleanupChromaKeyFiles,
        _saveClipToLibrary = saveClipToLibrary,
        super(const ClipEditorState()) {
     // Clip data
@@ -233,6 +241,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
   final MergeClipsFn _mergeClips;
   final FlattenClipForLibraryFn _flattenClipForLibrary;
   final CleanupFlattenedClipFn _cleanupFlattenedClip;
+  final CleanupChromaKeyFilesFn _cleanupChromaKeyFiles;
   final SaveClipToLibraryFn _saveClipToLibrary;
 
   // === CLIP DATA ===
@@ -1216,6 +1225,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         ),
       );
       onFinalClipInvalidated.call();
+      _cleanupClearedChromaKeyFiles(clip);
       return;
     }
 
@@ -1237,6 +1247,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         ),
       );
       onFinalClipInvalidated.call();
+      _cleanupClearedChromaKeyFiles(clip);
       return;
     }
 
@@ -1326,6 +1337,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
 
       onFinalClipInvalidated.call();
+      _cleanupClearedChromaKeyFiles(currentClip);
     } catch (e, stackTrace) {
       final error = switch (e) {
         StateError() ||
@@ -1394,6 +1406,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     );
 
     onFinalClipInvalidated.call();
+    _cleanupClearedChromaKeyFiles(clip);
   }
 
   Future<void> _onChromaKeyRequested(
@@ -1446,7 +1459,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       // The cached forward/reversed paths now point at stale (unkeyed) files —
       // clear them so a later reverse re-renders from the keyed video instead
       // of restoring footage that still has the screen in it.
-      final updatedClip = currentClips[currentIndex].copyWith(
+      final currentClip = currentClips[currentIndex];
+      final updatedClip = currentClip.copyWith(
         video: baked.video,
         chromaKey: event.chromaKey,
         chromaKeySourcePath: baked.source,
@@ -1466,6 +1480,21 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
 
       onFinalClipInvalidated.call();
+      _cleanupClearedChromaKeyFiles(currentClip);
+    } on ChromaKeyBackdropMissingException catch (e, stackTrace) {
+      addError(e, stackTrace);
+      Log.warning(
+        '⚠️ Chroma-key backdrop disappeared while baking clip ${clip.id}: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          isChromaKeying: false,
+          clearChromaKeyingClipId: true,
+          lastChromaKeyResult: ChromaKeyFailure(),
+        ),
+      );
     } catch (e, stackTrace) {
       final error = switch (e) {
         StateError() ||
@@ -1486,6 +1515,24 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
           lastChromaKeyResult: ChromaKeyFailure(),
         ),
       );
+    }
+  }
+
+  void _cleanupClearedChromaKeyFiles(DivineVideoClip clip) {
+    final paths = [
+      clip.chromaKeySourcePath,
+      clip.chromaKey?.backgroundImagePath,
+    ];
+    if (paths.every((path) => path == null || path.isEmpty)) return;
+    try {
+      _cleanupChromaKeyFiles(paths);
+    } catch (e, stackTrace) {
+      Log.warning(
+        '⚠️ Failed to queue chroma-key files for cleanup: $e',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
     }
   }
 
@@ -1544,7 +1591,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       // cached forward/reversed paths now point at stale (pre-transform)
       // files — clear them so a later reverse re-renders from the transformed
       // source instead of restoring untransformed content.
-      final updatedClip = currentClips[currentIndex].copyWith(
+      final currentClip = currentClips[currentIndex];
+      final updatedClip = currentClip.copyWith(
         video: transformedVideo,
         clearForwardVideoPath: true,
         clearReversedVideoPath: true,
@@ -1567,6 +1615,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       );
 
       onFinalClipInvalidated.call();
+      _cleanupClearedChromaKeyFiles(currentClip);
     } catch (e, stackTrace) {
       final error = switch (e) {
         StateError() ||

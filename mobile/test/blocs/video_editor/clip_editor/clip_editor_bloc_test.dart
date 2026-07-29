@@ -306,6 +306,7 @@ void main() {
       MergeClipsFn? mergeClips,
       FlattenClipForLibraryFn? flattenClipForLibrary,
       CleanupFlattenedClipFn? cleanupFlattenedClip,
+      CleanupChromaKeyFilesFn? cleanupChromaKeyFiles,
       SaveClipToLibraryFn? saveClipToLibrary,
     }) {
       return ClipEditorBloc(
@@ -321,6 +322,7 @@ void main() {
         // paths never touch the file system.
         cleanupFlattenedClip:
             cleanupFlattenedClip ?? (clip, {keepThumbnailPath}) async {},
+        cleanupChromaKeyFiles: cleanupChromaKeyFiles,
         // Defaults to "the library rejected it" so a test that never opts in
         // can't silently pass a save it didn't wire up.
         saveClipToLibrary:
@@ -1874,9 +1876,14 @@ void main() {
       // standalone reversed clip: trims reset, duration becomes the window
       // length, the split floor clears, and — because the forward clip was
       // trimmed — the swap-based cache is dropped so the toggle re-renders.
+      final reversedCleanupPaths = <String>[];
       blocTest<ClipEditorBloc, ClipEditorState>(
         'bakes the visible window into a standalone reversed clip',
-        build: () => buildBloc(reverseClip: _fakeReverseClip),
+        build: () => buildBloc(
+          reverseClip: _fakeReverseClip,
+          cleanupChromaKeyFiles: (paths) =>
+              reversedCleanupPaths.addAll(paths.whereType<String>()),
+        ),
         seed: () => ClipEditorState(
           clips: [
             _createClipWithFile().copyWith(
@@ -1945,6 +1952,7 @@ void main() {
             bloc.state.clips.first.requireVideo.file?.path,
             equals('/reversed/clip-local_clip-local.mp4'),
           );
+          expect(reversedCleanupPaths, contains('/path/pre-key.mp4'));
         },
       );
 
@@ -2448,6 +2456,36 @@ void main() {
       );
 
       blocTest<ClipEditorBloc, ClipEditorState>(
+        'treats a missing backdrop clip as expected IO',
+        build: () => buildBloc(
+          bakeChromaKey:
+              ({
+                required sourceClip,
+                required chromaKey,
+                required renderId,
+              }) async => throw const ChromaKeyBackdropMissingException(
+                '/path/deleted-backdrop.mp4',
+              ),
+        ),
+        seed: () => ClipEditorState(clips: [_createClip()]),
+        act: (bloc) => bloc.add(
+          const ClipEditorChromaKeyRequested(clipId: 'clip-1', chromaKey: key),
+        ),
+        errors: () => [
+          isA<ChromaKeyBackdropMissingException>().having(
+            (e) => e,
+            'reportable marker',
+            isNot(isA<ReportableError>()),
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.clips.single.video?.file?.path, '/path/clip-1.mp4');
+          expect(bloc.state.isChromaKeying, isFalse);
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyFailure>());
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
         'discards the render when the clip is gone',
         build: () => buildBloc(
           bakeChromaKey:
@@ -2481,10 +2519,8 @@ void main() {
         },
         // Outlast the fake render so `verify` sees the settled state.
         wait: const Duration(milliseconds: 50),
-        verify: (bloc) => expect(
-          bloc.state.lastChromaKeyResult,
-          isA<ChromaKeyDiscarded>(),
-        ),
+        verify: (bloc) =>
+            expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyDiscarded>()),
       );
     });
 
@@ -2508,6 +2544,7 @@ void main() {
         chromaKeySourcePath: sourcePath,
       );
 
+      final removeCleanupPaths = <String>[];
       blocTest<ClipEditorBloc, ClipEditorState>(
         'restores the pre-key footage without rendering',
         build: () => buildBloc(
@@ -2517,6 +2554,8 @@ void main() {
                 required chromaKey,
                 required renderId,
               }) async => throw StateError('removal must not render'),
+          cleanupChromaKeyFiles: (paths) =>
+              removeCleanupPaths.addAll(paths.whereType<String>()),
         ),
         seed: () => ClipEditorState(clips: [keyedClip()]),
         act: (bloc) => bloc.add(const ClipEditorChromaKeyRemoved('clip-1')),
@@ -2526,6 +2565,7 @@ void main() {
           expect(clip.chromaKey, isNull);
           expect(clip.chromaKeySourcePath, isNull);
           expect(bloc.state.lastChromaKeyResult, isA<ChromaKeySuccess>());
+          expect(removeCleanupPaths, contains(sourcePath));
         },
       );
 
@@ -2576,9 +2616,14 @@ void main() {
         ],
       );
 
+      final transformCleanupPaths = <String>[];
       blocTest<ClipEditorBloc, ClipEditorState>(
         'renders transformed clip, swaps the file, and clears reverse caches',
-        build: () => buildBloc(transformClip: _fakeTransformClip),
+        build: () => buildBloc(
+          transformClip: _fakeTransformClip,
+          cleanupChromaKeyFiles: (paths) =>
+              transformCleanupPaths.addAll(paths.whereType<String>()),
+        ),
         seed: () => ClipEditorState(
           clips: [
             _createClipWithFile().copyWith(
@@ -2636,6 +2681,7 @@ void main() {
             bloc.state.clips.first.requireVideo.file?.path,
             equals('/transformed/clip-local_clip-local_transform.mp4'),
           );
+          expect(transformCleanupPaths, contains('/path/pre-key.mp4'));
         },
       );
 

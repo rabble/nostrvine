@@ -12,6 +12,15 @@ import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+class ChromaKeyBackdropMissingException implements Exception {
+  const ChromaKeyBackdropMissingException(this.path);
+
+  final String path;
+
+  @override
+  String toString() => 'ChromaKeyBackdropMissingException: $path';
+}
+
 /// Renders [sourceClip] with [chromaKey] burned in, returning the new file and
 /// the input it was rendered from.
 ///
@@ -157,11 +166,9 @@ abstract class ChromaKeyBakeService {
     required EditorVideo inputVideo,
     required ClipChromaKey chromaKey,
   }) async {
-    final backdropPath = chromaKey.backgroundVideoPath;
-
     // A colour or image fill lives inside the key itself, so one keyed track
     // is all it takes.
-    if (backdropPath == null && !chromaKey.key.isTransparent) {
+    if (!chromaKey.needsComposition) {
       return VideoRenderData(
         id: renderId,
         videoSegments: [
@@ -171,8 +178,9 @@ abstract class ChromaKeyBakeService {
       );
     }
 
+    final backdropPath = chromaKey.backgroundVideoPath;
     if (backdropPath != null && !File(backdropPath).existsSync()) {
-      throw StateError('Chroma-key backdrop video is missing at $backdropPath');
+      throw ChromaKeyBackdropMissingException(backdropPath);
     }
 
     // Everything else needs a second track — or, for a transparent key, at
