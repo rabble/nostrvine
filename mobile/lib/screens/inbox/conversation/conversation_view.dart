@@ -245,8 +245,10 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                                   participantPubkeys: widget.participantPubkeys,
                                   blockedPubkeys: blockedReactors,
                                   displayName: displayName,
-                                  imageUrl: profile?.picture,
-                                  nip05: profile?.shortDisplayNip05,
+                                  imageUrl: isDeleted ? null : profile?.picture,
+                                  nip05: isDeleted
+                                      ? null
+                                      : profile?.shortDisplayNip05,
                                   onViewProfile: () {
                                     final npub = NostrKeyUtils.encodePubKey(
                                       otherPubkey,

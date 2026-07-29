@@ -3719,6 +3719,17 @@ void main() {
         expect((result! as UserProfileVanished).pubkey, equals(testPubkey));
       });
 
+      test('ignores the legacy deleted field', () async {
+        const legacyDeletedResponse = '{"deleted": true, "profile": null}';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(legacyDeletedResponse, 200));
+
+        final result = await client.getUserProfile(testPubkey);
+
+        expect(result, isA<UserProfileNotPublished>());
+      });
+
       test('a vanish request alongside a served profile is live', () async {
         // `has_vanish_request` is historical and never goes false again, so a
         // completed vanish that republished a Kind 0 still carries it while
@@ -4667,6 +4678,65 @@ void main() {
           expect(
             (result.profiles['pub2']! as UserProfileFound).profile.name,
             equals('Valid'),
+          );
+        },
+      );
+
+      test(
+        'returns UserProfileVanished for has_vanish_request with null profile',
+        () async {
+          const response = '''
+{
+  "users": [
+    {"pubkey": "pub1", "has_vanish_request": true, "profile": null}
+  ]
+}
+''';
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => http.Response(response, 200));
+
+          final result = await client.getBulkProfiles(['pub1']);
+
+          expect(result.profiles, hasLength(1));
+          expect(result.profiles['pub1'], isA<UserProfileVanished>());
+        },
+      );
+
+      test(
+        'returns UserProfileFound for has_vanish_request with populated '
+        'profile',
+        () async {
+          const response = '''
+{
+  "users": [
+    {
+      "pubkey": "pub1",
+      "has_vanish_request": true,
+      "profile": {"name": "Restored", "display_name": "Restored User"}
+    }
+  ]
+}
+''';
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async => http.Response(response, 200));
+
+          final result = await client.getBulkProfiles(['pub1']);
+
+          expect(result.profiles, hasLength(1));
+          expect(result.profiles['pub1'], isA<UserProfileFound>());
+          expect(
+            (result.profiles['pub1']! as UserProfileFound).profile.name,
+            equals('Restored'),
           );
         },
       );

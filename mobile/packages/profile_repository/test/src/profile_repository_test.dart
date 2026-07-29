@@ -834,9 +834,9 @@ void main() {
             mockVanishedDao = MockVanishedProfilesDao();
             mockIdentityDao = MockIdentityEventsDao();
 
-            when(() => mockVanishedDao.markVanished(any())).thenAnswer(
-              (_) async {},
-            );
+            when(
+              () => mockVanishedDao.markVanished(any()),
+            ).thenAnswer((_) async {});
             when(
               () => mockVanishedDao.clearVanished(any()),
             ).thenAnswer((_) async => 1);

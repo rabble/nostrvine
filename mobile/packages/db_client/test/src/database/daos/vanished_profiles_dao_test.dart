@@ -62,8 +62,9 @@ void main() {
     });
 
     test('clearVanished forgets the pubkey', () async {
-      // The self-heal path: a wrong vanish classification must be recoverable
-      // rather than erasing the account from this device forever.
+      // The self-heal path: a wrong `has_vanish_request: true` classification
+      // must be recoverable rather than erasing the account from this device
+      // forever.
       await dao.markVanished(_pubkey);
 
       final removed = await dao.clearVanished(_pubkey);
@@ -123,6 +124,31 @@ void main() {
 
         await subscription.cancel();
         expect(emissions, equals([false]));
+      });
+    });
+
+    group('watchAllPubkeys', () {
+      test('emits the whole vanished set when rows change', () async {
+        final emissions = <List<String>>[];
+        final subscription = dao.watchAllPubkeys().listen((pubkeys) {
+          emissions.add([...pubkeys]..sort());
+        });
+
+        await pumpEventQueue();
+        await dao.markVanished(_pubkey);
+        await pumpEventQueue();
+        await dao.markVanished(_otherPubkey);
+        await pumpEventQueue();
+        await dao.clearVanished(_pubkey);
+        await pumpEventQueue();
+
+        await subscription.cancel();
+        expect(emissions, [
+          <String>[],
+          [_pubkey],
+          [_otherPubkey, _pubkey]..sort(),
+          [_otherPubkey],
+        ]);
       });
     });
   });

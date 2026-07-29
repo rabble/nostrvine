@@ -37,6 +37,7 @@ void main() {
       UserProfile? suppliedProfile,
       UserProfile? myProfile,
       UserProfile? riverpodProfile,
+      bool isVanished = false,
       bool provideMyProfileBloc = true,
     }) {
       Widget layer = ProfileBannerLayer(
@@ -63,6 +64,9 @@ void main() {
           fetchUserProfileProvider(
             _testUserHex,
           ).overrideWith((ref) async => riverpodProfile),
+          profileVanishedProvider(
+            _testUserHex,
+          ).overrideWith((ref) => Stream.value(isVanished)),
         ],
         child: MaterialApp(home: Scaffold(body: layer)),
       );
@@ -144,6 +148,23 @@ void main() {
 
       final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
       expect(banner.bannerUrl, equals('https://example.com/relay.jpg'));
+    });
+
+    testWidgets('does not render cached banner for a vanished other profile', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: false,
+          isVanished: true,
+          riverpodProfile: _profileWithBanner('https://example.com/stale.jpg'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final banner = tester.widget<ProfileBanner>(find.byType(ProfileBanner));
+      expect(banner.bannerUrl, isNull);
+      expect(banner.profileColor, isNull);
     });
 
     testWidgets(

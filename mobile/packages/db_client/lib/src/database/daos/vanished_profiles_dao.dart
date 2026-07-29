@@ -29,8 +29,8 @@ class VanishedProfilesDao extends DatabaseAccessor<AppDatabase>
   /// Forgets that [pubkey] ever vanished.
   ///
   /// Called when the server reports the account as live again, so a wrong
-  /// vanish classification is recoverable instead of erasing the user from
-  /// this device permanently.
+  /// `has_vanish_request: true` classification is recoverable instead of
+  /// erasing the user from this device permanently.
   Future<int> clearVanished(String pubkey) {
     return (delete(
       vanishedProfiles,
@@ -51,6 +51,13 @@ class VanishedProfilesDao extends DatabaseAccessor<AppDatabase>
       ..where((t) => t.pubkey.equals(pubkey))
       ..limit(1);
     return query.watchSingleOrNull().map((row) => row != null).distinct();
+  }
+
+  /// Emits the whole vanished-pubkey set whenever the tombstone table changes.
+  Stream<List<String>> watchAllPubkeys() {
+    return select(vanishedProfiles).watch().map(
+      (rows) => rows.map((row) => row.pubkey).toList(growable: false),
+    );
   }
 
   /// Every vanished pubkey, for warming an in-memory set at startup.

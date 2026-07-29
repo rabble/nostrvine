@@ -4,6 +4,7 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
+import 'package:meta/meta.dart';
 
 /// {@template app_db_client}
 /// A typed database client that wraps [DbClient] with domain-specific methods.
@@ -210,6 +211,7 @@ class AppDbClient {
   }
 
   /// Insert or update a user profile.
+  @visibleForTesting
   Future<UserProfileRow> upsertProfile(UserProfilesCompanion profile) async {
     final result = await _dbClient.insert(
       _db.userProfiles,
