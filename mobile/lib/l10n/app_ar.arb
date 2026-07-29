@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "تعذّر تحميل هذه الصورة.",
     "videoEditorChromaKeyRemove": "أزل الشاشة الخضراء",
     "videoEditorChromaKeyFailed": "تعذّر تطبيق الشاشة الخضراء. مقطعك كما هو دون تغيير.",
+    "videoEditorChromaKeyRemoveFailed": "تعذّر إزالة الشاشة الخضراء. مقطعك كما هو دون تغيير.",
     "videoEditorChromaKeyApplying": "جارٍ تطبيق الشاشة الخضراء…",
     "videoEditorChromaKeyPreviewUnavailable": "لا يستطيع هذا الجهاز عرض المعاينة المباشرة. لكن إعداداتك ستُطبَّق عند التصدير.",
     "videoEditorOriginalAudioLabel": "الصوت الأصلي",

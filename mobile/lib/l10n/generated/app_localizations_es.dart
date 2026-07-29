@@ -8895,6 +8895,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo aplicar el croma. Tu clip queda igual.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'No se pudo quitar el croma. Tu clip queda igual.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Aplicando el croma…';
 
   @override

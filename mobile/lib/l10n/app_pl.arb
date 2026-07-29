@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Nie udało się wczytać tego obrazu.",
     "videoEditorChromaKeyRemove": "Usuń zielone tło",
     "videoEditorChromaKeyFailed": "Nie udało się zastosować zielonego tła. Twój klip pozostaje bez zmian.",
+    "videoEditorChromaKeyRemoveFailed": "Nie udało się usunąć zielonego tła. Twój klip pozostaje bez zmian.",
     "videoEditorChromaKeyApplying": "Stosowanie zielonego tła…",
     "videoEditorChromaKeyPreviewUnavailable": "To urządzenie nie pokaże podglądu na żywo. Twoje ustawienia i tak zadziałają przy eksporcie.",
     "videoEditorOriginalAudioLabel": "Oryginalne audio",

@@ -8487,6 +8487,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorChromaKeyFailed => '크로마키를 적용하지 못했습니다. 클립은 그대로입니다.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      '크로마키를 제거하지 못했습니다. 클립은 그대로입니다.';
+
+  @override
   String get videoEditorChromaKeyApplying => '크로마키를 적용하는 중…';
 
   @override

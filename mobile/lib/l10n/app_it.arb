@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Impossibile caricare quell'immagine.",
     "videoEditorChromaKeyRemove": "Rimuovi il green screen",
     "videoEditorChromaKeyFailed": "Non è stato possibile applicare il green screen. La clip resta invariata.",
+    "videoEditorChromaKeyRemoveFailed": "Non è stato possibile rimuovere il green screen. La clip resta invariata.",
     "videoEditorChromaKeyApplying": "Applico il green screen…",
     "videoEditorChromaKeyPreviewUnavailable": "Questo dispositivo non può mostrare l'anteprima dal vivo. Le tue impostazioni valgono comunque in esportazione.",
     "videoEditorOriginalAudioLabel": "Audio originale",

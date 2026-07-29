@@ -53,13 +53,11 @@ class VideoEditorScaffold extends StatelessWidget {
         body: _SplitFailureListener(
           child: _ClipReverseResultListener(
             child: _ClipTransformResultListener(
-              child: _ChromaKeyResultListener(
-                child: _ClipMergeResultListener(
-                  child: _ClipsRemovedResultListener(
-                    child: _AudioExtractionResultListener(
-                      child: _ClipLibrarySaveResultListener(
-                        child: _ScaffoldBody(isLoading: isLoading),
-                      ),
+              child: _ClipMergeResultListener(
+                child: _ClipsRemovedResultListener(
+                  child: _AudioExtractionResultListener(
+                    child: _ClipLibrarySaveResultListener(
+                      child: _ScaffoldBody(isLoading: isLoading),
                     ),
                   ),
                 ),
@@ -191,45 +189,11 @@ class _ClipReverseResultListener extends StatelessWidget {
   }
 }
 
-/// Listens to [ClipEditorBloc.state.lastChromaKeyResult] and surfaces a
-/// snackbar when baking a green screen into a clip fails.
-///
-/// Success needs no message: the clip's video is swapped and the canvas
-/// reloads it, which is the confirmation. Kept at the scaffold level (always
-/// mounted) so the snackbar fires even when the timeline controls are hidden
-/// while the render is in flight.
-class _ChromaKeyResultListener extends StatelessWidget {
-  const _ChromaKeyResultListener({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<ClipEditorBloc, ClipEditorState>(
-      listenWhen: (prev, curr) =>
-          !identical(prev.lastChromaKeyResult, curr.lastChromaKeyResult) &&
-          curr.lastChromaKeyResult != null,
-      listener: (context, state) {
-        switch (state.lastChromaKeyResult) {
-          case ChromaKeyFailure():
-            ScaffoldMessenger.of(context).showSnackBar(
-              DivineSnackbarContainer.snackBar(
-                context.l10n.videoEditorChromaKeyFailed,
-              ),
-            );
-          case ChromaKeyDiscarded():
-          // The clip was removed during the render — nothing to attach the
-          // result to, and no user action that warrants a snackbar.
-          case ChromaKeySuccess():
-          // The swapped clip file is the confirmation.
-          case null:
-            break;
-        }
-      },
-      child: child,
-    );
-  }
-}
+// No chroma-key result listener here on purpose. Both chroma-key events are
+// dispatched from `VideoClipChromaKeyScreen`, which cannot be left while a bake
+// is in flight, so that screen is always mounted when the result lands and owns
+// the message. A second listener at this level would queue the same snackbar on
+// the same root `ScaffoldMessenger` and show it twice.
 
 /// Listens to [ClipEditorBloc.state.lastTransformResult] and surfaces a
 /// snackbar when a transform-render operation fails or the clip has no local

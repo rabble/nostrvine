@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "その画像を読み込めませんでした。",
     "videoEditorChromaKeyRemove": "グリーンバックを削除",
     "videoEditorChromaKeyFailed": "グリーンバックを適用できませんでした。クリップは変更されていません。",
+    "videoEditorChromaKeyRemoveFailed": "グリーンバックを削除できませんでした。クリップは変更されていません。",
     "videoEditorChromaKeyApplying": "グリーンバックを適用しています…",
     "videoEditorChromaKeyPreviewUnavailable": "この端末ではライブプレビューを表示できません。設定は書き出し時にきちんと反映されます。",
     "videoEditorOriginalAudioLabel": "元の音声",

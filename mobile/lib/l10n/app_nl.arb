@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Kon die afbeelding niet laden.",
     "videoEditorChromaKeyRemove": "Greenscreen verwijderen",
     "videoEditorChromaKeyFailed": "Kon het greenscreen niet toepassen. Je clip blijft ongewijzigd.",
+    "videoEditorChromaKeyRemoveFailed": "Kon het greenscreen niet verwijderen. Je clip blijft ongewijzigd.",
     "videoEditorChromaKeyApplying": "Greenscreen wordt toegepast…",
     "videoEditorChromaKeyPreviewUnavailable": "Dit toestel kan de live voorbeeldweergave niet tonen. Je instellingen gelden nog steeds bij het exporteren.",
     "videoEditorOriginalAudioLabel": "Origineel geluid",

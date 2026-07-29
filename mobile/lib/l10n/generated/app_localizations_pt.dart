@@ -8869,6 +8869,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível aplicar o fundo verde. O teu clipe fica igual.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Não foi possível remover o fundo verde. O teu clipe fica igual.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'A aplicar o fundo verde…';
 
   @override

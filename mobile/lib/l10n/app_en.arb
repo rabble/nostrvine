@@ -5041,6 +5041,10 @@
   "videoEditorChromaKeyImagePickFailed": "Couldn't load that image.",
   "videoEditorChromaKeyRemove": "Remove green screen",
   "videoEditorChromaKeyFailed": "Couldn't apply the green screen. Your clip is unchanged.",
+  "videoEditorChromaKeyRemoveFailed": "Couldn't remove the green screen. Your clip is unchanged.",
+  "@videoEditorChromaKeyRemoveFailed": {
+    "description": "Shown when dropping a clip's already-baked green screen fails, so the clip keeps the keyed video. The counterpart videoEditorChromaKeyFailed is for the opposite direction — applying one."
+  },
   "videoEditorChromaKeyApplying": "Applying the green screen…",
   "videoEditorChromaKeyPreviewUnavailable": "This device can't show the live preview. Your settings still apply when you export.",
   "@videoEditorChromaKeyPreviewUnavailable": {

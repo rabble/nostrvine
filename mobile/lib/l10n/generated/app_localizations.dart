@@ -15276,6 +15276,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t apply the green screen. Your clip is unchanged.'**
   String get videoEditorChromaKeyFailed;
 
+  /// Shown when dropping a clip's already-baked green screen fails, so the clip keeps the keyed video. The counterpart videoEditorChromaKeyFailed is for the opposite direction — applying one.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove the green screen. Your clip is unchanged.'**
+  String get videoEditorChromaKeyRemoveFailed;
+
   /// No description provided for @videoEditorChromaKeyApplying.
   ///
   /// In en, this message translates to:

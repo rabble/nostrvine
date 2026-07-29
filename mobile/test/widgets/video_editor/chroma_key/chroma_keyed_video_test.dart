@@ -41,25 +41,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('survives a key change without leaking the old shader', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const ChromaKeyedVideo(
-          chromaKey: ClipChromaKey(key: ChromaKey.greenScreen()),
-          child: child,
-        ),
-      );
-      await tester.pumpWidget(
-        const ChromaKeyedVideo(
-          chromaKey: ClipChromaKey(key: ChromaKey.blueScreen()),
-          child: child,
-        ),
-      );
-      await tester.pumpWidget(const ChromaKeyedVideo(child: child));
-
-      expect(find.text('video'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
+    // Deliberately no test for the shader path: `flutter_test` reports no
+    // shader image filter, so `_prepare` returns at its backend guard and the
+    // shader is never built. Any such test would pass with the shader logic
+    // deleted, which makes it worse than no test — see
+    // `.claude/rules/testing.md`.
   });
 }

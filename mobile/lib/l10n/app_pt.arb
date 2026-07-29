@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Não foi possível carregar essa imagem.",
     "videoEditorChromaKeyRemove": "Remover o fundo verde",
     "videoEditorChromaKeyFailed": "Não foi possível aplicar o fundo verde. O teu clipe fica igual.",
+    "videoEditorChromaKeyRemoveFailed": "Não foi possível remover o fundo verde. O teu clipe fica igual.",
     "videoEditorChromaKeyApplying": "A aplicar o fundo verde…",
     "videoEditorChromaKeyPreviewUnavailable": "Este dispositivo não consegue mostrar a pré-visualização ao vivo. As tuas definições aplicam-se na mesma ao exportar.",
     "videoEditorOriginalAudioLabel": "Áudio original",

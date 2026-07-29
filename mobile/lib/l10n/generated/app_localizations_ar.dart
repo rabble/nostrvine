@@ -8756,6 +8756,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر تطبيق الشاشة الخضراء. مقطعك كما هو دون تغيير.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'تعذّر إزالة الشاشة الخضراء. مقطعك كما هو دون تغيير.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'جارٍ تطبيق الشاشة الخضراء…';
 
   @override

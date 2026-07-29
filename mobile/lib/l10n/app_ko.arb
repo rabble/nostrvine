@@ -3223,6 +3223,7 @@
     "videoEditorChromaKeyImagePickFailed": "그 이미지를 불러오지 못했습니다.",
     "videoEditorChromaKeyRemove": "크로마키 제거",
     "videoEditorChromaKeyFailed": "크로마키를 적용하지 못했습니다. 클립은 그대로입니다.",
+    "videoEditorChromaKeyRemoveFailed": "크로마키를 제거하지 못했습니다. 클립은 그대로입니다.",
     "videoEditorChromaKeyApplying": "크로마키를 적용하는 중…",
     "videoEditorChromaKeyPreviewUnavailable": "이 기기에서는 실시간 미리보기를 표시할 수 없습니다. 설정은 내보낼 때 그대로 적용됩니다.",
     "videoEditorOriginalAudioLabel": "원본 오디오",

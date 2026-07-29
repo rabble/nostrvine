@@ -8932,6 +8932,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'appliquer le fond vert. Ton clip est inchangé.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Impossible de retirer le fond vert. Ton clip est inchangé.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Application du fond vert…';
 
   @override

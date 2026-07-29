@@ -8890,6 +8890,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Зеленият екран не можа да се приложи. Клипът ти остава непроменен.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Зеленият екран не можа да се премахне. Клипът ти остава непроменен.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Прилагане на зеления екран…';
 
   @override

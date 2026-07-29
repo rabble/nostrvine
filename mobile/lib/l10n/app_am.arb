@@ -4024,6 +4024,7 @@
     "videoEditorChromaKeyImagePickFailed": "ያንን ምስል መጫን አልተቻለም።",
     "videoEditorChromaKeyRemove": "አረንጓዴ ስክሪኑን አስወግድ",
     "videoEditorChromaKeyFailed": "አረንጓዴ ስክሪኑን መተግበር አልተቻለም። ቅንጥብህ ሳይለወጥ ይቆያል።",
+    "videoEditorChromaKeyRemoveFailed": "አረንጓዴ ስክሪኑን ማስወገድ አልተቻለም። ቅንጥብህ ሳይለወጥ ይቆያል።",
     "videoEditorChromaKeyApplying": "አረንጓዴ ስክሪን እየተተገበረ ነው…",
     "videoEditorChromaKeyPreviewUnavailable": "ይህ መሣሪያ ቀጥታ ቅድመ-እይታን ማሳየት አይችልም። ቅንብሮችህ ግን ወደ ውጭ ሲወጣ ይሠራሉ።",
     "videoEditorOriginalAudioLabel": "ዋናው ኦዲዮ",

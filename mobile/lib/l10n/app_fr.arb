@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Impossible de charger cette image.",
     "videoEditorChromaKeyRemove": "Retirer le fond vert",
     "videoEditorChromaKeyFailed": "Impossible d'appliquer le fond vert. Ton clip est inchangé.",
+    "videoEditorChromaKeyRemoveFailed": "Impossible de retirer le fond vert. Ton clip est inchangé.",
     "videoEditorChromaKeyApplying": "Application du fond vert…",
     "videoEditorChromaKeyPreviewUnavailable": "Cet appareil ne peut pas afficher l'aperçu en direct. Tes réglages s'appliquent quand même à l'export.",
     "videoEditorOriginalAudioLabel": "Audio original",

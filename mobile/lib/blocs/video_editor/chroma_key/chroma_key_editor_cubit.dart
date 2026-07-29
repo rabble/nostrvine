@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/video_editor/clip_chroma_key.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -85,7 +86,18 @@ class ChromaKeyEditorCubit extends Cubit<ChromaKeyEditorState> {
       if (isClosed) return;
       emit(state.copyWith(detectionStatus: ChromaKeyDetectionStatus.failure));
     } catch (error, stackTrace) {
-      addError(error, stackTrace);
+      // Same split as the bake in `ClipEditorBloc`: a decode or channel failure
+      // is expected and stays out of Crashlytics, an invariant violation does
+      // not.
+      addError(
+        switch (error) {
+          StateError() ||
+          TypeError() ||
+          RangeError() => Reportable(error, context: 'detectFromFootage'),
+          _ => error,
+        },
+        stackTrace,
+      );
       if (isClosed) return;
       emit(state.copyWith(detectionStatus: ChromaKeyDetectionStatus.failure));
     }

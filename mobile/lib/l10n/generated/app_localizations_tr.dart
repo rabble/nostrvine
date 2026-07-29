@@ -8781,6 +8781,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yeşil perde uygulanamadı. Klibin değişmedi.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Yeşil perde kaldırılamadı. Klibin değişmedi.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Yeşil perde uygulanıyor…';
 
   @override

@@ -8895,6 +8895,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non è stato possibile applicare il green screen. La clip resta invariata.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Non è stato possibile rimuovere il green screen. La clip resta invariata.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Applico il green screen…';
 
   @override

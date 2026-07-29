@@ -2475,6 +2475,7 @@
     "videoEditorChromaKeyImagePickFailed": "Hindi ma-load ang larawang iyon.",
     "videoEditorChromaKeyRemove": "Alisin ang green screen",
     "videoEditorChromaKeyFailed": "Hindi na-apply ang green screen. Hindi nagbago ang clip mo.",
+    "videoEditorChromaKeyRemoveFailed": "Hindi naalis ang green screen. Hindi nagbago ang clip mo.",
     "videoEditorChromaKeyApplying": "Ina-apply ang green screen…",
     "videoEditorChromaKeyPreviewUnavailable": "Hindi maipapakita ng device na ito ang live preview. Gumagana pa rin ang mga setting mo kapag nag-export.",
     "videoEditorOriginalAudioLabel": "Orihinal na audio",

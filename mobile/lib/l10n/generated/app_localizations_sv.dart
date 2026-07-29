@@ -8811,6 +8811,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att använda green screen. Ditt klipp är oförändrat.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Det gick inte att ta bort green screen. Ditt klipp är oförändrat.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Använder green screen …';
 
   @override

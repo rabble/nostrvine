@@ -8780,6 +8780,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Layar hijau tidak bisa diterapkan. Klipmu tidak berubah.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Layar hijau tidak bisa dihapus. Klipmu tidak berubah.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Menerapkan layar hijau…';
 
   @override

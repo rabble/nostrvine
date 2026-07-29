@@ -1877,7 +1877,14 @@ void main() {
       blocTest<ClipEditorBloc, ClipEditorState>(
         'bakes the visible window into a standalone reversed clip',
         build: () => buildBloc(reverseClip: _fakeReverseClip),
-        seed: () => ClipEditorState(clips: [_createClipWithFile()]),
+        seed: () => ClipEditorState(
+          clips: [
+            _createClipWithFile().copyWith(
+              chromaKey: const ClipChromaKey(key: ChromaKey.greenScreen()),
+              chromaKeySourcePath: '/path/pre-key.mp4',
+            ),
+          ],
+        ),
         act: (bloc) => bloc.add(
           const ClipEditorClipReverseRequested(clipId: 'clip-local'),
         ),
@@ -1917,6 +1924,14 @@ void main() {
               .having(
                 (s) => s.clips.first.reversedVideoPath,
                 'reversedVideoPath',
+                isNull,
+              )
+              // The reversed render is a new file; re-keying from the recorded
+              // un-reversed source would undo the reverse.
+              .having((s) => s.clips.first.chromaKey, 'chromaKey', isNull)
+              .having(
+                (s) => s.clips.first.chromaKeySourcePath,
+                'chromaKeySourcePath',
                 isNull,
               )
               .having(
@@ -2525,7 +2540,10 @@ void main() {
           // Nothing to restore, so the clip must keep the keyed video rather
           // than be pointed at a file that does not exist.
           expect(bloc.state.clips.single.video?.file?.path, '/path/keyed.mp4');
-          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyFailure>());
+          // Its own result type, not the bake's: the two drive opposite copy,
+          // and reusing ChromaKeyFailure told the user we could not *apply* a
+          // key they were trying to remove.
+          expect(bloc.state.lastChromaKeyResult, isA<ChromaKeyRemoveFailure>());
         },
       );
 
@@ -2566,6 +2584,8 @@ void main() {
             _createClipWithFile().copyWith(
               forwardVideoPath: '/path/clip-local.mp4',
               reversedVideoPath: '/reversed/clip-local.mp4',
+              chromaKey: const ClipChromaKey(key: ChromaKey.greenScreen()),
+              chromaKeySourcePath: '/path/pre-key.mp4',
             ),
           ],
         ),
@@ -2594,6 +2614,15 @@ void main() {
               .having(
                 (s) => s.clips.first.reversedVideoPath,
                 'reversedVideoPath',
+                isNull,
+              )
+              // The transform re-rendered the geometry, so re-keying from the
+              // recorded pre-key file would silently drop the crop. Both halves
+              // of the key have to go with it.
+              .having((s) => s.clips.first.chromaKey, 'chromaKey', isNull)
+              .having(
+                (s) => s.clips.first.chromaKeySourcePath,
+                'chromaKeySourcePath',
                 isNull,
               )
               .having(

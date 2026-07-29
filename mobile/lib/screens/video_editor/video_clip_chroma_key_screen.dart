@@ -20,6 +20,7 @@ import 'package:openvine/utils/image_orientation.dart';
 import 'package:openvine/utils/loop_restarts.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_editor/chroma_key/chroma_key_backdrop.dart';
 import 'package:openvine/widgets/video_editor/chroma_key/chroma_key_clip_picker_sheet.dart';
 import 'package:openvine/widgets/video_editor/chroma_key/chroma_key_controls.dart';
 import 'package:openvine/widgets/video_editor/chroma_key/chroma_keyed_video.dart';
@@ -62,6 +63,21 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
   late final ChromaKeyEditorCubit _cubit;
   DivineVideoPlayerController? _player;
 
+  /// Background images this screen copied into the documents dir.
+  ///
+  /// They have to be tracked because nothing else can reclaim them: an image
+  /// that is not the one the user ends up baking is referenced by no clip, and
+  /// the draft orphan sweep only ever looks at paths a clip still points at.
+  final _createdImagePaths = <String>{};
+
+  /// The one created image the confirmed bake actually used, if any. Everything
+  /// else in [_createdImagePaths] is garbage by the time this screen closes.
+  String? _keptImagePath;
+
+  /// The background image the pending bake was dispatched with, promoted to
+  /// [_keptImagePath] once that bake lands.
+  String? _pendingImagePath;
+
   @override
   void initState() {
     super.initState();
@@ -78,20 +94,20 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
     unawaited(_initializePlayer());
   }
 
-  /// The footage the preview and the measurement run on.
-  ///
-  /// For an already-keyed clip that is the pre-bake original: keying the baked
-  /// video again would show a key applied twice, and measuring it would sample
-  /// the replaced background instead of the screen.
-  /// Whether the pre-key footage is still on disk to restore.
+  /// Whether the pre-key footage is still on disk to preview and restore.
   late final bool _hasKeySource = () {
     final source = widget.clip.chromaKeySourcePath;
     return source != null && File(source).existsSync();
   }();
 
+  /// The footage the preview and the measurement run on.
+  ///
+  /// For an already-keyed clip that is the pre-bake original: keying the baked
+  /// video again would show a key applied twice, and measuring it would sample
+  /// the replaced background instead of the screen.
   String get _previewPath {
     final source = widget.clip.chromaKeySourcePath;
-    if (source != null && File(source).existsSync()) return source;
+    if (source != null && _hasKeySource) return source;
     return widget.clip.video?.file?.path ?? '';
   }
 
@@ -134,17 +150,26 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
     }
   }
 
-  /// Fires when the looping clip wraps, so a video backdrop restarts with it.
+  /// Keeps a video backdrop in step with the looping preview.
   ///
-  /// Broadcast because the backdrop widget subscribes and unsubscribes as the
-  /// background type changes.
-  Stream<void> get _clipRestarts => _restarts ??= loopRestarts(
-    _player!.stateStream.map((state) => state.position),
-  ).asBroadcastStream();
+  /// The restart stream is broadcast because the backdrop widget subscribes and
+  /// unsubscribes as the background type changes. The offset and speed are the
+  /// clip's own, so the preview shows the alignment the export will produce —
+  /// see [ChromaKeyBackdropSync].
+  ChromaKeyBackdropSync get _backdropSync => ChromaKeyBackdropSync(
+    restarts: _restarts ??= loopRestarts(
+      _player!.stateStream.map((state) => state.position),
+    ).asBroadcastStream(),
+    sourceOffset: widget.clip.trimStart,
+    playbackSpeed: widget.clip.playbackSpeed ?? 1,
+  );
   Stream<void>? _restarts;
 
   @override
   void dispose() {
+    // A pick the user walked away from is unreachable garbage the moment this
+    // screen goes: nothing else in the app enumerates these files.
+    unawaited(_pruneCreatedImages(keep: _keptImagePath));
     unawaited(_player?.dispose());
     unawaited(_cubit.close());
     super.dispose();
@@ -199,7 +224,10 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
         await File(picked.path).readAsBytes(),
       );
       await File(target).writeAsBytes(normalized, flush: true);
+      _createdImagePaths.add(target);
       _cubit.useImageBackground(target);
+      // Trying five photos before settling on one should not cost five files.
+      unawaited(_pruneCreatedImages(keep: target));
     } catch (error, stackTrace) {
       Log.error(
         'Failed to copy the chroma-key background image',
@@ -214,6 +242,27 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
           context.l10n.videoEditorChromaKeyImagePickFailed,
         ),
       );
+    }
+  }
+
+  /// Deletes every background image this screen created except [keep].
+  ///
+  /// Best-effort: a file that cannot be removed costs disk, not correctness, so
+  /// a failure is logged rather than surfaced.
+  Future<void> _pruneCreatedImages({String? keep}) async {
+    final stale = _createdImagePaths.where((path) => path != keep).toList();
+    _createdImagePaths.removeWhere((path) => path != keep);
+    for (final path in stale) {
+      try {
+        final file = File(path);
+        if (file.existsSync()) await file.delete();
+      } catch (error) {
+        Log.warning(
+          '⚠️ Failed to delete unused chroma-key background $path: $error',
+          name: 'VideoClipChromaKeyScreen',
+          category: LogCategory.video,
+        );
+      }
     }
   }
 
@@ -297,7 +346,7 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
                         child: _Preview(
                           aspectRatio: widget.clip.targetAspectRatio.value,
                           player: _player,
-                          restarts: _player == null ? null : _clipRestarts,
+                          backdropSync: _player == null ? null : _backdropSync,
                         ),
                       ),
                       // Undoing a key is a file swap, not a render — the clip
@@ -311,11 +360,7 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
                             type: .ghost,
                             size: .small,
                             expanded: true,
-                            onPressed: isBaking
-                                ? null
-                                : () => context.read<ClipEditorBloc>().add(
-                                    ClipEditorChromaKeyRemoved(widget.clip.id),
-                                  ),
+                            onPressed: isBaking ? null : () => _remove(context),
                           ),
                         ),
                       Flexible(
@@ -339,32 +384,52 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
   void _confirm(BuildContext context) {
     // The bloc owns the render so it survives this screen; the screen stays up
     // and blocked until the result lands, which is what makes the wait legible.
+    final chromaKey = _cubit.state.chromaKey;
+    _pendingImagePath = chromaKey.backgroundImagePath;
     context.read<ClipEditorBloc>().add(
       ClipEditorChromaKeyRequested(
         clipId: widget.clip.id,
-        chromaKey: _cubit.state.chromaKey,
+        chromaKey: chromaKey,
       ),
+    );
+  }
+
+  void _remove(BuildContext context) {
+    // Going back to the pre-key footage leaves the clip with no key at all, so
+    // no background image survives it — including one an earlier failed bake
+    // had queued.
+    _pendingImagePath = null;
+    context.read<ClipEditorBloc>().add(
+      ClipEditorChromaKeyRemoved(widget.clip.id),
     );
   }
 
   void _onBakeResult(BuildContext context, ClipEditorState state) {
     switch (state.lastChromaKeyResult) {
       case ChromaKeySuccess():
+        // The clip now points at this bake's background image, so it is the one
+        // image the teardown must not delete. Null after a Remove, which leaves
+        // the clip with no key and every created image unreferenced.
+        _keptImagePath = _pendingImagePath;
         Navigator.of(context).pop();
       case ChromaKeyFailure():
         // Stay open: the settings are still on screen, so retrying costs
         // nothing but another tap.
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.videoEditorChromaKeyFailed,
-          ),
-        );
+        _showResult(context, context.l10n.videoEditorChromaKeyFailed);
+      case ChromaKeyRemoveFailure():
+        _showResult(context, context.l10n.videoEditorChromaKeyRemoveFailed);
       case ChromaKeyDiscarded():
         // The clip is gone from under us — there is nothing left to edit.
         Navigator.of(context).pop();
       case null:
         break;
     }
+  }
+
+  void _showResult(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(DivineSnackbarContainer.snackBar(message));
   }
 }
 
@@ -378,35 +443,45 @@ class _BakingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: ColoredBox(
-        color: VineTheme.backgroundCamera.withValues(alpha: 0.85),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 16,
-            children: [
-              const BrandedLoadingIndicator(size: 44),
-              Text(
-                context.l10n.videoEditorChromaKeyApplying,
-                style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
-              ),
-              // RepaintBoundary: without it the progress text repaints the
-              // whole overlay on every tick.
-              RepaintBoundary(
-                child: StreamBuilder<ProgressModel>(
-                  stream: ProVideoEditor.instance.progressStreamById(renderId),
-                  builder: (context, snapshot) {
-                    final progress = snapshot.data?.progress ?? 0;
-                    return Text(
-                      '${(progress * 100).round()}%',
-                      style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
-                      ),
-                    );
-                  },
+      // `ColoredBox` already absorbs pointers, but semantics travel their own
+      // path: without `BlockSemantics` the controls underneath stay reachable
+      // to a screen reader, and edits made there are silently dropped — the
+      // bake captured its settings at Done. Worse, activating the clip picker
+      // would put a sheet on this Navigator that the success handler's `pop()`
+      // would close instead of this screen.
+      child: BlockSemantics(
+        child: ColoredBox(
+          color: VineTheme.backgroundCamera.withValues(alpha: 0.85),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 16,
+              children: [
+                const BrandedLoadingIndicator(size: 44),
+                Text(
+                  context.l10n.videoEditorChromaKeyApplying,
+                  style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
                 ),
-              ),
-            ],
+                // RepaintBoundary: without it the progress text repaints the
+                // whole overlay on every tick.
+                RepaintBoundary(
+                  child: StreamBuilder<ProgressModel>(
+                    stream: ProVideoEditor.instance.progressStreamById(
+                      renderId,
+                    ),
+                    builder: (context, snapshot) {
+                      final progress = snapshot.data?.progress ?? 0;
+                      return Text(
+                        '${(progress * 100).round()}%',
+                        style: VineTheme.bodyMediumFont(
+                          color: VineTheme.onSurfaceVariant,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -419,14 +494,14 @@ class _Preview extends StatelessWidget {
   const _Preview({
     required this.aspectRatio,
     required this.player,
-    required this.restarts,
+    required this.backdropSync,
   });
 
   final double aspectRatio;
   final DivineVideoPlayerController? player;
 
-  /// Loop signal handed to a video backdrop so it restarts with the clip.
-  final Stream<void>? restarts;
+  /// Keeps a video backdrop aligned with the clip. See [ChromaKeyBackdropSync].
+  final ChromaKeyBackdropSync? backdropSync;
 
   @override
   Widget build(BuildContext context) {
@@ -448,7 +523,7 @@ class _Preview extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             child: ChromaKeyedVideo(
               chromaKey: chromaKey,
-              backdropRestarts: restarts,
+              backdropSync: backdropSync,
               child: DivineVideoPlayer(controller: controller),
             ),
           ),

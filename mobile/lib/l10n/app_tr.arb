@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Bu görsel yüklenemedi.",
     "videoEditorChromaKeyRemove": "Yeşil perdeyi kaldır",
     "videoEditorChromaKeyFailed": "Yeşil perde uygulanamadı. Klibin değişmedi.",
+    "videoEditorChromaKeyRemoveFailed": "Yeşil perde kaldırılamadı. Klibin değişmedi.",
     "videoEditorChromaKeyApplying": "Yeşil perde uygulanıyor…",
     "videoEditorChromaKeyPreviewUnavailable": "Bu cihaz canlı önizlemeyi gösteremiyor. Ayarların dışa aktarımda yine de geçerli.",
     "videoEditorOriginalAudioLabel": "Orijinal ses",

@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "No se pudo cargar esa imagen.",
     "videoEditorChromaKeyRemove": "Quitar el croma",
     "videoEditorChromaKeyFailed": "No se pudo aplicar el croma. Tu clip queda igual.",
+    "videoEditorChromaKeyRemoveFailed": "No se pudo quitar el croma. Tu clip queda igual.",
     "videoEditorChromaKeyApplying": "Aplicando el croma…",
     "videoEditorChromaKeyPreviewUnavailable": "Este dispositivo no puede mostrar la vista previa en vivo. Tus ajustes se aplican igualmente al exportar.",
     "videoEditorOriginalAudioLabel": "Audio original",

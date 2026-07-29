@@ -483,10 +483,9 @@ final class ClipReverseDiscarded extends ClipReverseResult {}
 /// Reverse render failed.
 final class ClipReverseFailure extends ClipReverseResult {}
 
-// === TRANSFORM RESULT ===
+// === CHROMA KEY RESULT ===
 
-/// One-shot signal describing the outcome of a transform-render operation.
-/// Outcome of baking a green screen into a clip.
+/// One-shot signal describing the outcome of a green-screen operation.
 sealed class ChromaKeyResult {}
 
 /// The clip's file was re-rendered with the key burned in.
@@ -498,6 +497,15 @@ final class ChromaKeyDiscarded extends ChromaKeyResult {}
 /// The bake failed; the clip keeps its original video.
 final class ChromaKeyFailure extends ChromaKeyResult {}
 
+/// Dropping a baked key failed, so the clip keeps the keyed video.
+///
+/// Distinct from [ChromaKeyFailure] because the two need opposite copy: this
+/// one is "we couldn't take it off", not "we couldn't put it on".
+final class ChromaKeyRemoveFailure extends ChromaKeyResult {}
+
+// === TRANSFORM RESULT ===
+
+/// One-shot signal describing the outcome of a transform-render operation.
 sealed class ClipTransformResult {}
 
 /// Transform render succeeded; the clip file has been swapped in state.

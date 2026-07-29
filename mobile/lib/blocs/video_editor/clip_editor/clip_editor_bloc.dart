@@ -1372,7 +1372,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
-      emit(state.copyWith(lastChromaKeyResult: ChromaKeyFailure()));
+      emit(state.copyWith(lastChromaKeyResult: ChromaKeyRemoveFailure()));
       return;
     }
 

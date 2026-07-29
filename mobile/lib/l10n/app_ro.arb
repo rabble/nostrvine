@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Imaginea nu a putut fi încărcată.",
     "videoEditorChromaKeyRemove": "Elimină ecranul verde",
     "videoEditorChromaKeyFailed": "Ecranul verde nu a putut fi aplicat. Clipul tău rămâne neschimbat.",
+    "videoEditorChromaKeyRemoveFailed": "Ecranul verde nu a putut fi eliminat. Clipul tău rămâne neschimbat.",
     "videoEditorChromaKeyApplying": "Se aplică ecranul verde…",
     "videoEditorChromaKeyPreviewUnavailable": "Acest dispozitiv nu poate afișa previzualizarea live. Setările tale se aplică oricum la export.",
     "videoEditorOriginalAudioLabel": "Audio original",

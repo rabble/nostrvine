@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Das Bild konnte nicht geladen werden.",
     "videoEditorChromaKeyRemove": "Greenscreen entfernen",
     "videoEditorChromaKeyFailed": "Der Greenscreen konnte nicht angewendet werden. Dein Clip bleibt unverändert.",
+    "videoEditorChromaKeyRemoveFailed": "Der Greenscreen konnte nicht entfernt werden. Dein Clip bleibt unverändert.",
     "videoEditorChromaKeyApplying": "Greenscreen wird angewendet …",
     "videoEditorChromaKeyPreviewUnavailable": "Dieses Gerät kann die Live-Vorschau nicht zeigen. Deine Einstellungen wirken beim Export trotzdem.",
     "videoEditorOriginalAudioLabel": "Originalton",

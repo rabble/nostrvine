@@ -22,16 +22,16 @@ class ChromaKeyedVideo extends StatefulWidget {
   const ChromaKeyedVideo({
     required this.child,
     this.chromaKey,
-    this.backdropRestarts,
+    this.backdropSync,
     super.key,
   });
 
   final ClipChromaKey? chromaKey;
   final Widget child;
 
-  /// Fires when [child]'s video loops, so a video backdrop can restart with
-  /// it instead of drifting.
-  final Stream<void>? backdropRestarts;
+  /// Keeps a video backdrop in step with [child] instead of letting the two
+  /// drift. See [ChromaKeyBackdropSync].
+  final ChromaKeyBackdropSync? backdropSync;
 
   @override
   State<ChromaKeyedVideo> createState() => _ChromaKeyedVideoState();
@@ -113,7 +113,7 @@ class _ChromaKeyedVideoState extends State<ChromaKeyedVideo> {
         Positioned.fill(
           child: ChromaKeyBackdrop(
             chromaKey: chromaKey,
-            restarts: widget.backdropRestarts,
+            sync: widget.backdropSync,
           ),
         ),
         ImageFiltered(

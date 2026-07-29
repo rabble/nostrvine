@@ -8912,6 +8912,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-apply ang green screen. Hindi nagbago ang clip mo.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Hindi naalis ang green screen. Hindi nagbago ang clip mo.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Ina-apply ang green screen…';
 
   @override

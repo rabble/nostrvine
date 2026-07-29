@@ -10,6 +10,35 @@ import 'package:flutter/material.dart';
 import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// How a video backdrop is kept in step with the clip playing in front of it.
+///
+/// The two run on independent native clocks — one player cannot drive two
+/// surfaces — so instead of a shared clock they are re-anchored every time the
+/// clip loops. The anchor is chosen to match the exported file rather than to
+/// look tidy: `ChromaKeyBakeService.backdropSegments` tiles the backdrop across
+/// the *untrimmed* clip starting at source time zero, and trim and speed are
+/// applied to the baked file afterwards. So the first frame the user sees sits
+/// [sourceOffset] into the backdrop, and the pair advances at [playbackSpeed].
+@immutable
+class ChromaKeyBackdropSync {
+  const ChromaKeyBackdropSync({
+    required this.restarts,
+    this.sourceOffset = Duration.zero,
+    this.playbackSpeed = 1,
+  });
+
+  /// Fires whenever the clip in front loops back to its start.
+  final Stream<void>? restarts;
+
+  /// Where in the backdrop the clip's first *visible* frame sits — the clip's
+  /// trim start, since the bake anchors the backdrop to the untrimmed source.
+  final Duration sourceOffset;
+
+  /// The clip's playback speed. The export applies it to the baked file, which
+  /// already contains the backdrop, so the preview has to speed both up too.
+  final double playbackSpeed;
+}
+
 /// The backdrop for a keyed clip, matching [chromaKey]'s background type.
 ///
 /// Composited *behind* the keyed video rather than sampled inside the shader,
@@ -17,18 +46,15 @@ import 'package:unified_logger/unified_logger.dart';
 class ChromaKeyBackdrop extends StatelessWidget {
   const ChromaKeyBackdrop({
     required this.chromaKey,
-    this.restarts,
+    this.sync,
     super.key,
   });
 
   final ClipChromaKey chromaKey;
 
-  /// Fires whenever the clip in front loops back to its start.
-  ///
-  /// A video backdrop seeks to zero on each event, which is what keeps the two
-  /// independent players from drifting apart over a long session — and matches
-  /// the export, where the backdrop starts at the clip's first frame.
-  final Stream<void>? restarts;
+  /// Keeps a video backdrop aligned with the clip in front. See
+  /// [ChromaKeyBackdropSync].
+  final ChromaKeyBackdropSync? sync;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +70,7 @@ class ChromaKeyBackdrop extends StatelessWidget {
       ClipChromaKeyBackgroundType.image when imagePath != null =>
         _ImageBackdrop(path: imagePath),
       ClipChromaKeyBackgroundType.video when videoPath != null =>
-        _VideoBackdrop(path: videoPath, restarts: restarts),
+        _VideoBackdrop(path: videoPath, sync: sync),
       // Transparent — and the degenerate cases where a background type's own
       // source went missing (a deleted library clip, a pruned cache file),
       // which read as "no backdrop" rather than as a crash.
@@ -74,15 +100,15 @@ class _ImageBackdrop extends StatelessWidget {
 
 /// A looping, muted library video playing behind the subject.
 ///
-/// It runs on its own native clock — two players cannot share one — but seeks
-/// back to zero whenever the clip in front loops, so the pair re-aligns every
-/// cycle instead of drifting apart. That mirrors the export, where the backdrop
-/// starts at the clip's first frame and tiles from there.
+/// It runs on its own native clock — two players cannot share one — but is
+/// re-anchored whenever the clip in front loops, so the pair realigns every
+/// cycle instead of drifting apart. Where it is anchored to, and why that is
+/// not simply zero, is [ChromaKeyBackdropSync].
 class _VideoBackdrop extends StatefulWidget {
-  const _VideoBackdrop({required this.path, this.restarts});
+  const _VideoBackdrop({required this.path, this.sync});
 
   final String path;
-  final Stream<void>? restarts;
+  final ChromaKeyBackdropSync? sync;
 
   @override
   State<_VideoBackdrop> createState() => _VideoBackdropState();
@@ -91,6 +117,17 @@ class _VideoBackdrop extends StatefulWidget {
 class _VideoBackdropState extends State<_VideoBackdrop> {
   DivineVideoPlayerController? _controller;
   StreamSubscription<void>? _restartSubscription;
+  StreamSubscription<void>? _stateSubscription;
+
+  /// The backdrop's own length, needed to wrap [_restartPosition] into it.
+  /// Zero until the player reports it, which anchors at zero until then.
+  Duration _backdropDuration = Duration.zero;
+
+  /// Bumped by every load. A load whose generation is no longer current has
+  /// been superseded by a newer path and must tear its controller down instead
+  /// of installing it — `mounted` alone does not catch that, since the widget
+  /// is still very much mounted.
+  int _loadGeneration = 0;
 
   @override
   void initState() {
@@ -101,27 +138,47 @@ class _VideoBackdropState extends State<_VideoBackdrop> {
 
   void _listenForRestarts() {
     unawaited(_restartSubscription?.cancel());
-    _restartSubscription = widget.restarts?.listen((_) {
-      unawaited(_controller?.seekTo(Duration.zero));
+    _restartSubscription = widget.sync?.restarts?.listen((_) {
+      unawaited(_controller?.seekTo(_restartPosition));
     });
+  }
+
+  /// Where the backdrop belongs when the clip in front wraps.
+  ///
+  /// Not zero: the bake tiles the backdrop across the untrimmed clip from
+  /// source time zero, so the clip's first *visible* frame sits `sourceOffset`
+  /// (its trim start) into the backdrop. Wrapped into the backdrop's own
+  /// length, which is where its tiling repeats.
+  Duration get _restartPosition {
+    final offset = widget.sync?.sourceOffset ?? Duration.zero;
+    if (offset <= Duration.zero || _backdropDuration <= Duration.zero) {
+      return Duration.zero;
+    }
+    return Duration(
+      microseconds: offset.inMicroseconds % _backdropDuration.inMicroseconds,
+    );
   }
 
   @override
   void didUpdateWidget(_VideoBackdrop oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.restarts != widget.restarts) _listenForRestarts();
+    if (oldWidget.sync?.restarts != widget.sync?.restarts) {
+      _listenForRestarts();
+    }
     if (oldWidget.path != widget.path) {
       final previous = _controller;
       setState(() => _controller = null);
+      unawaited(_stateSubscription?.cancel());
       unawaited(previous?.dispose());
       unawaited(_initialize());
     }
   }
 
   Future<void> _initialize() async {
-    // Hold the controller locally and re-check `mounted` after every await: a
-    // path change or a dispose can supersede this load mid-flight, and the
-    // half-built controller has to be torn down rather than leaked.
+    final generation = ++_loadGeneration;
+    // Hold the controller locally and re-check after every await: a path change
+    // or a dispose can supersede this load mid-flight, and the half-built
+    // controller has to be torn down rather than leaked.
     // Opt out of the one-video-at-a-time rule: this is a layer of the clip in
     // front, not a video of its own, so the two must run together instead of
     // stopping each other.
@@ -129,15 +186,25 @@ class _VideoBackdropState extends State<_VideoBackdrop> {
       useTexture: true,
       exclusivePlayback: false,
     );
+    bool superseded() => !mounted || generation != _loadGeneration;
     try {
       await controller.initialize();
-      if (!mounted) return await controller.dispose();
-      await controller.setSource(VideoClip.file(widget.path, volume: 0));
-      if (!mounted) return await controller.dispose();
+      if (superseded()) return await controller.dispose();
+      await controller.setSource(
+        VideoClip.file(
+          widget.path,
+          volume: 0,
+          playbackSpeed: widget.sync?.playbackSpeed ?? 1,
+        ),
+      );
+      if (superseded()) return await controller.dispose();
       await controller.setLooping(looping: true);
-      if (!mounted) return await controller.dispose();
+      if (superseded()) return await controller.dispose();
       await controller.play();
-      if (!mounted) return await controller.dispose();
+      if (superseded()) return await controller.dispose();
+      _stateSubscription = controller.stateStream.listen(
+        (state) => _backdropDuration = state.duration,
+      );
       setState(() => _controller = controller);
     } catch (error, stackTrace) {
       Log.error(
@@ -153,7 +220,11 @@ class _VideoBackdropState extends State<_VideoBackdrop> {
 
   @override
   void dispose() {
+    // Bump so any load still in flight sees itself superseded and disposes its
+    // own controller instead of installing it into a dead state.
+    _loadGeneration++;
     unawaited(_restartSubscription?.cancel());
+    unawaited(_stateSubscription?.cancel());
     unawaited(_controller?.dispose());
     _controller = null;
     super.dispose();

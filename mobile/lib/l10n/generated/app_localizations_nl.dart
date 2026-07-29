@@ -8850,6 +8850,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon het greenscreen niet toepassen. Je clip blijft ongewijzigd.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Kon het greenscreen niet verwijderen. Je clip blijft ongewijzigd.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Greenscreen wordt toegepast…';
 
   @override

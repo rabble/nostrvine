@@ -229,6 +229,34 @@ void main() {
       });
     });
 
+    group('tuning', () {
+      test('the sliders and the colour keep a backdrop clip', () {
+        final cubit = build(
+          initialChromaKey: const ClipChromaKey(
+            key: ChromaKey.greenScreen(),
+            backgroundVideoPath: '/a/backdrop.mp4',
+          ),
+        );
+        addTearDown(cubit.close);
+
+        cubit
+          ..setSimilarity(0.4)
+          ..setSmoothness(0.3)
+          ..setSpill(0.1)
+          ..setKeyColor(const Color(0xFF00FF00));
+
+        // The backdrop lives outside `ChromaKey`, so every tuning setter has to
+        // carry it forward by hand. Rewriting one of them through `withKey`
+        // would silently drop it and bake a black fill instead.
+        expect(cubit.state.chromaKey.backgroundVideoPath, '/a/backdrop.mp4');
+        expect(cubit.state.backgroundType, ClipChromaKeyBackgroundType.video);
+        expect(cubit.state.chromaKey.key.similarity, 0.4);
+        expect(cubit.state.chromaKey.key.smoothness, 0.3);
+        expect(cubit.state.chromaKey.key.spill, 0.1);
+        expect(cubit.state.chromaKey.key.color, const Color(0xFF00FF00));
+      });
+    });
+
     group('presets', () {
       test('blue keys tighter and despills more gently than green', () {
         final cubit = build();

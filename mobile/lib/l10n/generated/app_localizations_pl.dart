@@ -8985,6 +8985,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się zastosować zielonego tła. Twój klip pozostaje bez zmian.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Nie udało się usunąć zielonego tła. Twój klip pozostaje bez zmian.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Stosowanie zielonego tła…';
 
   @override

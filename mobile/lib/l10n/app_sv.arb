@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Det gick inte att läsa in bilden.",
     "videoEditorChromaKeyRemove": "Ta bort green screen",
     "videoEditorChromaKeyFailed": "Det gick inte att använda green screen. Ditt klipp är oförändrat.",
+    "videoEditorChromaKeyRemoveFailed": "Det gick inte att ta bort green screen. Ditt klipp är oförändrat.",
     "videoEditorChromaKeyApplying": "Använder green screen …",
     "videoEditorChromaKeyPreviewUnavailable": "Den här enheten kan inte visa förhandsvisningen live. Dina inställningar gäller ändå vid export.",
     "videoEditorOriginalAudioLabel": "Originalljud",

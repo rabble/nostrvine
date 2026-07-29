@@ -3892,6 +3892,7 @@
     "videoEditorChromaKeyImagePickFailed": "Gambar itu tidak bisa dimuat.",
     "videoEditorChromaKeyRemove": "Hapus layar hijau",
     "videoEditorChromaKeyFailed": "Layar hijau tidak bisa diterapkan. Klipmu tidak berubah.",
+    "videoEditorChromaKeyRemoveFailed": "Layar hijau tidak bisa dihapus. Klipmu tidak berubah.",
     "videoEditorChromaKeyApplying": "Menerapkan layar hijau…",
     "videoEditorChromaKeyPreviewUnavailable": "Perangkat ini tidak bisa menampilkan pratinjau langsung. Pengaturanmu tetap berlaku saat ekspor.",
     "videoEditorOriginalAudioLabel": "Audio asli",

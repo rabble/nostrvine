@@ -8465,6 +8465,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorChromaKeyFailed => 'グリーンバックを適用できませんでした。クリップは変更されていません。';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'グリーンバックを削除できませんでした。クリップは変更されていません。';
+
+  @override
   String get videoEditorChromaKeyApplying => 'グリーンバックを適用しています…';
 
   @override

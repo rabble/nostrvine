@@ -9000,6 +9000,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ecranul verde nu a putut fi aplicat. Clipul tău rămâne neschimbat.';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Ecranul verde nu a putut fi eliminat. Clipul tău rămâne neschimbat.';
+
+  @override
   String get videoEditorChromaKeyApplying => 'Se aplică ecranul verde…';
 
   @override

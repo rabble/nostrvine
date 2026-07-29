@@ -8630,6 +8630,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'አረንጓዴ ስክሪኑን መተግበር አልተቻለም። ቅንጥብህ ሳይለወጥ ይቆያል።';
 
   @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'አረንጓዴ ስክሪኑን ማስወገድ አልተቻለም። ቅንጥብህ ሳይለወጥ ይቆያል።';
+
+  @override
   String get videoEditorChromaKeyApplying => 'አረንጓዴ ስክሪን እየተተገበረ ነው…';
 
   @override
