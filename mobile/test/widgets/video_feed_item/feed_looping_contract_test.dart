@@ -9,18 +9,36 @@ void main() {
     // The seek-based enforcement this replaced no longer exists to be passed
     // (#6445), so what is left to pin is that the loop still happens in the
     // platform player.
-    final pooledPlayerSource = _dartCodeOnly(
-      'packages/infinite_video_feed/lib/src/widgets/infinite_video_feed.dart',
+    const pooledPlayerPath =
+        'packages/infinite_video_feed/lib/src/widgets/infinite_video_feed.dart';
+
+    expect(
+      _dartCodeOnly(pooledPlayerPath),
+      contains('setLooping(looping: true)'),
     );
 
-    expect(pooledPlayerSource, contains('setLooping(looping: true)'));
-    expect(
-      pooledPlayerSource,
-      isNot(contains('seekTo(Duration.zero)')),
-      reason:
-          'Feed playback must not restart a video with a Dart seek; '
-          'seek-based restarts create audible seams (#5544).',
-    );
+    // Every layer that holds a controller can hand-roll the restart, so the
+    // guard covers all three rather than the one the deleted wiring sat in:
+    // the subscription service owns the position stream the old seek fired
+    // from, and the app-side call site configures both.
+    const subscriptionsPath =
+        'packages/infinite_video_feed/lib/src/services/'
+        'controller_subscriptions.dart';
+    const seekFreePaths = [
+      pooledPlayerPath,
+      subscriptionsPath,
+      'lib/widgets/video_feed_item/feed_videos.dart',
+    ];
+
+    for (final path in seekFreePaths) {
+      expect(
+        _dartCodeOnly(path),
+        isNot(contains('seekTo(Duration.zero)')),
+        reason:
+            '$path must not restart a video with a Dart seek; '
+            'seek-based restarts create audible seams (#5544).',
+      );
+    }
   });
 
   test('every feed source is opened with the cap applied', () {

@@ -201,6 +201,42 @@ void main() {
         },
       );
 
+      test('does not fire when the jump back starts mid-clip', () async {
+        final controller = FakeController();
+        var loopFired = false;
+
+        subs.subscribeToAutoAdvance(
+          0,
+          controller,
+          endThreshold: const Duration(milliseconds: 200),
+          startThreshold: const Duration(milliseconds: 100),
+          isCurrent: () => true,
+          onLoopCompleted: () => loopFired = true,
+        );
+
+        // A stale-playback recovery seek jumps backward from the middle of
+        // the clip. Arming on that would auto-advance a video the viewer is
+        // still watching.
+        controller
+          ..pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(seconds: 1),
+              duration: Duration(seconds: 10),
+            ),
+          )
+          ..pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 50),
+              duration: Duration(seconds: 10),
+            ),
+          );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(loopFired, isFalse);
+      });
+
       test('does not fire when not current', () async {
         final controller = FakeController();
         var loopFired = false;
