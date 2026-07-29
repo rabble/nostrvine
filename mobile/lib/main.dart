@@ -2687,15 +2687,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
 
     const forceOpenOnboarding = AppConfig.isGhActionsPrPreviewBuild;
 
-    // Gate the global PeopleListsBloc on the curated-lists feature flag.
-    // When enabled we provision it above MaterialApp.router so every route
-    // (including ones outside AppShell) sees the same lists state. The
-    // bloc only depends on the repository and a pubkey stream; we derive
-    // the latter from AuthService.
-    final peopleListsEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.curatedLists),
-    );
-
     // Eagerly create the outgoing-DM retry service so its foreground
     // subscription is wired up at app shell setup. The service has no
     // UI consumer (it operates on the durable outgoing_dms queue), so
@@ -2831,28 +2822,38 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 ),
               )..add(const AppUpdateCheckRequested()),
             ),
-            if (peopleListsEnabled)
-              BlocProvider(
-                create: (_) {
-                  final authService = ref.read(authServiceProvider);
-                  final ownerPubkeyStream = authService.authStateStream
-                      .map((_) => authService.currentPublicKeyHex)
-                      .distinct();
-                  return PeopleListsBloc(
-                    repository: ref.read(peopleListsRepositoryProvider),
-                    // peopleListsRepositoryProvider is keepAlive but not
-                    // identity-stable: it watches nostrServiceProvider, which
-                    // disposes its client on every identity change. This create
-                    // runs once, so the bloc subscribes to the successive
-                    // instances rather than keeping its capture (#6480).
-                    repositoryStream: ref.read(
-                      peopleListsRepositoryIdentityStreamProvider,
-                    ),
-                    ownerPubkeyStream: ownerPubkeyStream,
-                    initialOwnerPubkey: authService.currentPublicKeyHex,
-                  )..add(const PeopleListsStarted());
-                },
-              ),
+            // Provisioned above MaterialApp.router so every route (including
+            // ones outside AppShell) sees the same lists state.
+            //
+            // Deliberately not wrapped in `if (curatedLists enabled)`: a
+            // conditional entry changes this provider chain's shape, so
+            // flipping the flag re-inflated everything below it — including
+            // the Navigator, which silently dropped imperatively pushed
+            // routes (users toggling the flag were thrown back to Settings).
+            // Laziness does the gating instead: every consumer checks
+            // FeatureFlag.curatedLists first, so the bloc is never created
+            // while the flag is off.
+            BlocProvider(
+              create: (_) {
+                final authService = ref.read(authServiceProvider);
+                final ownerPubkeyStream = authService.authStateStream
+                    .map((_) => authService.currentPublicKeyHex)
+                    .distinct();
+                return PeopleListsBloc(
+                  repository: ref.read(peopleListsRepositoryProvider),
+                  // peopleListsRepositoryProvider is keepAlive but not
+                  // identity-stable: it watches nostrServiceProvider, which
+                  // disposes its client on every identity change. This create
+                  // runs once, so the bloc subscribes to the successive
+                  // instances rather than keeping its capture (#6480).
+                  repositoryStream: ref.read(
+                    peopleListsRepositoryIdentityStreamProvider,
+                  ),
+                  ownerPubkeyStream: ownerPubkeyStream,
+                  initialOwnerPubkey: authService.currentPublicKeyHex,
+                )..add(const PeopleListsStarted());
+              },
+            ),
           ],
           // Global listener for email verification failures - shows snackbar
           // when verification times out or fails while user is elsewhere in app
