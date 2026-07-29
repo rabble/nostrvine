@@ -33,9 +33,21 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
     /**
      * Length of the video in microseconds, or [DURATION_UNKNOWN] while it is
      * not known. Only a video whose end is known can be faded out.
+     *
+     * Writing a different length means a different video, so it also drops
+     * [measuredLoopFrames]. A player is reused across videos — a
+     * `setMediaItems` swap disables the audio renderer, which flushes the sink
+     * but never resets it, so [onReset] does not run between two videos and
+     * nothing else would clear the previous one's measurement.
      */
     @Volatile
     var videoDurationUs: Long = DURATION_UNKNOWN
+        set(value) {
+            if (field != value) {
+                measuredLoopFrames = 0
+            }
+            field = value
+        }
 
     /**
      * Whether to fade at all. Off for multi-clip timelines, where a stream is
@@ -69,16 +81,21 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
 
     /**
      * Frames the last completed loop actually delivered, or 0 before one has
-     * been measured, together with the [videoDurationUs] it was measured
-     * against so it is dropped when the video changes.
+     * been measured, together with the sample rate it was counted at.
      *
      * The declared duration is the container's, which is the longest track and
      * is cut on whole access units; the counter here is decoded audio frames.
      * The two disagree by up to an AAC frame — twice the fade — so the fade out
      * would land early or late until a real loop has been measured.
+     *
+     * Volatile because [videoDurationUs]'s setter drops it from the main
+     * thread while the playback thread reads it. A lost write costs the
+     * accuracy of one lap, which is what the measurement buys in the first
+     * place.
      */
+    @Volatile
     private var measuredLoopFrames: Long = 0
-    private var measuredLoopForDurationUs: Long = DURATION_UNKNOWN
+    private var measuredLoopSampleRate: Int = 0
 
     /**
      * Whether any input arrived since the last anchor. Guards against the
@@ -86,6 +103,12 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
      * reports as a discontinuity each without ever reaching [queueInput].
      */
     private var sawInputSinceAnchor: Boolean = false
+
+    /**
+     * Whether a flush landed mid-lap, which makes the frames counted since
+     * then a fragment rather than a loop. See [onFlush].
+     */
+    private var lapInterrupted: Boolean = false
 
     override fun onConfigure(
         inputAudioFormat: AudioProcessor.AudioFormat,
@@ -107,22 +130,28 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
             return
         }
         // The loop that just ended ran from the anchor to here, so this is the
-        // one exact measurement of its length there is. Reject one that came
-        // out far short of what the container claims: a flush the video did not
-        // ask for — a route change, an underrun — restarts the count mid-loop,
-        // and half a loop is not a measurement of a whole one.
+        // one exact measurement of its length there is — unless a flush cut
+        // the count in the middle of it, in which case what reaches here is a
+        // fragment and the previous estimate is the better of the two.
         val loopFrames = readFrames - anchorFrames
-        val estimate = durationFrames(inputAudioFormat.sampleRate)
-        if (loopFrames > 0 && loopFrames * 2 >= estimate) {
+        if (!lapInterrupted && loopFrames > 0) {
             measuredLoopFrames = loopFrames
-            measuredLoopForDurationUs = videoDurationUs
+            measuredLoopSampleRate = inputAudioFormat.sampleRate
         }
         anchorFrames = readFrames
         nextStreamStartUs = 0
         sawInputSinceAnchor = false
+        lapInterrupted = false
     }
 
     override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
+        // A flush that arrives after frames have already been counted is not
+        // the resync media3 runs at a stream change — that one lands before
+        // the first buffer of the new stream. It is a route change or an
+        // underrun, and the count it restarts no longer spans a whole lap.
+        if (sawInputSinceAnchor) {
+            lapInterrupted = true
+        }
         // streamMetadata.positionOffsetUs is always 0 on the playback path in
         // media3 1.10 — DefaultAudioSink flushes the pipeline without one — so
         // the start position comes from [nextStreamStartUs] instead. It stays
@@ -142,8 +171,9 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
         anchorFrames = 0
         nextStreamStartUs = 0
         measuredLoopFrames = 0
-        measuredLoopForDurationUs = DURATION_UNKNOWN
+        measuredLoopSampleRate = 0
         sawInputSinceAnchor = false
+        lapInterrupted = false
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
@@ -231,10 +261,14 @@ internal class LoopDeclickAudioProcessor : BaseAudioProcessor() {
      * there is one, otherwise the container's duration as an estimate.
      */
     private fun durationFrames(sampleRate: Int): Long {
-        val durationUs = videoDurationUs
-        if (measuredLoopFrames > 0 && measuredLoopForDurationUs == durationUs) {
-            return measuredLoopFrames
+        // A frame count only means the same length at the rate it was counted
+        // at, and an adaptive stream can switch from 44.1 kHz to 48 kHz
+        // without the declared duration moving.
+        val measured = measuredLoopFrames
+        if (measured > 0 && measuredLoopSampleRate == sampleRate) {
+            return measured
         }
+        val durationUs = videoDurationUs
         if (durationUs <= 0) {
             return 0
         }

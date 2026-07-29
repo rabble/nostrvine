@@ -37,32 +37,48 @@ class LoopDeclickAudioProcessorTest {
         this.enabled = enabled
     }
 
-    /** A mono processor already through `configure`, ready to be flushed. */
+    /** A processor already through `configure`, ready to be flushed. */
     private fun configured(
         durationUs: Long = 6_000_000L,
+        channelCount: Int = 1,
     ): LoopDeclickAudioProcessor = processor(durationUs = durationUs).apply {
         configure(
-            AudioProcessor.AudioFormat(sampleRate, 1, C.ENCODING_PCM_16BIT),
+            AudioProcessor.AudioFormat(sampleRate, channelCount, C.ENCODING_PCM_16BIT),
         )
     }
 
     private fun LoopDeclickAudioProcessor.flushPipeline() =
         flush(AudioProcessor.StreamMetadata.DEFAULT)
 
-    private fun pcm(frames: Int): ByteBuffer =
-        ByteBuffer.allocateDirect(frames * 2)
-            .order(ByteOrder.LITTLE_ENDIAN)
+    /**
+     * [frames] interleaved frames, each carrying one sample per entry of
+     * [levels]. Native order is what media3 hands an [AudioProcessor] and what
+     * `replaceOutputBuffer` allocates.
+     */
+    private fun pcm(frames: Int, levels: List<Short> = listOf(level)): ByteBuffer =
+        ByteBuffer.allocateDirect(frames * levels.size * 2)
+            .order(ByteOrder.nativeOrder())
             .apply {
-                repeat(frames) { putShort(level) }
+                repeat(frames) { levels.forEach(::putShort) }
                 flip()
             }
 
-    /** Pushes [frames] frames through and returns the gain of the last one. */
+    /** Pushes [frames] mono frames through and returns the gain of the last. */
     private fun LoopDeclickAudioProcessor.play(frames: Int): Float {
         queueInput(pcm(frames))
         val out = output
         val last = out.getShort((frames - 1) * 2)
         return last.toFloat() / level
+    }
+
+    /** Pushes [frames] frames of [levels] through and returns every sample. */
+    private fun LoopDeclickAudioProcessor.playInterleaved(
+        frames: Int,
+        levels: List<Short>,
+    ): ShortArray {
+        queueInput(pcm(frames, levels))
+        val out = output
+        return ShortArray(frames * levels.size) { out.getShort(it * 2) }
     }
 
     @Test
@@ -253,6 +269,23 @@ class LoopDeclickAudioProcessorTest {
     }
 
     @Test
+    fun `most of a loop is still not a measurement of one`() {
+        val subject = configured(durationUs = 100_000L)
+        subject.flushPipeline()
+        subject.play(1_000)
+        // Mid-loop flush again, but this time what follows is 62% of the
+        // container's 4800 frames. A guard that only rejects fragments under
+        // half the estimate takes this one and puts the fade out 1800 frames
+        // early for the rest of the video.
+        subject.flushPipeline()
+        subject.play(3_000)
+        subject.onStreamChanged()
+
+        assertEquals(1f, subject.play(4_800 - fadeFrames.toInt() + 1), 0f)
+        assertTrue("the container's estimate must survive", subject.play(1) < 1f)
+    }
+
+    @Test
     fun `a new video drops the previous one's measurement`() {
         val subject = configured(durationUs = 100_000L)
         subject.flushPipeline()
@@ -267,5 +300,60 @@ class LoopDeclickAudioProcessorTest {
         // 9600 frames now. Reusing the 3000-frame measurement would wrap here
         // and silence the frame instead.
         assertEquals(1f, subject.play(3_001), 0f)
+    }
+
+    @Test
+    fun `a new video of the same length drops it too`() {
+        val subject = configured(durationUs = 100_000L)
+        subject.flushPipeline()
+        subject.play(3_000)
+        subject.onStreamChanged()
+
+        // A player is reused across videos and never reset between them, so
+        // two videos that agree to the millisecond must not share a frame
+        // count — they disagree by up to an AAC frame, which is wider than
+        // the fade.
+        subject.videoDurationUs = LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        subject.videoDurationUs = 100_000L
+        subject.flushPipeline()
+
+        assertEquals(1f, subject.play(3_001), 0f)
+    }
+
+    @Test
+    fun `a stereo fade scales each channel by the frame's own gain`() {
+        val leftLevel: Short = 20_000
+        val rightLevel: Short = -12_000
+        val subject = configured(channelCount = 2)
+        subject.flushPipeline()
+
+        val samples = subject.playInterleaved(
+            fadeFrames.toInt(),
+            listOf(leftLevel, rightLevel),
+        )
+
+        // Half way into the fade in, each channel carries half of its own
+        // level — not half of the left one twice.
+        val frame = fadeFrames.toInt() / 2
+        val gain = frame.toFloat() / fadeFrames
+        assertEquals((leftLevel * gain).toInt(), samples[frame * 2].toInt())
+        assertEquals((rightLevel * gain).toInt(), samples[frame * 2 + 1].toInt())
+    }
+
+    @Test
+    fun `stereo frames advance the position once per frame, not per sample`() {
+        val subject = configured(durationUs = 100_000L, channelCount = 2)
+        subject.flushPipeline()
+
+        // 4800 frames. Counting interleaved samples instead would reach the
+        // end of the video half way through it.
+        val flat = subject.playInterleaved(
+            4_800 - fadeFrames.toInt() + 1,
+            listOf(level, level),
+        )
+        assertEquals(level.toInt(), flat.last().toInt())
+
+        val fading = subject.playInterleaved(1, listOf(level, level))
+        assertTrue("fade out must start at the video's end", fading.first() < level)
     }
 }
