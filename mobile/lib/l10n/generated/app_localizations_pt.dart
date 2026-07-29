@@ -9936,6 +9936,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'Badge';
 
   @override
+  String get profileBadgeFooterBody =>
+      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+
+  @override
+  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
 
   @override

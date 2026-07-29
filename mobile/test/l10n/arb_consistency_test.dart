@@ -359,6 +359,10 @@ const _knownUntranslatedDebt = <String>{
   // localization pass; offline devices still get the fully translated
   // videoMetadataC2paMissingNote.
   'videoMetadataC2paMissingNoteServiceUnavailable',
+  // Profile badge detail sheet footer pointing at badges.divine.video;
+  // translation deferred to the next l10n pass.
+  'profileBadgeFooterBody',
+  'profileBadgeFooterLink',
 };
 
 const _signatureVerificationKeys = <String>{
