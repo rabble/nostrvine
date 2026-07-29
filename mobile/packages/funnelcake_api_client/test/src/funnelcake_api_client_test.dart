@@ -3703,11 +3703,15 @@ void main() {
         expect((result! as UserProfileNotPublished).pubkey, equals(testPubkey));
       });
 
-      test('returns UserProfileVanished when deleted is true', () async {
-        const deletedResponse = '{"deleted": true, "profile": null}';
+      test('a vanish request with no profile is vanished', () async {
+        // Both the pending and the completed-with-nothing-republished states
+        // reach the client this way: the server suppresses the Kind 0 for the
+        // first and erased it for the second.
+        const vanishedResponse =
+            '{"has_vanish_request": true, "profile": null}';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer((_) async => http.Response(deletedResponse, 200));
+        ).thenAnswer((_) async => http.Response(vanishedResponse, 200));
 
         final result = await client.getUserProfile(testPubkey);
 
@@ -3715,33 +3719,35 @@ void main() {
         expect((result! as UserProfileVanished).pubkey, equals(testPubkey));
       });
 
-      test('deleted takes precedence over a populated profile', () async {
-        // The server reports `deleted` from the permanent vanish-request
-        // record, so it can be true while a pre-erasure copy of the Kind 0 is
-        // still being served. That window is exactly when someone is most
-        // likely to open the profile, so deletion has to win.
-        const deletedWithProfile =
-            '{"deleted": true, "profile": {"name": "meylis", '
+      test('a vanish request alongside a served profile is live', () async {
+        // `has_vanish_request` is historical and never goes false again, so a
+        // completed vanish that republished a Kind 0 still carries it while
+        // the server serves the account as live. Hiding on the flag alone
+        // would erase that account from every device permanently.
+        const vanishedWithProfile =
+            '{"has_vanish_request": true, "profile": {"name": "meylis", '
             '"display_name": "meylis.divine"}}';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer((_) async => http.Response(deletedWithProfile, 200));
+        ).thenAnswer((_) async => http.Response(vanishedWithProfile, 200));
 
         final result = await client.getUserProfile(testPubkey);
 
         expect(
           result,
-          isA<UserProfileVanished>(),
+          isA<UserProfileFound>(),
           reason:
-              'a vanished account must not surface its pre-erasure metadata',
+              'the server serves a republished account as live, and the '
+              'client must not hide it on the historical flag alone',
         );
       });
 
-      test('deleted false with a null profile is not vanished', () async {
+      test('no vanish request with a null profile is not vanished', () async {
         // The discriminator: a user who never published a Kind 0 looks
         // identical on the wire apart from this flag, and must not be treated
         // as deleted.
-        const notPublishedResponse = '{"deleted": false, "profile": null}';
+        const notPublishedResponse =
+            '{"has_vanish_request": false, "profile": null}';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(notPublishedResponse, 200));
@@ -3751,7 +3757,7 @@ void main() {
         expect(result, isA<UserProfileNotPublished>());
       });
 
-      test('a missing deleted field is not vanished', () async {
+      test('a missing vanish-request field is not vanished', () async {
         // Servers that predate the field must keep the previous behaviour.
         const legacyResponse = '{"profile": null}';
         when(
@@ -4692,6 +4698,63 @@ void main() {
           expect(result.profiles['pub1'], isA<UserProfileNotPublished>());
         },
       );
+
+      test('a vanish request with no profile is vanished', () async {
+        // The bulk handler strips a *pending* request upstream, so the only
+        // way the flag reaches this parser is a completed vanish that has
+        // post-boundary activity but no republished Kind 0.
+        const response = '''
+{
+  "users": [
+    {"pubkey": "pub1", "has_vanish_request": true, "profile": null},
+    {"pubkey": "pub2", "profile": {"name": "Valid"}}
+  ]
+}
+''';
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(response, 200));
+
+        final result = await client.getBulkProfiles(['pub1', 'pub2']);
+
+        expect(result.profiles['pub1'], isA<UserProfileVanished>());
+        expect(result.profiles['pub2'], isA<UserProfileFound>());
+      });
+
+      test('a vanish request alongside a served profile is live', () async {
+        // Same reconciliation as getUserProfile: the flag is historical, so a
+        // republished account still carries it and must not be hidden.
+        const response = '''
+{
+  "users": [
+    {
+      "pubkey": "pub1",
+      "has_vanish_request": true,
+      "profile": {"name": "Republished"}
+    }
+  ]
+}
+''';
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(response, 200));
+
+        final result = await client.getBulkProfiles(['pub1']);
+
+        expect(result.profiles['pub1'], isA<UserProfileFound>());
+        expect(
+          (result.profiles['pub1']! as UserProfileFound).profile.name,
+          equals('Republished'),
+        );
+      });
 
       test('sends correct headers for POST', () async {
         when(

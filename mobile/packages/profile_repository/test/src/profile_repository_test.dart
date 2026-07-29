@@ -1007,10 +1007,10 @@ void main() {
 
           test('re-checks a vanish recorded in an earlier session and '
               'self-heals', () async {
-            // Recovery from a wrong deleted:true must not be limited to the
-            // session that recorded it — a restart hydrates the marker from
-            // the durable table with no fetch behind it, and that session's
-            // one re-check is what clears it.
+            // Recovery from a wrong vanish classification must not be limited
+            // to the session that recorded it — a restart hydrates the marker
+            // from the durable table with no fetch behind it, and that
+            // session's one re-check is what clears it.
             when(
               () => mockVanishedDao.getAllPubkeys(),
             ).thenAnswer((_) async => [testPubkey]);
@@ -1122,9 +1122,10 @@ void main() {
             test(
               'still re-checks an already-vanished account, but only once',
               () async {
-                // This is the only channel that can undo a wrong deleted:true:
-                // fetchFreshProfile answers a vanished pubkey from the durable
-                // marker, so nothing else reaches the network for it.
+                // This is the only channel that can undo a wrong vanish
+                // classification: fetchFreshProfile answers a vanished pubkey
+                // from the durable marker, so nothing else reaches the
+                // network for it.
                 when(
                   () => mockVanishedDao.getAllPubkeys(),
                 ).thenAnswer((_) async => [testPubkey]);

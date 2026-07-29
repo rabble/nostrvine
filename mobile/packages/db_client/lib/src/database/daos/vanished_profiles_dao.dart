@@ -29,8 +29,8 @@ class VanishedProfilesDao extends DatabaseAccessor<AppDatabase>
   /// Forgets that [pubkey] ever vanished.
   ///
   /// Called when the server reports the account as live again, so a wrong
-  /// `deleted: true` is recoverable instead of erasing the user from this
-  /// device permanently.
+  /// vanish classification is recoverable instead of erasing the user from
+  /// this device permanently.
   Future<int> clearVanished(String pubkey) {
     return (delete(
       vanishedProfiles,

@@ -536,8 +536,8 @@ void main() {
       });
 
       test('writes resume once the vanish is cleared', () async {
-        // Self-heal: a wrong `deleted: true` must not lock the pubkey out of
-        // the cache for the life of the install.
+        // Self-heal: a wrong vanish classification must not lock the pubkey
+        // out of the cache for the life of the install.
         await database.vanishedProfilesDao.markVanished(testPubkey);
         await dao.upsertProfile(createProfile(name: 'Blocked'));
 

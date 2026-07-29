@@ -124,18 +124,18 @@ final class UserProfileNotPublished extends UserProfileResult {
       'stats: $stats, engagement: $engagement)';
 }
 
-/// The account has a NIP-62 request to vanish on record.
+/// The account has a NIP-62 request to vanish on record **and** the server is
+/// serving no profile for it.
 ///
-/// Takes precedence over profile presence. The server reports `deleted` from
-/// the permanent vanish-request record, so it can be `true` while a pre-erasure
-/// copy of the Kind 0 metadata is still being served — which is exactly the
-/// window in which someone is most likely to open the profile. Callers must
-/// treat this variant as "there is nothing to show" regardless of what else the
-/// response carried.
+/// Both halves are load-bearing. The server's `has_vanish_request` flag comes
+/// from the permanent vanish-request record, so it stays `true` after the
+/// erasure sweep completes and the account publishes a new Kind 0 — which the
+/// server then serves as live. Reading the flag alone would hide those accounts
+/// permanently, because it never goes `false` again.
 ///
-/// [social], [stats], and [engagement] are always `null` here so it is
-/// structurally impossible to cache counters for an account that asked to be
-/// erased.
+/// Callers must treat this variant as "there is nothing to show". [social],
+/// [stats], and [engagement] are always `null` here so it is structurally
+/// impossible to cache counters for an account that asked to be erased.
 @immutable
 final class UserProfileVanished extends UserProfileResult {
   const UserProfileVanished({required this.pubkey});

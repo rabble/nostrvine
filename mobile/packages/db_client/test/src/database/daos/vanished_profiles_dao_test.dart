@@ -62,7 +62,7 @@ void main() {
     });
 
     test('clearVanished forgets the pubkey', () async {
-      // The self-heal path: a wrong `deleted: true` must be recoverable
+      // The self-heal path: a wrong vanish classification must be recoverable
       // rather than erasing the account from this device forever.
       await dao.markVanished(_pubkey);
 

@@ -1589,7 +1589,7 @@ class IdentityVerifications extends Table {
 /// account switch would resurrect vanished profiles for the other account.
 ///
 /// Rows are removed only when the server reports the account as live again
-/// (`ProfileRepository._clearVanish`), so a wrong `deleted: true` is
+/// (`ProfileRepository._clearVanish`), so a wrong vanish classification is
 /// recoverable rather than permanent.
 @DataClassName('VanishedProfileRow')
 class VanishedProfiles extends Table {
