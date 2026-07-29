@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:divine_video_player/divine_video_player.dart';
 
 /// Bundles the state-stream subscriptions the feed maintains per
-/// active player controller (errors, loop enforcement, auto-advance loop
-/// detection, dimensions, first-frame).
+/// active player controller (errors, auto-advance loop detection,
+/// dimensions, first-frame).
 ///
 /// Each `subscribeTo*` call cancels any prior subscription of the same
 /// kind for that index. [unsubscribe] cancels all of them for one index;
@@ -13,7 +13,6 @@ class ControllerSubscriptions {
   final _dimensions = <int, StreamSubscription<DivineVideoPlayerState>>{};
   final _firstFrame = <int, StreamSubscription<DivineVideoPlayerState>>{};
   final _errors = <int, StreamSubscription<DivineVideoPlayerState>>{};
-  final _loop = <int, StreamSubscription<DivineVideoPlayerState>>{};
   final _autoAdvance = <int, StreamSubscription<DivineVideoPlayerState>>{};
 
   /// Subscribes to runtime playback errors. Calls [onError] with the
@@ -37,46 +36,19 @@ class ControllerSubscriptions {
     });
   }
 
-  /// Subscribes to loop enforcement: when the active video crosses
-  /// [maxLoopDuration] while playing, [onSeekToZero] is invoked. The
-  /// caller is responsible for guarding against repeated triggers
-  /// (`isSeekInProgress`/`onSeekStarted`/`onSeekFinished`).
-  void subscribeToLoopEnforcement(
-    int index,
-    DivineVideoPlayerController controller, {
-    required Duration maxLoopDuration,
-    required bool Function() isCurrent,
-    required bool Function() isSeekInProgress,
-    required void Function() onSeekStarted,
-    required void Function() onPositionBelowMax,
-    required void Function() onSeekToZero,
-  }) {
-    unawaited(_loop[index]?.cancel());
-    _loop[index] = controller.stateStream.listen((state) {
-      if (!isCurrent()) return;
-
-      if (state.position < maxLoopDuration) {
-        onPositionBelowMax();
-        return;
-      }
-
-      if (!state.isPlaying || isSeekInProgress()) return;
-
-      onSeekStarted();
-      onSeekToZero();
-    });
-  }
-
   /// Subscribes to loop-completion detection. Fires [onLoopCompleted] when
-  /// the playback position resets from near the effective end (min of
-  /// [maxLoopDuration] and the natural duration) back to near zero.
+  /// the playback position resets from near the reported duration back to
+  /// near zero.
+  ///
+  /// The duration is the clip's, so a feed that caps playback with a native
+  /// clip end already reports the capped length here — detection needs no
+  /// separate limit.
   ///
   /// [endThreshold] / [startThreshold] define the windows for "near end"
   /// and "near start".
   void subscribeToAutoAdvance(
     int index,
     DivineVideoPlayerController controller, {
-    required Duration? maxLoopDuration,
     required Duration endThreshold,
     required Duration startThreshold,
     required bool Function() isCurrent,
@@ -88,21 +60,11 @@ class ControllerSubscriptions {
     var armed = false;
     var lastPosition = initialState.position;
 
-    Duration? effectiveEnd;
     final initialDuration = initialState.duration;
-    if (initialDuration > Duration.zero) {
-      effectiveEnd =
-          (maxLoopDuration != null && maxLoopDuration < initialDuration)
-          ? maxLoopDuration
-          : initialDuration;
-    } else if (maxLoopDuration != null) {
-      effectiveEnd = maxLoopDuration;
-    }
     if (isCurrent() &&
         initialState.isPlaying &&
-        effectiveEnd != null &&
-        effectiveEnd > Duration.zero &&
-        lastPosition >= effectiveEnd - endThreshold) {
+        initialDuration > Duration.zero &&
+        lastPosition >= initialDuration - endThreshold) {
       armed = true;
     }
 
@@ -112,19 +74,8 @@ class ControllerSubscriptions {
       final position = state.position;
       final duration = state.duration;
 
-      Duration? effectiveEnd;
-      if (duration > Duration.zero) {
-        effectiveEnd = (maxLoopDuration != null && maxLoopDuration < duration)
-            ? maxLoopDuration
-            : duration;
-      } else if (maxLoopDuration != null) {
-        effectiveEnd = maxLoopDuration;
-      }
-
-      if (effectiveEnd != null && effectiveEnd > Duration.zero) {
-        if (position >= effectiveEnd - endThreshold) {
-          armed = true;
-        }
+      if (duration > Duration.zero && position >= duration - endThreshold) {
+        armed = true;
       }
 
       if (armed && position <= startThreshold && lastPosition > position) {
@@ -197,7 +148,6 @@ class ControllerSubscriptions {
     unawaited(_dimensions.remove(index)?.cancel());
     unawaited(_firstFrame.remove(index)?.cancel());
     unawaited(_errors.remove(index)?.cancel());
-    unawaited(_loop.remove(index)?.cancel());
     unawaited(_autoAdvance.remove(index)?.cancel());
   }
 
@@ -215,10 +165,6 @@ class ControllerSubscriptions {
       unawaited(s.cancel());
     }
     _errors.clear();
-    for (final s in _loop.values) {
-      unawaited(s.cancel());
-    }
-    _loop.clear();
     for (final s in _autoAdvance.values) {
       unawaited(s.cancel());
     }

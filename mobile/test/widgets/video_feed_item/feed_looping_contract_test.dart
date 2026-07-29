@@ -5,22 +5,21 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 
 void main() {
-  test('feed playback uses native looping instead of 6.3s seek enforcement', () {
-    final feedVideosSource = _dartCodeOnly(
-      'lib/widgets/video_feed_item/feed_videos.dart',
-    );
+  test('feed playback loops natively rather than seeking back to zero', () {
+    // The seek-based enforcement this replaced no longer exists to be passed
+    // (#6445), so what is left to pin is that the loop still happens in the
+    // platform player.
     final pooledPlayerSource = _dartCodeOnly(
       'packages/infinite_video_feed/lib/src/widgets/infinite_video_feed.dart',
     );
 
     expect(pooledPlayerSource, contains('setLooping(looping: true)'));
-    expect(feedVideosSource, isNot(contains('maxLoopDuration:')));
     expect(
-      feedVideosSource,
-      isNot(contains('maxLoopDuration: VideoEditorConstants.maxDuration')),
+      pooledPlayerSource,
+      isNot(contains('seekTo(Duration.zero)')),
       reason:
-          'Feed playback must not restart long videos with a Dart seek at the '
-          '6.3s recording limit; seek-based restarts create audible seams.',
+          'Feed playback must not restart a video with a Dart seek; '
+          'seek-based restarts create audible seams (#5544).',
     );
   });
 

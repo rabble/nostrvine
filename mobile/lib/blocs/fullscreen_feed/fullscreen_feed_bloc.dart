@@ -80,7 +80,8 @@ const _maxConcurrentCacheDownloads = 1;
 ///
 /// **Playback hooks integration:**
 /// - Background caching triggered via [FullscreenFeedVideoCacheStarted]
-/// - Loop enforcement handled by the FeedVideos player configuration
+/// - Looping and the playback-length cap handled by the FeedVideos player
+///   configuration
 /// - Cache resolution happens at the player/repository level
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
