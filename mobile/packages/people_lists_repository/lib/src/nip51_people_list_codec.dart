@@ -1,5 +1,5 @@
 // ABOUTME: Encodes and decodes NIP-51 kind 30000 people (follow set) events.
-// ABOUTME: Preserves full Nostr pubkeys and skips the app block-list d=block.
+// ABOUTME: Preserves full Nostr pubkeys and skips app-managed reserved d tags.
 
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
@@ -39,16 +39,25 @@ class PeopleListEventPayload extends Equatable {
 /// * Encodes a [UserList] into a [PeopleListEventPayload].
 /// * Decodes a kind 30000 [Event] into a [UserList], or `null` when the event
 ///   does not describe a user-editable people list (missing `d`, wrong kind,
-///   or the reserved app block list).
+///   or one of the reserved app-managed lists in [reservedDTags]).
 abstract final class Nip51PeopleListCodec {
   /// NIP-51 kind for people / follow sets.
   static const int kind = 30000;
 
   /// Reserved `d` tag value used by the app's block list.
-  ///
-  /// Events with this identifier are filtered out of the user-facing list
-  /// collection so that the block list cannot be edited as a regular list.
   static const String blockedDTag = 'block';
+
+  /// Reserved `d` tag value used by the app's new-post notification
+  /// subscription list ("bells").
+  static const String notifyDTag = 'notify';
+
+  /// Reserved `d` tag values for app-managed kind 30000 lists.
+  ///
+  /// Events with these identifiers are filtered out of the user-facing list
+  /// collection so app-managed lists cannot be renamed, edited, or deleted as
+  /// ordinary people lists. Deleting the notify list would silently clear
+  /// every bell the user has set.
+  static const Set<String> reservedDTags = {blockedDTag, notifyDTag};
 
   /// Encodes [list] into a [PeopleListEventPayload].
   ///
@@ -87,7 +96,7 @@ abstract final class Nip51PeopleListCodec {
   /// Returns `null` when:
   /// * [Event.kind] is not [kind].
   /// * The event has no non-empty `d` tag.
-  /// * The `d` tag equals [blockedDTag] (the reserved block list).
+  /// * The `d` tag is one of [reservedDTags] (app-managed lists).
   ///
   /// The returned [UserList.name] prefers the `title` tag and falls back to
   /// the `d` tag when `title` is missing. Full 64-char pubkeys are preserved
@@ -98,7 +107,7 @@ abstract final class Nip51PeopleListCodec {
     }
 
     final dTag = _firstTagValue(event.tags, 'd');
-    if (dTag == null || dTag == blockedDTag) {
+    if (dTag == null || reservedDTags.contains(dTag)) {
       return null;
     }
 

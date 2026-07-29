@@ -113,10 +113,7 @@ void main() {
         expect(
           decoded.createdAt,
           equals(
-            DateTime.fromMillisecondsSinceEpoch(
-              1710000000 * 1000,
-              isUtc: true,
-            ),
+            DateTime.fromMillisecondsSinceEpoch(1710000000 * 1000, isUtc: true),
           ),
         );
       });
@@ -179,6 +176,22 @@ void main() {
           30000,
           const [
             ['d', 'block'],
+            ['p', memberPubkeyA],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+
+        expect(Nip51PeopleListCodec.decode(event), isNull);
+      });
+
+      test('returns null for the app notify-list kind 30000 event', () {
+        final event = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'notify'],
+            ['title', 'Notify'],
             ['p', memberPubkeyA],
           ],
           '',
@@ -276,10 +289,7 @@ void main() {
         expect(
           decoded.updatedAt,
           equals(
-            DateTime.fromMillisecondsSinceEpoch(
-              1710000000 * 1000,
-              isUtc: true,
-            ),
+            DateTime.fromMillisecondsSinceEpoch(1710000000 * 1000, isUtc: true),
           ),
         );
       });
