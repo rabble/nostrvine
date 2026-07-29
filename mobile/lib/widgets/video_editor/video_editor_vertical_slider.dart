@@ -320,6 +320,9 @@ class _Thumb extends StatelessWidget {
                 child: Text(
                   (value * 100).toStringAsFixed(0),
                   style: VineTheme.labelMediumFont(
+                    // Was inheriting the ambient bodyMedium, i.e. exactly this
+                    // token — spelled out so it follows the palette in light.
+                    color: context.vineColors.secondaryText,
                     fontFeatures: [const .tabularFigures()],
                   ),
                 ),

@@ -1,4 +1,4 @@
-// ABOUTME: Tests for the four design-system drift ratchets (#6145) and the
+// ABOUTME: Tests for the design-system drift ratchets (#6145, #6404) and the
 // ABOUTME: shared Dart code-only filter their detectors run on first.
 
 import 'dart:io';
@@ -17,6 +17,7 @@ void main() {
     'check_raw_colors_ceiling.sh': 'RAW_COLORS',
     'check_material_button_ceiling.sh': 'MATERIAL_BUTTON',
     'check_raw_dialog_ceiling.sh': 'RAW_DIALOG',
+    'check_implicit_font_color_ceiling.sh': 'IMPLICIT_FONT_COLOR',
   };
 
   // A code snippet that must count exactly once under the named ratchet.
@@ -26,6 +27,8 @@ void main() {
     'check_material_button_ceiling.sh':
         'final b = IconButton(onPressed: null);',
     'check_raw_dialog_ceiling.sh': 'final d = showDialog<void>(context: c);',
+    'check_implicit_font_color_ceiling.sh':
+        'final f = VineTheme.bodyLargeFont();',
   };
 
   // Detector tokens embedded in places that must NEVER count: a trailing
@@ -50,6 +53,11 @@ void main() {
       'final a = 1; // replaced showDialog( with a full-screen flow',
       '/* showModalBottomSheet( in a block comment */',
       "final m = 'showDialog was skipped';",
+    ],
+    'check_implicit_font_color_ceiling.sh': [
+      'final a = 1; // was VineTheme.bodyLargeFont() before the color pass',
+      '/* VineTheme.titleMediumFont() in a block comment */',
+      "final m = 'VineTheme.labelSmallFont() in a log string';",
     ],
   };
 
@@ -143,6 +151,48 @@ void main() {
           expect(res.stdout, contains('GREW past the frozen ceiling'));
         });
       });
+    });
+
+    test('font detector only counts calls that omit color:', () {
+      libFile('a.dart').writeAsStringSync('''
+final a = VineTheme.bodyMediumFont(color: context.vineColors.onSurface);
+final b = VineTheme.labelMediumFont(
+  color: pickColor(first, second),
+  fontFeatures: [const .tabularFigures()],
+);
+final c = VineTheme.titleLargeFont();
+final d = VineTheme.bodySmallFont(fontWeight: FontWeight.w600);
+''');
+
+      final res = run(
+        'check_implicit_font_color_ceiling.sh',
+        'IMPLICIT_FONT_COLOR',
+        update: true,
+      );
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(
+        baselineRows().single,
+        endsWith('\t2'),
+        reason:
+            'Only the two calls without a color: argument count; a nested '
+            'call that itself takes a color must not be mistaken for one.',
+      );
+    });
+
+    test('font detector ignores helper definitions and copyWith colors', () {
+      libFile('a.dart').writeAsStringSync('''
+static TextStyle bodyLargeFont({Color? color, double? fontSize}) => const .new();
+final a = theme.textTheme.bodyLarge?.copyWith(color: Colors.red);
+final b = VineTheme.bodyLargeFont(color: colors.primaryText);
+''');
+
+      final res = run(
+        'check_implicit_font_color_ceiling.sh',
+        'IMPLICIT_FONT_COLOR',
+        update: true,
+      );
+      expect(res.exitCode, 0, reason: res.stderr.toString());
+      expect(baselineRows(), isEmpty);
     });
 
     test('material-button detector catches generic and FAB call sites', () {
