@@ -867,6 +867,22 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `an HLS source reaches the player without being probed`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(
+            trimmingSetClipsCall("https://cdn.example/abc/hls/master.m3u8?token=t"),
+            result,
+        )
+
+        // MediaExtractor has no HLS extractor, so probing a playlist can only
+        // throw — and a throw is not cached, so deferring for one would pay a
+        // doomed fetch on every setClips for that source.
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        verify(exactly = 0) { mockHandler.post(any()) }
+    }
+
+    @Test
     fun `a source without both track types is applied unclamped`() {
         val result = mockk<MethodChannel.Result>(relaxed = true)
 

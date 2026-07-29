@@ -11,6 +11,7 @@ import java.util.Collections
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadFactory
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -50,7 +51,8 @@ internal class DivineVideoPlayerInstance(
      * Reads source metadata off the platform thread. Single-threaded, so the
      * clips of one call resolve in order and two calls cannot interleave.
      */
-    private val metadataExecutor: ExecutorService = Executors.newSingleThreadExecutor(),
+    private val metadataExecutor: ExecutorService =
+        Executors.newSingleThreadExecutor(metadataThreadFactory(playerId)),
 ) : MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler,
     TextureRegistry.SurfaceProducer.Callback {
@@ -457,6 +459,7 @@ internal class DivineVideoPlayerInstance(
         val unresolved = clipsRaw.mapNotNull { map ->
             val uri = map["uri"] as? String ?: return@mapNotNull null
             if (map["trimToCommonTrackEnd"] as? Boolean != true) return@mapNotNull null
+            if (!canReadTrackDurations(uri)) return@mapNotNull null
             if (trackDurationsCache.containsKey(uri)) return@mapNotNull null
             uri to httpHeadersOf(map)
         }
@@ -724,7 +727,32 @@ internal class DivineVideoPlayerInstance(
     }
 
     /**
+     * Whether [uri]'s track lengths can be read at all.
+     *
+     * `MediaExtractor` has no HLS extractor: it fetches the playlist, fails to
+     * sniff it and throws. A throw is deliberately uncached (see
+     * [resolveTrackDurations]), so probing a playlist would hold every
+     * `setClips` for that source behind a read that can only fail, and pay the
+     * fetch again on the next one. The feed keeps HLS as a fallback for a
+     * progressive source that would not start, so this is the path a video
+     * takes when it is already having a bad time.
+     *
+     * A scheme [resolveTrackDurations] cannot open is the same shape of
+     * answer: permanent, and not worth deferring a load to rediscover.
+     */
+    private fun canReadTrackDurations(uri: String): Boolean {
+        val path = uri.substringBefore('?').substringBefore('#')
+        if (path.endsWith(".m3u8", ignoreCase = true)) return false
+        return uri.startsWith("/") ||
+            uri.startsWith("file://") ||
+            uri.startsWith("http://") ||
+            uri.startsWith("https://")
+    }
+
+    /**
      * Reads [uri]'s video and audio track lengths into [trackDurationsCache].
+     *
+     * Only ever called for a [uri] [canReadTrackDurations] accepted.
      *
      * Blocks on I/O — a remote source costs a range request for the moov box —
      * so it must never run on the platform thread. The Apple player pays the
@@ -743,12 +771,13 @@ internal class DivineVideoPlayerInstance(
         val extractor = MediaExtractor()
         val durations = try {
             when {
-                uri.startsWith("/") -> extractor.setDataSource(uri)
                 uri.startsWith("file://") ->
                     extractor.setDataSource(Uri.parse(uri).path ?: return)
                 uri.startsWith("http://") || uri.startsWith("https://") ->
                     extractor.setDataSource(uri, headers)
-                else -> return
+                // A bare filesystem path. [canReadTrackDurations] rejected
+                // everything else before this was ever queued.
+                else -> extractor.setDataSource(uri)
             }
             var videoUs = -1L
             var audioUs = -1L
@@ -1585,6 +1614,19 @@ internal class DivineVideoPlayerInstance(
             )
 
         private const val TRACK_DURATION_CACHE_ENTRIES = 256
+
+        /**
+         * Names the metadata thread and marks it a daemon.
+         *
+         * `shutdownNow()` cannot interrupt a [MediaExtractor] read — it is
+         * native I/O — so the stalled host this design already plans for keeps
+         * its thread alive past [dispose]. Daemon so it can never hold the
+         * process up, named so a thread dump says which player it belongs to
+         * instead of showing an anonymous `pool-N-thread-1`.
+         */
+        private fun metadataThreadFactory(playerId: Int) = ThreadFactory { runnable ->
+            Thread(runnable, "divine-video-metadata-$playerId").apply { isDaemon = true }
+        }
 
         /**
          * How long the player may stay in `STATE_BUFFERING` before it is

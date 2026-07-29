@@ -151,6 +151,9 @@ class VideoClip {
   /// remote source's track lengths costs a metadata request before playback
   /// starts, so both platforms cache the result per source and Android gives
   /// up after a short wait and plays unclamped rather than hold the load.
+  /// Android does not probe an HLS source at all — `MediaExtractor` cannot
+  /// open a playlist — so an HLS clip plays unclamped rather than paying for a
+  /// read that can only fail.
   final bool trimToCommonTrackEnd;
 
   /// Serializes this clip for platform channel transport.
