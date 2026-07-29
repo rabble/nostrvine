@@ -89,11 +89,13 @@
         android:theme="@style/NormalTheme"
         android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config">
-        <!-- Render with Impeller. This reverses the earlier Skia opt-out,
-             which the comment history below explains.
+        <!-- Render with Impeller. This reverses the Skia opt-out added in
+             df2e479f7 ("perf(android): switch rendering backend to
+             Skia"), and it is a traded risk rather than a fix landing on
+             a solved problem - read this before assuming it is safe.
 
-             Previously (Flutter 3.2x) on-device profiling of profile
-             builds during feed scroll measured:
+             That opt-out came from on-device profiling of profile builds
+             during feed scroll:
              - Impeller/Vulkan: 17-27ms raster per frame, 37-46 FPS,
                constant jank (many blur/saveLayer passes over a live
                video texture).
@@ -104,28 +106,40 @@
                #145531).
              - Skia: 13-16ms raster, 60 FPS, correct video rendering.
 
-             Re-evaluated on Flutter 3.44, as that comment asked for on
-             each upgrade. What changed since: both GLES texture issues
-             are closed upstream, and the video editor's live chroma-key
-             preview needs `ui.ImageFilter.shader`, which is
-             Impeller-only - on Skia it degrades to an unkeyed preview
-             (the export is unaffected either way).
+             Nothing upstream has changed since. That measurement was
+             taken on Flutter 3.44.0, the same pin this branch builds on,
+             with both cited issues already closed - so this is not a
+             re-evaluation after an engine upgrade. What changed is the
+             requirement: the video editor's live chroma-key preview
+             needs `ui.ImageFilter.shader`, which Skia does not implement
+             at all. On Skia the preview degrades to the unkeyed video
+             (the exported file is unaffected either way), and we decided
+             a working preview is worth re-entering Impeller.
 
-             Keep re-checking the same thing on each upgrade, since that
-             is what forced the original opt-out: profile build, feed
-             scroll, watch raster time and whether video textures stay
-             correct. Devices below API 29 or without Vulkan fall back
-             automatically, so the editor keeps its no-shader fallback
-             path regardless.
+             Two things that follow, both easy to get wrong:
 
-             Note there is deliberately no `EnableImpeller` entry below.
-             Impeller is the default on API 29+, and the engine logs
-             "[Action Required]: Impeller opt-out deprecated" for the mere
-             presence of that entry - even when it is set to `true`.
-             Verified on a Galaxy S25 (API 36, Vulkan 1.3): with no entry
-             the warning is gone and
-             `ImageFilter.isShaderFilterSupported` reports true, which is
-             what the chroma-key preview needs. -->
+             - "Falls back to Skia" is not what happens. Below API 29 the
+               engine does use Skia, but on API 29+ without a usable
+               Vulkan context (Huawei, MediaTek below API 31, the engine's
+               known-bad-SOC list) it falls back to Impeller *OpenGLES* -
+               the backend the black-video-texture measurement above
+               implicates. `ImageFilter.isShaderFilterSupported` is true
+               there, so the editor's no-shader fallback does not engage
+               on those devices either. If feed video renders black in the
+               field, that device class is the first place to look, and
+               this commit is the one to revert.
+             - Re-check on every upgrade, the same way the original
+               measurement was taken: profile build, feed scroll, watch
+               raster time and whether video textures stay correct.
+
+             There is deliberately no `EnableImpeller` entry below.
+             Impeller is the engine default on API 29+, so the entry is
+             redundant; setting it to `true` would also work and would not
+             trip the "[Action Required]: Impeller opt-out deprecated"
+             warning, which the engine only logs when Impeller is actually
+             off. Verified on a Galaxy S25 (API 36, Vulkan 1.3): with no
+             entry, `ImageFilter.isShaderFilterSupported` reports true,
+             which is what the chroma-key preview needs. -->
         <!-- FCM default notification channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
