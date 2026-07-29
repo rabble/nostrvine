@@ -86,6 +86,7 @@ void main() {
       return PeopleListsBloc(
         repository: repository,
         ownerPubkeyStream: ownerPubkeyController.stream,
+        repositoryStream: const Stream.empty(),
         initialOwnerPubkey: initialOwnerPubkey,
         clock: _fixedClock,
       );

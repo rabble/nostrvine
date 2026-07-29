@@ -27,10 +27,10 @@ typedef PeopleListsClock = DateTime Function();
 /// changes, and applies optimistic updates for user-initiated mutations
 /// before the repository returns.
 ///
-/// It depends only on the repository and an owner-pubkey stream — it does
-/// not import other BLoCs. Owner transitions cancel the prior
-/// subscription, clear pending mutations, and start a new subscription
-/// plus an out-of-band sync.
+/// It depends only on the repository, an owner-pubkey stream, and a
+/// repository stream — it does not import other BLoCs. Owner transitions
+/// cancel the prior subscription, clear pending mutations, and start a new
+/// subscription plus an out-of-band sync.
 ///
 /// ## Failure recovery contract
 ///
@@ -48,13 +48,19 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// typically adapts an auth service's state stream into this shape so
   /// the bloc has no Flutter or Riverpod dependency.
   ///
+  /// [repositoryStream] must emit each successive [PeopleListsRepository]
+  /// instance. Required rather than optional: this bloc is built once in the
+  /// app shell while `peopleListsRepositoryProvider` rebuilds on every identity
+  /// change, so a caller that omits the stream silently reverts #6480. Pass
+  /// `const Stream.empty()` when the repository genuinely cannot change.
+  ///
   /// [clock] stamps optimistic `updatedAt` values and mutation ids.
   /// Defaults to [DateTime.now] in UTC. Tests inject a fixed clock for
   /// determinism.
   PeopleListsBloc({
     required PeopleListsRepository repository,
     required Stream<String?> ownerPubkeyStream,
-    Stream<PeopleListsRepository>? repositoryStream,
+    required Stream<PeopleListsRepository> repositoryStream,
     String? initialOwnerPubkey,
     PeopleListsClock? clock,
   }) : _repository = repository,
@@ -103,7 +109,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// the same reason.
   PeopleListsRepository _repository;
   final Stream<String?> _ownerPubkeyStream;
-  final Stream<PeopleListsRepository>? _repositoryStream;
+  final Stream<PeopleListsRepository> _repositoryStream;
   final PeopleListsClock _clock;
 
   StreamSubscription<String?>? _ownerSubscription;
@@ -135,7 +141,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     );
 
     await _repositorySubscription?.cancel();
-    _repositorySubscription = _repositoryStream?.listen(
+    _repositorySubscription = _repositoryStream.listen(
       (repository) => add(PeopleListsRepositoryChanged(repository: repository)),
       onError: (Object error, StackTrace stackTrace) {
         addError(error, stackTrace);
