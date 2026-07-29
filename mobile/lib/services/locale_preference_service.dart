@@ -94,12 +94,16 @@ class LocalePreferenceService {
     'it': 'Italiano',
     'ja': '日本語',
     'ko': '한국어',
+    'ms': 'Bahasa Melayu',
     'nl': 'Nederlands',
     'pl': 'Polski',
     'pt': 'Português',
     'ro': 'Română',
     'sv': 'Svenska',
     'tr': 'Türkçe',
+    'ur': 'اردو',
+    'vi': 'Tiếng Việt',
+    'zh': '简体中文',
   };
 
   /// Returns the native display name for a locale code, or the code

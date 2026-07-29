@@ -118,6 +118,8 @@ class LanguagePreferenceService {
     'vi': 'Vietnamese',
     'id': 'Indonesian',
     'uk': 'Ukrainian',
+    'ur': 'Urdu',
+    'ms': 'Malay',
   };
 
   /// Returns the display name for a language code, or the code itself
