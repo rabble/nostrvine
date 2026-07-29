@@ -12,6 +12,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
+final _vanishedProfilePubkeysProvider = StreamProvider<Set<String>>((ref) {
+  return ref
+      .watch(databaseProvider)
+      .vanishedProfilesDao
+      .watchAllPubkeys()
+      .map((pubkeys) => pubkeys.toSet());
+});
+
 // ignore: specify_nonobvious_property_types
 final userProfileStatsReactiveProvider =
     StreamProvider.family<ProfileStats?, String>((ref, pubkey) {
@@ -97,8 +105,7 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
 /// treatment in the inbox and the following bar.
 @riverpod
 Stream<bool> profileVanished(Ref ref, String pubkey) {
-  return ref
-      .watch(databaseProvider)
-      .vanishedProfilesDao
-      .watchIsVanished(pubkey);
+  final pubkeys =
+      ref.watch(_vanishedProfilePubkeysProvider).value ?? const <String>{};
+  return Stream.value(pubkeys.contains(pubkey));
 }

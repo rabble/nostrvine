@@ -173,6 +173,7 @@ void main() {
     Widget buildSubject({
       ConversationState? state,
       UserProfile? otherProfile,
+      bool otherProfileVanished = false,
       MockGoRouter? goRouter,
       DmRestoreStatusState? restoreStatus,
     }) {
@@ -202,6 +203,9 @@ void main() {
           fetchUserProfileProvider(
             otherPubkey,
           ).overrideWith((ref) async => otherProfile),
+          profileVanishedProvider(
+            otherPubkey,
+          ).overrideWith((ref) => Stream.value(otherProfileVanished)),
           // The view now reads the blocklist eagerly in build() to filter
           // reaction reactors, so every pump needs a stubbed repository.
           contentBlocklistRepositoryProvider.overrideWithValue(mockBlocklist),
@@ -398,6 +402,36 @@ void main() {
 
         expect(find.byType(EmptyConversation), findsOneWidget);
       });
+
+      testWidgets(
+        'empty conversation hides stale avatar and nip05 for deleted account',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const ConversationState(status: ConversationStatus.loaded),
+              otherProfile: UserProfile(
+                pubkey: otherPubkey,
+                name: 'Stale Name',
+                displayName: 'Stale Display',
+                picture: 'https://example.com/stale.jpg',
+                nip05: 'stale@example.com',
+                rawData: const {},
+                createdAt: now,
+                eventId: 'stale-profile',
+              ),
+              otherProfileVanished: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final empty = tester.widget<EmptyConversation>(
+            find.byType(EmptyConversation),
+          );
+          expect(empty.displayName, l10n.profileDeletedAccountName);
+          expect(empty.imageUrl, isNull);
+          expect(empty.nip05, isNull);
+        },
+      );
 
       testWidgets(
         'empty conversation stays unqualified when recovery is complete',

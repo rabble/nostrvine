@@ -1752,23 +1752,19 @@ class FunnelcakeApiClient {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final profileJson = data['profile'] as Map<String, dynamic>?;
-
-        // Both halves are required. `has_vanish_request` is read from the
-        // permanent vanish-request record, so it stays true after the erasure
-        // sweep completes and the account publishes again — which the server
-        // then serves as a live profile. It marks a deletion only while the
-        // server is *also* withholding the profile: a pending request
-        // suppresses the Kind 0 server-side, and a completed one erased it.
-        // Reading the flag alone would hide a republished account forever,
-        // because it never goes false again. Absent means the server predates
-        // the field, which preserves the previous behaviour.
-        if (data['has_vanish_request'] == true && profileJson == null) {
-          return UserProfileVanished(pubkey: pubkey);
-        }
-
         final socialJson = data['social'] as Map<String, dynamic>?;
         final statsJson = data['stats'] as Map<String, dynamic>?;
         final engagementJson = data['engagement'] as Map<String, dynamic>?;
+        final hasVanishRequest = data['has_vanish_request'] == true;
+
+        // `has_vanish_request` is historical, not a tombstone by itself. A
+        // completed vanish can later publish post-boundary Kind 0 metadata and
+        // the server serves that as live. Only a suppressed/missing profile with
+        // the flag should render as a deleted account. Absent means the server
+        // predates the field, preserving the previous not-published behaviour.
+        if (hasVanishRequest && profileJson == null) {
+          return UserProfileVanished(pubkey: pubkey);
+        }
 
         final social = socialJson != null
             ? ProfileSocialData.fromJson(socialJson)
@@ -2154,19 +2150,17 @@ class FunnelcakeApiClient {
             if (pubkey == null || pubkey.isEmpty) continue;
 
             final profileJson = user['profile'] as Map<String, dynamic>?;
-
-            // Same rule as getUserProfile, and narrower here: the server
-            // strips a pending vanish request out of bulk hydration entirely,
-            // so on this path the flag is only ever visible for a request the
-            // erasure sweep already completed.
-            if (user['has_vanish_request'] == true && profileJson == null) {
-              result[pubkey] = UserProfileVanished(pubkey: pubkey);
-              continue;
-            }
-
             final socialJson = user['social'] as Map<String, dynamic>?;
             final statsJson = user['stats'] as Map<String, dynamic>?;
             final engagementJson = user['engagement'] as Map<String, dynamic>?;
+            final hasVanishRequest = user['has_vanish_request'] == true;
+
+            // Same contract as getUserProfile: the flag alone is historical,
+            // while flag + null profile is the suppressed/deleted-account shape.
+            if (hasVanishRequest && profileJson == null) {
+              result[pubkey] = UserProfileVanished(pubkey: pubkey);
+              continue;
+            }
 
             final social = socialJson != null
                 ? ProfileSocialData.fromJson(socialJson)

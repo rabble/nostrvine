@@ -269,8 +269,9 @@ class ProfileRepository {
     _confirmedMissing.add(pubkey);
     // This response *is* this session's re-check. Without it the next
     // [fetchFreshProfile] would immediately spend a second request to be told
-    // the same thing; recovery from a wrong vanish classification rides on
-    // the next session instead, which every session performs exactly once.
+    // the same thing; recovery from a wrong `has_vanish_request: true` +
+    // null-profile classification rides on the next session instead, which
+    // every session performs exactly once.
     _vanishRevalidated.add(pubkey);
     // Load-bearing: stops the raw-Kind-0 retry ladder from re-querying relays
     // for a profile that is never coming back.
@@ -286,8 +287,8 @@ class ProfileRepository {
   /// Forgets a previously recorded vanish.
   ///
   /// Called whenever the server reports the account as live again, so a wrong
-  /// vanish classification is recoverable instead of erasing the account from
-  /// this device permanently.
+  /// `has_vanish_request: true` classification is recoverable instead of
+  /// erasing the account from this device permanently.
   ///
   /// Deliberately **not** gated on [_vanished]. That set is one mirror per
   /// repository instance, hydrated asynchronously, of a table every instance
@@ -298,6 +299,7 @@ class ProfileRepository {
   /// matching nothing dirties no page; that disagreement is costlier.
   Future<void> _clearVanish(String pubkey) async {
     _vanished.remove(pubkey);
+    _rawKind0ConfirmedMissing.remove(pubkey);
     await _vanishedProfilesDao?.clearVanished(pubkey);
   }
 
@@ -305,9 +307,10 @@ class ProfileRepository {
   /// the read path that never otherwise reaches the network: an
   /// already-vanished pubkey, which [fetchFreshProfile] and
   /// [fetchBatchProfiles] both answer from the durable marker. This is
-  /// therefore the only channel that can clear a wrong vanish classification,
-  /// and it runs once in *every* session — including after a restart — so
-  /// recovery is not limited to the session that recorded the vanish.
+  /// therefore the only channel that can clear a wrong
+  /// `has_vanish_request: true` + null-profile classification, and it runs
+  /// once in *every* session. That includes after a restart, so recovery is
+  /// not limited to the session that recorded the vanish.
   ///
   /// Deliberately calls the unguarded fetch: the guarded entry point would
   /// bounce straight back here for a vanished pubkey.
@@ -717,7 +720,8 @@ class ProfileRepository {
           case UserProfileFound():
             // Self-heal: the server says this account is live, so forget any
             // vanish we recorded earlier. Without this a single wrong
-            // classification would erase the account from this device forever.
+            // `has_vanish_request: true` + null profile would erase the account
+            // from this device forever.
             await _clearVanish(pubkey);
             final funnelcakeProfile = UserProfile.fromUserProfileFound(result);
             await _cacheProfileStatsFromResult(pubkey, result);

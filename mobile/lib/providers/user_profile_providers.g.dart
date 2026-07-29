@@ -301,7 +301,7 @@ final class ProfileVanishedProvider
   }
 }
 
-String _$profileVanishedHash() => r'cb1f9c9ef27a29577e5299d468dc777a052a86b1';
+String _$profileVanishedHash() => r'9c15d7c790f73dd872f1cf8e8c690ef0f411ba17';
 
 /// Whether the account behind [pubkey] has requested NIP-62 deletion.
 ///

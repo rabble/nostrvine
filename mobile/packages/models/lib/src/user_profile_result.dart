@@ -127,11 +127,11 @@ final class UserProfileNotPublished extends UserProfileResult {
 /// The account has a NIP-62 request to vanish on record **and** the server is
 /// serving no profile for it.
 ///
-/// Both halves are load-bearing. The server's `has_vanish_request` flag comes
-/// from the permanent vanish-request record, so it stays `true` after the
-/// erasure sweep completes and the account publishes a new Kind 0 — which the
-/// server then serves as live. Reading the flag alone would hide those accounts
-/// permanently, because it never goes `false` again.
+/// Returned only when the server reports `has_vanish_request: true` and does
+/// not include a profile. The flag is historical erasure-request state, not a
+/// tombstone by itself: a completed vanish can later publish post-boundary
+/// profile metadata and the server serves that as live. Callers must treat this
+/// variant as "there is nothing to show".
 ///
 /// Callers must treat this variant as "there is nothing to show". [social],
 /// [stats], and [engagement] are always `null` here so it is structurally
