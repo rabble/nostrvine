@@ -69,7 +69,14 @@ class UserProfileTile extends ConsumerWidget {
     final profileListFeaturesEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
     );
-    final showAddToList = profileListFeaturesEnabled && !isCurrentUser;
+    // curatedLists is the master switch for people lists; profileListFeatures
+    // only adds this surface on top of it. Without both, tapping would
+    // construct the lazily-registered PeopleListsBloc for a disabled feature.
+    final curatedListsEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
+    final showAddToList =
+        profileListFeaturesEnabled && curatedListsEnabled && !isCurrentUser;
 
     // Get display name or truncated npub (fallback for users without Kind 0)
     final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);

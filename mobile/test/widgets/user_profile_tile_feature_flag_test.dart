@@ -60,6 +60,26 @@ void main() {
       },
     );
 
+    // curatedLists is the master switch. The action opens a sheet that reads
+    // the lazily-registered global PeopleListsBloc, so showing it here would
+    // spin up a repository and relay subscription for a disabled feature.
+    testWidgets(
+      'hides add-to-list action when curatedLists is disabled',
+      (tester) async {
+        await tester.pumpWidget(
+          _buildSubject(
+            authService: authService,
+            profileListFeaturesEnabled: true,
+            curatedListsEnabled: false,
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(_divineIcon(DivineIconName.listPlus), findsNothing);
+      },
+    );
+
     testWidgets('tile responds when tapping the avatar-name gap', (
       tester,
     ) async {
@@ -96,6 +116,7 @@ void main() {
 Widget _buildSubject({
   required _TestAuthService authService,
   required bool profileListFeaturesEnabled,
+  bool curatedListsEnabled = true,
   VoidCallback? onTap,
 }) {
   return MaterialApp(
@@ -107,6 +128,9 @@ Widget _buildSubject({
         isFeatureEnabledProvider(
           FeatureFlag.profileListFeatures,
         ).overrideWithValue(profileListFeaturesEnabled),
+        isFeatureEnabledProvider(
+          FeatureFlag.curatedLists,
+        ).overrideWithValue(curatedListsEnabled),
       ],
       child: Scaffold(
         body: UserProfileTile(

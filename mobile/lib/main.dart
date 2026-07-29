@@ -2830,9 +2830,16 @@ class _DivineAppState extends ConsumerState<DivineApp>
             // flipping the flag re-inflated everything below it — including
             // the Navigator, which silently dropped imperatively pushed
             // routes (users toggling the flag were thrown back to Settings).
-            // Laziness does the gating instead: every consumer checks
-            // FeatureFlag.curatedLists first, so the bloc is never created
-            // while the flag is off.
+            // Laziness does the gating instead: every entry point into the
+            // people-lists UI checks FeatureFlag.curatedLists before reading
+            // the bloc — the lists routes redirect home, the profile and
+            // search affordances stay hidden, and both sheets refuse to
+            // open — so nothing constructs it while the flag is off.
+            //
+            // ref.read in `create` is safe here: peopleListsRepositoryProvider
+            // is keepAlive over the equally stable nostrServiceProvider, and
+            // without the conditional entry this bloc lives for the whole app
+            // run, so there is no rebuild that could strand the capture.
             BlocProvider(
               create: (_) {
                 final authService = ref.read(authServiceProvider);

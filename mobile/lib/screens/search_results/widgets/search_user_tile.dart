@@ -43,9 +43,17 @@ class SearchUserTile extends ConsumerWidget {
     final profileListFeaturesEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
     );
+    // curatedLists is the master switch for people lists; profileListFeatures
+    // only adds this surface on top of it. Without both, tapping would
+    // construct the lazily-registered PeopleListsBloc for a disabled feature.
+    final curatedListsEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
     final ownPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
     final showAddToList =
-        profileListFeaturesEnabled && profile.pubkey != ownPubkey;
+        profileListFeaturesEnabled &&
+        curatedListsEnabled &&
+        profile.pubkey != ownPubkey;
 
     return Semantics(
       identifier: 'search_user_tile_${profile.pubkey}',
