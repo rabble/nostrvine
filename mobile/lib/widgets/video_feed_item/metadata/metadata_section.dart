@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 /// A labeled section in the metadata expanded sheet.
 ///
 /// Each section has:
-/// - A bottom border in [VineTheme.outlineDisabled]
+/// - A bottom border in the semantic `outlineDisabled` color
 /// - 16px padding on all sides
-/// - A small label in [VineTheme.onSurfaceVariant]
+/// - A small label in the semantic `onSurfaceVariant` color
 /// - 16px gap between label and content
 ///
 /// Sections conditionally render: pass `null` to [child] or wrap the

@@ -660,27 +660,6 @@ void main() {
         expect(theme.appBarTheme.centerTitle, true);
       });
 
-      test('returns ThemeData with correct bottomNavigationBarTheme', () {
-        final theme = VineTheme.theme;
-
-        expect(
-          theme.bottomNavigationBarTheme.backgroundColor,
-          VineTheme.darkColors.nav,
-        );
-        expect(
-          theme.bottomNavigationBarTheme.selectedItemColor,
-          VineTheme.darkColors.onNav,
-        );
-        expect(
-          theme.bottomNavigationBarTheme.unselectedItemColor,
-          VineTheme.darkColors.onNavMuted,
-        );
-        expect(
-          theme.bottomNavigationBarTheme.type,
-          BottomNavigationBarType.fixed,
-        );
-      });
-
       test('returns ThemeData with correct textTheme', () {
         final theme = VineTheme.theme;
 

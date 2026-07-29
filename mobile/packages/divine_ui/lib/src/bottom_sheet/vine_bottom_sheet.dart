@@ -415,12 +415,13 @@ class _HeaderlessDragHandle extends StatelessWidget {
           padding: EdgeInsets.only(top: 8, bottom: 20),
           child: Center(child: VineBottomSheetDragHandle()),
         ),
-        // 5 % white alpha — Figma `outline/outline-disabled` token value
-        // (`rgba(255, 255, 255, 0.05)`). Scoped to this chrome divider
-        // only because the shared `VineTheme.outlineDisabled` solid
-        // value (`#001A12`) does not contrast against the sheet
-        // surface.
-        if (showDivider) Container(height: 1, color: const Color(0x0DFFFFFF)),
+        if (showDivider)
+          Container(
+            height: 1,
+            color: context.vineColors.isLight
+                ? context.vineColors.outlineDisabled
+                : const Color(0x0DFFFFFF),
+          ),
       ],
     );
   }
@@ -525,10 +526,7 @@ class _ScrollableContent extends StatelessWidget {
 
         // Optional bottom input
         if (bottomInput != null)
-          _KeyboardAwareBottomInput(
-            includeSafeArea: true,
-            child: bottomInput!,
-          ),
+          _KeyboardAwareBottomInput(includeSafeArea: true, child: bottomInput!),
       ],
     );
   }
@@ -709,10 +707,7 @@ class _CloseButton extends StatelessWidget {
 /// Shows a loading indicator while the async [onComplete] callback runs,
 /// then calls [onDismiss] to close the sheet.
 class _CompleteButton extends StatefulWidget {
-  const _CompleteButton({
-    required this.onComplete,
-    required this.onDismiss,
-  });
+  const _CompleteButton({required this.onComplete, required this.onDismiss});
 
   final AsyncCallback onComplete;
   final VoidCallback onDismiss;

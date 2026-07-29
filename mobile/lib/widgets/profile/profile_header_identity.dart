@@ -177,7 +177,11 @@ class _ProfileBadgeChip extends StatelessWidget {
         color: context.vineColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
-          side: const BorderSide(color: VineTheme.neutral10),
+          side: BorderSide(
+            color: context.vineColors.isLight
+                ? context.vineColors.outlineMuted
+                : VineTheme.neutral10,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(radius),

@@ -1047,13 +1047,6 @@ class VineTheme {
           fontFamily: 'System',
         ),
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: colors.nav,
-        selectedItemColor: colors.onNav,
-        unselectedItemColor: colors.onNavMuted,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-      ),
       textTheme: TextTheme(
         displayLarge: TextStyle(
           color: colors.primaryText,

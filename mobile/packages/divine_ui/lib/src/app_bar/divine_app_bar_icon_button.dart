@@ -49,7 +49,7 @@ class DivineAppBarIconButton extends StatelessWidget {
   /// Optional border for the button container.
   ///
   /// When non-null, the button renders as [DivineIconButtonType.secondary],
-  /// whose built-in 2px [VineTheme.outlineMuted] border matches every
+  /// whose built-in 2px semantic `outlineMuted` border matches every
   /// current usage of this param exactly. The supplied [BorderSide]'s own
   /// color/width are not independently honored.
   final BorderSide? borderSide;

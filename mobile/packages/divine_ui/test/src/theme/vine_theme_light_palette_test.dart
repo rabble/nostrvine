@@ -101,7 +101,7 @@ const _supportingPairs = <(String, String)>[
 
 /// Token pairs that share a dark value while differing in light.
 ///
-/// The migration's dark-value parity script (`check_dark_value_parity.sh`)
+/// The migration's dark-value parity script (`check_dark_value_parity.dart`)
 /// compares the DARK value of a removed constant against its replacement, so
 /// these pairs are interchangeable as far as it — and the dark goldens — are
 /// concerned. Picking the wrong one of a pair is a bug that only renders in

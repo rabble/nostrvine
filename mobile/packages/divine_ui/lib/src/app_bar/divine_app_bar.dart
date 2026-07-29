@@ -264,10 +264,9 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Controls the status bar icon brightness.
   ///
-  /// When null, transparent and gradient app bars keep light status-bar icons
-  /// — those modes exist to overlay video, whose brightness is content-driven
-  /// rather than theme-driven. A solid app bar instead inherits the
-  /// palette-derived style from `appBarTheme`.
+  /// When null, solid and transparent app bars inherit the palette-derived
+  /// style from `appBarTheme`. Gradient app bars keep light status-bar icons
+  /// because their gradient is the darkening scrim over media.
   final SystemUiOverlayStyle? systemOverlayStyle;
 
   @override
@@ -337,10 +336,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
           ? null
           : [
               if (actions.isNotEmpty)
-                DiVineAppBarActions(
-                  actions: actions,
-                  style: effectiveStyle,
-                ),
+                DiVineAppBarActions(actions: actions, style: effectiveStyle),
               if (customActions.isNotEmpty)
                 Padding(
                   padding: EdgeInsetsDirectional.only(
@@ -365,9 +361,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     if (backgroundMode == DiVineAppBarBackgroundMode.gradient) {
       return Container(
-        decoration: BoxDecoration(
-          gradient: gradient!.toLinearGradient(),
-        ),
+        decoration: BoxDecoration(gradient: gradient!.toLinearGradient()),
         child: appBarContent,
       );
     }

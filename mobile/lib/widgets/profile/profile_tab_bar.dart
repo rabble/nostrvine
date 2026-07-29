@@ -163,7 +163,7 @@ class _ProfileTab extends StatelessWidget {
 /// behind the status bar, the tab bar icons sit below the status bar
 /// rather than behind it.
 ///
-/// Also renders the 2px [VineTheme.outlineMuted] divider at the bottom of
+/// Also renders the 2px semantic `outlineMuted` divider at the bottom of
 /// the header. The rounded top corners of the tab content viewport are
 /// applied separately, on the body's [ColoredBox] wrapper.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {

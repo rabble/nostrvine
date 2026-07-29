@@ -37,9 +37,7 @@ class _WebsiteFieldState extends State<WebsiteField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsetsDirectional.only(
-            start: 16,
-          ),
+          padding: const EdgeInsetsDirectional.only(start: 16),
           child: Text(
             context.l10n.profileSetupWebsiteLabel,
             style: VineTheme.labelMediumFont(
@@ -52,18 +50,16 @@ class _WebsiteFieldState extends State<WebsiteField> {
         TextFormField(
           controller: widget.controller,
           focusNode: _focusNode,
-          style: VineTheme.bodyLargeFont(
-            color: context.vineColors.onSurface,
-          ),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           decoration: InputDecoration(
             isCollapsed: true,
             hintText: context.l10n.profileSetupWebsiteHint,
             hintStyle: profileFieldHintStyleOf(context),
-            border: profileFieldBorder,
-            enabledBorder: profileFieldBorder,
-            focusedBorder: profileFieldBorder,
-            errorBorder: profileFieldBorder,
-            focusedErrorBorder: profileFieldBorder,
+            border: profileFieldBorderOf(context),
+            enabledBorder: profileFieldBorderOf(context),
+            focusedBorder: profileFieldBorderOf(context),
+            errorBorder: profileFieldBorderOf(context),
+            focusedErrorBorder: profileFieldBorderOf(context),
             contentPadding: const EdgeInsets.all(16),
           ),
           keyboardType: TextInputType.url,

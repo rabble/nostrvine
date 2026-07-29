@@ -552,10 +552,17 @@ class _PhaseToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final colors = context.vineColors;
+    final isLight = colors.isLight;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.lightText.withValues(alpha: 0.08),
+        color: isLight
+            ? colors.containerLow
+            : VineTheme.lightText.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isLight ? colors.outlineMuted : Colors.transparent,
+        ),
       ),
       child: Row(
         children: [
@@ -588,6 +595,8 @@ class _PhaseSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
+    final isLight = colors.isLight;
     return Expanded(
       child: Semantics(
         button: true,
@@ -603,19 +612,27 @@ class _PhaseSegment extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected
-                  ? VineTheme.primary.withValues(alpha: 0.18)
+                  ? isLight
+                        ? colors.primaryContainer
+                        : VineTheme.primary.withValues(alpha: 0.18)
                   : null,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected ? VineTheme.primary : Colors.transparent,
+                color: selected
+                    ? isLight
+                          ? colors.outline
+                          : VineTheme.primary
+                    : Colors.transparent,
               ),
             ),
             child: Text(
               label,
               style: VineTheme.labelMediumFont(
                 color: selected
-                    ? VineTheme.primary
-                    : context.vineColors.mutedText,
+                    ? isLight
+                          ? colors.onSurface
+                          : VineTheme.primary
+                    : colors.mutedText,
               ),
             ),
           ),

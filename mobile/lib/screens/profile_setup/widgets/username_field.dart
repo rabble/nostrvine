@@ -45,9 +45,7 @@ class _UsernameFieldState extends State<UsernameField> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                left: 16,
-              ),
+              padding: const EdgeInsets.only(left: 16),
               child: Text(
                 context.l10n.profileSetupUsernameLabel,
                 style: VineTheme.labelMediumFont(
@@ -75,18 +73,14 @@ class _UsernameFieldState extends State<UsernameField> {
                   color: context.vineColors.onSurfaceMuted,
                   fontSize: 12,
                 ),
-                hintStyle: TextStyle(
-                  color: context.vineColors.onSurfaceMuted,
-                ),
-                border: profileFieldBorder,
-                enabledBorder: profileFieldBorder,
-                disabledBorder: profileFieldBorder,
-                focusedBorder: profileFieldBorder,
-                errorBorder: profileFieldBorder,
-                focusedErrorBorder: profileFieldBorder,
-                contentPadding: const EdgeInsets.all(
-                  16,
-                ),
+                hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
+                border: profileFieldBorderOf(context),
+                enabledBorder: profileFieldBorderOf(context),
+                disabledBorder: profileFieldBorderOf(context),
+                focusedBorder: profileFieldBorderOf(context),
+                errorBorder: profileFieldBorderOf(context),
+                focusedErrorBorder: profileFieldBorderOf(context),
+                contentPadding: const EdgeInsets.all(16),
                 prefixText: '@',
                 prefixStyle: VineTheme.bodyLargeFont(
                   color: context.vineColors.onSurfaceMuted,
@@ -106,9 +100,7 @@ class _UsernameFieldState extends State<UsernameField> {
               // for a typed capital letter.
               inputFormatters: [
                 const LowercaseTextInputFormatter(),
-                FilteringTextInputFormatter.allow(
-                  RegExp('[a-z0-9-]'),
-                ),
+                FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
               ],
               textInputAction: TextInputAction.next,
               onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),

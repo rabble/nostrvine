@@ -10,7 +10,7 @@ import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 ///
 /// Items scroll horizontally. A fixed pill is always centered — its width
 /// animates to fit the selected label. The centered item shows
-/// [VineTheme.primary] text; all others show [VineTheme.whiteText].
+/// semantic `onSurface` text; all others show `mediaChromeForeground`.
 class VideoRecorderModeSelectorWheel extends StatefulWidget {
   const VideoRecorderModeSelectorWheel({
     required this.selectedMode,

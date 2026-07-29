@@ -37,7 +37,7 @@ class ConversationTile extends ConsumerWidget {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
-  /// When true, applies a [VineTheme.containerLow] background tint to
+  /// When true, applies the semantic `containerLow` background tint to
   /// indicate this row is the target of an open long-press action sheet.
   final bool highlighted;
 
