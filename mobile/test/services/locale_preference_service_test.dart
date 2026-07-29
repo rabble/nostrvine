@@ -95,12 +95,16 @@ void main() {
             'it',
             'ja',
             'ko',
+            'ms',
             'nl',
             'pl',
             'pt',
             'ro',
             'sv',
             'tr',
+            'ur',
+            'vi',
+            'zh',
           ]),
         );
         expect(LocalePreferenceService.supportedLocales['en'], 'English');
@@ -108,6 +112,10 @@ void main() {
         expect(LocalePreferenceService.supportedLocales['ar'], 'العربية');
         expect(LocalePreferenceService.supportedLocales['bg'], 'Български');
         expect(LocalePreferenceService.supportedLocales['ko'], '한국어');
+        expect(LocalePreferenceService.supportedLocales['vi'], 'Tiếng Việt');
+        expect(LocalePreferenceService.supportedLocales['ur'], 'اردو');
+        expect(LocalePreferenceService.supportedLocales['zh'], '简体中文');
+        expect(LocalePreferenceService.supportedLocales['ms'], 'Bahasa Melayu');
       });
     });
 

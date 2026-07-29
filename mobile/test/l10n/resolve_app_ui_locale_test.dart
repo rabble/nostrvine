@@ -18,8 +18,8 @@ void main() {
       expect(locale.languageCode, 'en');
     });
 
-    test('uses English when device language is not supported (Chinese)', () {
-      final locale = resolveAppUiLocale(const [Locale('zh', 'CN')], supported);
+    test('uses English when device language is not supported (Hindi)', () {
+      final locale = resolveAppUiLocale(const [Locale('hi', 'IN')], supported);
       expect(locale.languageCode, 'en');
     });
 
@@ -46,6 +46,26 @@ void main() {
       expect(locale.languageCode, 'am');
     });
 
+    test('matches supported Vietnamese', () {
+      final locale = resolveAppUiLocale(const [Locale('vi', 'VN')], supported);
+      expect(locale.languageCode, 'vi');
+    });
+
+    test('matches supported Urdu', () {
+      final locale = resolveAppUiLocale(const [Locale('ur', 'PK')], supported);
+      expect(locale.languageCode, 'ur');
+    });
+
+    test('matches supported Chinese', () {
+      final locale = resolveAppUiLocale(const [Locale('zh', 'CN')], supported);
+      expect(locale.languageCode, 'zh');
+    });
+
+    test('matches supported Malay', () {
+      final locale = resolveAppUiLocale(const [Locale('ms', 'MY')], supported);
+      expect(locale.languageCode, 'ms');
+    });
+
     test('matches English when preferred', () {
       final locale = resolveAppUiLocale(const [Locale('en', 'US')], supported);
       expect(locale.languageCode, 'en');
@@ -53,7 +73,7 @@ void main() {
 
     test('uses later preferred locale when earlier is unsupported', () {
       final locale = resolveAppUiLocale(const [
-        Locale('zh'),
+        Locale('hi'),
         Locale('es'),
       ], supported);
       expect(locale.languageCode, 'es');
