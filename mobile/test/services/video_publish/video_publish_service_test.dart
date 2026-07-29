@@ -86,6 +86,12 @@ void main() {
 
     progressChanges = [];
 
+    // Default: the draft belongs to the signed-in account. The ownership guard
+    // is exercised explicitly in the "account switch" group.
+    when(
+      () => mockDraftService.isDraftOwnedByAnotherAccount(any()),
+    ).thenAnswer((_) async => false);
+
     service = VideoPublishService(
       uploadManager: mockUploadManager,
       authService: mockAuthService,
@@ -1265,6 +1271,64 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
+      });
+    });
+
+    // Switching accounts mid-upload leaves the leaving account's draft
+    // reachable from the new session. Publishing it would sign the video with
+    // the wrong identity and reassign the draft's owner on the way.
+    group('account switched mid-upload', () {
+      setUp(() {
+        when(
+          () => mockDraftService.isDraftOwnedByAnotherAccount(any()),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('publishVideo refuses a draft owned by another account', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        final draft = _createTestDraft();
+
+        final result = await service.publishVideo(draft: draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).kind,
+          PublishErrorKind.accountChanged,
+        );
+        verifyNever(() => mockDraftService.saveDraft(any()));
+        verifyNever(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+        verifyNever(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        );
+      });
+
+      test('retryUpload refuses a draft owned by another account', () async {
+        final draft = _createTestDraft();
+
+        final result = await service.retryUpload(draft);
+
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).kind,
+          PublishErrorKind.accountChanged,
+        );
+        verifyNever(() => mockUploadManager.retryUpload(any()));
       });
     });
 

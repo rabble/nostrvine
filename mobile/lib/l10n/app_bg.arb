@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "Видеото се качи, но миниатюрата не можа да се подготви. Опитай пак.",
     "publishErrorNostrPublishFailed": "Видеото се качи, но публикацията не можа да се пусне. Провери настройките за релета и опитай пак.",
     "publishErrorInterrupted": "Качването беше прекъснато. Искаш ли да опиташ пак?",
+    "publishErrorAccountChanged": "Това видео е от друг профил. Върни се към него, за да го публикуваш.",
     "publishErrorGeneric": "Нещо се обърка. Опитай пак.",
     "publishErrorRateLimited": "Твърде много качвания в момента. Изчакай малко и опитай пак.",
     "publishErrorUploadSessionExpired": "Сесията ти за качване изтече. Опитай пак.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Добави друг акаунт",
   "settingsAccountSwitchFailed": "Не можахме да превключим акаунтите. Опитайте отново.",
     "settingsUnsavedDraftsTitle": "Незапазени чернови",
+    "settingsUploadInProgressTitle": "Тече качване",
+    "settingsUploadInProgressMessage": "Все още {count, plural, one{се качва {count} видео} other{се качват {count} видеа}}. Смяната на профила спира качването — {count, plural, one{видеото остава като чернова} other{видеата остават като чернови}} в този профил.",
     "settingsUnsavedDraftsMessage": "Имаш {count} незапазен{count, plural, =1{а чернова} other{и чернови}}. При смяна на акаунта {count, plural, =1{тя ще се запази} other{те ще се запазят}}, но може първо да {count, plural, =1{я публикуваш или прегледаш} other{ги публикуваш или прегледаш}}.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

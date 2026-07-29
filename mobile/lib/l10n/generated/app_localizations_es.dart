@@ -122,6 +122,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Borradores sin guardar';
 
   @override
+  String get settingsUploadInProgressTitle => 'Subida en curso';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'videos',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tus videos quedan como borradores',
+      one: 'tu video queda como borrador',
+    );
+    return 'Todavía tenés $count $_temp0 subiendo. Cambiar de cuenta detiene la subida: $_temp1 en esta cuenta.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7263,6 +7283,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Esta subida se interrumpió. ¿Querés intentar de nuevo?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Este video es de otra cuenta. Volvé a esa cuenta para publicarlo.';
 
   @override
   String get publishErrorGeneric => 'Algo salió mal. Intentá de nuevo.';

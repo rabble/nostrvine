@@ -334,6 +334,18 @@ abstract class AppLocalizations {
   /// **'Unsaved Drafts'**
   String get settingsUnsavedDraftsTitle;
 
+  /// No description provided for @settingsUploadInProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload in progress'**
+  String get settingsUploadInProgressTitle;
+
+  /// Confirmation shown before an account switch while videos are still uploading. {count} is the number of in-flight uploads.
+  ///
+  /// In en, this message translates to:
+  /// **'You still have {count} {count, plural, =1{video} other{videos}} uploading. Switching accounts stops the upload — your {count, plural, =1{video stays as a draft} other{videos stay as drafts}} in this account.'**
+  String settingsUploadInProgressMessage(int count);
+
   /// No description provided for @settingsUnsavedDraftsMessage.
   ///
   /// In en, this message translates to:
@@ -12524,6 +12536,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This upload was interrupted. Would you like to try again?'**
   String get publishErrorInterrupted;
+
+  /// No description provided for @publishErrorAccountChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This video belongs to a different account. Switch back to that account to post it.'**
+  String get publishErrorAccountChanged;
 
   /// No description provided for @publishErrorGeneric.
   ///

@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "Videon laddades upp, men miniatyrbilden kunde inte skapas. Försök igen.",
     "publishErrorNostrPublishFailed": "Videon laddades upp men inlägget kunde inte publiceras. Kontrollera dina relinställningar och försök igen.",
     "publishErrorInterrupted": "Uppladdningen avbröts. Vill du försöka igen?",
+    "publishErrorAccountChanged": "Den här videon hör till ett annat konto. Byt tillbaka till det kontot för att posta den.",
     "publishErrorGeneric": "Något gick fel. Försök igen.",
     "publishErrorRateLimited": "För många uppladdningar just nu. Vänta en stund och försök igen.",
     "publishErrorUploadSessionExpired": "Din uppladdningssession har gått ut. Försök igen.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Lägg till ett till konto",
   "settingsAccountSwitchFailed": "Det gick inte att byta konto. Försök igen.",
     "settingsUnsavedDraftsTitle": "Osparade utkast",
+    "settingsUploadInProgressTitle": "Uppladdning pågår",
+    "settingsUploadInProgressMessage": "Du har fortfarande {count} {count, plural, one{video} other{videor}} som laddas upp. Att byta konto stoppar uppladdningen — {count, plural, one{din video sparas som utkast} other{dina videor sparas som utkast}} i det här kontot.",
     "settingsUnsavedDraftsMessage": "Du har {count} osparade {count, plural, one{utkast} other{utkast}}. Att byta konto behåller dina utkast, men du kanske vill publicera eller granska dem först.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

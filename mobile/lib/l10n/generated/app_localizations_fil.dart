@@ -122,6 +122,26 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Mga Hindi Naka-save na Draft';
 
   @override
+  String get settingsUploadInProgressTitle => 'May kasalukuyang upload';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'mga video',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'mga video mo bilang mga draft',
+      one: 'video mo bilang draft',
+    );
+    return 'May $count pa ring $_temp0 na nag-a-upload. Kapag nagpalit ka ng account, hihinto ang upload — mananatili ang $_temp1 sa account na ito.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7277,6 +7297,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Naputol ang upload na ito. Gusto mo bang subukan ulit?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Sa ibang account ang video na ito. Bumalik sa account na iyon para i-post.';
 
   @override
   String get publishErrorGeneric =>

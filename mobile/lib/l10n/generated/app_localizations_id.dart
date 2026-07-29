@@ -122,6 +122,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Draf Belum Tersimpan';
 
   @override
+  String get settingsUploadInProgressTitle => 'Sedang mengunggah';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    return 'Masih ada $count video yang sedang diunggah. Mengganti akun akan menghentikan unggahan — videomu tetap tersimpan sebagai draf di akun ini.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     return 'Kamu punya $count draf yang belum disimpan. Mengganti akun akan tetap menyimpan drafmu, tapi mungkin kamu ingin mempublikasikan atau meninjaunya dulu.';
   }
@@ -7170,6 +7178,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Unggahan ini terganggu. Mau coba lagi?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Video ini milik akun lain. Balik ke akun itu untuk mempostingnya.';
 
   @override
   String get publishErrorGeneric => 'Terjadi kesalahan. Silakan coba lagi.';

@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "Video yüklendi ama küçük resim hazırlanamadı. Lütfen tekrar dene.",
     "publishErrorNostrPublishFailed": "Video yüklendi ama gönderi yayınlanamadı. Röle ayarlarını kontrol edip tekrar dene.",
     "publishErrorInterrupted": "Bu yükleme yarıda kaldı. Tekrar denemek ister misin?",
+    "publishErrorAccountChanged": "Bu video başka bir hesaba ait. Paylaşmak için o hesaba geri dön.",
     "publishErrorGeneric": "Bir şeyler ters gitti. Lütfen tekrar dene.",
     "publishErrorRateLimited": "Şu anda çok fazla yükleme var. Biraz bekleyip tekrar dene.",
     "publishErrorUploadSessionExpired": "Yükleme oturumun sona erdi. Lütfen tekrar dene.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Başka hesap ekle",
   "settingsAccountSwitchFailed": "Hesaplar değiştirilemedi. Lütfen tekrar dene.",
     "settingsUnsavedDraftsTitle": "Kaydedilmemiş Taslaklar",
+    "settingsUploadInProgressTitle": "Yükleme sürüyor",
+    "settingsUploadInProgressMessage": "Hâlâ {count} video yükleniyor. Hesap değiştirmek yüklemeyi durdurur — videoların bu hesapta taslak olarak kalır.",
     "settingsUnsavedDraftsMessage": "{count} kaydedilmemiş taslağınız var. Hesap değiştirmek taslağınızı saklayacaktır, ancak önce yayınlamak veya gözden geçirmek isteyebilirsiniz.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

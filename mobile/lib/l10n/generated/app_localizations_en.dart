@@ -122,6 +122,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Unsaved Drafts';
 
   @override
+  String get settingsUploadInProgressTitle => 'Upload in progress';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'videos',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'videos stay as drafts',
+      one: 'video stays as a draft',
+    );
+    return 'You still have $count $_temp0 uploading. Switching accounts stops the upload — your $_temp1 in this account.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7187,6 +7207,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'This upload was interrupted. Would you like to try again?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'This video belongs to a different account. Switch back to that account to post it.';
 
   @override
   String get publishErrorGeneric => 'Something went wrong. Please try again.';

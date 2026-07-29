@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "ቪዲዮው ተሰቅሏል፣ ነገር ግን ድንክዬው ሊዘጋጅ አልቻለም። እባክዎ እንደገና ይሞክሩ።",
     "publishErrorNostrPublishFailed": "ቪዲዮው ተሰቅሏል ነገር ግን ልጥፉ ሊታተም አልቻለም። የቅብብሎሽ ቅንብሮችዎን ይፈትሹ እና እንደገና ይሞክሩ።",
     "publishErrorInterrupted": "ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?",
+    "publishErrorAccountChanged": "ይህ ቪዲዮ የሌላ መለያ ነው። ለመለጠፍ ወደዚያ መለያ ተመለስ።",
     "publishErrorGeneric": "የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።",
     "publishErrorRateLimited": "አሁን በጣም ብዙ ስቀላዎች አሉ። ከአፍታ በኋላ እንደገና ይሞክሩ።",
     "publishErrorUploadSessionExpired": "የስቀላ ክፍለ ጊዜዎ አብቅቷል። እባክዎ እንደገና ይሞክሩ።",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "ሌላ መለያ ያክሉ",
   "settingsAccountSwitchFailed": "መለያዎችን መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "settingsUnsavedDraftsTitle": "ያልተቀመጡ ረቂቆች",
+    "settingsUploadInProgressTitle": "ስቀላ በሂደት ላይ",
+    "settingsUploadInProgressMessage": "አሁንም {count} {count, plural, =1{ቪዲዮ} other{ቪዲዮዎች}} በመስቀል ላይ {count, plural, =1{ነው} other{ናቸው}}። አካውንት መቀየር ስቀላውን ያቆማል — {count, plural, =1{ቪዲዮህ እንደ ረቂቅ} other{ቪዲዮዎችህ እንደ ረቂቆች}} በዚህ አካውንት ውስጥ ይቀራሉ።",
     "settingsUnsavedDraftsMessage": "ያልተቀመጡ {count} {count, plural, =1{ረቂቅ} other{ረቂቆች}} አሉህ። አካውንት ስትቀይር {count, plural, =1{ረቂቁ} other{ረቂቆቹ}} ይቀመጣሉ፣ ግን መጀመሪያ {count, plural, =1{ልታትመው ወይም ልትመለከተው} other{ልታትማቸው ወይም ልትመለከታቸው}} ትችላለህ።",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

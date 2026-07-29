@@ -477,6 +477,86 @@ void main() {
       });
     });
 
+    group('account ownership', () {
+      const pubkeyA =
+          'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+      const pubkeyB =
+          'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3';
+
+      DraftStorageService serviceFor(String? ownerPubkey) =>
+          DraftStorageService(
+            draftsDao: database.draftsDao,
+            clipsDao: database.clipsDao,
+            ownerPubkey: ownerPubkey,
+          );
+
+      DivineVideoDraft draftWithId(String id) {
+        final now = DateTime.now();
+        return DivineVideoDraft(
+          id: id,
+          clips: [
+            DivineVideoClip(
+              id: 'clip_$id',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: const Duration(seconds: 6),
+              recordedAt: now,
+              targetAspectRatio: AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ],
+          title: id,
+          description: '',
+          hashtags: {},
+          selectedApproach: 'hybrid',
+          createdAt: now,
+          lastModified: now,
+          publishStatus: PublishStatus.draft,
+          publishAttempts: 0,
+        );
+      }
+
+      test("getDraftById does not read another account's draft", () async {
+        await serviceFor(pubkeyA).saveDraft(draftWithId('draft_a'));
+
+        expect(await serviceFor(pubkeyA).getDraftById('draft_a'), isNotNull);
+        expect(await serviceFor(pubkeyB).getDraftById('draft_a'), isNull);
+      });
+
+      test('isDraftOwnedByAnotherAccount flags a foreign draft', () async {
+        await serviceFor(pubkeyA).saveDraft(draftWithId('draft_a'));
+
+        expect(
+          await serviceFor(pubkeyB).isDraftOwnedByAnotherAccount('draft_a'),
+          isTrue,
+        );
+        expect(
+          await serviceFor(pubkeyA).isDraftOwnedByAnotherAccount('draft_a'),
+          isFalse,
+        );
+      });
+
+      test('isDraftOwnedByAnotherAccount is false for an unknown id', () async {
+        expect(
+          await serviceFor(pubkeyA).isDraftOwnedByAnotherAccount('nope'),
+          isFalse,
+        );
+      });
+
+      test(
+        'isDraftOwnedByAnotherAccount is false for a legacy draft',
+        () async {
+          await serviceFor(null).saveDraft(draftWithId('draft_legacy'));
+
+          expect(
+            await serviceFor(pubkeyA).isDraftOwnedByAnotherAccount(
+              'draft_legacy',
+            ),
+            isFalse,
+          );
+        },
+      );
+    });
+
     group('deleteDraft', () {
       test('should delete draft by ID', () async {
         final now = DateTime.now();

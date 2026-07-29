@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "動画はアップロードできたけど、サムネイルを準備できなかったよ。もう一回試してみて。",
     "publishErrorNostrPublishFailed": "動画はアップロードできたけど、投稿を公開できなかったよ。リレー設定を確認して、もう一回試してみて。",
     "publishErrorInterrupted": "アップロードが中断されたよ。もう一回試す？",
+    "publishErrorAccountChanged": "この動画は別のアカウントのものだよ。投稿するにはそのアカウントに戻ってね。",
     "publishErrorGeneric": "問題が発生したよ。もう一回試してみて。",
     "publishErrorRateLimited": "今はアップロードが多すぎるよ。少し待ってからもう一回試してみて。",
     "publishErrorUploadSessionExpired": "アップロードのセッションが切れちゃったよ。もう一回試してみて。",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "別のアカウントを追加",
   "settingsAccountSwitchFailed": "アカウントを切り替えられませんでした。もう一度お試しください。",
     "settingsUnsavedDraftsTitle": "未保存の下書きがあるよ",
+    "settingsUploadInProgressTitle": "アップロード中",
+    "settingsUploadInProgressMessage": "まだ{count}件の動画をアップロード中だよ。アカウントを切り替えるとアップロードは止まって、動画はこのアカウントの下書きに残るよ。",
     "settingsUnsavedDraftsMessage": "未保存の下書きが{count}件あるよ。切り替えても下書きは残るけど、先に公開か確認しておくのがおすすめ。",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

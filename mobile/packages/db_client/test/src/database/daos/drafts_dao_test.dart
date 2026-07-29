@@ -225,6 +225,30 @@ void main() {
         expect(idsB, isNot(contains('draft_a')));
       });
 
+      test('getDraftById returns only owned + legacy drafts', () async {
+        await insertDraft(id: 'draft_a', ownerPubkey: pubkeyA);
+        await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);
+        await insertDraft(id: 'draft_legacy');
+
+        expect(
+          await dao.getDraftById('draft_a', ownerPubkey: pubkeyA),
+          isNotNull,
+        );
+        expect(
+          await dao.getDraftById('draft_legacy', ownerPubkey: pubkeyA),
+          isNotNull,
+        );
+        expect(await dao.getDraftById('draft_b', ownerPubkey: pubkeyA), isNull);
+      });
+
+      test('getDraftById without ownerPubkey reads across accounts', () async {
+        await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);
+
+        final draft = await dao.getDraftById('draft_b');
+        expect(draft, isNotNull);
+        expect(draft!.ownerPubkey, equals(pubkeyB));
+      });
+
       test('getAllDrafts without ownerPubkey returns all drafts', () async {
         await insertDraft(id: 'draft_a', ownerPubkey: pubkeyA);
         await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);

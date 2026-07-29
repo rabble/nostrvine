@@ -54,6 +54,8 @@ extension PublishErrorKindL10n on AppLocalizations {
         return publishErrorNostrPublishFailed;
       case PublishErrorKind.interrupted:
         return publishErrorInterrupted;
+      case PublishErrorKind.accountChanged:
+        return publishErrorAccountChanged;
       case PublishErrorKind.generic:
         return publishErrorGeneric;
     }

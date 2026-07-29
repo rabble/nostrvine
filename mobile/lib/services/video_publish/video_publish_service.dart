@@ -200,6 +200,20 @@ class VideoPublishService {
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
   Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
+    // An account switch while the upload was in flight leaves the previous
+    // account's draft reachable from this session. Publishing it would sign the
+    // video with the wrong identity, and the `publishing` save below would
+    // reassign the draft's owner on the way — so bail out before either.
+    if (await draftService.isDraftOwnedByAnotherAccount(draft.id)) {
+      Log.warning(
+        '🚫 Refusing to publish draft ${draft.id}: it belongs to another '
+        'account',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      return const PublishError(PublishErrorKind.accountChanged);
+    }
+
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
       final error = await _handleActiveUpload(draft.id);
@@ -753,6 +767,17 @@ class VideoPublishService {
 
   /// Retry a failed upload and continue publishing.
   Future<PublishResult> retryUpload(DivineVideoDraft draft) async {
+    // Same ownership guard as [publishVideo] — checked here too so a retry
+    // never re-uploads another account's video before reaching that check.
+    if (await draftService.isDraftOwnedByAnotherAccount(draft.id)) {
+      Log.warning(
+        '🚫 Refusing to retry draft ${draft.id}: it belongs to another account',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      return const PublishError(PublishErrorKind.accountChanged);
+    }
+
     if (_backgroundUploadId == null) {
       Log.warning('⚠️ No background upload to retry', category: .video);
 

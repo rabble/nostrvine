@@ -123,6 +123,26 @@ class AppLocalizationsBg extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Незапазени чернови';
 
   @override
+  String get settingsUploadInProgressTitle => 'Тече качване';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'се качват $count видеа',
+      one: 'се качва $count видео',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'видеата остават като чернови',
+      one: 'видеото остава като чернова',
+    );
+    return 'Все още $_temp0. Смяната на профила спира качването — $_temp1 в този профил.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7267,6 +7287,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Качването беше прекъснато. Искаш ли да опиташ пак?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Това видео е от друг профил. Върни се към него, за да го публикуваш.';
 
   @override
   String get publishErrorGeneric => 'Нещо се обърка. Опитай пак.';

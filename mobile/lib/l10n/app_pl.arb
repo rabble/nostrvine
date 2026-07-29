@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "Film został przesłany, ale nie udało się przygotować miniatury. Spróbuj ponownie.",
     "publishErrorNostrPublishFailed": "Film został przesłany, ale nie udało się opublikować posta. Sprawdź ustawienia przekaźników i spróbuj ponownie.",
     "publishErrorInterrupted": "Przesyłanie zostało przerwane. Chcesz spróbować ponownie?",
+    "publishErrorAccountChanged": "Ten film należy do innego konta. Wróć na tamto konto, żeby go opublikować.",
     "publishErrorGeneric": "Coś poszło nie tak. Spróbuj ponownie.",
     "publishErrorRateLimited": "Zbyt wiele przesyłań w tej chwili. Poczekaj chwilę i spróbuj ponownie.",
     "publishErrorUploadSessionExpired": "Sesja przesyłania wygasła. Spróbuj ponownie.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Dodaj kolejne konto",
   "settingsAccountSwitchFailed": "Nie udało się przełączyć kont. Spróbuj ponownie.",
     "settingsUnsavedDraftsTitle": "Niezapisane wersje robocze",
+    "settingsUploadInProgressTitle": "Trwa przesyłanie",
+    "settingsUploadInProgressMessage": "Masz jeszcze {count} {count, plural, one{film} few{filmy} many{filmów} other{filmu}} w trakcie przesyłania. Zmiana konta przerwie przesyłanie — {count, plural, one{film zostanie zapisany jako szkic} other{filmy zostaną zapisane jako szkice}} na tym koncie.",
     "settingsUnsavedDraftsMessage": "Masz {count} niezapisanych {count, plural, =1{wersji roboczej} other{wersji roboczych}}. Przełączenie kont zachowa {count, plural, =1{ją} other{je}}, ale możesz chcieć je najpierw opublikować lub przejrzeć.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

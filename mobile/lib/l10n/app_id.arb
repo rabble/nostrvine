@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "Video berhasil diunggah, tapi thumbnail tidak bisa disiapkan. Silakan coba lagi.",
     "publishErrorNostrPublishFailed": "Video berhasil diunggah, tapi posting tidak bisa dipublikasikan. Periksa pengaturan relay-mu dan coba lagi.",
     "publishErrorInterrupted": "Unggahan ini terganggu. Mau coba lagi?",
+    "publishErrorAccountChanged": "Video ini milik akun lain. Balik ke akun itu untuk mempostingnya.",
     "publishErrorGeneric": "Terjadi kesalahan. Silakan coba lagi.",
     "publishErrorRateLimited": "Terlalu banyak unggahan saat ini. Tunggu sebentar lalu coba lagi.",
     "publishErrorUploadSessionExpired": "Sesi unggahanmu sudah berakhir. Silakan coba lagi.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Tambah akun lain",
   "settingsAccountSwitchFailed": "Tidak dapat beralih akun. Coba lagi.",
     "settingsUnsavedDraftsTitle": "Draf Belum Tersimpan",
+    "settingsUploadInProgressTitle": "Sedang mengunggah",
+    "settingsUploadInProgressMessage": "Masih ada {count} video yang sedang diunggah. Mengganti akun akan menghentikan unggahan — videomu tetap tersimpan sebagai draf di akun ini.",
     "settingsUnsavedDraftsMessage": "Kamu punya {count} draf yang belum disimpan. Mengganti akun akan tetap menyimpan drafmu, tapi mungkin kamu ingin mempublikasikan atau meninjaunya dulu.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

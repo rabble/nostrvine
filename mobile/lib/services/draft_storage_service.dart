@@ -352,8 +352,21 @@ class DraftStorageService {
     );
   }
 
-  Future<DivineVideoDraft?> getDraftById(String id) async {
+  /// Whether the draft [id] exists but is owned by a different account.
+  ///
+  /// Returns `false` for an unknown id (a draft that was never persisted) and
+  /// for legacy rows with no owner, so only a genuine cross-account read is
+  /// reported. Used to stop a publish from posting another account's video
+  /// under the signed-in identity after an account switch.
+  Future<bool> isDraftOwnedByAnotherAccount(String id) async {
     final row = await _draftsDao.getDraftById(id);
+    final owner = row?.ownerPubkey;
+    if (owner == null) return false;
+    return owner != ownerPubkey;
+  }
+
+  Future<DivineVideoDraft?> getDraftById(String id) async {
+    final row = await _draftsDao.getDraftById(id, ownerPubkey: ownerPubkey);
     if (row == null) {
       Log.debug('📝 Draft not found: $id', category: LogCategory.video);
       return null;

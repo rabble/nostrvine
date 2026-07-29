@@ -93,9 +93,16 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return query.get();
   }
 
-  /// Get a single draft by ID
-  Future<DraftRow?> getDraftById(String id) {
-    return (select(drafts)..where((t) => t.id.equals(id))).getSingleOrNull();
+  /// Get a single draft by ID.
+  ///
+  /// When [ownerPubkey] is provided, returns the draft only when it belongs to
+  /// that account **or** is a legacy row with no owner. Omit it to look the
+  /// draft up across accounts (used to detect foreign ownership).
+  Future<DraftRow?> getDraftById(String id, {String? ownerPubkey}) {
+    return (select(drafts)..where(
+          (t) => t.id.equals(id) & _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+        ))
+        .getSingleOrNull();
   }
 
   /// Get drafts filtered by publish status.

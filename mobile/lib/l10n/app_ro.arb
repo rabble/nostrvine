@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "Videoclipul s-a încărcat, dar miniatura nu a putut fi pregătită. Încearcă din nou.",
     "publishErrorNostrPublishFailed": "Videoclipul s-a încărcat, dar postarea nu a putut fi publicată. Verifică-ți setările relay-urilor și încearcă din nou.",
     "publishErrorInterrupted": "Această încărcare a fost întreruptă. Vrei să încerci din nou?",
+    "publishErrorAccountChanged": "Acest videoclip aparține altui cont. Comută înapoi la acel cont ca să îl postezi.",
     "publishErrorGeneric": "Ceva nu a mers bine. Încearcă din nou.",
     "publishErrorRateLimited": "Prea multe încărcări chiar acum. Așteaptă o clipă și încearcă din nou.",
     "publishErrorUploadSessionExpired": "Sesiunea de încărcare a expirat. Încearcă din nou.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Adaugă alt cont",
   "settingsAccountSwitchFailed": "Nu s-a putut schimba contul. Încearcă din nou.",
     "settingsUnsavedDraftsTitle": "Ciorne nesalvate",
+    "settingsUploadInProgressTitle": "Încărcare în curs",
+    "settingsUploadInProgressMessage": "Mai ai {count} {count, plural, one{videoclip} few{videoclipuri} other{de videoclipuri}} în curs de încărcare. Schimbarea contului oprește încărcarea — {count, plural, one{videoclipul rămâne ca schiță} other{videoclipurile rămân ca schițe}} în acest cont.",
     "settingsUnsavedDraftsMessage": "Ai {count} {count, plural, =1{ciornă} other{ciorne}} nesalvate. Schimbarea contului âți va păstra {count, plural, =1{ciorna} other{ciornele}}, dar poate vrei să {count, plural, =1{o} other{le}} publici sau să {count, plural, =1{o} other{le}} revizuiîi întâi.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

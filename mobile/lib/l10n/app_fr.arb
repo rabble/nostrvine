@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "La vidéo a été envoyée, mais la miniature n'a pas pu être préparée. Réessaie.",
     "publishErrorNostrPublishFailed": "La vidéo a été envoyée, mais la publication n'a pas pu être diffusée. Vérifie tes réglages de relais et réessaie.",
     "publishErrorInterrupted": "Cet envoi a été interrompu. Tu veux réessayer ?",
+    "publishErrorAccountChanged": "Cette vidéo appartient à un autre compte. Reviens sur ce compte pour la publier.",
     "publishErrorGeneric": "Un problème est survenu. Réessaie.",
     "publishErrorRateLimited": "Trop d'envois en ce moment. Réessaie dans un instant.",
     "publishErrorUploadSessionExpired": "Ta session d'envoi a expiré. Réessaie.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Ajouter un autre compte",
   "settingsAccountSwitchFailed": "Impossible de changer de compte. Réessaie.",
     "settingsUnsavedDraftsTitle": "Brouillons non enregistrés",
+    "settingsUploadInProgressTitle": "Envoi en cours",
+    "settingsUploadInProgressMessage": "Tu as encore {count} {count, plural, one{vidéo} other{vidéos}} en cours d'envoi. Changer de compte arrête l'envoi — {count, plural, one{ta vidéo reste en brouillon} other{tes vidéos restent en brouillons}} dans ce compte.",
     "settingsUnsavedDraftsMessage": "Tu as {count} {count, plural, one{brouillon} other{brouillons}} non enregistré{count, plural, one{} other{s}}. Changer de compte va garder {count, plural, one{ton brouillon} other{tes brouillons}}, mais tu voudras peut-être {count, plural, one{le} other{les}} publier ou relire d''abord.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

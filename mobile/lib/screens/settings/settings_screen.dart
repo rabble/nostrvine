@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -101,53 +102,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// Confirmation sheet shown before an account switch that would disturb
+  /// unfinished work. Returns true when the user chose to switch anyway.
+  Future<bool> _confirmSwitchAnyway({
+    required String title,
+    required String message,
+  }) async {
+    final proceed = await VineBottomSheet.show<bool>(
+      context: context,
+      scrollable: false,
+      contentTitle: title,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            message,
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.settingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.settingsSwitchAnyway,
+                  type: DivineButtonType.error,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    return proceed ?? false;
+  }
+
   Future<void> _handleSwitchAccount() async {
     final accountState = _accountCubit.state;
+    final publishBloc = context.read<BackgroundPublishBloc>();
+    final inFlightDraftIds = [
+      for (final upload in publishBloc.state.uploads)
+        if (upload.result == null) upload.draft.id,
+    ];
 
-    if (accountState.hasDrafts) {
-      final draftCount = accountState.draftCount;
-      final proceedWithWarning = await VineBottomSheet.show<bool>(
-        context: context,
-        scrollable: false,
-        contentTitle: context.l10n.settingsUnsavedDraftsTitle,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(
-              context.l10n.settingsUnsavedDraftsMessage(draftCount),
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Row(
-              spacing: 16,
-              children: [
-                Expanded(
-                  child: DivineButton(
-                    label: context.l10n.settingsCancel,
-                    type: DivineButtonType.secondary,
-                    expanded: true,
-                    onPressed: () => Navigator.of(context).pop(false),
-                  ),
-                ),
-                Expanded(
-                  child: DivineButton(
-                    label: context.l10n.settingsSwitchAnyway,
-                    type: DivineButtonType.error,
-                    expanded: true,
-                    onPressed: () => Navigator.of(context).pop(true),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+    // An in-flight upload cannot survive the switch — the leaving account's
+    // container owns the UploadManager and is torn down. Say so, and park the
+    // videos back as drafts of the account they were recorded on rather than
+    // leaving them as failures.
+    if (inFlightDraftIds.isNotEmpty) {
+      final proceed = await _confirmSwitchAnyway(
+        title: context.l10n.settingsUploadInProgressTitle,
+        message: context.l10n.settingsUploadInProgressMessage(
+          inFlightDraftIds.length,
+        ),
       );
+      if (!proceed) return;
 
-      if (proceedWithWarning != true) return;
+      for (final draftId in inFlightDraftIds) {
+        publishBloc.add(BackgroundPublishVanished(draftId: draftId));
+      }
+    } else if (accountState.hasDrafts) {
+      final proceed = await _confirmSwitchAnyway(
+        title: context.l10n.settingsUnsavedDraftsTitle,
+        message: context.l10n.settingsUnsavedDraftsMessage(
+          accountState.draftCount,
+        ),
+      );
+      if (!proceed) return;
     }
 
     if (!mounted) return;
