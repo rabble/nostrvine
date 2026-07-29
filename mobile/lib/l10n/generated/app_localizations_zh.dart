@@ -958,7 +958,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupProfilePicturePreview => '头像预览';
 
   @override
-  String get nostrInfoIntroBuiltOn => 'DiVine 构建于 Nostr 之上，';
+  String get nostrInfoIntroBuiltOn => 'Divine 构建于 Nostr 之上，';
 
   @override
   String get nostrInfoIntroDescription => ' 一个抗审查的开放协议，让人们在网上交流时不必依赖某一家公司或平台。';
@@ -4742,7 +4742,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listAddCollaboratorTitle => '添加协作者';
 
   @override
-  String get listCollaboratorSearchHint => '搜索 diVine...';
+  String get listCollaboratorSearchHint => '搜索 Divine...';
 
   @override
   String get listNameLabel => '列表名称';
@@ -7254,14 +7254,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invitesNoneAvailable => '暂时没有可用邀请';
 
   @override
-  String get invitesShareWithPeople => '把 diVine 分享给你认识的人';
+  String get invitesShareWithPeople => '把 Divine 分享给你认识的人';
 
   @override
   String get invitesUsedInvites => '已使用的邀请';
 
   @override
   String invitesShareMessage(String code) {
-    return '来 diVine 找我玩！使用邀请码 $code 即可开始：\nhttps://divine.video/invite/$code';
+    return '来 Divine 找我玩！使用邀请码 $code 即可开始：\nhttps://divine.video/invite/$code';
   }
 
   @override
@@ -7274,7 +7274,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get invitesShareInvite => '分享邀请';
 
   @override
-  String get invitesShareSubject => '来 diVine 找我玩';
+  String get invitesShareSubject => '来 Divine 找我玩';
 
   @override
   String get invitesClaimed => '已使用';
