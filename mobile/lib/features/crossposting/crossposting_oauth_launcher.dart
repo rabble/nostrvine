@@ -3,11 +3,13 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:openvine/features/crossposting/crossposting_callback.dart';
 
 const _invalidCallbackMessage =
     'Invalid crossposting OAuth callback. Expected '
-    'https://divine.video/app/callback with no user info or explicit port.';
-const _callbackPrefix = 'https://';
+    '$crosspostingOAuthCallbackScheme://$crosspostingOAuthCallbackHost'
+    '$crosspostingOAuthCallbackPath with no user info or explicit port.';
+const _callbackPrefix = '$crosspostingOAuthCallbackScheme://';
 final _authorityTerminator = RegExp('[/#?]');
 final _malformedPercentTriplet = RegExp('%(?![0-9A-Fa-f]{2})');
 
@@ -34,10 +36,10 @@ Future<Uri?> launchCrosspostingOAuth(
   try {
     final callback = await authenticate(
       url: authorizationUri.toString(),
-      callbackUrlScheme: 'https',
+      callbackUrlScheme: crosspostingOAuthCallbackScheme,
       options: const FlutterWebAuth2Options(
-        httpsHost: 'divine.video',
-        httpsPath: '/app/callback',
+        httpsHost: crosspostingOAuthCallbackHost,
+        httpsPath: crosspostingOAuthCallbackPath,
       ),
     );
     return _parseCallback(callback);
@@ -60,9 +62,9 @@ Uri _parseCallback(String callback) {
     throw const FormatException(_invalidCallbackMessage);
   }
 
-  if (uri.scheme != 'https' ||
-      uri.host != 'divine.video' ||
-      uri.path != '/app/callback' ||
+  if (uri.scheme != crosspostingOAuthCallbackScheme ||
+      uri.host != crosspostingOAuthCallbackHost ||
+      uri.path != crosspostingOAuthCallbackPath ||
       uri.hasPort ||
       uri.authority.contains('@')) {
     throw const FormatException(_invalidCallbackMessage);
@@ -76,7 +78,8 @@ bool _hasExactRawAuthority(String callback) {
   const authorityStart = _callbackPrefix.length;
   final terminator = callback.indexOf(_authorityTerminator, authorityStart);
   final authorityEnd = terminator == -1 ? callback.length : terminator;
-  return callback.substring(authorityStart, authorityEnd) == 'divine.video';
+  return callback.substring(authorityStart, authorityEnd) ==
+      crosspostingOAuthCallbackHost;
 }
 
 Future<String> _authenticate({

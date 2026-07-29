@@ -7,6 +7,7 @@ import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/features/crossposting/crossposting_callback.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
 
@@ -39,8 +40,10 @@ class CrosspostingSettingsCubit extends Cubit<CrosspostingSettingsState> {
        _oauthCallbackTimeout = oauthCallbackTimeout,
        super(CrosspostingSettingsState());
 
-  static final Uri callbackBaseUrl = Uri.parse(
-    'https://divine.video/app/callback',
+  static final Uri callbackBaseUrl = Uri(
+    scheme: crosspostingOAuthCallbackScheme,
+    host: crosspostingOAuthCallbackHost,
+    path: crosspostingOAuthCallbackPath,
   );
 
   final CrosspostingRepository _repository;
