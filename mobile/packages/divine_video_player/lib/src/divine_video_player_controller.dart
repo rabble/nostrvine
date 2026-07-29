@@ -53,10 +53,19 @@ class DivineVideoPlayerController {
   /// short-form many-player surfaces like the feed should pass
   /// [VideoBufferProfile.feed] to bound per-player heap use. Only Android
   /// acts on it today. See [VideoBufferProfile].
+  ///
+  /// [exclusivePlayback] opts this controller into the app-wide rule that
+  /// only one video plays at a time. Defaults to `true`, which is right for
+  /// anything the user perceives as *a* video — a feed item, a preview, a
+  /// full-screen player. Pass `false` only for a companion player that is
+  /// part of another player's picture rather than a video of its own, such as
+  /// the chroma-key backdrop composited behind a keyed clip. See
+  /// [_pauseOtherLiveControllers].
   DivineVideoPlayerController({
     this.useTexture = false,
     this.useLegacySurface = false,
     this.bufferProfile = VideoBufferProfile.full,
+    this.exclusivePlayback = true,
   }) {
     _ensureNativeLogHandler();
   }
@@ -122,6 +131,10 @@ class DivineVideoPlayerController {
   /// How aggressively the native player buffers media into memory.
   /// See the constructor docs and [VideoBufferProfile].
   final VideoBufferProfile bufferProfile;
+
+  /// Whether this player takes part in the one-video-at-a-time rule.
+  /// See the constructor docs and [_pauseOtherLiveControllers].
+  final bool exclusivePlayback;
 
   static const _globalChannel = MethodChannel('divine_video_player');
 
@@ -444,7 +457,7 @@ class DivineVideoPlayerController {
   /// Starts or resumes playback.
   Future<void> play() async {
     _ensureInitialized();
-    await _pauseOtherLiveControllers();
+    if (exclusivePlayback) await _pauseOtherLiveControllers();
     if (_isWebBackend) return _webBackend!.play();
     if (_isLinuxBackend) return _linuxBackend!.play();
     await _methodChannel.invokeMethod<void>('play');
@@ -588,11 +601,17 @@ class DivineVideoPlayerController {
 
   /// Enforces Divine's app-wide invariant that only one live
   /// [DivineVideoPlayerController] is playing at a time.
+  ///
+  /// Controllers with [exclusivePlayback] set to `false` sit outside the rule
+  /// in both directions: they neither pause anyone when they start, nor get
+  /// paused when someone else does. Otherwise a companion player and the clip
+  /// it belongs to would stop each other — whichever started last would win.
   Future<void> _pauseOtherLiveControllers() async {
     final otherControllers = _liveControllers
         .where(
           (controller) =>
               !identical(controller, this) &&
+              controller.exclusivePlayback &&
               controller._initialized &&
               !controller._disposed,
         )
