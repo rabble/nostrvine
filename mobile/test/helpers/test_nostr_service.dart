@@ -269,7 +269,7 @@ class TestNostrService implements NostrClient {
   @override
   Future<bool> removeRelay(
     String relayUrl, {
-    RelayRemoveSource source = RelayRemoveSource.user,
+    required RelayRemoveSource source,
   }) async {
     // No-op for tests
     return true;

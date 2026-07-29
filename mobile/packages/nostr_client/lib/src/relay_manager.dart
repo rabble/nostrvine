@@ -318,7 +318,7 @@ class RelayManager {
   /// Returns false if the relay URL is invalid or not configured.
   Future<bool> removeRelay(
     String url, {
-    RelayRemoveSource source = RelayRemoveSource.user,
+    required RelayRemoveSource source,
   }) async {
     await _ensureUserRemovedRelaysLoaded();
 

@@ -256,7 +256,7 @@ void main() {
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
-          targetRelays: const ['wss://relay.nos.social'],
+          targetRelays: const ['wss://relay.divine.video'],
           awaitRecipientOk: true,
           selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),

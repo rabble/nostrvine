@@ -1171,6 +1171,7 @@
       }
     }
   },
+  "relaySettingsRemoveRelayTooltip": "Remove relay",
   "relaySettingsCancel": "Cancel",
   "relaySettingsRemove": "Remove",
   "relaySettingsRemovedRelay": "Removed relay: {relayUrl}",

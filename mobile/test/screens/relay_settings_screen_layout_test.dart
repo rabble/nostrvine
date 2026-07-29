@@ -96,20 +96,22 @@ void main() {
   testWidgets('warns before removing the Divine relay', (tester) async {
     SharedPreferences.setMockInitialValues({});
 
-    const defaultRelay = 'wss://relay.divine.video';
+    const defaultRelay = 'wss://relay.divine.video/';
+    const configuredRelay = 'wss://relay.divine.video';
     final nostrService = _MockNostrService();
     final capabilityService = _MockRelayCapabilityService();
     final statsService = _MockRelayStatisticsService();
     final videoEventService = _MockVideoEventService();
-    final stats = RelayStatistics(relayUrl: defaultRelay)..isConnected = true;
+    final stats = RelayStatistics(relayUrl: configuredRelay)
+      ..isConnected = true;
 
     when(() => nostrService.defaultRelayUrl).thenReturn(defaultRelay);
-    when(() => nostrService.configuredRelays).thenReturn([defaultRelay]);
+    when(() => nostrService.configuredRelays).thenReturn([configuredRelay]);
     when(() => nostrService.connectedRelayCount).thenReturn(1);
-    when(statsService.getAllStatistics).thenReturn({defaultRelay: stats});
+    when(statsService.getAllStatistics).thenReturn({configuredRelay: stats});
     when(
       () => capabilityService.getRelayCapabilities(any()),
-    ).thenThrow(RelayCapabilityException('Not found', defaultRelay));
+    ).thenThrow(RelayCapabilityException('Not found', configuredRelay));
 
     final container = ProviderContainer(
       overrides: [
@@ -138,6 +140,10 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(
+      find.byTooltip(l10n.relaySettingsRemoveRelayTooltip),
+      findsOneWidget,
+    );
     await tester.tap(find.byType(IconButton).first);
     await tester.pumpAndSettle();
 
@@ -146,7 +152,72 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text(l10n.relaySettingsRemoveDefaultRelayMessage(defaultRelay)),
+      find.text(l10n.relaySettingsRemoveDefaultRelayMessage(configuredRelay)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('can restore Divine relay while custom relays remain', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    const defaultRelay = 'wss://relay.divine.video';
+    const customRelay = 'wss://relay.example.com';
+    final nostrService = _MockNostrService();
+    final capabilityService = _MockRelayCapabilityService();
+    final statsService = _MockRelayStatisticsService();
+    final videoEventService = _MockVideoEventService();
+    final stats = RelayStatistics(relayUrl: customRelay)..isConnected = true;
+
+    when(() => nostrService.defaultRelayUrl).thenReturn(defaultRelay);
+    when(() => nostrService.configuredRelays).thenReturn([customRelay]);
+    when(() => nostrService.connectedRelayCount).thenReturn(1);
+    when(
+      () => nostrService.addRelay(defaultRelay, source: RelayAddSource.user),
+    ).thenAnswer((_) async => true);
+    when(statsService.getAllStatistics).thenReturn({customRelay: stats});
+    when(
+      () => capabilityService.getRelayCapabilities(any()),
+    ).thenThrow(RelayCapabilityException('Not found', customRelay));
+
+    final container = ProviderContainer(
+      overrides: [
+        nostrServiceProvider.overrideWithValue(nostrService),
+        relayCapabilityServiceProvider.overrideWithValue(capabilityService),
+        relayStatisticsServiceProvider.overrideWithValue(statsService),
+        relayStatisticsStreamProvider.overrideWith(
+          (_) => Stream.value({customRelay: stats}),
+        ),
+        videoEventServiceProvider.overrideWithValue(videoEventService),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const RelaySettingsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.relaySettingsRestoreDefaultRelay), findsOneWidget);
+
+    await tester.tap(find.text(l10n.relaySettingsRestoreDefaultRelay));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => nostrService.addRelay(defaultRelay, source: RelayAddSource.user),
+    ).called(1);
+    expect(
+      find.text(l10n.relaySettingsRestoredDefault(defaultRelay)),
       findsOneWidget,
     );
   });

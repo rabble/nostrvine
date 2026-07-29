@@ -1102,7 +1102,7 @@ class NostrClient {
   /// relay. Automatic removals are only reconciliation cleanup.
   Future<bool> removeRelay(
     String relayUrl, {
-    RelayRemoveSource source = RelayRemoveSource.user,
+    required RelayRemoveSource source,
   }) async {
     return _relayManager.removeRelay(relayUrl, source: source);
   }

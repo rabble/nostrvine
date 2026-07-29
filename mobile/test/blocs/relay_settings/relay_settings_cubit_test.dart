@@ -21,6 +21,7 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 void main() {
   setUpAll(() {
     registerFallbackValue(RelayAddSource.automatic);
+    registerFallbackValue(RelayRemoveSource.user);
   });
 
   group(RelaySettingsCubit, () {
@@ -37,7 +38,9 @@ void main() {
       when(
         () => nostr.addRelay(any(), source: any(named: 'source')),
       ).thenAnswer((_) async => true);
-      when(() => nostr.removeRelay(any())).thenAnswer((_) async => true);
+      when(
+        () => nostr.removeRelay(any(), source: any(named: 'source')),
+      ).thenAnswer((_) async => true);
       when(nostr.forceReconnectAll).thenAnswer((_) async {});
       when(videos.resetAndResubscribeAll).thenAnswer((_) async {});
     });
@@ -230,14 +233,21 @@ void main() {
         const RelaySettingsState(relays: ['wss://a.example']),
       ],
       verify: (_) {
-        verify(() => nostr.removeRelay('wss://b.example')).called(1);
+        verify(
+          () => nostr.removeRelay(
+            'wss://b.example',
+            source: RelayRemoveSource.user,
+          ),
+        ).called(1);
       },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'removeRelay returns failed when service returns false',
       setUp: () {
-        when(() => nostr.removeRelay(any())).thenAnswer((_) async => false);
+        when(
+          () => nostr.removeRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
       },
       build: buildCubit,
       act: (cubit) async {

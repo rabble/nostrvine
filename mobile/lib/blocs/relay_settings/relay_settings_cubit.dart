@@ -115,7 +115,10 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
 
   Future<RemoveRelayOutcome> removeRelay(String relayUrl) async {
     try {
-      final success = await _nostrClient.removeRelay(relayUrl);
+      final success = await _nostrClient.removeRelay(
+        relayUrl,
+        source: RelayRemoveSource.user,
+      );
       if (!success) return RemoveRelayOutcome.failed;
       refreshRelays();
       return RemoveRelayOutcome.removed;

@@ -2037,7 +2037,10 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        final result = await client.removeRelay(relayUrl);
+        final result = await client.removeRelay(
+          relayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isTrue);
         final captured = verify(

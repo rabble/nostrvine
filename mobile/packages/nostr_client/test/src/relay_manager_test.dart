@@ -666,7 +666,10 @@ void main() {
       });
 
       test('removes relay from configured list', () async {
-        final result = await manager.removeRelay(testCustomRelayUrl);
+        final result = await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isTrue);
         expect(manager.configuredRelays, isNot(contains(testCustomRelayUrl)));
@@ -674,32 +677,47 @@ void main() {
 
       test('disconnects from the relay via RelayPool', () async {
         clearInteractions(mockRelayPool);
-        await manager.removeRelay(testCustomRelayUrl);
+        await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
       });
 
       test('allows removing default relay', () async {
-        final result = await manager.removeRelay(testDefaultRelayUrl);
+        final result = await manager.removeRelay(
+          testDefaultRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isTrue);
         expect(manager.configuredRelays, isNot(contains(testDefaultRelayUrl)));
       });
 
       test('returns false for non-configured relay', () async {
-        final result = await manager.removeRelay('wss://unknown.relay.com');
+        final result = await manager.removeRelay(
+          'wss://unknown.relay.com',
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isFalse);
       });
 
       test('returns false for invalid URL', () async {
-        final result = await manager.removeRelay('invalid-url');
+        final result = await manager.removeRelay(
+          'invalid-url',
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isFalse);
       });
 
       test('removes status entry for relay', () async {
-        await manager.removeRelay(testCustomRelayUrl);
+        await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         final status = manager.getRelayStatus(testCustomRelayUrl);
         expect(status, isNull);
@@ -723,7 +741,10 @@ void main() {
         await managerWithStorage.addRelay(testCustomRelayUrl);
         clearInteractions(mockStorage);
 
-        await managerWithStorage.removeRelay(testCustomRelayUrl);
+        await managerWithStorage.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         verify(() => mockStorage.saveRelays(any())).called(1);
       });
@@ -736,7 +757,10 @@ void main() {
         );
 
         await managerWithStorage.initialize();
-        await managerWithStorage.removeRelay(testCustomRelayUrl);
+        await managerWithStorage.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(await storage.loadRemovedRelays(), equals([testCustomRelayUrl]));
       });
@@ -842,7 +866,10 @@ void main() {
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);
 
-        await manager.removeRelay(testCustomRelayUrl);
+        await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
         await Future<void>.delayed(Duration.zero);
 
         expect(statusUpdates, isNotEmpty);

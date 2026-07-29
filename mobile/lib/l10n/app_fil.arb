@@ -3421,5 +3421,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "relaySettingsRemoveRelayTooltip": "Remove relay"
 }

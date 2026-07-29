@@ -1992,6 +1992,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveRelayTooltip => 'Remove relay';
+
+  @override
   String get relaySettingsCancel => 'إلغاء';
 
   @override

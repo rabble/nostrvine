@@ -2027,6 +2027,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveRelayTooltip => 'Remove relay';
+
+  @override
   String get relaySettingsCancel => 'Abbrechen';
 
   @override

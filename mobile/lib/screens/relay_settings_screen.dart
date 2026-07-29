@@ -212,6 +212,11 @@ class _RelayList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultRelayUrl = context.read<RelaySettingsCubit>().defaultRelayUrl;
+    final hasDefaultRelay = relays.any(
+      (relay) => _relayUrlsEquivalent(relay, defaultRelayUrl),
+    );
+
     return Column(
       children: [
         Container(
@@ -239,6 +244,16 @@ class _RelayList extends StatelessWidget {
             ],
           ),
         ),
+        if (!hasDefaultRelay)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: DivineButton(
+              label: context.l10n.relaySettingsRestoreDefaultRelay,
+              leadingIcon: DivineIconName.arrowCounterClockwise,
+              expanded: true,
+              onPressed: () => _restoreDefaultRelay(context),
+            ),
+          ),
         Expanded(
           child: ListView.builder(
             itemCount: relays.length,
@@ -262,8 +277,10 @@ class _RelayTile extends ConsumerWidget {
     final stats = statsAsync.whenData((allStats) => allStats[relayUrl]).value;
     final isConnected = stats?.isConnected ?? false;
     final statusSummary = _relayStatusSummary(context, stats);
-    final isDefaultRelay =
-        relayUrl == context.read<RelaySettingsCubit>().defaultRelayUrl;
+    final isDefaultRelay = _relayUrlsEquivalent(
+      relayUrl,
+      context.read<RelaySettingsCubit>().defaultRelayUrl,
+    );
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: VineTheme.transparent),
@@ -302,7 +319,7 @@ class _RelayTile extends ConsumerWidget {
               backgroundColor: VineTheme.transparent,
               foregroundColor: VineTheme.error,
               showShadow: false,
-              tooltip: context.l10n.relaySettingsRemove,
+              tooltip: context.l10n.relaySettingsRemoveRelayTooltip,
               onPressed: () => _confirmRemoveRelay(
                 context,
                 relayUrl,
@@ -668,6 +685,26 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
       ),
     );
   }
+}
+
+String? _normalizeRelayUrlForComparison(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return null;
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return null;
+  var normalized = uri.replace(scheme: uri.scheme.toLowerCase()).toString();
+  if (normalized.endsWith('/')) {
+    normalized = normalized.substring(0, normalized.length - 1);
+  }
+  return normalized;
+}
+
+bool _relayUrlsEquivalent(String a, String b) {
+  final normalizedA = _normalizeRelayUrlForComparison(a);
+  final normalizedB = _normalizeRelayUrlForComparison(b);
+  return normalizedA != null &&
+      normalizedB != null &&
+      normalizedA == normalizedB;
 }
 
 // Action helpers — pulled to top-level functions so the private widget
