@@ -95,6 +95,8 @@ class RelayPool {
 
   final Map<String, Function> _queryCompleteCallbacks = {};
 
+  final Set<String> _queryFanoutInProgress = {};
+
   /// Tracks which relays have sent EOSE for each subscription.
   /// Used to determine when all relays have finished sending stored events.
   final Map<String, Set<String>> _subscriptionEoseRelays = {};
@@ -219,6 +221,13 @@ class RelayPool {
     // Without that guard a permanent allow-list rejection would be tracked
     // and hang until the publish deadline instead of failing fast.
     return _isRestrictedReason(message) &&
+        relay.relayStatus.alwaysAuth &&
+        !relay.relayStatus.authed;
+  }
+
+  bool _shouldReplayQueryAfterAuth(Relay relay, String reason) {
+    if (_isExplicitAuthRequiredReason(reason)) return true;
+    return _isRestrictedReason(reason) &&
         relay.relayStatus.alwaysAuth &&
         !relay.relayStatus.authed;
   }
@@ -652,6 +661,32 @@ class RelayPool {
     return next;
   }
 
+  /// Fires the one-shot query callback for [subId] once no relay still has it
+  /// pending, then forgets the callback.
+  ///
+  /// Both terminal frames route here: `EOSE` (the relay finished sending
+  /// stored events) and `CLOSED` (the relay ended the subscription without
+  /// finishing). Either way the caller must be released rather than left to
+  /// burn its whole timeout budget.
+  void _fireQueryCompleteIfSettled(String subId) {
+    final callback = _queryCompleteCallbacks[subId];
+    if (callback == null) return;
+    if (_queryFanoutInProgress.contains(subId)) return;
+
+    final list = [
+      ..._relaysSnapshot(),
+      ..._tempRelaysSnapshot(),
+      ..._cacheRelaysSnapshot(),
+    ];
+    for (final r in list) {
+      // Some relay still owes us a terminal frame for this query.
+      if (r.checkQuery(subId)) return;
+    }
+
+    _queryCompleteCallbacks.remove(subId);
+    callback();
+  }
+
   Future<void> _onEvent(Relay relay, List<dynamic> json) async {
     final messageType = _stringAt(relay, json, 0, 'message type');
     if (messageType == null) return;
@@ -677,12 +712,17 @@ class RelayPool {
       log('📡 Raw message from ${relay.url}: $json');
     }
 
-    // #5863: when an off-main verify worker is wired, serialize EVENT/EOSE
-    // per relay so the asynchronous verify preserves in-order delivery — an
-    // EOSE must not complete a query before its preceding events finish
-    // verifying. With no worker the original synchronous path runs unchanged.
+    // #5863: when an off-main verify worker is wired, serialize the frames
+    // that carry or terminate a query per relay so the asynchronous verify
+    // preserves in-order delivery — a terminal frame must not complete a query
+    // before its preceding events finish verifying. CLOSED is terminal too: a
+    // relay may stream part of a stored replay and then abandon it, so
+    // completing on CLOSED out of order would drop the events already in
+    // flight. With no worker the original synchronous path runs unchanged.
     if (_verifyWorker != null &&
-        (messageType == 'EVENT' || messageType == 'EOSE')) {
+        (messageType == 'EVENT' ||
+            messageType == 'EOSE' ||
+            messageType == 'CLOSED')) {
       return _enqueueOrdered(
         relay,
         () => _dispatchTypedFrame(relay, json, messageType),
@@ -819,28 +859,7 @@ class RelayPool {
       }
       var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
-        // is Query find if need to callback
-        var callback = _queryCompleteCallbacks[subId];
-        if (callback != null) {
-          // need to callback, check if all relay complete query
-          final list = [
-            ..._relaysSnapshot(),
-            ..._tempRelaysSnapshot(),
-            ..._cacheRelaysSnapshot(),
-          ];
-          bool completeQuery = true;
-          for (var r in list) {
-            if (r.checkQuery(subId)) {
-              // this relay hadn't compltete query
-              completeQuery = false;
-              break;
-            }
-          }
-          if (completeQuery) {
-            callback();
-            _queryCompleteCallbacks.remove(subId);
-          }
-        }
+        _fireQueryCompleteIfSettled(subId);
       } else {
         // Handle EOSE for long-running subscriptions
         final subscription = _subscriptions[subId];
@@ -1079,6 +1098,13 @@ class RelayPool {
       if (relay.hasCountQuery(subscriptionId)) {
         relay.failCountQuery(subscriptionId, reason);
       }
+
+      // A refused/abandoned REQ is terminal unless it is the pre-AUTH probe
+      // that must stay saved for replay after NIP-42 succeeds.
+      if (!_shouldReplayQueryAfterAuth(relay, reason) &&
+          relay.discardQuery(subscriptionId)) {
+        _fireQueryCompleteIfSettled(subscriptionId);
+      }
     }
   }
 
@@ -1256,6 +1282,7 @@ class RelayPool {
       // completion callback so a query cancelled before EOSE doesn't leak a
       // never-fired callback in [_queryCompleteCallbacks].
       _queryCompleteCallbacks.remove(id);
+      _queryFanoutInProgress.remove(id);
 
       // check query and send close
       var it = _relaysSnapshot();
@@ -1334,6 +1361,7 @@ class RelayPool {
     Subscription subscription = Subscription(filters, onEvent, id: id);
     if (onComplete != null) {
       _queryCompleteCallbacks[subscription.id] = onComplete;
+      _queryFanoutInProgress.add(subscription.id);
     }
 
     // Collect futures so we can await them before the early-completion
@@ -1384,23 +1412,18 @@ class RelayPool {
       }
     }
 
-    // Wait for all sends to complete (and saveQuery to run) before
-    // checking whether any relay accepted the query.
-    await Future.wait(queryFutures);
-
-    // If no relay accepted the query (all sends failed), fire onComplete
-    // immediately so callers don't wait for the full timeout.
-    if (onComplete != null) {
-      final list = [
-        ..._relaysSnapshot(),
-        ..._tempRelaysSnapshot(),
-        ..._cacheRelaysSnapshot(),
-      ];
-      final anyPending = list.any((r) => r.checkQuery(subscription.id));
-      if (!anyPending) {
-        _queryCompleteCallbacks.remove(subscription.id);
-        onComplete();
+    try {
+      // Wait for all sends to complete (and saveQuery to run) before allowing
+      // terminal frames to decide whether every relay has settled.
+      await Future.wait(queryFutures);
+    } finally {
+      if (onComplete != null) {
+        _queryFanoutInProgress.remove(subscription.id);
       }
+    }
+
+    if (onComplete != null) {
+      _fireQueryCompleteIfSettled(subscription.id);
     }
 
     return subscription.id;
