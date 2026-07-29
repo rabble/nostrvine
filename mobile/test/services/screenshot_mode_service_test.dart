@@ -1,8 +1,12 @@
 // ABOUTME: Tests for ScreenshotModeService startup orchestration.
 // ABOUTME: Covers throwaway auth and creator-follow seeding behavior.
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/classic_vines_provider.dart'
+    show ClassicViner;
+import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/screenshot_mode_service.dart';
 
@@ -104,7 +108,7 @@ void main() {
         expect(
           fixtures,
           everyElement(
-            isA<dynamic>().having(
+            isA<ClassicViner>().having(
               (viner) => viner.authorAvatar,
               'authorAvatar',
               isNotEmpty,
@@ -128,6 +132,31 @@ void main() {
           everyElement(isNotEmpty),
         );
         expect(fixtures.map((list) => list.pubkey), everyElement(isNull));
+        expect(fixtures.map((list) => list.createdAt).toSet(), hasLength(1));
+      });
+
+      test('discover-list provider override ignores live mutations', () {
+        final container = ProviderContainer(
+          overrides: [
+            discoveredListsProvider.overrideWith(ScreenshotDiscoveredLists.new),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final notifier = container.read(discoveredListsProvider.notifier);
+        final initial = container.read(discoveredListsProvider);
+
+        notifier.clear();
+        notifier.setLoading(true);
+        notifier.addLists([
+          initial.lists.first.copyWith(
+            id: 'live-relay-list',
+            name: 'Live relay list',
+            videoEventIds: List<String>.generate(999, (index) => 'live-$index'),
+          ),
+        ]);
+
+        expect(container.read(discoveredListsProvider), initial);
       });
     });
   });

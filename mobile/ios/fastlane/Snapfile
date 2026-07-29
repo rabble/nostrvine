@@ -1,12 +1,10 @@
 # Snapfile — configuration for `fastlane snapshot`.
 # Docs: https://docs.fastlane.tools/actions/snapshot/
 
-# App Store Connect required display sizes: iPhone 6.9" + 6.5", and the
-# 13" iPad Pro (2064×2752) which covers the iPad requirement.
+# App Store Connect required iPhone display sizes: 6.9" + 6.5".
 devices([
   "iPhone 16 Pro Max",
   "iPhone 11 Pro Max",
-  "iPad Pro 13-inch (M5)",
 ])
 
 # Add locales here to produce localized screenshot sets (the app already

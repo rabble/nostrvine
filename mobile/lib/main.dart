@@ -1492,11 +1492,6 @@ Future<void> _startOpenVineApp() async {
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,
-  );
-
-  // Create the initial account container to initialize services BEFORE runApp.
-  final container = buildAccountContainer(
-    deviceScope,
     accountOverrides: [
       // Screenshot mode: lead the 01_classics OG-Viner row with returning
       // Vine OGs who all have avatars, so the marketing shot has no
@@ -1505,8 +1500,13 @@ Future<void> _startOpenVineApp() async {
         topClassicVinersProvider.overrideWith(
           (ref) async => screenshotOgVinersFixtures(),
         ),
+      if (ScreenshotMode.enabled)
+        discoveredListsProvider.overrideWith(ScreenshotDiscoveredLists.new),
     ],
   );
+
+  // Create the initial account container to initialize services BEFORE runApp.
+  final container = buildAccountContainer(deviceScope);
 
   final startupCoordinator = _createStartupCoordinator(container);
   // The native splash is released by [StartupSplashReleaseController], wired in
@@ -1587,13 +1587,6 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
 
   if (ScreenshotMode.enabled) {
     await buildScreenshotModeService(container).prepare();
-    // Deterministic, on-brand lists for the 06_lists capture instead of
-    // whatever public lists the relays happen to surface. Seeded here in
-    // startup rather than by the screen: presentation must not import the
-    // service layer (scripts/check_ui_service_boundary.sh).
-    container
-        .read(discoveredListsProvider.notifier)
-        .setLists(screenshotDiscoverListsFixtures());
     // The native side wrote the capture route + seed flag into
     // SharedPreferences at launch (AppDelegate). Load them, seed editor
     // clips if requested, then drive the router imperatively —

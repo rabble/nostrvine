@@ -33,7 +33,6 @@ EDGE = (0x44, 0x46, 0x4A)
 CANVASES = {
     "11 Pro Max": (1242, 2688),
     "16 Pro Max": (1290, 2796),
-    "iPad Pro 13": (2064, 2752),
 }
 DEFAULT_CANVAS = (1290, 2796)
 
@@ -128,7 +127,7 @@ def device_body(w, h, radius):
 
 
 def draw_caption(draw, cw, ch, headline, subhead):
-    """Draw captions without allowing wider iPad canvases to crowd vertically."""
+    """Draw captions without letting headline and subhead crowd vertically."""
     if not headline:
         return
     head_font = ImageFont.truetype(FONT_PATH, int(min(cw * 0.068, ch * 0.040)))

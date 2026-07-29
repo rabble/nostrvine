@@ -12,6 +12,7 @@ import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart'
     show ClassicViner;
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -190,7 +191,7 @@ List<ClassicViner> screenshotOgVinersFixtures() => const [
 /// deterministic lists instead so the marketing shot is always clean.
 /// `pubkey` is left null so no author by-line can surface an off-brand name.
 List<model.CuratedList> screenshotDiscoverListsFixtures() {
-  final now = DateTime.now();
+  final now = DateTime.utc(2026);
   model.CuratedList list(String id, String name, String desc, int count) =>
       model.CuratedList(
         id: id,
@@ -213,6 +214,33 @@ List<model.CuratedList> screenshotDiscoverListsFixtures() {
     list('nature-loops', 'Nature Loops', 'Six seconds of calm', 61),
     list('music-vault', 'Music Vault', 'Beats, covers, originals', 81),
   ];
+}
+
+/// Screenshot-mode discovered-list provider override.
+///
+/// Keeps the `06_lists` capture isolated from live relay refresh/pagination:
+/// the screen can read the same provider as production, but stream mutations
+/// are no-ops while screenshot mode is active.
+class ScreenshotDiscoveredLists extends DiscoveredLists {
+  @override
+  DiscoveredListsState build() {
+    return DiscoveredListsState(lists: screenshotDiscoverListsFixtures());
+  }
+
+  @override
+  void setLists(List<model.CuratedList> lists) {}
+
+  @override
+  void addLists(List<model.CuratedList> newLists) {}
+
+  @override
+  void setLoading(bool loading) {}
+
+  @override
+  void updateOldestTimestamp(DateTime timestamp) {}
+
+  @override
+  void clear() {}
 }
 
 /// Bundled classic-Vine fixtures used as editor timeline clips. The mp4s

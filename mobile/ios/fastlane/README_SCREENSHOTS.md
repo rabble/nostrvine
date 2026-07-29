@@ -1,8 +1,8 @@
 # App Store screenshot pipeline
 
 Automated, caption-overlaid App Store screenshots for Divine. One command
-captures the required screenshots on all App Store device sizes and composites the
-marketing captions on top.
+captures the required iPhone screenshot sizes and composites the marketing
+captions on top.
 
 ## How to run
 
@@ -54,7 +54,7 @@ bundle exec fastlane frame     # re-frame existing captures (fast)
   creators (see `ScreenshotModeService.creatorPubkeysHex`) so the share
   sheet and feeds have real content. The account persists on the
   simulator between runs.
-- Screenshot mode also overrides `topClassicVinersProvider` and seeds
+- Screenshot mode also overrides `topClassicVinersProvider` and
   `discoveredListsProvider` with deterministic fixtures so the classics row
   and list-discovery capture do not depend on live relay ordering or
   avatar-less public profiles.
@@ -138,6 +138,6 @@ credentials.
 - Content screens (02, 03, 07) render live production data -
   loop counts and thumbnails will differ between runs; the framing is
   deterministic.
-- All three simulators (`iPhone 16 Pro Max`, `iPhone 11 Pro Max`, and
-  `iPad Pro 13-inch (M5)`) must exist; create them with `xcrun simctl create`
-  if `snapshot` reports a missing device.
+- Both simulators (`iPhone 16 Pro Max`, `iPhone 11 Pro Max`) must exist;
+  create them with `xcrun simctl create` if `snapshot` reports a missing
+  device.
