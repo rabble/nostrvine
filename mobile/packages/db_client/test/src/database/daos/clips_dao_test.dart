@@ -169,6 +169,34 @@ void main() {
           expect(referenced, {'frame_1001.jpg'});
         },
       );
+
+      test('protects the files behind a baked green screen', () async {
+        // Baking a green screen swaps `file_path` to the keyed render, so the
+        // pre-key original and the background image are only reachable through
+        // the JSON blob. Without them in the scan, the next draft save reaps
+        // both: Remove stops working and a re-tune stacks a second key on
+        // already-keyed pixels.
+        await dao.upsertClip(
+          id: 'clip_keyed',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'clip_keyed_chromakey_1.mp4',
+          thumbnailPath: null,
+          data:
+              '{"chromaKeySourcePath":"pre_key.mp4",'
+              '"chromaKey":{"backgroundImage":"chroma_bg_1.png"}}',
+        );
+
+        final referenced = await dao.referencedFilenames({
+          'pre_key.mp4',
+          'chroma_bg_1.png',
+          'unrelated.mp4',
+        });
+
+        expect(referenced, {'pre_key.mp4', 'chroma_bg_1.png'});
+      });
     });
 
     group('getClipsByDraftId', () {

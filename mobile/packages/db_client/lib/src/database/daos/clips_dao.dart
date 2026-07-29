@@ -391,12 +391,23 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return referenced;
   }
 
+  /// JSON keys inside a clip's `data` blob whose value is a file this clip
+  /// owns. A filename found under one of these keys is live and must survive
+  /// cleanup, even when no indexed column points at it.
+  ///
+  /// `chromaKeySourcePath` and `backgroundImage` belong here for the same
+  /// reason as the reverse caches: baking a green screen swaps the clip's
+  /// `file_path` to the keyed render, which makes the pre-key original look
+  /// orphaned to the draft-save diff — but the clip still needs it to undo or
+  /// re-tune the key.
   static const _jsonFilePathKeys = {
     'filePath',
     'thumbnailPath',
     'ghostFramePath',
     'forwardVideoPath',
     'reversedVideoPath',
+    'chromaKeySourcePath',
+    'backgroundImage',
     'path',
   };
 
