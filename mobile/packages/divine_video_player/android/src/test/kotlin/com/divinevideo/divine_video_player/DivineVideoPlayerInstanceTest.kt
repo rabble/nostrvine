@@ -761,6 +761,112 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `a superseded setClips still answers its caller`() {
+        val stale = mockk<MethodChannel.Result>(relaxed = true)
+        val fresh = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/one.mp4"), stale)
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/two.mp4"), fresh)
+        capturePostedRunnables().forEach { it.run() }
+
+        // Dropping the superseded result leaves `await setClips()` pending for
+        // the life of the app; the feed's failover state stays pinned on that
+        // index and never recovers. CANCELLED is the code the Dart controller
+        // already swallows.
+        verify(exactly = 1) { stale.error("CANCELLED", any(), any()) }
+        verify(exactly = 0) { stale.success(any()) }
+    }
+
+    @Test
+    fun `dispose answers a setClips still waiting on the track lengths`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/gone.mp4"), result)
+        instance.dispose()
+        capturePostedRunnables().forEach { it.run() }
+
+        verify(exactly = 1) { result.error("CANCELLED", any(), any()) }
+    }
+
+    @Test
+    fun `clips are applied unclamped when the track lengths never arrive`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        // An executor that accepts work and never runs it: a remote read that
+        // connects and then stalls. MediaHTTPConnection has no read timeout,
+        // so nothing below this bounds the wait.
+        val stalled = DivineVideoPlayerInstance(
+            messenger = messenger,
+            context = context,
+            playerId = 2,
+            playerFactory = { _ -> mockPlayer },
+            mainHandler = mockHandler,
+            audioOverlayManagerFactory = { _ -> mockAudioManager },
+            metadataExecutor = StalledExecutorService(),
+        )
+
+        stalled.onMethodCall(trimmingSetClipsCall("https://cdn.example/stalled.mp4"), result)
+        verify(exactly = 0) { mockPlayer.setMediaItems(any(), any(), any()) }
+
+        val deadline = mutableListOf<Runnable>()
+        verify {
+            mockHandler.postDelayed(
+                capture(deadline),
+                DivineVideoPlayerInstance.TRACK_DURATION_RESOLVE_TIMEOUT_MS,
+            )
+        }
+        deadline.forEach { it.run() }
+
+        // A seam is worse than a load that never finishes is worse.
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a source that reads as having no track pair is not probed again`() {
+        val uri = "https://cdn.example/no-pair.mp4"
+
+        // MediaExtractor is stubbed to defaults here, so it reports no tracks
+        // — the same shape as a genuinely audio-only source. That answer is
+        // about the source and does not change, so it is cached.
+        instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+        capturePostedRunnables().forEach { it.run() }
+        val afterFirst = capturePostedRunnables().size
+
+        instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+
+        // Answered from the cache, so nothing is deferred: the clips reach the
+        // player without a second continuation.
+        assertEquals(afterFirst, capturePostedRunnables().size)
+        verify(exactly = 2) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a read that threw is probed again rather than cached as unreadable`() {
+        val uri = "https://cdn.example/flaky.mp4"
+        mockkConstructor(android.media.MediaExtractor::class)
+        try {
+            every {
+                anyConstructed<android.media.MediaExtractor>()
+                    .setDataSource(any<String>(), any<Map<String, String>>())
+            } throws IOException("connection reset")
+
+            instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+            capturePostedRunnables().forEach { it.run() }
+            val afterFirst = capturePostedRunnables().size
+
+            instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+
+            // A socket reset says nothing about the source. Caching it as
+            // unreadable would disable the loop-seam clamp for this URL for
+            // the rest of the process — the LRU is access-ordered, so the
+            // entry is re-promoted on every replay and never even evicts.
+            assertEquals(afterFirst + 1, capturePostedRunnables().size)
+        } finally {
+            unmockkConstructor(android.media.MediaExtractor::class)
+        }
+    }
+
+    @Test
     fun `a source without both track types is applied unclamped`() {
         val result = mockk<MethodChannel.Result>(relaxed = true)
 
@@ -773,6 +879,31 @@ class DivineVideoPlayerInstanceTest {
         verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
         verify(exactly = 0) { result.error(any(), any(), any()) }
     }
+}
+
+/** Accepts work and never runs it — a metadata read that never returns. */
+private class StalledExecutorService : java.util.concurrent.AbstractExecutorService() {
+    private var stopped = false
+
+    override fun execute(command: Runnable) = Unit
+
+    override fun shutdown() {
+        stopped = true
+    }
+
+    override fun shutdownNow(): MutableList<Runnable> {
+        stopped = true
+        return mutableListOf()
+    }
+
+    override fun isShutdown(): Boolean = stopped
+
+    override fun isTerminated(): Boolean = stopped
+
+    override fun awaitTermination(
+        timeout: Long,
+        unit: java.util.concurrent.TimeUnit,
+    ): Boolean = true
 }
 
 /** Runs submitted work on the calling thread so tests stay deterministic. */

@@ -175,6 +175,36 @@ internal class DivineVideoPlayerInstance(
     private var setClipsGeneration = 0L
 
     /**
+     * The `setClips` whose track lengths are still being read, if any.
+     *
+     * At most one exists: a newer call settles the previous one before taking
+     * the slot.
+     */
+    private var deferredSetClips: DeferredSetClips? = null
+
+    /**
+     * Gives up waiting for the track lengths and starts the player unclamped.
+     *
+     * The read has to be bounded. `MediaExtractor` fetches a remote source
+     * through `MediaHTTPConnection`, which sets a connect timeout and no read
+     * timeout at all, so a host that accepts the connection and then stalls
+     * would hold `await setClips()` open indefinitely. A seam is bad, a player
+     * that never starts is worse — so the clips go in without the clamp, and
+     * the read still finishes into [trackDurationsCache] for the next play of
+     * that source.
+     */
+    private val deferredSetClipsTimeout = Runnable {
+        deferredSetClips?.let { deferred ->
+            DivineVideoPlayerLog.warning(
+                "Player $playerId applied clips unclamped: track lengths not " +
+                    "read within ${TRACK_DURATION_RESOLVE_TIMEOUT_MS}ms",
+                name = "DivineVideoPlayer.Load",
+            )
+            settleDeferredSetClips(deferred, apply = true)
+        }
+    }
+
+    /**
      * Fades the outer edges of a looping video so its loop join is not a click
      * (#6468). Lives for the life of the instance because it is wired into the
      * renderers factory when the player is built.
@@ -422,6 +452,7 @@ internal class DivineVideoPlayerInstance(
 
         // Any newer call supersedes a resolution still in flight.
         val generation = ++setClipsGeneration
+        deferredSetClips?.let { settleDeferredSetClips(it, apply = false) }
 
         val unresolved = clipsRaw.mapNotNull { map ->
             val uri = map["uri"] as? String ?: return@mapNotNull null
@@ -439,20 +470,24 @@ internal class DivineVideoPlayerInstance(
         // it — the alternative is looping to the container duration, which is
         // the *longest* track, and leaving the shorter one's tail as a frozen
         // frame before every restart.
+        val deferred = DeferredSetClips(generation, call, clipsRaw, result)
+        deferredSetClips = deferred
+        mainHandler.postDelayed(
+            deferredSetClipsTimeout,
+            TRACK_DURATION_RESOLVE_TIMEOUT_MS,
+        )
+
         try {
             metadataExecutor.execute {
                 // The clips must be applied even if resolving blows up —
                 // playing to the container duration is a seam, not playing at
-                // all is a dead player and a Dart call that hangs to timeout.
+                // all is a dead player.
                 try {
                     unresolved.forEach { (uri, headers) ->
                         resolveTrackDurations(uri, headers)
                     }
                 } finally {
-                    mainHandler.post {
-                        if (generation != setClipsGeneration) return@post
-                        applyClips(call, clipsRaw, result)
-                    }
+                    mainHandler.post { settleDeferredSetClips(deferred, apply = true) }
                 }
             }
         } catch (e: RejectedExecutionException) {
@@ -461,7 +496,51 @@ internal class DivineVideoPlayerInstance(
                 "Player $playerId dropped setClips after dispose: $e",
                 name = "DivineVideoPlayer.Load",
             )
-            result.error("DISPOSED", "Player was disposed", null)
+            if (claimDeferredSetClips(deferred)) {
+                result.error("DISPOSED", "Player was disposed", null)
+            }
+        }
+    }
+
+    /**
+     * Takes [deferred] out of the pending slot, or returns `false` if
+     * something else already settled it.
+     *
+     * Whoever wins owes Dart a reply: a `setClips` whose
+     * [MethodChannel.Result] is dropped leaves `await setClips()` pending for
+     * the life of the app, which in the feed pins the tile's failover state
+     * and suppresses every later recovery attempt for it.
+     */
+    private fun claimDeferredSetClips(deferred: DeferredSetClips): Boolean {
+        if (deferred.settled) return false
+        deferred.settled = true
+        if (deferredSetClips === deferred) {
+            deferredSetClips = null
+            mainHandler.removeCallbacks(deferredSetClipsTimeout)
+        }
+        return true
+    }
+
+    /**
+     * Applies [deferred]'s clips, or tells its caller they were superseded.
+     *
+     * Runs on the platform thread from whichever comes first: the resolution
+     * landing, [deferredSetClipsTimeout] expiring, a newer [handleSetClips],
+     * or [dispose].
+     */
+    private fun settleDeferredSetClips(deferred: DeferredSetClips, apply: Boolean) {
+        if (!claimDeferredSetClips(deferred)) return
+        if (apply && deferred.generation == setClipsGeneration) {
+            applyClips(deferred.call, deferred.clipsRaw, deferred.result)
+        } else {
+            // Same contract [applyClips] uses for a superseded in-flight call:
+            // the Dart controller swallows CANCELLED, and the newer call is
+            // the one that answers.
+            deferred.result.error(
+                "CANCELLED",
+                "Superseded by newer setClips call",
+                null,
+            )
         }
     }
 
@@ -652,8 +731,11 @@ internal class DivineVideoPlayerInstance(
      * same cost, awaiting `load(.timeRange)` on both tracks before it builds
      * the composition.
      *
-     * A source whose lengths cannot be read is cached as [NO_TRACK_PAIR] so
-     * the read is not retried on every failover attempt.
+     * A source that genuinely carries no video/audio pair is cached as
+     * [NO_TRACK_PAIR] so the read is not repeated for it. A read that *threw*
+     * is not cached: a socket reset or a 5xx says nothing about the source,
+     * and [NO_TRACK_PAIR] is permanent — one bad moment would disable the
+     * clamp for that URL for the rest of the process.
      */
     private fun resolveTrackDurations(uri: String, headers: Map<String, String>) {
         if (trackDurationsCache.containsKey(uri)) return
@@ -691,7 +773,7 @@ internal class DivineVideoPlayerInstance(
                 "Player $playerId could not read track durations: $e",
                 name = "DivineVideoPlayer.Load",
             )
-            NO_TRACK_PAIR
+            return
         } finally {
             extractor.release()
         }
@@ -1414,8 +1496,10 @@ internal class DivineVideoPlayerInstance(
         mainHandler.removeCallbacks(bufferingWatchdogRunnable)
         cancelDecoderRetry()
         // A metadata read already in flight finishes into a bumped generation
-        // and is dropped; queued ones never start.
+        // and is dropped; queued ones never start. Its caller is answered here
+        // rather than left waiting on a continuation that will not apply.
         setClipsGeneration++
+        deferredSetClips?.let { settleDeferredSetClips(it, apply = false) }
         metadataExecutor.shutdownNow()
         seekCompletionResult?.success(null)
         seekCompletionResult = null
@@ -1443,11 +1527,45 @@ internal class DivineVideoPlayerInstance(
         eventSink = null
     }
 
+    /**
+     * A `setClips` held back until its clips' track lengths have been read.
+     *
+     * Carries everything [applyClips] needs so the call can be replayed on the
+     * platform thread once the read lands — or answered without applying when
+     * something supersedes it.
+     */
+    private class DeferredSetClips(
+        val generation: Long,
+        val call: MethodCall,
+        val clipsRaw: List<Map<String, Any?>>,
+        val result: MethodChannel.Result,
+    ) {
+        /**
+         * Set by whichever of the resolution, the deadline, a newer
+         * `setClips`, or `dispose` gets here first. Read and written on the
+         * platform thread only.
+         */
+        var settled: Boolean = false
+    }
+
     companion object {
         private const val POSITION_UPDATE_INTERVAL_MS = 200L
         private const val SET_CLIPS_TIMEOUT_MS = 10_000L
 
-        /** Cached "this source's track lengths cannot be read". */
+        /**
+         * How long a `setClips` waits for its clips' track lengths.
+         *
+         * Long enough for a moov range request against a healthy CDN, short
+         * enough that a stalled one costs a seam rather than a load. The
+         * ordinary `setClips` watchdog cannot cover this window — it is armed
+         * in [applyClips], which is exactly what the wait is holding up.
+         *
+         * Internal rather than private so the test can post the deadline it
+         * asserts on rather than restate the number.
+         */
+        internal const val TRACK_DURATION_RESOLVE_TIMEOUT_MS = 1_500L
+
+        /** Cached "this source carries no video/audio pair to trim". */
         private val NO_TRACK_PAIR = longArrayOf(-1L, -1L)
 
         /**
