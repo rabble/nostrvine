@@ -1000,7 +1000,7 @@ class VineTheme {
     iconButton: Color(0xFFE7F5EE),
     primaryText: Color(0xFF07241B),
     secondaryText: Color(0xFF385149),
-    mutedText: Color(0xFF6F817A),
+    mutedText: Color(0xFF5F7069),
     onSurface: Color(0xFF17382D),
     onSurfaceVariant: Color(0xFF526B61),
     onSurfaceMuted: Color(0x8C17382D),

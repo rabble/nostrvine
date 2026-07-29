@@ -84,12 +84,16 @@ const _bodyPairs = <(String, String)>[
   ('onSurface', 'primaryContainer'),
   ('onNav', 'nav'),
   ('inverseOnSurface', 'inverseSurface'),
+  // `mutedText` is `textTheme.bodySmall`'s color at fontSize 12, so it is
+  // normal text by the WCAG threshold (18px / 14px bold), not large text.
+  ('mutedText', 'background'),
+  ('mutedText', 'card'),
+  ('mutedText', 'surface'),
 ];
 
 /// Supporting copy — hints, placeholders, secondary labels — held to the
 /// large-text ratio because that is the type size these tokens are used at.
 const _supportingPairs = <(String, String)>[
-  ('mutedText', 'surface'),
   ('onSurfaceVariant', 'surface'),
   ('onSurfaceMuted', 'surface'),
   ('onErrorContainer', 'errorContainer'),
