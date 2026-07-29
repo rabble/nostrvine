@@ -17,16 +17,52 @@ class PeopleListsStarted extends PeopleListsEvent {
   const PeopleListsStarted();
 }
 
-/// Internal event emitted when the owner pubkey stream changes.
-class PeopleListsOwnerChanged extends PeopleListsEvent {
-  /// Creates an owner-change event.
-  const PeopleListsOwnerChanged({required this.ownerPubkey});
+/// Internal event emitted when the injected repository stream hands over a
+/// new [PeopleListsRepository] instance.
+///
+/// The app-shell provider rebuilds its repository on every identity change and
+/// the old one's `NostrClient` is disposed, so the bloc must re-point rather
+/// than keep its constructor-time capture (#6480).
+class PeopleListsRepositoryChanged extends PeopleListsEvent {
+  /// Creates a repository-change event.
+  const PeopleListsRepositoryChanged({required this.repository});
 
-  /// The new owner pubkey (full hex), or `null` when unauthenticated.
-  final String? ownerPubkey;
+  /// The repository instance the bloc should use from now on.
+  final PeopleListsRepository repository;
 
   @override
-  List<Object?> get props => [ownerPubkey];
+  List<Object?> get props => [repository];
+}
+
+/// Internal event emitted when the owner pubkey stream changes.
+///
+/// Also carries the repository re-wire (see [PeopleListsOwnerChanged.rewire]).
+/// Both cases are handled in this one `sequential()` bucket so the lists
+/// subscription has a single writer — `sequential()` orders events only within
+/// a bucket, so a second handler mutating it would interleave.
+class PeopleListsOwnerChanged extends PeopleListsEvent {
+  /// Creates an owner-change event.
+  const PeopleListsOwnerChanged({required this.ownerPubkey}) : isRewire = false;
+
+  /// Re-opens the lists subscription on the current repository without
+  /// changing the owner.
+  ///
+  /// The owner is resolved from state when the event is *handled*, not when it
+  /// is dispatched, so a re-wire queued behind a pending owner change picks up
+  /// the settled owner instead of the one that was leaving.
+  const PeopleListsOwnerChanged.rewire() : ownerPubkey = null, isRewire = true;
+
+  /// The new owner pubkey (full hex), or `null` when unauthenticated.
+  ///
+  /// Always `null` for a [PeopleListsOwnerChanged.rewire]; read the owner from
+  /// state instead.
+  final String? ownerPubkey;
+
+  /// Whether this is a repository re-wire rather than a real owner change.
+  final bool isRewire;
+
+  @override
+  List<Object?> get props => [ownerPubkey, isRewire];
 }
 
 /// Internal event emitted whenever the repository publishes a new set of

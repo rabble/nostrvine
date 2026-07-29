@@ -86,6 +86,7 @@ void main() {
       return PeopleListsBloc(
         repository: repository,
         ownerPubkeyStream: ownerPubkeyController.stream,
+        repositoryStream: const Stream.empty(),
         initialOwnerPubkey: initialOwnerPubkey,
         clock: _fixedClock,
       );
@@ -975,6 +976,231 @@ void main() {
 
       expect(ownerAListsController.hasListener, isFalse);
       expect(ownerBListsController.hasListener, isTrue);
+    });
+
+    // #6480: peopleListsRepositoryProvider is keepAlive but not
+    // identity-stable — it watches nostrServiceProvider, whose client is
+    // disposed on every identity change. The app-shell BlocProvider.create
+    // runs once, so without these the bloc keeps calling a disposed client,
+    // where queryEvents returns [] and syncOwner silently stops working.
+    group('repository identity swap', () {
+      late _MockPeopleListsRepository nextRepository;
+      late StreamController<PeopleListsRepository> repositoryController;
+      late StreamController<List<UserList>> nextOwnerAListsController;
+
+      setUp(() {
+        nextRepository = _MockPeopleListsRepository();
+        repositoryController =
+            StreamController<PeopleListsRepository>.broadcast();
+        nextOwnerAListsController =
+            StreamController<List<UserList>>.broadcast();
+
+        when(
+          () => nextRepository.watchLists(ownerPubkey: _ownerA),
+        ).thenAnswer((_) => nextOwnerAListsController.stream);
+        when(
+          () =>
+              nextRepository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((_) async {});
+      });
+
+      tearDown(() async {
+        await repositoryController.close();
+        if (!nextOwnerAListsController.isClosed) {
+          await nextOwnerAListsController.close();
+        }
+      });
+
+      PeopleListsBloc buildSwappableBloc() {
+        return PeopleListsBloc(
+          repository: repository,
+          ownerPubkeyStream: ownerPubkeyController.stream,
+          repositoryStream: repositoryController.stream,
+          clock: _fixedClock,
+        );
+      }
+
+      Future<PeopleListsBloc> startedWithOwnerA() async {
+        final bloc = buildSwappableBloc()..add(const PeopleListsStarted());
+        await _flush();
+        ownerPubkeyController.add(_ownerA);
+        await _flush();
+        return bloc;
+      }
+
+      test(
+        're-runs syncOwner on the new repository for the current owner',
+        () async {
+          final bloc = await startedWithOwnerA();
+          addTearDown(bloc.close);
+          clearInteractions(repository);
+
+          repositoryController.add(nextRepository);
+          await _flush();
+
+          verify(
+            () => nextRepository.syncOwner(ownerPubkey: _ownerA),
+          ).called(1);
+          verifyNever(
+            () => repository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+          );
+        },
+      );
+
+      test('moves the lists subscription onto the new repository', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        expect(ownerAListsController.hasListener, isTrue);
+
+        repositoryController.add(nextRepository);
+        await _flush();
+
+        expect(ownerAListsController.hasListener, isFalse);
+        expect(nextOwnerAListsController.hasListener, isTrue);
+      });
+
+      test('routes later list snapshots through the new repository', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+
+        repositoryController.add(nextRepository);
+        await _flush();
+
+        nextOwnerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.ready));
+        expect(bloc.state.lists.single.name, equals('Friends'));
+        expect(bloc.state.listIdsByPubkey[_memberAlice], equals({'l1'}));
+      });
+
+      test(
+        'keeps the visible lists across the swap (no loading flicker)',
+        () async {
+          final bloc = await startedWithOwnerA();
+          addTearDown(bloc.close);
+
+          ownerAListsController.add([
+            _buildList(
+              id: 'l1',
+              name: 'Friends',
+              pubkeys: const [_memberAlice],
+            ),
+          ]);
+          await _flush();
+          expect(bloc.state.status, equals(PeopleListsStatus.ready));
+
+          final emitted = <PeopleListsStatus>[];
+          final subscription = bloc.stream.listen((s) => emitted.add(s.status));
+          addTearDown(subscription.cancel);
+
+          repositoryController.add(nextRepository);
+          await _flush();
+
+          // The swap fires on every cold-start auth flip; blanking the state
+          // would flicker PeopleListMembershipIndicator on every profile header.
+          expect(emitted, isNot(contains(PeopleListsStatus.loading)));
+          expect(bloc.state.lists.single.name, equals('Friends'));
+        },
+      );
+
+      test(
+        'ignores a re-emission of the repository it already holds',
+        () async {
+          final bloc = await startedWithOwnerA();
+          addTearDown(bloc.close);
+          clearInteractions(repository);
+
+          // The app-shell stream is seeded with the current instance, so the
+          // very first emission is always the one the bloc was built with.
+          repositoryController.add(repository);
+          await _flush();
+
+          verifyNever(
+            () => repository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+          );
+          expect(ownerAListsController.hasListener, isTrue);
+        },
+      );
+
+      test('does not subscribe or sync while unauthenticated', () async {
+        final bloc = buildSwappableBloc()..add(const PeopleListsStarted());
+        addTearDown(bloc.close);
+        await _flush();
+
+        repositoryController.add(nextRepository);
+        await _flush();
+
+        verifyNever(
+          () =>
+              nextRepository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        );
+        expect(nextOwnerAListsController.hasListener, isFalse);
+      });
+
+      test('a later owner change uses the swapped-in repository', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        final nextOwnerBLists = StreamController<List<UserList>>.broadcast();
+        addTearDown(nextOwnerBLists.close);
+        when(
+          () => nextRepository.watchLists(ownerPubkey: _ownerB),
+        ).thenAnswer((_) => nextOwnerBLists.stream);
+
+        repositoryController.add(nextRepository);
+        await _flush();
+        ownerPubkeyController.add(_ownerB);
+        await _flush();
+
+        verify(() => nextRepository.syncOwner(ownerPubkey: _ownerB)).called(1);
+        expect(nextOwnerBLists.hasListener, isTrue);
+        expect(ownerBListsController.hasListener, isFalse);
+      });
+
+      // An account switch fires both streams at once. `sequential()` orders
+      // events only within a bucket, so an owner change and a repository swap
+      // land in different buckets and can interleave. When the swap re-opened
+      // the subscription itself, that interleave left the previous owner's
+      // subscription live on the incoming account's repository — and it
+      // outlived close(), because close() cancels only whatever happens to sit
+      // in the field at the time.
+      test(
+        'a same-turn owner change and repository swap leave no orphan',
+        () async {
+          final bloc = await startedWithOwnerA();
+          addTearDown(bloc.close);
+          final nextOwnerBLists = StreamController<List<UserList>>.broadcast();
+          addTearDown(nextOwnerBLists.close);
+          when(
+            () => nextRepository.watchLists(ownerPubkey: _ownerB),
+          ).thenAnswer((_) => nextOwnerBLists.stream);
+          clearInteractions(nextRepository);
+
+          ownerPubkeyController.add(_ownerB);
+          repositoryController.add(nextRepository);
+          await _flush();
+          await _flush();
+          await _flush();
+
+          // The account being left is never queried on the incoming account's
+          // client.
+          verifyNever(() => nextRepository.syncOwner(ownerPubkey: _ownerA));
+          expect(nextOwnerAListsController.hasListener, isFalse);
+          expect(nextOwnerBLists.hasListener, isTrue);
+
+          await bloc.close();
+          await _flush();
+
+          // close() cancels every subscription the bloc opened, not just the one
+          // that happened to win the field.
+          expect(ownerAListsController.hasListener, isFalse);
+          expect(ownerBListsController.hasListener, isFalse);
+          expect(nextOwnerAListsController.hasListener, isFalse);
+          expect(nextOwnerBLists.hasListener, isFalse);
+        },
+      );
     });
   });
 }

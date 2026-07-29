@@ -27,10 +27,10 @@ typedef PeopleListsClock = DateTime Function();
 /// changes, and applies optimistic updates for user-initiated mutations
 /// before the repository returns.
 ///
-/// It depends only on the repository and an owner-pubkey stream — it does
-/// not import other BLoCs. Owner transitions cancel the prior
-/// subscription, clear pending mutations, and start a new subscription
-/// plus an out-of-band sync.
+/// It depends only on the repository, an owner-pubkey stream, and a
+/// repository stream — it does not import other BLoCs. Owner transitions
+/// cancel the prior subscription, clear pending mutations, and start a new
+/// subscription plus an out-of-band sync.
 ///
 /// ## Failure recovery contract
 ///
@@ -48,19 +48,31 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// typically adapts an auth service's state stream into this shape so
   /// the bloc has no Flutter or Riverpod dependency.
   ///
+  /// [repositoryStream] must emit each successive [PeopleListsRepository]
+  /// instance. Required rather than optional: this bloc is built once in the
+  /// app shell while `peopleListsRepositoryProvider` rebuilds on every identity
+  /// change, so a caller that omits the stream silently reverts #6480. Pass
+  /// `const Stream.empty()` when the repository genuinely cannot change.
+  ///
   /// [clock] stamps optimistic `updatedAt` values and mutation ids.
   /// Defaults to [DateTime.now] in UTC. Tests inject a fixed clock for
   /// determinism.
   PeopleListsBloc({
     required PeopleListsRepository repository,
     required Stream<String?> ownerPubkeyStream,
+    required Stream<PeopleListsRepository> repositoryStream,
     String? initialOwnerPubkey,
     PeopleListsClock? clock,
   }) : _repository = repository,
        _ownerPubkeyStream = ownerPubkeyStream,
+       _repositoryStream = repositoryStream,
        _clock = clock ?? _defaultClock,
        super(PeopleListsState(ownerPubkey: initialOwnerPubkey)) {
     on<PeopleListsStarted>(_onStarted);
+    on<PeopleListsRepositoryChanged>(
+      _onRepositoryChanged,
+      transformer: sequential(),
+    );
     on<PeopleListsOwnerChanged>(_onOwnerChanged, transformer: sequential());
     on<PeopleListsRepositoryListsChanged>(_onRepositoryListsChanged);
     on<PeopleListsCreateRequested>(
@@ -87,17 +99,28 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
 
   static DateTime _defaultClock() => DateTime.now().toUtc();
 
-  final PeopleListsRepository _repository;
+  /// The repository the bloc currently operates on.
+  ///
+  /// Mutable by design. `state_management.md` bans mutable bloc fields for
+  /// *state*, but an injected dependency is configuration, and this one has to
+  /// be swappable: the app-shell `BlocProvider.create:` runs once while the
+  /// underlying provider rebuilds on every identity change.
+  /// `NotificationBadgeCubit` carries the same mutable-dependency shape for
+  /// the same reason.
+  PeopleListsRepository _repository;
   final Stream<String?> _ownerPubkeyStream;
+  final Stream<PeopleListsRepository> _repositoryStream;
   final PeopleListsClock _clock;
 
   StreamSubscription<String?>? _ownerSubscription;
   StreamSubscription<List<UserList>>? _listsSubscription;
+  StreamSubscription<PeopleListsRepository>? _repositorySubscription;
 
   @override
   Future<void> close() async {
     await _ownerSubscription?.cancel();
     await _listsSubscription?.cancel();
+    await _repositorySubscription?.cancel();
     return super.close();
   }
 
@@ -117,43 +140,49 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       },
     );
 
+    await _repositorySubscription?.cancel();
+    _repositorySubscription = _repositoryStream.listen(
+      (repository) => add(PeopleListsRepositoryChanged(repository: repository)),
+      onError: (Object error, StackTrace stackTrace) {
+        addError(error, stackTrace);
+      },
+    );
+
     final currentOwner = state.ownerPubkey;
     if (currentOwner != null && currentOwner.isNotEmpty) {
       add(PeopleListsOwnerChanged(ownerPubkey: currentOwner));
     }
   }
 
-  Future<void> _onOwnerChanged(
-    PeopleListsOwnerChanged event,
+  /// Re-points the bloc at a freshly built repository.
+  ///
+  /// Swaps the field only, then hands the actual re-subscription to
+  /// [_onOwnerChanged] via [PeopleListsOwnerChanged.rewire]. Doing the swap
+  /// inline instead would give [_listsSubscription] a second writer in a
+  /// different event bucket — `sequential()` orders events only within a
+  /// bucket, so a re-subscription landing inside `_onOwnerChanged`'s `await`
+  /// would be orphaned and outlive [close].
+  ///
+  /// Routing through the owner bucket also queues the re-wire *behind* any
+  /// pending owner change, so a swap that arrives mid-account-switch resolves
+  /// against the owner that is arriving rather than the one that is leaving.
+  void _onRepositoryChanged(
+    PeopleListsRepositoryChanged event,
     Emitter<PeopleListsState> emit,
-  ) async {
-    final newOwner = event.ownerPubkey;
-    if (newOwner == state.ownerPubkey &&
-        state.status != PeopleListsStatus.initial) {
-      return;
-    }
+  ) {
+    if (identical(_repository, event.repository)) return;
+    _repository = event.repository;
+    add(const PeopleListsOwnerChanged.rewire());
+  }
 
-    await _listsSubscription?.cancel();
-    _listsSubscription = null;
-
-    if (newOwner == null || newOwner.isEmpty) {
-      emit(const PeopleListsState());
-      return;
-    }
-
-    emit(
-      PeopleListsState(
-        status: PeopleListsStatus.loading,
-        ownerPubkey: newOwner,
-      ),
-    );
-
-    _listsSubscription = _repository
-        .watchLists(ownerPubkey: newOwner)
+  /// Subscribes to [ownerPubkey]'s lists on the current repository.
+  StreamSubscription<List<UserList>> _watchOwner(String ownerPubkey) {
+    return _repository
+        .watchLists(ownerPubkey: ownerPubkey)
         .listen(
           (lists) => add(
             PeopleListsRepositoryListsChanged(
-              ownerPubkey: newOwner,
+              ownerPubkey: ownerPubkey,
               lists: lists,
             ),
           ),
@@ -161,7 +190,56 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
             addError(error, stackTrace);
           },
         );
+  }
 
+  /// Owns [_listsSubscription] — the only handler that writes it.
+  ///
+  /// Deliberately synchronous. Suspending here would let another handler run
+  /// between the read and the write of [_listsSubscription] and orphan a
+  /// subscription that then outlives [close]; staying synchronous makes this
+  /// the sole, uninterruptible writer. `cancel()` stops delivery to the
+  /// listener synchronously — its future only reports resource cleanup, so
+  /// nothing below depends on awaiting it.
+  ///
+  /// A re-wire ([PeopleListsOwnerChanged.rewire]) reuses the owner already in
+  /// state and deliberately emits nothing: the repository swap fires on every
+  /// cold-start auth flip, and blanking the state would flicker
+  /// `PeopleListMembershipIndicator` on every profile header. The re-opened
+  /// `watchLists` subscription re-emits the current snapshot immediately from
+  /// the shared cache.
+  void _onOwnerChanged(
+    PeopleListsOwnerChanged event,
+    Emitter<PeopleListsState> emit,
+  ) {
+    final newOwner = event.isRewire ? state.ownerPubkey : event.ownerPubkey;
+    if (!event.isRewire &&
+        newOwner == state.ownerPubkey &&
+        state.status != PeopleListsStatus.initial) {
+      return;
+    }
+
+    unawaited(_listsSubscription?.cancel());
+    _listsSubscription = null;
+
+    if (newOwner == null || newOwner.isEmpty) {
+      if (!event.isRewire) emit(const PeopleListsState());
+      return;
+    }
+
+    if (!event.isRewire) {
+      emit(
+        PeopleListsState(
+          status: PeopleListsStatus.loading,
+          ownerPubkey: newOwner,
+        ),
+      );
+    }
+
+    _listsSubscription = _watchOwner(newOwner);
+
+    // On the old repository this reached a disposed NostrClient, whose
+    // queryEvents returns an empty list, so the owner's lists silently stopped
+    // syncing from relays (#6480).
     unawaited(_repository.syncOwner(ownerPubkey: newOwner));
   }
 

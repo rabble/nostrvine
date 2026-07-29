@@ -2840,6 +2840,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
                       .distinct();
                   return PeopleListsBloc(
                     repository: ref.read(peopleListsRepositoryProvider),
+                    // peopleListsRepositoryProvider is keepAlive but not
+                    // identity-stable: it watches nostrServiceProvider, which
+                    // disposes its client on every identity change. This create
+                    // runs once, so the bloc subscribes to the successive
+                    // instances rather than keeping its capture (#6480).
+                    repositoryStream: ref.read(
+                      peopleListsRepositoryIdentityStreamProvider,
+                    ),
                     ownerPubkeyStream: ownerPubkeyStream,
                     initialOwnerPubkey: authService.currentPublicKeyHex,
                   )..add(const PeopleListsStarted());
