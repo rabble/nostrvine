@@ -78,142 +78,6 @@ void main() {
     });
 
     // ------------------------------------------------------------------
-    group('subscribeToLoopEnforcement', () {
-      test('fires onSeekToZero when position >= maxLoopDuration', () async {
-        final controller = FakeController();
-        var seekCalled = false;
-
-        subs.subscribeToLoopEnforcement(
-          0,
-          controller,
-          maxLoopDuration: const Duration(seconds: 5),
-          isCurrent: () => true,
-          isSeekInProgress: () => false,
-          onSeekStarted: () {},
-          onPositionBelowMax: () {},
-          onSeekToZero: () => seekCalled = true,
-        );
-
-        controller.pushState(
-          const DivineVideoPlayerState(
-            status: PlaybackStatus.playing,
-            position: Duration(seconds: 5),
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-
-        expect(seekCalled, isTrue);
-      });
-
-      test(
-        'does not fire onSeekToZero when position < maxLoopDuration',
-        () async {
-          final controller = FakeController();
-          var seekCalled = false;
-
-          subs.subscribeToLoopEnforcement(
-            0,
-            controller,
-            maxLoopDuration: const Duration(seconds: 5),
-            isCurrent: () => true,
-            isSeekInProgress: () => false,
-            onSeekStarted: () {},
-            onPositionBelowMax: () {},
-            onSeekToZero: () => seekCalled = true,
-          );
-
-          controller.pushState(
-            const DivineVideoPlayerState(
-              status: PlaybackStatus.playing,
-              position: Duration(seconds: 4),
-            ),
-          );
-          await Future<void>.delayed(Duration.zero);
-
-          expect(seekCalled, isFalse);
-        },
-      );
-
-      test('does not fire when isCurrent returns false', () async {
-        final controller = FakeController();
-        var seekCalled = false;
-
-        subs.subscribeToLoopEnforcement(
-          0,
-          controller,
-          maxLoopDuration: const Duration(seconds: 5),
-          isCurrent: () => false,
-          isSeekInProgress: () => false,
-          onSeekStarted: () {},
-          onPositionBelowMax: () {},
-          onSeekToZero: () => seekCalled = true,
-        );
-
-        controller.pushState(
-          const DivineVideoPlayerState(
-            status: PlaybackStatus.playing,
-            position: Duration(seconds: 5),
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-
-        expect(seekCalled, isFalse);
-      });
-
-      test('does not fire when isSeekInProgress returns true', () async {
-        final controller = FakeController();
-        var seekCalled = false;
-
-        subs.subscribeToLoopEnforcement(
-          0,
-          controller,
-          maxLoopDuration: const Duration(seconds: 5),
-          isCurrent: () => true,
-          isSeekInProgress: () => true,
-          onSeekStarted: () {},
-          onPositionBelowMax: () {},
-          onSeekToZero: () => seekCalled = true,
-        );
-
-        controller.pushState(
-          const DivineVideoPlayerState(
-            status: PlaybackStatus.playing,
-            position: Duration(seconds: 6),
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-
-        expect(seekCalled, isFalse);
-      });
-
-      test('calls onPositionBelowMax when position is below limit', () async {
-        final controller = FakeController();
-        var belowCalled = false;
-
-        subs.subscribeToLoopEnforcement(
-          0,
-          controller,
-          maxLoopDuration: const Duration(seconds: 5),
-          isCurrent: () => true,
-          isSeekInProgress: () => false,
-          onSeekStarted: () {},
-          onPositionBelowMax: () => belowCalled = true,
-          onSeekToZero: () {},
-        );
-
-        controller.pushState(
-          const DivineVideoPlayerState(
-            status: PlaybackStatus.playing,
-            position: Duration(seconds: 3),
-          ),
-        );
-        await Future<void>.delayed(Duration.zero);
-
-        expect(belowCalled, isTrue);
-      });
-    });
-
-    // ------------------------------------------------------------------
     group('subscribeToAutoAdvance', () {
       test(
         'fires onLoopCompleted when position resets from near end',
@@ -224,7 +88,6 @@ void main() {
           subs.subscribeToAutoAdvance(
             0,
             controller,
-            maxLoopDuration: const Duration(seconds: 10),
             endThreshold: const Duration(milliseconds: 200),
             startThreshold: const Duration(milliseconds: 100),
             isCurrent: () => true,
@@ -271,7 +134,6 @@ void main() {
           subs.subscribeToAutoAdvance(
             0,
             controller,
-            maxLoopDuration: const Duration(seconds: 10),
             endThreshold: const Duration(milliseconds: 200),
             startThreshold: const Duration(milliseconds: 100),
             isCurrent: () => true,
@@ -300,7 +162,6 @@ void main() {
           subs.subscribeToAutoAdvance(
             0,
             controller,
-            maxLoopDuration: const Duration(seconds: 10),
             endThreshold: const Duration(milliseconds: 200),
             startThreshold: const Duration(milliseconds: 100),
             isCurrent: () => true,
@@ -340,6 +201,42 @@ void main() {
         },
       );
 
+      test('does not fire when the jump back starts mid-clip', () async {
+        final controller = FakeController();
+        var loopFired = false;
+
+        subs.subscribeToAutoAdvance(
+          0,
+          controller,
+          endThreshold: const Duration(milliseconds: 200),
+          startThreshold: const Duration(milliseconds: 100),
+          isCurrent: () => true,
+          onLoopCompleted: () => loopFired = true,
+        );
+
+        // A stale-playback recovery seek jumps backward from the middle of
+        // the clip. Arming on that would auto-advance a video the viewer is
+        // still watching.
+        controller
+          ..pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(seconds: 1),
+              duration: Duration(seconds: 10),
+            ),
+          )
+          ..pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 50),
+              duration: Duration(seconds: 10),
+            ),
+          );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(loopFired, isFalse);
+      });
+
       test('does not fire when not current', () async {
         final controller = FakeController();
         var loopFired = false;
@@ -347,7 +244,6 @@ void main() {
         subs.subscribeToAutoAdvance(
           0,
           controller,
-          maxLoopDuration: null,
           endThreshold: const Duration(milliseconds: 200),
           startThreshold: const Duration(milliseconds: 100),
           isCurrent: () => false,
@@ -581,31 +477,21 @@ void main() {
 
       test('cancels all four subscription types', () async {
         final controller = FakeController();
-        var seekCalled = false;
+        var errorCalled = false;
         var loopFired = false;
         var dimCalled = false;
+        var firstFrameCalled = false;
 
         subs
           ..subscribeToPlaybackErrors(
             0,
             controller,
             isAlreadyError: () => false,
-            onError: (_, _) {},
-          )
-          ..subscribeToLoopEnforcement(
-            0,
-            controller,
-            maxLoopDuration: const Duration(seconds: 10),
-            isCurrent: () => true,
-            isSeekInProgress: () => false,
-            onSeekStarted: () {},
-            onPositionBelowMax: () {},
-            onSeekToZero: () => seekCalled = true,
+            onError: (_, _) => errorCalled = true,
           )
           ..subscribeToAutoAdvance(
             0,
             controller,
-            maxLoopDuration: const Duration(seconds: 10),
             endThreshold: const Duration(milliseconds: 200),
             startThreshold: const Duration(milliseconds: 100),
             isCurrent: () => true,
@@ -616,6 +502,11 @@ void main() {
             controller,
             onDimensionsReady: () => dimCalled = true,
           )
+          ..subscribeToFirstFrame(
+            0,
+            controller,
+            onFirstFrame: () => firstFrameCalled = true,
+          )
           ..disposeAll();
 
         // After disposeAll none of the callbacks should fire.
@@ -623,17 +514,31 @@ void main() {
           ..pushState(
             const DivineVideoPlayerState(
               status: PlaybackStatus.playing,
-              position: Duration(seconds: 11),
+              position: Duration(milliseconds: 9900),
+              duration: Duration(seconds: 10),
             ),
           )
           ..pushState(
-            const DivineVideoPlayerState(videoWidth: 1920, videoHeight: 1080),
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.playing,
+              position: Duration(milliseconds: 50),
+              duration: Duration(seconds: 10),
+            ),
+          )
+          ..pushState(
+            const DivineVideoPlayerState(
+              status: PlaybackStatus.error,
+              videoWidth: 1920,
+              videoHeight: 1080,
+              isFirstFrameRendered: true,
+            ),
           );
         await Future<void>.delayed(Duration.zero);
 
-        expect(seekCalled, isFalse);
+        expect(errorCalled, isFalse);
         expect(loopFired, isFalse);
         expect(dimCalled, isFalse);
+        expect(firstFrameCalled, isFalse);
       });
     });
   });

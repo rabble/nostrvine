@@ -1184,13 +1184,6 @@ void main() {
             'Without the cap a 60s file referenced by a foreign Nostr client '
             'plays in full in the feed.',
       );
-      expect(
-        feed.maxLoopDuration,
-        isNull,
-        reason:
-            'Length enforcement is a native clip end; a Dart seek back to zero '
-            'creates the audible loop seam #5544 reported.',
-      );
     });
   });
 

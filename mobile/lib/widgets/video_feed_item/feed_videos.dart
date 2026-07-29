@@ -366,9 +366,8 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
         },
         // Nothing in the feed plays longer than a Vine, not even a 60s file a
         // foreign Nostr client points at. The cap is a native clip end, so the
-        // loop point stays in the platform player — deliberately NOT
-        // maxLoopDuration, whose Dart seek at the 6.3s recording limit both
-        // truncated classic Vines and created an audible seam (#5544, #6421).
+        // loop point stays in the platform player and the join stays seamless
+        // (#5544, #6421).
         maxPlaybackDuration: AppConstants.maxFeedPlaybackDuration,
         onVideoLoopCompleted: _handleAutoAdvanceCompleted,
         shouldPortraitExpand: widget.shouldPortraitExpand,

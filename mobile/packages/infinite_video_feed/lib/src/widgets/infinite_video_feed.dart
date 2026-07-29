@@ -54,7 +54,6 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.prefetchCount = 8,
     this.shouldPortraitExpand = true,
     this.maxPlaybackDuration,
-    this.maxLoopDuration,
     this.onActiveVideoChanged,
     this.onNearEnd,
     this.nearEndThreshold = 10,
@@ -243,15 +242,6 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// When `null`, every source plays to its full length.
   final Duration? maxPlaybackDuration;
 
-  /// Seeks active playback back to zero once this position is reached.
-  ///
-  /// When `null`, timeline-length loop enforcement is disabled and native
-  /// looping behavior applies.
-  ///
-  /// Prefer [maxPlaybackDuration] for length enforcement: a Dart-side seek
-  /// produces an audible seam at the loop point (#5544).
-  final Duration? maxLoopDuration;
-
   /// Called when the active video changes.
   final OnActiveVideoChanged? onActiveVideoChanged;
 
@@ -263,10 +253,9 @@ class InfiniteVideoFeed extends StatefulWidget {
 
   /// Called each time the active video completes a loop.
   ///
-  /// Fires when the playback position resets from near the end back to the
-  /// beginning, either because [maxLoopDuration] was reached and the feed
-  /// enforced a seek-to-zero, or because the video reached its natural end
-  /// and looped on its own.
+  /// Fires when the playback position resets from near the end of the clip
+  /// back to the beginning — the native player looping the clip it was
+  /// opened with, which [maxPlaybackDuration] may already have shortened.
   ///
   /// The `currentIndex` argument is the feed index of the video that looped.
   /// Use this to implement auto-advance logic in the owning widget.
@@ -361,7 +350,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   final _errors = <int>{};
   final _errorTypes = <int, VideoErrorType>{};
   final _terminalErrorTypesByVideoId = <String, VideoErrorType>{};
-  final _loopSeekInProgress = <int>{};
   // Viewer auth headers per index, applied to every resolved playback source
   // for that index. The age-gate token is a hash-bound BUD-01 (kind 24242)
   // auth, valid for any variant URL of the same blob, so one header set covers
@@ -1034,7 +1022,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _autoRetryTimers.clear();
     _autoRetryAttempts.clear();
 
-    _loopSeekInProgress.clear();
     _failoverInFlight.clear();
     _processingRetryInFlight.clear();
     _processingRetryAttempts.clear();
@@ -1062,7 +1049,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _staleDetector.forget(index);
     _cancelAutoRetry(index);
     _errors.remove(index);
-    _loopSeekInProgress.remove(index);
     _failoverInFlight.remove(index);
     _processingRetryInFlight.remove(index);
     _processingRetryAttempts.remove(index);
@@ -1736,37 +1722,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         },
       );
 
-    final maxLoopDuration = widget.maxLoopDuration;
-    if (maxLoopDuration != null) {
-      _subscriptions.subscribeToLoopEnforcement(
-        index,
-        controller,
-        maxLoopDuration: maxLoopDuration,
-        isCurrent: () => index == _currentIndex,
-        isSeekInProgress: () => _loopSeekInProgress.contains(index),
-        onSeekStarted: () {
-          _loopSeekInProgress.add(index);
-          _log(
-            'Loop enforcement index $index: '
-            'maxMs=${maxLoopDuration.inMilliseconds}',
-          );
-        },
-        onPositionBelowMax: () => _loopSeekInProgress.remove(index),
-        // Do NOT clear _loopSeekInProgress in whenComplete: native seekTo
-        // returns immediately (before ExoPlayer finishes seeking), so
-        // clearing the guard here lets stale position events retrigger
-        // the seek before position 0 is reported. The guard is cleared by
-        // onPositionBelowMax once ExoPlayer actually emits the post-seek
-        // position.
-        onSeekToZero: () => unawaited(controller.seekTo(Duration.zero)),
-      );
-    }
-
     if (widget.onVideoLoopCompleted != null) {
       _subscriptions.subscribeToAutoAdvance(
         index,
         controller,
-        maxLoopDuration: widget.maxLoopDuration,
         endThreshold: _loopEndThreshold,
         startThreshold: _loopStartThreshold,
         isCurrent: () => index == _currentIndex,

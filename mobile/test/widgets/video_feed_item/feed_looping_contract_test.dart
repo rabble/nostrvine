@@ -5,23 +5,47 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 
 void main() {
-  test('feed playback uses native looping instead of 6.3s seek enforcement', () {
-    final feedVideosSource = _dartCodeOnly(
-      'lib/widgets/video_feed_item/feed_videos.dart',
-    );
-    final pooledPlayerSource = _dartCodeOnly(
-      'packages/infinite_video_feed/lib/src/widgets/infinite_video_feed.dart',
+  test('feed playback loops natively rather than seeking back to zero', () {
+    // The seek-based enforcement this replaced no longer exists to be passed
+    // (#6445), so what is left to pin is that the loop still happens in the
+    // platform player.
+    const pooledPlayerPath =
+        'packages/infinite_video_feed/lib/src/widgets/infinite_video_feed.dart';
+
+    expect(
+      _dartCodeOnly(pooledPlayerPath),
+      contains('setLooping(looping: true)'),
     );
 
-    expect(pooledPlayerSource, contains('setLooping(looping: true)'));
-    expect(feedVideosSource, isNot(contains('maxLoopDuration:')));
-    expect(
-      feedVideosSource,
-      isNot(contains('maxLoopDuration: VideoEditorConstants.maxDuration')),
-      reason:
-          'Feed playback must not restart long videos with a Dart seek at the '
-          '6.3s recording limit; seek-based restarts create audible seams.',
-    );
+    // Every layer that holds a controller can hand-roll the restart, so the
+    // guard covers all three rather than the one the deleted wiring sat in:
+    // the subscription service owns the position stream the old seek fired
+    // from, and the app-side call site configures both.
+    //
+    // It matches the spelling, not the value. `_seekKick` already seeks with
+    // a computed duration for stale recovery, so widening to a `seekTo(`
+    // regex would collide with it — the cost is that `seekTo(const
+    // Duration())` reaches zero unseen. Read this as a tripwire for the
+    // regression that shipped three times, not as proof no Dart seek can
+    // reach zero.
+    const subscriptionsPath =
+        'packages/infinite_video_feed/lib/src/services/'
+        'controller_subscriptions.dart';
+    const seekFreePaths = [
+      pooledPlayerPath,
+      subscriptionsPath,
+      'lib/widgets/video_feed_item/feed_videos.dart',
+    ];
+
+    for (final path in seekFreePaths) {
+      expect(
+        _dartCodeOnly(path),
+        isNot(contains('seekTo(Duration.zero)')),
+        reason:
+            '$path must not restart a video with a Dart seek; '
+            'seek-based restarts create audible seams (#5544).',
+      );
+    }
   });
 
   test('every feed source is opened with the cap applied', () {
