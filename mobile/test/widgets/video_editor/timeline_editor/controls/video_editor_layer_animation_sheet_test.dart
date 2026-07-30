@@ -94,28 +94,38 @@ void main() {
     testWidgets('picker chrome follows the light palette', (tester) async {
       await openPicker(tester, theme: VineTheme.lightTheme);
 
-      expect(
-        find.byWidgetPredicate((w) {
-          if (w is! DecoratedBox) return false;
-          final decoration = w.decoration;
-          return decoration is BoxDecoration &&
-              decoration.color == VineTheme.lightColors.containerLow;
-        }),
-        findsWidgets,
-      );
+      const colors = VineTheme.lightColors;
 
+      // Anchored on the two phase segments rather than "any box carrying this
+      // token" — the sheet paints a dozen boxes in `containerLow`, so a
+      // predicate over all of them stays green when a single site regresses.
+      // Enter is the initially selected phase.
+      final enter = _segmentDecoration(
+        tester,
+        l10n.videoEditorLayerAnimationEnter,
+      );
+      expect(enter.color, colors.primaryContainer);
+      expect((enter.border! as Border).top.color, colors.outline);
+
+      final leave = _segmentDecoration(
+        tester,
+        l10n.videoEditorLayerAnimationLeave,
+      );
+      expect(leave.color, isNull);
+      expect((leave.border! as Border).top.color, VineTheme.transparent);
+
+      // The toggle these two segments sit in is the `containerLow` surface.
+      final toggle = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: find.text(l10n.videoEditorLayerAnimationEnter),
+              matching: find.byType(DecoratedBox),
+            )
+            .last,
+      );
       expect(
-        find.byWidgetPredicate((w) {
-          if (w is! DecoratedBox && w is! Container) return false;
-          final decoration = switch (w) {
-            DecoratedBox(:final decoration) => decoration,
-            Container(:final decoration) => decoration,
-            _ => null,
-          };
-          return decoration is BoxDecoration &&
-              decoration.color == VineTheme.lightColors.primaryContainer;
-        }),
-        findsWidgets,
+        (toggle.decoration as BoxDecoration).color,
+        colors.containerLow,
       );
     });
 
@@ -603,3 +613,11 @@ typedef _LayerAnimationResult = ({
   List<editor.LayerAnimation> enter,
   List<editor.LayerAnimation> leave,
 });
+
+/// The decoration of the phase segment labelled [label].
+BoxDecoration _segmentDecoration(WidgetTester tester, String label) {
+  final container = tester.widget<Container>(
+    find.ancestor(of: find.text(label), matching: find.byType(Container)).first,
+  );
+  return container.decoration! as BoxDecoration;
+}
