@@ -320,6 +320,23 @@ class VineRecordingController {
 
 ProofMode manifest is uploaded alongside video to Blossom server:
 
+> **The `X-ProofMode-*` headers are best-effort supplementary metadata, not the
+> delivery mechanism for the manifest.** The canonical copy is the `proofmode`
+> tag on the kind 34236 event, and the C2PA manifest is embedded in the video
+> bytes themselves. No Blossom server currently reads these headers.
+>
+> They are also hard-capped: `BlossomUploadService.maxProofModeHeaderBytes`
+> (8 KiB combined) governs what actually goes on the wire, cheapest-and-most-
+> identifying first (`X-ProofMode-C2PA`, then `-Signature`, `-Attestation`,
+> `-Manifest`). An Android hardware attestation chain is ~54 KB and used to
+> travel twice — ~75 KB base64-encoded in `X-ProofMode-Manifest` plus ~72 KB
+> again in `X-ProofMode-Attestation`. Measured against `media.divine.video`,
+> combined request headers must stay under **128 KiB over HTTP/1.1** (past it
+> the edge answers 502) and under **64 KiB over HTTP/2** (past it the
+> connection is closed mid-request). At ~147 KB every publish from such a
+> device failed. Do not reintroduce an uncapped header here; put new proof
+> payloads in a request body.
+
 ```dart
 class BlossomUploadService {
   Future<UploadResult> uploadVideo({

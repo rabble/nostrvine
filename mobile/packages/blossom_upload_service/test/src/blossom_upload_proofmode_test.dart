@@ -432,6 +432,78 @@ void main() {
           expect(headers, contains('X-ProofMode-C2PA'));
         },
       );
+
+      test(
+        'drops the bulk headers when an Android attestation busts the budget',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          // Real Android hardware attestation chains run ~54 KB, and used to
+          // ship twice (base64 in the manifest and again in its own header):
+          // ~147 KB combined, past the 128 KiB that media.divine.video
+          // accepts over HTTP/1.1 before answering 502.
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+            'deviceAttestation': 'A' * 54000,
+            'c2pa_manifest_id': 'c2pa-test-id',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          // The identifying headers survive...
+          expect(headers, contains('X-ProofMode-C2PA'));
+          expect(headers, contains('X-ProofMode-Signature'));
+          // ...the two that blow the budget do not.
+          expect(headers, isNot(contains('X-ProofMode-Attestation')));
+          expect(headers, isNot(contains('X-ProofMode-Manifest')));
+        },
+      );
+
+      test(
+        'keeps every proof header inside the wire budget',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+            'deviceAttestation': 'A' * 54000,
+            'c2pa_manifest_id': 'c2pa-test-id',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final proofBytes = capturedOptions!.headers!.entries
+              .where((e) => e.key.startsWith('X-ProofMode-'))
+              .fold<int>(
+                0,
+                (sum, e) => sum + e.key.length + '${e.value}'.length + 4,
+              );
+
+          expect(
+            proofBytes,
+            lessThanOrEqualTo(BlossomUploadService.maxProofModeHeaderBytes),
+          );
+        },
+      );
     });
   });
 }

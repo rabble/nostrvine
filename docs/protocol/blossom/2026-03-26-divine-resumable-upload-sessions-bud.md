@@ -116,6 +116,28 @@ When present, these headers carry the same ProofMode metadata that legacy
 uploads preserve the same server-side ProofMode handling without forcing the
 video bytes back onto the legacy single-request upload path.
 
+These headers are **supplementary and size-capped**. Servers must not treat
+them as the delivery mechanism for the proof: the canonical manifest is the
+`proofmode` tag on the kind 34236 event, and the C2PA manifest is embedded in
+the uploaded bytes. No Divine Blossom server reads them today.
+
+Clients must keep the combined `X-ProofMode-*` header size within a
+conservative budget — the mobile client uses 8 KiB
+(`BlossomUploadService.maxProofModeHeaderBytes`) — and drop headers that do
+not fit, cheapest-and-most-identifying first.
+
+Measured against `media.divine.video`, combined request headers must stay
+under **128 KiB over HTTP/1.1** (past it the edge answers 502) and under
+**64 KiB over HTTP/2** (past it the connection is closed mid-request). An
+Android hardware attestation chain base64-encodes to ~75 KB in
+`X-ProofMode-Manifest` and another ~72 KB in `X-ProofMode-Attestation`, so an
+uncapped client sends ~147 KB and fails every upload with an opaque 502 — or,
+on the legacy `PUT /upload` path, a connection reset while the body is still
+streaming.
+
+Any future proof payload that can exceed the budget must travel in the
+`complete` request body, not in a header.
+
 Example successful response:
 
 ```json
