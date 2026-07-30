@@ -9437,10 +9437,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'バッジは Nostr で誰でも作れる小さな賞。友だちやクリエイター、今日をいい日にしてくれた人に贈ってみて。';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink => 'badges.divine.video で自分のバッジを作る';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

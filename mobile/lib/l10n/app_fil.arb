@@ -2550,6 +2550,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Ang mga badge ay maliliit na parangal na kahit sino ay puwedeng gumawa sa Nostr. Bigyan ang isang kaibigan, isang creator, o kung sino man ang nagpasaya sa araw mo.",
+    "profileBadgeFooterLink": "Gumawa ng sarili mo sa badges.divine.video",
     "profileNoSavedVideosTitle": "Wala pang naka-save",
     "profileSavedOwnEmpty": "Mag-bookmark ng video mula sa share sheet at lalabas dito.",
     "profileErrorLoadingSaved": "May error sa pag-load ng saved videos",

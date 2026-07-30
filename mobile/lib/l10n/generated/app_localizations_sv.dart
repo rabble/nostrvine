@@ -9868,10 +9868,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'Märken är små utmärkelser som vem som helst kan skapa på Nostr. Ge ett till en vän, en kreatör eller någon som gjorde din dag.';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink => 'Skapa ditt eget på badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

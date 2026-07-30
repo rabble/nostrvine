@@ -9911,10 +9911,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'Badges zijn kleine onderscheidingen die iedereen op Nostr kan maken. Geef er een aan een vriend, een creator of iemand die je dag goedmaakte.';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink =>
+      'Maak je eigen badge op badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

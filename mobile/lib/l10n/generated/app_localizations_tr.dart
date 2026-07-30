@@ -9821,10 +9821,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'Rozetler, Nostr\'da herkesin oluşturabileceği küçük ödüllerdir. Bir arkadaşına, bir içerik üreticisine ya da gününü güzelleştiren birine ver.';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink =>
+      'Kendi rozetini badges.divine.video\'da oluştur';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

@@ -10072,10 +10072,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'Insignele sunt mici recompense pe care oricine le poate crea pe Nostr. Dăruiește una unui prieten, unui creator sau cuiva care ți-a făcut ziua mai bună.';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink =>
+      'Creează-ți propria insignă pe badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

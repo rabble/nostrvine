@@ -9642,10 +9642,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'ባጆች በNostr ላይ ማንኛውም ሰው መፍጠር የሚችላቸው ትንንሽ ሽልማቶች ናቸው። ለጓደኛ፣ ለፈጣሪ ወይም ቀንህን ላሳመረልህ ሰው አንዷን ስጥ።';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink => 'የራስህን በbadges.divine.video ፍጠር';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

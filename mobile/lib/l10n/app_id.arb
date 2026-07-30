@@ -3919,6 +3919,8 @@
     "profileBadgeMoreRecipients": "+{count} more",
     "profileBadgeSemanticLabel": "{name} badge",
     "profileBadgeFallbackSemanticLabel": "Badge",
+    "profileBadgeFooterBody": "Badge adalah penghargaan kecil yang bisa dibuat siapa saja di Nostr. Beri satu untuk teman, kreator, atau siapa pun yang membuat harimu.",
+    "profileBadgeFooterLink": "Buat milikmu di badges.divine.video",
     "authSignInWithBrowserExtension": "Masuk dengan ekstensi peramban",
     "authNip07ConnectionFailed": "Tidak dapat terhubung ke ekstensi peramban Anda.",
     "authNip07ExtensionNotFound": "Tidak ditemukan ekstensi peramban. Pasang Alby, nos2x, atau ekstensi lain yang kompatibel dengan NIP-07.",

@@ -9970,10 +9970,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'I badge sono piccoli riconoscimenti che chiunque può creare su Nostr. Regalane uno a un amico, a un creator o a chi ti ha svoltato la giornata.';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink => 'Crea il tuo su badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';

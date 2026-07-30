@@ -322,6 +322,51 @@ void main() {
         }
       }
     });
+
+    test('profile badge footer copy is localized for every locale', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        for (final key in _profileBadgeFooterKeys) {
+          final value = arb[key];
+
+          expect(
+            value,
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define a non-empty $key message',
+          );
+          expect(
+            value,
+            isNot(template[key]),
+            reason:
+                '${file.path} must not fall back to English for the profile '
+                'badge footer copy',
+          );
+        }
+
+        // The link label names the badges app host; a translation that drops
+        // it leaves the call to action unactionable.
+        expect(
+          arb['profileBadgeFooterLink'],
+          contains('badges.divine.video'),
+          reason:
+              '${file.path} must keep badges.divine.video in '
+              'profileBadgeFooterLink',
+        );
+      }
+    });
   });
 }
 
@@ -359,8 +404,9 @@ const _knownUntranslatedDebt = <String>{
   // localization pass; offline devices still get the fully translated
   // videoMetadataC2paMissingNote.
   'videoMetadataC2paMissingNoteServiceUnavailable',
-  // Profile badge detail sheet footer pointing at badges.divine.video;
-  // translation deferred to the next l10n pass.
+};
+
+const _profileBadgeFooterKeys = <String>{
   'profileBadgeFooterBody',
   'profileBadgeFooterLink',
 };

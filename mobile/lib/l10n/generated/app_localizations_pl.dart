@@ -10050,10 +10050,10 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileBadgeFooterBody =>
-      'Badges are little awards anyone can make on Nostr. Give one to a friend, a creator, or someone who made your day.';
+      'Odznaki to małe wyróżnienia, które każdy może stworzyć w Nostr. Podaruj jedną przyjacielowi, twórcy albo komuś, kto umilił ci dzień.';
 
   @override
-  String get profileBadgeFooterLink => 'Make your own at badges.divine.video';
+  String get profileBadgeFooterLink => 'Stwórz własną na badges.divine.video';
 
   @override
   String get minorAccountReviewWelcomePageTitle => 'Family guide';
