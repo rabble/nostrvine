@@ -1292,6 +1292,7 @@
     "keyManagementKeycastPasswordPrompt": "Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo para makopya ito.",
     "keyManagementKeycastCopyKey": "Kopyahin ang key",
     "keyManagementKeycastWrongPassword": "Hindi tugma ang password. Subukan muli.",
+    "keyManagementKeycastTooManyAttempts": "Sobrang dami nang subok. Isara ito at magsimula ulit.",
     "keyManagementKeycastSignInAgain": "Nag-expire na ang session mo. Mag-sign in muli para makopya ang key mo.",
     "keyManagementKeycastEmailUnverified": "I-verify ang email address mo bago kopyahin ang key.",
     "keyManagementKeycastDenied": "Ang Divine ang nangangalaga sa mga key ng account na ito, kaya hindi ito makokopya dito.",

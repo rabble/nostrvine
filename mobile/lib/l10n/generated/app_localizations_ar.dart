@@ -5068,6 +5068,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'كلمة المرور غير مطابقة. حاول مرة أخرى.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'محاولات كثيرة جدًا. أغلق هذا وابدأ من جديد.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'انتهت صلاحية جلستك. سجّل الدخول مرة أخرى لنسخ مفتاحك.';
 

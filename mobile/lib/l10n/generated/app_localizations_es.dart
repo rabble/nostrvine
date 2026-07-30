@@ -5148,6 +5148,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esa contraseña no coincide. Vuelve a intentarlo.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Demasiados intentos. Cierra esto y empieza de nuevo.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Tu sesión ha caducado. Inicia sesión de nuevo para copiar tu clave.';
 

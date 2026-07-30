@@ -5238,6 +5238,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'To hasło się nie zgadza. Spróbuj ponownie.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Za dużo prób. Zamknij to i zacznij od nowa.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Twoja sesja wygasła. Zaloguj się ponownie, aby skopiować klucz.';
 

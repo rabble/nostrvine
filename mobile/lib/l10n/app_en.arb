@@ -2870,6 +2870,10 @@
   "@keyManagementKeycastWrongPassword": {
     "description": "Inline error under the password field when the account password was rejected. The dialog stays open so the user can retry."
   },
+  "keyManagementKeycastTooManyAttempts": "Too many tries. Close this and start over.",
+  "@keyManagementKeycastTooManyAttempts": {
+    "description": "Inline error under the password field once the sheet has taken as many wrong passwords as it will accept. The user has to dismiss the sheet and reopen it to try again."
+  },
   "keyManagementKeycastSignInAgain": "Your session has expired. Sign in again to copy your key.",
   "@keyManagementKeycastSignInAgain": {
     "description": "Error shown when the saved session could not be refreshed, so fetching the key needs a fresh sign-in rather than a retry."

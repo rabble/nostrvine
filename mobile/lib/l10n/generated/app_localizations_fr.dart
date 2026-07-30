@@ -5171,6 +5171,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce mot de passe ne correspond pas. Réessaie.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Trop d\'essais. Ferme ça et recommence.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Ta session a expiré. Reconnecte-toi pour copier ta clé.';
 

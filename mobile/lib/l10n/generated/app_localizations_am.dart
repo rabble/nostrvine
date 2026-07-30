@@ -5001,6 +5001,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementKeycastWrongPassword => 'የይለፍ ቃሉ አይዛመድም። እንደገና ይሞክሩ።';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'በጣም ብዙ ሙከራዎች። ይህን ዝጋና ከመጀመሪያው ጀምር።';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'ክፍለ ጊዜዎ አልቋል። ቁልፍዎን ለመቅዳት እንደገና ይግቡ።';
 

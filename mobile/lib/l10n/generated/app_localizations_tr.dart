@@ -5076,6 +5076,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Şifre eşleşmiyor. Tekrar dene.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Çok fazla deneme oldu. Bunu kapat ve baştan başla.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Oturumun sona erdi. Anahtarını kopyalamak için tekrar giriş yap.';
 

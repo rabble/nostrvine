@@ -1338,6 +1338,7 @@
     "keyManagementKeycastPasswordPrompt": "키는 Divine 로그인 서비스가 보관합니다. 복사하려면 계정 비밀번호를 입력하세요.",
     "keyManagementKeycastCopyKey": "키 복사",
     "keyManagementKeycastWrongPassword": "비밀번호가 일치하지 않습니다. 다시 시도하세요.",
+    "keyManagementKeycastTooManyAttempts": "시도가 너무 많아요. 이 창을 닫고 다시 시작해 주세요.",
     "keyManagementKeycastSignInAgain": "세션이 만료되었습니다. 키를 복사하려면 다시 로그인하세요.",
     "keyManagementKeycastEmailUnverified": "키를 복사하기 전에 이메일 주소를 인증하세요.",
     "keyManagementKeycastDenied": "이 계정의 키는 Divine이 관리하므로 여기에서 복사할 수 없습니다.",

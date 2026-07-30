@@ -5154,6 +5154,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'La password non corrisponde. Riprova.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Troppi tentativi. Chiudi e ricomincia.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'La tua sessione è scaduta. Accedi di nuovo per copiare la chiave.';
 

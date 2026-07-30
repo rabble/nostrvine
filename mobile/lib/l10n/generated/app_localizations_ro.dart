@@ -5247,6 +5247,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Parola nu se potrivește. Încearcă din nou.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Prea multe încercări. Închide și ia-o de la capăt.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Sesiunea ta a expirat. Autentifică-te din nou pentru a copia cheia.';
 

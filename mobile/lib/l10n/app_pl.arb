@@ -2015,6 +2015,7 @@
     "keyManagementKeycastPasswordPrompt": "Twój klucz przechowuje serwis logowania Divine. Podaj hasło do konta, aby go skopiować.",
     "keyManagementKeycastCopyKey": "Kopiuj klucz",
     "keyManagementKeycastWrongPassword": "To hasło się nie zgadza. Spróbuj ponownie.",
+    "keyManagementKeycastTooManyAttempts": "Za dużo prób. Zamknij to i zacznij od nowa.",
     "keyManagementKeycastSignInAgain": "Twoja sesja wygasła. Zaloguj się ponownie, aby skopiować klucz.",
     "keyManagementKeycastEmailUnverified": "Potwierdź swój adres e-mail, zanim skopiujesz klucz.",
     "keyManagementKeycastDenied": "Divine zarządza kluczami tego konta, więc nie można ich tutaj skopiować.",

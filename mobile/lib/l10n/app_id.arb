@@ -2014,6 +2014,7 @@
     "keyManagementKeycastPasswordPrompt": "Kuncimu disimpan oleh layanan login Divine. Masukkan kata sandi akunmu untuk menyalinnya.",
     "keyManagementKeycastCopyKey": "Salin kunci",
     "keyManagementKeycastWrongPassword": "Kata sandi tidak cocok. Coba lagi.",
+    "keyManagementKeycastTooManyAttempts": "Terlalu banyak percobaan. Tutup ini dan mulai lagi.",
     "keyManagementKeycastSignInAgain": "Sesimu telah berakhir. Masuk lagi untuk menyalin kuncimu.",
     "keyManagementKeycastEmailUnverified": "Verifikasi alamat emailmu sebelum menyalin kunci.",
     "keyManagementKeycastDenied": "Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.",

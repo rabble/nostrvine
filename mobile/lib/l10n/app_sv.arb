@@ -2015,6 +2015,7 @@
     "keyManagementKeycastPasswordPrompt": "Din nyckel förvaras av Divines inloggningstjänst. Ange kontots lösenord för att kopiera den.",
     "keyManagementKeycastCopyKey": "Kopiera nyckel",
     "keyManagementKeycastWrongPassword": "Lösenordet stämmer inte. Försök igen.",
+    "keyManagementKeycastTooManyAttempts": "För många försök. Stäng det här och börja om.",
     "keyManagementKeycastSignInAgain": "Din session har gått ut. Logga in igen för att kopiera nyckeln.",
     "keyManagementKeycastEmailUnverified": "Bekräfta din e-postadress innan du kopierar nyckeln.",
     "keyManagementKeycastDenied": "Divine sköter nycklarna för det här kontot, så de kan inte kopieras här.",

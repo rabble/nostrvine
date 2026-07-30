@@ -5165,6 +5165,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Passwort stimmt nicht. Versuch es noch einmal.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Zu viele Versuche. Schließ das und fang neu an.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Deine Sitzung ist abgelaufen. Melde dich erneut an, um deinen Schlüssel zu kopieren.';
 

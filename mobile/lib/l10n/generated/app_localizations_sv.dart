@@ -5102,6 +5102,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lösenordet stämmer inte. Försök igen.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'För många försök. Stäng det här och börja om.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Din session har gått ut. Logga in igen för att kopiera nyckeln.';
 

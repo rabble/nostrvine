@@ -4866,6 +4866,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementKeycastWrongPassword => 'パスワードが一致しません。もう一度お試しください。';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      '試行が多すぎるよ。これを閉じて最初からやり直してね。';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'セッションの有効期限が切れました。鍵をコピーするには再度サインインしてください。';
 

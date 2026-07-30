@@ -5154,6 +5154,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Паролата не съвпада. Опитай отново.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Твърде много опити. Затвори това и започни отначало.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Сесията ти изтече. Влез отново, за да копираш ключа си.';
 

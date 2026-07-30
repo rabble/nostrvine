@@ -2007,6 +2007,7 @@
     "keyManagementKeycastPasswordPrompt": "مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك لنسخه.",
     "keyManagementKeycastCopyKey": "نسخ المفتاح",
     "keyManagementKeycastWrongPassword": "كلمة المرور غير مطابقة. حاول مرة أخرى.",
+    "keyManagementKeycastTooManyAttempts": "محاولات كثيرة جدًا. أغلق هذا وابدأ من جديد.",
     "keyManagementKeycastSignInAgain": "انتهت صلاحية جلستك. سجّل الدخول مرة أخرى لنسخ مفتاحك.",
     "keyManagementKeycastEmailUnverified": "أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.",
     "keyManagementKeycastDenied": "تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.",

@@ -4884,6 +4884,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keyManagementKeycastWrongPassword => '비밀번호가 일치하지 않습니다. 다시 시도하세요.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      '시도가 너무 많아요. 이 창을 닫고 다시 시작해 주세요.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       '세션이 만료되었습니다. 키를 복사하려면 다시 로그인하세요.';
 

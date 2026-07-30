@@ -2014,6 +2014,7 @@
     "keyManagementKeycastPasswordPrompt": "Anahtarın Divine'ın giriş servisinde tutuluyor. Kopyalamak için hesap şifreni gir.",
     "keyManagementKeycastCopyKey": "Anahtarı kopyala",
     "keyManagementKeycastWrongPassword": "Şifre eşleşmiyor. Tekrar dene.",
+    "keyManagementKeycastTooManyAttempts": "Çok fazla deneme oldu. Bunu kapat ve baştan başla.",
     "keyManagementKeycastSignInAgain": "Oturumun sona erdi. Anahtarını kopyalamak için tekrar giriş yap.",
     "keyManagementKeycastEmailUnverified": "Anahtarını kopyalamadan önce e-posta adresini doğrula.",
     "keyManagementKeycastDenied": "Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.",

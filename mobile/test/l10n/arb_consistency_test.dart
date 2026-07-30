@@ -55,6 +55,8 @@ void main() {
         'keyManagementKeycastPasswordPrompt',
         'keyManagementKeycastCopyKey',
         'keyManagementKeycastWrongPassword',
+        'keyManagementKeycastTooManyAttempts',
+        'keyManagementYourPrivateKeyLabel',
         'keyManagementKeycastSignInAgain',
         'keyManagementKeycastEmailUnverified',
         'keyManagementKeycastDenied',

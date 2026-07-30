@@ -5104,6 +5104,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'That password doesn\'t match. Try again.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Too many tries. Close this and start over.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Your session has expired. Sign in again to copy your key.';
 

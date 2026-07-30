@@ -2007,6 +2007,7 @@
     "keyManagementKeycastPasswordPrompt": "鍵は Divine のログインサービスが保管しています。コピーするにはアカウントのパスワードを入力してください。",
     "keyManagementKeycastCopyKey": "鍵をコピー",
     "keyManagementKeycastWrongPassword": "パスワードが一致しません。もう一度お試しください。",
+    "keyManagementKeycastTooManyAttempts": "試行が多すぎるよ。これを閉じて最初からやり直してね。",
     "keyManagementKeycastSignInAgain": "セッションの有効期限が切れました。鍵をコピーするには再度サインインしてください。",
     "keyManagementKeycastEmailUnverified": "鍵をコピーする前にメールアドレスを確認してください。",
     "keyManagementKeycastDenied": "このアカウントの鍵は Divine が管理しているため、ここではコピーできません。",

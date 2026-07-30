@@ -2216,6 +2216,7 @@
     "keyManagementKeycastPasswordPrompt": "Ключът ти се съхранява от услугата за вход на Divine. Въведи паролата на профила си, за да го копираш.",
     "keyManagementKeycastCopyKey": "Копирай ключа",
     "keyManagementKeycastWrongPassword": "Паролата не съвпада. Опитай отново.",
+    "keyManagementKeycastTooManyAttempts": "Твърде много опити. Затвори това и започни отначало.",
     "keyManagementKeycastSignInAgain": "Сесията ти изтече. Влез отново, за да копираш ключа си.",
     "keyManagementKeycastEmailUnverified": "Потвърди имейл адреса си, преди да копираш ключа.",
     "keyManagementKeycastDenied": "Divine управлява ключовете на този профил, така че те не могат да се копират тук.",

@@ -2015,6 +2015,7 @@
     "keyManagementKeycastPasswordPrompt": "Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in om hem te kopiëren.",
     "keyManagementKeycastCopyKey": "Sleutel kopiëren",
     "keyManagementKeycastWrongPassword": "Dat wachtwoord klopt niet. Probeer het opnieuw.",
+    "keyManagementKeycastTooManyAttempts": "Te veel pogingen. Sluit dit en begin opnieuw.",
     "keyManagementKeycastSignInAgain": "Je sessie is verlopen. Meld je opnieuw aan om je sleutel te kopiëren.",
     "keyManagementKeycastEmailUnverified": "Bevestig je e-mailadres voordat je je sleutel kopieert.",
     "keyManagementKeycastDenied": "Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.",

@@ -2015,6 +2015,7 @@
     "keyManagementKeycastPasswordPrompt": "Dein Schlüssel wird beim Login-Dienst von Divine aufbewahrt. Gib dein Konto-Passwort ein, um ihn zu kopieren.",
     "keyManagementKeycastCopyKey": "Schlüssel kopieren",
     "keyManagementKeycastWrongPassword": "Das Passwort stimmt nicht. Versuch es noch einmal.",
+    "keyManagementKeycastTooManyAttempts": "Zu viele Versuche. Schließ das und fang neu an.",
     "keyManagementKeycastSignInAgain": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um deinen Schlüssel zu kopieren.",
     "keyManagementKeycastEmailUnverified": "Bestätige deine E-Mail-Adresse, bevor du deinen Schlüssel kopierst.",
     "keyManagementKeycastDenied": "Divine verwaltet die Schlüssel dieses Kontos, daher können sie hier nicht kopiert werden.",

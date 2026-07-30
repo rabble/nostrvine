@@ -5068,6 +5068,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Kata sandi tidak cocok. Coba lagi.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Terlalu banyak percobaan. Tutup ini dan mulai lagi.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Sesimu telah berakhir. Masuk lagi untuk menyalin kuncimu.';
 

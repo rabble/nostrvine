@@ -2015,6 +2015,7 @@
     "keyManagementKeycastPasswordPrompt": "Cheia ta este păstrată de serviciul de autentificare Divine. Introdu parola contului pentru a o copia.",
     "keyManagementKeycastCopyKey": "Copiază cheia",
     "keyManagementKeycastWrongPassword": "Parola nu se potrivește. Încearcă din nou.",
+    "keyManagementKeycastTooManyAttempts": "Prea multe încercări. Închide și ia-o de la capăt.",
     "keyManagementKeycastSignInAgain": "Sesiunea ta a expirat. Autentifică-te din nou pentru a copia cheia.",
     "keyManagementKeycastEmailUnverified": "Confirmă adresa de e-mail înainte de a copia cheia.",
     "keyManagementKeycastDenied": "Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.",

@@ -2015,6 +2015,7 @@
     "keyManagementKeycastPasswordPrompt": "Sua chave é guardada pelo serviço de login da Divine. Digite a senha da sua conta para copiá-la.",
     "keyManagementKeycastCopyKey": "Copiar chave",
     "keyManagementKeycastWrongPassword": "Essa senha não confere. Tente novamente.",
+    "keyManagementKeycastTooManyAttempts": "Tentativas demais. Fecha isto e começa de novo.",
     "keyManagementKeycastSignInAgain": "Sua sessão expirou. Entre novamente para copiar sua chave.",
     "keyManagementKeycastEmailUnverified": "Verifique seu endereço de e-mail antes de copiar sua chave.",
     "keyManagementKeycastDenied": "A Divine cuida das chaves desta conta, então elas não podem ser copiadas aqui.",

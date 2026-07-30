@@ -8876,6 +8876,12 @@ abstract class AppLocalizations {
   /// **'That password doesn\'t match. Try again.'**
   String get keyManagementKeycastWrongPassword;
 
+  /// Inline error under the password field once the sheet has taken as many wrong passwords as it will accept. The user has to dismiss the sheet and reopen it to try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Close this and start over.'**
+  String get keyManagementKeycastTooManyAttempts;
+
   /// Error shown when the saved session could not be refreshed, so fetching the key needs a fresh sign-in rather than a retry.
   ///
   /// In en, this message translates to:

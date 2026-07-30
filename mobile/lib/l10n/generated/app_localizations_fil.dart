@@ -5168,6 +5168,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi tugma ang password. Subukan muli.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Sobrang dami nang subok. Isara ito at magsimula ulit.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Nag-expire na ang session mo. Mag-sign in muli para makopya ang key mo.';
 

@@ -5127,6 +5127,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dat wachtwoord klopt niet. Probeer het opnieuw.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Te veel pogingen. Sluit dit en begin opnieuw.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Je sessie is verlopen. Meld je opnieuw aan om je sleutel te kopiëren.';
 

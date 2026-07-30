@@ -5137,6 +5137,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Essa senha não confere. Tente novamente.';
 
   @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Tentativas demais. Fecha isto e começa de novo.';
+
+  @override
   String get keyManagementKeycastSignInAgain =>
       'Sua sessão expirou. Entre novamente para copiar sua chave.';
 
