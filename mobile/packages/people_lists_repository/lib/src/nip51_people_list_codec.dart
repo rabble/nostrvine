@@ -90,6 +90,51 @@ abstract final class Nip51PeopleListCodec {
     return PeopleListEventPayload(kind: kind, tags: tags);
   }
 
+  /// Encodes an app-managed reserved list into a [PeopleListEventPayload].
+  ///
+  /// Reserved lists (see [reservedDTags]) never become a [UserList], so they
+  /// cannot go through [encode]. Emits one `p` tag per non-empty pubkey,
+  /// never truncated.
+  ///
+  /// An empty [pubkeys] is legitimate — it is how the user clears the list —
+  /// and produces an event with `d` and `title` but no `p` tags.
+  static PeopleListEventPayload encodeReserved({
+    required String dTag,
+    required String title,
+    required Iterable<String> pubkeys,
+  }) {
+    assert(
+      reservedDTags.contains(dTag),
+      'encodeReserved is only for app-managed lists in reservedDTags',
+    );
+    return PeopleListEventPayload(
+      kind: kind,
+      tags: [
+        ['d', dTag],
+        ['title', title],
+        for (final pubkey in pubkeys)
+          if (pubkey.isNotEmpty) ['p', pubkey],
+      ],
+    );
+  }
+
+  /// Decodes the member pubkeys of the app-managed reserved list [dTag].
+  ///
+  /// Returns `null` when [event] is not a kind [kind] event carrying that
+  /// exact `d` tag, so callers can filter a mixed relay response. An empty
+  /// list means the event exists and has no members — distinct from `null`.
+  ///
+  /// Full pubkeys are preserved; duplicates are collapsed while keeping first
+  /// occurrence order.
+  static List<String>? decodeReservedMembers(
+    Event event, {
+    required String dTag,
+  }) {
+    if (event.kind != kind) return null;
+    if (_firstTagValue(event.tags, 'd') != dTag) return null;
+    return _memberPubkeys(event.tags).toSet().toList(growable: false);
+  }
+
   /// Decodes [event] into a [UserList], or returns `null` when the event is
   /// not a user-facing people list.
   ///
@@ -111,12 +156,7 @@ abstract final class Nip51PeopleListCodec {
       return null;
     }
 
-    final pubkeys = event.tags
-        .where(
-          (tag) => tag.length >= 2 && tag[0] == 'p' && tag[1].isNotEmpty,
-        )
-        .map((tag) => tag[1])
-        .toList(growable: false);
+    final pubkeys = _memberPubkeys(event.tags).toList(growable: false);
 
     final timestamp = DateTime.fromMillisecondsSinceEpoch(
       event.createdAt * 1000,
@@ -134,6 +174,11 @@ abstract final class Nip51PeopleListCodec {
       nostrEventId: event.id.isEmpty ? null : event.id,
     );
   }
+
+  /// Member pubkeys from every non-empty `p` tag, in tag order.
+  static Iterable<String> _memberPubkeys(List<List<String>> tags) => tags
+      .where((tag) => tag.length >= 2 && tag[0] == 'p' && tag[1].isNotEmpty)
+      .map((tag) => tag[1]);
 
   static String? _firstTagValue(List<List<String>> tags, String name) {
     for (final tag in tags) {

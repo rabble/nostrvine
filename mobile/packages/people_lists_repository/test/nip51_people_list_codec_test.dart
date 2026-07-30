@@ -201,6 +201,81 @@ void main() {
         expect(Nip51PeopleListCodec.decode(event), isNull);
       });
 
+      test('decodeReservedMembers reads members of the notify list', () {
+        final event = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'notify'],
+            ['p', memberPubkeyA],
+            ['p', memberPubkeyB],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+
+        expect(
+          Nip51PeopleListCodec.decodeReservedMembers(event, dTag: 'notify'),
+          equals([memberPubkeyA, memberPubkeyB]),
+        );
+      });
+
+      test('decodeReservedMembers distinguishes empty from absent', () {
+        final emptyList = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'notify'],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+        final otherList = Event(
+          ownerPubkey,
+          30000,
+          const [
+            ['d', 'block'],
+            ['p', memberPubkeyA],
+          ],
+          '',
+          createdAt: 1710000000,
+        );
+
+        expect(
+          Nip51PeopleListCodec.decodeReservedMembers(emptyList, dTag: 'notify'),
+          isEmpty,
+        );
+        expect(
+          Nip51PeopleListCodec.decodeReservedMembers(otherList, dTag: 'notify'),
+          isNull,
+        );
+      });
+
+      test('encodeReserved round-trips through decodeReservedMembers', () {
+        final payload = Nip51PeopleListCodec.encodeReserved(
+          dTag: Nip51PeopleListCodec.notifyDTag,
+          title: 'Notify',
+          pubkeys: [memberPubkeyA, memberPubkeyB],
+        );
+        final event = Event(
+          ownerPubkey,
+          payload.kind,
+          payload.tags,
+          payload.content,
+          createdAt: 1710000000,
+        );
+
+        expect(
+          Nip51PeopleListCodec.decodeReservedMembers(
+            event,
+            dTag: Nip51PeopleListCodec.notifyDTag,
+          ),
+          equals([memberPubkeyA, memberPubkeyB]),
+        );
+        // Must stay invisible to the user-facing list collection.
+        expect(Nip51PeopleListCodec.decode(event), isNull);
+      });
+
       test('returns null for non kind 30000 events', () {
         final event = Event(
           ownerPubkey,
