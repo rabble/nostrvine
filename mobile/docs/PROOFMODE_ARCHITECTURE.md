@@ -536,6 +536,8 @@ See `docs/MANUAL_TEST_VIDEO_UPLOAD.md` for manual upload verification procedures
 - Android Play Integrity: ~200-500ms
 - A failed attestation degrades the proof to no `device_attestation` field; it
   never discards the PGP signature or C2PA manifest.
+- The published payload shape and the verifier rule that follows from the cache
+  are documented in [NOSTR_VIDEO_EVENTS.md](NOSTR_VIDEO_EVENTS.md#device_attestation-payload-ios).
 
 ## Future Enhancements
 

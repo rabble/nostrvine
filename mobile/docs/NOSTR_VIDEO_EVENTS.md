@@ -115,6 +115,36 @@ parsing is enforced in `mobile/packages/models/lib/src/video_event.dart` and
 | `pgp_fingerprint` | `["pgp_fingerprint", "ABCD1234EFGH5678"]` | PGP public key fingerprint for signature verification |
 | `c2pa_manifest_id` | `["c2pa_manifest_id", "<manifest-id>"]` | Active C2PA manifest identifier when available |
 
+#### `device_attestation` payload (iOS)
+
+On iOS the tag value is the App Attest payload verbatim:
+
+```json
+{
+  "keyID": "<key identifier>",
+  "attestationString": "<base64 attestation object>",
+  "assertionString": "<base64 assertion>"
+}
+```
+
+Apple rate limits `generateKey` and `attestKey`, so the Secure Enclave key is
+provisioned once per install and `keyID` plus `attestationString` are replayed
+from cache on every later proof. A verifier needs two branches:
+
+- **`assertionString` present** — verify the assertion against *this* proof's
+  hash. The attestation still proves the key came from a genuine Apple device,
+  but its embedded nonce binds the proof that provisioned the key, not this one.
+- **`assertionString` absent** — this is the provisioning proof, so the
+  attestation nonce binds the current proof hash and the plain nonce check
+  applies.
+
+Because the key lives for the life of the install, `keyID` and
+`attestationString` are a stable public identifier: every video published from
+one install carries the same pair, including videos published from different
+Nostr accounts on that device. The cache is wiped on uninstall and on a
+`DCError.invalidKey` recovery (device restore, OS reset). Nothing consumes these
+fields yet.
+
 ### Creator Identity Hints
 
 These tags are discovery hints only. They do not replace the event pubkey as the

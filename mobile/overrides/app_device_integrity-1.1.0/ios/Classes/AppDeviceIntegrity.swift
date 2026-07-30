@@ -64,7 +64,7 @@ final class AppDeviceIntegrity {
     }
 
     func generateKeyAndAttest(completion: @escaping (Bool) -> Void) {
-        resolveCredential(forceRefresh: false) { [weak self] credential in
+        resolveCredential(replacing: nil) { [weak self] credential in
             guard let self = self, let credential = credential else {
                 completion(false)
                 return
@@ -108,7 +108,7 @@ final class AppDeviceIntegrity {
             }
 
             print("App Attest key no longer valid, re-provisioning")
-            self.resolveCredential(forceRefresh: true) { refreshed in
+            self.resolveCredential(replacing: credential.keyID) { refreshed in
                 guard let refreshed = refreshed else {
                     completion(false)
                     return
@@ -139,17 +139,26 @@ final class AppDeviceIntegrity {
         }
     }
 
+    /// Hands back the install's credential, provisioning one if the cache is
+    /// empty. Pass the key that just failed as [staleKeyID] to replace it.
     private func resolveCredential(
-        forceRefresh: Bool,
+        replacing staleKeyID: String?,
         completion: @escaping (Credential?) -> Void
     ) {
         Self.lock.lock()
 
-        if forceRefresh {
+        // Clear only while the cache still points at the key that failed. Two
+        // assertions can fail on the same dead key, and dropping the
+        // replacement the first recovery already stored would spend another
+        // rate-limited key generation for nothing.
+        if let staleKeyID = staleKeyID,
+           Self.defaults.string(forKey: StorageKey.keyID) == staleKeyID {
             Self.defaults.removeObject(forKey: StorageKey.keyID)
             Self.defaults.removeObject(forKey: StorageKey.attestation)
-        } else if let keyID = Self.defaults.string(forKey: StorageKey.keyID),
-                  let attestation = Self.defaults.string(forKey: StorageKey.attestation) {
+        }
+
+        if let keyID = Self.defaults.string(forKey: StorageKey.keyID),
+           let attestation = Self.defaults.string(forKey: StorageKey.attestation) {
             Self.lock.unlock()
             completion(Credential(keyID: keyID, attestation: attestation, isFresh: false))
             return
