@@ -19,8 +19,22 @@ enum DivineIconButtonType {
   /// and white icon.
   ghost,
 
-  /// Ghost secondary button with lighter scrim (15% black) and white icon.
+  /// Ghost secondary button with lighter scrim (15% black), carrying a
+  /// palette-derived icon.
+  ///
+  /// For chrome that sits on a themed surface. Use [ghostOverMedia] when the
+  /// scrim is painted over a video frame or an image instead — there the
+  /// backdrop is content-driven, so a palette-derived icon can land on
+  /// anything.
   ghostSecondary,
+
+  /// Same 15% black scrim as [ghostSecondary], with a fixed light icon in
+  /// both appearance modes.
+  ///
+  /// The button-level counterpart of `DiVineAppBarStyle.overMediaStyle`: what
+  /// shows through a scrim over media is a video frame rather than a palette
+  /// surface, so the icon cannot follow the palette.
+  ghostOverMedia,
 
   /// Error/destructive button with red background and light icon.
   error,
@@ -251,7 +265,8 @@ class _DivineIconButtonContent extends StatelessWidget {
         DivineIconButtonType.secondary => colors.surfaceContainer,
         DivineIconButtonType.tertiary => colors.inverseSurface,
         DivineIconButtonType.ghost => VineTheme.scrim65,
-        DivineIconButtonType.ghostSecondary => VineTheme.scrim15,
+        DivineIconButtonType.ghostSecondary ||
+        DivineIconButtonType.ghostOverMedia => VineTheme.scrim15,
         DivineIconButtonType.error => VineTheme.error,
       };
 
@@ -262,8 +277,10 @@ class _DivineIconButtonContent extends StatelessWidget {
         DivineIconButtonType.secondary =>
           colors.isLight ? colors.onSurface : VineTheme.primary,
         DivineIconButtonType.tertiary => colors.inverseOnSurface,
-        // The stronger ghost scrim can carry fixed light content in both modes.
-        DivineIconButtonType.ghost => VineTheme.onSurface,
+        // The stronger ghost scrim, and any scrim over media, carry fixed
+        // light content in both modes.
+        DivineIconButtonType.ghost ||
+        DivineIconButtonType.ghostOverMedia => VineTheme.onSurface,
         DivineIconButtonType.ghostSecondary =>
           colors.isLight ? colors.onSurface : VineTheme.onSurface,
         DivineIconButtonType.error => VineTheme.onErrorContainer,
@@ -284,7 +301,8 @@ class _DivineIconButtonContent extends StatelessWidget {
     // Disabled buttons have no shadow (except for some types).
     if ((!_isEnabled && type == .primary) ||
         type == .ghost ||
-        type == .ghostSecondary) {
+        type == .ghostSecondary ||
+        type == .ghostOverMedia) {
       return null;
     }
 

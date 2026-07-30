@@ -244,7 +244,7 @@ class _EditClipPreview extends StatelessWidget {
                       excludeSemantics: true,
                       child: DivineIconButton(
                         icon: .pencilSimpleLine,
-                        type: .ghostSecondary,
+                        type: .ghostOverMedia,
                         size: .small,
                         onPressed: onEditCover,
                       ),

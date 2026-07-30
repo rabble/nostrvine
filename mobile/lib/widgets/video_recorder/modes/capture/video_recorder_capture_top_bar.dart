@@ -67,7 +67,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                       semanticLabel:
                           context.l10n.videoRecorderCaptureCloseLabel,
                       size: .small,
-                      type: .ghostSecondary,
+                      type: .ghostOverMedia,
                       onPressed: () => fromEditor
                           ? context.pop(false)
                           : closeVideoRecorder(context),
@@ -81,7 +81,7 @@ class VideoRecorderCaptureTopBar extends ConsumerWidget {
                         semanticLabel:
                             context.l10n.videoRecorderCaptureNextLabel,
                         size: .small,
-                        type: .ghostSecondary,
+                        type: .ghostOverMedia,
                         onPressed: capturesStills
                             ? () => context.read<VideoRecorderBloc>().add(
                                 const VideoRecorderStopMotionAssembleRequested(),

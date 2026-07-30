@@ -320,21 +320,21 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                 if (widget.isOwnProfile)
                   DivineIconButton(
                     icon: DivineIconName.gear,
-                    type: DivineIconButtonType.ghostSecondary,
+                    type: DivineIconButtonType.ghostOverMedia,
                     size: DivineIconButtonSize.small,
                     onPressed: () => context.push(SettingsScreen.path),
                   )
                 else if (widget.onBack != null)
                   DivineIconButton(
                     icon: DivineIconName.caretLeft,
-                    type: DivineIconButtonType.ghostSecondary,
+                    type: DivineIconButtonType.ghostOverMedia,
                     size: DivineIconButtonSize.small,
                     onPressed: widget.onBack,
                   ),
                 if (widget.onMore != null)
                   DivineIconButton(
                     icon: DivineIconName.dotsThree,
-                    type: DivineIconButtonType.ghostSecondary,
+                    type: DivineIconButtonType.ghostOverMedia,
                     size: DivineIconButtonSize.small,
                     onPressed: widget.onMore,
                   ),

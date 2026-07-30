@@ -39,6 +39,10 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
         Align(
           alignment: .topCenter,
           child: VideoEditorToolbar(
+            // This screen paints a fixed 61 % black scrim over everything
+            // (`VideoEditorConstants.textEditorBackground`), so the close
+            // button cannot follow the palette into light mode.
+            closeType: .ghostOverMedia,
             onClose: () => VideoTextEditorScope.of(context).editor.close(),
             onDone: () => VideoTextEditorScope.of(context).editor.done(),
           ),

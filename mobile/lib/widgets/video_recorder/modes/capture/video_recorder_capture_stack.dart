@@ -137,7 +137,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                         icon: .trash,
                         semanticLabel:
                             context.l10n.videoRecorderDeleteLastClipLabel,
-                        type: .ghostSecondary,
+                        type: .ghostOverMedia,
                         size: .small,
                         onPressed: recorderMode.capturesStills
                             ? () => context.read<VideoRecorderBloc>().add(
@@ -156,7 +156,7 @@ class VideoRecorderCaptureStack extends ConsumerWidget {
                     child: IgnorePointer(
                       child: DivineIconButton(
                         icon: .trash,
-                        type: .ghostSecondary,
+                        type: .ghostOverMedia,
                         size: .small,
                         onPressed: null,
                       ),

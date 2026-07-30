@@ -567,7 +567,7 @@ class _AvatarLightbox extends StatelessWidget {
                     left: 12,
                     child: DivineIconButton(
                       icon: DivineIconName.x,
-                      type: DivineIconButtonType.ghostSecondary,
+                      type: DivineIconButtonType.ghostOverMedia,
                       size: DivineIconButtonSize.small,
                       onPressed: () => Navigator.of(context).pop(),
                     ),

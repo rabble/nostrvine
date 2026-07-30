@@ -40,7 +40,7 @@ class ImageCropEditorToolbar extends StatelessWidget
         padding: const EdgeInsets.only(left: 16),
         child: DivineIconButton(
           icon: DivineIconName.x,
-          type: DivineIconButtonType.ghostSecondary,
+          type: DivineIconButtonType.ghostOverMedia,
           size: DivineIconButtonSize.small,
           semanticLabel: l10n.imageCropEditorCloseSemanticLabel,
           onPressed: onClose,
