@@ -993,10 +993,11 @@ void main() {
 
         await service.saveDraft(draft);
 
-        await service.updatePublishStatus(
+        final updated = await service.updatePublishStatus(
           draftId: draft.id,
           status: PublishStatus.publishing,
         );
+        expect(updated, isTrue);
 
         // updatePublishStatus updates the column used for filtering
         final publishing = await service.getDraftsByPublishStatuses({
@@ -1009,6 +1010,15 @@ void main() {
           PublishStatus.draft,
         });
         expect(drafts, isEmpty);
+      });
+
+      test('returns false when the draft row is missing', () async {
+        final updated = await service.updatePublishStatus(
+          draftId: 'missing',
+          status: PublishStatus.draft,
+        );
+
+        expect(updated, isFalse);
       });
 
       test('should update publish status with error message', () async {

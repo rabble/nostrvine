@@ -58,7 +58,7 @@ void main() {
         status: any(named: 'status'),
         publishError: any(named: 'publishError'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => true);
     when(
       () => mockDraftStorageService.deleteDraft(any()),
     ).thenAnswer((_) async {});
@@ -730,7 +730,7 @@ void main() {
           // The account switch disposes the container this bloc lives in the
           // moment parkInFlight resolves, so a write still in flight at that
           // point is a lost video.
-          final write = Completer<void>();
+          final write = Completer<bool>();
           when(
             () => mockDraftStorageService.updatePublishStatus(
               draftId: any(named: 'draftId'),
@@ -744,7 +744,7 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           expect(parked, isFalse);
 
-          write.complete();
+          write.complete(true);
           await parking;
           expect(parked, isTrue);
         },
@@ -777,6 +777,35 @@ void main() {
           );
         },
         errors: () => [isA<Exception>()],
+      );
+
+      blocTest(
+        'rejects a park write that did not update a draft row',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          ).thenAnswer((_) async => false);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: inFlight, result: null, progress: 0),
+          ],
+        ),
+        act: (bloc) async {
+          await expectLater(
+            bloc.parkInFlight(),
+            throwsA(isA<StateError>()),
+          );
+        },
+        errors: () => [isA<StateError>()],
       );
 
       blocTest(

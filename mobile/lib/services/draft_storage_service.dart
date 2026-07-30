@@ -341,13 +341,13 @@ class DraftStorageService {
   /// Updates the publish status of a draft directly in the database.
   ///
   /// More efficient than loading the full draft, mutating, and saving.
-  Future<void> updatePublishStatus({
+  Future<bool> updatePublishStatus({
     required String draftId,
     required PublishStatus status,
     String? publishError,
     int? publishAttempts,
-  }) async {
-    await _draftsDao.updatePublishStatus(
+  }) {
+    return _draftsDao.updatePublishStatus(
       id: draftId,
       publishStatus: status.name,
       publishError: publishError,

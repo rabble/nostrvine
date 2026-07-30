@@ -345,11 +345,14 @@ class BackgroundPublishBloc
     bool propagateFailure = false,
   }) async {
     try {
-      await _draftStorageService.updatePublishStatus(
+      final updated = await _draftStorageService.updatePublishStatus(
         draftId: draftId,
         status: status,
         publishError: publishError,
       );
+      if (!updated) {
+        throw StateError('Draft $draftId was missing during status update');
+      }
     } catch (error, stackTrace) {
       Log.error(
         'Failed to persist publish status for draft $draftId: $error',
