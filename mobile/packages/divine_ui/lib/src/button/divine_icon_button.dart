@@ -259,12 +259,13 @@ class _DivineIconButtonContent extends StatelessWidget {
       foregroundColor ??
       switch (type) {
         DivineIconButtonType.primary => VineTheme.onPrimary,
-        DivineIconButtonType.secondary => VineTheme.primary,
+        DivineIconButtonType.secondary =>
+          colors.isLight ? colors.onSurface : VineTheme.primary,
         DivineIconButtonType.tertiary => colors.inverseOnSurface,
-        // Ghost variants sit on scrims over media, so they keep the fixed
-        // light-on-dark treatment in both appearance modes.
-        DivineIconButtonType.ghost ||
-        DivineIconButtonType.ghostSecondary => VineTheme.onSurface,
+        // The stronger ghost scrim can carry fixed light content in both modes.
+        DivineIconButtonType.ghost => VineTheme.onSurface,
+        DivineIconButtonType.ghostSecondary =>
+          colors.isLight ? colors.onSurface : VineTheme.onSurface,
         DivineIconButtonType.error => VineTheme.onErrorContainer,
       };
 
