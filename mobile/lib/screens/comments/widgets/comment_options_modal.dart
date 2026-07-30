@@ -171,6 +171,9 @@ class _OptionTile extends StatelessWidget {
       identifier: identifier,
       button: true,
       label: semanticLabel,
+      // excludeSemantics drops the child subtree — including the
+      // GestureDetector's tap action — so the action is re-declared here.
+      onTap: onTap,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,

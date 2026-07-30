@@ -71,6 +71,59 @@ void main() {
       expect(result, isA<CommentDeleteResult>());
     });
 
+    testWidgets('option rows expose activatable button semantics', (
+      tester,
+    ) async {
+      final semanticsHandle = tester.ensureSemantics();
+
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () =>
+                      CommentOptionsModal.showForOtherUserIntegrated(
+                        context,
+                        authorPubkey:
+                            'author0123456789abcdef0123456789abcdef012'
+                            '3456789ab',
+                      ),
+                  child: const Text('Open options'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+
+      await tester.tap(find.text('Open options'));
+      await tester.pumpAndSettle();
+
+      // The Flag Content row gates the whole report flow, so it has to be
+      // activatable by a screen reader — excludeSemantics drops the child
+      // subtree, which otherwise leaves a button with no tap action.
+      expect(
+        tester.getSemantics(find.bySemanticsIdentifier('flag_content_option')),
+        isSemantics(isButton: true, hasTapAction: true),
+      );
+      expect(
+        tester.getSemantics(find.bySemanticsIdentifier('block_user_option')),
+        isSemantics(isButton: true, hasTapAction: true),
+      );
+
+      semanticsHandle.dispose();
+    });
+
     testWidgets(
       'flag content Submit stays pinned and reachable with every reason at '
       'large text scale',
