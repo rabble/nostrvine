@@ -264,6 +264,49 @@ void main() {
             ).called(1);
           },
         );
+
+        blocTest(
+          'keeps the recycled autosave slot when the publish copy succeeds',
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          ),
+          setUp: () {
+            when(
+              () => publishDraft.sourceDraftId,
+            ).thenReturn(VideoEditorConstants.autoSaveId);
+          },
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: publishDraft,
+              publishmentProcess: Future.value(const PublishSuccess()),
+            ),
+          ),
+          expect: () => [
+            BackgroundPublishState(
+              uploads: [
+                BackgroundUpload(
+                  draft: publishDraft,
+                  result: null,
+                  progress: 0,
+                ),
+              ],
+            ),
+            const BackgroundPublishState(
+              recentlySucceededIds: {publishDraftId},
+            ),
+          ],
+          verify: (_) {
+            verify(
+              () => mockDraftStorageService.deleteDraft(publishDraftId),
+            ).called(1);
+            verifyNever(
+              () => mockDraftStorageService.deleteDraft(
+                VideoEditorConstants.autoSaveId,
+              ),
+            );
+          },
+        );
       });
 
       group('when the publish process throws an exception', () {
@@ -705,6 +748,35 @@ void main() {
           await parking;
           expect(parked, isTrue);
         },
+      );
+
+      blocTest(
+        'propagates a failed park write to the account-switch caller',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          ).thenThrow(Exception('database locked'));
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: inFlight, result: null, progress: 0),
+          ],
+        ),
+        act: (bloc) async {
+          await expectLater(
+            bloc.parkInFlight(),
+            throwsA(isA<Exception>()),
+          );
+        },
+        errors: () => [isA<Exception>()],
       );
 
       blocTest(

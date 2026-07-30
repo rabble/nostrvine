@@ -204,7 +204,11 @@ class BackgroundPublishBloc
     if (inFlight.isEmpty) return;
 
     for (final upload in inFlight) {
-      await _park(draftId: upload.draft.id, draft: upload.draft);
+      await _park(
+        draftId: upload.draft.id,
+        draft: upload.draft,
+        propagateFailure: true,
+      );
     }
     for (final upload in inFlight) {
       add(BackgroundPublishVanished(draftId: upload.draft.id));
@@ -237,6 +241,7 @@ class BackgroundPublishBloc
   Future<void> _park({
     required String draftId,
     required DivineVideoDraft? draft,
+    bool propagateFailure = false,
   }) async {
     final sourceDraftId = draft?.sourceDraftId;
     if (sourceDraftId != null &&
@@ -247,7 +252,11 @@ class BackgroundPublishBloc
       return;
     }
 
-    await _persistPublishStatus(draftId: draftId, status: PublishStatus.draft);
+    await _persistPublishStatus(
+      draftId: draftId,
+      status: PublishStatus.draft,
+      propagateFailure: propagateFailure,
+    );
   }
 
   Future<void> _onBackgroundPublishRetryRequested(
@@ -308,7 +317,9 @@ class BackgroundPublishBloc
     await _deleteDraft(publishedDraft.id);
 
     final sourceDraftId = publishedDraft.sourceDraftId;
-    if (sourceDraftId != null && sourceDraftId != publishedDraft.id) {
+    if (sourceDraftId != null &&
+        sourceDraftId != publishedDraft.id &&
+        sourceDraftId != VideoEditorConstants.autoSaveId) {
       await _deleteDraft(sourceDraftId);
     }
   }
@@ -331,6 +342,7 @@ class BackgroundPublishBloc
     required String draftId,
     required PublishStatus status,
     String? publishError,
+    bool propagateFailure = false,
   }) async {
     try {
       await _draftStorageService.updatePublishStatus(
@@ -346,6 +358,7 @@ class BackgroundPublishBloc
         stackTrace: stackTrace,
       );
       addError(error, stackTrace);
+      if (propagateFailure) rethrow;
     }
   }
 }

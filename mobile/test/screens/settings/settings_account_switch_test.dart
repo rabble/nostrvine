@@ -386,6 +386,30 @@ void main() {
     verify(() => deviceScope.switchController).called(1);
   });
 
+  testWidgets('failed parking aborts the account switch with feedback', (
+    tester,
+  ) async {
+    when(
+      () => publishBloc.parkInFlight(),
+    ).thenAnswer((_) async => throw Exception('database locked'));
+    seedPublishState(
+      BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
+        ],
+      ),
+    );
+
+    final l10n = await pumpAndTapSwitch(tester);
+    await tester.tap(find.text(l10n.settingsSwitchAnyway));
+    await tester.pumpAndSettle();
+    await tester.tap(accountTile(otherPubkey));
+    await tester.pumpAndSettle();
+
+    verifyNever(() => deviceScope.switchController);
+    expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
+  });
+
   testWidgets('adding an account parks the in-flight uploads', (tester) async {
     // `addNewAccount` signs out to reach the sign-in flow, ending the session
     // the upload runs in just as the switch does — so this tile has to park
@@ -407,6 +431,31 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => publishBloc.parkInFlight()).called(1);
+  });
+
+  testWidgets('failed parking aborts adding an account with feedback', (
+    tester,
+  ) async {
+    when(
+      () => publishBloc.parkInFlight(),
+    ).thenAnswer((_) async => throw Exception('database locked'));
+    when(() => authService.signOut()).thenAnswer((_) async {});
+    seedPublishState(
+      BackgroundPublishState(
+        uploads: [
+          BackgroundUpload(draft: draftWithId('d1'), result: null, progress: 0),
+        ],
+      ),
+    );
+
+    final l10n = await pumpAndTapSwitch(tester);
+    await tester.tap(find.text(l10n.settingsSwitchAnyway));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.settingsAddAnotherAccount).last);
+    await tester.pumpAndSettle();
+
+    verifyNever(() => authService.signOut());
+    expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
   });
 
   testWidgets('confirming the warning alone parks nothing', (tester) async {

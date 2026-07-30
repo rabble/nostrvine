@@ -149,6 +149,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return proceed ?? false;
   }
 
+  Future<bool> _parkUploadsBeforeAccountChange(
+    BackgroundPublishBloc publishBloc,
+  ) async {
+    try {
+      await publishBloc.parkInFlight();
+      return true;
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to park uploads before account change',
+        name: 'SettingsScreen',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.settingsAccountSwitchFailed)),
+      );
+      return false;
+    }
+  }
+
   Future<void> _handleSwitchAccount() async {
     final accountState = _accountCubit.state;
     final publishBloc = context.read<BackgroundPublishBloc>();
@@ -196,7 +217,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // video. Parking reads the queue now rather than reusing the ids
               // the warning was built from, so an upload that finished while
               // the picker was open is left alone.
-              await publishBloc.parkInFlight();
+              if (!await _parkUploadsBeforeAccountChange(publishBloc)) return;
               if (!mounted) return;
 
               final deviceScope = ref.read(deviceScopeProvider);
@@ -236,7 +257,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // so the video would be missing from both the queue and the library
             // until a later launch swept it up. Park it for the same reason the
             // switch above does, under the same warning this sheet opened with.
-            await publishBloc.parkInFlight();
+            if (!await _parkUploadsBeforeAccountChange(publishBloc)) return;
+            if (!mounted) return;
             await _accountCubit.addNewAccount();
           },
         ),
