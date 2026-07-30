@@ -56,6 +56,7 @@ class InvitesView extends StatelessWidget {
           builder: (context, state) {
             return switch (state.status) {
               InviteStatusLoadingStatus.initial ||
+              InviteStatusLoadingStatus.waitingForAuth ||
               InviteStatusLoadingStatus.loading => const Center(
                 child: CircularProgressIndicator(color: VineTheme.vineGreen),
               ),

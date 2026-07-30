@@ -1,13 +1,21 @@
 part of 'invite_status_cubit.dart';
 
 /// Status of the invite status data load.
-enum InviteStatusLoadingStatus { initial, loading, loaded, error }
+enum InviteStatusLoadingStatus {
+  initial,
+  waitingForAuth,
+  loading,
+  loaded,
+  error,
+}
 
 /// State for the invite status cubit.
 class InviteStatusState extends Equatable {
   const InviteStatusState({
     this.status = InviteStatusLoadingStatus.initial,
     this.inviteStatus,
+    this.accountId,
+    this.isSignerReady = false,
   });
 
   /// The current loading status.
@@ -15,6 +23,12 @@ class InviteStatusState extends Equatable {
 
   /// The invite status from the server, if loaded.
   final InviteStatus? inviteStatus;
+
+  /// Hex public key whose invite data this state belongs to.
+  final String? accountId;
+
+  /// Whether the active account can sign an invite request now.
+  final bool isSignerReady;
 
   /// Whether there are unclaimed invite codes.
   bool get hasUnclaimedCodes => inviteStatus?.hasUnclaimedCodes ?? false;
@@ -36,13 +50,22 @@ class InviteStatusState extends Equatable {
   InviteStatusState copyWith({
     InviteStatusLoadingStatus? status,
     InviteStatus? inviteStatus,
+    String? accountId,
+    bool? isSignerReady,
   }) {
     return InviteStatusState(
       status: status ?? this.status,
       inviteStatus: inviteStatus ?? this.inviteStatus,
+      accountId: accountId ?? this.accountId,
+      isSignerReady: isSignerReady ?? this.isSignerReady,
     );
   }
 
   @override
-  List<Object?> get props => [status, inviteStatus];
+  List<Object?> get props => [
+    status,
+    inviteStatus,
+    accountId,
+    isSignerReady,
+  ];
 }

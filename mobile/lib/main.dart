@@ -34,6 +34,7 @@ import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_status/invite_status_auth_session_source.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
@@ -2730,9 +2731,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   required String url,
                   required InviteRequestMethod method,
                   String? payload,
+                  bool forceRefresh = false,
                 }) async {
                   final authService = ref.read(nip98AuthServiceProvider);
                   if (!authService.canCreateTokens) return null;
+                  if (forceRefresh) {
+                    authService.clearTokenCache();
+                  }
                   final token = await authService.createAuthToken(
                     url: url,
                     method: switch (method) {
@@ -2804,11 +2809,18 @@ class _DivineAppState extends ConsumerState<DivineApp>
               ),
             ),
             BlocProvider(
-              create: (context) => InviteStatusCubit(
-                inviteApiClient: context.read<InviteApiClient>(),
-                isInviteAuthReady: () =>
-                    ref.read(nip98AuthServiceProvider).canCreateTokens,
-              ),
+              lazy: false,
+              create: (context) {
+                final authSessions = InviteStatusAuthSessionSource(
+                  ref.read(authServiceProvider),
+                );
+
+                return InviteStatusCubit(
+                  inviteApiClient: context.read<InviteApiClient>(),
+                  initialAuthSession: authSessions.current,
+                  authSessionStream: authSessions.changes,
+                )..start();
+              },
             ),
             BlocProvider(
               create: (_) => AppUpdateBloc(

@@ -326,8 +326,13 @@ void main() {
             200,
           );
         }),
-        authHeaderProvider: ({required url, required method, payload}) async =>
-            null,
+        authHeaderProvider:
+            ({
+              required url,
+              required method,
+              payload,
+              forceRefresh = false,
+            }) async => null,
         warningLogger: warnings.add,
       );
 
@@ -336,6 +341,142 @@ void main() {
       expect(result.remaining, 3);
       expect(result.codes, hasLength(1));
       expect(warnings, contains('Failed to attach invite auth token'));
+    });
+
+    for (final authCode in [
+      InviteApiErrorCode.authRequired,
+      InviteApiErrorCode.authExpired,
+    ]) {
+      test(
+        'retries invite status once with refreshed auth after $authCode',
+        () async {
+          var requestCount = 0;
+          final forceRefreshValues = <bool>[];
+          final statusClient = InviteApiClient(
+            baseUrl: 'https://invites.divine.video',
+            client: MockClient((request) async {
+              requestCount++;
+              if (requestCount == 1) {
+                return http.Response(
+                  jsonEncode({
+                    'error': 'Refresh invite authentication',
+                    'code': authCode,
+                  }),
+                  401,
+                );
+              }
+              expect(request.headers['Authorization'], equals('Nostr fresh'));
+              return http.Response(
+                jsonEncode({
+                  'canInvite': true,
+                  'remaining': 5,
+                  'total': 5,
+                  'codes': <Object>[],
+                }),
+                200,
+              );
+            }),
+            authHeaderProvider:
+                ({
+                  required url,
+                  required method,
+                  payload,
+                  forceRefresh = false,
+                }) async {
+                  forceRefreshValues.add(forceRefresh);
+                  return forceRefresh ? 'Nostr fresh' : 'Nostr cached';
+                },
+          );
+
+          final result = await statusClient.getInviteStatus();
+
+          expect(result.remaining, equals(5));
+          expect(requestCount, equals(2));
+          expect(forceRefreshValues, equals([false, true]));
+        },
+      );
+    }
+
+    test(
+      'stops after one refreshed-auth retry for persistent auth_required',
+      () async {
+        var requestCount = 0;
+        final forceRefreshValues = <bool>[];
+        final statusClient = InviteApiClient(
+          baseUrl: 'https://invites.divine.video',
+          client: MockClient((request) async {
+            requestCount++;
+            return http.Response(
+              jsonEncode({
+                'error': 'Authorization header required',
+                'code': InviteApiErrorCode.authRequired,
+              }),
+              401,
+            );
+          }),
+          authHeaderProvider:
+              ({
+                required url,
+                required method,
+                payload,
+                forceRefresh = false,
+              }) async {
+                forceRefreshValues.add(forceRefresh);
+                return forceRefresh ? 'Nostr fresh' : 'Nostr cached';
+              },
+        );
+
+        await expectLater(
+          statusClient.getInviteStatus(),
+          throwsA(
+            isA<InviteApiException>().having(
+              (error) => error.code,
+              'code',
+              InviteApiErrorCode.authRequired,
+            ),
+          ),
+        );
+
+        expect(requestCount, equals(2));
+        expect(forceRefreshValues, equals([false, true]));
+      },
+    );
+
+    test('does not retry invite status after auth_invalid_binding', () async {
+      var requestCount = 0;
+      final statusClient = InviteApiClient(
+        baseUrl: 'https://invites.divine.video',
+        client: MockClient((request) async {
+          requestCount++;
+          return http.Response(
+            jsonEncode({
+              'error': 'Invalid auth binding',
+              'code': InviteApiErrorCode.authInvalidBinding,
+            }),
+            401,
+          );
+        }),
+        authHeaderProvider:
+            ({
+              required url,
+              required method,
+              payload,
+              forceRefresh = false,
+            }) async => 'Nostr token',
+      );
+
+      await expectLater(
+        statusClient.getInviteStatus(),
+        throwsA(
+          isA<InviteApiException>().having(
+            (error) => error.code,
+            'code',
+            InviteApiErrorCode.authInvalidBinding,
+          ),
+        ),
+      );
+
+      expect(requestCount, equals(1));
     });
 
     test('returns generate invite result on 201', () async {
@@ -349,8 +490,13 @@ void main() {
             201,
           );
         }),
-        authHeaderProvider: ({required url, required method, payload}) async =>
-            null,
+        authHeaderProvider:
+            ({
+              required url,
+              required method,
+              payload,
+              forceRefresh = false,
+            }) async => null,
       );
 
       final result = await generateClient.generateInvite();

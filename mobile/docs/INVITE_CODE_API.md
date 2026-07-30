@@ -3,7 +3,10 @@
 ## Principles
 
 - Invites gate **new Nostr identity creation only**, not app access.
-- Existing Nostr users (import nsec, bunker, Keycast, Amber) **bypass invites entirely and MUST NOT call these endpoints**.
+- Existing Nostr users (import nsec, bunker, Keycast, Amber) **bypass the
+  invite gate and MUST NOT consume an invite**. Once their signer is ready,
+  they should call `invite-status` through the same authenticated NIP-98 path
+  as every other identity.
 - Invites are a **growth valve and community-shaping tool, not a security wall**.
 - The invitation graph tracks who invited whom for **growth analytics and cohort quality**, not for access control.
 - Once a user has an npub and can authenticate via Nostr, invites are never re-checked for that user.
@@ -113,7 +116,16 @@ New users receive a default allocation of invite codes to share.
 
 Check whether the **current authenticated user** can generate invites and how many they have left.
 
-The app uses this to decide **whether to show invite generation UI** and to display pending/claimed invites.
+The app calls this for every authenticated identity after its signer is ready.
+The server may lazily enroll the pubkey and grant its initial allocation during
+this request. The successful response contains that allocation immediately, so
+the app can show the invite entry and generation UI without another launch or
+manual refresh.
+
+Imported nsec, Keycast, bunker, Amber, and other supported signers all use this
+endpoint through the generic authenticated signing path. A genuine zero
+allocation is represented by a successful `200` response; auth, network, and
+service failures must not be treated as zero.
 
 #### Responses
 
@@ -141,7 +153,7 @@ The app uses this to decide **whether to show invite generation UI** and to disp
 }
 ```
 
-**Not eligible (default for most users) (`200`):**
+**No allocation (`200`):**
 
 ```json
 {
@@ -160,7 +172,10 @@ If the user has no invite allocation, return `canInvite: false`.
 
 Generate an invite code to share with others.
 
-Eligibility is **NOT tied to how the user joined diVine**. Any authenticated user may generate invites **if** the server has granted them inviter status. This is controlled server-side by admins or policy, not automatic.
+Eligibility is **NOT tied to how the user joined diVine**. Any authenticated
+user may generate invites when the server has allocated capacity, including an
+initial allocation granted by lazy enrollment on `invite-status`. Later
+allocation changes remain controlled by server policy.
 
 #### Request
 

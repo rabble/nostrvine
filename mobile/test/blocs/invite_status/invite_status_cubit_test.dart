@@ -14,6 +14,8 @@ void main() {
   group(InviteStatusCubit, () {
     late _MockInviteApiClient mockInviteApiClient;
 
+    const testAccountId =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
     const testStatus = InviteStatus(
       canInvite: true,
       remaining: 3,
@@ -33,11 +35,19 @@ void main() {
       mockInviteApiClient = _MockInviteApiClient();
     });
 
-    InviteStatusCubit buildCubit({bool Function()? isInviteAuthReady}) =>
-        InviteStatusCubit(
-          inviteApiClient: mockInviteApiClient,
-          isInviteAuthReady: isInviteAuthReady,
-        );
+    InviteStatusCubit buildCubit({
+      InviteStatusAuthSession initialAuthSession =
+          const InviteStatusAuthSession(
+            accountId: testAccountId,
+            isSignerReady: true,
+          ),
+      Stream<InviteStatusAuthSession> authSessionStream =
+          const Stream<InviteStatusAuthSession>.empty(),
+    }) => InviteStatusCubit(
+      inviteApiClient: mockInviteApiClient,
+      initialAuthSession: initialAuthSession,
+      authSessionStream: authSessionStream,
+    );
 
     test('initial state is correct', () {
       final cubit = buildCubit();
@@ -47,6 +57,8 @@ void main() {
       expect(cubit.state.unclaimedCount, equals(0));
       expect(cubit.state.hasAvailableInvites, isFalse);
       expect(cubit.state.availableInviteCount, equals(0));
+      expect(cubit.state.accountId, equals(testAccountId));
+      expect(cubit.state.isSignerReady, isTrue);
     });
 
     blocTest<InviteStatusCubit, InviteStatusState>(
@@ -59,10 +71,16 @@ void main() {
       build: buildCubit,
       act: (cubit) => cubit.load(),
       expect: () => [
-        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
         const InviteStatusState(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: testStatus,
+          accountId: testAccountId,
+          isSignerReady: true,
         ),
       ],
     );
@@ -77,8 +95,16 @@ void main() {
       build: buildCubit,
       act: (cubit) => cubit.load(),
       expect: () => [
-        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
-        const InviteStatusState(status: InviteStatusLoadingStatus.error),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.error,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
       ],
       errors: () => [isA<Exception>()],
     );
@@ -91,8 +117,11 @@ void main() {
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,
-      seed: () =>
-          const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+      seed: () => const InviteStatusState(
+        status: InviteStatusLoadingStatus.loading,
+        accountId: testAccountId,
+        isSignerReady: true,
+      ),
       act: (cubit) => cubit.load(),
       expect: () => <InviteStatusState>[],
       verify: (_) {
@@ -102,7 +131,12 @@ void main() {
 
     blocTest<InviteStatusCubit, InviteStatusState>(
       'load does not fetch when invite auth is not ready',
-      build: () => buildCubit(isInviteAuthReady: () => false),
+      build: () => buildCubit(
+        initialAuthSession: const InviteStatusAuthSession(
+          accountId: testAccountId,
+          isSignerReady: false,
+        ),
+      ),
       act: (cubit) => cubit.load(),
       expect: () => <InviteStatusState>[],
       verify: (_) {
@@ -118,20 +152,29 @@ void main() {
         ).thenAnswer((_) async => testStatus);
       },
       build: buildCubit,
-      seed: () =>
-          const InviteStatusState(status: InviteStatusLoadingStatus.error),
+      seed: () => const InviteStatusState(
+        status: InviteStatusLoadingStatus.error,
+        accountId: testAccountId,
+        isSignerReady: true,
+      ),
       act: (cubit) => cubit.load(),
       expect: () => [
-        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
         const InviteStatusState(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: testStatus,
+          accountId: testAccountId,
+          isSignerReady: true,
         ),
       ],
     );
 
     blocTest<InviteStatusCubit, InviteStatusState>(
-      'load restores previous state on expected 401 auth gap',
+      'load exposes an expected 401 auth gap as an error',
       setUp: () {
         when(() => mockInviteApiClient.getInviteStatus()).thenThrow(
           const InviteApiException(
@@ -145,16 +188,22 @@ void main() {
       seed: () => const InviteStatusState(
         status: InviteStatusLoadingStatus.loaded,
         inviteStatus: testStatus,
+        accountId: testAccountId,
+        isSignerReady: true,
       ),
       act: (cubit) => cubit.load(),
       expect: () => [
         const InviteStatusState(
           status: InviteStatusLoadingStatus.loading,
           inviteStatus: testStatus,
+          accountId: testAccountId,
+          isSignerReady: true,
         ),
         const InviteStatusState(
-          status: InviteStatusLoadingStatus.loaded,
+          status: InviteStatusLoadingStatus.error,
           inviteStatus: testStatus,
+          accountId: testAccountId,
+          isSignerReady: true,
         ),
       ],
       errors: () => <Object>[],
@@ -174,8 +223,16 @@ void main() {
       build: buildCubit,
       act: (cubit) => cubit.load(),
       expect: () => [
-        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
-        const InviteStatusState(status: InviteStatusLoadingStatus.error),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.error,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
       ],
       errors: () => [isA<InviteApiException>()],
     );
@@ -194,10 +251,16 @@ void main() {
       build: buildCubit,
       act: (cubit) => cubit.generateInvite(),
       expect: () => [
-        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
         const InviteStatusState(
           status: InviteStatusLoadingStatus.loaded,
           inviteStatus: testStatus,
+          accountId: testAccountId,
+          isSignerReady: true,
         ),
       ],
       verify: (_) {
@@ -220,8 +283,16 @@ void main() {
       build: buildCubit,
       act: (cubit) => cubit.generateInvite(),
       expect: () => [
-        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
-        const InviteStatusState(status: InviteStatusLoadingStatus.error),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loading,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.error,
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
       ],
       errors: () => [isA<InviteApiException>()],
     );
@@ -244,7 +315,11 @@ void main() {
         expect(
           emittedStates,
           equals([
-            const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+            const InviteStatusState(
+              status: InviteStatusLoadingStatus.loading,
+              accountId: testAccountId,
+              isSignerReady: true,
+            ),
           ]),
         );
 
@@ -255,12 +330,373 @@ void main() {
         expect(
           emittedStates,
           equals([
-            const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+            const InviteStatusState(
+              status: InviteStatusLoadingStatus.loading,
+              accountId: testAccountId,
+              isSignerReady: true,
+            ),
           ]),
         );
 
         await subscription.cancel();
       },
+    );
+
+    test('Keycast status loads when delayed RPC signer becomes ready', () async {
+      final authSessions = StreamController<InviteStatusAuthSession>();
+      addTearDown(authSessions.close);
+      when(
+        () => mockInviteApiClient.getInviteStatus(),
+      ).thenAnswer((_) async => testStatus);
+
+      final cubit = buildCubit(
+        initialAuthSession: const InviteStatusAuthSession(
+          accountId:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          isSignerReady: false,
+        ),
+        authSessionStream: authSessions.stream,
+      )..start();
+      addTearDown(cubit.close);
+
+      verifyNever(() => mockInviteApiClient.getInviteStatus());
+
+      authSessions.add(
+        const InviteStatusAuthSession(
+          accountId:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          isSignerReady: true,
+        ),
+      );
+      await cubit.stream.firstWhere(
+        (state) => state.status == InviteStatusLoadingStatus.loaded,
+      );
+
+      verify(() => mockInviteApiClient.getInviteStatus()).called(1);
+      expect(cubit.state.inviteStatus, equals(testStatus));
+    });
+
+    test(
+      'imported nsec loads status immediately when signer is ready',
+      () async {
+        when(
+          () => mockInviteApiClient.getInviteStatus(),
+        ).thenAnswer((_) async => testStatus);
+
+        final cubit = buildCubit()..start();
+        addTearDown(cubit.close);
+
+        await cubit.stream.firstWhere(
+          (state) => state.status == InviteStatusLoadingStatus.loaded,
+        );
+
+        verify(() => mockInviteApiClient.getInviteStatus()).called(1);
+      },
+    );
+
+    test(
+      'account switch ignores a late response from the previous account',
+      () async {
+        final authSessions = StreamController<InviteStatusAuthSession>();
+        final accountAResponse = Completer<InviteStatus>();
+        const accountBStatus = InviteStatus(
+          canInvite: true,
+          remaining: 5,
+          total: 5,
+          codes: [],
+        );
+        var requestCount = 0;
+        when(() => mockInviteApiClient.getInviteStatus()).thenAnswer((_) {
+          requestCount++;
+          return requestCount == 1
+              ? accountAResponse.future
+              : Future<InviteStatus>.value(accountBStatus);
+        });
+
+        final cubit = buildCubit(
+          authSessionStream: authSessions.stream,
+        )..start();
+        addTearDown(() async {
+          await authSessions.close();
+          await cubit.close();
+        });
+        await Future<void>.delayed(Duration.zero);
+
+        authSessions.add(
+          const InviteStatusAuthSession(
+            accountId:
+                'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            isSignerReady: true,
+          ),
+        );
+        await cubit.stream.firstWhere(
+          (state) =>
+              state.accountId ==
+                  'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' &&
+              state.status == InviteStatusLoadingStatus.loaded,
+        );
+
+        accountAResponse.complete(testStatus);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(
+          cubit.state.accountId,
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        );
+        expect(cubit.state.inviteStatus, equals(accountBStatus));
+        verify(() => mockInviteApiClient.getInviteStatus()).called(2);
+      },
+    );
+
+    test('account switch clears the previous allocation immediately', () async {
+      final authSessions = StreamController<InviteStatusAuthSession>();
+      final accountBResponse = Completer<InviteStatus>();
+      var requestCount = 0;
+      when(() => mockInviteApiClient.getInviteStatus()).thenAnswer((_) {
+        requestCount++;
+        return requestCount == 1
+            ? Future<InviteStatus>.value(testStatus)
+            : accountBResponse.future;
+      });
+
+      final cubit = buildCubit(
+        authSessionStream: authSessions.stream,
+      )..start();
+      addTearDown(() async {
+        await authSessions.close();
+        await cubit.close();
+      });
+      await cubit.stream.firstWhere(
+        (state) => state.status == InviteStatusLoadingStatus.loaded,
+      );
+
+      final switchedState = cubit.stream.firstWhere(
+        (state) =>
+            state.accountId ==
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      );
+      authSessions.add(
+        const InviteStatusAuthSession(
+          accountId:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          isSignerReady: true,
+        ),
+      );
+
+      expect((await switchedState).inviteStatus, isNull);
+      expect(cubit.state.inviteStatus, isNull);
+
+      accountBResponse.complete(
+        const InviteStatus(
+          canInvite: false,
+          remaining: 0,
+          total: 0,
+          codes: [],
+        ),
+      );
+      await cubit.stream.firstWhere(
+        (state) => state.status == InviteStatusLoadingStatus.loaded,
+      );
+    });
+
+    test('A-B-A session churn rejects the first A response', () async {
+      final authSessions = StreamController<InviteStatusAuthSession>();
+      final firstAccountAResponse = Completer<InviteStatus>();
+      const accountBStatus = InviteStatus(
+        canInvite: true,
+        remaining: 2,
+        total: 2,
+        codes: [],
+      );
+      const currentAccountAStatus = InviteStatus(
+        canInvite: true,
+        remaining: 1,
+        total: 1,
+        codes: [],
+      );
+      var requestCount = 0;
+      when(() => mockInviteApiClient.getInviteStatus()).thenAnswer((_) {
+        requestCount++;
+        return switch (requestCount) {
+          1 => firstAccountAResponse.future,
+          2 => Future<InviteStatus>.value(accountBStatus),
+          _ => Future<InviteStatus>.value(currentAccountAStatus),
+        };
+      });
+
+      final cubit = buildCubit(
+        authSessionStream: authSessions.stream,
+      )..start();
+      addTearDown(() async {
+        await authSessions.close();
+        await cubit.close();
+      });
+      await Future<void>.delayed(Duration.zero);
+
+      authSessions.add(
+        const InviteStatusAuthSession(
+          accountId:
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+          isSignerReady: true,
+        ),
+      );
+      await cubit.stream.firstWhere(
+        (state) => state.inviteStatus == accountBStatus,
+      );
+
+      authSessions.add(
+        const InviteStatusAuthSession(
+          accountId: testAccountId,
+          isSignerReady: true,
+        ),
+      );
+      await cubit.stream.firstWhere(
+        (state) => state.inviteStatus == currentAccountAStatus,
+      );
+
+      firstAccountAResponse.complete(testStatus);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state.accountId, testAccountId);
+      expect(cubit.state.inviteStatus, currentAccountAStatus);
+      verify(() => mockInviteApiClient.getInviteStatus()).called(3);
+    });
+
+    test(
+      'readiness flap during refresh starts a replacement load',
+      () async {
+        final authSessions = StreamController<InviteStatusAuthSession>();
+        final staleRefreshResponse = Completer<InviteStatus>();
+        const replacementStatus = InviteStatus(
+          canInvite: true,
+          remaining: 4,
+          total: 4,
+          codes: [],
+        );
+        var requestCount = 0;
+        when(() => mockInviteApiClient.getInviteStatus()).thenAnswer((_) {
+          requestCount++;
+          return switch (requestCount) {
+            1 => Future<InviteStatus>.value(testStatus),
+            2 => staleRefreshResponse.future,
+            _ => Future<InviteStatus>.value(replacementStatus),
+          };
+        });
+
+        final cubit = buildCubit(
+          authSessionStream: authSessions.stream,
+        )..start();
+        addTearDown(() async {
+          await authSessions.close();
+          await cubit.close();
+        });
+        await cubit.stream.firstWhere(
+          (state) => state.status == InviteStatusLoadingStatus.loaded,
+        );
+
+        final loadingState = cubit.stream.firstWhere(
+          (state) => state.status == InviteStatusLoadingStatus.loading,
+        );
+        unawaited(cubit.load());
+        await loadingState;
+
+        final waitingForAuthState = cubit.stream.firstWhere(
+          (state) => state.status == InviteStatusLoadingStatus.waitingForAuth,
+        );
+        authSessions.add(
+          const InviteStatusAuthSession(
+            accountId: testAccountId,
+            isSignerReady: false,
+          ),
+        );
+        await waitingForAuthState;
+
+        final replacementLoadedState = cubit.stream.firstWhere(
+          (state) => state.inviteStatus == replacementStatus,
+        );
+        authSessions.add(
+          const InviteStatusAuthSession(
+            accountId: testAccountId,
+            isSignerReady: true,
+          ),
+        );
+        await replacementLoadedState;
+
+        staleRefreshResponse.complete(testStatus);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(cubit.state.status, InviteStatusLoadingStatus.loaded);
+        expect(cubit.state.inviteStatus, replacementStatus);
+        verify(() => mockInviteApiClient.getInviteStatus()).called(3);
+      },
+    );
+
+    blocTest<InviteStatusCubit, InviteStatusState>(
+      'persistent 401 is an error rather than a zero allocation',
+      setUp: () {
+        when(() => mockInviteApiClient.getInviteStatus()).thenThrow(
+          const InviteApiException(
+            'Authorization header required',
+            statusCode: 401,
+            code: InviteApiErrorCode.authRequired,
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        isA<InviteStatusState>().having(
+          (state) => state.status,
+          'status',
+          InviteStatusLoadingStatus.loading,
+        ),
+        isA<InviteStatusState>()
+            .having(
+              (state) => state.status,
+              'status',
+              InviteStatusLoadingStatus.error,
+            )
+            .having(
+              (state) => state.inviteStatus,
+              'inviteStatus',
+              isNull,
+            ),
+      ],
+      errors: () => <Object>[],
+    );
+
+    blocTest<InviteStatusCubit, InviteStatusState>(
+      'successful zero allocation remains a loaded server result',
+      setUp: () {
+        when(() => mockInviteApiClient.getInviteStatus()).thenAnswer(
+          (_) async => const InviteStatus(
+            canInvite: false,
+            remaining: 0,
+            total: 0,
+            codes: [],
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.load(),
+      expect: () => [
+        isA<InviteStatusState>().having(
+          (state) => state.status,
+          'status',
+          InviteStatusLoadingStatus.loading,
+        ),
+        isA<InviteStatusState>()
+            .having(
+              (state) => state.status,
+              'status',
+              InviteStatusLoadingStatus.loaded,
+            )
+            .having(
+              (state) => state.availableInviteCount,
+              'availableInviteCount',
+              0,
+            ),
+      ],
     );
 
     group('state computed properties', () {

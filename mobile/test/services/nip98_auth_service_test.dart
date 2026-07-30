@@ -319,6 +319,55 @@ void main() {
         ).called(2);
       });
 
+      test(
+        'does not reuse a cached token after the active account changes',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          var activePubkey =
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+          when(() => mockAuthService.currentPublicKeyHex).thenAnswer(
+            (_) => activePubkey,
+          );
+
+          var callCount = 0;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((invocation) async {
+            callCount++;
+            final tags =
+                invocation.namedArguments[#tags] as List<List<String>>? ?? [];
+            return _createMockEvent(tags: tags, idSuffix: callCount.toString());
+          });
+
+          final accountAToken = await service.createAuthToken(
+            url: 'https://invites.divine.video/v1/invite-status',
+            method: HttpMethod.get,
+          );
+
+          activePubkey =
+              'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+          final accountBToken = await service.createAuthToken(
+            url: 'https://invites.divine.video/v1/invite-status',
+            method: HttpMethod.get,
+          );
+
+          expect(accountAToken, isNotNull);
+          expect(accountBToken, isNotNull);
+          expect(accountBToken!.token, isNot(equals(accountAToken!.token)));
+          verify(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).called(2);
+        },
+      );
+
       test('clearTokenCache empties the cache', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         _stubSignEvent(mockAuthService);

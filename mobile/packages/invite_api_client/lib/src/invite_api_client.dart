@@ -20,6 +20,7 @@ typedef InviteAuthHeaderProvider =
       required String url,
       required InviteRequestMethod method,
       String? payload,
+      bool forceRefresh,
     });
 
 typedef InviteWarningLogger = void Function(String message);
@@ -305,22 +306,32 @@ class InviteApiClient {
     final uri = Uri.parse('$_baseUrl/v1/invite-status');
 
     try {
-      final response = await _client
-          .get(
-            uri,
-            headers: await _headers(url: uri.toString(), requiresAuth: true),
-          )
-          .timeout(_defaultTimeout);
+      for (var attempt = 0; attempt < 2; attempt++) {
+        final response = await _client
+            .get(
+              uri,
+              headers: await _headers(
+                url: uri.toString(),
+                requiresAuth: true,
+                forceAuthRefresh: attempt > 0,
+              ),
+            )
+            .timeout(_defaultTimeout);
 
-      if (response.statusCode != 200) {
-        throw _requestFailed(
+        if (response.statusCode == 200) {
+          final json = jsonDecode(response.body) as Map<String, dynamic>;
+          return InviteStatus.fromJson(json);
+        }
+
+        final failure = _requestFailed(
           message: 'Failed to fetch invite status',
           response: response,
         );
+        if (attempt == 0 && _canRefreshInviteStatusAuth(failure)) {
+          continue;
+        }
+        throw failure;
       }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return InviteStatus.fromJson(json);
     } catch (error) {
       throw _wrapClientException(
         error: error,
@@ -328,6 +339,11 @@ class InviteApiClient {
         failureMessage: 'Failed to fetch invite status',
       );
     }
+
+    throw const InviteApiException(
+      'Failed to fetch invite status',
+      code: InviteApiErrorCode.clientError,
+    );
   }
 
   Future<GenerateInviteResult> generateInvite() async {
@@ -373,6 +389,7 @@ class InviteApiClient {
     String? payload,
     bool requiresAuth = false,
     NostrSigner? signer,
+    bool forceAuthRefresh = false,
   }) async {
     final headers = <String, String>{
       'Content-Type': 'application/json',
@@ -392,6 +409,7 @@ class InviteApiClient {
         url: url,
         method: method,
         payload: payload,
+        forceRefresh: forceAuthRefresh,
       );
 
       if (header != null) {
@@ -402,6 +420,12 @@ class InviteApiClient {
     }
 
     return headers;
+  }
+
+  bool _canRefreshInviteStatusAuth(InviteApiException failure) {
+    if (_authHeaderProvider == null || failure.statusCode != 401) return false;
+    return failure.code == InviteApiErrorCode.authRequired ||
+        failure.code == InviteApiErrorCode.authExpired;
   }
 
   Future<String> _createAuthorizationHeader({
