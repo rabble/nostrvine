@@ -2973,6 +2973,67 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
+  /// Fetch the signing key Keycast holds for the signed-in Divine Login
+  /// account, so it can be handed to the user who owns it.
+  ///
+  /// Only for an account whose key is not on the device: [canExportLocalNsec]
+  /// accounts already have [exportNsec] and must keep using it, because that
+  /// path never leaves the device. This one costs a round trip and the
+  /// account [password], which Keycast verifies itself.
+  ///
+  /// Returns [ExportKeyFailure.needsSignIn] when no OAuth client is configured
+  /// or the session cannot be refreshed — both mean the credential this needs
+  /// is unavailable, and only signing in again produces one.
+  ///
+  /// The returned key is raw key material. It is deliberately not stored,
+  /// cached, or logged here; the caller owns it from the moment it returns.
+  Future<ExportKeyResult> exportKeycastNsec(String password) async {
+    final client = _oauthClient;
+    if (client == null) {
+      Log.debug(
+        'No OAuth client configured - cannot export a Keycast-held key',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return ExportKeyResult.failure(ExportKeyFailure.needsSignIn);
+    }
+
+    try {
+      // Refresh first for the same reason deleteKeycastAccount does: the
+      // access token may have expired while the screen was open, and a
+      // refreshable session should not surface to the user as a sign-in prompt.
+      final session = await client.getSessionOrRefresh();
+      final accessToken = session?.accessToken;
+      if (accessToken == null) {
+        Log.warning(
+          'Cannot export Keycast key: session unavailable after refresh',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return ExportKeyResult.failure(ExportKeyFailure.needsSignIn);
+      }
+
+      final result = await client.exportKey(accessToken, password);
+      if (!result.success) {
+        // The failure enum is safe to log; `error` may quote server prose and
+        // `key` is never logged at any level.
+        Log.warning(
+          'Keycast key export refused: ${result.failure}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+      return result;
+    } catch (e) {
+      Log.error(
+        'Keycast key export failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return ExportKeyResult.failure(ExportKeyFailure.network);
+    }
+  }
+
   /// Delete the server-side Keycast account for the signed-in user.
   ///
   /// `requiresReauthentication` is true when the failure can only be cleared by

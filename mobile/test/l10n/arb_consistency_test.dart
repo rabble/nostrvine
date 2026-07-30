@@ -38,7 +38,7 @@ void main() {
       }
     });
 
-    test('Keycast key hand-off copy is localized for every locale', () {
+    test('Keycast key export copy is localized for every locale', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
           l10nDir
@@ -52,7 +52,13 @@ void main() {
       final template = _readArb(File('lib/l10n/app_en.arb'));
       const keys = [
         'keyManagementKeycastRemoteSigning',
-        'keyManagementKeycastOpenWeb',
+        'keyManagementKeycastPasswordPrompt',
+        'keyManagementKeycastCopyKey',
+        'keyManagementKeycastWrongPassword',
+        'keyManagementKeycastSignInAgain',
+        'keyManagementKeycastEmailUnverified',
+        'keyManagementKeycastDenied',
+        'keyManagementKeycastGenericFailure',
       ];
 
       for (final file in arbFiles) {

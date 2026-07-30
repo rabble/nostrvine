@@ -5054,10 +5054,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'مفتاحك موجود في خدمة تسجيل الدخول لدى Divine، لا على هذا الجهاز — يمكنك الحصول عليه من الويب في أي وقت.';
+      'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine، وليس على هذا الجهاز. أكِّد كلمة المرور وسنجلبه لك.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'الحصول على مفتاحي من الويب';
+  String get keyManagementKeycastPasswordPrompt =>
+      'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك لنسخه.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'نسخ المفتاح';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'كلمة المرور غير مطابقة. حاول مرة أخرى.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'انتهت صلاحية جلستك. سجّل الدخول مرة أخرى لنسخ مفتاحك.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'تعذّر الوصول إلى خدمة تسجيل الدخول';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

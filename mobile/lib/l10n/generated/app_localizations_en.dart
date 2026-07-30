@@ -5090,10 +5090,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Your key lives on Divine\'s login service, not on this device — grab it from the web whenever you need it.';
+      'Your key lives on Divine\'s login service, not on this device. Confirm your password and we\'ll fetch it for you.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Get my key on the web';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Your key is kept by Divine\'s login service. Enter your account password to copy it.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copy key';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'That password doesn\'t match. Try again.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Your session has expired. Sign in again to copy your key.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Verify your email address before copying your key.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine looks after this account\'s keys, so they can\'t be copied here.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'the login service could not be reached';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

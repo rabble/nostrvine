@@ -4988,10 +4988,32 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'ቁልፍህ በDivine የመግቢያ አገልግሎት ላይ ነው፤ በዚህ መሣሪያ ላይ አልተቀመጠም — ባስፈለገህ ጊዜ ከዌብ ላይ ማግኘት ትችላለህ።';
+      'ቁልፍዎ በዚህ መሣሪያ ላይ አይደለም፤ በDivine የመግቢያ አገልግሎት ውስጥ ተቀምጧል። የይለፍ ቃልዎን ያረጋግጡ፤ እኛም እናመጣዋለን።';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'ቁልፌን ከዌብ አግኝ';
+  String get keyManagementKeycastPasswordPrompt =>
+      'ቁልፍዎ በDivine የመግቢያ አገልግሎት ተቀምጧል። ለመቅዳት የመለያዎን የይለፍ ቃል ያስገቡ።';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'ቁልፍ ቅዳ';
+
+  @override
+  String get keyManagementKeycastWrongPassword => 'የይለፍ ቃሉ አይዛመድም። እንደገና ይሞክሩ።';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'ክፍለ ጊዜዎ አልቋል። ቁልፍዎን ለመቅዳት እንደገና ይግቡ።';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'ቁልፍዎን ከመቅዳት በፊት የኢሜይል አድራሻዎን ያረጋግጡ።';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።';
+
+  @override
+  String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

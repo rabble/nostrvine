@@ -12,12 +12,7 @@ import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
-import 'package:openvine/utils/external_link_launcher.dart';
-
-/// Path on the Divine Login web app where an account whose key Keycast holds
-/// can export its nsec. Joined to the active `OAuthConfig.serverUrl` so local
-/// builds reach the local Keycast instead of production.
-const _accountSecurityPath = '/settings/security';
+import 'package:openvine/screens/key_management/keycast_key_export_card.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -379,7 +374,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                   ),
                 ),
               ] else if (showKeycastRemoteSigningInfo)
-                const _KeycastRemoteSigningCard(),
+                const KeycastKeyExportCard(),
             ],
           ),
         ),
@@ -589,71 +584,6 @@ class _NpubDisplayBlock extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.keyManagementPublicKeyCopied)));
-  }
-}
-
-/// Shown in place of the "Copy My Private Key (nsec)" action for an account
-/// whose key Keycast holds: the key is never on the device, and NIP-46 defines
-/// no method that could fetch it, so the only place to reach it is the Divine
-/// Login web app.
-///
-/// Design settled this in #855 — a Divine Login identity gets its key from the
-/// service, not from the app — so the card hands the user off rather than
-/// exporting anything locally.
-class _KeycastRemoteSigningCard extends ConsumerWidget {
-  const _KeycastRemoteSigningCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.key,
-                color: VineTheme.vineGreen,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  context.l10n.keyManagementKeycastRemoteSigning,
-                  style: VineTheme.bodyMediumFont(
-                    color: VineTheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          DivineButton(
-            label: context.l10n.keyManagementKeycastOpenWeb,
-            leadingIcon: DivineIconName.arrowUpRight,
-            type: DivineButtonType.secondary,
-            size: DivineButtonSize.small,
-            onPressed: () => _openAccountSecurity(context, ref),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openAccountSecurity(BuildContext context, WidgetRef ref) async {
-    // Consistency guard with the other two key-boundary call sites. A flip to
-    // restricted unmounts this card, so there is no real window here; kept so
-    // every handover site reads the gate. Keycast also refuses a minor's
-    // export server-side, so the web page is not an end-run around the gate.
-    if (ref.read(isKeyManagementRestrictedProvider)) return;
-    final serverUrl = ref.read(oauthConfigProvider).serverUrl;
-    await openExternalLink(context, '$serverUrl$_accountSecurityPath');
   }
 }
 

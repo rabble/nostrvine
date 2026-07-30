@@ -2854,13 +2854,37 @@
   "keyManagementBackupSubtitle": "Save your private key (nsec) to use your account in other Nostr apps.",
   "keyManagementCopyNsec": "Copy My Private Key (nsec)",
   "keyManagementNeverShare": "Never share your nsec with anyone!",
-  "keyManagementKeycastRemoteSigning": "Your key lives on Divine's login service, not on this device — grab it from the web whenever you need it.",
+  "keyManagementKeycastRemoteSigning": "Your key lives on Divine's login service, not on this device. Confirm your password and we'll fetch it for you.",
   "@keyManagementKeycastRemoteSigning": {
-    "description": "Explanation shown in place of the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is not on the device."
+    "description": "Explanation shown above the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is fetched from the service rather than read off the device."
   },
-  "keyManagementKeycastOpenWeb": "Get my key on the web",
-  "@keyManagementKeycastOpenWeb": {
-    "description": "Button that opens the Account & Security page of Divine's login website in a browser, where the account's private key can be exported."
+  "keyManagementKeycastPasswordPrompt": "Your key is kept by Divine's login service. Enter your account password to copy it.",
+  "@keyManagementKeycastPasswordPrompt": {
+    "description": "Body text of the dialog that asks for the account password before fetching the private key from Divine's login service."
+  },
+  "keyManagementKeycastCopyKey": "Copy key",
+  "@keyManagementKeycastCopyKey": {
+    "description": "Confirm button in the password dialog; fetches the private key and copies it to the clipboard."
+  },
+  "keyManagementKeycastWrongPassword": "That password doesn't match. Try again.",
+  "@keyManagementKeycastWrongPassword": {
+    "description": "Inline error under the password field when the account password was rejected. The dialog stays open so the user can retry."
+  },
+  "keyManagementKeycastSignInAgain": "Your session has expired. Sign in again to copy your key.",
+  "@keyManagementKeycastSignInAgain": {
+    "description": "Error shown when the saved session could not be refreshed, so fetching the key needs a fresh sign-in rather than a retry."
+  },
+  "keyManagementKeycastEmailUnverified": "Verify your email address before copying your key.",
+  "@keyManagementKeycastEmailUnverified": {
+    "description": "Error shown when the login service refuses to release the key because the account's email address is not verified yet."
+  },
+  "keyManagementKeycastDenied": "Divine looks after this account's keys, so they can't be copied here.",
+  "@keyManagementKeycastDenied": {
+    "description": "Error shown when the login service refuses to release the key by policy, such as an account whose keys Divine manages custodially."
+  },
+  "keyManagementKeycastGenericFailure": "the login service could not be reached",
+  "@keyManagementKeycastGenericFailure": {
+    "description": "Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence."
   },
   "keyManagementRestrictedTitle": "Your keys are managed by Divine",
   "@keyManagementRestrictedTitle": {

@@ -5157,10 +5157,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Ta clé se trouve sur le service de connexion de Divine, pas sur cet appareil — récupère-la sur le web quand tu veux.';
+      'Ta clé est conservée par le service de connexion de Divine, pas sur cet appareil. Confirme ton mot de passe et on va la chercher.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Récupérer ma clé sur le web';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Ta clé est conservée par le service de connexion de Divine. Saisis le mot de passe de ton compte pour la copier.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copier la clé';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Ce mot de passe ne correspond pas. Réessaie.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Ta session a expiré. Reconnecte-toi pour copier ta clé.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Vérifie ton adresse e-mail avant de copier ta clé.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine gère les clés de ce compte, elles ne peuvent donc pas être copiées ici.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'le service de connexion est injoignable';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

@@ -5224,10 +5224,34 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Twój klucz jest w usłudze logowania Divine, a nie na tym urządzeniu — odbierz go w sieci, kiedy chcesz.';
+      'Twój klucz jest przechowywany przez serwis logowania Divine, a nie na tym urządzeniu. Potwierdź hasło, a go pobierzemy.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Odbierz klucz w sieci';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Twój klucz przechowuje serwis logowania Divine. Podaj hasło do konta, aby go skopiować.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Kopiuj klucz';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'To hasło się nie zgadza. Spróbuj ponownie.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Twoja sesja wygasła. Zaloguj się ponownie, aby skopiować klucz.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Potwierdź swój adres e-mail, zanim skopiujesz klucz.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine zarządza kluczami tego konta, więc nie można ich tutaj skopiować.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'nie udało się połączyć z serwisem logowania';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

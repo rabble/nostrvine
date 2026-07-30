@@ -5233,10 +5233,34 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Cheia ta se află în serviciul de autentificare Divine, nu pe acest dispozitiv — o poți lua de pe web oricând.';
+      'Cheia ta se află pe serviciul de autentificare Divine, nu pe acest dispozitiv. Confirmă parola și o aducem pentru tine.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Ia cheia de pe web';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Cheia ta este păstrată de serviciul de autentificare Divine. Introdu parola contului pentru a o copia.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copiază cheia';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Parola nu se potrivește. Încearcă din nou.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Sesiunea ta a expirat. Autentifică-te din nou pentru a copia cheia.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Confirmă adresa de e-mail înainte de a copia cheia.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'serviciul de autentificare nu a putut fi contactat';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

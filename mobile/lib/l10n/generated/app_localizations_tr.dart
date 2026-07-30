@@ -5062,10 +5062,34 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Anahtarın bu cihazda değil, Divine\'ın giriş servisinde — istediğin zaman web\'den alabilirsin.';
+      'Anahtarın bu cihazda değil, Divine\'ın giriş servisinde tutuluyor. Şifreni onayla, biz de anahtarı getirelim.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Anahtarımı web\'den al';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Anahtarın Divine\'ın giriş servisinde tutuluyor. Kopyalamak için hesap şifreni gir.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Anahtarı kopyala';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Şifre eşleşmiyor. Tekrar dene.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Oturumun sona erdi. Anahtarını kopyalamak için tekrar giriş yap.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Anahtarını kopyalamadan önce e-posta adresini doğrula.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'giriş servisine ulaşılamadı';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

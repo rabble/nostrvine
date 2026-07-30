@@ -5088,10 +5088,34 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Din nyckel finns hos inloggningstjänsten från Divine, inte på den här enheten – hämta den på webben när du vill.';
+      'Din nyckel finns hos Divines inloggningstjänst, inte på den här enheten. Bekräfta ditt lösenord så hämtar vi den.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Hämta nyckeln på webben';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Din nyckel förvaras av Divines inloggningstjänst. Ange kontots lösenord för att kopiera den.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Kopiera nyckel';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Lösenordet stämmer inte. Försök igen.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Din session har gått ut. Logga in igen för att kopiera nyckeln.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Bekräfta din e-postadress innan du kopierar nyckeln.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine sköter nycklarna för det här kontot, så de kan inte kopieras här.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'inloggningstjänsten kunde inte nås';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

@@ -10,14 +10,11 @@ import 'package:go_router/go_router.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../helpers/test_provider_overrides.dart';
-import '../helpers/url_launcher_test_double.dart';
 
 class _FakeKeyManagementAuthService extends Fake implements AuthService {
   _FakeKeyManagementAuthService({
@@ -52,6 +49,21 @@ class _FakeKeyManagementAuthService extends Fake implements AuthService {
 
   @override
   Future<String?> exportNsec({String? biometricPrompt}) async => null;
+
+  /// What [exportKeycastNsec] returns. Defaults to a refusal so a test that
+  /// forgets to set it cannot accidentally assert on a fabricated key.
+  ExportKeyResult exportKeycastResult = ExportKeyResult.failure(
+    ExportKeyFailure.unknown,
+  );
+
+  /// Passwords handed to [exportKeycastNsec], in call order.
+  final List<String> exportKeycastPasswords = <String>[];
+
+  @override
+  Future<ExportKeyResult> exportKeycastNsec(String password) async {
+    exportKeycastPasswords.add(password);
+    return exportKeycastResult;
+  }
 
   int importFromNsecCallCount = 0;
 
@@ -168,15 +180,12 @@ void main() {
           ),
           findsNothing,
         );
-        expect(
-          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
-          findsNothing,
-        );
       },
     );
 
     testWidgets(
-      'explains missing local nsec instead of showing copy action for RPC-only Keycast account',
+      'offers the copy action for an RPC-only Keycast account, explained as '
+      'service-held',
       (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         authService = _FakeKeyManagementAuthService(
@@ -187,9 +196,11 @@ void main() {
 
         await pumpSubject(tester);
 
+        // Same label as the local path — the key arrives from Keycast rather
+        // than off the device, which is what the explanation above it says.
         expect(
           find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
-          findsNothing,
+          findsOneWidget,
         );
         expect(
           find.text(
@@ -198,73 +209,141 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(
-          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
-          findsOneWidget,
-        );
       },
     );
 
-    testWidgets(
-      'opens Account & Security on the configured login origin for an '
-      'RPC-only Keycast account',
-      (tester) async {
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        final originalPlatform = UrlLauncherPlatform.instance;
-        final launcher = UrlLauncherTestDouble();
-        UrlLauncherPlatform.instance = launcher;
-        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+    /// Pump an RPC-only Keycast account on a surface tall enough for the card's
+    /// button to be on-stage, then open the password sheet.
+    Future<AppLocalizations> openPasswordSheet(WidgetTester tester) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
 
+      // The screen is a long ListView; on the default 800x600 the button
+      // renders offstage and cannot be tapped.
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await pumpSubject(tester);
+
+      await tester.ensureVisible(find.text(l10n.keyManagementCopyNsec));
+      await tester.tap(find.text(l10n.keyManagementCopyNsec));
+      await tester.pumpAndSettle();
+
+      return l10n;
+    }
+
+    testWidgets(
+      'asks for the account password before fetching a Keycast-held key',
+      (tester) async {
         authService = _FakeKeyManagementAuthService(
           currentNpub: testNpub,
           authenticationSource: AuthenticationSource.divineOAuth,
           canExportLocalNsec: false,
         );
 
-        // Tall surface so the hand-off button is on-stage and hittable: the
-        // screen is a long ListView and on the default 800x600 the button
-        // renders offstage.
-        tester.view.physicalSize = const Size(1080, 2400);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
+        final l10n = await openPasswordSheet(tester);
 
-        // A non-production origin, so a regression that hardcodes
-        // login.divine.video instead of deriving the link from the active
-        // OAuth config fails here. `staging.login.divine.video` still passes
-        // openExternalLink's trusted-host check, so no confirm dialog appears.
-        await tester.pumpWidget(
-          testMaterialApp(
-            home: const KeyManagementScreen(),
-            mockAuthService: authService,
-            additionalOverrides: [
-              isKeyManagementRestrictedProvider.overrideWithValue(false),
-              oauthConfigProvider.overrideWithValue(
-                const OAuthConfig(
-                  serverUrl: 'https://staging.login.divine.video',
-                  clientId: 'divine-mobile',
-                  redirectUri: 'https://divine.video/app/callback',
-                ),
-              ),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.ensureVisible(
-          find.text(l10n.keyManagementKeycastOpenWeb),
-        );
-        await tester.tap(find.text(l10n.keyManagementKeycastOpenWeb));
-        await tester.pumpAndSettle();
-
-        expect(launcher.launched, hasLength(1));
-        expect(
-          launcher.launched.single.url,
-          equals('https://staging.login.divine.video/settings/security'),
-        );
-        expect(launcher.launched.single.useExternalApplication, isTrue);
+        expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsOne);
+        expect(find.text(l10n.authPasswordLabel), findsOne);
+        expect(find.text(l10n.keyManagementKeycastCopyKey), findsOne);
+        // Nothing is fetched until the user confirms.
+        expect(authService.exportKeycastPasswords, isEmpty);
       },
     );
+
+    testWidgets('copies the fetched key to the clipboard', (tester) async {
+      const fetchedNsec =
+          'nsec1testkeymaterialthatisnotarealkey00000000000000000000000000';
+      final copied = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied.add((call.arguments as Map)['text'] as String);
+            }
+            return null;
+          });
+
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.divineOAuth,
+        canExportLocalNsec: false,
+      )..exportKeycastResult = ExportKeyResult.success(fetchedNsec);
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'hunter2');
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
+      expect(authService.exportKeycastPasswords, equals(['hunter2']));
+      expect(copied, equals([fetchedNsec]));
+      expect(find.text(l10n.keyManagementExportSuccess), findsOne);
+      // The dialog is gone, so the password field cannot linger on screen.
+      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsNothing);
+    });
+
+    testWidgets('keeps the sheet open on a wrong password', (tester) async {
+      authService =
+          _FakeKeyManagementAuthService(
+              currentNpub: testNpub,
+              authenticationSource: AuthenticationSource.divineOAuth,
+              canExportLocalNsec: false,
+            )
+            ..exportKeycastResult = ExportKeyResult.failure(
+              ExportKeyFailure.wrongPassword,
+            );
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'wrong');
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.keyManagementKeycastWrongPassword), findsOne);
+      // Still open, so the retry costs one keystroke rather than a reopen.
+      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsOne);
+    });
+
+    testWidgets('reports a refusal that a retry cannot clear', (tester) async {
+      authService =
+          _FakeKeyManagementAuthService(
+              currentNpub: testNpub,
+              authenticationSource: AuthenticationSource.divineOAuth,
+              canExportLocalNsec: false,
+            )
+            ..exportKeycastResult = ExportKeyResult.failure(
+              ExportKeyFailure.needsSignIn,
+            );
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'hunter2');
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.keyManagementKeycastSignInAgain), findsOne);
+      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsNothing);
+    });
+
+    testWidgets('does not fetch when the password field is empty', (
+      tester,
+    ) async {
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.divineOAuth,
+        canExportLocalNsec: false,
+      );
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
+      expect(authService.exportKeycastPasswords, isEmpty);
+      expect(find.text(l10n.authPasswordRequired), findsOne);
+      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsOne);
+    });
 
     testWidgets(
       'hides nsec export and key import for a protected minor',
@@ -303,12 +382,15 @@ void main() {
     );
 
     testWidgets(
-      'hides the web hand-off for a protected minor with an RPC-only Keycast '
+      'hides the Keycast key export for a protected minor with an RPC-only '
       'account',
       (tester) async {
         final l10n = lookupAppLocalizations(const Locale('en'));
         // RPC-only Keycast key: without the gate this is exactly the account
-        // that renders the hand-off, so this proves the gate removes it.
+        // that renders the export card, so this proves the gate removes it.
+        // Keycast refuses a verified_minor export server-side as well, so this
+        // is the affordance being removed rather than the only thing stopping
+        // it.
         authService = _FakeKeyManagementAuthService(
           currentNpub: testNpub,
           authenticationSource: AuthenticationSource.divineOAuth,
@@ -319,7 +401,7 @@ void main() {
 
         expect(find.text(l10n.keyManagementRestrictedTitle), findsOneWidget);
         expect(
-          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
+          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
           findsNothing,
         );
         expect(

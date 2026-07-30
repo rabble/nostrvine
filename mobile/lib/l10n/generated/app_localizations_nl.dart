@@ -5113,10 +5113,34 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Je sleutel staat bij de inlogservice van Divine, niet op dit apparaat – pak hem wanneer je wilt op het web.';
+      'Je sleutel staat bij de inlogservice van Divine, niet op dit apparaat. Bevestig je wachtwoord en we halen hem op.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Sleutel ophalen op het web';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in om hem te kopiëren.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Sleutel kopiëren';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Dat wachtwoord klopt niet. Probeer het opnieuw.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Je sessie is verlopen. Meld je opnieuw aan om je sleutel te kopiëren.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Bevestig je e-mailadres voordat je je sleutel kopieert.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'de inlogservice was niet bereikbaar';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

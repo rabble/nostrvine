@@ -8852,17 +8852,53 @@ abstract class AppLocalizations {
   /// **'Never share your nsec with anyone!'**
   String get keyManagementNeverShare;
 
-  /// Explanation shown in place of the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is not on the device.
+  /// Explanation shown above the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is fetched from the service rather than read off the device.
   ///
   /// In en, this message translates to:
-  /// **'Your key lives on Divine\'s login service, not on this device — grab it from the web whenever you need it.'**
+  /// **'Your key lives on Divine\'s login service, not on this device. Confirm your password and we\'ll fetch it for you.'**
   String get keyManagementKeycastRemoteSigning;
 
-  /// Button that opens the Account & Security page of Divine's login website in a browser, where the account's private key can be exported.
+  /// Body text of the dialog that asks for the account password before fetching the private key from Divine's login service.
   ///
   /// In en, this message translates to:
-  /// **'Get my key on the web'**
-  String get keyManagementKeycastOpenWeb;
+  /// **'Your key is kept by Divine\'s login service. Enter your account password to copy it.'**
+  String get keyManagementKeycastPasswordPrompt;
+
+  /// Confirm button in the password dialog; fetches the private key and copies it to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy key'**
+  String get keyManagementKeycastCopyKey;
+
+  /// Inline error under the password field when the account password was rejected. The dialog stays open so the user can retry.
+  ///
+  /// In en, this message translates to:
+  /// **'That password doesn\'t match. Try again.'**
+  String get keyManagementKeycastWrongPassword;
+
+  /// Error shown when the saved session could not be refreshed, so fetching the key needs a fresh sign-in rather than a retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Sign in again to copy your key.'**
+  String get keyManagementKeycastSignInAgain;
+
+  /// Error shown when the login service refuses to release the key because the account's email address is not verified yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email address before copying your key.'**
+  String get keyManagementKeycastEmailUnverified;
+
+  /// Error shown when the login service refuses to release the key by policy, such as an account whose keys Divine manages custodially.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine looks after this account\'s keys, so they can\'t be copied here.'**
+  String get keyManagementKeycastDenied;
+
+  /// Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'the login service could not be reached'**
+  String get keyManagementKeycastGenericFailure;
 
   /// Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody).
   ///

@@ -4853,10 +4853,32 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      '鍵はこのデバイスではなく、Divine のログインサービスに保管されています。必要なときにウェブから取得できます。';
+      '鍵はこの端末ではなく、Divine のログインサービスに保管されています。パスワードを確認すれば取得できます。';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'ウェブで鍵を取得';
+  String get keyManagementKeycastPasswordPrompt =>
+      '鍵は Divine のログインサービスが保管しています。コピーするにはアカウントのパスワードを入力してください。';
+
+  @override
+  String get keyManagementKeycastCopyKey => '鍵をコピー';
+
+  @override
+  String get keyManagementKeycastWrongPassword => 'パスワードが一致しません。もう一度お試しください。';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'セッションの有効期限が切れました。鍵をコピーするには再度サインインしてください。';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      '鍵をコピーする前にメールアドレスを確認してください。';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'このアカウントの鍵は Divine が管理しているため、ここではコピーできません。';
+
+  @override
+  String get keyManagementKeycastGenericFailure => 'ログインサービスに接続できませんでした';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

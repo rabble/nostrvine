@@ -4871,10 +4871,31 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      '키는 이 기기가 아니라 Divine 로그인 서비스에 있습니다. 필요할 때 웹에서 가져올 수 있습니다.';
+      '키는 이 기기가 아니라 Divine 로그인 서비스에 보관되어 있습니다. 비밀번호를 확인하면 가져올 수 있습니다.';
 
   @override
-  String get keyManagementKeycastOpenWeb => '웹에서 키 가져오기';
+  String get keyManagementKeycastPasswordPrompt =>
+      '키는 Divine 로그인 서비스가 보관합니다. 복사하려면 계정 비밀번호를 입력하세요.';
+
+  @override
+  String get keyManagementKeycastCopyKey => '키 복사';
+
+  @override
+  String get keyManagementKeycastWrongPassword => '비밀번호가 일치하지 않습니다. 다시 시도하세요.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      '세션이 만료되었습니다. 키를 복사하려면 다시 로그인하세요.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified => '키를 복사하기 전에 이메일 주소를 인증하세요.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      '이 계정의 키는 Divine이 관리하므로 여기에서 복사할 수 없습니다.';
+
+  @override
+  String get keyManagementKeycastGenericFailure => '로그인 서비스에 연결할 수 없습니다';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

@@ -1059,6 +1059,111 @@ class KeycastOAuth {
     }
   }
 
+  /// Export the account's own signing key from Keycast.
+  ///
+  /// For an account created with email/password, Keycast holds the key and
+  /// NIP-46 exposes no method that returns key material, so this endpoint is
+  /// the only way the owner can reach their nsec. It takes the same bearer
+  /// [token] as every other `/api/user/*` call — Keycast tries `Authorization`
+  /// before the browser cookie — plus the account [password], which the handler
+  /// verifies itself. The web flow's separate `/api/user/verify-password` step
+  /// only gates its own UI and is not needed here.
+  ///
+  /// Keycast enforces its preconditions server-side: the email must be
+  /// verified, and a `verified_minor` account is refused before any key
+  /// material is touched. Calling this does not move either check on-device.
+  ///
+  /// [format] selects the encoding; Keycast defaults to `nsec`.
+  ///
+  /// On success [ExportKeyResult.key] is raw key material. Never log it, and
+  /// never write it anywhere but the destination the user asked for.
+  Future<ExportKeyResult> exportKey(
+    String token,
+    String password, {
+    String format = 'nsec',
+  }) async {
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('${config.serverUrl}/api/user/export-key'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'password': password, 'format': format}),
+          )
+          .timeout(requestTimeout);
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final key = json['key'] as String?;
+        if (key == null || key.isEmpty) {
+          return ExportKeyResult.failure(
+            ExportKeyFailure.unknown,
+            message: 'Keycast returned no key',
+          );
+        }
+        return ExportKeyResult.success(key);
+      }
+
+      final message = _errorMessageFrom(response);
+
+      // Keycast answers 401 for both a wrong account password and a stale
+      // bearer token, and its prose is not a stable discriminator. Re-probing
+      // an endpoint that needs only the token separates them: if the token
+      // still authenticates, the password is what failed.
+      if (response.statusCode == 401) {
+        final tokenStillValid = await getAccountStatus(token) != null;
+        return ExportKeyResult.failure(
+          tokenStillValid
+              ? ExportKeyFailure.wrongPassword
+              : ExportKeyFailure.needsSignIn,
+          message: message,
+        );
+      }
+
+      // 403 covers two unrelated refusals: an unverified email, and the policy
+      // denial that carries the verified_minor custody refusal. That policy
+      // message is deliberately uniform so it leaks no account state, so the
+      // unverified email is identified positively and the rest falls through.
+      if (response.statusCode == 403) {
+        final unverifiedEmail =
+            message != null &&
+            message.toLowerCase().contains('verify your email');
+        return ExportKeyResult.failure(
+          unverifiedEmail
+              ? ExportKeyFailure.emailUnverified
+              : ExportKeyFailure.denied,
+          message: message,
+        );
+      }
+
+      if (response.statusCode == 404) {
+        return ExportKeyResult.failure(
+          ExportKeyFailure.noKey,
+          message: message,
+        );
+      }
+
+      if (response.statusCode >= 500) {
+        return ExportKeyResult.failure(
+          ExportKeyFailure.server,
+          message: message ?? 'Server error (${response.statusCode})',
+        );
+      }
+
+      return ExportKeyResult.failure(
+        ExportKeyFailure.unknown,
+        message: message ?? 'HTTP ${response.statusCode}',
+      );
+    } catch (e) {
+      return ExportKeyResult.failure(
+        ExportKeyFailure.network,
+        message: 'Network error: $e',
+      );
+    }
+  }
+
   void close() {
     _client.close();
   }

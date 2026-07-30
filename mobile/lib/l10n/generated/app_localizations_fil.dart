@@ -5154,10 +5154,34 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Nasa login service ng Divine ang key mo, hindi sa device na ito — kunin mo ito sa web kahit kailan.';
+      'Nasa login service ng Divine ang key mo, hindi sa device na ito. Kumpirmahin ang password mo at kukunin namin ito.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Kunin ang key sa web';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo para makopya ito.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Kopyahin ang key';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Hindi tugma ang password. Subukan muli.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Nag-expire na ang session mo. Mag-sign in muli para makopya ang key mo.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'I-verify ang email address mo bago kopyahin ang key.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Ang Divine ang nangangalaga sa mga key ng account na ito, kaya hindi ito makokopya dito.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'hindi maabot ang login service';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

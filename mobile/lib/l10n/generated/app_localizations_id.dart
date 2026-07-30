@@ -5054,10 +5054,34 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Kunci kamu ada di layanan login Divine, bukan di perangkat ini — ambil dari web kapan pun kamu perlu.';
+      'Kuncimu tersimpan di layanan login Divine, bukan di perangkat ini. Konfirmasi kata sandimu dan kami akan mengambilnya.';
 
   @override
-  String get keyManagementKeycastOpenWeb => 'Ambil kunci di web';
+  String get keyManagementKeycastPasswordPrompt =>
+      'Kuncimu disimpan oleh layanan login Divine. Masukkan kata sandi akunmu untuk menyalinnya.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Salin kunci';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Kata sandi tidak cocok. Coba lagi.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Sesimu telah berakhir. Masuk lagi untuk menyalin kuncimu.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Verifikasi alamat emailmu sebelum menyalin kunci.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'layanan login tidak dapat dihubungi';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

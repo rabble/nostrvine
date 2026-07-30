@@ -98,21 +98,18 @@ void main() {
         final l10n = lookupAppLocalizations(const Locale('en'));
 
         expect(find.text('Key Management'), findsOneWidget);
+        // The key is reachable, just not on this device: the copy action is
+        // offered for this account too, and the explanation above it says the
+        // key comes from Divine's login service rather than local storage.
         expect(
           find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
-          findsNothing,
+          findsOneWidget,
         );
         expect(
           find.text(
             l10n.keyManagementKeycastRemoteSigning,
             skipOffstage: false,
           ),
-          findsOneWidget,
-        );
-        // The key is reachable, just not on this device: the card hands the
-        // user off to Divine Login's Account & Security page.
-        expect(
-          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
           findsOneWidget,
         );
 
