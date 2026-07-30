@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "ストップモーションのフレーム {total}枚中{position}枚目",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count}フレーム}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "フレーム",
-    "libraryStopMotionClipLabel": "ストップモーションクリップ"
+    "libraryStopMotionClipLabel": "ストップモーションクリップ",
+  "profileNotifyBellOff": "新しい動画を通知する",
+  "profileNotifyBellOn": "新しい動画の通知を停止",
+  "profileNotifyUpdateFailed": "保存できませんでした。もう一度試しますか？"
 }

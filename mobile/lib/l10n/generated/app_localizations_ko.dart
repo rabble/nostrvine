@@ -10398,4 +10398,13 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => '새 영상 알림 받기';
+
+  @override
+  String get profileNotifyBellOn => '새 영상 알림 끄기';
+
+  @override
+  String get profileNotifyUpdateFailed => '저장하지 못했습니다. 다시 시도할까요?';
 }

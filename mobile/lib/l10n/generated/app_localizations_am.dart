@@ -10574,4 +10574,13 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'ስለ አዲስ ቫይኖች አሳውቀኝ';
+
+  @override
+  String get profileNotifyBellOn => 'ስለ አዲስ ቫይኖች አታሳውቀኝ';
+
+  @override
+  String get profileNotifyUpdateFailed => 'ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ?';
 }

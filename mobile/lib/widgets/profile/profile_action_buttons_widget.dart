@@ -6,20 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:openvine/blocs/notify_bell/notify_bell_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
+import 'package:openvine/widgets/profile/profile_notify_bell_button.dart';
 
 /// Action buttons shown on profile page.
 ///
 /// Different buttons shown for own profile vs other user profiles.
 /// For other profiles, button order changes based on follow state:
 /// - Not following: [Follow] [Message] [Share]
-/// - Following:     [Message] [Following] [Share]
+/// - Following:     [Message] [Bell] [Following] [Share]
 ///
 /// Creates [MyFollowingBloc] for other profiles so both the follow button
-/// and the row ordering react to the same optimistic state change instantly.
+/// and the row ordering react to the same optimistic state change instantly,
+/// and [NotifyBellCubit] so the follow-gated bell has a host that outlives
+/// its own mount.
 class ProfileActionButtons extends ConsumerWidget {
   const ProfileActionButtons({
     required this.userIdHex,
@@ -58,7 +62,14 @@ class ProfileActionButtons extends ConsumerWidget {
     final contentBlocklistRepository = ref.watch(
       contentBlocklistRepositoryProvider,
     );
+    final notifySubscriptions = ref.watch(
+      notifySubscriptionsRepositoryProvider,
+    );
     final nostrClient = ref.watch(nostrServiceProvider);
+    // Empty rather than null when no signer is attached (the placeholder
+    // LocalKeySigner), so signed-out is an emptiness check.
+    final viewerPubkey = nostrClient.publicKey;
+    final hasViewer = viewerPubkey.isNotEmpty;
 
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
@@ -68,21 +79,45 @@ class ProfileActionButtons extends ConsumerWidget {
 
     // Create MyFollowingBloc at this level so both the follow button
     // and the row ordering share the same optimistic state.
-    return BlocProvider(
-      create: (_) => MyFollowingBloc(
-        followRepository: followRepository,
-        contentBlocklistRepository: contentBlocklistRepository,
-      )..add(const MyFollowingListLoadRequested()),
+    //
+    // NotifyBellCubit is provided here too, above the follow-gated bell, so
+    // it survives the bell unmounting on unfollow and can still publish the
+    // teardown. Both are keyed on their repositories' identity so an auth
+    // flip rebuilds them instead of leaving a stale capture.
+    return MultiBlocProvider(
+      key: ValueKey((
+        followRepository,
+        contentBlocklistRepository,
+        notifySubscriptions,
+        viewerPubkey,
+      )),
+      providers: [
+        BlocProvider(
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistRepository: contentBlocklistRepository,
+          )..add(const MyFollowingListLoadRequested()),
+        ),
+        if (hasViewer)
+          BlocProvider(
+            create: (_) => NotifyBellCubit(
+              repository: notifySubscriptions,
+              viewerPubkey: viewerPubkey,
+              creatorPubkey: userIdHex,
+            )..load(),
+          ),
+      ],
       child: _OtherProfileButtons(
         userIdHex: userIdHex,
         displayName: displayName,
-        currentUserPubkey: nostrClient.publicKey,
+        currentUserPubkey: viewerPubkey,
         isBlocked: isBlocked,
         canTargetUser: canTargetUser,
         isMessageRestricted: isMessageRestricted,
         onMessageUser: onMessageUser,
         onShareProfile: onShareProfile,
         onBlockedTap: onBlockedTap,
+        canShowBell: hasViewer,
       ),
     );
   }
@@ -148,12 +183,16 @@ class _OtherProfileButtons extends StatelessWidget {
     required this.onMessageUser,
     required this.onShareProfile,
     required this.onBlockedTap,
+    required this.canShowBell,
   });
 
   final String userIdHex;
   final String? displayName;
   final String? currentUserPubkey;
   final bool isBlocked;
+
+  /// Whether a [NotifyBellCubit] was provided (requires a signed-in viewer).
+  final bool canShowBell;
 
   /// Whether the UI may offer interactions targeting this user. False
   /// hides the follow and message affordances entirely — absence, never
@@ -170,9 +209,22 @@ class _OtherProfileButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
-      selector: (state) => state.isFollowing(userIdHex),
-      builder: (context, isFollowing) {
+    return BlocConsumer<MyFollowingBloc, MyFollowingState>(
+      // The bell is follow-gated, so an abandoned subscription would keep
+      // pushing videos from someone the viewer no longer follows with no UI
+      // left to switch it off. Bridged here rather than inside the bell,
+      // which has already unmounted by the time this fires.
+      listenWhen: (previous, current) =>
+          canShowBell &&
+          previous.isFollowing(userIdHex) &&
+          !current.isFollowing(userIdHex),
+      listener: (context, state) {
+        context.read<NotifyBellCubit>().clearForUnfollow();
+      },
+      buildWhen: (previous, current) =>
+          previous.isFollowing(userIdHex) != current.isFollowing(userIdHex),
+      builder: (context, state) {
+        final isFollowing = state.isFollowing(userIdHex);
         final canShowMessage = canTargetUser && !isMessageRestricted;
         final followButton = FollowFromProfileButtonView(
           pubkey: userIdHex,
@@ -194,7 +246,7 @@ class _OtherProfileButtons extends StatelessWidget {
         final List<Widget> children;
 
         if (isFollowing) {
-          // Following: [Message (expanded)] [Following] [Share]
+          // Following: [Message (expanded)] [Bell] [Following] [Share]
           children = [
             if (canTargetUser) ...[
               if (canShowMessage)
@@ -209,6 +261,7 @@ class _OtherProfileButtons extends StatelessWidget {
                   ),
                 ),
               if (!canShowMessage) const Spacer(),
+              if (canShowBell) const ProfileNotifyBellButton(),
               followButton,
             ] else
               const Spacer(),

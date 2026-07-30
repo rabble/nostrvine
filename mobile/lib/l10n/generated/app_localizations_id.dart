@@ -10754,4 +10754,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Beri tahu tentang vine baru';
+
+  @override
+  String get profileNotifyBellOn => 'Hentikan pemberitahuan vine baru';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Gagal menyimpan. Coba lagi?';
 }

@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Bingkai stop-motion {position} dari {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} bingkai}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
-    "libraryStopMotionClipLabel": "Klip stop-motion"
+    "libraryStopMotionClipLabel": "Klip stop-motion",
+  "profileNotifyBellOff": "Beri tahu tentang vine baru",
+  "profileNotifyBellOn": "Hentikan pemberitahuan vine baru",
+  "profileNotifyUpdateFailed": "Gagal menyimpan. Coba lagi?"
 }

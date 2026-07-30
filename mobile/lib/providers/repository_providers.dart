@@ -482,6 +482,23 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
 final Provider<Stream<PeopleListsRepository>>
 peopleListsRepositoryIdentityStreamProvider =
     identityStreamOf<PeopleListsRepository>(peopleListsRepositoryProvider);
+/// Repository for the reserved kind 30000 `d=notify` subscription list.
+///
+/// Owns which creators the signed-in user gets new-post notifications about
+/// ("bells"). Kept separate from [peopleListsRepository] so the app-managed
+/// list is never reachable from list-editing UI.
+///
+/// Long-lived so the in-memory subscription snapshot and its mutation queue
+/// survive navigation — a per-route instance would re-read the list on every
+/// profile visit and lose in-flight publishes.
+@Riverpod(keepAlive: true)
+NotifySubscriptionsRepository notifySubscriptionsRepository(Ref ref) {
+  final repository = NotifySubscriptionsRepositoryImpl(
+    nostrClient: ref.watch(nostrServiceProvider),
+  );
+  ref.onDispose(repository.dispose);
+  return repository;
+}
 
 /// Bookmark service for NIP-51 bookmarks
 @riverpod

@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Klatka poklatkowa {position} z {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 klatka} few{{count} klatki} many{{count} klatek} other{{count} klatki}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Klatki",
-    "libraryStopMotionClipLabel": "Klip poklatkowy"
+    "libraryStopMotionClipLabel": "Klip poklatkowy",
+  "profileNotifyBellOff": "Powiadamiaj o nowych vine'ach",
+  "profileNotifyBellOn": "Nie powiadamiaj o nowych vine'ach",
+  "profileNotifyUpdateFailed": "Nie udało się zapisać. Spróbować ponownie?"
 }

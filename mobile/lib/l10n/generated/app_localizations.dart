@@ -18599,6 +18599,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.'**
   String get supporterDisclaimer;
+
+  /// Accessibility label on the profile bell when the viewer is not subscribed. Describes the action the tap performs, not the current state.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified about new vines'**
+  String get profileNotifyBellOff;
+
+  /// Accessibility label on the profile bell when the viewer is subscribed. Describes the action the tap performs.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop notifying me about new vines'**
+  String get profileNotifyBellOn;
+
+  /// Transient message when publishing the notification-subscription list fails. The bell has already reverted to its previous state.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save that. Try again?'**
+  String get profileNotifyUpdateFailed;
 }
 
 class _AppLocalizationsDelegate

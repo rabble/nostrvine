@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-Motion-Bild {position} von {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 Frame} other{{count} Frames}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
-    "libraryStopMotionClipLabel": "Stop-Motion-Clip"
+    "libraryStopMotionClipLabel": "Stop-Motion-Clip",
+  "profileNotifyBellOff": "Über neue Vines benachrichtigen",
+  "profileNotifyBellOn": "Keine Benachrichtigungen über neue Vines",
+  "profileNotifyUpdateFailed": "Konnte nicht gespeichert werden. Nochmal?"
 }

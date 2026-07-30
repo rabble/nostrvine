@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop motion-bild {position} av {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 bildruta} other{{count} bildrutor}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Bildrutor",
-    "libraryStopMotionClipLabel": "Stop motion-klipp"
+    "libraryStopMotionClipLabel": "Stop motion-klipp",
+  "profileNotifyBellOff": "Meddela om nya vines",
+  "profileNotifyBellOn": "Sluta meddela om nya vines",
+  "profileNotifyUpdateFailed": "Kunde inte sparas. Försök igen?"
 }

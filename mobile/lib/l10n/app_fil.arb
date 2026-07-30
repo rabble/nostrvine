@@ -3290,5 +3290,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-motion frame {position} ng {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} frame}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Mga frame",
-    "libraryStopMotionClipLabel": "Stop-motion na clip"
+    "libraryStopMotionClipLabel": "Stop-motion na clip",
+  "profileNotifyBellOff": "Ipaalam ang mga bagong vine",
+  "profileNotifyBellOn": "Itigil ang pagpaalam sa mga bagong vine",
+  "profileNotifyUpdateFailed": "Hindi nai-save. Subukan muli?"
 }

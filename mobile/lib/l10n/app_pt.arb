@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Quadro de stop motion {position} de {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 quadro} other{{count} quadros}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Quadros",
-    "libraryStopMotionClipLabel": "Clipe de stop motion"
+    "libraryStopMotionClipLabel": "Clipe de stop motion",
+  "profileNotifyBellOff": "Avisar sobre novos vines",
+  "profileNotifyBellOn": "Parar de avisar sobre novos vines",
+  "profileNotifyUpdateFailed": "Não foi possível salvar. Tentar de novo?"
 }

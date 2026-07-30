@@ -4845,5 +4845,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Стоп-моушън кадър {position} от {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 кадър} other{{count} кадъра}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Кадри",
-    "libraryStopMotionClipLabel": "Стоп-моушън клип"
+    "libraryStopMotionClipLabel": "Стоп-моушън клип",
+  "profileNotifyBellOff": "Получавай известия за нови видеа",
+  "profileNotifyBellOn": "Спри известията за нови видеа",
+  "profileNotifyUpdateFailed": "Не се запази. Опитай пак?"
 }

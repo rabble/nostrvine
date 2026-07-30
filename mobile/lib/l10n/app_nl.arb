@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-motion-beeld {position} van {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 frame} other{{count} frames}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
-    "libraryStopMotionClipLabel": "Stop-motion-clip"
+    "libraryStopMotionClipLabel": "Stop-motion-clip",
+  "profileNotifyBellOff": "Melden bij nieuwe vines",
+  "profileNotifyBellOn": "Niet meer melden bij nieuwe vines",
+  "profileNotifyUpdateFailed": "Kon niet opslaan. Opnieuw proberen?"
 }

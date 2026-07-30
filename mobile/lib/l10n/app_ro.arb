@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Cadru stop-motion {position} din {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 cadru} other{{count} cadre}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Cadre",
-    "libraryStopMotionClipLabel": "Clip stop-motion"
+    "libraryStopMotionClipLabel": "Clip stop-motion",
+  "profileNotifyBellOff": "Anunță-mă despre videoclipuri noi",
+  "profileNotifyBellOn": "Nu mă mai anunța despre videoclipuri noi",
+  "profileNotifyUpdateFailed": "Nu s-a salvat. Reîncerci?"
 }

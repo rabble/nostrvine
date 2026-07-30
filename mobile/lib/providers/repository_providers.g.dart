@@ -667,6 +667,86 @@ final class PeopleListsRepositoryProvider
 String _$peopleListsRepositoryHash() =>
     r'd62acfadef10fcaab46ba5f74352e7feacf3a63d';
 
+/// Repository for the reserved kind 30000 `d=notify` subscription list.
+///
+/// Owns which creators the signed-in user gets new-post notifications about
+/// ("bells"). Kept separate from [peopleListsRepository] so the app-managed
+/// list is never reachable from list-editing UI.
+///
+/// Long-lived so the in-memory subscription snapshot and its mutation queue
+/// survive navigation — a per-route instance would re-read the list on every
+/// profile visit and lose in-flight publishes.
+
+@ProviderFor(notifySubscriptionsRepository)
+final notifySubscriptionsRepositoryProvider =
+    NotifySubscriptionsRepositoryProvider._();
+
+/// Repository for the reserved kind 30000 `d=notify` subscription list.
+///
+/// Owns which creators the signed-in user gets new-post notifications about
+/// ("bells"). Kept separate from [peopleListsRepository] so the app-managed
+/// list is never reachable from list-editing UI.
+///
+/// Long-lived so the in-memory subscription snapshot and its mutation queue
+/// survive navigation — a per-route instance would re-read the list on every
+/// profile visit and lose in-flight publishes.
+
+final class NotifySubscriptionsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          NotifySubscriptionsRepository,
+          NotifySubscriptionsRepository,
+          NotifySubscriptionsRepository
+        >
+    with $Provider<NotifySubscriptionsRepository> {
+  /// Repository for the reserved kind 30000 `d=notify` subscription list.
+  ///
+  /// Owns which creators the signed-in user gets new-post notifications about
+  /// ("bells"). Kept separate from [peopleListsRepository] so the app-managed
+  /// list is never reachable from list-editing UI.
+  ///
+  /// Long-lived so the in-memory subscription snapshot and its mutation queue
+  /// survive navigation — a per-route instance would re-read the list on every
+  /// profile visit and lose in-flight publishes.
+  NotifySubscriptionsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'notifySubscriptionsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$notifySubscriptionsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<NotifySubscriptionsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  NotifySubscriptionsRepository create(Ref ref) {
+    return notifySubscriptionsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(NotifySubscriptionsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<NotifySubscriptionsRepository>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$notifySubscriptionsRepositoryHash() =>
+    r'54ed8c30c8819f524052ba4abaccb01dfaeaacce';
+
 /// Bookmark service for NIP-51 bookmarks
 
 @ProviderFor(bookmarkService)

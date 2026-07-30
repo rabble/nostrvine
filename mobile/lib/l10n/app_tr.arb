@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop motion karesi {position}/{total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} kare}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Kare",
-    "libraryStopMotionClipLabel": "Stop motion klibi"
+    "libraryStopMotionClipLabel": "Stop motion klibi",
+  "profileNotifyBellOff": "Yeni vine'lardan haberdar et",
+  "profileNotifyBellOn": "Yeni vine bildirimlerini kapat",
+  "profileNotifyUpdateFailed": "Kaydedilemedi. Tekrar denensin mi?"
 }

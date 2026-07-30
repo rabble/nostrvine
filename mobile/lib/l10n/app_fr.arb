@@ -4714,5 +4714,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Image stop-motion {position} sur {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 image} other{{count} images}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Images",
-    "libraryStopMotionClipLabel": "Clip stop-motion"
+    "libraryStopMotionClipLabel": "Clip stop-motion",
+  "profileNotifyBellOff": "M'avertir des nouvelles vines",
+  "profileNotifyBellOn": "Ne plus m'avertir des nouvelles vines",
+  "profileNotifyUpdateFailed": "Échec de l'enregistrement. Réessayer ?"
 }
