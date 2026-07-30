@@ -143,8 +143,25 @@ void main() {
         // real error and hangs pumpAndSettle.
         final caughtErrors = <FlutterErrorDetails>[];
         final previousOnError = FlutterError.onError;
-        FlutterError.onError = caughtErrors.add;
         addTearDown(() => FlutterError.onError = previousOnError);
+
+        // Runs [flow] with framework errors collected instead of failing the
+        // test, and restores the real handler before returning.
+        //
+        // Nothing inside may call expect(): flutter_test reports a
+        // TestFailure through FlutterError.onError, so the collector would
+        // swallow it, `_pendingExceptionDetails` would stay null, and the
+        // binding's own assert would fire before it can complete the test —
+        // hanging the shard instead of reporting the regression. Measure
+        // inside, assert outside.
+        Future<void> collectingErrors(Future<void> Function() flow) async {
+          FlutterError.onError = caughtErrors.add;
+          try {
+            await flow();
+          } finally {
+            FlutterError.onError = previousOnError;
+          }
+        }
 
         // Flutter's TextPainter asserts `debugSize == size` when a
         // RenderParagraph is scrolled under a non-1.0 textScale in tests — a
@@ -206,45 +223,61 @@ void main() {
           await tester.pump(const Duration(milliseconds: 400));
         }
 
-        await tester.tap(find.text('Open options'));
-        await settle();
-
-        // Options sheet -> choose Flag Content.
-        await tester.tap(find.text(l10n.commentOptionsFlagContentLabel));
-        await settle();
-
-        // Opening the sheet must not overflow — the unfixed sheet clipped
-        // Submit off-screen here.
-        expect(unexpectedErrors(), isEmpty, reason: 'overflow on sheet open');
-
-        // Submit is pinned: on-screen and hittable before any scroll (the
-        // unfixed sheet clipped it off-screen).
         final submit = find.widgetWithText(
           ElevatedButton,
           l10n.commentOptionsFlagSubmit,
         );
-        expect(submit, findsOneWidget);
+        final lastReason = find.text(l10n.reportReasonOther);
         final viewportHeight =
             tester.view.physicalSize.height / tester.view.devicePixelRatio;
-        final submitRect = tester.getRect(submit);
+
+        late List<String> errorsOnOpen;
+        late int submitMatchesOnOpen;
+        late Rect submitRect;
+        late Rect submitRectAfterScroll;
+        late double lastReasonCenterDy;
+
+        await collectingErrors(() async {
+          await tester.tap(find.text('Open options'));
+          await settle();
+
+          // Options sheet -> choose Flag Content.
+          await tester.tap(find.text(l10n.commentOptionsFlagContentLabel));
+          await settle();
+          errorsOnOpen = unexpectedErrors();
+
+          submitMatchesOnOpen = submit.evaluate().length;
+          submitRect = tester.getRect(submit);
+
+          // The last reason must be reachable by scrolling and must sit above
+          // the pinned Submit — never hidden behind it.
+          await tester.ensureVisible(lastReason);
+          await settle();
+          submitRectAfterScroll = tester.getRect(submit);
+          lastReasonCenterDy = tester.getCenter(lastReason).dy;
+
+          await tester.tap(lastReason);
+          await settle();
+          await tester.tap(submit);
+          await settle();
+        });
+
+        // Opening the sheet must not overflow — the unfixed sheet clipped
+        // Submit off-screen here.
+        expect(errorsOnOpen, isEmpty, reason: 'overflow on sheet open');
+
+        // Submit is pinned: on-screen and hittable before any scroll (the
+        // unfixed sheet clipped it off-screen).
+        expect(submitMatchesOnOpen, 1);
         expect(submitRect.top, greaterThanOrEqualTo(0));
         expect(submitRect.bottom, lessThanOrEqualTo(viewportHeight));
 
-        // The last reason must be reachable by scrolling and must sit above
-        // the pinned Submit — never hidden behind it.
-        final lastReason = find.text(l10n.reportReasonOther);
-        await tester.ensureVisible(lastReason);
-        await settle();
         // Submit did not move when the reasons scrolled: it is pinned, not
         // part of the scroll view.
-        expect(tester.getRect(submit), submitRect);
-        expect(tester.getCenter(lastReason).dy, lessThan(submitRect.top));
-        await tester.tap(lastReason);
-        await settle();
+        expect(submitRectAfterScroll, submitRect);
+        expect(lastReasonCenterDy, lessThan(submitRect.top));
 
-        // Submit is still pinned; submitting reports the last reason.
-        await tester.tap(submit);
-        await settle();
+        // Submit stayed hittable; submitting reports the last reason.
         expect(result, isA<CommentReportResult>());
         expect(
           (result! as CommentReportResult).reason,
