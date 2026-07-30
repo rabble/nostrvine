@@ -9,8 +9,12 @@ import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 /// Horizontal picker-wheel mode selector.
 ///
 /// Items scroll horizontally. A fixed pill is always centered — its width
-/// animates to fit the selected label. The centered item shows
-/// semantic `onSurface` text; all others show `mediaChromeForeground`.
+/// animates to fit the selected label.
+///
+/// In dark mode the centered item shows `VineTheme.primary` text and the rest
+/// show semantic `onSurface`. In light mode the accent only reaches 1.92:1 on
+/// the pill, so the centered item takes `onSurface` and the rest step down to
+/// `mutedText`, with an `outline` edge on the pill to keep it legible.
 class VideoRecorderModeSelectorWheel extends StatefulWidget {
   const VideoRecorderModeSelectorWheel({
     required this.selectedMode,
@@ -203,6 +207,8 @@ class _VideoRecorderModeSelectorWheelState
         _jumpTo(pendingJumpIndex);
       });
     }
+    final colors = context.vineColors;
+    final isLight = colors.isLight;
     return LayoutBuilder(
       builder: (context, constraints) {
         final leadingPadding = (constraints.maxWidth - itemWidths.first) / 2;
@@ -220,8 +226,12 @@ class _VideoRecorderModeSelectorWheelState
                   height: _pillHeight,
                   width: _pillWidth(modes[_selectedIndex].label, textScaler),
                   decoration: BoxDecoration(
-                    color: context.vineColors.surfaceContainer,
+                    color: colors.surfaceContainer,
                     borderRadius: .circular(_pillHeight / 2),
+                    // The light pill is only 1.09:1 against the bar behind
+                    // it, so without an edge the wheel loses the one thing
+                    // that shows which mode is armed.
+                    border: isLight ? Border.all(color: colors.outline) : null,
                   ),
                 ),
               ),
@@ -282,8 +292,12 @@ class _VideoRecorderModeSelectorWheelState
                                 duration: const Duration(milliseconds: 200),
                                 style: VineTheme.titleSmallFont(
                                   color: isSelected
-                                      ? VineTheme.primary
-                                      : context.vineColors.onSurface,
+                                      ? isLight
+                                            ? colors.onSurface
+                                            : VineTheme.primary
+                                      : isLight
+                                      ? colors.mutedText
+                                      : colors.onSurface,
                                 ),
                                 child: Text(
                                   modes[i].label,
