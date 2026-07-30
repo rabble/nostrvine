@@ -2928,8 +2928,8 @@ class BlossomUploadService {
   /// Add ProofMode headers to upload request.
   ///
   /// Generates X-ProofMode-Manifest, X-ProofMode-Signature,
-  /// and X-ProofMode-Attestation headers from the provided
-  /// ProofManifest JSON.
+  /// X-ProofMode-PublicKey, X-ProofMode-Attestation and X-ProofMode-C2PA
+  /// headers from the provided ProofManifest JSON.
   ///
   /// Headers are attached best-effort within [maxProofModeHeaderBytes]. See
   /// that constant for why an oversized proof is dropped instead of sent.
@@ -2941,13 +2941,17 @@ class BlossomUploadService {
       final manifestMap = jsonDecode(proofManifestJson) as Map<String, dynamic>;
 
       // Ordered cheapest-and-most-identifying first, so a proof that busts the
-      // budget still carries the C2PA id and the signature.
+      // budget still carries the C2PA id and a verifiable signature/key pair.
       final candidates = <String, String>{
         if (manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id']
             case final c2paManifestId?)
           'X-ProofMode-C2PA': _encodeHeaderValue(c2paManifestId),
         if (manifestMap['pgpSignature'] case final pgpSignature?)
           'X-ProofMode-Signature': _encodeHeaderValue(pgpSignature),
+        // Paired with the signature: without the key the signature cannot be
+        // verified from headers alone.
+        if (manifestMap['publicKey'] case final publicKey?)
+          'X-ProofMode-PublicKey': _encodeHeaderValue(publicKey),
         if (manifestMap['deviceAttestation'] case final deviceAttestation?)
           'X-ProofMode-Attestation': _encodeHeaderValue(deviceAttestation),
         'X-ProofMode-Manifest': base64.encode(utf8.encode(proofManifestJson)),

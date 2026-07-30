@@ -327,8 +327,10 @@ ProofMode manifest is uploaded alongside video to Blossom server:
 >
 > They are also hard-capped: `BlossomUploadService.maxProofModeHeaderBytes`
 > (8 KiB combined) governs what actually goes on the wire, cheapest-and-most-
-> identifying first (`X-ProofMode-C2PA`, then `-Signature`, `-Attestation`,
-> `-Manifest`). An Android hardware attestation chain is ~54 KB and used to
+> identifying first (`X-ProofMode-C2PA`, then `-Signature`, `-PublicKey`,
+> `-Attestation`, `-Manifest`). `-Signature` and `-PublicKey` sit above the
+> bulk headers because a signature without its key cannot be verified from
+> headers alone. An Android hardware attestation chain is ~54 KB and used to
 > travel twice — ~75 KB base64-encoded in `X-ProofMode-Manifest` plus ~72 KB
 > again in `X-ProofMode-Attestation`. Measured against `media.divine.video`,
 > combined request headers must stay under **128 KiB over HTTP/1.1** (past it

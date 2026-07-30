@@ -108,8 +108,14 @@ Optional request headers:
 
 - `X-ProofMode-Manifest`
 - `X-ProofMode-Signature`
+- `X-ProofMode-PublicKey`
 - `X-ProofMode-Attestation`
 - `X-ProofMode-C2PA`
+
+`X-ProofMode-PublicKey` carries the PGP public key matching
+`X-ProofMode-Signature`. The two travel together because a signature cannot be
+verified from headers alone without it; a server that sees one without the
+other must treat the signature as unverified rather than invalid.
 
 When present, these headers carry the same ProofMode metadata that legacy
 `PUT /upload` accepts. Clients should send them on `complete` so resumable

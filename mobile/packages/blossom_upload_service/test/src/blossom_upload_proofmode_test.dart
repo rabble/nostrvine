@@ -445,9 +445,11 @@ void main() {
           // header) for ~147 KB combined, past the 128 KiB that
           // media.divine.video accepts over HTTP/1.1 before answering 502.
           final realWorldSignature = 'S' * 821;
+          final realWorldPublicKey = 'K' * 2048;
           final manifest = jsonEncode({
             'videoHash': 'abc123',
             'pgpSignature': realWorldSignature,
+            'publicKey': realWorldPublicKey,
             'deviceAttestation': 'A' * 53826,
             'c2pa_manifest_id': 'urn:c2pa:7ae319b2-8641-4eea-8203-a1faf72e31e4',
           });
@@ -465,18 +467,52 @@ void main() {
           // The identifying headers survive...
           expect(headers, contains('X-ProofMode-C2PA'));
           expect(headers, contains('X-ProofMode-Signature'));
+          expect(headers, contains('X-ProofMode-PublicKey'));
           // ...the two that blow the budget do not.
           expect(headers, isNot(contains('X-ProofMode-Attestation')));
           expect(headers, isNot(contains('X-ProofMode-Manifest')));
 
-          // A real-world PGP signature survives the budget intact, not merely
-          // present: truncating it would make the proof unverifiable.
+          // The signature and the key that verifies it both survive the budget
+          // intact, not merely present: truncating either one leaves a proof
+          // that cannot be checked from headers alone.
           expect(
             utf8.decode(
               base64.decode(headers['X-ProofMode-Signature'] as String),
             ),
             equals(realWorldSignature),
           );
+          expect(
+            utf8.decode(
+              base64.decode(headers['X-ProofMode-PublicKey'] as String),
+            ),
+            equals(realWorldPublicKey),
+          );
+        },
+      );
+
+      test(
+        'omits the public key header when the manifest has no publicKey',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-Signature'));
+          expect(headers, isNot(contains('X-ProofMode-PublicKey')));
         },
       );
 
