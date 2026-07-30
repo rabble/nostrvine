@@ -50,6 +50,7 @@ import 'package:openvine/features/appearance/models/appearance_mode.dart';
 import 'package:openvine/features/appearance/providers/appearance_providers.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
@@ -2844,8 +2845,10 @@ class _DivineAppState extends ConsumerState<DivineApp>
             // open — so a disabled feature does not construct the bloc.
             //
             // Once constructed while the flag is on, the bloc remains session-
-            // lifetime even if the flag flips off. Stopping already-started
-            // repository work on a flag-off transition is tracked in #6494.
+            // lifetime even if the flag flips off — laziness gates construction,
+            // not teardown. enabledStream is how it stands down instead: on a
+            // flag-off it drops its cache subscription and stops syncing, and on
+            // a flag-on it rewires to whoever is signed in then (#6494).
             //
             // peopleListsRepositoryProvider is keepAlive but not identity-
             // stable: it watches nostrServiceProvider, which recreates its
@@ -2864,6 +2867,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   repositoryStream: ref.read(
                     peopleListsRepositoryIdentityStreamProvider,
                   ),
+                  enabledStream: ref.read(curatedListsEnabledStreamProvider),
                   ownerPubkeyStream: ownerPubkeyStream,
                   initialOwnerPubkey: authService.currentPublicKeyHex,
                 )..add(const PeopleListsStarted());
