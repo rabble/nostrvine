@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "تم رفع الفيديو، لكن تعذّر تجهيز الصورة المصغّرة. يرجى المحاولة مرّة أخرى.",
     "publishErrorNostrPublishFailed": "تم رفع الفيديو لكن تعذّر نشر المنشور. تحقّق من إعدادات المحوّلات وحاول مرّة أخرى.",
     "publishErrorInterrupted": "تم قطع هذا الرفع. هل ترغب في المحاولة مرّة أخرى؟",
+    "publishErrorAccountChanged": "هذا الفيديو يخصّ حسابًا آخر. ارجع إلى ذلك الحساب لنشره.",
     "publishErrorGeneric": "حدث خطأ ما. يرجى المحاولة مرّة أخرى.",
     "publishErrorRateLimited": "عمليات رفع كثيرة جدًا الآن. انتظر قليلًا وحاول مرّة أخرى.",
     "publishErrorUploadSessionExpired": "انتهت صلاحية جلسة الرفع. يرجى المحاولة مرّة أخرى.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "إضافة حساب آخر",
   "settingsAccountSwitchFailed": "تعذر تبديل الحسابات. يُرجى المحاولة مرة أخرى.",
     "settingsUnsavedDraftsTitle": "مسودات غير محفوظة",
+    "settingsUploadInProgressTitle": "جارٍ الرفع",
+    "settingsUploadInProgressMessage": "لا يزال لديك {count, plural, zero{مقاطع قيد الرفع} one{مقطع واحد قيد الرفع} two{مقطعان قيد الرفع} few{{count} مقاطع قيد الرفع} many{{count} مقطعًا قيد الرفع} other{{count} مقطع قيد الرفع}}. تبديل الحساب يوقف الرفع — تبقى المقاطع كمسودات في هذا الحساب.",
     "settingsUnsavedDraftsMessage": "لديك {count, plural, zero{مسودات غير محفوظة} one{مسودة واحدة غير محفوظة} two{مسودتان غير محفوظتين} few{{count} مسودات غير محفوظة} many{{count} مسودة غير محفوظة} other{{count} مسودة غير محفوظة}}. تبديل الحسابات سيحتفظ بها، لكن قد ترغب في نشرها أو مراجعتها أولاً.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

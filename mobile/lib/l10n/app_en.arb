@@ -73,6 +73,16 @@
     "description": "Snackbar shown when an in-place account switch fails and the current account is kept."
   },
   "settingsUnsavedDraftsTitle": "Unsaved Drafts",
+  "settingsUploadInProgressTitle": "Upload in progress",
+  "settingsUploadInProgressMessage": "You still have {count} {count, plural, =1{video} other{videos}} uploading. Switching accounts stops the upload — your {count, plural, =1{video stays as a draft} other{videos stay as drafts}} in this account.",
+  "@settingsUploadInProgressMessage": {
+    "description": "Confirmation shown before an account switch while videos are still uploading. {count} is the number of in-flight uploads.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsUnsavedDraftsMessage": "You have {count} unsaved {count, plural, =1{draft} other{drafts}}. Switching accounts will keep your {count, plural, =1{draft} other{drafts}}, but you may want to publish or review {count, plural, =1{it} other{them}} first.",
   "@settingsUnsavedDraftsMessage": {
     "placeholders": {
@@ -4088,6 +4098,7 @@
   "publishErrorThumbnailFailed": "The video uploaded, but the thumbnail could not be prepared. Please try again.",
   "publishErrorNostrPublishFailed": "The video uploaded but the post could not be published. Check your relay settings and try again.",
   "publishErrorInterrupted": "This upload was interrupted. Would you like to try again?",
+  "publishErrorAccountChanged": "This video belongs to a different account. Switch back to that account to post it.",
   "publishErrorGeneric": "Something went wrong. Please try again.",
   "publishErrorRateLimited": "Too many uploads right now. Wait a moment and try again.",
   "publishErrorUploadSessionExpired": "Your upload session expired. Please try again.",

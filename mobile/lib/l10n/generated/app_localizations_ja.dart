@@ -115,6 +115,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => '未保存の下書きがあるよ';
 
   @override
+  String get settingsUploadInProgressTitle => 'アップロード中';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    return 'まだ$count件の動画をアップロード中だよ。アカウントを切り替えるとアップロードは止まって、動画はこのアカウントの下書きに残るよ。';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     return '未保存の下書きが$count件あるよ。切り替えても下書きは残るけど、先に公開か確認しておくのがおすすめ。';
   }
@@ -6903,6 +6911,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get publishErrorInterrupted => 'アップロードが中断されたよ。もう一回試す？';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'この動画は別のアカウントのものだよ。投稿するにはそのアカウントに戻ってね。';
 
   @override
   String get publishErrorGeneric => '問題が発生したよ。もう一回試してみて。';

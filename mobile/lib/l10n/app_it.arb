@@ -20,6 +20,7 @@
   "publishErrorThumbnailFailed": "Il video è stato caricato, ma non è stato possibile preparare la miniatura. Riprova.",
   "publishErrorNostrPublishFailed": "Il video è stato caricato, ma non è stato possibile pubblicare il post. Controlla le impostazioni dei relay e riprova.",
   "publishErrorInterrupted": "Questo caricamento è stato interrotto. Vuoi riprovare?",
+  "publishErrorAccountChanged": "Questo video appartiene a un altro account. Torna su quell'account per pubblicarlo.",
   "publishErrorGeneric": "Qualcosa è andato storto. Riprova.",
   "publishErrorRateLimited": "Troppi caricamenti in questo momento. Aspetta un attimo e riprova.",
   "publishErrorUploadSessionExpired": "La sessione di caricamento è scaduta. Riprova.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Aggiungi un altro account",
   "settingsAccountSwitchFailed": "Impossibile cambiare account. Riprova.",
     "settingsUnsavedDraftsTitle": "Bozze non salvate",
+    "settingsUploadInProgressTitle": "Caricamento in corso",
+    "settingsUploadInProgressMessage": "Hai ancora {count} {count, plural, one{video} other{video}} in caricamento. Cambiare account interrompe il caricamento: {count, plural, one{il tuo video resta come bozza} other{i tuoi video restano come bozze}} in questo account.",
     "settingsUnsavedDraftsMessage": "Hai {count} {count, plural, one{bozza non salvata} other{bozze non salvate}}. Cambiando account {count, plural, one{la tua bozza verrà mantenuta} other{le tue bozze verranno mantenute}}, ma potresti voler {count, plural, one{pubblicarla o rivederla} other{pubblicarle o rivederle}} prima.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

@@ -119,6 +119,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'ያልተቀመጡ ረቂቆች';
 
   @override
+  String get settingsUploadInProgressTitle => 'ስቀላ በሂደት ላይ';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ቪዲዮዎች',
+      one: 'ቪዲዮ',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ናቸው',
+      one: 'ነው',
+    );
+    String _temp2 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ቪዲዮዎችህ እንደ ረቂቆች',
+      one: 'ቪዲዮህ እንደ ረቂቅ',
+    );
+    return 'አሁንም $count $_temp0 በመስቀል ላይ $_temp1። አካውንት መቀየር ስቀላውን ያቆማል — $_temp2 በዚህ አካውንት ውስጥ ይቀራሉ።';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7050,6 +7076,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get publishErrorInterrupted => 'ይህ ስቀላ ተቋርጧል። እንደገና መሞከር ይፈልጋሉ?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'ይህ ቪዲዮ የሌላ መለያ ነው። ለመለጠፍ ወደዚያ መለያ ተመለስ።';
 
   @override
   String get publishErrorGeneric => 'የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';

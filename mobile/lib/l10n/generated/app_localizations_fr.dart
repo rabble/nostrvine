@@ -122,6 +122,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Brouillons non enregistrés';
 
   @override
+  String get settingsUploadInProgressTitle => 'Envoi en cours';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'vidéos',
+      one: 'vidéo',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tes vidéos restent en brouillons',
+      one: 'ta vidéo reste en brouillon',
+    );
+    return 'Tu as encore $count $_temp0 en cours d\'envoi. Changer de compte arrête l\'envoi — $_temp1 dans ce compte.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7287,6 +7307,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Cet envoi a été interrompu. Tu veux réessayer ?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Cette vidéo appartient à un autre compte. Reviens sur ce compte pour la publier.';
 
   @override
   String get publishErrorGeneric => 'Un problème est survenu. Réessaie.';

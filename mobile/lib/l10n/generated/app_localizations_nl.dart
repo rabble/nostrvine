@@ -122,6 +122,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Niet-opgeslagen concepten';
 
   @override
+  String get settingsUploadInProgressTitle => 'Upload bezig';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'worden nog $count video\'s',
+      one: 'wordt nog $count video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'je video\'s blijven als concepten',
+      one: 'je video blijft als concept',
+    );
+    return 'Er $_temp0 geüpload. Van account wisselen stopt de upload — $_temp1 in dit account.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7228,6 +7248,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Deze upload is onderbroken. Wil je het opnieuw proberen?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Deze video hoort bij een ander account. Ga terug naar dat account om hem te posten.';
 
   @override
   String get publishErrorGeneric => 'Er ging iets mis. Probeer het opnieuw.';

@@ -200,6 +200,20 @@ class VideoPublishService {
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
   Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
+    // An account switch while the upload was in flight leaves the previous
+    // account's draft reachable from this session. Publishing it would sign the
+    // video with the wrong identity, and the `publishing` save below would
+    // reassign the draft's owner on the way — so bail out before either.
+    if (await draftService.isDraftOwnedByAnotherAccount(draft.id)) {
+      Log.warning(
+        '🚫 Refusing to publish draft ${draft.id}: it belongs to another '
+        'account',
+        category: .video,
+      );
+      _backgroundUploadId = null;
+      return const PublishError(PublishErrorKind.accountChanged);
+    }
+
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
       final error = await _handleActiveUpload(draft.id);
@@ -748,38 +762,6 @@ class VideoPublishService {
 
     if (hasProofMode && nativeProof == null) {
       Log.error('📜 ProofMode deserialization failed!', category: .video);
-    }
-  }
-
-  /// Retry a failed upload and continue publishing.
-  Future<PublishResult> retryUpload(DivineVideoDraft draft) async {
-    if (_backgroundUploadId == null) {
-      Log.warning('⚠️ No background upload to retry', category: .video);
-
-      _backgroundUploadId = null; // Clear any stale upload ID
-      return const PublishError(PublishErrorKind.noRetry);
-    }
-
-    Log.info('🔄 Retrying upload: $_backgroundUploadId', category: .video);
-    try {
-      await uploadManager.retryUpload(_backgroundUploadId!);
-      final success = await _pollUploadProgress(draft.id, _backgroundUploadId!);
-
-      if (!success) {
-        final upload = uploadManager.getUpload(_backgroundUploadId!);
-        _backgroundUploadId = null;
-        return await _handleUploadError(
-          upload?.errorMessage ?? 'Retry failed',
-          StackTrace.current,
-          draft,
-        );
-      }
-
-      // Continue with publishing
-      return await publishVideo(draft: draft);
-    } catch (e, stackTrace) {
-      Log.error('📝 Failed to retry: $e', category: LogCategory.video);
-      return _handleUploadError(e, stackTrace, draft);
     }
   }
 

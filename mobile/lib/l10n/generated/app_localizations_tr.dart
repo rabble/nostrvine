@@ -123,6 +123,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Kaydedilmemiş Taslaklar';
 
   @override
+  String get settingsUploadInProgressTitle => 'Yükleme sürüyor';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    return 'Hâlâ $count video yükleniyor. Hesap değiştirmek yüklemeyi durdurur — videoların bu hesapta taslak olarak kalır.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     return '$count kaydedilmemiş taslağınız var. Hesap değiştirmek taslağınızı saklayacaktır, ancak önce yayınlamak veya gözden geçirmek isteyebilirsiniz.';
   }
@@ -7170,6 +7178,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Bu yükleme yarıda kaldı. Tekrar denemek ister misin?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Bu video başka bir hesaba ait. Paylaşmak için o hesaba geri dön.';
 
   @override
   String get publishErrorGeneric =>

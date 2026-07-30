@@ -122,6 +122,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Osparade utkast';
 
   @override
+  String get settingsUploadInProgressTitle => 'Uppladdning pågår';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'videor',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'dina videor sparas som utkast',
+      one: 'din video sparas som utkast',
+    );
+    return 'Du har fortfarande $count $_temp0 som laddas upp. Att byta konto stoppar uppladdningen — $_temp1 i det här kontot.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7192,6 +7212,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Uppladdningen avbröts. Vill du försöka igen?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Den här videon hör till ett annat konto. Byt tillbaka till det kontot för att posta den.';
 
   @override
   String get publishErrorGeneric => 'Något gick fel. Försök igen.';

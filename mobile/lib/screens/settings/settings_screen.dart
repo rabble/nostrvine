@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -101,53 +102,100 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// Confirmation sheet shown before an account switch that would disturb
+  /// unfinished work. Returns true when the user chose to switch anyway.
+  Future<bool> _confirmSwitchAnyway({
+    required String title,
+    required String message,
+  }) async {
+    final proceed = await VineBottomSheet.show<bool>(
+      context: context,
+      scrollable: false,
+      contentTitle: title,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            message,
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.settingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.settingsSwitchAnyway,
+                  type: DivineButtonType.error,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    return proceed ?? false;
+  }
+
+  Future<bool> _parkUploadsBeforeAccountChange(
+    BackgroundPublishBloc publishBloc,
+  ) async {
+    try {
+      await publishBloc.parkInFlight();
+      return true;
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to park uploads before account change',
+        name: 'SettingsScreen',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.settingsAccountSwitchFailed)),
+      );
+      return false;
+    }
+  }
+
   Future<void> _handleSwitchAccount() async {
     final accountState = _accountCubit.state;
+    final publishBloc = context.read<BackgroundPublishBloc>();
 
-    if (accountState.hasDrafts) {
-      final draftCount = accountState.draftCount;
-      final proceedWithWarning = await VineBottomSheet.show<bool>(
-        context: context,
-        scrollable: false,
-        contentTitle: context.l10n.settingsUnsavedDraftsTitle,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(
-              context.l10n.settingsUnsavedDraftsMessage(draftCount),
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Row(
-              spacing: 16,
-              children: [
-                Expanded(
-                  child: DivineButton(
-                    label: context.l10n.settingsCancel,
-                    type: DivineButtonType.secondary,
-                    expanded: true,
-                    onPressed: () => Navigator.of(context).pop(false),
-                  ),
-                ),
-                Expanded(
-                  child: DivineButton(
-                    label: context.l10n.settingsSwitchAnyway,
-                    type: DivineButtonType.error,
-                    expanded: true,
-                    onPressed: () => Navigator.of(context).pop(true),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+    // An in-flight upload cannot survive the switch — the leaving account's
+    // container owns the UploadManager and is torn down. Say so here; the
+    // videos are parked back as drafts of the account they were recorded on
+    // only once a target account is actually picked, since confirming this
+    // sheet still leaves the user free to back out of the picker below.
+    final inFlightCount = publishBloc.state.uploads
+        .where((upload) => upload.result == null)
+        .length;
+    if (inFlightCount > 0) {
+      final proceed = await _confirmSwitchAnyway(
+        title: context.l10n.settingsUploadInProgressTitle,
+        message: context.l10n.settingsUploadInProgressMessage(inFlightCount),
       );
-
-      if (proceedWithWarning != true) return;
+      if (!proceed) return;
+    } else if (accountState.hasDrafts) {
+      final proceed = await _confirmSwitchAnyway(
+        title: context.l10n.settingsUnsavedDraftsTitle,
+        message: context.l10n.settingsUnsavedDraftsMessage(
+          accountState.draftCount,
+        ),
+      );
+      if (!proceed) return;
     }
 
     if (!mounted) return;
@@ -162,6 +210,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () async {
               Navigator.of(context).pop();
               if (account.pubkeyHex == accountState.currentPubkey) return;
+
+              // Park now that a switch is actually committed, and await it:
+              // `swapAccount` disposes the container this bloc lives in, so a
+              // fire-and-forget event would race the teardown and lose the
+              // video. Parking reads the queue now rather than reusing the ids
+              // the warning was built from, so an upload that finished while
+              // the picker was open is left alone.
+              if (!await _parkUploadsBeforeAccountChange(publishBloc)) return;
+              if (!mounted) return;
+
               final deviceScope = ref.read(deviceScopeProvider);
               try {
                 // In-place swap: no sign-out, no welcome-screen bounce. On
@@ -191,6 +249,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _AddAccountTile(
           onTap: () async {
             Navigator.of(context).pop();
+
+            // Adding an account ends this session too — `addNewAccount` signs
+            // out to reach the sign-in flow. It keeps the local rows, but an
+            // in-flight upload's copy would be stranded at
+            // `PublishStatus.publishing`, which the drafts library filters out,
+            // so the video would be missing from both the queue and the library
+            // until a later launch swept it up. Park it for the same reason the
+            // switch above does, under the same warning this sheet opened with.
+            if (!await _parkUploadsBeforeAccountChange(publishBloc)) return;
+            if (!mounted) return;
             await _accountCubit.addNewAccount();
           },
         ),

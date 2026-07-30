@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "O vídeo foi enviado, mas não foi possível preparar a miniatura. Tente novamente.",
     "publishErrorNostrPublishFailed": "O vídeo foi enviado, mas não foi possível publicar o post. Verifique suas configurações de relay e tente novamente.",
     "publishErrorInterrupted": "Este envio foi interrompido. Quer tentar de novo?",
+    "publishErrorAccountChanged": "Este vídeo é de outra conta. Volte para essa conta para publicá-lo.",
     "publishErrorGeneric": "Algo deu errado. Tente novamente.",
     "publishErrorRateLimited": "Muitos envios agora. Espere um momento e tente novamente.",
     "publishErrorUploadSessionExpired": "Sua sessão de envio expirou. Tente novamente.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Adicionar outra conta",
   "settingsAccountSwitchFailed": "Não foi possível trocar de conta. Tente novamente.",
     "settingsUnsavedDraftsTitle": "Rascunhos não salvos",
+    "settingsUploadInProgressTitle": "Envio em andamento",
+    "settingsUploadInProgressMessage": "Você ainda tem {count} {count, plural, one{vídeo} other{vídeos}} enviando. Trocar de conta interrompe o envio — {count, plural, one{seu vídeo fica como rascunho} other{seus vídeos ficam como rascunhos}} nesta conta.",
     "settingsUnsavedDraftsMessage": "Você tem {count} {count, plural, =1{rascunho não salvo} other{rascunhos não salvos}}. Trocar de conta vai manter {count, plural, =1{seu rascunho} other{seus rascunhos}}, mas talvez você queira publicar ou revisar {count, plural, =1{ele} other{eles}} antes.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

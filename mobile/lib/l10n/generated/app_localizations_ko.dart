@@ -116,6 +116,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => '저장되지 않은 초안';
 
   @override
+  String get settingsUploadInProgressTitle => '업로드 중';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    return '아직 동영상 $count개를 업로드 중이에요. 계정을 바꾸면 업로드가 중단되고, 동영상은 이 계정에 초안으로 남아요.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     return '저장되지 않은 초안이 $count개 있어요. 계정을 바꿔도 초안은 유지되지만, 먼저 게시하거나 검토하는 게 좋아요.';
   }
@@ -6928,6 +6936,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get publishErrorInterrupted => '업로드가 중단됐어요. 다시 시도할까요?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      '이 영상은 다른 계정 거예요. 올리려면 그 계정으로 다시 전환해 주세요.';
 
   @override
   String get publishErrorGeneric => '문제가 생겼어요. 다시 시도해주세요.';

@@ -121,6 +121,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'مسودات غير محفوظة';
 
   @override
+  String get settingsUploadInProgressTitle => 'جارٍ الرفع';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مقطع قيد الرفع',
+      many: '$count مقطعًا قيد الرفع',
+      few: '$count مقاطع قيد الرفع',
+      two: 'مقطعان قيد الرفع',
+      one: 'مقطع واحد قيد الرفع',
+      zero: 'مقاطع قيد الرفع',
+    );
+    return 'لا يزال لديك $_temp0. تبديل الحساب يوقف الرفع — تبقى المقاطع كمسودات في هذا الحساب.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7152,6 +7170,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'تم قطع هذا الرفع. هل ترغب في المحاولة مرّة أخرى؟';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'هذا الفيديو يخصّ حسابًا آخر. ارجع إلى ذلك الحساب لنشره.';
 
   @override
   String get publishErrorGeneric => 'حدث خطأ ما. يرجى المحاولة مرّة أخرى.';

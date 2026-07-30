@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "De video is geüpload, maar de thumbnail kon niet worden voorbereid. Probeer het opnieuw.",
     "publishErrorNostrPublishFailed": "De video is geüpload, maar de post kon niet worden gepubliceerd. Controleer je relay-instellingen en probeer het opnieuw.",
     "publishErrorInterrupted": "Deze upload is onderbroken. Wil je het opnieuw proberen?",
+    "publishErrorAccountChanged": "Deze video hoort bij een ander account. Ga terug naar dat account om hem te posten.",
     "publishErrorGeneric": "Er ging iets mis. Probeer het opnieuw.",
     "publishErrorRateLimited": "Te veel uploads op dit moment. Wacht even en probeer het opnieuw.",
     "publishErrorUploadSessionExpired": "Je uploadsessie is verlopen. Probeer het opnieuw.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Nog een account toevoegen",
   "settingsAccountSwitchFailed": "Kan niet van account wisselen. Probeer het opnieuw.",
     "settingsUnsavedDraftsTitle": "Niet-opgeslagen concepten",
+    "settingsUploadInProgressTitle": "Upload bezig",
+    "settingsUploadInProgressMessage": "Er {count, plural, one{wordt nog {count} video} other{worden nog {count} video's}} geüpload. Van account wisselen stopt de upload — {count, plural, one{je video blijft als concept} other{je video's blijven als concepten}} in dit account.",
     "settingsUnsavedDraftsMessage": "Je hebt {count, plural, one{1 niet-opgeslagen concept} other{{count} niet-opgeslagen concepten}}. Als je van account wisselt blijven {count, plural, one{je concept} other{je concepten}} bewaard, maar misschien wil je {count, plural, one{het} other{ze}} eerst publiceren of nakijken.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

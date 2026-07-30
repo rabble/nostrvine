@@ -2,6 +2,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -183,15 +184,78 @@ class BackgroundPublishBloc
     }).toList();
     emit(state.copyWith(uploads: remainingUploads));
 
-    final vanishedDraft = uploadToVanish?.draft;
-    if (vanishedDraft?.sourceDraftId != null) {
-      await _deleteDraft(vanishedDraft!.id);
+    await _park(draftId: event.draftId, draft: uploadToVanish?.draft);
+  }
+
+  /// Parks every upload that has not finished yet back as a draft, awaiting
+  /// the writes.
+  ///
+  /// A caller that is about to tear down the container this bloc lives in —
+  /// the account switch — must use this instead of adding one
+  /// [BackgroundPublishVanished] per upload: `add` is fire-and-forget, so the
+  /// handler's writes would race the teardown and the video would be lost on
+  /// anything slower than a single fast write. The events are still dispatched
+  /// afterwards, for the in-memory cleanup only; re-parking an already parked
+  /// upload is a no-op.
+  Future<void> parkInFlight() async {
+    final inFlight = state.uploads
+        .where((upload) => upload.result == null)
+        .toList();
+    if (inFlight.isEmpty) return;
+
+    for (final upload in inFlight) {
+      await _park(
+        draftId: upload.draft.id,
+        draft: upload.draft,
+        propagateFailure: true,
+      );
+    }
+    for (final upload in inFlight) {
+      add(BackgroundPublishVanished(draftId: upload.draft.id));
+    }
+  }
+
+  /// Keeps an abandoned upload's video reachable.
+  ///
+  /// Dropping the publish copy is only safe while the draft it was copied from
+  /// is still there to fall back on; otherwise the copy is the last row holding
+  /// the video and deleting it would discard the video instead of saving it.
+  /// Park the copy as a draft in that case.
+  ///
+  /// [VideoEditorConstants.autoSaveId] never counts as a surviving source, even
+  /// when a row under that id is on disk. A fresh recording's source *is* that
+  /// autosave draft, which `clearAll` reaps ~600ms after the publish handoff —
+  /// and it is a single slot every later editor session recycles, so whatever
+  /// sits there by the time this upload is parked belongs to a different
+  /// session, or (since [DraftStorageService.draftExists] is deliberately
+  /// unscoped) to another account. Reading that as "the source survived" would
+  /// delete the only copy of the video. Parking a copy whose autosave row does
+  /// still hold the same video costs a duplicate draft; the other way round
+  /// costs the video.
+  ///
+  /// Idempotent: a repeat call finds the copy already deleted, or rewrites the
+  /// same draft status. Ownership-neutral by design — every write it makes is
+  /// keyed on the draft's primary key and none of them touch `ownerPubkey`, so
+  /// the row stays with the account that recorded it no matter which account
+  /// the service handed here belongs to.
+  Future<void> _park({
+    required String draftId,
+    required DivineVideoDraft? draft,
+    bool propagateFailure = false,
+  }) async {
+    final sourceDraftId = draft?.sourceDraftId;
+    if (sourceDraftId != null &&
+        sourceDraftId != draft!.id &&
+        sourceDraftId != VideoEditorConstants.autoSaveId &&
+        await _draftStorageService.draftExists(sourceDraftId)) {
+      await _deleteDraft(draft.id);
       return;
     }
 
     await _persistPublishStatus(
-      draftId: event.draftId,
+      draftId: draftId,
       status: PublishStatus.draft,
+      propagateFailure: propagateFailure,
     );
   }
 
@@ -253,7 +317,9 @@ class BackgroundPublishBloc
     await _deleteDraft(publishedDraft.id);
 
     final sourceDraftId = publishedDraft.sourceDraftId;
-    if (sourceDraftId != null && sourceDraftId != publishedDraft.id) {
+    if (sourceDraftId != null &&
+        sourceDraftId != publishedDraft.id &&
+        sourceDraftId != VideoEditorConstants.autoSaveId) {
       await _deleteDraft(sourceDraftId);
     }
   }
@@ -276,13 +342,17 @@ class BackgroundPublishBloc
     required String draftId,
     required PublishStatus status,
     String? publishError,
+    bool propagateFailure = false,
   }) async {
     try {
-      await _draftStorageService.updatePublishStatus(
+      final updated = await _draftStorageService.updatePublishStatus(
         draftId: draftId,
         status: status,
         publishError: publishError,
       );
+      if (!updated) {
+        throw StateError('Draft $draftId was missing during status update');
+      }
     } catch (error, stackTrace) {
       Log.error(
         'Failed to persist publish status for draft $draftId: $error',
@@ -291,6 +361,7 @@ class BackgroundPublishBloc
         stackTrace: stackTrace,
       );
       addError(error, stackTrace);
+      if (propagateFailure) rethrow;
     }
   }
 }

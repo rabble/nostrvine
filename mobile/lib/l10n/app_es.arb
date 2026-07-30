@@ -20,6 +20,7 @@
     "publishErrorThumbnailFailed": "El vídeo se subió, pero no se pudo preparar la miniatura. Intentá de nuevo.",
     "publishErrorNostrPublishFailed": "El vídeo se subió, pero no se pudo completar la publicación. Revisá tus ajustes de relays e intentá de nuevo.",
     "publishErrorInterrupted": "Esta subida se interrumpió. ¿Querés intentar de nuevo?",
+    "publishErrorAccountChanged": "Este video es de otra cuenta. Volvé a esa cuenta para publicarlo.",
     "publishErrorGeneric": "Algo salió mal. Intentá de nuevo.",
     "publishErrorRateLimited": "Demasiadas subidas ahora mismo. Esperá un momento e intentá de nuevo.",
     "publishErrorUploadSessionExpired": "Tu sesión de subida expiró. Intentá de nuevo.",
@@ -88,6 +89,8 @@
     "settingsAddAnotherAccount": "Agregar otra cuenta",
   "settingsAccountSwitchFailed": "No se pudieron cambiar las cuentas. Inténtalo de nuevo.",
     "settingsUnsavedDraftsTitle": "Borradores sin guardar",
+    "settingsUploadInProgressTitle": "Subida en curso",
+    "settingsUploadInProgressMessage": "Todavía tenés {count} {count, plural, one{video} other{videos}} subiendo. Cambiar de cuenta detiene la subida: {count, plural, one{tu video queda como borrador} other{tus videos quedan como borradores}} en esta cuenta.",
     "settingsUnsavedDraftsMessage": "Tenés {count} {count, plural, =1{borrador sin guardar} other{borradores sin guardar}}. Cambiar de cuenta va a mantener {count, plural, =1{tu borrador} other{tus borradores}}, pero quizás quieras publicar o revisar{count, plural, =1{lo} other{los}} primero.",
     "@settingsUnsavedDraftsMessage": {
         "placeholders": {

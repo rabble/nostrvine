@@ -72,6 +72,11 @@ enum PublishErrorKind {
   /// A previous upload was interrupted (surfaced on resume).
   interrupted,
 
+  /// The draft belongs to a different account than the one signed in now —
+  /// the user switched accounts while the upload was in flight. Publishing
+  /// would post the video under the wrong identity.
+  accountChanged,
+
   /// Unclassified failure — generic "try again" copy.
   generic,
 }

@@ -122,6 +122,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Ungespeicherte Entwürfe';
 
   @override
+  String get settingsUploadInProgressTitle => 'Upload läuft';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Videos',
+      one: 'Video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'deine Videos bleiben als Entwürfe',
+      one: 'dein Video bleibt als Entwurf',
+    );
+    return 'Du lädst gerade noch $count $_temp0 hoch. Beim Kontowechsel wird der Upload gestoppt — $_temp1 in diesem Konto.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7283,6 +7303,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Dieser Upload wurde unterbrochen. Möchtest du es erneut versuchen?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Dieses Video gehört zu einem anderen Konto. Wechsle zurück zu diesem Konto, um es zu posten.';
 
   @override
   String get publishErrorGeneric =>

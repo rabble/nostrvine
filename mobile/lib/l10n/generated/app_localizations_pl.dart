@@ -130,6 +130,28 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Niezapisane wersje robocze';
 
   @override
+  String get settingsUploadInProgressTitle => 'Trwa przesyłanie';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'filmu',
+      many: 'filmów',
+      few: 'filmy',
+      one: 'film',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'filmy zostaną zapisane jako szkice',
+      one: 'film zostanie zapisany jako szkic',
+    );
+    return 'Masz jeszcze $count $_temp0 w trakcie przesyłania. Zmiana konta przerwie przesyłanie — $_temp1 na tym koncie.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7362,6 +7384,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Przesyłanie zostało przerwane. Chcesz spróbować ponownie?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Ten film należy do innego konta. Wróć na tamto konto, żeby go opublikować.';
 
   @override
   String get publishErrorGeneric => 'Coś poszło nie tak. Spróbuj ponownie.';

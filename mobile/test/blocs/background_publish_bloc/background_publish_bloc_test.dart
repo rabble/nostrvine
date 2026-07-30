@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/background_publish/publish_foreground_session.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
@@ -55,10 +58,14 @@ void main() {
         status: any(named: 'status'),
         publishError: any(named: 'publishError'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => true);
     when(
       () => mockDraftStorageService.deleteDraft(any()),
     ).thenAnswer((_) async {});
+    // Default: the draft a publish copy was made from is still on disk.
+    when(
+      () => mockDraftStorageService.draftExists(any()),
+    ).thenAnswer((_) async => true);
   });
 
   group('BackgroundPublishState', () {
@@ -255,6 +262,49 @@ void main() {
             verify(
               () => mockDraftStorageService.deleteDraft(sourceDraftId),
             ).called(1);
+          },
+        );
+
+        blocTest(
+          'keeps the recycled autosave slot when the publish copy succeeds',
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          ),
+          setUp: () {
+            when(
+              () => publishDraft.sourceDraftId,
+            ).thenReturn(VideoEditorConstants.autoSaveId);
+          },
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: publishDraft,
+              publishmentProcess: Future.value(const PublishSuccess()),
+            ),
+          ),
+          expect: () => [
+            BackgroundPublishState(
+              uploads: [
+                BackgroundUpload(
+                  draft: publishDraft,
+                  result: null,
+                  progress: 0,
+                ),
+              ],
+            ),
+            const BackgroundPublishState(
+              recentlySucceededIds: {publishDraftId},
+            ),
+          ],
+          verify: (_) {
+            verify(
+              () => mockDraftStorageService.deleteDraft(publishDraftId),
+            ).called(1);
+            verifyNever(
+              () => mockDraftStorageService.deleteDraft(
+                VideoEditorConstants.autoSaveId,
+              ),
+            );
           },
         );
       });
@@ -504,6 +554,286 @@ void main() {
               publishError: any(named: 'publishError'),
             ),
           );
+        },
+      );
+
+      blocTest(
+        'parks the publish copy when the draft it was copied from is gone',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(() => draft.sourceDraftId).thenReturn('draft_source');
+          when(
+            () => mockDraftStorageService.draftExists('draft_source'),
+          ).thenAnswer((_) async => false);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest(
+        'parks a copy of the autosave slot even while a row under that id '
+        'exists — regression: the shared slot is not a usable fallback',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          // A fresh recording's source is the fixed autosave id, which
+          // `clearAll` reaps right after the publish handoff. Whatever sits
+          // under that id by the time this upload is parked belongs to a
+          // *later* editor session (or, since `draftExists` is unscoped, to
+          // another account) — never to this video, so it is not a fallback.
+          when(
+            () => draft.sourceDraftId,
+          ).thenReturn(VideoEditorConstants.autoSaveId);
+          when(
+            () => mockDraftStorageService.draftExists(
+              VideoEditorConstants.autoSaveId,
+            ),
+          ).thenAnswer((_) async => true);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest(
+        'parks a self-referencing publish row instead of deleting it',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(() => draft.sourceDraftId).thenReturn(draftId);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 1.0),
+          ],
+        ),
+        act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
+        expect: () => [const BackgroundPublishState()],
+        verify: (_) {
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
+          verify(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: draftId,
+              status: PublishStatus.draft,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
+    group('parkInFlight', () {
+      late _MockVineDraft inFlight;
+      late _MockVineDraft alsoInFlight;
+      late _MockVineDraft finished;
+
+      _MockVineDraft draftWithId(String id) {
+        final draft = _MockVineDraft();
+        when(() => draft.id).thenReturn(id);
+        when(() => draft.sourceDraftId).thenReturn(null);
+        return draft;
+      }
+
+      setUp(() {
+        inFlight = draftWithId('in_flight');
+        alsoInFlight = draftWithId('also_in_flight');
+        finished = draftWithId('finished');
+      });
+
+      blocTest(
+        'parks every upload that has not finished yet',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: inFlight, result: null, progress: 0),
+            BackgroundUpload(draft: alsoInFlight, result: null, progress: 0),
+            BackgroundUpload(
+              draft: finished,
+              result: const PublishError(PublishErrorKind.generic),
+              progress: 1,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.parkInFlight(),
+        verify: (bloc) {
+          for (final draftId in ['in_flight', 'also_in_flight']) {
+            verify(
+              () => mockDraftStorageService.updatePublishStatus(
+                draftId: draftId,
+                status: PublishStatus.draft,
+              ),
+            ).called(greaterThanOrEqualTo(1));
+          }
+          verifyNever(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: 'finished',
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          );
+          // The finished upload stays in the queue so its failure sheet is
+          // still there to act on.
+          expect(bloc.state.uploads.map((upload) => upload.draft.id), [
+            'finished',
+          ]);
+        },
+      );
+
+      blocTest(
+        'does not return before the park write has landed',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: inFlight, result: null, progress: 0),
+          ],
+        ),
+        act: (bloc) async {
+          // The account switch disposes the container this bloc lives in the
+          // moment parkInFlight resolves, so a write still in flight at that
+          // point is a lost video.
+          final write = Completer<bool>();
+          when(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          ).thenAnswer((_) => write.future);
+
+          var parked = false;
+          final parking = bloc.parkInFlight().then((_) => parked = true);
+          await Future<void>.delayed(Duration.zero);
+          expect(parked, isFalse);
+
+          write.complete(true);
+          await parking;
+          expect(parked, isTrue);
+        },
+      );
+
+      blocTest(
+        'propagates a failed park write to the account-switch caller',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          ).thenThrow(Exception('database locked'));
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: inFlight, result: null, progress: 0),
+          ],
+        ),
+        act: (bloc) async {
+          await expectLater(
+            bloc.parkInFlight(),
+            throwsA(isA<Exception>()),
+          );
+        },
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest(
+        'rejects a park write that did not update a draft row',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        setUp: () {
+          when(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          ).thenAnswer((_) async => false);
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: inFlight, result: null, progress: 0),
+          ],
+        ),
+        act: (bloc) async {
+          await expectLater(
+            bloc.parkInFlight(),
+            throwsA(isA<StateError>()),
+          );
+        },
+        errors: () => [isA<StateError>()],
+      );
+
+      blocTest(
+        'does nothing when no upload is in flight',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          draftStorageService: mockDraftStorageService,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: finished,
+              result: const PublishError(PublishErrorKind.generic),
+              progress: 1,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.parkInFlight(),
+        expect: () => const <BackgroundPublishState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockDraftStorageService.updatePublishStatus(
+              draftId: any(named: 'draftId'),
+              status: any(named: 'status'),
+              publishError: any(named: 'publishError'),
+            ),
+          );
+          verifyNever(() => mockDraftStorageService.deleteDraft(any()));
         },
       );
     });

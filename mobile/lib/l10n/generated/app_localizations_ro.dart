@@ -130,6 +130,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Ciorne nesalvate';
 
   @override
+  String get settingsUploadInProgressTitle => 'Încărcare în curs';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'de videoclipuri',
+      few: 'videoclipuri',
+      one: 'videoclip',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'videoclipurile rămân ca schițe',
+      one: 'videoclipul rămâne ca schiță',
+    );
+    return 'Mai ai $count $_temp0 în curs de încărcare. Schimbarea contului oprește încărcarea — $_temp1 în acest cont.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7361,6 +7382,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Această încărcare a fost întreruptă. Vrei să încerci din nou?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Acest videoclip aparține altui cont. Comută înapoi la acel cont ca să îl postezi.';
 
   @override
   String get publishErrorGeneric => 'Ceva nu a mers bine. Încearcă din nou.';

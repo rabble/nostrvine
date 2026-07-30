@@ -122,6 +122,26 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Bozze non salvate';
 
   @override
+  String get settingsUploadInProgressTitle => 'Caricamento in corso';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'video',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'i tuoi video restano come bozze',
+      one: 'il tuo video resta come bozza',
+    );
+    return 'Hai ancora $count $_temp0 in caricamento. Cambiare account interrompe il caricamento: $_temp1 in questo account.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7262,6 +7282,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get publishErrorInterrupted =>
       'Questo caricamento è stato interrotto. Vuoi riprovare?';
+
+  @override
+  String get publishErrorAccountChanged =>
+      'Questo video appartiene a un altro account. Torna su quell\'account per pubblicarlo.';
 
   @override
   String get publishErrorGeneric => 'Qualcosa è andato storto. Riprova.';

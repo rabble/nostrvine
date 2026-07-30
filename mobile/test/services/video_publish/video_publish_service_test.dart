@@ -86,6 +86,12 @@ void main() {
 
     progressChanges = [];
 
+    // Default: the draft belongs to the signed-in account. The ownership guard
+    // is exercised explicitly in the "account switch" group.
+    when(
+      () => mockDraftService.isDraftOwnedByAnotherAccount(any()),
+    ).thenAnswer((_) async => false);
+
     service = VideoPublishService(
       uploadManager: mockUploadManager,
       authService: mockAuthService,
@@ -1268,120 +1274,49 @@ void main() {
       });
     });
 
-    group('retryUpload', () {
-      test('returns error when no upload to retry', () async {
-        // Arrange
-        final draft = _createTestDraft();
-
-        // Act
-        final result = await service.retryUpload(draft);
-
-        // Assert
-        expect(result, isA<PublishError>());
-        expect((result as PublishError).kind, PublishErrorKind.noRetry);
+    // Switching accounts mid-upload leaves the leaving account's draft
+    // reachable from the new session. Publishing it would sign the video with
+    // the wrong identity and reassign the draft's owner on the way.
+    group('account switched mid-upload', () {
+      setUp(() {
+        when(
+          () => mockDraftService.isDraftOwnedByAnotherAccount(any()),
+        ).thenAnswer((_) async => true);
       });
 
-      test(
-        'returns no upload to retry after auth failure clears upload id',
-        () async {
-          // Arrange - trigger an auth failure to set _backgroundUploadId
-          when(() => mockAuthService.isAuthenticated).thenReturn(false);
-          when(
-            () => mockDraftService.saveDraft(any()),
-          ).thenAnswer((_) async {});
+      test('publishVideo refuses a draft owned by another account', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+        final draft = _createTestDraft();
 
-          final draft = _createTestDraft();
-          await service.publishVideo(draft: draft);
+        final result = await service.publishVideo(draft: draft);
 
-          // Act - retry should fail because auth failure cleared the upload id
-          final result = await service.retryUpload(draft);
-
-          // Assert
-          expect(result, isA<PublishError>());
-          expect((result as PublishError).kind, PublishErrorKind.noRetry);
-        },
-      );
-
-      test(
-        'returns no upload to retry after upload failure clears upload id',
-        () async {
-          // Arrange - trigger an upload failure
-          when(() => mockAuthService.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthService.currentPublicKeyHex,
-          ).thenReturn('test_pubkey');
-          when(
-            () => mockDraftService.saveDraft(any()),
-          ).thenAnswer((_) async {});
-          when(() => mockUploadManager.isInitialized).thenReturn(true);
-          when(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
-              nostrPubkey: any(named: 'nostrPubkey'),
-              onProgress: any(named: 'onProgress'),
-            ),
-          ).thenAnswer(
-            (_) async => _createPendingUpload(
-              status: UploadStatus.failed,
-              errorMessage: 'Network error',
-            ),
-          );
-          when(() => mockUploadManager.getUpload(any())).thenReturn(
-            _createPendingUpload(
-              status: UploadStatus.failed,
-              errorMessage: 'Network error',
-            ),
-          );
-          when(
-            () => mockBlossomService.getBlossomServer(),
-          ).thenAnswer((_) async => 'https://test.server');
-
-          final draft = _createTestDraft();
-          await service.publishVideo(draft: draft);
-
-          // Act - retry should fail because upload failure cleared the id
-          final result = await service.retryUpload(draft);
-
-          // Assert
-          expect(result, isA<PublishError>());
-          expect((result as PublishError).kind, PublishErrorKind.noRetry);
-        },
-      );
-
-      test(
-        'returns no upload to retry after exception clears upload id',
-        () async {
-          // Arrange - trigger an exception during publish
-          when(() => mockAuthService.isAuthenticated).thenReturn(true);
-          when(
-            () => mockAuthService.currentPublicKeyHex,
-          ).thenReturn('test_pubkey');
-          when(
-            () => mockDraftService.saveDraft(any()),
-          ).thenAnswer((_) async {});
-          when(() => mockUploadManager.isInitialized).thenReturn(true);
-          when(
-            () => mockUploadManager.startUploadFromDraft(
-              draft: any(named: 'draft'),
-              nostrPubkey: any(named: 'nostrPubkey'),
-              onProgress: any(named: 'onProgress'),
-            ),
-          ).thenThrow(Exception('unexpected error'));
-          when(
-            () => mockBlossomService.getBlossomServer(),
-          ).thenAnswer((_) async => 'https://test.server');
-
-          final draft = _createTestDraft();
-          await service.publishVideo(draft: draft);
-
-          // Act - retry should fail because exception cleared the id
-          final result = await service.retryUpload(draft);
-
-          // Assert
-          expect(result, isA<PublishError>());
-          expect((result as PublishError).kind, PublishErrorKind.noRetry);
-        },
-      );
+        expect(result, isA<PublishError>());
+        expect(
+          (result as PublishError).kind,
+          PublishErrorKind.accountChanged,
+        );
+        verifyNever(() => mockDraftService.saveDraft(any()));
+        verifyNever(
+          () => mockUploadManager.startUploadFromDraft(
+            draft: any(named: 'draft'),
+            nostrPubkey: any(named: 'nostrPubkey'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        );
+        verifyNever(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        );
+      });
     });
 
     group('upload reuse', () {
