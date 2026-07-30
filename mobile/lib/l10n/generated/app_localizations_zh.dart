@@ -5490,12 +5490,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String collaboratorInviteDmBody(String title, String url) {
-    return '你被邀请参与《$title》的合作：$url\n\nOpen diVine to review and accept.';
+    return 'You were invited to collaborate on $title: $url\n\nOpen diVine to review and accept.';
   }
 
   @override
   String collaboratorInviteDmBodyUntitled(String url) {
-    return '你被邀请参与一个视频的合作：$url\n\nOpen diVine to review and accept.';
+    return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
   }
 
   @override
