@@ -20,6 +20,12 @@ abstract interface class NotificationPreferencesStore {
     String pubkey,
     NotificationPreferences preferences,
   );
+
+  /// Schema version of the kinds list last published for [pubkey], or `null`
+  /// when nothing has been published since the marker was introduced.
+  Future<int?> loadPublishedSchemaVersion(String pubkey);
+
+  Future<void> savePublishedSchemaVersion(String pubkey, int version);
 }
 
 class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
@@ -37,6 +43,7 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
   static const _dirtyBoxName = 'push_notification_preferences_dirty';
   static const _prefsKey = 'push_preferences';
   static const _dirtyPrefix = 'push_preferences_dirty_';
+  static const _schemaVersionPrefix = 'push_preferences_schema_';
 
   @override
   Future<NotificationPreferences> loadPreferences() async {
@@ -154,11 +161,43 @@ class HiveNotificationPreferencesStore implements NotificationPreferencesStore {
     }
   }
 
+  @override
+  Future<int?> loadPublishedSchemaVersion(String pubkey) async {
+    try {
+      final box = await _openDirtyBox();
+      return box.get(_schemaVersionKey(pubkey)) as int?;
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to load published preferences schema version: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  @override
+  Future<void> savePublishedSchemaVersion(String pubkey, int version) async {
+    try {
+      final box = await _openDirtyBox();
+      await box.put(_schemaVersionKey(pubkey), version);
+    } on Object catch (error) {
+      Log.warning(
+        'Failed to persist published preferences schema version: $error',
+        name: 'NotificationPreferencesService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   static Future<Box<dynamic>> openBox() => Hive.openBox<dynamic>(_boxName);
   static Future<Box<dynamic>> openDirtyBox() =>
       Hive.openBox<dynamic>(_dirtyBoxName);
 
   static String _dirtyKey(String pubkey) => '$_dirtyPrefix$pubkey';
+
+  static String _schemaVersionKey(String pubkey) =>
+      '$_schemaVersionPrefix$pubkey';
 }
 
 enum NotificationPreferencesSyncOutcome {
@@ -202,6 +241,40 @@ class NotificationPreferencesService {
     }
   }
 
+  /// Schema version of the kind list [NotificationPreferences.toKindsList]
+  /// currently emits.
+  ///
+  /// Bump this whenever a kind is added or removed, so already-installed
+  /// clients republish instead of leaving the push service acting on a kind
+  /// list that predates the change.
+  ///
+  /// * 1 — added kind 34236 (new-post / "bell" notifications).
+  static const int publishedKindsSchemaVersion = 1;
+
+  /// Marks preferences dirty when the last published kind list predates
+  /// [publishedKindsSchemaVersion].
+  ///
+  /// Without this, an upgrading user's stored preferences read back with
+  /// new flags enabled locally while the push service still holds the old
+  /// kind list — the settings screen shows a notification type switched on
+  /// that the service is filtering out, and nothing ever republishes because
+  /// only an explicit user edit marks dirty.
+  ///
+  /// Marking dirty rather than publishing directly reuses the caller's
+  /// readiness gating and retry handling.
+  Future<bool> markDirtyIfSchemaOutdated(String pubkey) async {
+    final published = await _store.loadPublishedSchemaVersion(pubkey);
+    if (published == publishedKindsSchemaVersion) return false;
+
+    // A pending edit is already queued to publish and will record the marker
+    // on success. Overwriting it here would discard the user's change in
+    // favour of the last-saved snapshot.
+    if (await _store.loadDirty(pubkey) != null) return false;
+
+    await _store.markDirty(pubkey, await _store.loadPreferences());
+    return true;
+  }
+
   Future<NotificationPreferencesSyncOutcome> syncDirtyPreferencesForPubkey(
     String pubkey,
   ) async {
@@ -220,6 +293,12 @@ class NotificationPreferencesService {
       return NotificationPreferencesSyncOutcome.stillDirty;
     }
 
+    // Recorded only after the publish lands, so a failed publish leaves the
+    // marker behind and the next readiness pass retries.
+    await _store.savePublishedSchemaVersion(
+      pubkey,
+      publishedKindsSchemaVersion,
+    );
     await _store.clearDirtyIfMatches(pubkey, preferences);
     final dirty = await _store.loadDirty(pubkey);
     return dirty == null

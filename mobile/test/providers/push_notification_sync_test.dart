@@ -44,6 +44,17 @@ class _MockEvent extends Mock implements Event {}
 
 class _FakeNotificationPreferencesStore
     implements NotificationPreferencesStore {
+  final publishedSchemaVersions = <String, int>{};
+
+  @override
+  Future<int?> loadPublishedSchemaVersion(String pubkey) async =>
+      publishedSchemaVersions[pubkey];
+
+  @override
+  Future<void> savePublishedSchemaVersion(String pubkey, int version) async {
+    publishedSchemaVersions[pubkey] = version;
+  }
+
   NotificationPreferences? savedPreferences;
   final dirtyPreferencesByPubkey = <String, NotificationPreferences>{};
   final _clearWaitersByPubkey = <String, List<Completer<void>>>{};

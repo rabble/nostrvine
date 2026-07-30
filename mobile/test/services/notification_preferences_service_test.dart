@@ -110,10 +110,91 @@ void main() {
 
     expect(outcome, NotificationPreferencesSyncOutcome.nothingToDrain);
   });
+
+  group('published kind-list schema', () {
+    const pubkey =
+        '3333333333333333333333333333333333333333333333333333333333333333';
+
+    test('republishes for a user who upgraded across a kinds change', () async {
+      // The pre-upgrade state: preferences stored, nothing dirty, and no
+      // schema marker because the marker did not exist when they last
+      // published. The push service is still filtering on the old kind list.
+      final store = _MemoryNotificationPreferencesStore()
+        ..preferences = const NotificationPreferences();
+      final published = <NotificationPreferences>[];
+      final service = NotificationPreferencesService(
+        store: store,
+        currentPubkey: () => pubkey,
+        publishPreferences: (_, prefs) async {
+          published.add(prefs);
+          return true;
+        },
+      );
+
+      expect(await service.markDirtyIfSchemaOutdated(pubkey), isTrue);
+      final outcome = await service.syncDirtyPreferencesForPubkey(pubkey);
+
+      expect(outcome, NotificationPreferencesSyncOutcome.publishedAndCleared);
+      expect(published.single.toKindsList(), contains(34236));
+      expect(
+        store.publishedSchemaVersions[pubkey],
+        NotificationPreferencesService.publishedKindsSchemaVersion,
+      );
+    });
+
+    test('does not republish once the marker is current', () async {
+      final store = _MemoryNotificationPreferencesStore()
+        ..publishedSchemaVersions[pubkey] =
+            NotificationPreferencesService.publishedKindsSchemaVersion;
+      final service = NotificationPreferencesService(
+        store: store,
+        currentPubkey: () => pubkey,
+        publishPreferences: (_, _) async => true,
+      );
+
+      expect(await service.markDirtyIfSchemaOutdated(pubkey), isFalse);
+      expect(
+        await service.syncDirtyPreferencesForPubkey(pubkey),
+        NotificationPreferencesSyncOutcome.nothingToDrain,
+      );
+    });
+
+    test('leaves the marker behind when the publish fails, so the next '
+        'readiness pass retries', () async {
+      final store = _MemoryNotificationPreferencesStore()
+        ..preferences = const NotificationPreferences();
+      final service = NotificationPreferencesService(
+        store: store,
+        currentPubkey: () => pubkey,
+        publishPreferences: (_, _) async => false,
+      );
+
+      await service.markDirtyIfSchemaOutdated(pubkey);
+      final outcome = await service.syncDirtyPreferencesForPubkey(pubkey);
+
+      expect(outcome, NotificationPreferencesSyncOutcome.stillDirty);
+      expect(store.publishedSchemaVersions[pubkey], isNull);
+      // The retry rides the surviving dirty entry rather than a second
+      // schema-triggered mark, so the pending payload is never clobbered.
+      expect(store.dirty[pubkey], isNotNull);
+      expect(await service.markDirtyIfSchemaOutdated(pubkey), isFalse);
+    });
+  });
 }
 
 class _MemoryNotificationPreferencesStore
     implements NotificationPreferencesStore {
+  final publishedSchemaVersions = <String, int>{};
+
+  @override
+  Future<int?> loadPublishedSchemaVersion(String pubkey) async =>
+      publishedSchemaVersions[pubkey];
+
+  @override
+  Future<void> savePublishedSchemaVersion(String pubkey, int version) async {
+    publishedSchemaVersions[pubkey] = version;
+  }
+
   NotificationPreferences? preferences;
   final dirty = <String, NotificationPreferences>{};
 
