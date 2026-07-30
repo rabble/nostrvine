@@ -745,22 +745,8 @@ class KeycastOAuth {
   /// Requires an active bearer [token]. Returns the parsed
   /// [KeycastAccountStatus], or null on any non-200 response, timeout, or
   /// network/parse error — callers treat null as "unknown / not a minor".
-  Future<KeycastAccountStatus?> getAccountStatus(String token) async {
-    try {
-      final response = await _client
-          .get(
-            Uri.parse('${config.serverUrl}/api/user/account'),
-            headers: {'Authorization': 'Bearer $token'},
-          )
-          .timeout(requestTimeout);
-
-      if (response.statusCode != 200) return null;
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return KeycastAccountStatus.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  Future<KeycastAccountStatus?> getAccountStatus(String token) async =>
+      (await _probeAccount(token))?.status;
 
   /// Verify a pending registration with the 6-digit PIN from the email.
   ///
@@ -1059,11 +1045,18 @@ class KeycastOAuth {
     }
   }
 
-  /// Whether [token] still authenticates against a token-only endpoint.
+  /// What Keycast reports about the account behind [token].
   ///
   /// `null` when the probe itself could not be answered — a timeout, a dropped
   /// connection, or a 5xx. Callers must not read that as a verdict either way.
-  Future<bool?> _tokenAuthenticates(String token) async {
+  ///
+  /// `GET /api/user/account` applies no email-verification or minor gate of its
+  /// own, so it answers for exactly the accounts an export refuses, and it
+  /// carries the account state as fields rather than as prose. `status` is null
+  /// only when an authenticated 200 did not parse.
+  Future<({bool authenticated, KeycastAccountStatus? status})?> _probeAccount(
+    String token,
+  ) async {
     try {
       final response = await _client
           .get(
@@ -1072,14 +1065,53 @@ class KeycastOAuth {
           )
           .timeout(requestTimeout);
 
-      return switch (response.statusCode) {
-        200 => true,
-        401 || 403 => false,
-        _ => null,
-      };
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        return (authenticated: false, status: null);
+      }
+      if (response.statusCode != 200) return null;
+
+      try {
+        return (
+          authenticated: true,
+          status: KeycastAccountStatus.fromJson(
+            jsonDecode(response.body) as Map<String, dynamic>,
+          ),
+        );
+      } catch (_) {
+        return (authenticated: true, status: null);
+      }
     } catch (_) {
       return null;
     }
+  }
+
+  /// Resolve a 401 or 403 export refusal against the account status [probe].
+  ///
+  /// Keycast's refusal bodies are English prose it owns and can reword per
+  /// deployment, and both codes are overloaded, so the discriminator is the
+  /// structured account state rather than the message.
+  static ExportKeyFailure _classifyRefusal(
+    int statusCode,
+    ({bool authenticated, KeycastAccountStatus? status})? probe,
+  ) {
+    // A probe that never answered proves nothing, so neither refusal may be
+    // reported as a verdict.
+    if (probe == null) return ExportKeyFailure.unknown;
+    if (!probe.authenticated) return ExportKeyFailure.needsSignIn;
+
+    // The token still authenticates, so what a 401 rejected was the password.
+    if (statusCode == 401) return ExportKeyFailure.wrongPassword;
+
+    // Mirrors the server's own order: the verified_minor custody refusal runs
+    // ahead of the email check, so a minor whose email is also unverified is a
+    // policy denial rather than a verification prompt. That refusal is worded
+    // uniformly on purpose and leaks no account state, which is why the state
+    // is read from the endpoint that is meant to carry it.
+    final status = probe.status;
+    if (status == null || status.verifiedMinor) return ExportKeyFailure.denied;
+    return status.emailVerified
+        ? ExportKeyFailure.denied
+        : ExportKeyFailure.emailUnverified;
   }
 
   /// Export the account's own signing key from Keycast.
@@ -1129,33 +1161,13 @@ class KeycastOAuth {
 
       final message = _errorMessageFrom(response);
 
-      // Keycast answers 401 for both a wrong account password and a stale
-      // bearer token, and its prose is not a stable discriminator. Re-probing
-      // an endpoint that needs only the token separates them: if the token
-      // still authenticates, the password is what failed. A probe that never
-      // answered proves neither, so it must not be read as a dead session.
-      if (response.statusCode == 401) {
-        return ExportKeyResult.failure(switch (await _tokenAuthenticates(
-          token,
-        )) {
-          true => ExportKeyFailure.wrongPassword,
-          false => ExportKeyFailure.needsSignIn,
-          null => ExportKeyFailure.unknown,
-        }, message: message);
-      }
-
-      // 403 covers two unrelated refusals: an unverified email, and the policy
-      // denial that carries the verified_minor custody refusal. That policy
-      // message is deliberately uniform so it leaks no account state, so the
-      // unverified email is identified positively and the rest falls through.
-      if (response.statusCode == 403) {
-        final unverifiedEmail =
-            message != null &&
-            message.toLowerCase().contains('verify your email');
+      // Each refusal code covers two unrelated causes — 401 is a wrong password
+      // or a stale token, 403 is an unverified email or the verified_minor
+      // custody denial — and the response body discriminates neither. Re-asking
+      // the account endpoint separates them from structured fields instead.
+      if (response.statusCode == 401 || response.statusCode == 403) {
         return ExportKeyResult.failure(
-          unverifiedEmail
-              ? ExportKeyFailure.emailUnverified
-              : ExportKeyFailure.denied,
+          _classifyRefusal(response.statusCode, await _probeAccount(token)),
           message: message,
         );
       }
@@ -1163,6 +1175,16 @@ class KeycastOAuth {
       if (response.statusCode == 404) {
         return ExportKeyResult.failure(
           ExportKeyFailure.noKey,
+          message: message,
+        );
+      }
+
+      // Keycast imposes no limit on this endpoint today, but anything in front
+      // of it can, and this is the one refusal whose remedy is to wait rather
+      // than to act — it must not fall through to the generic failure.
+      if (response.statusCode == 429) {
+        return ExportKeyResult.failure(
+          ExportKeyFailure.rateLimited,
           message: message,
         );
       }

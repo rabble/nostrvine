@@ -411,9 +411,11 @@ class VerifyEmailResult {
 /// Why a `POST /api/user/export-key` call did not return key material.
 ///
 /// The server writes its refusals as human prose that varies by deployment and
-/// is not stable enough to branch on, and it reuses HTTP 401 for both a wrong
-/// account password and a stale bearer token. Callers must switch on this enum
-/// rather than on [ExportKeyResult.error] or the status code.
+/// is not stable enough to branch on, and each of its two refusal codes covers
+/// two unrelated causes: 401 is a wrong account password or a stale bearer
+/// token, 403 is an unverified email or a custody policy denial. Callers must
+/// switch on this enum rather than on [ExportKeyResult.error] or the status
+/// code.
 enum ExportKeyFailure {
   /// The bearer token is valid but the submitted account password is not.
   /// Recoverable in place: re-prompt without sending the user elsewhere.
@@ -434,6 +436,11 @@ enum ExportKeyFailure {
 
   /// No exportable key is on record for this account.
   noKey,
+
+  /// Too many export attempts have been made for now. Unlike every other
+  /// refusal here, waiting is the remedy — an immediate retry will not clear
+  /// it.
+  rateLimited,
 
   /// Transport failure, timeout, or a malformed response.
   network,

@@ -21,12 +21,26 @@ void main() {
     const nsec =
         'nsec1testkeymaterialthatisnotarealkey00000000000000000000000000';
 
+    /// The account state behind the token, as `GET /api/user/account` reports
+    /// it. Every refusal that HTTP alone cannot classify is resolved from this.
+    String accountBody({
+      bool emailVerified = true,
+      bool verifiedMinor = false,
+    }) => jsonEncode({
+      'email': 'a@b.com',
+      'email_verified': emailVerified,
+      'public_key': 'abc',
+      'verified_minor': verifiedMinor,
+    });
+
     /// A client that answers export-key with [status]/[body] and account-status
-    /// with [accountStatusCode], so the 401 disambiguation can be driven.
+    /// with [accountStatusCode]/[account], so both overloaded refusal codes can
+    /// be driven.
     MockClient exportClient({
       required int status,
       required String body,
       int accountStatusCode = 200,
+      String? account,
       void Function(http.Request request)? onExport,
     }) {
       return MockClient((request) async {
@@ -35,10 +49,7 @@ void main() {
           return http.Response(body, status);
         }
         if (request.url.path == '/api/user/account') {
-          return http.Response(
-            '{"email":"a@b.com","email_verified":true,"public_key":"abc"}',
-            accountStatusCode,
-          );
+          return http.Response(account ?? accountBody(), accountStatusCode);
         }
         return http.Response('unexpected ${request.url.path}', 404);
       });
@@ -124,39 +135,77 @@ void main() {
       expect(result.failure, ExportKeyFailure.needsSignIn);
     });
 
+    // 403 is as overloaded as 401, and the server's two bodies are English
+    // prose it owns — the same wording it can reword or translate per
+    // deployment. These pin that the split comes from the account state.
+    test('separates the two 403s on account state, not on the body', () async {
+      // Both accounts get the *same* refusal body, so a classifier that read
+      // the prose could not tell them apart at all.
+      const body = 'Please verify your email address before continuing.';
+
+      final unverified = KeycastOAuth(
+        config: config,
+        httpClient: exportClient(
+          status: 403,
+          body: jsonEncode({'error': body}),
+          account: accountBody(emailVerified: false),
+        ),
+      );
+
+      expect(
+        (await unverified.exportKey('tok', 'pw')).failure,
+        ExportKeyFailure.emailUnverified,
+      );
+
+      final denied = KeycastOAuth(
+        config: config,
+        httpClient: exportClient(
+          status: 403,
+          body: jsonEncode({'error': body}),
+          account: accountBody(verifiedMinor: true),
+        ),
+      );
+
+      expect(
+        (await denied.exportKey('tok', 'pw')).failure,
+        ExportKeyFailure.denied,
+      );
+    });
+
+    // The server refuses a minor before it looks at the email, so a minor whose
+    // email is also unverified must not be told to go and verify it — that
+    // would promise an export that verifying can never unlock.
+    test('reads a minor with an unverified email as a policy denial', () async {
+      final oauth = KeycastOAuth(
+        config: config,
+        httpClient: exportClient(
+          status: 403,
+          body: jsonEncode({'error': 'Operation denied by policy'}),
+          account: accountBody(emailVerified: false, verifiedMinor: true),
+        ),
+      );
+
+      expect(
+        (await oauth.exportKey('tok', 'pw')).failure,
+        ExportKeyFailure.denied,
+      );
+    });
+
     test(
-      'separates an unverified email from a policy refusal on 403',
+      'does not guess which 403 it was when the probe cannot answer',
       () async {
-        final unverified = KeycastOAuth(
-          config: config,
-          httpClient: exportClient(
-            status: 403,
-            body: jsonEncode({
-              'error':
-                  'Please verify your email address before continuing. '
-                  'Check your inbox for the verification link.',
-            }),
-          ),
-        );
-
-        expect(
-          (await unverified.exportKey('tok', 'pw')).failure,
-          ExportKeyFailure.emailUnverified,
-        );
-
-        // The verified_minor refusal is deliberately worded to leak no account
-        // state, so anything that is not the email message is a policy denial.
-        final denied = KeycastOAuth(
+        final oauth = KeycastOAuth(
           config: config,
           httpClient: exportClient(
             status: 403,
             body: jsonEncode({'error': 'Operation denied by policy'}),
+            accountStatusCode: 503,
           ),
         );
 
         expect(
-          (await denied.exportKey('tok', 'pw')).failure,
-          ExportKeyFailure.denied,
+          (await oauth.exportKey('tok', 'pw')).failure,
+          ExportKeyFailure.unknown,
         );
       },
     );
@@ -193,6 +242,23 @@ void main() {
       );
     });
 
+    // Waiting is the remedy here and nothing else on this endpoint, so it must
+    // not land in the generic bucket that tells the user to try again now.
+    test('maps 429 to a rate limit', () async {
+      final oauth = KeycastOAuth(
+        config: config,
+        httpClient: exportClient(
+          status: 429,
+          body: jsonEncode({'error': 'Too many requests'}),
+        ),
+      );
+
+      expect(
+        (await oauth.exportKey('tok', 'pw')).failure,
+        ExportKeyFailure.rateLimited,
+      );
+    });
+
     test('maps 5xx to a server failure', () async {
       final oauth = KeycastOAuth(
         config: config,
@@ -223,7 +289,7 @@ void main() {
     });
 
     test('never returns a key on any failure path', () async {
-      for (final status in [400, 401, 403, 404, 500, 503]) {
+      for (final status in [400, 401, 403, 404, 429, 500, 503]) {
         final oauth = KeycastOAuth(
           config: config,
           httpClient: exportClient(
