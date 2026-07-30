@@ -5088,7 +5088,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Det här kontot signerar med Keycast. Ingen privat nyckel är lagrad på den här enheten, så det finns inget nsec att kopiera här.';
+      'Din nyckel finns hos inloggningstjänsten från Divine, inte på den här enheten – hämta den på webben när du vill.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Hämta nyckeln på webben';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

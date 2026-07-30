@@ -5140,7 +5140,10 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Този акаунт подписва с Keycast. На това устройство не е съхранен частен ключ, затова тук няма nsec за копиране.';
+      'Ключът ти е в услугата за вход на Divine, а не на това устройство — вземи го от уеб, когато ти е нужен.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Вземи ключа от уеб';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

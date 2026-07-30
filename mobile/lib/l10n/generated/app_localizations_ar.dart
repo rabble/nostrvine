@@ -5054,7 +5054,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'يوقّع هذا الحساب باستخدام Keycast. لا يوجد مفتاح خاص مخزّن على هذا الجهاز، لذلك لا يوجد nsec لنسخه هنا.';
+      'مفتاحك موجود في خدمة تسجيل الدخول لدى Divine، لا على هذا الجهاز — يمكنك الحصول عليه من الويب في أي وقت.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'الحصول على مفتاحي من الويب';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

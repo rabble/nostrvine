@@ -5090,7 +5090,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+      'Your key lives on Divine\'s login service, not on this device — grab it from the web whenever you need it.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Get my key on the web';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

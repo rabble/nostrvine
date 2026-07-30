@@ -5154,7 +5154,10 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Lumalagda ang account na ito gamit ang Keycast. Walang pribadong key na naka-store sa device na ito, kaya walang nsec na makokopya rito.';
+      'Nasa login service ng Divine ang key mo, hindi sa device na ito — kunin mo ito sa web kahit kailan.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Kunin ang key sa web';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

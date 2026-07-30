@@ -5224,7 +5224,10 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'To konto podpisuje za pomocą Keycast. Na tym urządzeniu nie ma zapisanego klucza prywatnego, więc nie ma tu nsec do skopiowania.';
+      'Twój klucz jest w usłudze logowania Divine, a nie na tym urządzeniu — odbierz go w sieci, kiedy chcesz.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Odbierz klucz w sieci';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

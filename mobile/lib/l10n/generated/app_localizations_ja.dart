@@ -4853,7 +4853,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'このアカウントはKeycastで署名します。このデバイスには秘密鍵が保存されていないため、ここでコピーできるnsecはありません。';
+      '鍵はこのデバイスではなく、Divine のログインサービスに保管されています。必要なときにウェブから取得できます。';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'ウェブで鍵を取得';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

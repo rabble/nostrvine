@@ -5054,7 +5054,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Akun ini menandatangani dengan Keycast. Tidak ada kunci privat yang disimpan di perangkat ini, jadi tidak ada nsec untuk disalin di sini.';
+      'Kunci kamu ada di layanan login Divine, bukan di perangkat ini — ambil dari web kapan pun kamu perlu.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Ambil kunci di web';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

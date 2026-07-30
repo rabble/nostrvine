@@ -8852,11 +8852,17 @@ abstract class AppLocalizations {
   /// **'Never share your nsec with anyone!'**
   String get keyManagementNeverShare;
 
-  /// No description provided for @keyManagementKeycastRemoteSigning.
+  /// Explanation shown in place of the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is not on the device.
   ///
   /// In en, this message translates to:
-  /// **'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.'**
+  /// **'Your key lives on Divine\'s login service, not on this device — grab it from the web whenever you need it.'**
   String get keyManagementKeycastRemoteSigning;
+
+  /// Button that opens the Account & Security page of Divine's login website in a browser, where the account's private key can be exported.
+  ///
+  /// In en, this message translates to:
+  /// **'Get my key on the web'**
+  String get keyManagementKeycastOpenWeb;
 
   /// Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody).
   ///

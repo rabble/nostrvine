@@ -5113,7 +5113,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Dit account ondertekent met Keycast. Er is geen privésleutel opgeslagen op dit apparaat, dus er is hier geen nsec om te kopiëren.';
+      'Je sleutel staat bij de inlogservice van Divine, niet op dit apparaat – pak hem wanneer je wilt op het web.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Sleutel ophalen op het web';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

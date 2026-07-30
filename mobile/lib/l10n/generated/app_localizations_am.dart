@@ -4988,7 +4988,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'ይህ መለያ በKeycast ይፈርማል። በዚህ መሣሪያ ላይ የግል ቁልፍ አልተቀመጠም፣ ስለዚህ እዚህ ለመቅዳት nsec የለም።';
+      'ቁልፍህ በDivine የመግቢያ አገልግሎት ላይ ነው፤ በዚህ መሣሪያ ላይ አልተቀመጠም — ባስፈለገህ ጊዜ ከዌብ ላይ ማግኘት ትችላለህ።';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'ቁልፌን ከዌብ አግኝ';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

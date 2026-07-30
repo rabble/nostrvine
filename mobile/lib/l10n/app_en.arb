@@ -2854,7 +2854,14 @@
   "keyManagementBackupSubtitle": "Save your private key (nsec) to use your account in other Nostr apps.",
   "keyManagementCopyNsec": "Copy My Private Key (nsec)",
   "keyManagementNeverShare": "Never share your nsec with anyone!",
-  "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
+  "keyManagementKeycastRemoteSigning": "Your key lives on Divine's login service, not on this device — grab it from the web whenever you need it.",
+  "@keyManagementKeycastRemoteSigning": {
+    "description": "Explanation shown in place of the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is not on the device."
+  },
+  "keyManagementKeycastOpenWeb": "Get my key on the web",
+  "@keyManagementKeycastOpenWeb": {
+    "description": "Button that opens the Account & Security page of Divine's login website in a browser, where the account's private key can be exported."
+  },
   "keyManagementRestrictedTitle": "Your keys are managed by Divine",
   "@keyManagementRestrictedTitle": {
     "description": "Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody)."

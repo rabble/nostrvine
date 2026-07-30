@@ -8,12 +8,16 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../helpers/test_provider_overrides.dart';
+import '../helpers/url_launcher_test_double.dart';
 
 class _FakeKeyManagementAuthService extends Fake implements AuthService {
   _FakeKeyManagementAuthService({
@@ -164,6 +168,10 @@ void main() {
           ),
           findsNothing,
         );
+        expect(
+          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
+          findsNothing,
+        );
       },
     );
 
@@ -190,6 +198,71 @@ void main() {
           ),
           findsOneWidget,
         );
+        expect(
+          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'opens Account & Security on the configured login origin for an '
+      'RPC-only Keycast account',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final originalPlatform = UrlLauncherPlatform.instance;
+        final launcher = UrlLauncherTestDouble();
+        UrlLauncherPlatform.instance = launcher;
+        addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
+
+        authService = _FakeKeyManagementAuthService(
+          currentNpub: testNpub,
+          authenticationSource: AuthenticationSource.divineOAuth,
+          canExportLocalNsec: false,
+        );
+
+        // Tall surface so the hand-off button is on-stage and hittable: the
+        // screen is a long ListView and on the default 800x600 the button
+        // renders offstage.
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // A non-production origin, so a regression that hardcodes
+        // login.divine.video instead of deriving the link from the active
+        // OAuth config fails here. `staging.login.divine.video` still passes
+        // openExternalLink's trusted-host check, so no confirm dialog appears.
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: const KeyManagementScreen(),
+            mockAuthService: authService,
+            additionalOverrides: [
+              isKeyManagementRestrictedProvider.overrideWithValue(false),
+              oauthConfigProvider.overrideWithValue(
+                const OAuthConfig(
+                  serverUrl: 'https://staging.login.divine.video',
+                  clientId: 'divine-mobile',
+                  redirectUri: 'https://divine.video/app/callback',
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(
+          find.text(l10n.keyManagementKeycastOpenWeb),
+        );
+        await tester.tap(find.text(l10n.keyManagementKeycastOpenWeb));
+        await tester.pumpAndSettle();
+
+        expect(launcher.launched, hasLength(1));
+        expect(
+          launcher.launched.single.url,
+          equals('https://staging.login.divine.video/settings/security'),
+        );
+        expect(launcher.launched.single.useExternalApplication, isTrue);
       },
     );
 
@@ -224,6 +297,36 @@ void main() {
         );
         expect(
           find.text(l10n.keyManagementImportTitle, skipOffstage: false),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'hides the web hand-off for a protected minor with an RPC-only Keycast '
+      'account',
+      (tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        // RPC-only Keycast key: without the gate this is exactly the account
+        // that renders the hand-off, so this proves the gate removes it.
+        authService = _FakeKeyManagementAuthService(
+          currentNpub: testNpub,
+          authenticationSource: AuthenticationSource.divineOAuth,
+          canExportLocalNsec: false,
+        );
+
+        await pumpSubject(tester, restricted: true);
+
+        expect(find.text(l10n.keyManagementRestrictedTitle), findsOneWidget);
+        expect(
+          find.text(l10n.keyManagementKeycastOpenWeb, skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.text(
+            l10n.keyManagementKeycastRemoteSigning,
+            skipOffstage: false,
+          ),
           findsNothing,
         );
       },

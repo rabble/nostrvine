@@ -5233,7 +5233,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Acest cont semnează cu Keycast. Nu este stocată nicio cheie privată pe acest dispozitiv, deci nu există niciun nsec de copiat aici.';
+      'Cheia ta se află în serviciul de autentificare Divine, nu pe acest dispozitiv — o poți lua de pe web oricând.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Ia cheia de pe web';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

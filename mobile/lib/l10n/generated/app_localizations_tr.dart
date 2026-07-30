@@ -5062,7 +5062,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Bu hesap Keycast ile imzalar. Bu cihazda özel anahtar saklanmıyor, bu yüzden burada kopyalanacak bir nsec yok.';
+      'Anahtarın bu cihazda değil, Divine\'ın giriş servisinde — istediğin zaman web\'den alabilirsin.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Anahtarımı web\'den al';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

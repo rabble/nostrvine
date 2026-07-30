@@ -5134,7 +5134,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Esta cuenta firma con Keycast. No hay ninguna clave privada guardada en este dispositivo, así que no hay ningún nsec que copiar aquí.';
+      'Tu clave vive en el servicio de inicio de sesión de Divine, no en este dispositivo: consíguela en la web cuando quieras.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => 'Obtener mi clave en la web';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

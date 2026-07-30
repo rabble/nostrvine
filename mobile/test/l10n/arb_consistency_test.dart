@@ -38,7 +38,7 @@ void main() {
       }
     });
 
-    test('Keycast remote signing copy is localized for every locale', () {
+    test('Keycast key hand-off copy is localized for every locale', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =
           l10nDir
@@ -50,17 +50,21 @@ void main() {
             ..sort((a, b) => a.path.compareTo(b.path));
 
       final template = _readArb(File('lib/l10n/app_en.arb'));
-      final source = template['keyManagementKeycastRemoteSigning'];
+      const keys = [
+        'keyManagementKeycastRemoteSigning',
+        'keyManagementKeycastOpenWeb',
+      ];
 
       for (final file in arbFiles) {
         final arb = _readArb(file);
 
-        expect(
-          arb['keyManagementKeycastRemoteSigning'],
-          isNot(source),
-          reason:
-              '${file.path} must not fall back to English for Keycast remote signing copy',
-        );
+        for (final key in keys) {
+          expect(
+            arb[key],
+            isNot(template[key]),
+            reason: '${file.path} must not fall back to English for $key',
+          );
+        }
       }
     });
 

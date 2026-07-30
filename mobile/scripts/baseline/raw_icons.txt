@@ -14,7 +14,7 @@ lib/screens/creator_analytics_screen.dart	9
 lib/screens/curated_list_feed_screen.dart	2
 lib/screens/discover_lists_screen.dart	1
 lib/screens/hashtag_feed_screen.dart	1
-lib/screens/key_management_screen.dart	3
+lib/screens/key_management_screen.dart	2
 lib/screens/original_sound_detail_screen.dart	1
 lib/screens/relay_diagnostic_screen.dart	12
 lib/screens/relay_settings_screen.dart	3

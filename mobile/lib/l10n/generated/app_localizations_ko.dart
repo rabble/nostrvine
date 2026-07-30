@@ -4871,7 +4871,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      '이 계정은 Keycast로 서명합니다. 이 기기에는 개인 키가 저장되어 있지 않으므로 여기에서 복사할 nsec가 없습니다.';
+      '키는 이 기기가 아니라 Divine 로그인 서비스에 있습니다. 필요할 때 웹에서 가져올 수 있습니다.';
+
+  @override
+  String get keyManagementKeycastOpenWeb => '웹에서 키 가져오기';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';
