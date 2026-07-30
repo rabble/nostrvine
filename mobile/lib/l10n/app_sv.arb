@@ -2018,6 +2018,7 @@
     "keyManagementKeycastSignInAgain": "Din session har gått ut. Logga in igen för att kopiera nyckeln.",
     "keyManagementKeycastEmailUnverified": "Bekräfta din e-postadress innan du kopierar nyckeln.",
     "keyManagementKeycastDenied": "Divine sköter nycklarna för det här kontot, så de kan inte kopieras här.",
+    "keyManagementYourPrivateKeyLabel": "Din privata nyckel (nsec)",
     "keyManagementKeycastGenericFailure": "inloggningstjänsten kunde inte nås",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",
     "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",

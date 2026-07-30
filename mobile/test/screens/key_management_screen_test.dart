@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for KeyManagementScreen public key and export capability UI
 // ABOUTME: Verifies public key copy plus Keycast local-vs-remote signing states
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -252,7 +253,9 @@ void main() {
       },
     );
 
-    testWidgets('copies the fetched key to the clipboard', (tester) async {
+    testWidgets('shows the fetched key hidden, and copies it on request', (
+      tester,
+    ) async {
       const fetchedNsec =
           'nsec1testkeymaterialthatisnotarealkey00000000000000000000000000';
       final copied = <String>[];
@@ -277,10 +280,61 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(authService.exportKeycastPasswords, equals(['hunter2']));
+
+      // The reveal step replaces the password step, and the key is present but
+      // obscured — a device that blocks the clipboard still has a way to it.
+      expect(find.text(l10n.keyManagementYourPrivateKeyLabel), findsOne);
+      expect(find.text(l10n.keyManagementNeverShare), findsOne);
+      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsNothing);
+
+      final keyField = tester.widget<TextField>(
+        find.byType(TextField).last,
+      );
+      expect(keyField.controller?.text, fetchedNsec);
+      expect(keyField.obscureText, isTrue, reason: 'hidden until revealed');
+      expect(keyField.readOnly, isTrue);
+
+      // Nothing reaches the clipboard until the user asks for it.
+      expect(copied, isEmpty);
+
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
       expect(copied, equals([fetchedNsec]));
       expect(find.text(l10n.keyManagementExportSuccess), findsOne);
-      // The dialog is gone, so the password field cannot linger on screen.
-      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsNothing);
+    });
+
+    testWidgets('lifts the sheet clear of the keyboard', (tester) async {
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.divineOAuth,
+        canExportLocalNsec: false,
+      );
+
+      final l10n = await openPasswordSheet(tester);
+
+      // Raise a keyboard the size of the one in the report: without the sheet
+      // reacting to viewInsets it sat entirely underneath, so the field and both
+      // actions were unreachable and typing was blind.
+      const keyboardHeight = 900.0;
+      tester.view.viewInsets = const FakeViewPadding(bottom: keyboardHeight);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+
+      final visibleBottom = tester.view.physicalSize.height - keyboardHeight;
+      final mustStayVisible = {
+        'password field': find.byType(DivineAuthTextField),
+        'copy action': find.text(l10n.keyManagementKeycastCopyKey),
+        'cancel action': find.text(l10n.commonCancel),
+      };
+      for (final entry in mustStayVisible.entries) {
+        expect(entry.value, findsOne);
+        expect(
+          tester.getRect(entry.value).bottom,
+          lessThanOrEqualTo(visibleBottom),
+          reason: '${entry.key} must stay above the keyboard',
+        );
+      }
     });
 
     testWidgets('keeps the sheet open on a wrong password', (tester) async {

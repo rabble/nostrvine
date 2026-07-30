@@ -5250,6 +5250,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Divine zarządza kluczami tego konta, więc nie można ich tutaj skopiować.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Twój klucz prywatny (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'nie udało się połączyć z serwisem logowania';
 

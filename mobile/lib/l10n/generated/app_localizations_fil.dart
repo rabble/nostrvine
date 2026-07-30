@@ -5180,6 +5180,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ang Divine ang nangangalaga sa mga key ng account na ito, kaya hindi ito makokopya dito.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Ang private key mo (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'hindi maabot ang login service';
 

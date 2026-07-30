@@ -5080,6 +5080,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'مفتاحك الخاص (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'تعذّر الوصول إلى خدمة تسجيل الدخول';
 

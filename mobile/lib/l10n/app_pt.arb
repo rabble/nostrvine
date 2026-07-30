@@ -2018,6 +2018,7 @@
     "keyManagementKeycastSignInAgain": "Sua sessão expirou. Entre novamente para copiar sua chave.",
     "keyManagementKeycastEmailUnverified": "Verifique seu endereço de e-mail antes de copiar sua chave.",
     "keyManagementKeycastDenied": "A Divine cuida das chaves desta conta, então elas não podem ser copiadas aqui.",
+    "keyManagementYourPrivateKeyLabel": "Sua chave privada (nsec)",
     "keyManagementKeycastGenericFailure": "não foi possível acessar o serviço de login",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",
     "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",

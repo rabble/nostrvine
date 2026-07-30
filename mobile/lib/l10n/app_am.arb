@@ -2354,6 +2354,7 @@
     "keyManagementKeycastSignInAgain": "ክፍለ ጊዜዎ አልቋል። ቁልፍዎን ለመቅዳት እንደገና ይግቡ።",
     "keyManagementKeycastEmailUnverified": "ቁልፍዎን ከመቅዳት በፊት የኢሜይል አድራሻዎን ያረጋግጡ።",
     "keyManagementKeycastDenied": "የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።",
+    "keyManagementYourPrivateKeyLabel": "የእርስዎ የግል ቁልፍ (nsec)",
     "keyManagementKeycastGenericFailure": "የመግቢያ አገልግሎቱን ማግኘት አልተቻለም",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",
     "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",

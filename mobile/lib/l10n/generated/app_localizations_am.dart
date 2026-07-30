@@ -5013,6 +5013,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'የእርስዎ የግል ቁልፍ (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
 
   @override

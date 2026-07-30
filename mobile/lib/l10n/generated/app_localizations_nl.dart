@@ -5139,6 +5139,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Je private key (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'de inlogservice was niet bereikbaar';
 

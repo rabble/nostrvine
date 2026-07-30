@@ -5116,6 +5116,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Divine looks after this account\'s keys, so they can\'t be copied here.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Your private key (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'the login service could not be reached';
 

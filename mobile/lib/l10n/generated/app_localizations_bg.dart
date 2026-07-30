@@ -5166,6 +5166,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Divine управлява ключовете на този профил, така че те не могат да се копират тук.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Твоят частен ключ (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'услугата за вход е недостъпна';
 

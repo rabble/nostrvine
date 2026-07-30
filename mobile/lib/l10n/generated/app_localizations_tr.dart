@@ -5088,6 +5088,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Özel anahtarın (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'giriş servisine ulaşılamadı';
 

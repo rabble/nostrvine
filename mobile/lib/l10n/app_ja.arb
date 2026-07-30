@@ -2010,6 +2010,7 @@
     "keyManagementKeycastSignInAgain": "セッションの有効期限が切れました。鍵をコピーするには再度サインインしてください。",
     "keyManagementKeycastEmailUnverified": "鍵をコピーする前にメールアドレスを確認してください。",
     "keyManagementKeycastDenied": "このアカウントの鍵は Divine が管理しているため、ここではコピーできません。",
+    "keyManagementYourPrivateKeyLabel": "あなたの秘密鍵 (nsec)",
     "keyManagementKeycastGenericFailure": "ログインサービスに接続できませんでした",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",
     "keyManagementRestrictedBody": "To keep your account safe, key backup and importing a different key aren't available here.",

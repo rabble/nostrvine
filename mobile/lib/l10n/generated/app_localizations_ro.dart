@@ -5259,6 +5259,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Cheia ta privată (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'serviciul de autentificare nu a putut fi contactat';
 

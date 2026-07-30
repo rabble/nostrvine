@@ -5160,6 +5160,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Divine gestiona las claves de esta cuenta, así que no se pueden copiar aquí.';
 
   @override
+  String get keyManagementYourPrivateKeyLabel => 'Tu clave privada (nsec)';
+
+  @override
   String get keyManagementKeycastGenericFailure =>
       'no se pudo conectar con el servicio de inicio de sesión';
 

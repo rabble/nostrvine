@@ -8894,6 +8894,12 @@ abstract class AppLocalizations {
   /// **'Divine looks after this account\'s keys, so they can\'t be copied here.'**
   String get keyManagementKeycastDenied;
 
+  /// Label on the read-only field that shows the fetched private key. The value is hidden until the user taps the reveal control.
+  ///
+  /// In en, this message translates to:
+  /// **'Your private key (nsec)'**
+  String get keyManagementYourPrivateKeyLabel;
+
   /// Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence.
   ///
   /// In en, this message translates to:

@@ -2882,6 +2882,10 @@
   "@keyManagementKeycastDenied": {
     "description": "Error shown when the login service refuses to release the key by policy, such as an account whose keys Divine manages custodially."
   },
+  "keyManagementYourPrivateKeyLabel": "Your private key (nsec)",
+  "@keyManagementYourPrivateKeyLabel": {
+    "description": "Label on the read-only field that shows the fetched private key. The value is hidden until the user taps the reveal control."
+  },
   "keyManagementKeycastGenericFailure": "the login service could not be reached",
   "@keyManagementKeycastGenericFailure": {
     "description": "Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence."
