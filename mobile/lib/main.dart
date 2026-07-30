@@ -2687,15 +2687,6 @@ class _DivineAppState extends ConsumerState<DivineApp>
 
     const forceOpenOnboarding = AppConfig.isGhActionsPrPreviewBuild;
 
-    // Gate the global PeopleListsBloc on the curated-lists feature flag.
-    // When enabled we provision it above MaterialApp.router so every route
-    // (including ones outside AppShell) sees the same lists state. The
-    // bloc only depends on the repository and a pubkey stream; we derive
-    // the latter from AuthService.
-    final peopleListsEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.curatedLists),
-    );
-
     // Eagerly create the outgoing-DM retry service so its foreground
     // subscription is wired up at app shell setup. The service has no
     // UI consumer (it operates on the durable outgoing_dms queue), so
@@ -2831,28 +2822,53 @@ class _DivineAppState extends ConsumerState<DivineApp>
                 ),
               )..add(const AppUpdateCheckRequested()),
             ),
-            if (peopleListsEnabled)
-              BlocProvider(
-                create: (_) {
-                  final authService = ref.read(authServiceProvider);
-                  final ownerPubkeyStream = authService.authStateStream
-                      .map((_) => authService.currentPublicKeyHex)
-                      .distinct();
-                  return PeopleListsBloc(
-                    repository: ref.read(peopleListsRepositoryProvider),
-                    // peopleListsRepositoryProvider is keepAlive but not
-                    // identity-stable: it watches nostrServiceProvider, which
-                    // disposes its client on every identity change. This create
-                    // runs once, so the bloc subscribes to the successive
-                    // instances rather than keeping its capture (#6480).
-                    repositoryStream: ref.read(
-                      peopleListsRepositoryIdentityStreamProvider,
-                    ),
-                    ownerPubkeyStream: ownerPubkeyStream,
-                    initialOwnerPubkey: authService.currentPublicKeyHex,
-                  )..add(const PeopleListsStarted());
-                },
-              ),
+            // Provisioned above MaterialApp.router so every route (including
+            // ones outside AppShell) sees the same lists state.
+            //
+            // Deliberately not wrapped in `if (curatedLists enabled)`: a
+            // conditional entry changes this provider chain's shape, so
+            // flipping the flag re-inflated everything below it — the whole
+            // MaterialApp.router subtree, feed state, video controllers, and
+            // the upload-listener dedupe sets with it. Users were thrown back
+            // to Settings from the imperatively pushed feature-flag screen;
+            // both the symptom and its disappearance under this shape are
+            // verified on device (#6477). What is not pinned is the
+            // Navigator-level step in between — a synthetic probe of the same
+            // shape kept the pushed route — so do not read the chain below
+            // re-inflation as established.
+            //
+            // Laziness does the creation gate instead: every entry point into
+            // the people-lists UI checks FeatureFlag.curatedLists before
+            // reading the bloc — the lists routes redirect home, the profile
+            // and search affordances stay hidden, and both sheets refuse to
+            // open — so a disabled feature does not construct the bloc.
+            //
+            // Once constructed while the flag is on, the bloc remains session-
+            // lifetime even if the flag flips off. Stopping already-started
+            // repository work on a flag-off transition is tracked in #6494.
+            //
+            // peopleListsRepositoryProvider is keepAlive but not identity-
+            // stable: it watches nostrServiceProvider, which recreates its
+            // client on auth change. This provider is intentionally still not
+            // keyed; repositoryStream keeps the app-lifetime bloc pointed at
+            // the current repository without re-inflating MaterialApp.router
+            // (#6480, #6482).
+            BlocProvider(
+              create: (_) {
+                final authService = ref.read(authServiceProvider);
+                final ownerPubkeyStream = authService.authStateStream
+                    .map((_) => authService.currentPublicKeyHex)
+                    .distinct();
+                return PeopleListsBloc(
+                  repository: ref.read(peopleListsRepositoryProvider),
+                  repositoryStream: ref.read(
+                    peopleListsRepositoryIdentityStreamProvider,
+                  ),
+                  ownerPubkeyStream: ownerPubkeyStream,
+                  initialOwnerPubkey: authService.currentPublicKeyHex,
+                )..add(const PeopleListsStarted());
+              },
+            ),
           ],
           // Global listener for email verification failures - shows snackbar
           // when verification times out or fails while user is elsewhere in app

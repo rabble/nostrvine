@@ -5,7 +5,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/widgets/widgets.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -15,7 +17,9 @@ import 'package:openvine/widgets/profile/new_people_list_sheet.dart';
 /// lists and lets them toggle membership for the given [pubkey].
 ///
 /// Consumers should call [AddToPeopleListsSheet.show] from within a
-/// subtree that has a [PeopleListsBloc] provided above it.
+/// subtree that has a [PeopleListsBloc] provided above it. Callers should
+/// also hide their affordance when [FeatureFlag.curatedLists] is off;
+/// [AddToPeopleListsSheet.show] enforces the same gate as a backstop.
 ///
 /// The sheet filters out read-only lists (`isEditable == false`). When
 /// there are no editable lists, an empty state offers a `Create list`
@@ -50,6 +54,11 @@ class AddToPeopleListsSheet extends StatelessWidget {
 
   /// Shows the sheet as a modal [VineBottomSheet].
   ///
+  /// Does nothing when [FeatureFlag.curatedLists] is off. The global
+  /// [PeopleListsBloc] is registered unconditionally and lazily, so opening
+  /// this sheet is what would construct it — starting a relay query and cache
+  /// subscription for a feature the user turned off.
+  ///
   /// Returns a [Future] that completes when the sheet is dismissed.
   static Future<void> show(
     BuildContext context, {
@@ -58,6 +67,8 @@ class AddToPeopleListsSheet extends StatelessWidget {
     String? displayName,
     UserProfile? initialCollaborator,
   }) {
+    if (!curatedListsEnabled(context)) return Future<void>.value();
+
     return VineBottomSheet.show<void>(
       context: context,
       title: Text(context.l10n.peopleListsSheetTitle),

@@ -5,9 +5,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
@@ -68,6 +71,7 @@ void main() {
   });
 
   group(AddToPeopleListsSheet, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
     late _MockPeopleListsBloc bloc;
 
     setUp(() {
@@ -107,13 +111,11 @@ void main() {
             name: 'Divine Team',
             isEditable: false,
           );
-          when(() => bloc.state).thenReturn(
-            _stateWith(lists: [editable, readOnly]),
-          );
+          when(
+            () => bloc.state,
+          ).thenReturn(_stateWith(lists: [editable, readOnly]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
           expect(find.text('Close Friends'), findsOneWidget);
           expect(find.text('Divine Team'), findsNothing);
@@ -130,13 +132,11 @@ void main() {
             pubkeys: [_targetPubkey],
           );
           final nonMemberList = _buildList(id: 'list-2', name: 'Work');
-          when(() => bloc.state).thenReturn(
-            _stateWith(lists: [memberList, nonMemberList]),
-          );
+          when(
+            () => bloc.state,
+          ).thenReturn(_stateWith(lists: [memberList, nonMemberList]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
           final checkboxes = tester
               .widgetList<DivineSpriteCheckbox>(
@@ -146,14 +146,8 @@ void main() {
           expect(checkboxes, hasLength(2));
           // Sheet renders lists in the bloc's declared order; first list
           // contains the target pubkey so its checkbox is selected.
-          expect(
-            checkboxes[0].state,
-            equals(DivineCheckboxState.selected),
-          );
-          expect(
-            checkboxes[1].state,
-            equals(DivineCheckboxState.unselected),
-          );
+          expect(checkboxes[0].state, equals(DivineCheckboxState.selected));
+          expect(checkboxes[1].state, equals(DivineCheckboxState.unselected));
         },
       );
     });
@@ -166,9 +160,7 @@ void main() {
           final list = _buildList(id: 'list-42', name: 'Close Friends');
           when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
           await tester.tap(find.byType(PeopleListRow));
           await tester.pump();
@@ -191,11 +183,9 @@ void main() {
         (tester) async {
           when(() => bloc.state).thenReturn(_stateWith(lists: const []));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
-          expect(find.text('No lists yet'), findsOneWidget);
+          expect(find.text(l10n.peopleListsEmptyTitle), findsOneWidget);
           // The Create list button lives in the VineBottomSheet bottomInput
           // slot, not inside the sheet body widget — so it is not present
           // when rendering AddToPeopleListsSheet directly.
@@ -214,11 +204,9 @@ void main() {
           );
           when(() => bloc.state).thenReturn(_stateWith(lists: [readOnly]));
 
-          await tester.pumpWidget(
-            buildSubject(pubkey: _targetPubkey),
-          );
+          await tester.pumpWidget(buildSubject(pubkey: _targetPubkey));
 
-          expect(find.text('No lists yet'), findsOneWidget);
+          expect(find.text(l10n.peopleListsEmptyTitle), findsOneWidget);
           expect(find.byType(DivineButton), findsNothing);
         },
       );
@@ -232,20 +220,24 @@ void main() {
           // BlocProvider must sit above the navigator so the bloc is
           // reachable from the modal route.
           await tester.pumpWidget(
-            BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: Builder(
-                    builder: (innerContext) => ElevatedButton(
-                      onPressed: () => AddToPeopleListsSheet.show(
-                        innerContext,
-                        pubkey: _targetPubkey,
-                        entryPoint: PeopleListEntryPoint.shareMenu,
+            _withCuratedListsFlag(
+              enabled: true,
+              child: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: Scaffold(
+                    body: Builder(
+                      builder: (innerContext) => ElevatedButton(
+                        onPressed: () => AddToPeopleListsSheet.show(
+                          innerContext,
+                          pubkey: _targetPubkey,
+                          entryPoint: PeopleListEntryPoint.shareMenu,
+                        ),
+                        child: const Text('open'),
                       ),
-                      child: const Text('open'),
                     ),
                   ),
                 ),
@@ -268,10 +260,66 @@ void main() {
           await tester.pumpAndSettle();
 
           // The new list sheet is shown — identified by its title key.
-          expect(
-            find.text('New people list'),
-            findsOneWidget,
+          expect(find.text(l10n.listNewPeopleList), findsOneWidget);
+        },
+      );
+    });
+
+    // The global PeopleListsBloc is registered unconditionally in main.dart
+    // (a conditional entry re-inflated the Navigator on every flag flip), so
+    // BlocProvider laziness is what keeps it unbuilt while curated lists are
+    // off. These pin that: `create` firing means a relay query and cache
+    // subscription started for a disabled feature.
+    group('curatedLists gate', () {
+      testWidgetsWithSurfaceSize(
+        'show does not open the sheet or construct $PeopleListsBloc when '
+        'curatedLists is off',
+        (tester) async {
+          var blocCreated = false;
+
+          await tester.pumpWidget(
+            _buildLazyBlocSubject(
+              curatedListsEnabled: false,
+              createBloc: () {
+                blocCreated = true;
+                return bloc;
+              },
+            ),
           );
+
+          await tester.tap(find.text('open'));
+          await tester.pumpAndSettle();
+
+          expect(blocCreated, isFalse);
+          expect(find.byType(AddToPeopleListsSheet), findsNothing);
+        },
+      );
+
+      testWidgetsWithSurfaceSize(
+        'show opens the sheet when curatedLists is on',
+        (tester) async {
+          var blocCreated = false;
+          whenListen(
+            bloc,
+            const Stream<PeopleListsState>.empty(),
+            initialState: _stateWith(lists: const []),
+          );
+
+          await tester.pumpWidget(
+            _buildLazyBlocSubject(
+              curatedListsEnabled: true,
+              createBloc: () {
+                blocCreated = true;
+                return bloc;
+              },
+            ),
+          );
+
+          await tester.tap(find.text('open'));
+          await tester.pumpAndSettle();
+
+          expect(blocCreated, isTrue);
+          expect(find.byType(AddToPeopleListsSheet), findsOneWidget);
         },
       );
     });
@@ -279,9 +327,7 @@ void main() {
     group('theming', () {
       testWidgetsWithSurfaceSize(
         'renders inside $VineBottomSheet when shown as a modal',
-        (
-          tester,
-        ) async {
+        (tester) async {
           final list = _buildList(id: 'list-1', name: 'Close Friends');
           when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
@@ -289,23 +335,27 @@ void main() {
           // reachable from the modal route. Wrapping the MaterialApp does
           // this because MaterialApp builds the root Navigator below it.
           await tester.pumpWidget(
-            BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: Builder(
-                    builder: (context) {
-                      return ElevatedButton(
-                        onPressed: () => AddToPeopleListsSheet.show(
-                          context,
-                          pubkey: _targetPubkey,
-                          entryPoint: PeopleListEntryPoint.shareMenu,
-                        ),
-                        child: const Text('open'),
-                      );
-                    },
+            _withCuratedListsFlag(
+              enabled: true,
+              child: BlocProvider<PeopleListsBloc>.value(
+                value: bloc,
+                child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: Scaffold(
+                    body: Builder(
+                      builder: (context) {
+                        return ElevatedButton(
+                          onPressed: () => AddToPeopleListsSheet.show(
+                            context,
+                            pubkey: _targetPubkey,
+                            entryPoint: PeopleListEntryPoint.shareMenu,
+                          ),
+                          child: const Text('open'),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -321,6 +371,49 @@ void main() {
       );
     });
   });
+}
+
+/// Mirrors the app shell: a lazy `BlocProvider` above the navigator, so
+/// [createBloc] only runs if something below actually reads the bloc.
+Widget _buildLazyBlocSubject({
+  required bool curatedListsEnabled,
+  required PeopleListsBloc Function() createBloc,
+}) {
+  return _withCuratedListsFlag(
+    enabled: curatedListsEnabled,
+    child: BlocProvider<PeopleListsBloc>(
+      create: (_) => createBloc(),
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => AddToPeopleListsSheet.show(
+                context,
+                pubkey: _targetPubkey,
+                entryPoint: PeopleListEntryPoint.profile,
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Scopes [child] with an explicit [FeatureFlag.curatedLists] value —
+/// `AddToPeopleListsSheet.show` reads it before opening.
+Widget _withCuratedListsFlag({required bool enabled, required Widget child}) {
+  return ProviderScope(
+    overrides: [
+      isFeatureEnabledProvider(
+        FeatureFlag.curatedLists,
+      ).overrideWithValue(enabled),
+    ],
+    child: child,
+  );
 }
 
 void testWidgetsWithSurfaceSize(

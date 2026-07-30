@@ -5,7 +5,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
+import 'package:openvine/features/people_lists/curated_lists_gate.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 
@@ -16,18 +18,23 @@ import 'package:openvine/widgets/user_picker_sheet.dart';
 ///
 /// [initialCollaborator] is pre-added as the first member — useful when
 /// opening the sheet directly from a profile.
+///
+/// Does nothing when [FeatureFlag.curatedLists] is off: the global
+/// [PeopleListsBloc] is registered lazily, so opening this sheet is what
+/// would start a relay query and cache subscription for a feature the user
+/// turned off.
 Future<void> showNewPeopleListSheet(
   BuildContext context, {
   UserProfile? initialCollaborator,
 }) {
+  if (!curatedListsEnabled(context)) return Future<void>.value();
+
   final bodyKey = GlobalKey<_NewPeopleListSheetBodyState>();
 
   return VineBottomSheet.show<void>(
     context: context,
     scrollable: false,
-    title: Builder(
-      builder: (context) => Text(context.l10n.listNewPeopleList),
-    ),
+    title: Builder(builder: (context) => Text(context.l10n.listNewPeopleList)),
     onComplete: () async {
       await bodyKey.currentState?._createList();
     },
@@ -39,10 +46,7 @@ Future<void> showNewPeopleListSheet(
 }
 
 class _NewPeopleListSheetBody extends StatefulWidget {
-  const _NewPeopleListSheetBody({
-    this.initialCollaborator,
-    super.key,
-  });
+  const _NewPeopleListSheetBody({this.initialCollaborator, super.key});
 
   final UserProfile? initialCollaborator;
 

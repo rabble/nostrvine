@@ -72,10 +72,8 @@ List<RouteBase> listsRoutes(Ref ref) {
     // `initialPubkey` query param lets callers (e.g., the share-video
     // "Add to list" sheet) seed the new list with a target person in
     // the same submit so the URL remains reloadable.
-    // Gated on FeatureFlag.curatedLists — the PeopleListsBloc this page
-    // depends on is only provided in main.dart when the flag is on, so
-    // a deep link here with the flag off would crash with
-    // ProviderNotFoundException. Redirect home instead.
+    // Gated on FeatureFlag.curatedLists — a deep link here with the flag
+    // off would open a feature the user turned off, so redirect home.
     GoRoute(
       path: CreatePeopleListPage.path,
       name: CreatePeopleListPage.routeName,
@@ -132,9 +130,8 @@ List<RouteBase> listsRoutes(Ref ref) {
 /// Redirects deep links for people-lists routes to the home feed when the
 /// [FeatureFlag.curatedLists] feature flag is off.
 ///
-/// The people-lists screens depend on a `PeopleListsBloc` that is only
-/// provided in `main.dart` when the flag is enabled. Without this guard a
-/// deep link / push / saved URL would crash with `ProviderNotFoundException`.
+/// Without this guard a deep link / push / saved URL would open the
+/// people-lists screens even though the user turned the feature off.
 /// Returns `null` (no redirect) when the flag is on.
 String? _peopleListsRedirectIfDisabled(Ref ref, GoRouterState state) {
   final enabled = ref.read(isFeatureEnabledProvider(FeatureFlag.curatedLists));
