@@ -15132,6 +15132,186 @@ abstract class AppLocalizations {
   /// **'Slide to adjust'**
   String get videoEditorTimelineSlideToAdjust;
 
+  /// No description provided for @videoEditorChromaKeyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Green screen'**
+  String get videoEditorChromaKeyLabel;
+
+  /// No description provided for @videoEditorChromaKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Green screen'**
+  String get videoEditorChromaKeyTitle;
+
+  /// No description provided for @videoEditorChromaKeySemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up the green screen for this clip'**
+  String get videoEditorChromaKeySemanticLabel;
+
+  /// No description provided for @videoEditorChromaKeyCloseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard green screen changes'**
+  String get videoEditorChromaKeyCloseSemanticLabel;
+
+  /// No description provided for @videoEditorChromaKeyDoneSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply the green screen'**
+  String get videoEditorChromaKeyDoneSemanticLabel;
+
+  /// No description provided for @videoEditorChromaKeyAutoDetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-detect'**
+  String get videoEditorChromaKeyAutoDetect;
+
+  /// No description provided for @videoEditorChromaKeyPresetGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get videoEditorChromaKeyPresetGreen;
+
+  /// No description provided for @videoEditorChromaKeyPresetBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get videoEditorChromaKeyPresetBlue;
+
+  /// No description provided for @videoEditorChromaKeyScreenColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen color'**
+  String get videoEditorChromaKeyScreenColorLabel;
+
+  /// No description provided for @videoEditorChromaKeyAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get videoEditorChromaKeyAmountLabel;
+
+  /// Hint under the chroma-key similarity slider. Raise it when parts of the screen survive, lower it when the subject starts disappearing.
+  ///
+  /// In en, this message translates to:
+  /// **'How much of the screen color disappears'**
+  String get videoEditorChromaKeyAmountHint;
+
+  /// No description provided for @videoEditorChromaKeyEdgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Edge'**
+  String get videoEditorChromaKeyEdgeLabel;
+
+  /// No description provided for @videoEditorChromaKeyEdgeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Softens the cutout so hair doesn\'t turn jagged'**
+  String get videoEditorChromaKeyEdgeHint;
+
+  /// No description provided for @videoEditorChromaKeySpillLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Spill'**
+  String get videoEditorChromaKeySpillLabel;
+
+  /// No description provided for @videoEditorChromaKeySpillHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pulls the screen\'s color back off your subject'**
+  String get videoEditorChromaKeySpillHint;
+
+  /// No description provided for @videoEditorChromaKeyBackgroundLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace with'**
+  String get videoEditorChromaKeyBackgroundLabel;
+
+  /// No description provided for @videoEditorChromaKeyBackgroundNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing'**
+  String get videoEditorChromaKeyBackgroundNone;
+
+  /// No description provided for @videoEditorChromaKeyBackgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Color'**
+  String get videoEditorChromaKeyBackgroundColor;
+
+  /// No description provided for @videoEditorChromaKeyBackgroundImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get videoEditorChromaKeyBackgroundImage;
+
+  /// No description provided for @videoEditorChromaKeyBackgroundVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip'**
+  String get videoEditorChromaKeyBackgroundVideo;
+
+  /// No description provided for @videoEditorChromaKeyTransparentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Video can\'t hold transparency, so this exports as black.'**
+  String get videoEditorChromaKeyTransparentHint;
+
+  /// No description provided for @videoEditorChromaKeyDetectFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t find a screen. It has to reach the edges of the frame — pick the color by hand instead.'**
+  String get videoEditorChromaKeyDetectFailed;
+
+  /// No description provided for @videoEditorChromaKeyPickClipTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a clip'**
+  String get videoEditorChromaKeyPickClipTitle;
+
+  /// No description provided for @videoEditorChromaKeyNoLibraryClips.
+  ///
+  /// In en, this message translates to:
+  /// **'Your library is empty. Save a clip first, then use it as a background.'**
+  String get videoEditorChromaKeyNoLibraryClips;
+
+  /// No description provided for @videoEditorChromaKeyImagePickFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load that image.'**
+  String get videoEditorChromaKeyImagePickFailed;
+
+  /// No description provided for @videoEditorChromaKeyRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove green screen'**
+  String get videoEditorChromaKeyRemove;
+
+  /// No description provided for @videoEditorChromaKeyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t apply the green screen. Your clip is unchanged.'**
+  String get videoEditorChromaKeyFailed;
+
+  /// Shown when dropping a clip's already-baked green screen fails, so the clip keeps the keyed video. The counterpart videoEditorChromaKeyFailed is for the opposite direction — applying one.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove the green screen. Your clip is unchanged.'**
+  String get videoEditorChromaKeyRemoveFailed;
+
+  /// No description provided for @videoEditorChromaKeyApplying.
+  ///
+  /// In en, this message translates to:
+  /// **'Applying the green screen…'**
+  String get videoEditorChromaKeyApplying;
+
+  /// Shown in the green-screen editor when the renderer has no shader image filter, so the preview cannot show the key applied.
+  ///
+  /// In en, this message translates to:
+  /// **'This device can\'t show the live preview. Your settings still apply when you export.'**
+  String get videoEditorChromaKeyPreviewUnavailable;
+
   /// No description provided for @videoEditorOriginalAudioLabel.
   ///
   /// In en, this message translates to:

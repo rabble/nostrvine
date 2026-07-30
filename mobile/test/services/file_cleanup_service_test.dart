@@ -10,15 +10,21 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:path/path.dart' as p;
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockDraftsDao extends Mock implements DraftsDao {}
 
 class _MockClipsDao extends Mock implements ClipsDao {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<String>{});
+  });
+
   group('FileCleanupService', () {
     late _MockDraftsDao draftsDao;
     late _MockClipsDao clipsDao;
@@ -38,6 +44,65 @@ void main() {
       verifyNever(() => clipsDao.isFileReferenced(any()));
       verifyNever(() => draftsDao.isDraftFileReferenced(any()));
     });
+
+    test(
+      'deletes chroma-key source and image files when unreferenced',
+      () async {
+        when(
+          () => clipsDao.referencedFilenames(any()),
+        ).thenAnswer((_) async => const {});
+        when(
+          () => draftsDao.isDraftFileReferenced(any()),
+        ).thenAnswer((_) async => false);
+        final tempDir = Directory.systemTemp.createTempSync(
+          'divine_chroma_cleanup',
+        );
+        addTearDown(() {
+          if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
+        });
+
+        File writeFile(String name) =>
+            File(p.join(tempDir.path, name))
+              ..writeAsBytesSync(const [0, 1, 2, 3]);
+
+        final keyed = writeFile('keyed.mp4');
+        final source = writeFile('pre_key.mp4');
+        final background = writeFile('chroma_bg.png');
+        final clip = DivineVideoClip(
+          id: 'clip_keyed',
+          video: EditorVideo.file(keyed.path),
+          duration: const Duration(seconds: 6),
+          recordedAt: DateTime(2026),
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 1,
+          chromaKeySourcePath: source.path,
+          chromaKey: ClipChromaKey(
+            key: ChromaKey(
+              backgroundImage: EditorLayerImage.file(background.path),
+            ),
+          ),
+        );
+
+        await FileCleanupService.deleteRecordingClipsFiles(
+          [clip],
+          draftsDao: draftsDao,
+          clipsDao: clipsDao,
+        );
+
+        expect(keyed.existsSync(), isFalse);
+        expect(source.existsSync(), isFalse);
+        expect(background.existsSync(), isFalse);
+        final checkedFilenames =
+            verify(
+                  () => clipsDao.referencedFilenames(captureAny()),
+                ).captured.single
+                as Set<String>;
+        expect(
+          checkedFilenames,
+          containsAll(['keyed.mp4', 'pre_key.mp4', 'chroma_bg.png']),
+        );
+      },
+    );
 
     group('deleteDraftAudioFiles', () {
       late Directory tempDir;

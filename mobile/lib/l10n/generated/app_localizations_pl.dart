@@ -8921,6 +8921,107 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Przesuń, aby dostosować';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Zielone tło';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Zielone tło';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Skonfiguruj zielone tło dla tego klipu';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Odrzuć zmiany zielonego tła';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Zastosuj zielone tło';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Wykryj automatycznie';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Zielony';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Niebieski';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Kolor tła';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Siła';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => 'Ile koloru tła znika';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Krawędź';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Zmiękcza wycięcie, żeby włosy nie były poszarpane';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Poświata';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Ściąga kolor tła z twojego obiektu';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Zastąp przez';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Nic';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Kolor';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Obraz';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Klip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Wideo nie przechowuje przezroczystości, więc w eksporcie będzie czarne.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Nie znaleziono tła. Musi sięgać krawędzi kadru — w przeciwnym razie wybierz kolor ręcznie.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Wybierz klip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Twoja biblioteka jest pusta. Zapisz najpierw klip, a potem użyj go jako tła.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Nie udało się wczytać tego obrazu.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Usuń zielone tło';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Nie udało się zastosować zielonego tła. Twój klip pozostaje bez zmian.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Nie udało się usunąć zielonego tła. Twój klip pozostaje bez zmian.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Stosowanie zielonego tła…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'To urządzenie nie pokaże podglądu na żywo. Twoje ustawienia i tak zadziałają przy eksporcie.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Oryginalne audio';
 
   @override

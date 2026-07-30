@@ -789,6 +789,20 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
   }
 
+  /// Queue clip-owned files that became unreachable in the live editor state.
+  ///
+  /// The actual delete waits for [_flushDeferredFileCleanup] so undo/redo and
+  /// the autosave row have time to stop referencing the old paths first.
+  void deferFileCleanup(Iterable<String?> paths) {
+    final validPaths = paths.whereType<String>().where(
+      (path) => path.isNotEmpty,
+    );
+    final db = ref.read(databaseProvider);
+    _deferredCleanupDraftsDao = db.draftsDao;
+    _deferredCleanupClipsDao = db.clipsDao;
+    _deferredFileCleanup.addAll(validPaths);
+  }
+
   /// Test hook: the set of files awaiting cleanup.
   @visibleForTesting
   Set<String> get deferredFileCleanupForTest => _deferredFileCleanup;

@@ -8828,6 +8828,108 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Scorri per regolare';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Imposta il green screen di questa clip';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Annulla le modifiche al green screen';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Applica il green screen';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Rilevamento automatico';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Verde';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Blu';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Colore dello sfondo';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Intensità';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Quanto colore dello sfondo sparisce';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Bordo';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Ammorbidisce il ritaglio così i capelli non si frastagliano';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Alone';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Toglie la tinta dello sfondo dal soggetto';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Sostituisci con';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Niente';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Colore';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Immagine';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Il video non supporta la trasparenza, quindi in esportazione diventa nero.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Nessuno sfondo trovato. Deve arrivare ai bordi dell\'inquadratura, altrimenti scegli il colore a mano.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Scegli una clip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'La tua libreria è vuota. Salva prima una clip, poi usala come sfondo.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Impossibile caricare quell\'immagine.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Rimuovi il green screen';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Non è stato possibile applicare il green screen. La clip resta invariata.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Non è stato possibile rimuovere il green screen. La clip resta invariata.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Applico il green screen…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Questo dispositivo non può mostrare l\'anteprima dal vivo. Le tue impostazioni valgono comunque in esportazione.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Audio originale';
 
   @override

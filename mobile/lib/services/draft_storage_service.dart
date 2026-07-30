@@ -179,39 +179,22 @@ class DraftStorageService {
     var orphanedFiles = const <String?>[];
     if (existingDraft != null) {
       final newFilePaths = <String?>{
-        for (final clip in draft.clips) ...[
-          clip.video?.file?.path,
-          // Stop-motion stills are clip-owned source files just like the video;
-          // include them so a still that survives the edit isn't queued for
-          // deletion below.
-          ...?clip.stopMotionFrames?.map((frame) => frame.path),
-          clip.thumbnailPath,
-        ],
-        draft.finalRenderedClip?.video?.file?.path,
-        draft.finalRenderedClip?.thumbnailPath,
+        for (final clip in draft.clips) ..._clipOwnedFilePaths(clip),
+        if (draft.finalRenderedClip != null)
+          ..._clipOwnedFilePaths(draft.finalRenderedClip!),
         draft.customThumbnailPath,
       };
 
       orphanedFiles = <String?>[
         for (final clip in existingDraft.clips) ...[
-          if (!newFilePaths.contains(clip.video?.file?.path))
-            clip.video?.file?.path,
-          // A still captured into this session and then removed no longer
-          // appears in the new frame list, so queue it for deferred cleanup.
-          ...?clip.stopMotionFrames
-              ?.map((frame) => frame.path)
-              .where((path) => !newFilePaths.contains(path)),
-          if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
+          ..._clipOwnedFilePaths(
+            clip,
+          ).where((path) => !newFilePaths.contains(path)),
         ],
         if (existingDraft.finalRenderedClip != null) ...[
-          if (!newFilePaths.contains(
-            existingDraft.finalRenderedClip?.video?.file?.path,
-          ))
-            existingDraft.finalRenderedClip?.video?.file?.path,
-          if (!newFilePaths.contains(
-            existingDraft.finalRenderedClip?.thumbnailPath,
-          ))
-            existingDraft.finalRenderedClip?.thumbnailPath,
+          ..._clipOwnedFilePaths(
+            existingDraft.finalRenderedClip!,
+          ).where((path) => !newFilePaths.contains(path)),
         ],
         if (!newFilePaths.contains(existingDraft.customThumbnailPath))
           existingDraft.customThumbnailPath,
@@ -279,6 +262,19 @@ class DraftStorageService {
         clipsDao: _clipsDao,
       );
     }
+  }
+
+  static Iterable<String?> _clipOwnedFilePaths(DivineVideoClip clip) sync* {
+    yield clip.video?.file?.path;
+    // Stop-motion stills are clip-owned source files just like the video;
+    // include them so a still that survives the edit is not queued for deletion.
+    final stopMotionFrames = clip.stopMotionFrames;
+    if (stopMotionFrames != null) {
+      yield* stopMotionFrames.map((frame) => frame.path);
+    }
+    yield clip.thumbnailPath;
+    yield clip.chromaKeySourcePath;
+    yield clip.chromaKey?.backgroundImagePath;
   }
 
   /// Get total count of drafts without loading their data.

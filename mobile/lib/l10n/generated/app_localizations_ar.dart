@@ -8690,6 +8690,105 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'اسحب للضبط';
 
   @override
+  String get videoEditorChromaKeyLabel => 'الشاشة الخضراء';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'الشاشة الخضراء';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'اضبط الشاشة الخضراء لهذا المقطع';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'تجاهل تغييرات الشاشة الخضراء';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'طبّق الشاشة الخضراء';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'كشف تلقائي';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'أخضر';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'أزرق';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'لون الخلفية';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'القوة';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => 'مقدار ما يختفي من لون الخلفية';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'الحافة';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'ينعّم القص حتى لا يبدو الشعر مسنّنًا';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'التسرّب';
+
+  @override
+  String get videoEditorChromaKeySpillHint => 'يزيل لون الخلفية عن الشخص';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'استبدلها بـ';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'لا شيء';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'لون';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'صورة';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'مقطع';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'الفيديو لا يحفظ الشفافية، لذا سيخرج هذا الجزء أسود.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'لم نعثر على خلفية. يجب أن تصل إلى حواف الإطار، وإلا فاختر اللون يدويًا.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'اختر مقطعًا';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'مكتبتك فارغة. احفظ مقطعًا أولًا ثم استخدمه كخلفية.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => 'تعذّر تحميل هذه الصورة.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'أزل الشاشة الخضراء';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'تعذّر تطبيق الشاشة الخضراء. مقطعك كما هو دون تغيير.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'تعذّر إزالة الشاشة الخضراء. مقطعك كما هو دون تغيير.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'جارٍ تطبيق الشاشة الخضراء…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'لا يستطيع هذا الجهاز عرض المعاينة المباشرة. لكن إعداداتك ستُطبَّق عند التصدير.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'الصوت الأصلي';
 
   @override

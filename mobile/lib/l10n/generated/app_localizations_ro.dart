@@ -8934,6 +8934,108 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Glisează pentru ajustare';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Ecran verde';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Ecran verde';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Configurează ecranul verde pentru acest clip';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Renunță la modificările ecranului verde';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Aplică ecranul verde';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Detectare automată';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Verde';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Albastru';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Culoarea fundalului';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Intensitate';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Cât din culoarea fundalului dispare';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Margine';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Înmoaie decupajul ca părul să nu iasă zimțat';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Reflexie';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Scoate nuanța fundalului de pe subiect';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Înlocuiește cu';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Nimic';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Culoare';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Imagine';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Videoclipul nu poate păstra transparența, așa că la export iese negru.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Nu am găsit niciun fundal. Trebuie să ajungă la marginile cadrului — altfel alege culoarea manual.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Alege un clip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Biblioteca ta e goală. Salvează întâi un clip, apoi folosește-l ca fundal.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Imaginea nu a putut fi încărcată.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Elimină ecranul verde';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Ecranul verde nu a putut fi aplicat. Clipul tău rămâne neschimbat.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Ecranul verde nu a putut fi eliminat. Clipul tău rămâne neschimbat.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Se aplică ecranul verde…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Acest dispozitiv nu poate afișa previzualizarea live. Setările tale se aplică oricum la export.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Audio original';
 
   @override

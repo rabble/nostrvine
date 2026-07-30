@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:pro_video_editor/pro_video_editor.dart' as editor;
 
 void main() {
@@ -197,6 +198,70 @@ void main() {
         '/videos',
       );
       expect(legacy.minTrimStart, equals(Duration.zero));
+    });
+  });
+
+  group('DivineVideoClip.chromaKey', () {
+    const key = ClipChromaKey(key: editor.ChromaKey.greenScreen());
+
+    test('round-trips with its source path through JSON', () {
+      final keyed = clip('/videos/clip.mp4').copyWith(
+        chromaKey: key,
+        chromaKeySourcePath: '/videos/original.mp4',
+      );
+
+      final restored = DivineVideoClip.fromJson(keyed.toJson(), '/videos');
+
+      expect(restored.chromaKey, key);
+      expect(restored.chromaKeySourcePath, '/videos/original.mp4');
+    });
+
+    test('is absent from JSON and null on legacy drafts', () {
+      final json = clip('/videos/clip.mp4').toJson();
+      expect(json.containsKey('chromaKey'), isFalse);
+      expect(json.containsKey('chromaKeySourcePath'), isFalse);
+
+      final restored = DivineVideoClip.fromJson(json, '/videos');
+      expect(restored.chromaKey, isNull);
+      expect(restored.chromaKeySourcePath, isNull);
+    });
+
+    test('survives an unrelated copyWith but can be cleared', () {
+      final keyed = clip('/videos/clip.mp4').copyWith(
+        chromaKey: key,
+        chromaKeySourcePath: '/videos/original.mp4',
+      );
+
+      expect(keyed.copyWith(volume: 0.5).chromaKey, isNotNull);
+
+      // Re-rendering the clip (transform, reverse) makes the recorded source
+      // stop describing the video, so both are dropped together.
+      final cleared = keyed.copyWith(clearChromaKey: true);
+      expect(cleared.chromaKey, isNull);
+      expect(cleared.chromaKeySourcePath, isNull);
+    });
+
+    test('does not follow the clip into a new logical clip', () {
+      final keyed = clip('/videos/clip.mp4').copyWith(
+        chromaKey: key,
+        chromaKeySourcePath: '/videos/original.mp4',
+      );
+
+      // A split or duplicate makes a different clip; re-keying it from the
+      // original's source would restore footage this clip never had.
+      final split = keyed.copyWith(id: 'c2');
+      expect(split.chromaKey, isNull);
+      expect(split.chromaKeySourcePath, isNull);
+    });
+
+    test('drops an unparseable key instead of failing the whole clip', () {
+      final json = clip('/videos/clip.mp4').toJson()
+        ..['chromaKey'] = 'not-a-map';
+
+      final restored = DivineVideoClip.fromJson(json, '/videos');
+
+      expect(restored.chromaKey, isNull);
+      expect(restored.id, 'c1');
     });
   });
 

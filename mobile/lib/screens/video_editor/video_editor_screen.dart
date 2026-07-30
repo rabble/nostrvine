@@ -162,6 +162,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
         if (!mounted) return false;
         return ref.read(clipManagerProvider.notifier).saveClipToLibrary(clip);
       },
+      cleanupChromaKeyFiles: (paths) {
+        if (!mounted) return;
+        ref.read(videoEditorProvider.notifier).deferFileCleanup(paths);
+      },
       onFinalClipInvalidated: () {
         // A clip render (reverse / transform) can resolve after this screen is
         // disposed — the user backed out while a long clip was still

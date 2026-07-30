@@ -7,6 +7,7 @@ import 'package:openvine/extensions/video_editor_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/stop_motion/stop_motion_frame_ops.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/screens/video_editor/video_clip_chroma_key_screen.dart';
 import 'package:openvine/screens/video_editor/video_clip_transform_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -51,6 +52,8 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       isSavingCurrentClipToLibrary,
       isSavingAnyClipToLibrary,
       isReversed,
+      isChromaKeyingCurrentClip,
+      hasChromaKey,
     ) = context.select((ClipEditorBloc b) {
       final state = b.state;
       final index = state.currentClipIndex;
@@ -78,6 +81,10 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
             state.savingClipToLibraryClipId == currentClipId,
         state.isSavingClipToLibrary,
         hasClip && state.clips[index].reversed,
+        state.isChromaKeying &&
+            currentClipId != null &&
+            state.chromaKeyingClipId == currentClipId,
+        hasClip && state.clips[index].chromaKey != null,
       );
     });
     final isLastClip = clipCount <= 1;
@@ -91,6 +98,9 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
       onSpeed: () => _setPlaybackSpeed(context),
       isSplitting: isSplittingCurrentClip,
       onTransform: () => _transformClip(context),
+      onChromaKey: () => _editChromaKey(context),
+      isChromaKeying: isChromaKeyingCurrentClip,
+      hasChromaKey: hasChromaKey,
       onExtractAudio: () => _requestExtractAudio(context),
       onReversed: () => _reverseClip(context),
       onSaveToLibrary: () => _saveClipToLibrary(context),
@@ -144,6 +154,32 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     // onFinalClipInvalidated commits the change to the editor history.
     bloc.add(
       ClipEditorClipTransformRequested(clipId: clip.id, transform: transform),
+    );
+  }
+
+  Future<void> _editChromaKey(BuildContext context) async {
+    final bloc = context.read<ClipEditorBloc>();
+    final state = bloc.state;
+    if (state.currentClipIndex < 0 ||
+        state.currentClipIndex >= state.clips.length) {
+      return;
+    }
+    final clip = state.clips[state.currentClipIndex];
+
+    // The screen dispatches the bake itself and stays open until the render
+    // lands, so it needs the bloc — a pushed route sits outside this subtree
+    // and would not otherwise find it. Nothing comes back through the pop.
+    await Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
+        opaque: false,
+        barrierColor: VineTheme.backgroundCamera,
+        pageBuilder: (_, _, _) => BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: VideoClipChromaKeyScreen(clip: clip),
+        ),
+        transitionsBuilder: (_, animation, _, child) =>
+            FadeTransition(opacity: animation, child: child),
+      ),
     );
   }
 

@@ -330,7 +330,7 @@ dependencies:
   firebase_performance: ^0.11.1+4
   firebase_messaging: ^16.1.1
   audio_session: ^0.2.2
-  pro_video_editor: ^2.9.0
+  pro_video_editor: ^2.11.0
   pro_image_editor: ^13.2.3
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
@@ -422,6 +422,11 @@ flutter:
     - assets/stickers/
     - assets/stickers/i18n/
     - shorebird.yaml
+
+  # Fragment shaders. `chroma_key.frag` powers the video editor's live
+  # green-screen preview (see shaders/chroma_key.frag).
+  shaders:
+    - shaders/chroma_key.frag
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

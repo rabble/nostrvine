@@ -8824,6 +8824,107 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Плъзнете за регулиране';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Зелен екран';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Зелен екран';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Настрой зеления екран за този клип';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Отхвърли промените по зеления екран';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Приложи зеления екран';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Автоматично разпознаване';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Зелено';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Синьо';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Цвят на фона';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Сила';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => 'Колко от цвета на фона изчезва';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Ръб';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Омекотява изрязването, за да не назъбва косата';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Отблясък';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Издърпва цвета на фона от обекта ти';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Замени с';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Нищо';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Цвят';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Изображение';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Клип';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Видеото не може да носи прозрачност, затова това ще излезе черно при експорт.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Не открихме фон. Той трябва да стига до ръба на кадъра — иначе избери цвета ръчно.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Избери клип';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Библиотеката ти е празна. Първо запази клип, после го използвай като фон.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Изображението не можа да се зареди.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Премахни зеления екран';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Зеленият екран не можа да се приложи. Клипът ти остава непроменен.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Зеленият екран не можа да се премахне. Клипът ти остава непроменен.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Прилагане на зеления екран…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Това устройство не може да показва прегледа на живо. Настройките ти важат при експорт.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Оригинален звук';
 
   @override

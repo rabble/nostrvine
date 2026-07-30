@@ -8,6 +8,7 @@ import 'package:divine_camera/divine_camera.dart'
     show CameraLensMetadata, DivineCameraLens;
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -40,6 +41,8 @@ class DivineVideoClip {
     this.proofManifestJson,
     this.deletedAt,
     this.transition,
+    this.chromaKey,
+    this.chromaKeySourcePath,
     this.sourceAuthorPubkey,
     this.sourceEventId,
     this.sourceAddressableId,
@@ -140,6 +143,23 @@ class DivineVideoClip {
   /// tail into the first clip's head so a looping player restarts seamlessly.
   /// Drives both the live editor preview and the final rendered composition.
   final ClipTransition? transition;
+
+  /// Green-screen settings the clip's file was last baked with, or `null` when
+  /// it carries no key.
+  ///
+  /// The key is already burned into [video] — this is not applied again at
+  /// export. It exists so re-opening the green-screen editor restores what the
+  /// user set instead of starting over.
+  final ClipChromaKey? chromaKey;
+
+  /// Path of the clip's video *before* its green screen was baked in.
+  ///
+  /// Re-keying always renders from this file, never from the already-keyed
+  /// one, so repeated edits neither stack keys nor lose a generation. Cleared
+  /// whenever another operation re-renders the clip (transform, reverse) or it
+  /// becomes a new logical clip (split, duplicate), since the source no longer
+  /// matches what the clip is now.
+  final String? chromaKeySourcePath;
 
   /// Original video author's pubkey when this local clip was imported from an
   /// existing published video.
@@ -319,6 +339,9 @@ class DivineVideoClip {
     DateTime? deletedAt,
     ClipTransition? transition,
     bool clearTransition = false,
+    ClipChromaKey? chromaKey,
+    String? chromaKeySourcePath,
+    bool clearChromaKey = false,
     String? sourceAuthorPubkey,
     bool clearSourceAuthorPubkey = false,
     String? sourceEventId,
@@ -372,6 +395,12 @@ class DivineVideoClip {
           : (proofManifestJson ?? this.proofManifestJson),
       deletedAt: deletedAt ?? this.deletedAt,
       transition: clearTransition ? null : (transition ?? this.transition),
+      chromaKey: isNewLogicalClip || clearChromaKey
+          ? null
+          : (chromaKey ?? this.chromaKey),
+      chromaKeySourcePath: isNewLogicalClip || clearChromaKey
+          ? null
+          : (chromaKeySourcePath ?? this.chromaKeySourcePath),
       sourceAuthorPubkey: clearSourceAuthorPubkey
           ? null
           : (sourceAuthorPubkey ?? this.sourceAuthorPubkey),
@@ -426,6 +455,9 @@ class DivineVideoClip {
         'reversedVideoPath': p.basename(reversedVideoPath!),
       if (proofManifestJson != null) 'proofManifestJson': proofManifestJson,
       if (transition != null) 'transition': transition!.toMap(),
+      if (chromaKey != null) 'chromaKey': chromaKey!.toJson(),
+      if (chromaKeySourcePath != null)
+        'chromaKeySourcePath': p.basename(chromaKeySourcePath!),
       if (sourceAuthorPubkey != null) 'sourceAuthorPubkey': sourceAuthorPubkey,
       if (sourceEventId != null) 'sourceEventId': sourceEventId,
       if (sourceAddressableId != null)
@@ -545,6 +577,16 @@ class DivineVideoClip {
       ),
       proofManifestJson: json['proofManifestJson'] as String?,
       transition: _transitionFromJson(json['transition']),
+      chromaKey: _chromaKeyFromJson(
+        json['chromaKey'],
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
+      chromaKeySourcePath: resolvePath(
+        json['chromaKeySourcePath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       sourceAuthorPubkey: json['sourceAuthorPubkey'] as String?,
       sourceEventId: json['sourceEventId'] as String?,
       sourceAddressableId: json['sourceAddressableId'] as String?,
@@ -566,6 +608,34 @@ class DivineVideoClip {
     } catch (error, stackTrace) {
       Log.error(
         'Dropping unparseable clip transition; falling back to a hard cut',
+        name: 'DivineVideoClip',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// Parses persisted green-screen settings, degrading to `null` when the
+  /// stored shape can't be read. Same rationale as [_transitionFromJson]: a
+  /// draft deserializes every clip through `fromJson`, so one unreadable
+  /// effect must not abort the whole draft load. The key is already baked into
+  /// the video, so losing it costs re-editability, not the effect itself.
+  static ClipChromaKey? _chromaKeyFromJson(
+    Object? raw,
+    String documentsPath, {
+    required bool useOriginalPath,
+  }) {
+    if (raw is! Map) return null;
+    try {
+      return ClipChromaKey.fromJson(
+        raw.cast<String, dynamic>(),
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      );
+    } catch (error, stackTrace) {
+      Log.error(
+        'Dropping unparseable clip chroma key; the baked video is unaffected',
         name: 'DivineVideoClip',
         error: error,
         stackTrace: stackTrace,

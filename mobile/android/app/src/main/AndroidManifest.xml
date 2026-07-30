@@ -89,26 +89,57 @@
         android:theme="@style/NormalTheme"
         android:localeConfig="@xml/locales_config"
         android:networkSecurityConfig="@xml/network_security_config">
-        <!-- Render with Skia instead of Impeller. On-device profiling
-             (profile builds, feed scroll) measured all three options:
+        <!-- Render with Impeller. This reverses the Skia opt-out added in
+             df2e479f7 ("perf(android): switch rendering backend to
+             Skia"), and it is a traded risk rather than a fix landing on
+             a solved problem - read this before assuming it is safe.
+
+             That opt-out came from on-device profiling of profile builds
+             during feed scroll:
              - Impeller/Vulkan: 17-27ms raster per frame, 37-46 FPS,
                constant jank (many blur/saveLayer passes over a live
                video texture).
              - Impeller/OpenGLES: 5-8ms raster, 60 FPS, but video
-               textures intermittently render BLACK while scrolling to
-               the next feed item until the scroll settles - the known
-               Impeller GLES SurfaceTexture/external-texture bug class
-               (flutter/flutter#141636, #145531).
+               textures intermittently rendered BLACK while scrolling to
+               the next feed item - the Impeller GLES SurfaceTexture /
+               external-texture bug class (flutter/flutter#141636,
+               #145531).
              - Skia: 13-16ms raster, 60 FPS, correct video rendering.
-             Skia is the only backend that is both smooth and correct on
-             this device class, and it matches the engine debug builds
-             already use (see debug/AndroidManifest.xml). Skia on Android
-             is deprecated upstream - re-evaluate Impeller (Vulkan raster
-             cost and the GLES video-texture bug) on each Flutter
-             upgrade. -->
-        <meta-data
-            android:name="io.flutter.embedding.android.EnableImpeller"
-            android:value="false" />
+
+             Nothing upstream has changed since. That measurement was
+             taken on Flutter 3.44.0, the same pin this branch builds on,
+             with both cited issues already closed - so this is not a
+             re-evaluation after an engine upgrade. What changed is the
+             requirement: the video editor's live chroma-key preview
+             needs `ui.ImageFilter.shader`, which Skia does not implement
+             at all. On Skia the preview degrades to the unkeyed video
+             (the exported file is unaffected either way), and we decided
+             a working preview is worth re-entering Impeller.
+
+             Two things that follow, both easy to get wrong:
+
+             - "Falls back to Skia" is not what happens. Below API 29 the
+               engine does use Skia, but on API 29+ without a usable
+               Vulkan context (Huawei, MediaTek below API 31, the engine's
+               known-bad-SOC list) it falls back to Impeller *OpenGLES* -
+               the backend the black-video-texture measurement above
+               implicates. `ImageFilter.isShaderFilterSupported` is true
+               there, so the editor's no-shader fallback does not engage
+               on those devices either. If feed video renders black in the
+               field, that device class is the first place to look, and
+               this commit is the one to revert.
+             - Re-check on every upgrade, the same way the original
+               measurement was taken: profile build, feed scroll, watch
+               raster time and whether video textures stay correct.
+
+             There is deliberately no `EnableImpeller` entry below.
+             Impeller is the engine default on API 29+, so the entry is
+             redundant; setting it to `true` would also work and would not
+             trip the "[Action Required]: Impeller opt-out deprecated"
+             warning, which the engine only logs when Impeller is actually
+             off. Verified on a Galaxy S25 (API 36, Vulkan 1.3): with no
+             entry, `ImageFilter.isShaderFilterSupported` reports true,
+             which is what the chroma-key preview needs. -->
         <!-- FCM default notification channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

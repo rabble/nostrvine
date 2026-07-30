@@ -8575,6 +8575,102 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'ለማስተካከል ያንሸራትቱ';
 
   @override
+  String get videoEditorChromaKeyLabel => 'አረንጓዴ ስክሪን';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'አረንጓዴ ስክሪን';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel => 'ለዚህ ቅንጥብ አረንጓዴ ስክሪን አዘጋጅ';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel => 'የአረንጓዴ ስክሪን ለውጦችን ተው';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'አረንጓዴ ስክሪኑን ተግብር';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'በራስ-ሰር ለይ';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'አረንጓዴ';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'ሰማያዊ';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'የስክሪኑ ቀለም';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'መጠን';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => 'ከስክሪኑ ቀለም ምን ያህል እንደሚጠፋ';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'ጠርዝ';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint => 'ፀጉር እንዳይሸበሸብ መቁረጡን ያለሰልሳል';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'ቀለም መፍሰስ';
+
+  @override
+  String get videoEditorChromaKeySpillHint => 'የስክሪኑን ቀለም ከሰውዬው ላይ ያነሳል';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'በዚህ ተካ';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'ምንም';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'ቀለም';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'ምስል';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'ቅንጥብ';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'ቪዲዮ ግልጽነት መያዝ አይችልም፣ ስለዚህ ሲወጣ ጥቁር ይሆናል።';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'ስክሪን አልተገኘም። እስከ ፍሬሙ ጠርዝ መድረስ አለበት — ካልሆነ ቀለሙን በእጅ ምረጥ።';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'ቅንጥብ ምረጥ';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'ቤተ-መጻሕፍትህ ባዶ ነው። መጀመሪያ ቅንጥብ አስቀምጥ፣ ከዚያ እንደ ዳራ ተጠቀምበት።';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => 'ያንን ምስል መጫን አልተቻለም።';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'አረንጓዴ ስክሪኑን አስወግድ';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'አረንጓዴ ስክሪኑን መተግበር አልተቻለም። ቅንጥብህ ሳይለወጥ ይቆያል።';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'አረንጓዴ ስክሪኑን ማስወገድ አልተቻለም። ቅንጥብህ ሳይለወጥ ይቆያል።';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'አረንጓዴ ስክሪን እየተተገበረ ነው…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'ይህ መሣሪያ ቀጥታ ቅድመ-እይታን ማሳየት አይችልም። ቅንብሮችህ ግን ወደ ውጭ ሲወጣ ይሠራሉ።';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'ዋናው ኦዲዮ';
 
   @override

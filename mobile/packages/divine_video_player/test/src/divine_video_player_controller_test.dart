@@ -374,6 +374,30 @@ void main() {
         expect(playerCalls.last.method, equals('play'));
       });
 
+      test('play leaves others alone when not exclusive', () async {
+        final backdrop = DivineVideoPlayerController(exclusivePlayback: false);
+        addTearDown(backdrop.dispose);
+        await backdrop.initialize();
+
+        playerCalls.clear();
+
+        await backdrop.play();
+
+        expect(playerCalls.map((call) => call.method), equals(['play']));
+      });
+
+      test('play does not pause a non-exclusive controller', () async {
+        final backdrop = DivineVideoPlayerController(exclusivePlayback: false);
+        addTearDown(backdrop.dispose);
+        await backdrop.initialize();
+
+        playerCalls.clear();
+
+        await controller.play();
+
+        expect(playerCalls.map((call) => call.method), equals(['play']));
+      });
+
       test('pause invokes native method', () async {
         await controller.pause();
 

@@ -189,6 +189,12 @@ class _ClipReverseResultListener extends StatelessWidget {
   }
 }
 
+// No chroma-key result listener here on purpose. Both chroma-key events are
+// dispatched from `VideoClipChromaKeyScreen`, which cannot be left while a bake
+// is in flight, so that screen is always mounted when the result lands and owns
+// the message. A second listener at this level would queue the same snackbar on
+// the same root `ScaffoldMessenger` and show it twice.
+
 /// Listens to [ClipEditorBloc.state.lastTransformResult] and surfaces a
 /// snackbar when a transform-render operation fails or the clip has no local
 /// file. Success is handled by the canvas player-sync listener that reacts to

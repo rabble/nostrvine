@@ -12,6 +12,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/stop_motion_clip_frame.dart';
+import 'package:openvine/models/video_editor/clip_chroma_key.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:path/path.dart' as p;
@@ -1709,6 +1710,34 @@ void main() {
             selectedApproach: 'video',
           );
 
+      DivineVideoDraft draftWithKeyedClip({
+        required String videoPath,
+        required String sourcePath,
+        required String backgroundPath,
+      }) => DivineVideoDraft.create(
+        id: 'draft_defer',
+        clips: [
+          DivineVideoClip(
+            id: 'clip_keyed',
+            video: EditorVideo.file(videoPath),
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025),
+            targetAspectRatio: AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+            chromaKeySourcePath: sourcePath,
+            chromaKey: ClipChromaKey(
+              key: ChromaKey(
+                backgroundImage: EditorLayerImage.file(backgroundPath),
+              ),
+            ),
+          ),
+        ],
+        title: 'Defer draft',
+        description: '',
+        hashtags: const {},
+        selectedApproach: 'video',
+      );
+
       test(
         'keeps an orphaned clip file alive and hands its path to the sink',
         () async {
@@ -1757,6 +1786,63 @@ void main() {
           reason: 'the currently-referenced clip file must be kept',
         );
       });
+
+      test(
+        'hands cleared chroma-key source and image paths to the cleanup sink',
+        () async {
+          final keyedVideo = writeVideo('keyed.mp4');
+          final transformedVideo = writeVideo('transformed.mp4');
+          final source = writeVideo('pre_key.mp4');
+          final background = writeVideo('chroma_bg.png');
+
+          await service.saveDraft(
+            draftWithKeyedClip(
+              videoPath: keyedVideo.path,
+              sourcePath: source.path,
+              backgroundPath: background.path,
+            ),
+          );
+
+          final deferred = <String>[];
+          await service.saveDraft(
+            draftWithClip(transformedVideo.path),
+            deferOrphanCleanup: (paths) =>
+                deferred.addAll(paths.whereType<String>()),
+          );
+
+          expect(
+            deferred,
+            containsAll([keyedVideo.path, source.path, background.path]),
+          );
+          expect(source.existsSync(), isTrue);
+          expect(background.existsSync(), isTrue);
+        },
+      );
+
+      test(
+        'deletes cleared chroma-key source and image paths without a sink',
+        () async {
+          final keyedVideo = writeVideo('keyed_delete.mp4');
+          final transformedVideo = writeVideo('transformed_delete.mp4');
+          final source = writeVideo('pre_key_delete.mp4');
+          final background = writeVideo('chroma_bg_delete.png');
+
+          await service.saveDraft(
+            draftWithKeyedClip(
+              videoPath: keyedVideo.path,
+              sourcePath: source.path,
+              backgroundPath: background.path,
+            ),
+          );
+
+          await service.saveDraft(draftWithClip(transformedVideo.path));
+
+          expect(keyedVideo.existsSync(), isFalse);
+          expect(source.existsSync(), isFalse);
+          expect(background.existsSync(), isFalse);
+          expect(transformedVideo.existsSync(), isTrue);
+        },
+      );
     });
 
     group('draft-local audio file hygiene', () {

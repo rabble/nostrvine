@@ -31,6 +31,10 @@ class ClipEditorState extends Equatable {
     this.isTransforming = false,
     this.transformingClipId,
     this.lastTransformResult,
+    this.isChromaKeying = false,
+    this.chromaKeyingClipId,
+    this.chromaKeyingRenderId,
+    this.lastChromaKeyResult,
     this.isMultiSelectMode = false,
     this.selectedClipIds = const {},
     this.isMerging = false,
@@ -160,6 +164,24 @@ class ClipEditorState extends Equatable {
   /// the canvas player-sync listener that reacts to the swapped clip file.
   final ClipTransformResult? lastTransformResult;
 
+  /// Whether a green screen is currently being baked into a clip's file.
+  final bool isChromaKeying;
+
+  /// Id of the clip whose green screen is baking, or `null`.
+  ///
+  /// Lets a clip's own editor tell "my bake is running" from "some other
+  /// clip's bake is running" without reaching for the service that named it.
+  final String? chromaKeyingClipId;
+
+  /// Render id of the bake in flight, or `null`.
+  ///
+  /// The UI subscribes to the renderer's progress stream under this id.
+  final String? chromaKeyingRenderId;
+
+  /// Outcome of the last chroma-key bake. Compared by identity so the same
+  /// outcome twice in a row still surfaces.
+  final ChromaKeyResult? lastChromaKeyResult;
+
   /// Whether the timeline is in multi-select mode — tapping a clip toggles its
   /// membership in [selectedClipIds] instead of entering single-clip editing.
   final bool isMultiSelectMode;
@@ -244,6 +266,11 @@ class ClipEditorState extends Equatable {
     ClipReverseResult? lastReverseResult,
     bool? isTransforming,
     String? transformingClipId,
+    bool? isChromaKeying,
+    String? chromaKeyingClipId,
+    String? chromaKeyingRenderId,
+    bool clearChromaKeyingClipId = false,
+    ChromaKeyResult? lastChromaKeyResult,
     bool clearTransformingClipId = false,
     ClipTransformResult? lastTransformResult,
     bool? isMultiSelectMode,
@@ -297,6 +324,14 @@ class ClipEditorState extends Equatable {
           ? null
           : (transformingClipId ?? this.transformingClipId),
       lastTransformResult: lastTransformResult ?? this.lastTransformResult,
+      isChromaKeying: isChromaKeying ?? this.isChromaKeying,
+      chromaKeyingClipId: clearChromaKeyingClipId
+          ? null
+          : (chromaKeyingClipId ?? this.chromaKeyingClipId),
+      chromaKeyingRenderId: clearChromaKeyingClipId
+          ? null
+          : (chromaKeyingRenderId ?? this.chromaKeyingRenderId),
+      lastChromaKeyResult: lastChromaKeyResult ?? this.lastChromaKeyResult,
       isMultiSelectMode: isMultiSelectMode ?? this.isMultiSelectMode,
       selectedClipIds: selectedClipIds ?? this.selectedClipIds,
       isMerging: isMerging ?? this.isMerging,
@@ -346,6 +381,10 @@ class ClipEditorState extends Equatable {
     isTransforming,
     transformingClipId,
     identityHashCode(lastTransformResult),
+    isChromaKeying,
+    chromaKeyingClipId,
+    chromaKeyingRenderId,
+    identityHashCode(lastChromaKeyResult),
     isMultiSelectMode,
     selectedClipIds,
     isMerging,
@@ -443,6 +482,26 @@ final class ClipReverseDiscarded extends ClipReverseResult {}
 
 /// Reverse render failed.
 final class ClipReverseFailure extends ClipReverseResult {}
+
+// === CHROMA KEY RESULT ===
+
+/// One-shot signal describing the outcome of a green-screen operation.
+sealed class ChromaKeyResult {}
+
+/// The clip's file was re-rendered with the key burned in.
+final class ChromaKeySuccess extends ChromaKeyResult {}
+
+/// The clip disappeared while the bake ran, so the result was dropped.
+final class ChromaKeyDiscarded extends ChromaKeyResult {}
+
+/// The bake failed; the clip keeps its original video.
+final class ChromaKeyFailure extends ChromaKeyResult {}
+
+/// Dropping a baked key failed, so the clip keeps the keyed video.
+///
+/// Distinct from [ChromaKeyFailure] because the two need opposite copy: this
+/// one is "we couldn't take it off", not "we couldn't put it on".
+final class ChromaKeyRemoveFailure extends ChromaKeyResult {}
 
 // === TRANSFORM RESULT ===
 

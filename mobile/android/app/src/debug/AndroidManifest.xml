@@ -7,7 +7,17 @@
 
     <!-- Disable Impeller in debug builds. Impeller's Vulkan backend crashes
          the Android emulator when using SwiftShader software rendering
-         (headless CI / AMD iGPU without native Vulkan). Skia works fine. -->
+         (headless CI / AMD iGPU without native Vulkan). Skia works fine.
+
+         This is an emulator workaround, not a product decision - release and
+         profile builds render with Impeller (see main/AndroidManifest.xml).
+         Anything that needs Impeller on a real device in debug (notably the
+         video editor's live chroma-key preview, which uses the Impeller-only
+         `ui.ImageFilter.shader`) must override it per run, by passing the
+         `enable-impeller` flag to `flutter run` (spelled with the usual
+         double dash; it cannot be written literally inside an XML comment).
+         Without that override a debug build on a device shows the unkeyed
+         preview; the exported video is unaffected either way. -->
     <application>
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"

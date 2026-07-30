@@ -8415,6 +8415,101 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => '슬라이드하여 조절';
 
   @override
+  String get videoEditorChromaKeyLabel => '크로마키';
+
+  @override
+  String get videoEditorChromaKeyTitle => '크로마키';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel => '이 클립의 크로마키 설정';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel => '크로마키 변경 사항 취소';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => '크로마키 적용';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => '자동 감지';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => '초록';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => '파랑';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => '배경 색';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => '강도';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => '배경 색이 얼마나 지워질지';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => '가장자리';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint => '잘린 부분을 부드럽게 해 머리카락이 거칠어지지 않게 합니다';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => '색 번짐';
+
+  @override
+  String get videoEditorChromaKeySpillHint => '배경 색을 피사체에서 걷어냅니다';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => '이걸로 바꾸기';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => '없음';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => '색';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => '이미지';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => '클립';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      '영상은 투명도를 담을 수 없어서 내보내면 검게 나옵니다.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      '배경을 찾지 못했습니다. 화면 가장자리까지 닿아야 해요. 아니면 색을 직접 고르세요.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => '클립 고르기';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      '보관함이 비어 있어요. 클립을 먼저 저장하면 배경으로 쓸 수 있습니다.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => '그 이미지를 불러오지 못했습니다.';
+
+  @override
+  String get videoEditorChromaKeyRemove => '크로마키 제거';
+
+  @override
+  String get videoEditorChromaKeyFailed => '크로마키를 적용하지 못했습니다. 클립은 그대로입니다.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      '크로마키를 제거하지 못했습니다. 클립은 그대로입니다.';
+
+  @override
+  String get videoEditorChromaKeyApplying => '크로마키를 적용하는 중…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      '이 기기에서는 실시간 미리보기를 표시할 수 없습니다. 설정은 내보낼 때 그대로 적용됩니다.';
+
+  @override
   String get videoEditorOriginalAudioLabel => '원본 오디오';
 
   @override

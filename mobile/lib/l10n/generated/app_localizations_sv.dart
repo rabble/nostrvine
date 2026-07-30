@@ -8744,6 +8744,108 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Dra för att justera';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Ställ in green screen för det här klippet';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Ignorera ändringarna av green screen';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Använd green screen';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Hitta automatiskt';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Grön';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Blå';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Bakgrundsfärg';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Styrka';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Hur mycket av bakgrundsfärgen som försvinner';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Kant';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Mjukar upp urklippet så att hår inte blir taggigt';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Färgspill';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Drar bort bakgrundens färg från ditt motiv';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Ersätt med';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Inget';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Färg';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Bild';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Klipp';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video kan inte spara transparens, så det här exporteras som svart.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Hittade ingen bakgrund. Den måste nå ut till bildkanten – välj annars färgen för hand.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Välj ett klipp';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Ditt bibliotek är tomt. Spara ett klipp först, sedan kan du använda det som bakgrund.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Det gick inte att läsa in bilden.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Ta bort green screen';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Det gick inte att använda green screen. Ditt klipp är oförändrat.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Det gick inte att ta bort green screen. Ditt klipp är oförändrat.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Använder green screen …';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Den här enheten kan inte visa förhandsvisningen live. Dina inställningar gäller ändå vid export.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Originalljud';
 
   @override

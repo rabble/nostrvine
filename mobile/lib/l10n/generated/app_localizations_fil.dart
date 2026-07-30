@@ -8845,6 +8845,108 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'I-slide para i-adjust';
 
   @override
+  String get videoEditorChromaKeyLabel => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Green screen';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'I-set up ang green screen para sa clip na ito';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Itapon ang mga pagbabago sa green screen';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Ilapat ang green screen';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Auto-detect';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Berde';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Asul';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Kulay ng screen';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Lakas';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Gaano karaming kulay ng screen ang mawawala';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Gilid';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Pinapalambot ang gupit para hindi magaspang ang buhok';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Spill';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Inaalis ang kulay ng screen sa subject mo';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Palitan ng';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Wala';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Kulay';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Larawan';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Hindi kayang magdala ng transparency ang video, kaya magiging itim ito sa export.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Walang nakitang screen. Kailangang umabot ito sa gilid ng frame — kung hindi, piliin ang kulay nang manu-mano.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Pumili ng clip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Walang laman ang library mo. Mag-save muna ng clip, tapos gamitin bilang background.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Hindi ma-load ang larawang iyon.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Alisin ang green screen';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Hindi na-apply ang green screen. Hindi nagbago ang clip mo.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Hindi naalis ang green screen. Hindi nagbago ang clip mo.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Ina-apply ang green screen…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Hindi maipapakita ng device na ito ang live preview. Gumagana pa rin ang mga setting mo kapag nag-export.';
+
+  @override
   String get videoEditorOriginalAudioLabel => 'Orihinal na audio';
 
   @override
