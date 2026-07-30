@@ -171,6 +171,9 @@ class _OptionTile extends StatelessWidget {
       identifier: identifier,
       button: true,
       label: semanticLabel,
+      // excludeSemantics drops the child subtree — including the
+      // GestureDetector's tap action — so the action is re-declared here.
+      onTap: onTap,
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -225,27 +228,42 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    // The reasons scroll while Submit stays pinned below them, so Submit is
+    // always visible — even with all 11 reasons under large accessibility
+    // text scales, which otherwise pushed it off-screen in a plain Column.
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-          child: Text(
-            context.l10n.commentOptionsFlagReasonPrompt,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                  child: Text(
+                    context.l10n.commentOptionsFlagReasonPrompt,
+                    style: VineTheme.bodyMediumFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                  ),
+                ),
+                for (final reason in ContentFilterReason.values)
+                  _ReasonRadioTile(
+                    reason: reason,
+                    isSelected: _selectedReason == reason,
+                    onTap: () {
+                      setState(() {
+                        _selectedReason = reason;
+                      });
+                    },
+                  ),
+              ],
+            ),
           ),
         ),
-        for (final reason in ContentFilterReason.values)
-          _ReasonRadioTile(
-            reason: reason,
-            isSelected: _selectedReason == reason,
-            onTap: () {
-              setState(() {
-                _selectedReason = reason;
-              });
-            },
-          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
           child: SizedBox(
@@ -305,62 +323,73 @@ class _ReasonRadioTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label:
+          '${context.l10n.reportReasonTitle(reason)}. '
+          '${context.l10n.reportReasonSubtitle(reason)}',
+      // excludeSemantics drops the child subtree — including the
+      // GestureDetector's tap action — so the action is re-declared here.
       onTap: onTap,
-      child: Container(
-        color: VineTheme.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected
-                      ? VineTheme.vineGreen
-                      : VineTheme.onSurfaceMuted,
-                  width: 2,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          color: VineTheme.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected
+                        ? VineTheme.vineGreen
+                        : VineTheme.onSurfaceMuted,
+                    width: 2,
+                  ),
+                ),
+                child: isSelected
+                    ? Center(
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: VineTheme.vineGreen,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.reportReasonTitle(reason),
+                      style: VineTheme.bodyLargeFont(
+                        color: isSelected
+                            ? VineTheme.onSurface
+                            : VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      context.l10n.reportReasonSubtitle(reason),
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: isSelected
-                  ? Center(
-                      child: Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: VineTheme.vineGreen,
-                        ),
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    context.l10n.reportReasonTitle(reason),
-                    style: VineTheme.bodyLargeFont(
-                      color: isSelected
-                          ? VineTheme.onSurface
-                          : VineTheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    context.l10n.reportReasonSubtitle(reason),
-                    style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
