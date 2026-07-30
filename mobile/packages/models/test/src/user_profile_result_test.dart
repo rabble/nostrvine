@@ -40,6 +40,43 @@ void main() {
       expect(data.createdAt, isNull);
     });
 
+    test('fromJson treats empty strings as absent', () {
+      // Funnelcake models every profile metadata field as a non-nullable Rust
+      // String, so a Kind 0 key that does not exist is serialized as ''.
+      // Keeping those placeholders let a REST-hydrated profile out-count the
+      // real Kind 0 in the publish-seed comparison, after which the publish
+      // path's isNotEmpty guards deleted the fields for real.
+      final data = UserProfileData.fromJson(_pubkey, const {
+        'name': '',
+        'display_name': 'Alice',
+        'about': '',
+        'picture': '',
+        'banner': '',
+        'nip05': '',
+        'lud16': '',
+        'website': '',
+      });
+
+      expect(data.displayName, equals('Alice'));
+      expect(data.name, isNull);
+      expect(data.about, isNull);
+      expect(data.picture, isNull);
+      expect(data.banner, isNull);
+      expect(data.nip05, isNull);
+      expect(data.lud16, isNull);
+      expect(data.website, isNull);
+    });
+
+    test('fromJson ignores non-String values', () {
+      final data = UserProfileData.fromJson(_pubkey, const {
+        'name': 42,
+        'display_name': true,
+      });
+
+      expect(data.name, isNull);
+      expect(data.displayName, isNull);
+    });
+
     test('fromJson parses profile_updated into createdAt', () {
       final data = UserProfileData.fromJson(_pubkey, const {
         'name': 'alice',

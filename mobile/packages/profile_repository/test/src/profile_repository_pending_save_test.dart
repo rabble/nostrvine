@@ -75,7 +75,13 @@ void main() {
       when(() => event.id).thenReturn('e' * 64);
       when(() => event.content).thenReturn('{"display_name":"Alice"}');
 
-      // No cached profile → seed short-circuits, no relay fetch.
+      // The publish seed is resolved from the signing key when the caller
+      // supplies no profile, so the client's pubkey is load-bearing here.
+      when(() => nostrClient.publicKey).thenReturn(pubkey);
+
+      // Nothing cached and nothing on relays → the seed resolves to null and
+      // the publish composes from an empty map. These tests are about the
+      // pending-save slot mechanics, not about seeding.
       when(
         () => userProfilesDao.getProfile(any()),
       ).thenAnswer((_) async => null);

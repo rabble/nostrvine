@@ -79,6 +79,10 @@ void main() {
         httpClient: mockHttpClient,
       );
 
+      // The publish seed falls back to the signing key when the caller
+      // supplies no `currentProfile`, so this getter is on the save path.
+      when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
+
       // Default mock event setup
       when(() => mockProfileEvent.kind).thenReturn(0);
       when(() => mockProfileEvent.pubkey).thenReturn(testPubkey);
@@ -139,6 +143,20 @@ void main() {
     ) async {
       when(() => mockProfileEvent.content).thenReturn(jsonEncode(content));
       return (await profileRepository.fetchFreshProfile(pubkey: testPubkey))!;
+    }
+
+    /// Makes the relay report no Kind 0 for [testPubkey], so a publish that
+    /// supplies no `currentProfile` resolves to an empty seed.
+    void stubNoRelayProfile() {
+      when(
+        () => mockNostrClient.fetchProfile(testPubkey),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockNostrClient.fetchProfile(
+          testPubkey,
+          useCache: any(named: 'useCache'),
+        ),
+      ).thenAnswer((_) async => null);
     }
 
     group('getCachedProfile', () {
@@ -1924,6 +1942,9 @@ void main() {
     group('saveProfileEvent', () {
       test('sends all provided fields to nostrClient and caches and returns '
           'user profile', () async {
+        // No pre-existing profile anywhere, so the publish composes from the
+        // provided fields alone and the only cache write is the published one.
+        stubNoRelayProfile();
         when(() => mockProfileEvent.content).thenReturn(
           jsonEncode({
             'display_name': 'New Name',
@@ -2034,6 +2055,11 @@ void main() {
       test(
         'omits unset about/picture/banner keys instead of writing nulls',
         () async {
+          // This test is about never emitting null values, which is only
+          // observable when there is no seed to preserve. Nothing is cached
+          // and the relay has nothing, so the seed resolves to null.
+          stubNoRelayProfile();
+
           await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
           verify(
@@ -2044,7 +2070,8 @@ void main() {
         },
       );
 
-      test('omits nip05 when neither username nor nip05 is provided', () async {
+      test('preserves the existing nip05 when neither username nor nip05 is '
+          'provided', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
         final captured =
@@ -2054,7 +2081,11 @@ void main() {
                   ),
                 ).captured.single
                 as Map<String, dynamic>;
-        expect(captured.containsKey('nip05'), isFalse);
+        // Not passing a nip05 means "leave it alone", not "delete it" —
+        // clearNip05 is the explicit removal path. Before the publish seed was
+        // resolved from the signer key, a caller that supplied no
+        // currentProfile silently dropped it.
+        expect(captured['nip05'], 'test@example.com');
       });
 
       test('includes banner when provided', () async {
@@ -2220,6 +2251,9 @@ void main() {
 
       test('throws ProfilePublishFailedException when no relay confirms '
           '(rejection or timeout)', () async {
+        // Isolate the failure path from the seed read, which legitimately
+        // caches whatever the relay reports.
+        stubNoRelayProfile();
         when(
           () => mockNostrClient.sendProfileAwaitOk(
             profileContent: any(named: 'profileContent'),
@@ -2236,6 +2270,9 @@ void main() {
       test(
         'throws NoRelaysConnectedException when no relays are connected',
         () async {
+          // Isolate the failure path from the seed read, which legitimately
+          // caches whatever the relay reports.
+          stubNoRelayProfile();
           when(
             () => mockNostrClient.sendProfileAwaitOk(
               profileContent: any(named: 'profileContent'),
@@ -2249,6 +2286,138 @@ void main() {
           verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
         },
       );
+
+      group('with no currentProfile', () {
+        test('seeds from the signing key instead of publishing a stripped '
+            'Kind 0', () async {
+          final rawKind0 = Event(
+            testPubkey,
+            0,
+            [
+              ['i', 'github:alice', 'proof'],
+            ],
+            jsonEncode({
+              'display_name': 'Old Name',
+              'name': 'alice',
+              'lud16': 'alice@getalby.com',
+              'bot': false,
+              'custom_client_key': 'keep-me',
+            }),
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          );
+          when(
+            () => mockNostrClient.fetchProfile(
+              testPubkey,
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => rawKind0);
+          // A non-empty rawTags seed takes the tags-carrying overload.
+          when(
+            () => mockNostrClient.sendProfileAwaitOk(
+              profileContent: any(named: 'profileContent'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => PublishSuccess(event: mockProfileEvent));
+
+          // No currentProfile — previously this returned before any fetch and
+          // published from an empty map, erasing everything below.
+          await profileRepository.saveProfileEvent(displayName: 'New Name');
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfileAwaitOk(
+                      profileContent: captureAny(named: 'profileContent'),
+                      tags: [
+                        ['i', 'github:alice', 'proof'],
+                      ],
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['display_name'], 'New Name');
+          expect(captured['name'], 'alice');
+          expect(captured['lud16'], 'alice@getalby.com');
+          expect(captured['bot'], false);
+          expect(captured['custom_client_key'], 'keep-me');
+        });
+
+        test(
+          'does not consult the relay when the client has no signing key',
+          () async {
+            when(() => mockNostrClient.publicKey).thenReturn('');
+
+            await profileRepository.saveProfileEvent(displayName: 'Only Name');
+
+            verifyNever(
+              () => mockNostrClient.fetchProfile(
+                any(),
+                useCache: any(named: 'useCache'),
+              ),
+            );
+            verify(
+              () => mockNostrClient.sendProfileAwaitOk(
+                profileContent: {'display_name': 'Only Name'},
+              ),
+            ).called(1);
+          },
+        );
+
+        test('a REST seed padded with empty-string placeholders does not '
+            'outrank the raw Kind 0', () async {
+          // Funnelcake models every metadata field as a non-nullable String, so
+          // an absent Kind 0 key arrives as ''. Counting raw keys let that
+          // padding win the richness comparison; counting meaningful keys does
+          // not.
+          final restSeed = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Wolf M. Iversen',
+            rawData: const {
+              'display_name': 'Wolf M. Iversen',
+              'name': '',
+              'about': '',
+              'website': '',
+              'lud16': '',
+            },
+            createdAt: DateTime(2026),
+            eventId: 'rest-$testPubkey',
+          );
+          final rawKind0 = Event(
+            testPubkey,
+            0,
+            const [],
+            jsonEncode({
+              'display_name': 'Wolf M. Iversen',
+              'name': 'alice',
+              'custom_client_key': 'keep-me',
+            }),
+            // Same second as the REST seed: funnelcake exposes the original
+            // event timestamp, so the newer-than check cannot break the tie.
+            createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+          );
+          when(
+            () => mockNostrClient.fetchProfile(
+              testPubkey,
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => rawKind0);
+
+          await profileRepository.saveProfileEvent(
+            displayName: 'Wolf M. Iversen',
+            currentProfile: restSeed,
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfileAwaitOk(
+                      profileContent: captureAny(named: 'profileContent'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          // Both are present only in the raw Kind 0. If the '' -padded REST
+          // seed had won the comparison, both would be gone from the publish.
+          expect(captured['name'], 'alice');
+          expect(captured['custom_client_key'], 'keep-me');
+        });
+      });
 
       group('with currentProfile', () {
         test('requires raw Kind 0 when resolving the publish seed', () async {
