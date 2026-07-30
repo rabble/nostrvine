@@ -3,14 +3,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
-
-import '../../helpers/go_router.dart';
 
 class _MockBadgeRepository extends Mock implements BadgeRepository {}
 
@@ -31,7 +31,7 @@ void main() {
       issuedBadge = _issuedViewData(recipientAccepted: true);
     });
 
-    Widget buildSubject({MockGoRouter? goRouter}) {
+    Widget buildSubject() {
       const app = MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -40,9 +40,7 @@ void main() {
 
       return ProviderScope(
         overrides: [badgeRepositoryProvider.overrideWithValue(repository)],
-        child: goRouter == null
-            ? app
-            : MockGoRouterProvider(goRouter: goRouter, child: app),
+        child: app,
       );
     }
 
@@ -83,26 +81,76 @@ void main() {
       verify(repository.loadDashboard).called(greaterThanOrEqualTo(2));
     });
 
-    testWidgets('opens the embedded Divine Badges app', (tester) async {
-      final mockGoRouter = MockGoRouter();
-      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
-      when(repository.loadDashboard).thenAnswer(
-        (_) async => const BadgeDashboardData(awarded: [], issued: []),
-      );
+    testWidgets(
+      'opens bundled badges sandbox when remote badges ID differs',
+      (tester) async {
+        final mergedDirectoryApps = [_remoteBadgesApp()];
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (_, _) => const BadgesScreen(),
+            ),
+            GoRoute(
+              path: NostrAppSandboxScreen.path,
+              builder: (_, state) {
+                final app =
+                    state.extra as NostrAppDirectoryEntry? ??
+                    mergedDirectoryApps.singleWhere(
+                      (entry) => entry.id == state.pathParameters['appId'],
+                    );
+                return Material(child: Text('Sandbox app: ${app.id}'));
+              },
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+        when(repository.loadDashboard).thenAnswer(
+          (_) async => const BadgeDashboardData(awarded: [], issued: []),
+        );
 
-      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              badgeRepositoryProvider.overrideWithValue(repository),
+            ],
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text(l10n.badgesOpenApp));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.badgesOpenApp));
+        await tester.pumpAndSettle();
 
-      verify(
-        () => mockGoRouter.push(
-          NostrAppSandboxScreen.pathForAppId('bundled-badges'),
-        ),
-      ).called(1);
-    });
+        expect(find.text('Sandbox app: bundled-badges'), findsOneWidget);
+        expect(find.text('Sandbox app: app-badges'), findsNothing);
+      },
+    );
   });
+}
+
+NostrAppDirectoryEntry _remoteBadgesApp() {
+  return const NostrAppDirectoryEntry(
+    id: 'app-badges',
+    slug: 'badges',
+    name: 'Remote Divine Badges',
+    tagline: 'Remote directory entry',
+    description: 'A remotely merged badges entry.',
+    iconUrl: 'https://badges.divine.video/icon.png',
+    launchUrl: 'https://badges.divine.video/remote',
+    allowedOrigins: ['https://badges.divine.video'],
+    allowedMethods: ['getPublicKey'],
+    allowedSignEventKinds: [],
+    promptRequiredFor: [],
+    status: 'approved',
+    sortOrder: 15,
+    createdAt: null,
+    updatedAt: null,
+  );
 }
 
 BadgeAwardViewData _awardViewData({required bool isAccepted}) {

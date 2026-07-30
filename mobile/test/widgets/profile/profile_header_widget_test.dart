@@ -536,7 +536,12 @@ void main() {
     ) async {
       final testProfile = createTestProfile(displayName: 'Badged User');
       final mockGoRouter = MockGoRouter();
-      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+      when(
+        () => mockGoRouter.push<Object?>(
+          any(),
+          extra: divineBadgesNostrApp,
+        ),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -584,8 +589,9 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () => mockGoRouter.push(
+        () => mockGoRouter.push<Object?>(
           NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.id),
+          extra: divineBadgesNostrApp,
         ),
       ).called(1);
     });

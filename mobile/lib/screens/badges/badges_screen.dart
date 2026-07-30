@@ -133,6 +133,7 @@ class _BadgesIntro extends StatelessWidget {
             onPressed: () {
               context.push(
                 NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.id),
+                extra: divineBadgesNostrApp,
               );
             },
           ),

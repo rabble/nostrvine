@@ -510,7 +510,10 @@ void _openProfileFromBadgeSheet(BuildContext context, String pubkey) {
 void _openBadgesAppFromBadgeSheet(BuildContext context) {
   final router = GoRouter.of(context);
   Navigator.of(context).pop();
-  router.push(NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.id));
+  router.push(
+    NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.id),
+    extra: divineBadgesNostrApp,
+  );
 }
 
 class _VerifiedAccountsBlock extends StatelessWidget {
