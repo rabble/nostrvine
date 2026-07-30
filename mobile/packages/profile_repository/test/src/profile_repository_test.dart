@@ -2419,6 +2419,56 @@ void main() {
         });
       });
 
+      test(
+        'a newer, sparser relay Kind 0 outranks a stale, richer local seed',
+        () async {
+          // A field removed on another client leaves the newest Kind 0 both
+          // newer and sparser than our copy. Richness must not override
+          // recency here, or the save re-publishes the deletion away.
+          final staleLocalSeed = UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice',
+            name: 'alice',
+            rawData: const {
+              'display_name': 'Alice',
+              'name': 'alice',
+              'lud16': 'alice@getalby.com',
+              'custom_client_key': 'deleted-elsewhere',
+            },
+            createdAt: DateTime(2026),
+            eventId: 'cached-$testPubkey',
+          );
+          final newerSparserKind0 = Event(
+            testPubkey,
+            0,
+            const [],
+            jsonEncode({'display_name': 'Alice', 'name': 'alice'}),
+            createdAt: DateTime(2026, 2).millisecondsSinceEpoch ~/ 1000,
+          );
+          when(
+            () => mockNostrClient.fetchProfile(
+              testPubkey,
+              useCache: any(named: 'useCache'),
+            ),
+          ).thenAnswer((_) async => newerSparserKind0);
+
+          await profileRepository.saveProfileEvent(
+            displayName: 'Alice',
+            currentProfile: staleLocalSeed,
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfileAwaitOk(
+                      profileContent: captureAny(named: 'profileContent'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured.containsKey('lud16'), isFalse);
+          expect(captured.containsKey('custom_client_key'), isFalse);
+        },
+      );
+
       group('with currentProfile', () {
         test('requires raw Kind 0 when resolving the publish seed', () async {
           final funnelcakeApiClient = MockFunnelcakeApiClient();

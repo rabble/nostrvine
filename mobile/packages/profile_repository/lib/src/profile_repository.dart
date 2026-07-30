@@ -1284,7 +1284,8 @@ class ProfileRepository {
   /// - the relay fetch returns null (its documented failure mode — internal
   ///   errors are swallowed by [fetchFreshProfile]),
   /// - the relay fetch exceeds [_publishSeedRelayTimeout],
-  /// - the local seed is strictly newer, or strictly richer in meaningful keys.
+  /// - the local seed is strictly newer, or carries the same timestamp and
+  ///   strictly more meaningful keys.
   Future<UserProfile?> _resolvePublishSeed(UserProfile? currentProfile) async {
     // `??` short-circuits, so the signer is consulted only when the caller gave
     // us no profile to take a pubkey from.
@@ -1309,23 +1310,30 @@ class ProfileRepository {
       return fresh;
     }
 
-    // `fresh` is a raw Kind 0 (requireRawKind0), so it is authoritative by
-    // construction: it carries unknown keys and NIP-39 tags that the REST
-    // projection structurally cannot express. Keep the local seed only when it
-    // is strictly newer or strictly richer.
-    //
-    // Richness is counted over *meaningful* keys, not `rawData.length`. A
-    // REST-derived profile used to out-count the real Kind 0 on `''`
-    // placeholders alone — Funnelcake models every metadata field as a
-    // non-nullable String, so an absent key arrives as `''` — which inverted
-    // this comparison and handed the publish path a seed whose `isNotEmpty`
-    // guards then deleted the very fields it was meant to preserve.
-    if (localSeed.createdAt.isAfter(fresh.createdAt) ||
-        _meaningfulKeyCount(localSeed.rawData) >
-            _meaningfulKeyCount(fresh.rawData)) {
+    // Recency decides first. A field the user removed on another client leaves
+    // the newest Kind 0 both newer *and* sparser, so letting key count override
+    // recency would re-publish the deletion away.
+    if (fresh.createdAt.isAfter(localSeed.createdAt)) {
+      return fresh;
+    }
+    if (localSeed.createdAt.isAfter(fresh.createdAt)) {
       return localSeed;
     }
-    return fresh;
+
+    // Same timestamp — break the tie on richness, counted over *meaningful*
+    // keys rather than `rawData.length`. A REST-derived profile used to
+    // out-count the real Kind 0 on `''` placeholders alone (Funnelcake models
+    // every metadata field as a non-nullable String, so an absent key arrives
+    // as `''`), which handed the publish path a seed whose `isNotEmpty` guards
+    // then deleted the very fields it was meant to preserve.
+    //
+    // On a genuine tie `fresh` wins: it is a raw Kind 0 (requireRawKind0), so
+    // it carries unknown keys and NIP-39 tags the REST projection structurally
+    // cannot express.
+    return _meaningfulKeyCount(localSeed.rawData) >
+            _meaningfulKeyCount(fresh.rawData)
+        ? localSeed
+        : fresh;
   }
 
   /// The signing key this repository publishes as, or `null` when the client
