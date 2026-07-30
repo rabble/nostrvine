@@ -105,7 +105,9 @@ void main() {
         l10n.videoEditorLayerAnimationEnter,
       );
       expect(enter.color, colors.primaryContainer);
-      expect((enter.border! as Border).top.color, colors.outline);
+      // The two light fills are 1.001:1 apart, so the border is what marks
+      // the selection — it has to be the readable token, not `outline`.
+      expect((enter.border! as Border).top.color, colors.onSurface);
 
       final leave = _segmentDecoration(
         tester,
