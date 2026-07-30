@@ -88,7 +88,7 @@ class AnimationPickerChip extends StatelessWidget {
                           : VineTheme.primary
                     : isLight
                     ? colors.outlineMuted
-                    : Colors.transparent,
+                    : VineTheme.transparent,
               ),
             ),
             child: Padding(

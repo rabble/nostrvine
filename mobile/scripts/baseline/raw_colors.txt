@@ -35,8 +35,6 @@ lib/widgets/support_dialog_utils.dart	5
 lib/widgets/user_avatar.dart	14
 lib/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_eraser.dart	1
 lib/widgets/video_editor/main_editor/video_editor_canvas.dart	1
-lib/widgets/video_editor/timeline_editor/controls/animation_picker_components.dart	1
-lib/widgets/video_editor/timeline_editor/controls/video_editor_layer_animation_sheet.dart	2
 lib/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart	1
 lib/widgets/video_editor/timeline_editor/controls/video_editor_transition_sheet.dart	1
 lib/widgets/video_editor/timeline_editor/strips/video_editor_timeline_clip_strip.dart	1

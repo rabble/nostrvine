@@ -561,7 +561,7 @@ class _PhaseToggle extends StatelessWidget {
             : VineTheme.lightText.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: isLight ? colors.outlineMuted : Colors.transparent,
+          color: isLight ? colors.outlineMuted : VineTheme.transparent,
         ),
       ),
       child: Row(
@@ -622,7 +622,7 @@ class _PhaseSegment extends StatelessWidget {
                     ? isLight
                           ? colors.outline
                           : VineTheme.primary
-                    : Colors.transparent,
+                    : VineTheme.transparent,
               ),
             ),
             child: Text(
@@ -691,7 +691,7 @@ class _LayerTypeTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: selected ? VineTheme.primary : Colors.transparent,
+                    color: selected ? VineTheme.primary : VineTheme.transparent,
                     width: 2,
                   ),
                 ),
