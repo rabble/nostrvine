@@ -2858,13 +2858,17 @@
   "@keyManagementKeycastRemoteSigning": {
     "description": "Explanation shown above the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is fetched from the service rather than read off the device."
   },
-  "keyManagementKeycastPasswordPrompt": "Your key is kept by Divine's login service. Enter your account password to copy it.",
+  "keyManagementKeycastPasswordPrompt": "Your key is kept by Divine's login service. Enter your account password and we'll fetch it.",
   "@keyManagementKeycastPasswordPrompt": {
-    "description": "Body text of the dialog that asks for the account password before fetching the private key from Divine's login service."
+    "description": "Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Says fetch rather than copy because confirming only brings the key back; a second step shows it and copies it."
+  },
+  "keyManagementKeycastFetchKey": "Get my key",
+  "@keyManagementKeycastFetchKey": {
+    "description": "Confirm button in the password step. It fetches the private key from Divine's login service and moves to the step that shows it; it does not copy anything itself."
   },
   "keyManagementKeycastCopyKey": "Copy key",
   "@keyManagementKeycastCopyKey": {
-    "description": "Confirm button in the password dialog; fetches the private key and copies it to the clipboard."
+    "description": "Button on the step that shows the fetched private key; copies it to the clipboard."
   },
   "keyManagementKeycastWrongPassword": "That password doesn't match. Try again.",
   "@keyManagementKeycastWrongPassword": {
@@ -2873,6 +2877,10 @@
   "keyManagementKeycastTooManyAttempts": "Too many tries. Close this and start over.",
   "@keyManagementKeycastTooManyAttempts": {
     "description": "Inline error under the password field once the sheet has taken as many wrong passwords as it will accept. The user has to dismiss the sheet and reopen it to try again."
+  },
+  "keyManagementKeycastRateLimited": "Too many key requests. Wait a few minutes and try again.",
+  "@keyManagementKeycastRateLimited": {
+    "description": "Error shown when the login service is refusing further key export requests for now, so waiting is the remedy rather than retrying straight away."
   },
   "keyManagementKeycastSignInAgain": "Your session has expired. Sign in again to copy your key.",
   "@keyManagementKeycastSignInAgain": {

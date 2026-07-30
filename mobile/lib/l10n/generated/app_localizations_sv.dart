@@ -5092,7 +5092,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Din nyckel förvaras av Divines inloggningstjänst. Ange kontots lösenord för att kopiera den.';
+      'Din nyckel förvaras av Divines inloggningstjänst. Ange kontots lösenord så hämtar vi den.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Hämta min nyckel';
 
   @override
   String get keyManagementKeycastCopyKey => 'Kopiera nyckel';
@@ -5104,6 +5107,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'För många försök. Stäng det här och börja om.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'För många nyckelförfrågningar. Vänta några minuter och försök igen.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

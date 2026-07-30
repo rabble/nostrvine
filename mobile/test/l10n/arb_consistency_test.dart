@@ -53,9 +53,11 @@ void main() {
       const keys = [
         'keyManagementKeycastRemoteSigning',
         'keyManagementKeycastPasswordPrompt',
+        'keyManagementKeycastFetchKey',
         'keyManagementKeycastCopyKey',
         'keyManagementKeycastWrongPassword',
         'keyManagementKeycastTooManyAttempts',
+        'keyManagementKeycastRateLimited',
         'keyManagementYourPrivateKeyLabel',
         'keyManagementKeycastSignInAgain',
         'keyManagementKeycastEmailUnverified',

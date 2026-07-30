@@ -8858,13 +8858,19 @@ abstract class AppLocalizations {
   /// **'Your key lives on Divine\'s login service, not on this device. Confirm your password and we\'ll fetch it for you.'**
   String get keyManagementKeycastRemoteSigning;
 
-  /// Body text of the dialog that asks for the account password before fetching the private key from Divine's login service.
+  /// Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Says fetch rather than copy because confirming only brings the key back; a second step shows it and copies it.
   ///
   /// In en, this message translates to:
-  /// **'Your key is kept by Divine\'s login service. Enter your account password to copy it.'**
+  /// **'Your key is kept by Divine\'s login service. Enter your account password and we\'ll fetch it.'**
   String get keyManagementKeycastPasswordPrompt;
 
-  /// Confirm button in the password dialog; fetches the private key and copies it to the clipboard.
+  /// Confirm button in the password step. It fetches the private key from Divine's login service and moves to the step that shows it; it does not copy anything itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Get my key'**
+  String get keyManagementKeycastFetchKey;
+
+  /// Button on the step that shows the fetched private key; copies it to the clipboard.
   ///
   /// In en, this message translates to:
   /// **'Copy key'**
@@ -8881,6 +8887,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many tries. Close this and start over.'**
   String get keyManagementKeycastTooManyAttempts;
+
+  /// Error shown when the login service is refusing further key export requests for now, so waiting is the remedy rather than retrying straight away.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many key requests. Wait a few minutes and try again.'**
+  String get keyManagementKeycastRateLimited;
 
   /// Error shown when the saved session could not be refreshed, so fetching the key needs a fresh sign-in rather than a retry.
   ///

@@ -5144,7 +5144,10 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Ключът ти се съхранява от услугата за вход на Divine. Въведи паролата на профила си, за да го копираш.';
+      'Ключът ти се съхранява от услугата за вход на Divine. Въведи паролата на профила си и ще го изтеглим.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Вземи ключа ми';
 
   @override
   String get keyManagementKeycastCopyKey => 'Копирай ключа';
@@ -5156,6 +5159,10 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Твърде много опити. Затвори това и започни отначало.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Твърде много заявки за ключа. Изчакай няколко минути и опитай пак.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

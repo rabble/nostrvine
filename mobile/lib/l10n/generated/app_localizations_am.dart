@@ -4992,7 +4992,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'ቁልፍዎ በDivine የመግቢያ አገልግሎት ተቀምጧል። ለመቅዳት የመለያዎን የይለፍ ቃል ያስገቡ።';
+      'ቁልፍዎ በDivine የመግቢያ አገልግሎት ተቀምጧል። የመለያዎን የይለፍ ቃል ያስገቡ፤ እኛም እናመጣዋለን።';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'ቁልፌን አምጣ';
 
   @override
   String get keyManagementKeycastCopyKey => 'ቁልፍ ቅዳ';
@@ -5003,6 +5006,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'በጣም ብዙ ሙከራዎች። ይህን ዝጋና ከመጀመሪያው ጀምር።';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'በጣም ብዙ የቁልፍ ጥያቄዎች። ጥቂት ደቂቃዎች ጠብቀው እንደገና ይሞክሩ።';
 
   @override
   String get keyManagementKeycastSignInAgain =>

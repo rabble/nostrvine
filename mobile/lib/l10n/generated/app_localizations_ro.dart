@@ -5237,7 +5237,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Cheia ta este păstrată de serviciul de autentificare Divine. Introdu parola contului pentru a o copia.';
+      'Cheia ta este păstrată de serviciul de autentificare Divine. Introdu parola contului și o aducem.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Adu cheia mea';
 
   @override
   String get keyManagementKeycastCopyKey => 'Copiază cheia';
@@ -5249,6 +5252,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Prea multe încercări. Închide și ia-o de la capăt.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Prea multe cereri pentru cheie. Așteaptă câteva minute și încearcă din nou.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

@@ -5127,7 +5127,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Sua chave é guardada pelo serviço de login da Divine. Digite a senha da sua conta para copiá-la.';
+      'Sua chave é guardada pelo serviço de login da Divine. Digite a senha da sua conta e nós a buscamos.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Buscar minha chave';
 
   @override
   String get keyManagementKeycastCopyKey => 'Copiar chave';
@@ -5139,6 +5142,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Tentativas demais. Fecha isto e começa de novo.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Pedidos de chave demais. Espera uns minutos e tenta de novo.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

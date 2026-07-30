@@ -5117,7 +5117,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in om hem te kopiëren.';
+      'Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in en we halen hem op.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Mijn sleutel ophalen';
 
   @override
   String get keyManagementKeycastCopyKey => 'Sleutel kopiëren';
@@ -5129,6 +5132,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Te veel pogingen. Sluit dit en begin opnieuw.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Te veel sleutelverzoeken. Wacht een paar minuten en probeer het opnieuw.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

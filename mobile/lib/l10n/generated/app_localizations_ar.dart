@@ -5058,7 +5058,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك لنسخه.';
+      'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك وسنجلبه لك.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'أحضِر مفتاحي';
 
   @override
   String get keyManagementKeycastCopyKey => 'نسخ المفتاح';
@@ -5070,6 +5073,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'محاولات كثيرة جدًا. أغلق هذا وابدأ من جديد.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'طلبات كثيرة جدًا للمفتاح. انتظر بضع دقائق ثم حاول مرة أخرى.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

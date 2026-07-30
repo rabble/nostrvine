@@ -5155,7 +5155,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Dein Schlüssel wird beim Login-Dienst von Divine aufbewahrt. Gib dein Konto-Passwort ein, um ihn zu kopieren.';
+      'Dein Schlüssel wird beim Login-Dienst von Divine aufbewahrt. Gib dein Konto-Passwort ein, dann holen wir ihn.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Schlüssel holen';
 
   @override
   String get keyManagementKeycastCopyKey => 'Schlüssel kopieren';
@@ -5167,6 +5170,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Zu viele Versuche. Schließ das und fang neu an.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Zu viele Schlüssel-Anfragen. Warte ein paar Minuten und versuch es erneut.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

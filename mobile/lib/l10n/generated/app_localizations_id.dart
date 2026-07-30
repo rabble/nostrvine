@@ -5058,7 +5058,10 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Kuncimu disimpan oleh layanan login Divine. Masukkan kata sandi akunmu untuk menyalinnya.';
+      'Kuncimu disimpan oleh layanan login Divine. Masukkan kata sandi akunmu dan kami akan mengambilnya.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Ambil kunciku';
 
   @override
   String get keyManagementKeycastCopyKey => 'Salin kunci';
@@ -5070,6 +5073,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Terlalu banyak percobaan. Tutup ini dan mulai lagi.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Terlalu banyak permintaan kunci. Tunggu beberapa menit lalu coba lagi.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

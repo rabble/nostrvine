@@ -4857,7 +4857,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      '鍵は Divine のログインサービスが保管しています。コピーするにはアカウントのパスワードを入力してください。';
+      '鍵は Divine のログインサービスが保管しています。アカウントのパスワードを入力すれば取得します。';
+
+  @override
+  String get keyManagementKeycastFetchKey => '鍵を取得';
 
   @override
   String get keyManagementKeycastCopyKey => '鍵をコピー';
@@ -4868,6 +4871,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       '試行が多すぎるよ。これを閉じて最初からやり直してね。';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      '鍵の取得リクエストが多すぎるよ。数分待ってからもう一度試してね。';
 
   @override
   String get keyManagementKeycastSignInAgain =>

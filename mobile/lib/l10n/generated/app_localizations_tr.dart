@@ -5066,7 +5066,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Anahtarın Divine\'ın giriş servisinde tutuluyor. Kopyalamak için hesap şifreni gir.';
+      'Anahtarın Divine\'ın giriş servisinde tutuluyor. Hesap şifreni gir, biz de getirelim.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Anahtarımı getir';
 
   @override
   String get keyManagementKeycastCopyKey => 'Anahtarı kopyala';
@@ -5078,6 +5081,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Çok fazla deneme oldu. Bunu kapat ve baştan başla.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Çok fazla anahtar isteği oldu. Birkaç dakika bekleyip tekrar dene.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

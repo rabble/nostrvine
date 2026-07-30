@@ -5158,7 +5158,10 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo para makopya ito.';
+      'Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo at kukunin namin ito.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Kunin ang key ko';
 
   @override
   String get keyManagementKeycastCopyKey => 'Kopyahin ang key';
@@ -5170,6 +5173,10 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Sobrang dami nang subok. Isara ito at magsimula ulit.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Sobrang dami nang hiling para sa key. Maghintay ng ilang minuto at subukan muli.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

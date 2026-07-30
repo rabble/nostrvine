@@ -4875,7 +4875,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      '키는 Divine 로그인 서비스가 보관합니다. 복사하려면 계정 비밀번호를 입력하세요.';
+      '키는 Divine 로그인 서비스가 보관합니다. 계정 비밀번호를 입력하면 가져옵니다.';
+
+  @override
+  String get keyManagementKeycastFetchKey => '키 가져오기';
 
   @override
   String get keyManagementKeycastCopyKey => '키 복사';
@@ -4886,6 +4889,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       '시도가 너무 많아요. 이 창을 닫고 다시 시작해 주세요.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      '키 요청이 너무 많아요. 몇 분 기다렸다가 다시 시도해 주세요.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

@@ -5228,7 +5228,10 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Twój klucz przechowuje serwis logowania Divine. Podaj hasło do konta, aby go skopiować.';
+      'Twój klucz przechowuje serwis logowania Divine. Podaj hasło do konta, a go pobierzemy.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Pobierz mój klucz';
 
   @override
   String get keyManagementKeycastCopyKey => 'Kopiuj klucz';
@@ -5240,6 +5243,10 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Za dużo prób. Zamknij to i zacznij od nowa.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Za dużo próśb o klucz. Odczekaj kilka minut i spróbuj ponownie.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

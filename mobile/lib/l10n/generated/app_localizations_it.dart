@@ -5144,7 +5144,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'La tua chiave è conservata dal servizio di accesso di Divine. Inserisci la password del tuo account per copiarla.';
+      'La tua chiave è conservata dal servizio di accesso di Divine. Inserisci la password del tuo account e la recuperiamo.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Recupera la mia chiave';
 
   @override
   String get keyManagementKeycastCopyKey => 'Copia la chiave';
@@ -5156,6 +5159,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Troppi tentativi. Chiudi e ricomincia.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Troppe richieste della chiave. Aspetta qualche minuto e riprova.';
 
   @override
   String get keyManagementKeycastSignInAgain =>

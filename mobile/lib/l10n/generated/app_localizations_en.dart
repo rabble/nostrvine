@@ -5094,7 +5094,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyManagementKeycastPasswordPrompt =>
-      'Your key is kept by Divine\'s login service. Enter your account password to copy it.';
+      'Your key is kept by Divine\'s login service. Enter your account password and we\'ll fetch it.';
+
+  @override
+  String get keyManagementKeycastFetchKey => 'Get my key';
 
   @override
   String get keyManagementKeycastCopyKey => 'Copy key';
@@ -5106,6 +5109,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get keyManagementKeycastTooManyAttempts =>
       'Too many tries. Close this and start over.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Too many key requests. Wait a few minutes and try again.';
 
   @override
   String get keyManagementKeycastSignInAgain =>
