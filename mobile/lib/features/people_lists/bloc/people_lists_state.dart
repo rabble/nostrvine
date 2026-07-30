@@ -40,6 +40,7 @@ class PeopleListsState extends Equatable {
     this.listIdsByPubkey = const {},
     this.pendingMutations = const {},
     this.lastSubmittedEventId,
+    this.enabled = true,
   });
 
   /// Current status of the bloc.
@@ -64,6 +65,21 @@ class PeopleListsState extends Equatable {
   /// relay socket — not relay `OK` confirmation.
   final String? lastSubmittedEventId;
 
+  /// Whether the curated-lists feature is currently enabled.
+  ///
+  /// Defaults to `true`; the bloc's `enabledStream` corrects it on the seed it
+  /// receives at startup. While `false` the bloc holds no repository
+  /// subscription and runs no sync — see [activeOwnerPubkey].
+  final bool enabled;
+
+  /// The owner the bloc may do repository work for.
+  ///
+  /// [ownerPubkey] while [enabled], `null` while the feature is off. Mutation
+  /// handlers read this rather than [ownerPubkey] so a disabled feature
+  /// publishes nothing, reusing the unauthenticated no-op path instead of
+  /// adding a second guard to each handler.
+  String? get activeOwnerPubkey => enabled ? ownerPubkey : null;
+
   /// Creates a copy with updated fields.
   PeopleListsState copyWith({
     PeopleListsStatus? status,
@@ -74,6 +90,7 @@ class PeopleListsState extends Equatable {
     Map<String, PeopleListsMutation>? pendingMutations,
     String? lastSubmittedEventId,
     bool clearLastSubmittedEventId = false,
+    bool? enabled,
   }) {
     return PeopleListsState(
       status: status ?? this.status,
@@ -84,6 +101,7 @@ class PeopleListsState extends Equatable {
       lastSubmittedEventId: clearLastSubmittedEventId
           ? null
           : (lastSubmittedEventId ?? this.lastSubmittedEventId),
+      enabled: enabled ?? this.enabled,
     );
   }
 
@@ -95,5 +113,6 @@ class PeopleListsState extends Equatable {
     listIdsByPubkey,
     pendingMutations,
     lastSubmittedEventId,
+    enabled,
   ];
 }

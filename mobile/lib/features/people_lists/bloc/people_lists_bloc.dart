@@ -27,10 +27,18 @@ typedef PeopleListsClock = DateTime Function();
 /// changes, and applies optimistic updates for user-initiated mutations
 /// before the repository returns.
 ///
-/// It depends only on the repository, an owner-pubkey stream, and a
-/// repository stream — it does not import other BLoCs. Owner transitions
-/// cancel the prior subscription, clear pending mutations, and start a new
-/// subscription plus an out-of-band sync.
+/// It depends only on the repository, an owner-pubkey stream, a repository
+/// stream, and an enabled stream — it does not import other BLoCs. Owner
+/// transitions cancel the prior subscription, clear pending mutations, and
+/// start a new subscription plus an out-of-band sync.
+///
+/// ## Feature-flag lifecycle
+///
+/// The bloc is registered unconditionally above `MaterialApp.router`, so it
+/// outlives `FeatureFlag.curatedLists` going off (#6477). While the flag is
+/// off it holds no repository subscription, runs no `syncOwner`, and publishes
+/// nothing — it only keeps following the owner so that turning the flag back
+/// on wires up the account that is signed in *then* (#6494).
 ///
 /// ## Failure recovery contract
 ///
@@ -54,6 +62,13 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// change, so a caller that omits the stream silently reverts #6480. Pass
   /// `const Stream.empty()` when the repository genuinely cannot change.
   ///
+  /// [enabledStream] must emit whether `FeatureFlag.curatedLists` is enabled,
+  /// seeded with its current value. Required for the same reason
+  /// [repositoryStream] is: this bloc outlives the flag, so a caller that omits
+  /// the stream silently reverts #6494 and leaves a disabled feature syncing in
+  /// the background. Pass `Stream.value(true)` when the flag genuinely cannot
+  /// change.
+  ///
   /// [clock] stamps optimistic `updatedAt` values and mutation ids.
   /// Defaults to [DateTime.now] in UTC. Tests inject a fixed clock for
   /// determinism.
@@ -61,14 +76,20 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     required PeopleListsRepository repository,
     required Stream<String?> ownerPubkeyStream,
     required Stream<PeopleListsRepository> repositoryStream,
+    required Stream<bool> enabledStream,
     String? initialOwnerPubkey,
     PeopleListsClock? clock,
   }) : _repository = repository,
        _ownerPubkeyStream = ownerPubkeyStream,
        _repositoryStream = repositoryStream,
+       _enabledStream = enabledStream,
        _clock = clock ?? _defaultClock,
        super(PeopleListsState(ownerPubkey: initialOwnerPubkey)) {
     on<PeopleListsStarted>(_onStarted);
+    on<PeopleListsEnabledChanged>(
+      _onEnabledChanged,
+      transformer: sequential(),
+    );
     on<PeopleListsRepositoryChanged>(
       _onRepositoryChanged,
       transformer: sequential(),
@@ -110,17 +131,20 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   PeopleListsRepository _repository;
   final Stream<String?> _ownerPubkeyStream;
   final Stream<PeopleListsRepository> _repositoryStream;
+  final Stream<bool> _enabledStream;
   final PeopleListsClock _clock;
 
   StreamSubscription<String?>? _ownerSubscription;
   StreamSubscription<List<UserList>>? _listsSubscription;
   StreamSubscription<PeopleListsRepository>? _repositorySubscription;
+  StreamSubscription<bool>? _enabledSubscription;
 
   @override
   Future<void> close() async {
     await _ownerSubscription?.cancel();
     await _listsSubscription?.cancel();
     await _repositorySubscription?.cancel();
+    await _enabledSubscription?.cancel();
     return super.close();
   }
 
@@ -148,10 +172,53 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       },
     );
 
+    await _enabledSubscription?.cancel();
+    _enabledSubscription = _enabledStream.listen(
+      (enabled) => add(PeopleListsEnabledChanged(enabled: enabled)),
+      onError: (Object error, StackTrace stackTrace) {
+        addError(error, stackTrace);
+      },
+    );
+
     final currentOwner = state.ownerPubkey;
     if (currentOwner != null && currentOwner.isNotEmpty) {
       add(PeopleListsOwnerChanged(ownerPubkey: currentOwner));
     }
+  }
+
+  /// Starts or stops all people-list work when `FeatureFlag.curatedLists`
+  /// flips.
+  ///
+  /// Turning the flag off cannot be expressed by dropping the `BlocProvider`:
+  /// a conditional entry changes the app-shell provider chain's shape and
+  /// re-inflates everything below it (#6477). So the already-constructed bloc
+  /// has to stand down on its own — otherwise its cache subscription and
+  /// `syncOwner` calls keep running for the rest of the session (#6494).
+  void _onEnabledChanged(
+    PeopleListsEnabledChanged event,
+    Emitter<PeopleListsState> emit,
+  ) {
+    if (event.enabled == state.enabled) return;
+
+    if (!event.enabled) {
+      _stopWatchingLists();
+      // Drops the snapshot and any pending mutations, but keeps the owner: the
+      // owner stream is not seeded, so state is the only place a later flag-on
+      // can learn who is signed in.
+      emit(PeopleListsState(ownerPubkey: state.ownerPubkey, enabled: false));
+      return;
+    }
+
+    final owner = state.ownerPubkey;
+    if (owner == null || owner.isEmpty) {
+      emit(state.copyWith(enabled: true));
+      return;
+    }
+
+    emit(state.copyWith(status: PeopleListsStatus.loading, enabled: true));
+    // Re-subscribing goes through the owner bucket so [_onOwnerChanged] stays
+    // the only handler that opens a lists subscription.
+    add(const PeopleListsOwnerChanged.rewire());
   }
 
   /// Re-points the bloc at a freshly built repository.
@@ -192,14 +259,23 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         );
   }
 
-  /// Owns [_listsSubscription] — the only handler that writes it.
+  /// Closes [_listsSubscription], if any.
   ///
-  /// Deliberately synchronous. Suspending here would let another handler run
-  /// between the read and the write of [_listsSubscription] and orphan a
-  /// subscription that then outlives [close]; staying synchronous makes this
-  /// the sole, uninterruptible writer. `cancel()` stops delivery to the
-  /// listener synchronously — its future only reports resource cleanup, so
-  /// nothing below depends on awaiting it.
+  /// Called from [_onOwnerChanged] and [_onEnabledChanged], both of which are
+  /// deliberately synchronous: what would orphan a subscription is a *writer
+  /// that suspends* between reading and nulling the field, not a second writer
+  /// (#6482). Do not make either handler `async`. `cancel()` stops delivery to
+  /// the listener synchronously — its future only reports resource cleanup, so
+  /// nothing depends on awaiting it.
+  void _stopWatchingLists() {
+    unawaited(_listsSubscription?.cancel());
+    _listsSubscription = null;
+  }
+
+  /// Opens [_listsSubscription] — the only handler that does.
+  ///
+  /// Deliberately synchronous, for the reason spelled out on
+  /// [_stopWatchingLists].
   ///
   /// A re-wire ([PeopleListsOwnerChanged.rewire]) reuses the owner already in
   /// state and deliberately emits nothing: the repository swap fires on every
@@ -218,11 +294,21 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       return;
     }
 
-    unawaited(_listsSubscription?.cancel());
-    _listsSubscription = null;
+    _stopWatchingLists();
 
     if (newOwner == null || newOwner.isEmpty) {
-      if (!event.isRewire) emit(const PeopleListsState());
+      if (!event.isRewire) {
+        emit(PeopleListsState(enabled: state.enabled));
+      }
+      return;
+    }
+
+    // Flag off: keep following the owner so a later flag-on wires up whoever is
+    // signed in then, but open no subscription and run no sync.
+    if (!state.enabled) {
+      if (!event.isRewire) {
+        emit(PeopleListsState(ownerPubkey: newOwner, enabled: false));
+      }
       return;
     }
 
@@ -231,6 +317,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         PeopleListsState(
           status: PeopleListsStatus.loading,
           ownerPubkey: newOwner,
+          enabled: state.enabled,
         ),
       );
     }
@@ -247,8 +334,9 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     PeopleListsRepositoryListsChanged event,
     Emitter<PeopleListsState> emit,
   ) {
-    // Ignore late emissions from a previous owner.
-    if (event.ownerPubkey != state.ownerPubkey) {
+    // Ignore late emissions from a previous owner, or ones already queued when
+    // the feature was turned off.
+    if (!state.enabled || event.ownerPubkey != state.ownerPubkey) {
       return;
     }
 
@@ -269,7 +357,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     PeopleListsCreateRequested event,
     Emitter<PeopleListsState> emit,
   ) async {
-    final owner = state.ownerPubkey;
+    final owner = state.activeOwnerPubkey;
     if (owner == null || owner.isEmpty) {
       return;
     }
@@ -296,7 +384,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     PeopleListsDeleteRequested event,
     Emitter<PeopleListsState> emit,
   ) async {
-    final owner = state.ownerPubkey;
+    final owner = state.activeOwnerPubkey;
     if (owner == null || owner.isEmpty) {
       return;
     }
@@ -401,7 +489,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     required String pubkey,
     required Emitter<PeopleListsState> emit,
   }) async {
-    final owner = state.ownerPubkey;
+    final owner = state.activeOwnerPubkey;
     if (owner == null || owner.isEmpty) {
       return;
     }
@@ -471,7 +559,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     required String pubkey,
     required Emitter<PeopleListsState> emit,
   }) async {
-    final owner = state.ownerPubkey;
+    final owner = state.activeOwnerPubkey;
     if (owner == null || owner.isEmpty) {
       return;
     }

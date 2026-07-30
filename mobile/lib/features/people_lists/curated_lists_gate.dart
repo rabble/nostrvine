@@ -1,10 +1,12 @@
-// ABOUTME: Reads FeatureFlag.curatedLists off a BuildContext.
-// ABOUTME: Backstop gate for entry points that would construct PeopleListsBloc.
+// ABOUTME: Access points for FeatureFlag.curatedLists outside the flag's own
+// ABOUTME: providers: a one-shot BuildContext read for imperative entry points,
+// ABOUTME: and a seeded stream for the app-lifetime PeopleListsBloc.
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/provider_identity_stream.dart';
 
 /// Whether curated lists are enabled for the current user.
 ///
@@ -23,3 +25,20 @@ bool curatedListsEnabled(BuildContext context) {
     listen: false,
   ).read(isFeatureEnabledProvider(FeatureFlag.curatedLists));
 }
+
+/// Successive `FeatureFlag.curatedLists` values, seeded with the current one,
+/// for the app-shell `PeopleListsBloc` (#6494).
+///
+/// Laziness gates *construction* of that bloc, and the entry points above keep
+/// that gate honest. What laziness cannot do is tear a bloc down again: the
+/// `BlocProvider` is unconditional on purpose (#6477), so one constructed while
+/// the flag was on stays alive for the session and has to stand down on its own
+/// when the flag goes off.
+///
+/// Unlike [identityStreamOf]'s usual subjects, the value here is a `bool`, so
+/// Riverpod's `==` change detection is plain value equality — exactly the
+/// signal wanted, rather than the identity proxy the helper's doc describes.
+final Provider<Stream<bool>> curatedListsEnabledStreamProvider =
+    identityStreamOf<bool>(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );

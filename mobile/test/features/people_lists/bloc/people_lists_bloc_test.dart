@@ -52,12 +52,14 @@ void main() {
   group(PeopleListsBloc, () {
     late _MockPeopleListsRepository repository;
     late StreamController<String?> ownerPubkeyController;
+    late StreamController<bool> enabledController;
     late StreamController<List<UserList>> ownerAListsController;
     late StreamController<List<UserList>> ownerBListsController;
 
     setUp(() {
       repository = _MockPeopleListsRepository();
       ownerPubkeyController = StreamController<String?>.broadcast();
+      enabledController = StreamController<bool>.broadcast();
       ownerAListsController = StreamController<List<UserList>>.broadcast();
       ownerBListsController = StreamController<List<UserList>>.broadcast();
 
@@ -74,6 +76,7 @@ void main() {
 
     tearDown(() async {
       await ownerPubkeyController.close();
+      await enabledController.close();
       if (!ownerAListsController.isClosed) {
         await ownerAListsController.close();
       }
@@ -87,6 +90,7 @@ void main() {
         repository: repository,
         ownerPubkeyStream: ownerPubkeyController.stream,
         repositoryStream: const Stream.empty(),
+        enabledStream: enabledController.stream,
         initialOwnerPubkey: initialOwnerPubkey,
         clock: _fixedClock,
       );
@@ -978,6 +982,177 @@ void main() {
       expect(ownerBListsController.hasListener, isTrue);
     });
 
+    // #6494: the app-shell BlocProvider is unconditional (#6477), so laziness
+    // only gates construction. A bloc built while FeatureFlag.curatedLists was
+    // on used to keep its cache subscription and keep calling syncOwner for
+    // kind 30000 for the rest of the session after the flag went off.
+    group('curated-lists flag lifecycle', () {
+      Future<PeopleListsBloc> startedWithOwnerA() async {
+        final bloc = buildBloc()..add(const PeopleListsStarted());
+        await _flush();
+        ownerPubkeyController.add(_ownerA);
+        await _flush();
+        return bloc;
+      }
+
+      Future<void> disable() async {
+        enabledController.add(false);
+        await _flush();
+        await _flush();
+      }
+
+      test('turning the flag off cancels the lists subscription', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        expect(ownerAListsController.hasListener, isTrue);
+
+        await disable();
+
+        expect(ownerAListsController.hasListener, isFalse);
+        expect(bloc.state.lists, isEmpty);
+      });
+
+      test('drops a snapshot that crossed the flag-off teardown', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+
+        // Same turn, flag first: the cancel is synchronous, but a snapshot the
+        // cache already handed over is queued behind the flag event.
+        enabledController.add(false);
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        await _flush();
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.enabled, isFalse);
+        expect(bloc.state.lists, isEmpty);
+        expect(bloc.state.listIdsByPubkey, isEmpty);
+      });
+
+      test('a later owner change runs no sync while the flag is off', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        await disable();
+        clearInteractions(repository);
+
+        ownerPubkeyController.add(_ownerB);
+        await _flush();
+        await _flush();
+
+        verifyNever(
+          () => repository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        );
+        verifyNever(
+          () => repository.watchLists(ownerPubkey: any(named: 'ownerPubkey')),
+        );
+        expect(ownerBListsController.hasListener, isFalse);
+      });
+
+      test('a repository swap runs no sync while the flag is off', () async {
+        final repositoryController =
+            StreamController<PeopleListsRepository>.broadcast();
+        addTearDown(repositoryController.close);
+        final nextRepository = _MockPeopleListsRepository();
+        when(
+          () =>
+              nextRepository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        ).thenAnswer((_) async {});
+        when(
+          () => nextRepository.watchLists(ownerPubkey: _ownerA),
+        ).thenAnswer((_) => const Stream<List<UserList>>.empty());
+
+        final bloc = PeopleListsBloc(
+          repository: repository,
+          ownerPubkeyStream: ownerPubkeyController.stream,
+          repositoryStream: repositoryController.stream,
+          enabledStream: enabledController.stream,
+          clock: _fixedClock,
+        )..add(const PeopleListsStarted());
+        addTearDown(bloc.close);
+        await _flush();
+        ownerPubkeyController.add(_ownerA);
+        await _flush();
+        await disable();
+
+        repositoryController.add(nextRepository);
+        await _flush();
+        await _flush();
+
+        verifyNever(
+          () =>
+              nextRepository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        );
+        verifyNever(
+          () =>
+              nextRepository.watchLists(ownerPubkey: any(named: 'ownerPubkey')),
+        );
+      });
+
+      test('mutations publish nothing while the flag is off', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        await disable();
+
+        bloc.add(const PeopleListsCreateRequested(name: 'Friends'));
+        await _flush();
+        await _flush();
+
+        verifyNever(
+          () => repository.createList(
+            ownerPubkey: any(named: 'ownerPubkey'),
+            name: any(named: 'name'),
+          ),
+        );
+      });
+
+      test('turning the flag back on resubscribes and syncs', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        await disable();
+        clearInteractions(repository);
+
+        enabledController.add(true);
+        await _flush();
+        await _flush();
+
+        expect(ownerAListsController.hasListener, isTrue);
+        verify(() => repository.syncOwner(ownerPubkey: _ownerA)).called(1);
+
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.ready));
+        expect(bloc.state.lists.single.id, equals('l1'));
+      });
+
+      // The owner stream is not seeded, so a flag-on can only learn the current
+      // account from state — which is why the bloc keeps following owner changes
+      // while it is standing down.
+      test('a flag-on syncs the account that signed in while off', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        await disable();
+
+        ownerPubkeyController.add(_ownerB);
+        await _flush();
+        await _flush();
+        clearInteractions(repository);
+
+        enabledController.add(true);
+        await _flush();
+        await _flush();
+
+        verify(() => repository.syncOwner(ownerPubkey: _ownerB)).called(1);
+        verifyNever(() => repository.syncOwner(ownerPubkey: _ownerA));
+        expect(ownerBListsController.hasListener, isTrue);
+        expect(ownerAListsController.hasListener, isFalse);
+      });
+    });
+
     // #6480: peopleListsRepositoryProvider is keepAlive but not
     // identity-stable — it watches nostrServiceProvider, whose client is
     // disposed on every identity change. The app-shell BlocProvider.create
@@ -1016,6 +1191,7 @@ void main() {
           repository: repository,
           ownerPubkeyStream: ownerPubkeyController.stream,
           repositoryStream: repositoryController.stream,
+          enabledStream: enabledController.stream,
           clock: _fixedClock,
         );
       }
