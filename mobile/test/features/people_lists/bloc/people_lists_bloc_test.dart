@@ -1006,6 +1006,12 @@ void main() {
         addTearDown(bloc.close);
         expect(ownerAListsController.hasListener, isTrue);
 
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        await _flush();
+        expect(bloc.state.lists, hasLength(1));
+
         await disable();
 
         expect(ownerAListsController.hasListener, isFalse);
@@ -1050,45 +1056,71 @@ void main() {
         expect(ownerBListsController.hasListener, isFalse);
       });
 
-      test('a repository swap runs no sync while the flag is off', () async {
-        final repositoryController =
-            StreamController<PeopleListsRepository>.broadcast();
-        addTearDown(repositoryController.close);
-        final nextRepository = _MockPeopleListsRepository();
-        when(
-          () =>
-              nextRepository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
-        ).thenAnswer((_) async {});
-        when(
-          () => nextRepository.watchLists(ownerPubkey: _ownerA),
-        ).thenAnswer((_) => const Stream<List<UserList>>.empty());
+      test(
+        'a repository swap runs no sync while off but still lands',
+        () async {
+          final repositoryController =
+              StreamController<PeopleListsRepository>.broadcast();
+          addTearDown(repositoryController.close);
+          final nextRepository = _MockPeopleListsRepository();
+          when(
+            () => nextRepository.syncOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => nextRepository.watchLists(ownerPubkey: _ownerA),
+          ).thenAnswer((_) => const Stream<List<UserList>>.empty());
 
-        final bloc = PeopleListsBloc(
-          repository: repository,
-          ownerPubkeyStream: ownerPubkeyController.stream,
-          repositoryStream: repositoryController.stream,
-          enabledStream: enabledController.stream,
-          clock: _fixedClock,
-        )..add(const PeopleListsStarted());
-        addTearDown(bloc.close);
-        await _flush();
-        ownerPubkeyController.add(_ownerA);
-        await _flush();
-        await disable();
+          final bloc = PeopleListsBloc(
+            repository: repository,
+            ownerPubkeyStream: ownerPubkeyController.stream,
+            repositoryStream: repositoryController.stream,
+            enabledStream: enabledController.stream,
+            clock: _fixedClock,
+          )..add(const PeopleListsStarted());
+          addTearDown(bloc.close);
+          await _flush();
+          ownerPubkeyController.add(_ownerA);
+          await _flush();
+          await disable();
 
-        repositoryController.add(nextRepository);
-        await _flush();
-        await _flush();
+          repositoryController.add(nextRepository);
+          await _flush();
+          await _flush();
 
-        verifyNever(
-          () =>
-              nextRepository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
-        );
-        verifyNever(
-          () =>
-              nextRepository.watchLists(ownerPubkey: any(named: 'ownerPubkey')),
-        );
-      });
+          verifyNever(
+            () => nextRepository.syncOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+          verifyNever(
+            () => nextRepository.watchLists(
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          );
+
+          // The swap must still re-point the field while the feature is off:
+          // the flag-on rewires onto whatever `_repository` holds, and the
+          // pre-swap instance is bound to a disposed NostrClient (#6480). So
+          // `_onRepositoryChanged` deliberately does *not* stand down with the
+          // rest of the bloc.
+          clearInteractions(repository);
+          enabledController.add(true);
+          await _flush();
+          await _flush();
+
+          verify(
+            () => nextRepository.syncOwner(ownerPubkey: _ownerA),
+          ).called(1);
+          verify(
+            () => nextRepository.watchLists(ownerPubkey: _ownerA),
+          ).called(1);
+          verifyNever(
+            () => repository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+          );
+        },
+      );
 
       test('mutations publish nothing while the flag is off', () async {
         final bloc = await startedWithOwnerA();
@@ -1127,6 +1159,34 @@ void main() {
 
         expect(bloc.state.status, equals(PeopleListsStatus.ready));
         expect(bloc.state.lists.single.id, equals('l1'));
+      });
+
+      // The flag lives in SharedPreferences, not in auth scope, and
+      // `enabledStream` only seeds at subscribe time — so nothing would put
+      // `enabled` back to false if a sign-out dropped it. It would silently
+      // revert to the field's `true` default and the next sign-in would resume
+      // syncing kind 30000 with the feature still off, i.e. #6494 again.
+      test('a sign-out while the flag is off keeps the feature off', () async {
+        final bloc = await startedWithOwnerA();
+        addTearDown(bloc.close);
+        await disable();
+
+        ownerPubkeyController.add(null);
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.enabled, isFalse);
+        expect(bloc.state.ownerPubkey, isNull);
+
+        clearInteractions(repository);
+        ownerPubkeyController.add(_ownerB);
+        await _flush();
+        await _flush();
+
+        verifyNever(
+          () => repository.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
+        );
+        expect(ownerBListsController.hasListener, isFalse);
       });
 
       // The owner stream is not seeded, so a flag-on can only learn the current
