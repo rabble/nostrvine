@@ -101,7 +101,7 @@ class RelayManager {
   /// The environment default relay URL.
   String get defaultRelayUrl => _config.defaultRelayUrl;
 
-  /// List of relay URLs the user has configured (including default)
+  /// List of relay URLs the user has configured.
   List<String> get configuredRelays => List.unmodifiable(_configuredRelays);
 
   /// List of relay URLs currently connected

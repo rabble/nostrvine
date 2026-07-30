@@ -85,7 +85,11 @@ enum AddRelayOutcome {
 enum RemoveRelayOutcome { removed, failed }
 
 /// Outcome of `RelaySettingsCubit.restoreDefaultRelay()`.
-enum RestoreDefaultRelayOutcome { restored, failed }
+enum RestoreDefaultRelayOutcome {
+  restored,
+  restoredConnectionPending,
+  failed,
+}
 
 /// Outcome of `RelaySettingsCubit.retryConnection()`.
 ///

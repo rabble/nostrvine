@@ -19,7 +19,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'relay_providers.g.dart';
 
-/// Current configured relay URLs, including the environment default relay.
+/// Current configured relay URLs.
 ///
 /// Updated by [relaySetChangeBridge] from the active relay status map so UI
 /// that only needs the relay set can react without constructing its own client.

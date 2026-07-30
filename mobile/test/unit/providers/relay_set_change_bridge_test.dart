@@ -566,6 +566,140 @@ void main() {
       });
     });
 
+    test(
+      'reconciles a replacement client to a target without default relay',
+      () {
+        fakeAsync((async) {
+          final replacementClient = MockNostrClient();
+          final replacementStatuses =
+              StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+          const removedRelay = 'wss://relay-old.example.com';
+          const addedRelay = 'wss://relay1.example.com';
+          final replacementRelays = <String>{defaultRelay, removedRelay};
+          var replacementPublicKey = '';
+
+          when(() => mockNostrClient.relayStatuses).thenReturn({
+            defaultRelay: RelayConnectionStatus.connected(defaultRelay),
+            removedRelay: RelayConnectionStatus.connected(removedRelay),
+          });
+          when(
+            () => mockNostrClient.relayStatusStream,
+          ).thenAnswer((_) => statusController.stream);
+          when(() => replacementClient.isInitialized).thenReturn(true);
+          when(
+            () => replacementClient.publicKey,
+          ).thenAnswer((_) => replacementPublicKey);
+          when(
+            () => replacementClient.defaultRelayUrl,
+          ).thenReturn(defaultRelay);
+          when(
+            () => replacementClient.relayStatuses,
+          ).thenAnswer(
+            (_) => {
+              for (final relay in replacementRelays)
+                relay: RelayConnectionStatus.connected(relay),
+            },
+          );
+          when(
+            () => replacementClient.relayStatusStream,
+          ).thenAnswer((_) => replacementStatuses.stream);
+          when(
+            () => replacementClient.configuredRelays,
+          ).thenAnswer((_) => replacementRelays.toList());
+          when(() => replacementClient.addRelays(any())).thenAnswer((
+            call,
+          ) async {
+            final relays = call.positionalArguments.single as List<String>;
+            replacementRelays.addAll(relays);
+            return relays.length;
+          });
+          when(
+            () => replacementClient.removeRelay(
+              any(),
+              source: any(named: 'source'),
+            ),
+          ).thenAnswer((call) async {
+            final relay = call.positionalArguments.single as String;
+            return replacementRelays.remove(relay);
+          });
+          when(replacementClient.forceReconnectAll).thenAnswer((_) async {});
+
+          final swappableService = SwappableNostrService(mockNostrClient);
+          final container = ProviderContainer(
+            overrides: [
+              nostrServiceProvider.overrideWith(() => swappableService),
+              nostrSessionProvider.overrideWith(() => testNostrSession),
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+            ],
+          );
+          final bridgeSubscription = container.listen<void>(
+            relaySetChangeBridgeProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          expect(mockNostrClient.publicKey, isEmpty);
+          clientPublicKey = pubkeyA;
+          testNostrSession.update(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkeyA,
+              client: mockNostrClient,
+            ),
+          );
+          async.flushMicrotasks();
+
+          statusController.add({
+            addedRelay: RelayConnectionStatus.connected(addedRelay),
+          });
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 1));
+
+          swappableService.replaceWith(replacementClient);
+          async.flushMicrotasks();
+          expect(replacementClient.publicKey, isEmpty);
+          verifyNever(() => replacementClient.addRelays(any()));
+          verifyNever(replacementClient.forceReconnectAll);
+
+          replacementPublicKey = pubkeyA;
+          testNostrSession.update(
+            NostrSessionReadiness.nostrReady(
+              pubkey: pubkeyA,
+              client: replacementClient,
+            ),
+          );
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 2));
+          async.flushMicrotasks();
+
+          expect(replacementRelays, equals({addedRelay}));
+          verify(() => replacementClient.addRelays([addedRelay])).called(1);
+          verify(
+            () => replacementClient.removeRelay(
+              removedRelay,
+              source: RelayRemoveSource.automatic,
+            ),
+          ).called(1);
+          verify(
+            () => replacementClient.removeRelay(
+              defaultRelay,
+              source: RelayRemoveSource.automatic,
+            ),
+          ).called(1);
+          verify(replacementClient.forceReconnectAll).called(1);
+          verify(
+            () => mockVideoEventService.resetAndResubscribeAll(),
+          ).called(1);
+          verifyNever(() => mockNostrClient.forceReconnectAll());
+
+          bridgeSubscription.close();
+          container.dispose();
+          replacementStatuses.close();
+        });
+      },
+    );
+
     test('discards a pending relay edit when the environment changes', () {
       fakeAsync((async) {
         final replacementClient = MockNostrClient();

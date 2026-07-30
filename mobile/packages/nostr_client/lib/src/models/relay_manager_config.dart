@@ -72,7 +72,7 @@ class RelayManagerConfig {
     this.allowedRelayHost,
   });
 
-  /// The default relay URL that is always included and cannot be removed
+  /// The environment default relay URL.
   final String defaultRelayUrl;
 
   /// When set, only relays whose host equals this value are admitted.

@@ -1143,7 +1143,7 @@ class NostrClient {
   /// Primary relay for client operations
   ///
   /// Returns the first connected relay, or first configured relay,
-  /// or the default relay URL if none are configured.
+  /// or the environment default relay URL if none are configured.
   String get primaryRelay {
     if (connectedRelays.isNotEmpty) {
       return connectedRelays.first;
@@ -1151,7 +1151,7 @@ class NostrClient {
     if (configuredRelays.isNotEmpty) {
       return configuredRelays.first;
     }
-    return 'wss://relay.divine.video';
+    return _relayManager.defaultRelayUrl;
   }
 
   /// Returns per-relay counters from the SDK's [RelayStatus].

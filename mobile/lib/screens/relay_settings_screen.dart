@@ -854,6 +854,17 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
         ),
       );
       Log.info('Restored default relay', name: 'RelaySettingsScreen');
+    case RestoreDefaultRelayOutcome.restoredConnectionPending:
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.relaySettingsFailedToConnectCheck),
+          backgroundColor: VineTheme.warning,
+        ),
+      );
+      Log.info(
+        'Restored default relay without connection',
+        name: 'RelaySettingsScreen',
+      );
     case RestoreDefaultRelayOutcome.failed:
       _showError(messenger, l10n.relaySettingsFailedToRestoreDefault);
   }

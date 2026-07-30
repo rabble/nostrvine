@@ -285,6 +285,42 @@ void main() {
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'restoreDefaultRelay refreshes when relay is configured but not connected',
+      setUp: () {
+        when(
+          () => nostr.defaultRelayUrl,
+        ).thenReturn('wss://relay.staging.divine.video');
+        when(
+          () => nostr.addRelay(
+            'wss://relay.staging.divine.video',
+            source: RelayAddSource.user,
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://relay.staging.divine.video']);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        expect(
+          await cubit.restoreDefaultRelay(),
+          RestoreDefaultRelayOutcome.restoredConnectionPending,
+        );
+      },
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://relay.staging.divine.video']),
+      ],
+      verify: (_) {
+        verify(
+          () => nostr.addRelay(
+            'wss://relay.staging.divine.video',
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
       'retryConnection emits connected with count when relays reconnect',
       setUp: () {
         when(() => nostr.connectedRelayCount).thenReturn(2);

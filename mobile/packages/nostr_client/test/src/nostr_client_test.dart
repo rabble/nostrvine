@@ -132,6 +132,9 @@ void main() {
       // Default: no environment lock (production behavior). Tests that
       // exercise the lock override specific URLs to false.
       when(() => mockRelayManager.isRelayAllowed(any())).thenReturn(true);
+      when(
+        () => mockRelayManager.defaultRelayUrl,
+      ).thenReturn('wss://relay.example.com');
 
       client = NostrClient.forTesting(
         nostr: mockNostr,
@@ -2074,6 +2077,24 @@ void main() {
           ),
         ).called(1);
       });
+    });
+
+    group('primaryRelay', () {
+      test(
+        'falls back to environment default when no relays are configured',
+        () {
+          when(() => mockRelayManager.connectedRelays).thenReturn(const []);
+          when(() => mockRelayManager.configuredRelays).thenReturn(const []);
+          when(
+            () => mockRelayManager.defaultRelayUrl,
+          ).thenReturn('wss://relay.staging.divine.video');
+
+          expect(
+            client.primaryRelay,
+            equals('wss://relay.staging.divine.video'),
+          );
+        },
+      );
     });
 
     group('connectedRelays', () {
