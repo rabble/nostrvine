@@ -258,11 +258,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Each reason is a labelled, selectable button for screen readers (it
-      // was a bare GestureDetector exposing no button role).
+      // was a bare GestureDetector exposing no button role). The tap action
+      // is asserted too: excludeSemantics drops the child subtree, so without
+      // an explicit onTap the node reads as a button that cannot be activated.
       final harassment = find.text(l10n.reportReasonHarassment);
       expect(
         tester.getSemantics(harassment),
-        isSemantics(isButton: true, isSelected: false),
+        isSemantics(isButton: true, isSelected: false, hasTapAction: true),
       );
       expect(
         tester.getSemantics(harassment).label,

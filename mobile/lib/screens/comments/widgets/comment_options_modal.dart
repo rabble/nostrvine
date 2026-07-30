@@ -326,6 +326,9 @@ class _ReasonRadioTile extends StatelessWidget {
       label:
           '${context.l10n.reportReasonTitle(reason)}. '
           '${context.l10n.reportReasonSubtitle(reason)}',
+      // excludeSemantics drops the child subtree — including the
+      // GestureDetector's tap action — so the action is re-declared here.
+      onTap: onTap,
       excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
