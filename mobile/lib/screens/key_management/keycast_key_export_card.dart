@@ -96,7 +96,7 @@ class KeycastKeyExportCard extends ConsumerWidget {
     final l10n = context.l10n;
     ScaffoldMessenger.of(context).showSnackBar(
       DivineSnackbarContainer.snackBar(
-        _failureMessage(l10n, result),
+        _failureMessage(l10n, result.failure),
         error: true,
       ),
     );
@@ -104,16 +104,18 @@ class KeycastKeyExportCard extends ConsumerWidget {
 
   /// Map a refusal to copy the user can act on.
   ///
-  /// Branches on [ExportKeyResult.failure], never on the server's prose: that
-  /// text is written for the web UI and varies by deployment.
-  String _failureMessage(AppLocalizations l10n, ExportKeyResult result) {
-    return switch (result.failure) {
+  /// Takes the enum rather than the whole result so the server's prose cannot
+  /// reach the screen: [ExportKeyResult.error] is written for the web UI, is
+  /// never translated, and for a transport failure it is the raw exception.
+  /// It stays in the logs.
+  String _failureMessage(AppLocalizations l10n, ExportKeyFailure? failure) {
+    return switch (failure) {
       ExportKeyFailure.needsSignIn => l10n.keyManagementKeycastSignInAgain,
       ExportKeyFailure.emailUnverified =>
         l10n.keyManagementKeycastEmailUnverified,
       ExportKeyFailure.denied => l10n.keyManagementKeycastDenied,
       _ => l10n.keyManagementExportFailed(
-        result.error ?? l10n.keyManagementKeycastGenericFailure,
+        l10n.keyManagementKeycastGenericFailure,
       ),
     };
   }
@@ -146,10 +148,26 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
   /// varies while typing, and a flush edge puts the actions under the keyboard.
   static const double _keyboardClearance = 12;
 
+  /// Wrong passwords this sheet will take before it stops accepting them.
+  ///
+  /// Keycast does not rate-limit `POST /user/export-key` and writes no audit
+  /// record for it, so an uncapped retry loop turns a borrowed unlocked phone
+  /// into a password oracle that pays out the account's nsec. Reopening the
+  /// sheet clears the count — this is friction, not a lockout, and the durable
+  /// fix is server-side.
+  static const int _maxAttempts = 5;
+
   final _passwordController = TextEditingController();
   final _keyController = TextEditingController();
   bool _submitting = false;
   String? _errorText;
+
+  /// Wrong passwords submitted so far, against [_maxAttempts].
+  int _wrongPasswords = 0;
+
+  /// True once [_maxAttempts] is spent: the field and the submit action stay
+  /// disabled until the sheet is dismissed.
+  bool _lockedOut = false;
 
   /// True once the key has been fetched, which swaps the password step for the
   /// reveal step.
@@ -164,6 +182,8 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
   }
 
   Future<void> _submit() async {
+    if (_lockedOut) return;
+
     final password = _passwordController.text;
     final l10n = context.l10n;
 
@@ -196,11 +216,18 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
     }
 
     // Wrong password is the one failure worth staying open for; anything else
-    // needs a different action than "type it again".
+    // needs a different action than "type it again". Retrying is capped so the
+    // sheet is not an unlimited guessing loop against an endpoint that hands
+    // back the nsec.
     if (result.failure == ExportKeyFailure.wrongPassword) {
+      _wrongPasswords++;
+      final lockedOut = _wrongPasswords >= _maxAttempts;
       setState(() {
         _submitting = false;
-        _errorText = l10n.keyManagementKeycastWrongPassword;
+        _lockedOut = lockedOut;
+        _errorText = lockedOut
+            ? l10n.keyManagementKeycastTooManyAttempts
+            : l10n.keyManagementKeycastWrongPassword;
       });
       return;
     }
@@ -220,7 +247,6 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
 
     return AnimatedPadding(
@@ -230,13 +256,59 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
         bottom: keyboardInset > 0 ? keyboardInset + _keyboardClearance : 0,
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        child: _fetched ? _buildRevealStep(l10n) : _buildPasswordStep(l10n),
+        padding: const EdgeInsets.all(16),
+        child: _fetched
+            ? _RevealStep(
+                controller: _keyController,
+                onCopy: _copyKey,
+                onClose: () => Navigator.of(context).pop(),
+              )
+            : _PasswordStep(
+                controller: _passwordController,
+                errorText: _errorText,
+                submitting: _submitting,
+                lockedOut: _lockedOut,
+                onSubmit: _submit,
+                onCancel: () => Navigator.of(context).pop(),
+                // Clear a stale "wrong password" as soon as the user edits, so
+                // the error refers to the attempt rather than the previous one.
+                // A spent attempt budget is not stale, so it stays put.
+                onEdited: () {
+                  if (_errorText != null && !_lockedOut) {
+                    setState(() => _errorText = null);
+                  }
+                },
+              ),
       ),
     );
   }
+}
 
-  Widget _buildPasswordStep(AppLocalizations l10n) {
+/// Step one: confirm the account password.
+class _PasswordStep extends StatelessWidget {
+  const _PasswordStep({
+    required this.controller,
+    required this.errorText,
+    required this.submitting,
+    required this.lockedOut,
+    required this.onSubmit,
+    required this.onCancel,
+    required this.onEdited,
+  });
+
+  final TextEditingController controller;
+  final String? errorText;
+  final bool submitting;
+  final bool lockedOut;
+  final VoidCallback onSubmit;
+  final VoidCallback onCancel;
+  final VoidCallback onEdited;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final blocked = submitting || lockedOut;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,18 +320,16 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
         ),
         DivineAuthTextField(
           label: l10n.authPasswordLabel,
-          controller: _passwordController,
+          controller: controller,
           obscureText: true,
           autofillHints: const [AutofillHints.password],
-          errorText: _errorText,
-          enabled: !_submitting,
+          errorText: errorText,
+          enabled: !blocked,
           textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _submitting ? null : _submit(),
-          // Clear a stale "wrong password" as soon as the user edits, so the
-          // error refers to the attempt rather than the previous one.
-          onChanged: (_) {
-            if (_errorText != null) setState(() => _errorText = null);
+          onSubmitted: (_) {
+            if (!blocked) onSubmit();
           },
+          onChanged: (_) => onEdited(),
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -269,22 +339,38 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
               label: l10n.commonCancel,
               type: DivineButtonType.tertiary,
               size: DivineButtonSize.small,
-              onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+              onPressed: submitting ? null : onCancel,
             ),
             DivineButton(
               label: l10n.keyManagementKeycastCopyKey,
               leadingIcon: DivineIconName.copy,
               size: DivineButtonSize.small,
-              isLoading: _submitting,
-              onPressed: _submitting ? null : _submit,
+              isLoading: submitting,
+              onPressed: blocked ? null : onSubmit,
             ),
           ],
         ),
       ],
     );
   }
+}
 
-  Widget _buildRevealStep(AppLocalizations l10n) {
+/// Step two: hand over the key that came back.
+class _RevealStep extends StatelessWidget {
+  const _RevealStep({
+    required this.controller,
+    required this.onCopy,
+    required this.onClose,
+  });
+
+  final TextEditingController controller;
+  final VoidCallback onCopy;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,7 +380,7 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
         // reveal control is what un-hides it.
         DivineAuthTextField(
           label: l10n.keyManagementYourPrivateKeyLabel,
-          controller: _keyController,
+          controller: controller,
           obscureText: true,
           readOnly: true,
           autocorrect: false,
@@ -333,13 +419,13 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
               label: l10n.commonClose,
               type: DivineButtonType.tertiary,
               size: DivineButtonSize.small,
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: onClose,
             ),
             DivineButton(
               label: l10n.keyManagementKeycastCopyKey,
               leadingIcon: DivineIconName.copy,
               size: DivineButtonSize.small,
-              onPressed: _copyKey,
+              onPressed: onCopy,
             ),
           ],
         ),

@@ -359,6 +359,77 @@ void main() {
       expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsOne);
     });
 
+    // Keycast does not rate-limit export-key, so the sheet is the only thing
+    // standing between a borrowed unlocked phone and an unlimited guessing
+    // loop that pays out the nsec.
+    testWidgets('stops taking passwords after too many wrong ones', (
+      tester,
+    ) async {
+      authService =
+          _FakeKeyManagementAuthService(
+              currentNpub: testNpub,
+              authenticationSource: AuthenticationSource.divineOAuth,
+              canExportLocalNsec: false,
+            )
+            ..exportKeycastResult = ExportKeyResult.failure(
+              ExportKeyFailure.wrongPassword,
+            );
+
+      final l10n = await openPasswordSheet(tester);
+
+      for (var attempt = 1; attempt <= 5; attempt++) {
+        await tester.enterText(find.byType(TextField).last, 'guess$attempt');
+        await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+        await tester.pumpAndSettle();
+      }
+
+      expect(authService.exportKeycastPasswords, hasLength(5));
+      expect(find.text(l10n.keyManagementKeycastTooManyAttempts), findsOne);
+
+      // A sixth guess must not reach the server, and editing the field must
+      // not clear the lockout the way it clears a plain wrong-password error.
+      await tester.enterText(find.byType(TextField).last, 'guess6');
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.keyManagementKeycastTooManyAttempts), findsOne);
+
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+      expect(authService.exportKeycastPasswords, hasLength(5));
+    });
+
+    // The server's prose is English, untranslated, and for a transport failure
+    // it is the raw exception — none of it belongs on screen.
+    testWidgets('reports a transport failure in localized copy', (
+      tester,
+    ) async {
+      authService =
+          _FakeKeyManagementAuthService(
+              currentNpub: testNpub,
+              authenticationSource: AuthenticationSource.divineOAuth,
+              canExportLocalNsec: false,
+            )
+            ..exportKeycastResult = ExportKeyResult.failure(
+              ExportKeyFailure.network,
+              message: 'Network error: ClientException: Connection reset',
+            );
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'hunter2');
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          l10n.keyManagementExportFailed(
+            l10n.keyManagementKeycastGenericFailure,
+          ),
+        ),
+        findsOne,
+      );
+      expect(find.textContaining('ClientException'), findsNothing);
+    });
+
     testWidgets('reports a refusal that a retry cannot clear', (tester) async {
       authService =
           _FakeKeyManagementAuthService(
