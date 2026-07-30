@@ -2,10 +2,12 @@ package com.divinevideo.divine_video_player
 
 import android.content.Context
 import android.graphics.SurfaceTexture
+import android.media.MediaFormat
 import android.net.Uri
 import android.os.Handler
 import android.os.SystemClock
 import android.view.Surface
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -844,6 +846,76 @@ class DivineVideoPlayerInstanceTest {
         // The same read still runs and posts a continuation that can tighten
         // the current playlist if the metadata lands before the first loop.
         verify(exactly = 1) { mockHandler.post(any()) }
+    }
+
+    /**
+     * Runs [block] with `MediaExtractor` reporting one video and one audio
+     * track of the given lengths, so a remote probe resolves to a real clamp
+     * instead of the stubbed "no tracks" answer the other tests get.
+     */
+    private fun withTrackDurations(videoUs: Long, audioUs: Long, block: () -> Unit) {
+        val video = mockk<MediaFormat>(relaxed = true)
+        val audio = mockk<MediaFormat>(relaxed = true)
+        every { video.getString(MediaFormat.KEY_MIME) } returns "video/avc"
+        every { video.containsKey(MediaFormat.KEY_DURATION) } returns true
+        every { video.getLong(MediaFormat.KEY_DURATION) } returns videoUs
+        every { audio.getString(MediaFormat.KEY_MIME) } returns "audio/mp4a-latm"
+        every { audio.containsKey(MediaFormat.KEY_DURATION) } returns true
+        every { audio.getLong(MediaFormat.KEY_DURATION) } returns audioUs
+
+        mockkConstructor(android.media.MediaExtractor::class)
+        try {
+            every {
+                anyConstructed<android.media.MediaExtractor>()
+                    .setDataSource(any<String>(), any<Map<String, String>>())
+            } just runs
+            every { anyConstructed<android.media.MediaExtractor>().trackCount } returns 2
+            every { anyConstructed<android.media.MediaExtractor>().getTrackFormat(0) } returns video
+            every { anyConstructed<android.media.MediaExtractor>().getTrackFormat(1) } returns audio
+            block()
+        } finally {
+            unmockkConstructor(android.media.MediaExtractor::class)
+        }
+    }
+
+    @Test
+    fun `a resolved clamp tightens a playlist that has not started`() {
+        every { mockPlayer.mediaItemCount } returns 1
+        every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()
+
+        withTrackDurations(videoUs = 6_000_000L, audioUs = 6_040_000L) {
+            instance.onMethodCall(
+                trimmingSetClipsCall("https://cdn.example/warm.mp4"),
+                mockk(relaxed = true),
+            )
+            capturePostedRunnables().forEach { it.run() }
+        }
+
+        // A preloaded tile sits paused at frame zero, so swapping the item for
+        // a clamped one costs nothing the viewer can see.
+        val replaced = slot<MediaItem>()
+        verify { mockPlayer.replaceMediaItem(0, capture(replaced)) }
+        assertEquals(6_000L, replaced.captured.clippingConfiguration.endPositionMs)
+    }
+
+    @Test
+    fun `a resolved clamp is not applied over a playlist already playing`() {
+        every { mockPlayer.mediaItemCount } returns 1
+        every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()
+        every { mockPlayer.playWhenReady } returns true
+
+        withTrackDurations(videoUs = 6_000_000L, audioUs = 6_040_000L) {
+            instance.onMethodCall(
+                trimmingSetClipsCall("https://cdn.example/playing.mp4"),
+                mockk(relaxed = true),
+            )
+            capturePostedRunnables().forEach { it.run() }
+        }
+
+        // A clipping configuration cannot be updated in place, so this would
+        // remove and re-insert the period being played and restart the video
+        // from zero mid-watch — worse than the seam it removes.
+        verify(exactly = 0) { mockPlayer.replaceMediaItem(any(), any()) }
     }
 
     @Test

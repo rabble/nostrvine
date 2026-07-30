@@ -559,6 +559,22 @@ internal class DivineVideoPlayerInstance(
         }
     }
 
+    /**
+     * Tightens the loaded playlist to the track ends a background read just
+     * resolved, while doing so is still free.
+     *
+     * A clamp lives in the item's `ClippingConfiguration`, and
+     * `ClippingMediaSource.canUpdateMediaItem` compares that configuration, so
+     * a changed one can never be applied in place: `replaceMediaItem` falls
+     * back to remove-and-insert, and removing the period being played resolves
+     * the position to the *default* position of the one that takes its place.
+     * On a player that has not started that is invisible — a preloaded tile
+     * sits paused at frame zero, and the feed preloads a window around the
+     * current index. On one that is already playing it is the video jumping
+     * back to its start mid-watch, which is a worse artifact than the seam it
+     * removes, so that load keeps the seam and the cached lengths clamp the
+     * next `setClips` for the source instead.
+     */
     private fun applyResolvedCommonTrackEnds(
         generation: Long,
         clipsRaw: List<Map<String, Any?>>,
@@ -566,6 +582,7 @@ internal class DivineVideoPlayerInstance(
         if (generation != setClipsGeneration) return
         val exoPlayer = player ?: return
         if (exoPlayer.mediaItemCount != clipsRaw.size) return
+        if (exoPlayer.playWhenReady || exoPlayer.currentPosition > 0L) return
 
         var changed = false
         clipsRaw.forEachIndexed loop@{ index, map ->
