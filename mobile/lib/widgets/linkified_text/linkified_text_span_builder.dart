@@ -5,6 +5,7 @@ import 'package:flutter/painting.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Called when a profile reference is tapped.
 typedef LinkifiedProfileTap = void Function(String hexPubkey);
@@ -84,13 +85,22 @@ class LinkifiedTextSpanBuilder {
   final String? videoLabel;
 
   /// Builds spans preserving the token precedence from [LinkifiedText].
+  ///
+  /// Unpaired UTF-16 surrogates are normalized here rather than at each
+  /// caller. Flutter's paragraph builder throws on them during layout — a
+  /// crash, not a rendering glitch — and they reach spans from two independent
+  /// directions: [text] itself, and the labels injected for profile
+  /// references. This is the one point every span passes through, so guarding
+  /// it covers both. Sanitizing is code-unit-for-code-unit, so match offsets
+  /// stay valid.
   List<TextSpan> build() {
+    final safeText = sanitizeUtf16(text);
     final spans = <TextSpan>[];
     var lastEnd = 0;
 
-    for (final match in _combinedRegex.allMatches(text)) {
+    for (final match in _combinedRegex.allMatches(safeText)) {
       if (match.start > lastEnd) {
-        spans.add(_plainSpan(text.substring(lastEnd, match.start)));
+        spans.add(_plainSpan(safeText.substring(lastEnd, match.start)));
       }
 
       final matchedUrl = match.group(1);
@@ -114,11 +124,11 @@ class LinkifiedTextSpanBuilder {
       lastEnd = match.end;
     }
 
-    if (lastEnd < text.length) {
-      spans.add(_plainSpan(text.substring(lastEnd)));
+    if (lastEnd < safeText.length) {
+      spans.add(_plainSpan(safeText.substring(lastEnd)));
     }
 
-    if (spans.isEmpty) return [_plainSpan(text)];
+    if (spans.isEmpty) return [_plainSpan(safeText)];
     return spans;
   }
 
@@ -189,7 +199,11 @@ class LinkifiedTextSpanBuilder {
   }
 
   TextSpan _buildProfileReferenceSpan(String hexPubkey, TextStyle style) {
-    final label = profileLabelForHex?.call(hexPubkey) ?? hexPubkey;
+    // Resolved from profile metadata, so it does not come through the
+    // sanitized source text and needs its own pass (see [build]).
+    final label = sanitizeUtf16(
+      profileLabelForHex?.call(hexPubkey) ?? hexPubkey,
+    );
     final displayText = label.startsWith('@') ? label : '@$label';
     return TextSpan(
       text: displayText,
