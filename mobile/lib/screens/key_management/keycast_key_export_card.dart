@@ -19,8 +19,9 @@ import 'package:openvine/utils/clipboard_utils.dart';
 /// preconditions server-side — a verified email, and the `verified_minor`
 /// custody refusal — so nothing here is a way around them.
 ///
-/// Nothing is stored: the key goes from the response to the clipboard the user
-/// asked for, and is never written to disk or logged.
+/// Nothing is stored: the key goes from the response to the sheet that shows
+/// it and to the clipboard the user asked for, and is never written to disk or
+/// logged.
 class KeycastKeyExportCard extends ConsumerWidget {
   const KeycastKeyExportCard({super.key});
 
@@ -114,6 +115,7 @@ class KeycastKeyExportCard extends ConsumerWidget {
       ExportKeyFailure.emailUnverified =>
         l10n.keyManagementKeycastEmailUnverified,
       ExportKeyFailure.denied => l10n.keyManagementKeycastDenied,
+      ExportKeyFailure.rateLimited => l10n.keyManagementKeycastRateLimited,
       _ => l10n.keyManagementExportFailed(
         l10n.keyManagementKeycastGenericFailure,
       ),
@@ -341,9 +343,11 @@ class _PasswordStep extends StatelessWidget {
               size: DivineButtonSize.small,
               onPressed: submitting ? null : onCancel,
             ),
+            // Fetches the key and moves to the reveal step; copying is that
+            // step's action, so neither this label nor its icon may promise it.
             DivineButton(
-              label: l10n.keyManagementKeycastCopyKey,
-              leadingIcon: DivineIconName.copy,
+              label: l10n.keyManagementKeycastFetchKey,
+              leadingIcon: DivineIconName.key,
               size: DivineButtonSize.small,
               isLoading: submitting,
               onPressed: blocked ? null : onSubmit,

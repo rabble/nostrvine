@@ -247,7 +247,10 @@ void main() {
 
         expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsOne);
         expect(find.text(l10n.authPasswordLabel), findsOne);
-        expect(find.text(l10n.keyManagementKeycastCopyKey), findsOne);
+        expect(find.text(l10n.keyManagementKeycastFetchKey), findsOne);
+        // This step only fetches, so it must not promise a copy it does not
+        // make — the key is copied a step later, on request.
+        expect(find.text(l10n.keyManagementKeycastCopyKey), findsNothing);
         // Nothing is fetched until the user confirms.
         expect(authService.exportKeycastPasswords, isEmpty);
       },
@@ -276,7 +279,7 @@ void main() {
       final l10n = await openPasswordSheet(tester);
 
       await tester.enterText(find.byType(TextField).last, 'hunter2');
-      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
       await tester.pumpAndSettle();
 
       expect(authService.exportKeycastPasswords, equals(['hunter2']));
@@ -294,8 +297,10 @@ void main() {
       expect(keyField.obscureText, isTrue, reason: 'hidden until revealed');
       expect(keyField.readOnly, isTrue);
 
-      // Nothing reaches the clipboard until the user asks for it.
+      // Nothing reaches the clipboard until the user asks for it. Copying is
+      // this step's action alone — the password step never offered it.
       expect(copied, isEmpty);
+      expect(find.text(l10n.keyManagementKeycastFetchKey), findsNothing);
 
       await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
       await tester.pumpAndSettle();
@@ -324,7 +329,7 @@ void main() {
       final visibleBottom = tester.view.physicalSize.height - keyboardHeight;
       final mustStayVisible = {
         'password field': find.byType(DivineAuthTextField),
-        'copy action': find.text(l10n.keyManagementKeycastCopyKey),
+        'fetch action': find.text(l10n.keyManagementKeycastFetchKey),
         'cancel action': find.text(l10n.commonCancel),
       };
       for (final entry in mustStayVisible.entries) {
@@ -351,7 +356,7 @@ void main() {
       final l10n = await openPasswordSheet(tester);
 
       await tester.enterText(find.byType(TextField).last, 'wrong');
-      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.keyManagementKeycastWrongPassword), findsOne);
@@ -379,7 +384,7 @@ void main() {
 
       for (var attempt = 1; attempt <= 5; attempt++) {
         await tester.enterText(find.byType(TextField).last, 'guess$attempt');
-        await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+        await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
         await tester.pumpAndSettle();
       }
 
@@ -392,7 +397,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text(l10n.keyManagementKeycastTooManyAttempts), findsOne);
 
-      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
       await tester.pumpAndSettle();
       expect(authService.exportKeycastPasswords, hasLength(5));
     });
@@ -416,7 +421,7 @@ void main() {
       final l10n = await openPasswordSheet(tester);
 
       await tester.enterText(find.byType(TextField).last, 'hunter2');
-      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
       await tester.pumpAndSettle();
 
       expect(
@@ -444,7 +449,7 @@ void main() {
       final l10n = await openPasswordSheet(tester);
 
       await tester.enterText(find.byType(TextField).last, 'hunter2');
-      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.keyManagementKeycastSignInAgain), findsOne);
@@ -462,7 +467,7 @@ void main() {
 
       final l10n = await openPasswordSheet(tester);
 
-      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
       await tester.pumpAndSettle();
 
       expect(authService.exportKeycastPasswords, isEmpty);
