@@ -1011,9 +1011,10 @@ class ProfileRepository {
     // Re-seed from the freshest Kind 0 we can get from relays. This is the
     // only path that preserves arbitrary unknown fields (custom client keys,
     // NIP-39 `i` tags, `bot`, future NIP additions) — the REST API does not
-    // expose them. Falls back to currentProfile on relay failure / timeout;
-    // currentProfile.rawData carries the typed REST fields per
-    // UserProfile.fromUserProfileFound.
+    // expose them. On relay failure or timeout it falls back to the best local
+    // seed: [currentProfile] when the caller supplied one (whose `rawData`
+    // carries the typed REST fields per `UserProfile.fromUserProfileFound`),
+    // otherwise the cached profile for the signing key.
     final seed = await _resolvePublishSeed(currentProfile);
 
     final newContent = Map<String, dynamic>.from(seed?.rawData ?? const {});
@@ -1269,32 +1270,91 @@ class ProfileRepository {
   /// been hydrated from the Funnelcake REST API and is missing keys the
   /// REST schema does not expose).
   ///
-  /// Returns [currentProfile] unchanged when:
-  /// - we have no pubkey to fetch with (cold publish, never published),
+  /// When [currentProfile] is null the subject is still known — this publish
+  /// signs through [_nostrClient], so its public key *is* the event's pubkey.
+  /// Seeding from it turns what was a destructive full replace into a
+  /// read-modify-write: previously a null [currentProfile] returned before any
+  /// fetch, so the published Kind 0 was composed from an empty map and every
+  /// field outside the form (`name`, `nip05`, `lud16`, `lud06`, `bot`,
+  /// monetization links, unknown client keys) plus every NIP-39 `i` tag was
+  /// erased on relays.
+  ///
+  /// Returns the local seed (or null) when:
+  /// - there is no pubkey at all — no [currentProfile] and no signer key,
   /// - the relay fetch returns null (its documented failure mode — internal
   ///   errors are swallowed by [fetchFreshProfile]),
   /// - the relay fetch exceeds [_publishSeedRelayTimeout],
-  /// - the relay event is older than [currentProfile] AND its rawData is no
-  ///   richer (i.e., currentProfile is already authoritative).
+  /// - the local seed is strictly newer, or carries the same timestamp and
+  ///   strictly more meaningful keys.
   Future<UserProfile?> _resolvePublishSeed(UserProfile? currentProfile) async {
-    if (currentProfile == null) {
-      return null;
+    // `??` short-circuits, so the signer is consulted only when the caller gave
+    // us no profile to take a pubkey from.
+    final pubkey = currentProfile?.pubkey ?? _signerPubkeyOrNull();
+    if (pubkey == null) {
+      return currentProfile;
     }
+
+    // A caller that passed no profile may still have one cached locally; read
+    // it before falling back to a bare relay fetch so an offline publish is
+    // seeded rather than stripped.
+    final localSeed = currentProfile ?? await getCachedProfile(pubkey: pubkey);
+
     final fresh = await fetchFreshProfile(
-      pubkey: currentProfile.pubkey,
+      pubkey: pubkey,
       requireRawKind0: true,
     ).timeout(_publishSeedRelayTimeout, onTimeout: () => null);
     if (fresh == null) {
-      return currentProfile;
+      return localSeed;
     }
-    // Prefer fresh when it is newer or when currentProfile's rawData is
-    // sparse (REST-sourced) — the latter case is exactly the
-    // arbitrary-fields-loss bug this seed step exists to fix.
-    if (fresh.createdAt.isAfter(currentProfile.createdAt) ||
-        currentProfile.rawData.length < fresh.rawData.length) {
+    if (localSeed == null) {
       return fresh;
     }
-    return currentProfile;
+
+    // Recency decides first. A field the user removed on another client leaves
+    // the newest Kind 0 both newer *and* sparser, so letting key count override
+    // recency would re-publish the deletion away.
+    if (fresh.createdAt.isAfter(localSeed.createdAt)) {
+      return fresh;
+    }
+    if (localSeed.createdAt.isAfter(fresh.createdAt)) {
+      return localSeed;
+    }
+
+    // Same timestamp — break the tie on richness, counted over *meaningful*
+    // keys rather than `rawData.length`. A REST-derived profile used to
+    // out-count the real Kind 0 on `''` placeholders alone (Funnelcake models
+    // every metadata field as a non-nullable String, so an absent key arrives
+    // as `''`), which handed the publish path a seed whose `isNotEmpty` guards
+    // then deleted the very fields it was meant to preserve.
+    //
+    // On a genuine tie `fresh` wins: it is a raw Kind 0 (requireRawKind0), so
+    // it carries unknown keys and NIP-39 tags the REST projection structurally
+    // cannot express.
+    return _meaningfulKeyCount(localSeed.rawData) >
+            _meaningfulKeyCount(fresh.rawData)
+        ? localSeed
+        : fresh;
+  }
+
+  /// The signing key this repository publishes as, or `null` when the client
+  /// has no key yet.
+  String? _signerPubkeyOrNull() {
+    final pubkey = _nostrClient.publicKey;
+    return pubkey.isEmpty ? null : pubkey;
+  }
+
+  /// Counts entries in a Kind 0 `rawData` map that carry an actual value.
+  ///
+  /// Null and empty-string values are placeholders, not content, so they must
+  /// not make one seed look richer than another.
+  static int _meaningfulKeyCount(Map<String, dynamic> rawData) {
+    var count = 0;
+    for (final value in rawData.values) {
+      if (value == null) continue;
+      if (value is String && value.isEmpty) continue;
+      count++;
+    }
+    return count;
   }
 
   /// Claims a username via NIP-98 authenticated request.

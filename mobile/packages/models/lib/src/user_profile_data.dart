@@ -50,19 +50,35 @@ class UserProfileData {
   factory UserProfileData.fromJson(String pubkey, Map<String, dynamic> json) {
     return UserProfileData(
       pubkey: pubkey,
-      name: json['name'] as String?,
-      displayName: json['display_name'] as String?,
-      about: json['about'] as String?,
-      picture: json['picture'] as String?,
-      banner: json['banner'] as String?,
-      website: json['website'] as String?,
-      nip05: json['nip05'] as String?,
-      lud16: json['lud16'] as String?,
+      name: _absentIfEmpty(json['name']),
+      displayName: _absentIfEmpty(json['display_name']),
+      about: _absentIfEmpty(json['about']),
+      picture: _absentIfEmpty(json['picture']),
+      banner: _absentIfEmpty(json['banner']),
+      website: _absentIfEmpty(json['website']),
+      nip05: _absentIfEmpty(json['nip05']),
+      lud16: _absentIfEmpty(json['lud16']),
       createdAt: switch (json['profile_updated']) {
         final String value => DateTime.tryParse(value),
         _ => null,
       },
     );
+  }
+
+  /// Reads a Funnelcake profile string field, mapping `''` to `null`.
+  ///
+  /// Funnelcake's profile response models every metadata field as a
+  /// non-nullable Rust `String`, so a Kind 0 key that simply does not exist is
+  /// serialized as `''`. Keeping that `''` would make an absent field
+  /// indistinguishable from a deliberately-blank one, and downstream that is
+  /// destructive rather than cosmetic: `UserProfile.fromUserProfileFound`
+  /// admits every non-null field into `rawData`, so the REST-derived profile
+  /// out-counts the real Kind 0 and wins `_resolvePublishSeed`'s richness
+  /// comparison — after which the publish path's `isNotEmpty` guards delete the
+  /// fields that were only ever `''` placeholders.
+  static String? _absentIfEmpty(dynamic value) {
+    if (value is! String || value.isEmpty) return null;
+    return value;
   }
 
   final String pubkey;
