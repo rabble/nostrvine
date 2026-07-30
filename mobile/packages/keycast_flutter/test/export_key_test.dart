@@ -75,22 +75,6 @@ void main() {
       },
     );
 
-    test('forwards a non-default format', () async {
-      late http.Request captured;
-      final oauth = KeycastOAuth(
-        config: config,
-        httpClient: exportClient(
-          status: 200,
-          body: jsonEncode({'key': 'deadbeef'}),
-          onExport: (request) => captured = request,
-        ),
-      );
-
-      await oauth.exportKey('tok', 'pw', format: 'hex');
-
-      expect((jsonDecode(captured.body) as Map)['format'], 'hex');
-    });
-
     test(
       'treats a 200 with no key as a failure rather than an empty key',
       () async {
@@ -176,6 +160,23 @@ void main() {
         );
       },
     );
+
+    // The probe is the only thing separating the two 401s, so a probe that
+    // never answered must not be reported as either verdict.
+    test('does not read an unanswerable probe as a dead session', () async {
+      final oauth = KeycastOAuth(
+        config: config,
+        httpClient: exportClient(
+          status: 401,
+          body: jsonEncode({'error': 'Invalid email or password.'}),
+          accountStatusCode: 503,
+        ),
+      );
+
+      final result = await oauth.exportKey('tok', 'pw');
+
+      expect(result.failure, ExportKeyFailure.unknown);
+    });
 
     test('maps 404 to no key on record', () async {
       final oauth = KeycastOAuth(

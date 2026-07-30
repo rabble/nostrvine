@@ -1059,6 +1059,29 @@ class KeycastOAuth {
     }
   }
 
+  /// Whether [token] still authenticates against a token-only endpoint.
+  ///
+  /// `null` when the probe itself could not be answered — a timeout, a dropped
+  /// connection, or a 5xx. Callers must not read that as a verdict either way.
+  Future<bool?> _tokenAuthenticates(String token) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse('${config.serverUrl}/api/user/account'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(requestTimeout);
+
+      return switch (response.statusCode) {
+        200 => true,
+        401 || 403 => false,
+        _ => null,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Export the account's own signing key from Keycast.
   ///
   /// For an account created with email/password, Keycast holds the key and
@@ -1073,15 +1096,13 @@ class KeycastOAuth {
   /// verified, and a `verified_minor` account is refused before any key
   /// material is touched. Calling this does not move either check on-device.
   ///
-  /// [format] selects the encoding; Keycast defaults to `nsec`.
+  /// `nsec` is the only encoding Keycast will produce — it rejects any other
+  /// `format` with a 400 — so the request pins it rather than taking it from
+  /// the caller.
   ///
   /// On success [ExportKeyResult.key] is raw key material. Never log it, and
   /// never write it anywhere but the destination the user asked for.
-  Future<ExportKeyResult> exportKey(
-    String token,
-    String password, {
-    String format = 'nsec',
-  }) async {
+  Future<ExportKeyResult> exportKey(String token, String password) async {
     try {
       final response = await _client
           .post(
@@ -1090,7 +1111,7 @@ class KeycastOAuth {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json',
             },
-            body: jsonEncode({'password': password, 'format': format}),
+            body: jsonEncode({'password': password, 'format': 'nsec'}),
           )
           .timeout(requestTimeout);
 
@@ -1111,15 +1132,16 @@ class KeycastOAuth {
       // Keycast answers 401 for both a wrong account password and a stale
       // bearer token, and its prose is not a stable discriminator. Re-probing
       // an endpoint that needs only the token separates them: if the token
-      // still authenticates, the password is what failed.
+      // still authenticates, the password is what failed. A probe that never
+      // answered proves neither, so it must not be read as a dead session.
       if (response.statusCode == 401) {
-        final tokenStillValid = await getAccountStatus(token) != null;
-        return ExportKeyResult.failure(
-          tokenStillValid
-              ? ExportKeyFailure.wrongPassword
-              : ExportKeyFailure.needsSignIn,
-          message: message,
-        );
+        return ExportKeyResult.failure(switch (await _tokenAuthenticates(
+          token,
+        )) {
+          true => ExportKeyFailure.wrongPassword,
+          false => ExportKeyFailure.needsSignIn,
+          null => ExportKeyFailure.unknown,
+        }, message: message);
       }
 
       // 403 covers two unrelated refusals: an unverified email, and the policy
