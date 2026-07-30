@@ -550,7 +550,7 @@ void main() {
           recipients: [_pubkey(1)],
         );
         final currentProfileBadges = _profileBadgesEvent(
-          id: _eventId(42),
+          id: _eventId(43),
           pubkey: _pubkey(1),
           createdAt: 3000,
           tags: [
@@ -559,7 +559,7 @@ void main() {
           ],
         );
         final legacyWithoutAward = _event(
-          id: _eventId(43),
+          id: _eventId(42),
           pubkey: _pubkey(1),
           kind: EventKind.badgeSet,
           createdAt: 3000,

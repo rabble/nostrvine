@@ -94,6 +94,9 @@ class IssuedBadgeRecipientViewData {
   final bool isAccepted;
 }
 
+/// Failure to publish profile badges to at least one relay.
+///
+/// Carries the relay-level [outcome] for logging and triage.
 class BadgePublishException implements Exception {
   const BadgePublishException(this.message, {required this.outcome});
 
@@ -470,12 +473,8 @@ class BadgeRepository {
         );
         if (byCreatedAt != 0) return byCreatedAt;
 
-        final rightIsCurrent = right.event.kind == EventKind.profileBadges
-            ? 1
-            : 0;
-        final leftIsCurrent = left.event.kind == EventKind.profileBadges
-            ? 1
-            : 0;
+        final rightIsCurrent = right.isLegacyProfileBadges ? 0 : 1;
+        final leftIsCurrent = left.isLegacyProfileBadges ? 0 : 1;
         final byKind = rightIsCurrent.compareTo(leftIsCurrent);
         if (byKind != 0) return byKind;
 
