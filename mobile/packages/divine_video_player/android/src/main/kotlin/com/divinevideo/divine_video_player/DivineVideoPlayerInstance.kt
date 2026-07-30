@@ -7,13 +7,18 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
+import java.util.Collections
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ThreadFactory
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.SeekParameters
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -42,6 +47,12 @@ internal class DivineVideoPlayerInstance(
     private val audioOverlayManagerFactory: (Context) -> AudioOverlayManager = { ctx ->
         AudioOverlayManager(ctx)
     },
+    /**
+     * Reads source metadata off the platform thread. Single-threaded, so the
+     * clips of one call resolve in order and two calls cannot interleave.
+     */
+    private val metadataExecutor: ExecutorService =
+        Executors.newSingleThreadExecutor(metadataThreadFactory(playerId)),
 ) : MethodChannel.MethodCallHandler,
     EventChannel.StreamHandler,
     TextureRegistry.SurfaceProducer.Callback {
@@ -158,6 +169,57 @@ internal class DivineVideoPlayerInstance(
     private var pendingGlobalStartMs: Long = 0L
 
     private val audioOverlayManager = audioOverlayManagerFactory(context)
+
+    /** Bumped by every [handleSetClips] so late background work can be dropped. */
+    private var setClipsGeneration = 0L
+
+    /**
+     * The `setClips` whose track lengths are still being read, if any.
+     *
+     * At most one exists: a newer call settles the previous one before taking
+     * the slot.
+     */
+    private var deferredSetClips: DeferredSetClips? = null
+
+    /**
+     * Gives up waiting for the track lengths and starts the player unclamped.
+     *
+     * The read has to be bounded. `MediaExtractor` fetches a remote source
+     * through `MediaHTTPConnection`, which sets a connect timeout and no read
+     * timeout at all, so a host that accepts the connection and then stalls
+     * would hold `await setClips()` open indefinitely. A seam is bad, a player
+     * that never starts is worse — so the clips go in without the clamp, and
+     * the read still finishes into [trackDurationsCache] for the next play of
+     * that source.
+     */
+    private val deferredSetClipsTimeout = Runnable {
+        deferredSetClips?.let { deferred ->
+            trackDurationProbingDisabled = true
+            DivineVideoPlayerLog.warning(
+                "Player $playerId applied clips unclamped: track lengths not " +
+                    "read within ${TRACK_DURATION_RESOLVE_TIMEOUT_MS}ms; " +
+                    "metadata probing disabled for this instance",
+                name = "DivineVideoPlayer.Load",
+            )
+            settleDeferredSetClips(deferred, apply = true)
+        }
+    }
+
+    /**
+     * True after a metadata read misses its deadline on this instance.
+     *
+     * `MediaExtractor` remote reads are native I/O and may not be interruptible.
+     * Once the single metadata thread is plausibly pinned, queuing more work only
+     * makes later loads wait for a deadline before playing unclamped anyway.
+     */
+    private var trackDurationProbingDisabled = false
+
+    /**
+     * Fades the outer edges of a looping video so its loop join is not a click
+     * (#6468). Lives for the life of the instance because it is wired into the
+     * renderers factory when the player is built.
+     */
+    private val declickProcessor = LoopDeclickAudioProcessor()
 
     /**
      * Pending result for an async seekTo call.
@@ -286,7 +348,8 @@ internal class DivineVideoPlayerInstance(
         // extraction contend for a small hardware decoder pool — into a
         // successful (if slower) decode instead of a dead surface.
         val renderersFactory =
-            DefaultRenderersFactory(context).setEnableDecoderFallback(true)
+            LoopDeclickRenderersFactory(context, declickProcessor)
+                .setEnableDecoderFallback(true)
         val builder = ExoPlayer.Builder(context, renderersFactory)
             .setMediaSourceFactory(
                 DefaultMediaSourceFactory(
@@ -397,6 +460,206 @@ internal class DivineVideoPlayerInstance(
             return
         }
 
+        // Any newer call supersedes a resolution still in flight.
+        val generation = ++setClipsGeneration
+        deferredSetClips?.let { settleDeferredSetClips(it, apply = false) }
+
+        val unresolved = if (trackDurationProbingDisabled) {
+            emptyList()
+        } else {
+            clipsRaw.mapNotNull { map ->
+                val uri = map["uri"] as? String ?: return@mapNotNull null
+                if (map["trimToCommonTrackEnd"] as? Boolean != true) return@mapNotNull null
+                if (!canReadTrackDurations(uri)) return@mapNotNull null
+                if (trackDurationsCache.containsKey(uri)) return@mapNotNull null
+                uri to httpHeadersOf(map)
+            }
+        }
+        val blockingUnresolved = unresolved.filter { (uri, _) ->
+            shouldBlockSetClipsForTrackDurations(uri)
+        }
+        val backgroundUnresolved = unresolved.filterNot { (uri, _) ->
+            shouldBlockSetClipsForTrackDurations(uri)
+        }
+        if (blockingUnresolved.isEmpty()) {
+            if (backgroundUnresolved.isNotEmpty()) {
+                warmTrackDurationsInBackground(generation, clipsRaw, backgroundUnresolved)
+            }
+            applyClips(call, clipsRaw, result)
+            return
+        }
+
+        // Where each track really ends is only in the source's metadata. Local
+        // files can be read before the playlist swap without adding a network
+        // round trip to first frame; remote sources warm in the background and
+        // tighten the current playlist when they land.
+        val deferred = DeferredSetClips(call, clipsRaw, result)
+        deferredSetClips = deferred
+        mainHandler.postDelayed(
+            deferredSetClipsTimeout,
+            TRACK_DURATION_RESOLVE_TIMEOUT_MS,
+        )
+
+        try {
+            metadataExecutor.execute {
+                // The clips must be applied even if resolving blows up —
+                // playing to the container duration is a seam, not playing at
+                // all is a dead player.
+                try {
+                    blockingUnresolved.forEach { (uri, headers) ->
+                        resolveTrackDurations(uri, headers)
+                    }
+                } finally {
+                    mainHandler.post {
+                        if (backgroundUnresolved.isNotEmpty()) {
+                            warmTrackDurationsInBackground(
+                                generation,
+                                clipsRaw,
+                                backgroundUnresolved,
+                            )
+                        }
+                        settleDeferredSetClips(deferred, apply = true)
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            // Disposed while a call was in flight; nothing left to play into.
+            DivineVideoPlayerLog.warning(
+                "Player $playerId dropped setClips after dispose: $e",
+                name = "DivineVideoPlayer.Load",
+            )
+            if (claimDeferredSetClips(deferred)) {
+                result.error("DISPOSED", "Player was disposed", null)
+            }
+        }
+    }
+
+    private fun warmTrackDurationsInBackground(
+        generation: Long,
+        clipsRaw: List<Map<String, Any?>>,
+        unresolved: List<Pair<String, Map<String, String>>>,
+    ) {
+        try {
+            metadataExecutor.execute {
+                try {
+                    unresolved.forEach { (uri, headers) ->
+                        resolveTrackDurations(uri, headers)
+                    }
+                } finally {
+                    mainHandler.post {
+                        applyResolvedCommonTrackEnds(generation, clipsRaw)
+                    }
+                }
+            }
+        } catch (e: RejectedExecutionException) {
+            DivineVideoPlayerLog.warning(
+                "Player $playerId dropped background track-duration read: $e",
+                name = "DivineVideoPlayer.Load",
+            )
+        }
+    }
+
+    /**
+     * Tightens the loaded playlist to the track ends a background read just
+     * resolved, while doing so is still free.
+     *
+     * A clamp lives in the item's `ClippingConfiguration`, and
+     * `ClippingMediaSource.canUpdateMediaItem` compares that configuration, so
+     * a changed one can never be applied in place: `replaceMediaItem` falls
+     * back to remove-and-insert, and removing the period being played resolves
+     * the position to the *default* position of the one that takes its place.
+     * On a player that has not started that is invisible — a preloaded tile
+     * sits paused at frame zero, and the feed preloads a window around the
+     * current index. On one that is already playing it is the video jumping
+     * back to its start mid-watch, which is a worse artifact than the seam it
+     * removes, so that load keeps the seam and the cached lengths clamp the
+     * next `setClips` for the source instead.
+     */
+    private fun applyResolvedCommonTrackEnds(
+        generation: Long,
+        clipsRaw: List<Map<String, Any?>>,
+    ) {
+        if (generation != setClipsGeneration) return
+        val exoPlayer = player ?: return
+        if (exoPlayer.mediaItemCount != clipsRaw.size) return
+        if (exoPlayer.playWhenReady || exoPlayer.currentPosition > 0L) return
+
+        var changed = false
+        clipsRaw.forEachIndexed loop@{ index, map ->
+            val uri = map["uri"] as? String ?: return@loop
+            if (map["trimToCommonTrackEnd"] as? Boolean != true) return@loop
+            val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
+            val requestedEndMs = (map["endMs"] as? Number)?.toLong()
+            val commonEndMs = boundedCommonTrackEndMs(uri, startMs, requestedEndMs)
+                ?: return@loop
+            val effectiveEndMs = listOfNotNull(requestedEndMs, commonEndMs).minOrNull()
+                ?: return@loop
+            val currentItem = exoPlayer.getMediaItemAt(index)
+            if (currentItem.clippingConfiguration.endPositionMs == effectiveEndMs) {
+                return@loop
+            }
+            exoPlayer.replaceMediaItem(
+                index,
+                buildMediaItem(uri, startMs, effectiveEndMs),
+            )
+            changed = true
+        }
+        if (changed) {
+            refreshClipOffsets(exoPlayer)
+            DivineVideoPlayerLog.info(
+                "Player $playerId applied resolved track-end clamp",
+                name = "DivineVideoPlayer.Load",
+            )
+        }
+    }
+
+    /**
+     * Takes [deferred] out of the pending slot, or returns `false` if
+     * something else already settled it.
+     *
+     * Whoever wins owes Dart a reply: a `setClips` whose
+     * [MethodChannel.Result] is dropped leaves `await setClips()` pending for
+     * the life of the app, which in the feed pins the tile's failover state
+     * and suppresses every later recovery attempt for it.
+     */
+    private fun claimDeferredSetClips(deferred: DeferredSetClips): Boolean {
+        if (deferred.settled) return false
+        deferred.settled = true
+        if (deferredSetClips === deferred) {
+            deferredSetClips = null
+            mainHandler.removeCallbacks(deferredSetClipsTimeout)
+        }
+        return true
+    }
+
+    /**
+     * Applies [deferred]'s clips, or tells its caller they were superseded.
+     *
+     * Runs on the platform thread from whichever comes first: the resolution
+     * landing, [deferredSetClipsTimeout] expiring, a newer [handleSetClips],
+     * or [dispose].
+     */
+    private fun settleDeferredSetClips(deferred: DeferredSetClips, apply: Boolean) {
+        if (!claimDeferredSetClips(deferred)) return
+        if (apply) {
+            applyClips(deferred.call, deferred.clipsRaw, deferred.result)
+        } else {
+            // Same contract [applyClips] uses for a superseded in-flight call:
+            // the Dart controller swallows CANCELLED, and the newer call is
+            // the one that answers.
+            deferred.result.error(
+                "CANCELLED",
+                "Superseded by newer setClips call",
+                null,
+            )
+        }
+    }
+
+    private fun applyClips(
+        call: MethodCall,
+        clipsRaw: List<Map<String, Any?>>,
+        result: MethodChannel.Result,
+    ) {
         val exoPlayer = ensurePlayer()
         val mediaItems = mutableListOf<MediaItem>()
         val offsets = mutableListOf<Long>()
@@ -432,30 +695,13 @@ internal class DivineVideoPlayerInstance(
             val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
             val clipSpeed = ((map["playbackSpeed"] as? Number)?.toFloat() ?: 1.0f)
                 .coerceAtLeast(MIN_PLAYBACK_SPEED)
-            val httpHeaders = (map["httpHeaders"] as? Map<*, *>)
-                ?.mapNotNull { entry ->
-                    val key = entry.key as? String
-                    val value = entry.value as? String
-                    if (key == null || value == null) null else key to value
-                }
-                ?.toMap()
-                ?: emptyMap()
+            val httpHeaders = httpHeadersOf(map)
             if (httpHeaders.isNotEmpty()) {
                 headersByUri[uri] = httpHeaders
                 blobHashFromUrl(uri)?.let { headersByHash[it] = httpHeaders }
             }
 
-            val builder = MediaItem.Builder().setUri(uri)
-                .setClippingConfiguration(
-                    MediaItem.ClippingConfiguration.Builder()
-                        .setStartPositionMs(startMs)
-                        .apply {
-                            if (effectiveEndMs != null) setEndPositionMs(effectiveEndMs)
-                        }
-                        .build(),
-                )
-
-            mediaItems.add(builder.build())
+            mediaItems.add(buildMediaItem(uri, startMs, effectiveEndMs))
             offsets.add(accumulated)
             volumes.add(clipVol)
             speeds.add(clipSpeed)
@@ -502,6 +748,17 @@ internal class DivineVideoPlayerInstance(
             }
         }
 
+        // Fade the video's edges only when the whole video is one clip, which
+        // is what the feed loops. On a multi-clip timeline a stream is one clip
+        // rather than the whole video, so fading every stream would notch the
+        // audio at each cut. The length is not known until STATE_READY.
+        //
+        // Published before the playlist swap below, because that swap disables
+        // the audio renderer and flushes the pipeline on the playback thread.
+        declickProcessor.enabled = clipCount == 1
+        declickProcessor.videoDurationUs = LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        declickProcessor.nextStreamStartUs = startLocalMs * 1000L
+
         // Replace the playlist in-place without calling stop() first.
         // stop() transitions ExoPlayer to STATE_IDLE which on some OEM decoders
         // (e.g. Vivo/Mediatek) triggers a full MediaCodec reset and surface
@@ -543,29 +800,111 @@ internal class DivineVideoPlayerInstance(
         mainHandler.postDelayed(setClipsTimeoutRunnable, SET_CLIPS_TIMEOUT_MS)
     }
 
+    private fun buildMediaItem(
+        uri: String,
+        startMs: Long,
+        endMs: Long?,
+    ): MediaItem =
+        MediaItem.Builder().setUri(uri)
+            .setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs(startMs)
+                    .apply {
+                        if (endMs != null) setEndPositionMs(endMs)
+                    }
+                    .build(),
+            )
+            .build()
+
     /**
      * The point up to which *every* track of [uri] still has content, in
-     * milliseconds, or `null` when it cannot be determined without I/O that
-     * would delay playback.
+     * milliseconds, or `null` when the source's track lengths are not known.
      *
-     * Only local files are probed. Reading a remote source's metadata means a
-     * network round trip on the platform thread before playback can start, so
-     * remote clips keep the container duration — and the seam — instead.
+     * Reads only [trackDurationsCache] — never I/O, so it is safe on the
+     * platform thread. [resolveTrackDurations] fills the cache first.
      */
     private fun boundedCommonTrackEndMs(
         uri: String,
         startMs: Long,
         requestedEndMs: Long?,
     ): Long? {
-        val path = when {
-            uri.startsWith("/") -> uri
-            uri.startsWith("file://") -> Uri.parse(uri).path
-            else -> null
-        } ?: return null
+        val durations = trackDurationsCache[uri] ?: return null
+        if (durations.size < 2 || durations[0] <= 0 || durations[1] <= 0) {
+            return null
+        }
+        return boundedCommonTrackEndMs(
+            startMs = startMs,
+            requestedEndMs = requestedEndMs,
+            videoEndMs = durations[0] / 1000,
+            audioEndMs = durations[1] / 1000,
+        )
+    }
+
+    /**
+     * Whether [uri]'s track lengths can be read at all.
+     *
+     * `MediaExtractor` has no HLS extractor: it fetches the playlist, fails to
+     * sniff it and throws. A throw is deliberately uncached (see
+     * [resolveTrackDurations]), so probing a playlist would hold every
+     * `setClips` for that source behind a read that can only fail, and pay the
+     * fetch again on the next one. The feed keeps HLS as a fallback for a
+     * progressive source that would not start, so this is the path a video
+     * takes when it is already having a bad time.
+     *
+     * A scheme [resolveTrackDurations] cannot open is the same shape of
+     * answer: permanent, and not worth deferring a load to rediscover.
+     */
+    private fun canReadTrackDurations(uri: String): Boolean {
+        val path = uri.substringBefore('?').substringBefore('#')
+        if (path.endsWith(".m3u8", ignoreCase = true) ||
+            path.contains("/hls/", ignoreCase = true)
+        ) {
+            return false
+        }
+        return uri.startsWith("/") ||
+            uri.startsWith("file://") ||
+            uri.startsWith("http://") ||
+            uri.startsWith("https://")
+    }
+
+    /**
+     * Local files are cheap enough to resolve before the playlist swap. Remote
+     * metadata reads add a second connection to the first-frame path, so they
+     * warm the cache without blocking playback.
+     */
+    private fun shouldBlockSetClipsForTrackDurations(uri: String): Boolean =
+        uri.startsWith("/") || uri.startsWith("file://")
+
+    /**
+     * Reads [uri]'s video and audio track lengths into [trackDurationsCache].
+     *
+     * Only ever called for a [uri] [canReadTrackDurations] accepted.
+     *
+     * Blocks on I/O — a remote source costs a range request for the moov box —
+     * so it must never run on the platform thread. The Apple player pays the
+     * same cost, awaiting `load(.timeRange)` on both tracks before it builds
+     * the composition.
+     *
+     * A source that genuinely carries no video/audio pair is cached as
+     * [NO_TRACK_PAIR] so the read is not repeated for it. A read that *threw*
+     * is not cached: a socket reset or a 5xx says nothing about the source,
+     * and [NO_TRACK_PAIR] is permanent — one bad moment would disable the
+     * clamp for that URL for the rest of the process.
+     */
+    private fun resolveTrackDurations(uri: String, headers: Map<String, String>) {
+        if (trackDurationsCache.containsKey(uri)) return
 
         val extractor = MediaExtractor()
-        return try {
-            extractor.setDataSource(path)
+        val durations = try {
+            when {
+                uri.startsWith("file://") ->
+                    extractor.setDataSource(Uri.parse(uri).path ?: return)
+                uri.startsWith("http://") || uri.startsWith("https://") ->
+                    extractor.setDataSource(uri, headers)
+                // A bare filesystem path. [canReadTrackDurations] rejected
+                // everything else before this was ever queued.
+                else -> extractor.setDataSource(uri)
+            }
             var videoUs = -1L
             var audioUs = -1L
             for (i in 0 until extractor.trackCount) {
@@ -580,25 +919,32 @@ internal class DivineVideoPlayerInstance(
             }
             // A clip without both track types has no mismatch to trim.
             if (videoUs <= 0 || audioUs <= 0) {
-                null
+                NO_TRACK_PAIR
             } else {
-                boundedCommonTrackEndMs(
-                    startMs = startMs,
-                    requestedEndMs = requestedEndMs,
-                    videoEndMs = videoUs / 1000,
-                    audioEndMs = audioUs / 1000,
-                )
+                longArrayOf(videoUs, audioUs)
             }
         } catch (e: Exception) {
             DivineVideoPlayerLog.warning(
                 "Player $playerId could not read track durations: $e",
                 name = "DivineVideoPlayer.Load",
             )
-            null
+            return
         } finally {
             extractor.release()
         }
+        trackDurationsCache[uri] = durations
     }
+
+    /** The per-clip HTTP headers Dart sent, if any. */
+    private fun httpHeadersOf(map: Map<String, Any?>): Map<String, String> =
+        (map["httpHeaders"] as? Map<*, *>)
+            ?.mapNotNull { entry ->
+                val key = entry.key as? String
+                val value = entry.value as? String
+                if (key == null || value == null) null else key to value
+            }
+            ?.toMap()
+            ?: emptyMap()
 
     private fun boundedCommonTrackEndMs(
         startMs: Long,
@@ -618,6 +964,21 @@ internal class DivineVideoPlayerInstance(
         val relativeLimitMs = (playableDurationMs * MAX_COMMON_TRACK_END_TRIM_RATIO).toLong()
         val trimLimitMs = minOf(MAX_COMMON_TRACK_END_TRIM_MS, relativeLimitMs)
         return commonEndMs.takeIf { trimMs <= trimLimitMs }
+    }
+
+    /**
+     * Hands the declick fade the current video's length, which bounds how long
+     * the fade may be on a video too short to carry two of them. Where the
+     * fade out sits is not derived from this — the processor holds the last
+     * few milliseconds back and releases them at the real end of the stream.
+     */
+    private fun updateDeclickDuration() {
+        val durationMs = player?.duration ?: C.TIME_UNSET
+        declickProcessor.videoDurationUs = if (durationMs == C.TIME_UNSET) {
+            LoopDeclickAudioProcessor.DURATION_UNKNOWN
+        } else {
+            durationMs * 1000L
+        }
     }
 
     private fun handleSeekTo(call: MethodCall, result: MethodChannel.Result) {
@@ -641,6 +1002,10 @@ internal class DivineVideoPlayerInstance(
         val resolved = resolveGlobalPosition(globalMs)
 
         val targetIndex = resolved.first
+        // The seek flushes the audio pipeline, which re-anchors the fade at
+        // whatever the next stream starts with. Tell it that is the seek target
+        // and not the start of the video, so the fade out stays on the join.
+        declickProcessor.nextStreamStartUs = resolved.second * 1000L
         exoPlayer.seekTo(targetIndex, resolved.second)
 
         // Apply the target clip's per-clip speed and volume immediately.
@@ -1000,6 +1365,9 @@ internal class DivineVideoPlayerInstance(
                 syncAudioOverlays()
             }
             if (playbackState == Player.STATE_READY) {
+                // The video's length is only readable once the timeline is
+                // populated, and it bounds how long the fade may be.
+                updateDeclickDuration()
                 // Seek complete — switch from reporting target to actual position.
                 pendingGlobalStartMs = 0L
                 completeSeekIfPending()
@@ -1282,6 +1650,12 @@ internal class DivineVideoPlayerInstance(
         mainHandler.removeCallbacks(setClipsTimeoutRunnable)
         mainHandler.removeCallbacks(bufferingWatchdogRunnable)
         cancelDecoderRetry()
+        // A metadata read already in flight finishes into a bumped generation
+        // and is dropped; queued ones never start. Its caller is answered here
+        // rather than left waiting on a continuation that will not apply.
+        setClipsGeneration++
+        deferredSetClips?.let { settleDeferredSetClips(it, apply = false) }
+        metadataExecutor.shutdownNow()
         seekCompletionResult?.success(null)
         seekCompletionResult = null
         pendingSetClipsResult?.success(null)
@@ -1308,9 +1682,80 @@ internal class DivineVideoPlayerInstance(
         eventSink = null
     }
 
+    /**
+     * A `setClips` held back until its clips' track lengths have been read.
+     *
+     * Carries everything [applyClips] needs so the call can be replayed on the
+     * platform thread once the read lands — or answered without applying when
+     * something supersedes it.
+     */
+    private class DeferredSetClips(
+        val call: MethodCall,
+        val clipsRaw: List<Map<String, Any?>>,
+        val result: MethodChannel.Result,
+    ) {
+        /**
+         * Set by whichever of the resolution, the deadline, a newer
+         * `setClips`, or `dispose` gets here first. Read and written on the
+         * platform thread only.
+         */
+        var settled: Boolean = false
+    }
+
     companion object {
         private const val POSITION_UPDATE_INTERVAL_MS = 200L
         private const val SET_CLIPS_TIMEOUT_MS = 10_000L
+
+        /**
+         * How long a `setClips` waits for its clips' track lengths.
+         *
+         * Long enough for a moov range request against a healthy CDN, short
+         * enough that a stalled one costs a seam rather than a load. The
+         * ordinary `setClips` watchdog cannot cover this window — it is armed
+         * in [applyClips], which is exactly what the wait is holding up.
+         *
+         * Internal rather than private so the test can post the deadline it
+         * asserts on rather than restate the number.
+         */
+        internal const val TRACK_DURATION_RESOLVE_TIMEOUT_MS = 1_500L
+
+        /** Cached "this source carries no video/audio pair to trim". */
+        private val NO_TRACK_PAIR = longArrayOf(-1L, -1L)
+
+        /**
+         * Video and audio track lengths in microseconds, keyed by source.
+         *
+         * Shared across instances so a failover to a mirror of the same video,
+         * or a second visit to it in the feed, does not pay the read again.
+         * Bounded, because a long feed session visits a lot of sources.
+         */
+        private val trackDurationsCache: MutableMap<String, LongArray> =
+            Collections.synchronizedMap(
+                object : LinkedHashMap<String, LongArray>(16, 0.75f, true) {
+                    override fun removeEldestEntry(
+                        eldest: MutableMap.MutableEntry<String, LongArray>?,
+                    ): Boolean = size > TRACK_DURATION_CACHE_ENTRIES
+                },
+            )
+
+        private const val TRACK_DURATION_CACHE_ENTRIES = 256
+
+        internal fun clearTrackDurationsCacheForTesting() {
+            trackDurationsCache.clear()
+        }
+
+        /**
+         * Names the metadata thread and marks it a daemon.
+         *
+         * `shutdownNow()` cannot interrupt a [MediaExtractor] read — it is
+         * native I/O — so the stalled host this design already plans for keeps
+         * its thread alive past [dispose]. Daemon so it can never hold the
+         * process up, named so a thread dump says which player it belongs to
+         * instead of showing an anonymous `pool-N-thread-1`.
+         */
+        private fun metadataThreadFactory(playerId: Int) = ThreadFactory { runnable ->
+            Thread(runnable, "divine-video-metadata-$playerId").apply { isDaemon = true }
+        }
 
         /**
          * How long the player may stay in `STATE_BUFFERING` before it is

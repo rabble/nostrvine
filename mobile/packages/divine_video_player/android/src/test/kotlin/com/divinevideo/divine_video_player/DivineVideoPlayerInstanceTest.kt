@@ -2,10 +2,12 @@ package com.divinevideo.divine_video_player
 
 import android.content.Context
 import android.graphics.SurfaceTexture
+import android.media.MediaFormat
 import android.net.Uri
 import android.os.Handler
 import android.os.SystemClock
 import android.view.Surface
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -29,6 +31,7 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.io.IOException
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -58,6 +61,7 @@ class DivineVideoPlayerInstanceTest {
 
     @Before
     fun setUp() {
+        DivineVideoPlayerInstance.clearTrackDurationsCacheForTesting()
         messenger = mockk(relaxed = true)
         context = mockk(relaxed = true)
         mockPlayer = mockk(relaxed = true)
@@ -82,7 +86,13 @@ class DivineVideoPlayerInstanceTest {
             playerFactory = { _ -> mockPlayer },
             mainHandler = mockHandler,
             audioOverlayManagerFactory = { _ -> mockAudioManager },
+            metadataExecutor = DirectExecutorService(),
         )
+    }
+
+    @After
+    fun tearDown() {
+        DivineVideoPlayerInstance.clearTrackDurationsCacheForTesting()
     }
 
     /**
@@ -701,4 +711,335 @@ class DivineVideoPlayerInstanceTest {
         // Clip 1's speed must NOT be applied.
         verify(exactly = 0) { mockPlayer.setPlaybackParameters(PlaybackParameters(0.25f)) }
     }
+
+    // -- common-track-end clamp resolution --
+
+    private fun trimmingSetClipsCall(uri: String): MethodCall =
+        MethodCall(
+            "setClips",
+            mapOf(
+                "clips" to listOf(
+                    mapOf(
+                        "uri" to uri,
+                        "startMs" to 0,
+                        "trimToCommonTrackEnd" to true,
+                    ),
+                ),
+            ),
+        )
+
+    /** The [Runnable]s handed to [mockHandler] via `post`, in order. */
+    private fun capturePostedRunnables(): List<Runnable> {
+        val posted = mutableListOf<Runnable>()
+        verify { mockHandler.post(capture(posted)) }
+        return posted
+    }
+
+    @Test
+    fun `setClips waits for the track lengths before touching the player`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/a.mp4"), result)
+
+        // The metadata read ran, but applying is posted back to the platform
+        // thread — nothing may reach the player until that lands.
+        verify(exactly = 0) { mockPlayer.setMediaItems(any(), any(), any()) }
+
+        capturePostedRunnables().forEach { it.run() }
+
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a resolution that lands after a newer setClips is dropped`() {
+        val stale = mockk<MethodChannel.Result>(relaxed = true)
+        val fresh = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/stale.mp4"), stale)
+        val afterStale = capturePostedRunnables().size
+
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/fresh.mp4"), fresh)
+        val posted = capturePostedRunnables()
+
+        // Run the newer continuation first, then the superseded one: the
+        // stale clips must not be applied over the clips that replaced them.
+        posted.drop(afterStale).forEach { it.run() }
+        posted.take(afterStale).forEach { it.run() }
+
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a superseded setClips still answers its caller`() {
+        val stale = mockk<MethodChannel.Result>(relaxed = true)
+        val fresh = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/one.mp4"), stale)
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/two.mp4"), fresh)
+        capturePostedRunnables().forEach { it.run() }
+
+        // Dropping the superseded result leaves `await setClips()` pending for
+        // the life of the app; the feed's failover state stays pinned on that
+        // index and never recovers. CANCELLED is the code the Dart controller
+        // already swallows.
+        verify(exactly = 1) { stale.error("CANCELLED", any(), any()) }
+        verify(exactly = 0) { stale.success(any()) }
+    }
+
+    @Test
+    fun `dispose answers a setClips still waiting on the track lengths`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("file:///tmp/gone.mp4"), result)
+        instance.dispose()
+        capturePostedRunnables().forEach { it.run() }
+
+        verify(exactly = 1) { result.error("CANCELLED", any(), any()) }
+    }
+
+    @Test
+    fun `clips are applied unclamped when the track lengths never arrive`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        // An executor that accepts work and never runs it: a metadata read that
+        // never returns. Nothing below this bounds the wait.
+        val stalled = DivineVideoPlayerInstance(
+            messenger = messenger,
+            context = context,
+            playerId = 2,
+            playerFactory = { _ -> mockPlayer },
+            mainHandler = mockHandler,
+            audioOverlayManagerFactory = { _ -> mockAudioManager },
+            metadataExecutor = StalledExecutorService(),
+        )
+
+        stalled.onMethodCall(trimmingSetClipsCall("file:///tmp/stalled.mp4"), result)
+        verify(exactly = 0) { mockPlayer.setMediaItems(any(), any(), any()) }
+
+        val deadline = mutableListOf<Runnable>()
+        verify {
+            mockHandler.postDelayed(
+                capture(deadline),
+                DivineVideoPlayerInstance.TRACK_DURATION_RESOLVE_TIMEOUT_MS,
+            )
+        }
+        deadline.forEach { it.run() }
+
+        // A seam is worse than a load that never finishes is worse.
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+
+        stalled.onMethodCall(trimmingSetClipsCall("file:///tmp/next.mp4"), mockk(relaxed = true))
+        // Once a read times out, the instance stops queueing metadata work and
+        // future loads play immediately instead of paying the same deadline.
+        verify(exactly = 2) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a remote source starts immediately while track lengths warm in the background`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/remote.mp4"), result)
+
+        // Remote MediaExtractor reads add a second connection to the feed's
+        // first-frame path, so they must not sit in front of the playlist swap.
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        // The same read still runs and posts a continuation that can tighten
+        // the current playlist if the metadata lands before the first loop.
+        verify(exactly = 1) { mockHandler.post(any()) }
+    }
+
+    /**
+     * Runs [block] with `MediaExtractor` reporting one video and one audio
+     * track of the given lengths, so a remote probe resolves to a real clamp
+     * instead of the stubbed "no tracks" answer the other tests get.
+     */
+    private fun withTrackDurations(videoUs: Long, audioUs: Long, block: () -> Unit) {
+        val video = mockk<MediaFormat>(relaxed = true)
+        val audio = mockk<MediaFormat>(relaxed = true)
+        every { video.getString(MediaFormat.KEY_MIME) } returns "video/avc"
+        every { video.containsKey(MediaFormat.KEY_DURATION) } returns true
+        every { video.getLong(MediaFormat.KEY_DURATION) } returns videoUs
+        every { audio.getString(MediaFormat.KEY_MIME) } returns "audio/mp4a-latm"
+        every { audio.containsKey(MediaFormat.KEY_DURATION) } returns true
+        every { audio.getLong(MediaFormat.KEY_DURATION) } returns audioUs
+
+        mockkConstructor(android.media.MediaExtractor::class)
+        try {
+            every {
+                anyConstructed<android.media.MediaExtractor>()
+                    .setDataSource(any<String>(), any<Map<String, String>>())
+            } just runs
+            every { anyConstructed<android.media.MediaExtractor>().trackCount } returns 2
+            every { anyConstructed<android.media.MediaExtractor>().getTrackFormat(0) } returns video
+            every { anyConstructed<android.media.MediaExtractor>().getTrackFormat(1) } returns audio
+            block()
+        } finally {
+            unmockkConstructor(android.media.MediaExtractor::class)
+        }
+    }
+
+    @Test
+    fun `a resolved clamp tightens a playlist that has not started`() {
+        every { mockPlayer.mediaItemCount } returns 1
+        every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()
+
+        withTrackDurations(videoUs = 6_000_000L, audioUs = 6_040_000L) {
+            instance.onMethodCall(
+                trimmingSetClipsCall("https://cdn.example/warm.mp4"),
+                mockk(relaxed = true),
+            )
+            capturePostedRunnables().forEach { it.run() }
+        }
+
+        // A preloaded tile sits paused at frame zero, so swapping the item for
+        // a clamped one costs nothing the viewer can see.
+        val replaced = slot<MediaItem>()
+        verify { mockPlayer.replaceMediaItem(0, capture(replaced)) }
+        assertEquals(6_000L, replaced.captured.clippingConfiguration.endPositionMs)
+    }
+
+    @Test
+    fun `a resolved clamp is not applied over a playlist already playing`() {
+        every { mockPlayer.mediaItemCount } returns 1
+        every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()
+        every { mockPlayer.playWhenReady } returns true
+
+        withTrackDurations(videoUs = 6_000_000L, audioUs = 6_040_000L) {
+            instance.onMethodCall(
+                trimmingSetClipsCall("https://cdn.example/playing.mp4"),
+                mockk(relaxed = true),
+            )
+            capturePostedRunnables().forEach { it.run() }
+        }
+
+        // A clipping configuration cannot be updated in place, so this would
+        // remove and re-insert the period being played and restart the video
+        // from zero mid-watch — worse than the seam it removes.
+        verify(exactly = 0) { mockPlayer.replaceMediaItem(any(), any()) }
+    }
+
+    @Test
+    fun `a source that reads as having no track pair is not probed again`() {
+        val uri = "https://cdn.example/no-pair.mp4"
+
+        // MediaExtractor is stubbed to defaults here, so it reports no tracks
+        // — the same shape as a genuinely audio-only source. That answer is
+        // about the source and does not change, so it is cached.
+        instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+        capturePostedRunnables().forEach { it.run() }
+        val afterFirst = capturePostedRunnables().size
+
+        instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+
+        // Answered from the cache, so nothing is deferred: the clips reach the
+        // player without a second continuation.
+        assertEquals(afterFirst, capturePostedRunnables().size)
+        verify(exactly = 2) { mockPlayer.setMediaItems(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a read that threw is probed again rather than cached as unreadable`() {
+        val uri = "https://cdn.example/flaky.mp4"
+        mockkConstructor(android.media.MediaExtractor::class)
+        try {
+            every {
+                anyConstructed<android.media.MediaExtractor>()
+                    .setDataSource(any<String>(), any<Map<String, String>>())
+            } throws IOException("connection reset")
+
+            instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+            capturePostedRunnables().forEach { it.run() }
+            val afterFirst = capturePostedRunnables().size
+
+            instance.onMethodCall(trimmingSetClipsCall(uri), mockk(relaxed = true))
+
+            // A socket reset says nothing about the source. Caching it as
+            // unreadable would disable the loop-seam clamp for this URL for
+            // the rest of the process — the LRU is access-ordered, so the
+            // entry is re-promoted on every replay and never even evicts.
+            assertEquals(afterFirst + 1, capturePostedRunnables().size)
+        } finally {
+            unmockkConstructor(android.media.MediaExtractor::class)
+        }
+    }
+
+    @Test
+    fun `an HLS source reaches the player without being probed`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(
+            trimmingSetClipsCall("https://cdn.example/abc/hls/master.m3u8?token=t"),
+            result,
+        )
+
+        // MediaExtractor has no HLS extractor, so probing a playlist can only
+        // throw — and a throw is not cached, so deferring for one would pay a
+        // doomed fetch on every setClips for that source.
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        verify(exactly = 0) { mockHandler.post(any()) }
+    }
+
+    @Test
+    fun `a source without both track types is applied unclamped`() {
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        // MediaExtractor is stubbed in unit tests, so it reports no tracks —
+        // the same shape as an audio-only or unreadable source. That must
+        // still reach the player rather than stranding the Dart call.
+        instance.onMethodCall(trimmingSetClipsCall("https://cdn.example/b.mp4"), result)
+        capturePostedRunnables().forEach { it.run() }
+
+        verify(exactly = 1) { mockPlayer.setMediaItems(any(), any(), any()) }
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+    }
+}
+
+/** Accepts work and never runs it — a metadata read that never returns. */
+private class StalledExecutorService : java.util.concurrent.AbstractExecutorService() {
+    private var stopped = false
+
+    override fun execute(command: Runnable) = Unit
+
+    override fun shutdown() {
+        stopped = true
+    }
+
+    override fun shutdownNow(): MutableList<Runnable> {
+        stopped = true
+        return mutableListOf()
+    }
+
+    override fun isShutdown(): Boolean = stopped
+
+    override fun isTerminated(): Boolean = stopped
+
+    override fun awaitTermination(
+        timeout: Long,
+        unit: java.util.concurrent.TimeUnit,
+    ): Boolean = true
+}
+
+/** Runs submitted work on the calling thread so tests stay deterministic. */
+private class DirectExecutorService : java.util.concurrent.AbstractExecutorService() {
+    private var stopped = false
+
+    override fun execute(command: Runnable) = command.run()
+
+    override fun shutdown() {
+        stopped = true
+    }
+
+    override fun shutdownNow(): MutableList<Runnable> {
+        stopped = true
+        return mutableListOf()
+    }
+
+    override fun isShutdown(): Boolean = stopped
+
+    override fun isTerminated(): Boolean = stopped
+
+    override fun awaitTermination(
+        timeout: Long,
+        unit: java.util.concurrent.TimeUnit,
+    ): Boolean = true
 }
