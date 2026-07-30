@@ -23,6 +23,18 @@ import 'package:unified_logger/unified_logger.dart';
 
 enum _CuratedListAction { delete, unfollow }
 
+/// Pops the delete-confirmation dialog with [confirmed].
+///
+/// The route can be gone by the time a tap on one of its buttons is
+/// delivered. `Navigator.of` then walks a defunct element and throws, which
+/// `FlutterError.onError` records as a fatal even though the pop is moot.
+void _popConfirmation(BuildContext dialogContext, {required bool confirmed}) {
+  if (!dialogContext.mounted) {
+    return;
+  }
+  Navigator.of(dialogContext).pop(confirmed);
+}
+
 class CuratedListFeedScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'list';
@@ -416,14 +428,14 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
+            onPressed: () => _popConfirmation(dialogContext, confirmed: false),
             child: Text(
               l10n.commonCancel,
               style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
             ),
           ),
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
+            onPressed: () => _popConfirmation(dialogContext, confirmed: true),
             child: Text(
               l10n.commonDelete,
               style: VineTheme.labelMediumFont(color: VineTheme.error),
