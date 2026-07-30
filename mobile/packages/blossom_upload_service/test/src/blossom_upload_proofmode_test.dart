@@ -439,15 +439,17 @@ void main() {
           arrangeUploadMocks();
           final mockFile = createMockFile();
 
-          // Real Android hardware attestation chains run ~54 KB, and used to
-          // ship twice (base64 in the manifest and again in its own header):
-          // ~147 KB combined, past the 128 KiB that media.divine.video
-          // accepts over HTTP/1.1 before answering 502.
+          // Field sizes taken from a real Android capture: an 821-byte PGP
+          // signature and a ~54 KB hardware attestation chain. The attestation
+          // used to ship twice (base64 in the manifest and again in its own
+          // header) for ~147 KB combined, past the 128 KiB that
+          // media.divine.video accepts over HTTP/1.1 before answering 502.
+          final realWorldSignature = 'S' * 821;
           final manifest = jsonEncode({
             'videoHash': 'abc123',
-            'pgpSignature': _pgpSignatureString,
-            'deviceAttestation': 'A' * 54000,
-            'c2pa_manifest_id': 'c2pa-test-id',
+            'pgpSignature': realWorldSignature,
+            'deviceAttestation': 'A' * 53826,
+            'c2pa_manifest_id': 'urn:c2pa:7ae319b2-8641-4eea-8203-a1faf72e31e4',
           });
 
           await service.uploadVideo(
@@ -466,6 +468,15 @@ void main() {
           // ...the two that blow the budget do not.
           expect(headers, isNot(contains('X-ProofMode-Attestation')));
           expect(headers, isNot(contains('X-ProofMode-Manifest')));
+
+          // A real-world PGP signature survives the budget intact, not merely
+          // present: truncating it would make the proof unverifiable.
+          expect(
+            utf8.decode(
+              base64.decode(headers['X-ProofMode-Signature'] as String),
+            ),
+            equals(realWorldSignature),
+          );
         },
       );
 
