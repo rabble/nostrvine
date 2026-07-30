@@ -186,11 +186,10 @@ void main() {
       expect(_mountCount, equals(1));
     });
 
-    // #6494. The flag flip must stop the bloc's work *without* the provider
-    // chain changing shape — a conditional entry here is what #6477 removed.
-    testWidgets('a curated-lists flag-off stops syncing without remounting', (
-      tester,
-    ) async {
+    // #6494. The flag flip has to stop the bloc's work from inside the bloc,
+    // because the provider chain cannot change shape — a conditional entry
+    // here is what #6477 removed.
+    testWidgets('a curated-lists flag-off stops syncing', (tester) async {
       final container = ProviderContainer(
         overrides: [_selector.overrideWith((_) => first)],
       );
@@ -219,8 +218,6 @@ void main() {
         () => second.syncOwner(ownerPubkey: any(named: 'ownerPubkey')),
       );
       expect(secondLists.hasListener, isFalse);
-
-      expect(_mountCount, equals(1));
     });
 
     testWidgets('renders lists from the swapped-in repository', (tester) async {

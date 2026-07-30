@@ -205,6 +205,10 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       // Drops the snapshot and any pending mutations, but keeps the owner: the
       // owner stream is not seeded, so state is the only place a later flag-on
       // can learn who is signed in.
+      //
+      // A mutation still in flight resumes against the snapshot it captured
+      // before this emit and puts it back — the pre-existing account-switch
+      // race, tracked in #6504.
       emit(PeopleListsState(ownerPubkey: state.ownerPubkey, enabled: false));
       return;
     }
