@@ -1172,8 +1172,21 @@ class VideoEventPublisher {
         }
       }
 
-      // Generate blurhash for progressive image loading
-      if (upload.localVideoPath.isNotEmpty) {
+      // Blurhash for progressive image loading. The upload's thumbnail leg
+      // already decoded the frame and derived it there, beside the video
+      // transfer; deriving it again here meant a second video decode on the
+      // critical path (measured at 568ms). Records written before the field
+      // existed, and uploads whose thumbnail was reused from an earlier
+      // attempt, still fall through to computing it.
+      final storedBlurhash = upload.blurhash;
+      if (storedBlurhash != null && storedBlurhash.isNotEmpty) {
+        imetaComponents.add('blurhash $storedBlurhash');
+        Log.info(
+          '✅ Reused blurhash from upload: $storedBlurhash',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      } else if (upload.localVideoPath.isNotEmpty) {
         final blurhashWatch = Stopwatch()..start();
         try {
           Log.debug(

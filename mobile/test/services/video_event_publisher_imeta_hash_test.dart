@@ -103,7 +103,7 @@ void main() {
     } catch (_) {}
   });
 
-  PendingUpload createUpload({required String? videoId}) {
+  PendingUpload createUpload({required String? videoId, String? blurhash}) {
     return PendingUpload(
       id: 'upload-id',
       localVideoPath: videoFile.path,
@@ -114,6 +114,7 @@ void main() {
       cdnUrl: 'https://cdn.example.com/video.mp4',
       fallbackUrl: 'https://cdn.example.com/video.mp4',
       thumbnailPath: 'https://cdn.example.com/thumb.jpg',
+      blurhash: blurhash,
     );
   }
 
@@ -162,17 +163,22 @@ void main() {
     ).thenAnswer((_) async => <Event>[publishedEvent]);
   }
 
-  /// The `x <digest>` component of the emitted imeta tag.
-  String? capturedDigest() {
+  /// The value of the imeta component introduced by [prefix].
+  String? capturedImeta(String prefix) {
     final imeta = capturedTags.firstWhere(
       (tag) => tag.isNotEmpty && tag.first == 'imeta',
       orElse: () => const <String>[],
     );
     for (final component in imeta) {
-      if (component.startsWith('x ')) return component.substring(2);
+      if (component.startsWith('$prefix ')) {
+        return component.substring(prefix.length + 1);
+      }
     }
     return null;
   }
+
+  /// The `x <digest>` component of the emitted imeta tag.
+  String? capturedDigest() => capturedImeta('x');
 
   test('reuses the digest the upload already computed', () async {
     stubSignAndPublish();
@@ -189,5 +195,18 @@ void main() {
       capturedDigest(),
       isNot(equals(sha256.convert(videoBytes).toString())),
     );
+  });
+
+  test('reuses the blurhash the thumbnail leg already derived', () async {
+    stubSignAndPublish();
+
+    final result = await publisher.publishDirectUpload(
+      createUpload(videoId: uploadedDigest, blurhash: 'LEHV6nWB2yk8pyoJadR*'),
+    );
+
+    expect(result, isTrue);
+    // Decoding the video again here would yield nothing for these bytes, so a
+    // present value proves it came from the record.
+    expect(capturedImeta('blurhash'), equals('LEHV6nWB2yk8pyoJadR*'));
   });
 }
