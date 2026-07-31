@@ -81,10 +81,13 @@ const String _classicsOffsetCursorPrefix = 'classic-offset:';
 
 /// Highest archive offset the Classics feed may open a session on.
 ///
-/// The loops-sorted archive holds roughly 10k videos; starting anywhere in
-/// the most-looped few hundred keeps the feed varied between sessions without
-/// dropping the user into the unwatched long tail. Shared with the Explore →
-/// Classics tab so both surfaces draw from the same window.
+/// The archive holds roughly 10k videos; starting anywhere in the most-viewed
+/// few hundred keeps the feed varied between sessions without dropping the
+/// user into the unwatched long tail. (`sort=loops` orders by views first and
+/// loops as the tiebreak on this path, because the request carries a
+/// `platform` filter and so misses Funnelcake's rank-ordered classic
+/// snapshot.) Shared with the Explore → Classics tab so both surfaces draw
+/// from the same window.
 const int classicsMaxRandomStartOffset = 400;
 
 /// Archive pages one Classics fetch may read while trying to fill its page.
@@ -817,21 +820,27 @@ class VideosRepository {
 
   /// Fetches classic Vine archive videos for the home feed's Classics mode.
   ///
-  /// Reads the same offset-paginated, loops-sorted archive as the standalone
-  /// Explore → Classics tab — not Explore → Popular's "Classic" toggle, which
-  /// is server-ordered and therefore opens on the same videos in the same
-  /// order every time. Each fetch that misses the cache starts at a random
-  /// offset within [classicsMaxRandomStartOffset] and shuffles the page, so
-  /// two sessions do not see the same opening run. The next offset rides in
+  /// Reads the same offset-paginated archive as the standalone Explore →
+  /// Classics tab — not Explore → Popular's "Classic" toggle, which is
+  /// server-ordered and therefore opens on the same videos in the same order
+  /// every time. Each fetch that misses the cache starts at a random offset
+  /// within [classicsMaxRandomStartOffset] and shuffles the page, so two
+  /// sessions do not see the same opening run. The next offset rides in
   /// [HomeFeedResult.paginationCursor], so the home feed paginates this like
   /// the For You feed. Filtering can empty an archive page, so up to
   /// [_classicsMaxPageFetches] pages are read to fill [limit] rather than
-  /// handing back a page a feed cannot paginate out of.
+  /// handing back a page a feed cannot paginate out of. A topped-up page can
+  /// therefore exceed [limit]; the cursor advances past every page actually
+  /// read, so trimming to [limit] would drop those videos rather than defer
+  /// them.
   ///
-  /// The in-memory cache keeps the slice stable while the process lives:
-  /// leaving and re-entering the feed preserves the current ordering, while
-  /// pull-to-refresh ([skipCache] `true`) draws a fresh slice. A cold start
-  /// starts from an empty cache and therefore draws a fresh slice too.
+  /// The in-memory cache keeps the *first* page stable while the process
+  /// lives, so leaving and re-entering the feed resumes on the same opening
+  /// run instead of reshuffling under the user; later pages are re-drawn and
+  /// re-shuffled on re-entry. Pull-to-refresh ([skipCache] `true`) draws a
+  /// fresh slice, and a cold start begins from an empty cache. An empty page
+  /// is never cached, so a slice that filters down to nothing is redrawn on
+  /// the next entry rather than pinned for the session.
   ///
   /// Funnelcake-only: returns an empty result when no Funnelcake relay is
   /// connected (relays do not expose the server-side `platform` filter).
@@ -882,10 +891,12 @@ class VideosRepository {
           seenVideoKeys: seenVideoKeys,
         );
 
-        // A short page means the archive ran out at this offset. Length is
-        // read from the raw stats, not the filtered list, so a page that
+        // Exhaustion is "the archive returned nothing here", not "the page
+        // came back short": the client drops rows with a missing id or URL
+        // before this sees them, so a short page is not an end-of-archive
+        // signal. Reading the count before filtering also means a page that
         // filters down to nothing tops up instead of ending the feed.
-        exhausted = stats.length < limit;
+        exhausted = stats.isEmpty;
         offset += limit;
       }
     } on FunnelcakeException {
@@ -901,8 +912,10 @@ class VideosRepository {
       hasMore: hasMore,
     );
 
-    // A failed page is not worth pinning for the rest of the session.
-    if (!failed && isFirstPage) {
+    // A failed page is not worth pinning for the rest of the session, and an
+    // empty one would be a trap: the feed cannot paginate out of an empty
+    // list, so pinning it would keep serving nothing until a manual refresh.
+    if (!failed && isFirstPage && collected.isNotEmpty) {
       _inMemoryFeedCache?.set(_classicsCacheKey, result);
     }
     return result;

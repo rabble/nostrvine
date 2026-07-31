@@ -20,39 +20,48 @@ class MockVideoLocalStorage extends Mock implements VideoLocalStorage {}
 /// [Random] that scripts the Classics archive-offset draws and records the
 /// bounds it was asked for.
 ///
-/// The offset draw is the only call bounded by the reachable page count
-/// ([offsetDrawMax]); the page shuffle's draws are bounded by the page length,
-/// so the two are distinguishable. Scripted draws are handed out in order and
-/// every other call falls through to a seeded [Random] so shuffles stay
-/// deterministic. Asking for an unscripted offset throws rather than silently
-/// drawing, so a test that fetches more pages than it planned for fails loudly.
+/// A fetch draws its offset first and shuffles its page last, so the armed
+/// draw ([expectOffsetDraw]) identifies the offset by position; every other
+/// call falls through to a seeded [Random] so shuffles stay deterministic.
+/// [recordedMaxima] exposes the bounds, so tests can pin the page count the
+/// offset was drawn over.
 class _StubRandom implements Random {
-  _StubRandom({this.offsetDraws = const [0]});
-
-  /// Results handed to successive offset draws, in call order.
-  final List<int> offsetDraws;
-
-  /// The `max` that identifies an offset draw: the reachable page count for
-  /// the `limit: 20` pages these tests use.
-  static const int offsetDrawMax = (classicsMaxRandomStartOffset ~/ 20) + 1;
+  _StubRandom({int firstOffsetDraw = 0}) : _pendingOffsetDraw = firstOffsetDraw;
 
   final Random _shuffleRandom = Random(0);
 
   /// Every `max` passed to [nextInt], in call order.
   final List<int> recordedMaxima = [];
 
-  int _offsetDrawCount = 0;
+  int? _pendingOffsetDraw;
+
+  /// Scripts the archive page the next offset draw lands on.
+  ///
+  /// A Classics fetch draws its offset before its first archive read, so the
+  /// armed draw is consumed by the next `nextInt`. Everything after it — the
+  /// page shuffle — falls through to [_shuffleRandom]. Position rather than
+  /// `max` identifies the draw, because a shuffle of N items walks
+  /// `nextInt(N)` down to `nextInt(2)` and would otherwise collide with the
+  /// reachable-page count.
+  /// Throws when the previously armed draw was never consumed, so a test that
+  /// scripts an offset for a fetch that never draws one fails loudly instead
+  /// of leaking the value into a later shuffle.
+  void expectOffsetDraw(int page) {
+    if (_pendingOffsetDraw != null) {
+      throw StateError('Scripted Classics offset draw was never consumed');
+    }
+    _pendingOffsetDraw = page;
+  }
 
   @override
   int nextInt(int max) {
     recordedMaxima.add(max);
-    if (max != offsetDrawMax) return _shuffleRandom.nextInt(max);
 
-    final index = _offsetDrawCount++;
-    if (index >= offsetDraws.length) {
-      throw StateError('Unscripted Classics offset draw #${index + 1}');
-    }
-    return offsetDraws[index];
+    final offsetDraw = _pendingOffsetDraw;
+    if (offsetDraw == null) return _shuffleRandom.nextInt(max);
+
+    _pendingOffsetDraw = null;
+    return offsetDraw;
   }
 
   @override
@@ -4226,8 +4235,11 @@ void main() {
       late MockFunnelcakeApiClient mockFunnelcakeClient;
 
       /// Archive page large enough that a shuffle is observable.
-      List<VideoStats> archivePage(int count) => [
-        for (var i = 0; i < count; i++)
+      ///
+      /// [startIndex] keeps successive pages distinct, so a topped-up fetch
+      /// is not silently deduplicated down to one page's worth of rows.
+      List<VideoStats> archivePage(int count, {int startIndex = 0}) => [
+        for (var i = startIndex; i < startIndex + count; i++)
           _createVideoStats(
             id: 'vine-$i',
             pubkey: 'pubkey-$i',
@@ -4278,9 +4290,12 @@ void main() {
         );
       }
 
+      /// Repository wired to a live cache, so the cache guards are load-bearing
+      /// in every test rather than only in the ones that name the cache.
       VideosRepository buildRepository({Random? random}) => VideosRepository(
         nostrClient: mockNostrClient,
         funnelcakeApiClient: mockFunnelcakeClient,
+        inMemoryFeedCache: InMemoryFeedCache(),
         random: random,
       );
 
@@ -4296,7 +4311,7 @@ void main() {
         stubArchive(archivePage(20));
 
         // Random.nextInt is called once, over the number of reachable pages.
-        final random = _StubRandom(offsetDraws: [7]);
+        final random = _StubRandom(firstOffsetDraw: 7);
         await buildRepository(random: random).getClassicVideos(limit: 20);
 
         // The offset is drawn over the reachable page count, not a raw index.
@@ -4310,6 +4325,28 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'aligns the offset grid to the page size the feed asks for',
+        () async {
+          // The home feed passes no limit, so the grid is the default page size
+          // rather than the 20 the rest of this group uses.
+          stubArchive(archivePage(25));
+
+          final random = _StubRandom(firstOffsetDraw: 7);
+          await buildRepository(random: random).getClassicVideos();
+
+          expect(random.recordedMaxima.first, 17); // (400 ~/ 25) + 1
+          verify(
+            () => mockFunnelcakeClient.getClassicVines(
+              sort: any(named: 'sort'),
+              limit: 25,
+              offset: 175, // 7 * 25
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('reads the loops-sorted archive, like Explore → Classics', () async {
         stubArchive(archivePage(20));
@@ -4384,10 +4421,13 @@ void main() {
       test('draws a different slice on each cache-missing fetch', () async {
         stubArchive(archivePage(20));
 
-        final repository = buildRepository(
-          random: _StubRandom(offsetDraws: [7, 3]),
-        );
+        final random = _StubRandom(firstOffsetDraw: 7);
+        final repository = buildRepository(random: random);
         await repository.getClassicVideos(limit: 20);
+
+        // skipCache is what makes the second fetch redraw: without it the
+        // repository serves the slice it just pinned.
+        random.expectOffsetDraw(3);
         await repository.getClassicVideos(limit: 20, skipCache: true);
 
         final offsets = verify(
@@ -4424,26 +4464,48 @@ void main() {
         ).called(1);
       });
 
-      test('ends pagination when the archive returns a short page', () async {
-        stubArchive(archivePage(3));
+      test('ends pagination when the archive runs out', () async {
+        stubArchiveByOffset(
+          (offset) => offset == 0 ? archivePage(3) : const [],
+        );
 
         final result = await buildRepository(
           random: _StubRandom(),
         ).getClassicVideos(limit: 20);
 
+        expect(result.videos, hasLength(3));
         expect(result.paginationCursor, isNull);
         expect(result.hasMore, isFalse);
       });
 
+      test(
+        'keeps paginating when a short page is not the archive end',
+        () async {
+          // The client drops rows with a missing id or URL before the
+          // repository sees them, so a short page cannot be read as exhaustion:
+          // one dropped row would end the feed mid-archive.
+          stubArchiveByOffset(
+            (offset) =>
+                offset == 0 ? archivePage(19) : archivePage(20, startIndex: 19),
+          );
+
+          final result = await buildRepository(
+            random: _StubRandom(),
+          ).getClassicVideos(limit: 20);
+
+          expect(result.hasMore, isTrue);
+          expect(result.paginationCursor, 'classic-offset:40');
+          // Both pages are handed back rather than trimmed to `limit`: the
+          // cursor has already advanced past them, so trimming would drop
+          // those videos instead of deferring them to the next page.
+          expect(result.videos, hasLength(39));
+        },
+      );
+
       test('keeps the slice stable across cache-eligible fetches', () async {
         stubArchive(archivePage(20));
 
-        final repository = VideosRepository(
-          nostrClient: mockNostrClient,
-          funnelcakeApiClient: mockFunnelcakeClient,
-          inMemoryFeedCache: InMemoryFeedCache(),
-          random: _StubRandom(),
-        );
+        final repository = buildRepository(random: _StubRandom());
 
         final first = await repository.getClassicVideos(limit: 20);
         final second = await repository.getClassicVideos(limit: 20);
@@ -4457,6 +4519,51 @@ void main() {
             before: any(named: 'before'),
           ),
         ).called(1);
+      });
+
+      test(
+        'does not let a later page overwrite the cached first page',
+        () async {
+          stubArchiveByOffset(
+            (offset) =>
+                offset == 0 ? archivePage(20) : archivePage(20, startIndex: 20),
+          );
+
+          final random = _StubRandom();
+          final repository = buildRepository(random: random);
+
+          final first = await repository.getClassicVideos(limit: 20);
+          await repository.getClassicVideos(
+            limit: 20,
+            cursor: first.paginationCursor,
+          );
+          final reentry = await repository.getClassicVideos(limit: 20);
+
+          expect(
+            reentry.videos.map((v) => v.id),
+            first.videos.map((v) => v.id),
+          );
+        },
+      );
+
+      test('does not pin an empty page for the rest of the session', () async {
+        // Three full pages that filter down to nothing: the feed cannot
+        // paginate out of an empty list, so caching this would keep serving
+        // nothing until a manual refresh.
+        stubArchiveByOffset(
+          (offset) => offset < 200 ? nonVinePage(20) : archivePage(20),
+        );
+
+        final random = _StubRandom();
+        final repository = buildRepository(random: random);
+
+        final empty = await repository.getClassicVideos(limit: 20);
+        expect(empty.videos, isEmpty);
+
+        random.expectOffsetDraw(10); // 10 * 20 = offset 200
+        final reentry = await repository.getClassicVideos(limit: 20);
+
+        expect(reentry.videos, hasLength(20));
       });
 
       test('drops archive rows that are not original vines', () async {
@@ -4508,6 +4615,34 @@ void main() {
 
         expect(result.videos, isEmpty);
         expect(result.hasMore, isFalse);
+      });
+
+      test('serves the pages that succeeded when a top-up fails', () async {
+        // The first page filters short, so the fetch tops up — and the
+        // top-up is what fails.
+        stubArchiveByOffset((offset) {
+          if (offset == 0) {
+            return [...archivePage(12), ...nonVinePage(8)];
+          }
+          throw const FunnelcakeNotConfiguredException();
+        });
+
+        final random = _StubRandom();
+        final repository = buildRepository(random: random);
+
+        final result = await repository.getClassicVideos(limit: 20);
+
+        expect(result.videos, hasLength(12));
+        expect(result.hasMore, isFalse);
+        expect(result.paginationCursor, isNull);
+
+        // A partial page is not worth pinning: the next entry redraws
+        // instead of replaying what the failure left behind.
+        stubArchive(archivePage(20));
+        random.expectOffsetDraw(2);
+        final reentry = await repository.getClassicVideos(limit: 20);
+
+        expect(reentry.videos, hasLength(20));
       });
     });
 
@@ -11248,81 +11383,77 @@ void main() {
         ).called(2);
       });
 
-      test(
-        'reorders cached recommendations when seen state changes',
-        () async {
-          final first = _createVideoStats(
-            id: 'first-video',
-            pubkey: 'first-pubkey',
-            dTag: 'first-dtag',
-            videoUrl: 'https://example.com/first.mp4',
-          );
-          final second = _createVideoStats(
-            id: 'second-video',
-            pubkey: 'second-pubkey',
-            dTag: 'second-dtag',
-            videoUrl: 'https://example.com/second.mp4',
-          );
-          when(
-            () => mockFunnelcakeClient.getRecommendations(
-              seed: any(named: 'seed'),
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              fallback: any(named: 'fallback'),
-              category: any(named: 'category'),
-              preferredLanguages: any(named: 'preferredLanguages'),
-              viewerCountry: any(named: 'viewerCountry'),
-            ),
-          ).thenAnswer(
-            (_) async => RecommendationsResponse(
-              videos: [first, second],
-              source: 'personalized',
-              nextCursor: 'page-2',
-              hasMore: true,
-            ),
-          );
+      test('reorders cached recommendations when seen state changes', () async {
+        final first = _createVideoStats(
+          id: 'first-video',
+          pubkey: 'first-pubkey',
+          dTag: 'first-dtag',
+          videoUrl: 'https://example.com/first.mp4',
+        );
+        final second = _createVideoStats(
+          id: 'second-video',
+          pubkey: 'second-pubkey',
+          dTag: 'second-dtag',
+          videoUrl: 'https://example.com/second.mp4',
+        );
+        when(
+          () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            fallback: any(named: 'fallback'),
+            category: any(named: 'category'),
+            preferredLanguages: any(named: 'preferredLanguages'),
+            viewerCountry: any(named: 'viewerCountry'),
+          ),
+        ).thenAnswer(
+          (_) async => RecommendationsResponse(
+            videos: [first, second],
+            source: 'personalized',
+            nextCursor: 'page-2',
+            hasMore: true,
+          ),
+        );
 
-          final recentlySeenIds = <String>{};
-          final repo = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-            inMemoryFeedCache: InMemoryFeedCache(),
-            seenVideoLookup: SeenVideoLookup(
-              wasSeenRecently:
-                  (videoId, {within = const Duration(hours: 24)}) =>
-                      recentlySeenIds.contains(videoId),
-            ),
-          );
+        final recentlySeenIds = <String>{};
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: InMemoryFeedCache(),
+          seenVideoLookup: SeenVideoLookup(
+            wasSeenRecently: (videoId, {within = const Duration(hours: 24)}) =>
+                recentlySeenIds.contains(videoId),
+          ),
+        );
 
-          final fresh = await repo.getRecommendedVideos(
-            userPubkey: 'user-pubkey',
+        final fresh = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          limit: 10,
+        );
+        recentlySeenIds.add('first-video');
+        final cached = await repo.getRecommendedVideos(
+          userPubkey: 'user-pubkey',
+          limit: 10,
+        );
+
+        expect(fresh.videos.map((video) => video.id), [
+          'first-video',
+          'second-video',
+        ]);
+        expect(cached.videos.map((video) => video.id), [
+          'second-video',
+          'first-video',
+        ]);
+        expect(cached.paginationCursor, equals('page-2'));
+        expect(cached.hasMore, isTrue);
+        verify(
+          () => mockFunnelcakeClient.getRecommendations(
+            seed: any(named: 'seed'),
+            pubkey: 'user-pubkey',
             limit: 10,
-          );
-          recentlySeenIds.add('first-video');
-          final cached = await repo.getRecommendedVideos(
-            userPubkey: 'user-pubkey',
-            limit: 10,
-          );
-
-          expect(fresh.videos.map((video) => video.id), [
-            'first-video',
-            'second-video',
-          ]);
-          expect(cached.videos.map((video) => video.id), [
-            'second-video',
-            'first-video',
-          ]);
-          expect(cached.paginationCursor, equals('page-2'));
-          expect(cached.hasMore, isTrue);
-          verify(
-            () => mockFunnelcakeClient.getRecommendations(
-              seed: any(named: 'seed'),
-              pubkey: 'user-pubkey',
-              limit: 10,
-            ),
-          ).called(1);
-        },
-      );
+          ),
+        ).called(1);
+      });
 
       test('keeps the same session seed across cursor pagination', () async {
         final requestedSeeds = <String?>[];
