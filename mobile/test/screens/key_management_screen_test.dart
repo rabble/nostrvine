@@ -456,6 +456,37 @@ void main() {
       expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsNothing);
     });
 
+    // The login service answered, and its answer was that there is nothing to
+    // hand over. Reporting that as a connection problem invites a retry that
+    // can never succeed.
+    testWidgets('does not report a missing key as an unreachable service', (
+      tester,
+    ) async {
+      authService =
+          _FakeKeyManagementAuthService(
+              currentNpub: testNpub,
+              authenticationSource: AuthenticationSource.divineOAuth,
+              canExportLocalNsec: false,
+            )
+            ..exportKeycastResult = ExportKeyResult.failure(
+              ExportKeyFailure.noKey,
+              message: 'No account found with this email.',
+            );
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'hunter2');
+      await tester.tap(find.text(l10n.keyManagementKeycastFetchKey));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.keyManagementKeycastNoKey), findsOne);
+      expect(
+        find.textContaining(l10n.keyManagementKeycastGenericFailure),
+        findsNothing,
+      );
+      expect(find.textContaining('No account found'), findsNothing);
+    });
+
     testWidgets('does not fetch when the password field is empty', (
       tester,
     ) async {

@@ -116,6 +116,9 @@ class KeycastKeyExportCard extends ConsumerWidget {
         l10n.keyManagementKeycastEmailUnverified,
       ExportKeyFailure.denied => l10n.keyManagementKeycastDenied,
       ExportKeyFailure.rateLimited => l10n.keyManagementKeycastRateLimited,
+      // A definitive "there is no key" is not a failure to reach the service,
+      // and unlike the generic arm no retry will change it.
+      ExportKeyFailure.noKey => l10n.keyManagementKeycastNoKey,
       _ => l10n.keyManagementExportFailed(
         l10n.keyManagementKeycastGenericFailure,
       ),
