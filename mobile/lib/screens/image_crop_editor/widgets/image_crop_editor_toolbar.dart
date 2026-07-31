@@ -40,7 +40,10 @@ class ImageCropEditorToolbar extends StatelessWidget
         padding: const EdgeInsets.only(left: 16),
         child: DivineIconButton(
           icon: DivineIconName.x,
-          type: DivineIconButtonType.ghostOverMedia,
+          // `CropRotateEditor` hands this to a plain `Scaffold.appBar` with no
+          // `extendBodyBehindAppBar`, so the bar sits above the image on the
+          // scaffold's own `colors.surface` — a themed surface, not media.
+          type: DivineIconButtonType.ghostSecondary,
           size: DivineIconButtonSize.small,
           semanticLabel: l10n.imageCropEditorCloseSemanticLabel,
           onPressed: onClose,

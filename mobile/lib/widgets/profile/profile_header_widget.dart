@@ -312,6 +312,12 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         mainAxisSize: .min,
         children: [
           // Navigation buttons — always visible immediately.
+          //
+          // These are not reliably over media: a profile with no banner image
+          // and no `profileColor` — the default — gets the palette gradient
+          // `containerLow` -> `surface` from [ProfileBanner], and the banner's
+          // own scrim is fully transparent at this height. A fixed light glyph
+          // would sit at ~1.5:1 there on light, so they follow the palette.
           Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -320,21 +326,21 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                 if (widget.isOwnProfile)
                   DivineIconButton(
                     icon: DivineIconName.gear,
-                    type: DivineIconButtonType.ghostOverMedia,
+                    type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
                     onPressed: () => context.push(SettingsScreen.path),
                   )
                 else if (widget.onBack != null)
                   DivineIconButton(
                     icon: DivineIconName.caretLeft,
-                    type: DivineIconButtonType.ghostOverMedia,
+                    type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
                     onPressed: widget.onBack,
                   ),
                 if (widget.onMore != null)
                   DivineIconButton(
                     icon: DivineIconName.dotsThree,
-                    type: DivineIconButtonType.ghostOverMedia,
+                    type: DivineIconButtonType.ghostSecondary,
                     size: DivineIconButtonSize.small,
                     onPressed: widget.onMore,
                   ),
