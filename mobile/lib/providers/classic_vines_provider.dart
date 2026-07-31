@@ -15,6 +15,7 @@ import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'classic_vines_provider.g.dart';
 
@@ -30,7 +31,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   static const int _pageSize = 50;
   static const int _totalClassicVines = 10000; // Approximate total
   static const int _initialRequestAttempts = 2;
-  static const int _maxRandomStartOffset = 400;
+
+  /// Shared with the home feed's Classics mode so both surfaces open on the
+  /// same slice of the archive.
+  static const int _maxRandomStartOffset = classicsMaxRandomStartOffset;
 
   final Random _random = Random();
 

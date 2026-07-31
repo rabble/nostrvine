@@ -925,16 +925,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedBlocState> {
       _videosRepository
           .getNewVideos(until: until, skipCache: skipCache)
           .then((videos) => HomeFeedResult(videos: videos)),
-    VideoFeedSourceType.classic =>
-      paginationCursor == null
-          ? _videosRepository.getClassicVideos(
-              until: until,
-              skipCache: skipCache,
-            )
-          : _videosRepository.getClassicVideos(
-              cursor: paginationCursor,
-              skipCache: skipCache,
-            ),
+    // Classics is offset-paginated behind an opaque cursor and has no
+    // time-window pagination, so `until` does not apply.
+    VideoFeedSourceType.classic => _videosRepository.getClassicVideos(
+      cursor: paginationCursor,
+      skipCache: skipCache,
+    ),
   };
 
   void _scheduleNostrEnrichment({
