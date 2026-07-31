@@ -117,6 +117,12 @@ class _BlueskySettingsView extends StatelessWidget {
     if (state.status != CrosspostSettingsStatus.failure) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    // Captured here, while the route is still mounted. The root
+    // ScaffoldMessenger lives above the Navigator, so this snackbar outlives a
+    // pop — reading the cubit off [context] inside the action would then hit a
+    // defunct element, whose inherited-widget map the framework has already
+    // cleared.
+    final cubit = context.read<CrosspostSettingsCubit>();
     switch (state.error) {
       case CrosspostSettingsError.usernameNotClaimed:
         messenger.showSnackBar(
@@ -127,8 +133,11 @@ class _BlueskySettingsView extends StatelessWidget {
               label: context.l10n.blueskySetUpHandle,
               textColor: context.vineColors.primaryText,
               onPressed: () {
-                context.read<CrosspostSettingsCubit>().acknowledgeError();
-                unawaited(_openClaimFlowAndRefresh(context));
+                // BlocProvider closes the cubit when the route pops, so this
+                // tracks whether the screen the action refers to still exists.
+                if (cubit.isClosed) return;
+                cubit.acknowledgeError();
+                unawaited(_openClaimFlowAndRefresh(context, cubit));
               },
             ),
           ),
@@ -206,7 +215,12 @@ class _UsernameRequiredNotice extends StatelessWidget {
         style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
       trailing: TextButton(
-        onPressed: () => unawaited(_openClaimFlowAndRefresh(context)),
+        onPressed: () => unawaited(
+          _openClaimFlowAndRefresh(
+            context,
+            context.read<CrosspostSettingsCubit>(),
+          ),
+        ),
         child: Text(
           context.l10n.blueskySetUpHandle,
           style: const TextStyle(color: VineTheme.vineGreen),
@@ -216,10 +230,15 @@ class _UsernameRequiredNotice extends StatelessWidget {
   }
 }
 
-Future<void> _openClaimFlowAndRefresh(BuildContext context) async {
-  final cubit = context.read<CrosspostSettingsCubit>();
+Future<void> _openClaimFlowAndRefresh(
+  BuildContext context,
+  CrosspostSettingsCubit cubit,
+) async {
   await context.push(Nip05SettingsScreen.path);
-  if (!context.mounted) return;
+  // `context.mounted` only goes false once the element is unmounted, and the
+  // framework clears the inherited-widget map one step earlier — so pair it
+  // with the cubit's own liveness rather than trusting it alone.
+  if (!context.mounted || cubit.isClosed) return;
   await cubit.loadStatus();
 }
 
