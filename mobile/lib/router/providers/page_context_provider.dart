@@ -41,6 +41,7 @@ import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/appearance_settings_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
@@ -115,6 +116,7 @@ enum RouteType {
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
   nip05Settings, // NIP-05 management nested under Nostr settings
   blueskySettings, // Bluesky crosspost publishing settings
+  crosspostingSettings, // External platform connection and posting modes
   secureAccount,
   pooledVideoFeed, // Fullscreen video feed route
   videoDetail, // Video detail screen (deep link to specific video)
@@ -242,6 +244,7 @@ bool _isKnownRouteShape(List<String> segments) {
     case 'support-center':
     case 'legal':
     case 'bluesky-settings':
+    case 'crossposting-settings':
     case 'edit-profile':
     case 'clips':
     case 'clips-no-sound':
@@ -491,6 +494,9 @@ RouteContext? _parseRoute(String path, {required bool knownOnly}) {
 
     case 'bluesky-settings':
       return const RouteContext(type: RouteType.blueskySettings);
+
+    case 'crossposting-settings':
+      return const RouteContext(type: RouteType.crosspostingSettings);
 
     case 'edit-profile':
     case 'setup-profile':
@@ -779,6 +785,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.blueskySettings:
       return BlueskySettingsScreen.path;
+
+    case RouteType.crosspostingSettings:
+      return CrosspostingSettingsScreen.path;
 
     case RouteType.editProfile:
       return ProfileSetupScreen.editPath;

@@ -187,6 +187,39 @@ class OAuthSessionCoordinator {
     return refreshed?.accessToken;
   }
 
+  /// Returns an access token only when the stored OAuth session belongs to
+  /// [expectedOwnerPubkey].
+  ///
+  /// Expired sessions are checked through [storedSessionReader] before the
+  /// single-flight refresh starts, preventing a refresh token from one account
+  /// being rebound to another account. Concurrent refreshes share the same
+  /// operation via [refreshSession].
+  Future<String?> accessTokenForOwner({
+    required String expectedOwnerPubkey,
+    required Future<KeycastSession?> Function() storedSessionReader,
+  }) async {
+    final oauthClient = _oauthClient;
+    if (oauthClient == null) return null;
+
+    final activeSession = await oauthClient.getSession();
+    if (activeSession != null) {
+      if (activeSession.userPubkey != expectedOwnerPubkey) return null;
+      return activeSession.accessToken;
+    }
+
+    final storedSession = await storedSessionReader();
+    if (storedSession != null &&
+        storedSession.userPubkey != expectedOwnerPubkey) {
+      return null;
+    }
+
+    final refreshed = await refreshSession(
+      expectedOwnerPubkey: expectedOwnerPubkey,
+    );
+    if (refreshed?.userPubkey != expectedOwnerPubkey) return null;
+    return refreshed?.accessToken;
+  }
+
   /// Detaches any in-flight refresh so a post-sign-out login starts a fresh
   /// attempt instead of joining one issued for the outgoing session.
   ///

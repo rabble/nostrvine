@@ -438,5 +438,83 @@ void main() {
         ).called(1);
       },
     );
+    group('accessTokenForOwner', () {
+      test('returns an active token only for its bound owner', () async {
+        when(oauthClient.getSession).thenAnswer(
+          (_) async => _session(userPubkey: 'owner', accessToken: 'active'),
+        );
+        final coordinator = build();
+
+        expect(
+          await coordinator.accessTokenForOwner(
+            expectedOwnerPubkey: 'owner',
+            storedSessionReader: () async => null,
+          ),
+          'active',
+        );
+        expect(
+          await coordinator.accessTokenForOwner(
+            expectedOwnerPubkey: 'other',
+            storedSessionReader: () async => null,
+          ),
+          isNull,
+        );
+        verifyNever(
+          () => oauthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        );
+      });
+
+      test('refuses to refresh an expired session for another owner', () async {
+        when(oauthClient.getSession).thenAnswer((_) async => null);
+        final coordinator = build();
+
+        final token = await coordinator.accessTokenForOwner(
+          expectedOwnerPubkey: 'current-owner',
+          storedSessionReader: () async =>
+              _session(userPubkey: 'previous-owner'),
+        );
+
+        expect(token, isNull);
+        verifyNever(
+          () => oauthClient.refreshSession(
+            userPubkey: any(named: 'userPubkey'),
+          ),
+        );
+      });
+
+      test(
+        'concurrent expired-session reads share one bound refresh',
+        () async {
+          when(oauthClient.getSession).thenAnswer((_) async => null);
+          final refresh = Completer<KeycastSession?>();
+          when(
+            () => oauthClient.refreshSession(userPubkey: 'owner'),
+          ).thenAnswer((_) => refresh.future);
+          final coordinator = build();
+
+          final first = coordinator.accessTokenForOwner(
+            expectedOwnerPubkey: 'owner',
+            storedSessionReader: () async => _session(userPubkey: 'owner'),
+          );
+          final second = coordinator.accessTokenForOwner(
+            expectedOwnerPubkey: 'owner',
+            storedSessionReader: () async => _session(userPubkey: 'owner'),
+          );
+          refresh.complete(
+            _session(userPubkey: 'owner', accessToken: 'refreshed'),
+          );
+
+          expect(await Future.wait([first, second]), [
+            'refreshed',
+            'refreshed',
+          ]);
+          verify(
+            () => oauthClient.refreshSession(userPubkey: 'owner'),
+          ).called(1);
+        },
+      );
+    });
   });
 }

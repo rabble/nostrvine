@@ -18250,6 +18250,144 @@ abstract class AppLocalizations {
   /// **'Trust Divine relays, verify the rest.'**
   String get nostrSettingsSignatureVerificationNonDivineSubtitle;
 
+  /// Settings row and screen title for crossposting videos to external platforms.
+  ///
+  /// In en, this message translates to:
+  /// **'Crossposting'**
+  String get settingsCrosspostingTitle;
+
+  /// Settings row subtitle for the crossposting screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your videos to other platforms'**
+  String get settingsCrosspostingSubtitle;
+
+  /// Shown on the crossposting screen when the user is signed out.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Divine to manage crossposting'**
+  String get crosspostingSignInRequired;
+
+  /// Error shown when the crossposting settings fail to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your crossposting settings'**
+  String get crosspostingLoadFailed;
+
+  /// Empty state when the service has no enabled crossposting platforms.
+  ///
+  /// In en, this message translates to:
+  /// **'No crossposting platforms are available right now'**
+  String get crosspostingNoPlatforms;
+
+  /// Button label to retry loading crossposting settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get crosspostingRetry;
+
+  /// Status line for a platform without a linked account.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get crosspostingNotConnected;
+
+  /// Status line for a connected platform whose account name and external ID are unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get crosspostingConnected;
+
+  /// Status line for a platform whose account link expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs reconnecting'**
+  String get crosspostingNeedsReconnect;
+
+  /// Button label to link an external platform account.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect'**
+  String get crosspostingConnect;
+
+  /// Button label to re-link a platform account that needs re-authorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect'**
+  String get crosspostingReconnect;
+
+  /// Button label to unlink an external platform account.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get crosspostingDisconnect;
+
+  /// Posting-mode option: never crosspost to this platform.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get crosspostingModeOff;
+
+  /// Posting-mode option: user picks per video.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get crosspostingModeManual;
+
+  /// Explains the manual posting mode.
+  ///
+  /// In en, this message translates to:
+  /// **'You choose per video'**
+  String get crosspostingModeManualSubtitle;
+
+  /// Posting-mode option: every future video is crossposted.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get crosspostingModeAutomatic;
+
+  /// Explains the automatic posting mode and that it is not retroactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Future videos post automatically — only videos published after you turn this on'**
+  String get crosspostingModeAutomaticSubtitle;
+
+  /// Error shown when a posting mode is set on a platform that isn't connected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect this platform first to change how it posts.'**
+  String get crosspostingNotConnectedError;
+
+  /// Generic error for failed crossposting actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try again.'**
+  String get crosspostingGenericError;
+
+  /// Error shown when the crossposting OAuth browser session ends without a validated callback (for example when Android app-link verification fails).
+  ///
+  /// In en, this message translates to:
+  /// **'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.'**
+  String get crosspostingCallbackTimeoutError;
+
+  /// Snackbar after returning from a successful platform connection.
+  ///
+  /// In en, this message translates to:
+  /// **'{platform} connected'**
+  String crosspostingConnectionSuccess(String platform);
+
+  /// Snackbar after returning from a failed platform connection.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect {platform}'**
+  String crosspostingConnectionFailed(String platform);
+
+  /// Snackbar when the user denied the connection on the provider's page.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection was canceled on {platform}'**
+  String crosspostingConnectionDenied(String platform);
+
   /// Title of the supporter subscription settings screen and its settings tile.
   ///
   /// In en, this message translates to:
