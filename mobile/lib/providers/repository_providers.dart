@@ -482,6 +482,7 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
 final Provider<Stream<PeopleListsRepository>>
 peopleListsRepositoryIdentityStreamProvider =
     identityStreamOf<PeopleListsRepository>(peopleListsRepositoryProvider);
+
 /// Repository for the reserved kind 30000 `d=notify` subscription list.
 ///
 /// Owns which creators the signed-in user gets new-post notifications about
