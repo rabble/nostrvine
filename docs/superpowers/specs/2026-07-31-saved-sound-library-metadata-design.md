@@ -13,6 +13,12 @@ Saving stays immediate and publishes nothing. Personal details autosave from
 the save/import surface and remain editable later. The Library Sounds tab
 renders a card with that context instead of a title-and-duration row.
 
+Saving a sound and permitting remix are separate actions. Private/imported
+audio remains embedded only in the user's video unless they explicitly enable
+“Allow others to remix this sound.” Shared sounds carry public attribution,
+labels, source, license, and immutable consent evidence without copying any
+private library fields.
+
 ## Problem
 
 The library persists a `List<AudioEvent>` and shows title + duration. Titles
@@ -22,6 +28,12 @@ by one to find the one they want.
 The context that would identify a sound already exists at the moment of
 saving and is thrown away: the source `VideoEvent` (title, content, thumbnail,
 creator), and the proxy's `tags` on external results.
+
+There is also a consent and credit failure in the publish path. A local import
+is currently published as a reusable Kind 1063 whenever its video is
+published, even when `allowAudioReuse` is false. The code also assumes a local
+file is the user's own work, while public sound events do not consistently
+retain or display the original creator, source, license, or useful labels.
 
 ## Goals
 
@@ -35,7 +47,15 @@ creator), and the proxy's `tags` on external results.
 - Search saved sounds across those fields.
 - Filter the library by tapping a personal hashtag.
 - Preserve existing saved libraries through app upgrades.
-- Keep everything device-local.
+- Keep all private library organization device-local.
+- Never infer remix permission from saving, importing, or possessing a file.
+- Publish a reusable Kind 1063 only after explicit remix consent.
+- Preserve and display public creator/source/license attribution for shared
+  sounds.
+- Distinguish the credited creator from the account that shared the event.
+- Preserve exact signed provenance without creating a circular event-ID
+  dependency, while retaining the addressable video coordinate for current
+  navigation.
 
 ## Non-Goals
 
@@ -44,7 +64,8 @@ creator), and the proxy's `tags` on external results.
 - Background enrichment that fetches missing context after the save.
 - Generating, requesting, or polling for a transcript.
 - A crowdsourced label-editing API on `divine-sound-proxy`.
-- Changing audio-reuse consent or video-publishing behavior.
+- Inventing a new Nostr event kind for sounds.
+- Treating a personal label or private hashtag as public attribution.
 - Surviving uninstall or OS "clear app data".
 
 ### Deliberate scope cuts
@@ -56,6 +77,9 @@ creator), and the proxy's `tags` on external results.
   existing media tooling. Failure is silent and leaves a complete saved sound.
 - Hashtags are plain normalized strings, not a category taxonomy or nested
   collection system.
+- Public credit reuses Kind 1063, standard Nostr references, NIP-48 proxy
+  references, and existing/common metadata tags. It does not introduce a new
+  service or event kind.
 
 ## Product Decisions
 
@@ -82,6 +106,62 @@ relays, analytics, logs, or published events.
 Tags from `divine-sound-proxy` are copied into the record at save time so
 display and search do not depend on a future proxy response. They are never
 edited in the app and no proxy write endpoint is added.
+
+### Saving is not remix consent
+
+Adding a sound to the device library never publishes an event and never grants
+other people permission to remix it. Publishing a video with original or
+imported audio also does not create a Kind 1063 while “Allow others to remix
+this sound” is off.
+
+When the toggle is on:
+
+- original user-created audio is credited to the publisher;
+- an unattributed import requires either “I made this sound” or public
+  creator/source credit;
+- known provider/import attribution is prefilled;
+- an existing Nostr sound keeps its original event and attribution and is
+  never republished under the remixer;
+- provider audio is eligible for further remix only when its normalized
+  license permits derivatives.
+
+The current assumption that a device-local import is necessarily owned by the
+user is removed.
+
+### Private organization and public attribution are separate
+
+`personalLabel` and `personalHashtags` are private organizational data. They
+never enter publisher parameters, drafts' public metadata, signed events,
+logs, analytics, or public UI.
+
+Public attribution is reviewed independently when remixing is enabled:
+
+- public sound title;
+- credited creator name;
+- optional credited creator Nostr pubkey;
+- source URL;
+- license name and URL;
+- explicitly public sound tags;
+- whether the user confirmed they created the sound.
+
+The publishing surface shows a final “Shared as” preview. Provider metadata is
+read-only when it came from a trusted catalog response. Unknown imports cannot
+be offered for remix until ownership or attribution is supplied.
+
+### Public credit display
+
+Shared sounds render the same public hierarchy in sound detail, feed audio
+attribution, video metadata, and saved cards:
+
+1. Sound title.
+2. “By [credited creator].”
+3. “Shared by [event publisher]” when the publisher and creator differ.
+4. Provider/source and license.
+5. Public sound tags.
+6. “Remixing allowed” or “Credit only.”
+
+Saved cards additionally show “Your label” and “Your tags” as a visibly
+separate private layer.
 
 ### Card layout
 
@@ -132,6 +212,17 @@ class SavedSoundSourceContext {
   final String? thumbnailUrl;
   final String? transcript;
 }
+
+class AudioShareAttribution {
+  final String title;
+  final String creatorName;
+  final String? creatorPubkey;
+  final String? sourceUrl;
+  final String? licenseName;
+  final String? licenseUrl;
+  final List<String> publicTags;
+  final bool confirmedOwnWork;
+}
 ```
 
 Boundaries:
@@ -149,6 +240,59 @@ Boundaries:
   from the proxy response's existing `tags` array, so tags survive API
   mapping and audio selection long enough to reach `SavedSound.catalogTags`.
 - Full Nostr identifiers are stored untruncated.
+- `AudioShareAttribution` is public draft/publish state, not a field derived
+  from `SavedSound.personalLabel` or `personalHashtags`.
+- Public attribution is stored in the draft so autosave, reopening, background
+  publishing, and retry use the exact values the user reviewed.
+
+## Nostr Publication And Provenance
+
+New reusable sound events continue to use Kind 1063. They include:
+
+- NIP-94 file tags (`url`, `m`, `x`, and `size`) plus Divine's existing
+  `duration` tag where available;
+- an `a` tag containing the canonical addressable source-video coordinate
+  `34236:<pubkey>:<d-tag>` plus relay hint;
+- a `p` tag when the credited creator has a Nostr pubkey;
+- `t` tags only for explicitly public sound labels;
+- a NIP-48 `proxy` tag for provider-originated audio;
+- `title`, `source`, and `license` metadata plus documented Divine
+  `creator`, `creator_url`, and `license_url` extensions;
+- `allow_audio_reuse=true`;
+- a readable public description/credit in the event content.
+
+The Kind 1063 `a` reference is primary for navigation because a Kind 34236
+video is addressable and replaceable. The exact signed video event contains
+the existing reverse `e` reference to the Kind 1063 audio event. The audio
+cannot also `e`-reference that exact video: each immutable event ID would then
+depend on the other, creating an impossible hash cycle.
+
+Exact provenance is therefore the signed video event whose `e` tag references
+the audio event and whose address matches the audio's source `a` coordinate.
+Public credit and explicit consent are snapshotted into Kind 1063 so they
+remain readable after source edits, unavailability, or deletion.
+
+NIP-94 does not standardize artist or license attribution. Divine therefore
+uses registered/common tags where they exist and clearly documented Divine
+metadata for the remaining fields; the UI does not imply every Nostr client
+will render those extensions.
+
+For legacy Kind 1063 events without explicit consent, Divine queries signed
+video events that reference the audio ID, keeps only candidates whose address
+matches the audio's source `a` coordinate, and selects the earliest candidate
+at or after the audio event's creation. That exact event must contain
+`allow_audio_reuse=true`. If selection is ambiguous or evidence is missing,
+remixing is unavailable. Absence of a consent tag no longer defaults to
+permission.
+
+Provider catalog audio is already public source material rather than a private
+device import. When used in a published video, Divine creates a
+credit-bearing bridged Kind 1063 with its NIP-48 `proxy`, creator, source, and
+license metadata so the video can reference durable attribution. Trusted
+catalog tags become its public `t` tags. The event is marked reusable only when
+the normalized provider license permits derivatives and the publisher enables
+remixing; otherwise it carries `allow_audio_reuse=false`. The video publisher
+is shown as “Shared by,” never “By.”
 
 ## Persistence And Migration
 
@@ -204,7 +348,30 @@ Replace `SavedSoundsNotifier` with an app-scoped `SavedSoundsBloc`:
 The BLoC is recreated when the account storage key changes. Each async
 operation retains the storage key it started with, so an account switch cannot
 write into or update the wrong bucket. The audio picker maps records back to
-`AudioEvent`, so publishing code is unchanged.
+`AudioEvent`.
+
+### Publishing
+
+The publish flow receives explicit `AudioShareAttribution` separately from the
+saved-library record. The existing “Publish this sound” control becomes “Allow
+others to remix this sound.”
+
+- Toggle off: publish the video without creating a Kind 1063 for original or
+  imported private audio. Provider audio still gets a credit-only bridged Kind
+  1063 because omitting attribution is not acceptable.
+- Toggle on: validate public attribution, publish Kind 1063 first, then
+  reference it from the video.
+- Existing Nostr sound: reference the original Kind 1063 without republishing.
+- Provider sound: retain provider/source/license credit and permit further
+  remix only when the normalized license allows derivatives and the user
+  enables remixing.
+
+If a user explicitly requested a reusable sound and Kind 1063 publication
+fails, video publication stops in a retryable state. It must not silently post
+without the sharing choice the user reviewed. When the toggle is off,
+sound-sharing infrastructure cannot block original/private-import video
+publication. Provider-credit publication remains required; its failure blocks
+the video rather than publishing uncredited provider audio.
 
 ### UI
 
@@ -213,6 +380,10 @@ write into or update the wrong bucket. The audio picker maps records back to
 - The audio selection sheet passes the proxy result's catalog tags.
 - `sounds_tab.dart` renders rich vertical cards, search, and tappable personal
   hashtag filters from BLoC state.
+- The publish metadata screen owns the inline public-credit editor and “Shared
+  as” preview; no new dialog or bottom sheet is introduced.
+- Feed attribution, video metadata, and sound detail share the same public
+  credit presentation rules.
 - New copy is localized; `app_en.arb` keys are mirrored or added to
   `_knownUntranslatedDebt`.
 
@@ -226,6 +397,16 @@ write into or update the wrong bucket. The audio picker maps records back to
 - Missing embedded captions produce no transcript section and no error.
 - Failed waveform extraction produces no waveform and no error.
 - Removing a sound removes its metadata in the same write.
+- Invalid public attribution prevents enabling remix and identifies the
+  missing creator/source field inline.
+- A license that forbids derivatives shows “Credit only” and disables further
+  remix.
+- Failure to publish an explicitly requested reusable Kind 1063 keeps the
+  video retryable.
+- Publishing original/private-import audio with remix disabled never fails
+  because sound sharing is unavailable.
+- Provider-credit event failure blocks publication instead of posting
+  uncredited provider audio.
 
 ## Accessibility
 
@@ -262,6 +443,27 @@ Widget / golden:
 - Source-less card (icon fallback, no thumbnail).
 - Music-only record with no transcript and no error state.
 - Legacy record with only a fallback title.
+- Public credit with distinct creator and publisher.
+- Provider/source/license attribution and public tags.
+- “Remixing allowed” and “Credit only” states.
+
+Publishing / protocol:
+
+- Original and imported audio with remix off create no Kind 1063.
+- Imported audio with remix on requires ownership confirmation or attribution.
+- Existing Nostr audio is referenced and never republished under the remixer.
+- Provider audio always publishes durable source, creator, license, and trusted
+  catalog tags in a credit-bearing bridge; remix additionally respects
+  `allowsDerivatives` and the user's toggle.
+- New Kind 1063 events contain explicit consent, public tags, and addressable
+  `a` provenance; the exact video event provides the reverse `e` reference.
+- Legacy consent is verified from the exact signed video that references the
+  audio and matches its address, and fails closed when unavailable.
+- Private labels and personal hashtags never appear in publisher calls, signed
+  tags/content, logs, analytics, or public widgets.
+- Reusable Kind 1063 failure blocks a publish that explicitly requested sound
+  sharing and remains retryable; a required provider credit-event failure also
+  blocks rather than publishing uncredited audio.
 
 Run the service, BLoC, widget, l10n, and golden checks first, then
 `flutter analyze` and the broader affected suite before publishing.
@@ -278,6 +480,11 @@ One focused mobile PR:
 5. Add the autosaving label/hashtag editor.
 6. Replace saved-sound rows with rich cards, expanded search, and hashtag
    filtering.
+7. Separate public `AudioShareAttribution` from private saved metadata.
+8. Gate imported/original Kind 1063 publication on explicit consent.
+9. Publish addressable provenance and verify the exact reverse video reference
+   with public tags/credit.
+10. Display consistent creator, sharer, source, license, and remix status.
 
 No backend change is needed — `divine-sound-proxy` already returns `tags`.
 A provider that omits tags just yields an empty list.
