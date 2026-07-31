@@ -197,6 +197,22 @@ void main() {
     );
   });
 
+  test('emits the digest even when the local file is already gone', () async {
+    stubSignAndPublish();
+
+    // Funnelcake materializes events_local.sha256 from this sub-field and
+    // joins moderation labels on it — a publish landing after local cleanup
+    // must still carry x, even though size (which needs the file) cannot.
+    await videoFile.delete();
+
+    final result = await publisher.publishDirectUpload(
+      createUpload(videoId: uploadedDigest),
+    );
+
+    expect(result, isTrue);
+    expect(capturedDigest(), equals(uploadedDigest));
+  });
+
   test('reuses the blurhash the thumbnail leg already derived', () async {
     stubSignAndPublish();
 

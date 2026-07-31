@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 import '../mocks/mock_path_provider_platform.dart';
 
@@ -242,6 +243,15 @@ void main() {
         thumbnailUploads,
         equals(1),
         reason: 'the retry must reuse the thumbnail already on the CDN',
+      );
+      // The reused leg still emits a timeline line, so a log export reads
+      // "reused" rather than "the leg never ran".
+      expect(
+        LogCaptureService().getRecentLogs().any(
+          (entry) => entry.message.contains('upload.thumbnail 0ms reused'),
+        ),
+        isTrue,
+        reason: 'retry must log the reused thumbnail leg',
       );
     });
 

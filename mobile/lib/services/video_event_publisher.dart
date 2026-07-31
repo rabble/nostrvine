@@ -1142,25 +1142,27 @@ class VideoEventPublisher {
         imetaComponents.add('dim ${upload.videoWidth}x${upload.videoHeight}');
       }
 
-      // Add file size and SHA256 if available from local video file
+      // x: the digest is the upload's videoId, which every upload path sets
+      // from the locally streamed HashUtil.sha256File over this same file —
+      // _parseUploadResponse takes fileHash as a parameter and never reads a
+      // hash off the response body, so this is value-identical to re-hashing
+      // the file (which used to cost a measurable slice of the publish and
+      // pulled the whole video into memory). Deliberately independent of the
+      // local file still existing: funnelcake materializes events_local.sha256
+      // from this sub-field and joins moderation labels on it, so a publish
+      // landing after local cleanup must still carry it.
+      final hash = upload.videoId;
+      if (hash != null && hash.isNotEmpty) {
+        imetaComponents.add('x $hash');
+      }
+
+      // size genuinely needs the file on disk.
       if (upload.localVideoPath.isNotEmpty) {
         try {
           final videoFile = File(upload.localVideoPath);
           if (videoFile.existsSync()) {
-            // Add file size
             final fileSize = videoFile.lengthSync();
             imetaComponents.add('size $fileSize');
-
-            // Blossom is content-addressed, so the upload already streamed
-            // this exact digest and handed it back as the videoId — which
-            // publishDirectUpload has already required to be present. Hashing
-            // the file again here cost a measurable slice of the publish and
-            // pulled the whole video into memory, which is exactly what the
-            // upload path streams to avoid.
-            final hash = upload.videoId;
-            if (hash != null && hash.isNotEmpty) {
-              imetaComponents.add('x $hash');
-            }
 
             Log.verbose(
               'Added file metadata - size: $fileSize bytes, hash: $hash',

@@ -2708,12 +2708,13 @@ class BlossomUploadService {
           category: LogCategory.video,
         );
 
-        // The capability probe only picks between the resumable flow and the
-        // single PUT. A caller that already opted out of resumable cannot be
-        // routed by the answer, so the HEAD is dead weight — and an expensive
-        // one: the OS-first video upload never warms the capability cache, so
-        // the thumbnail leg pays a cold round-trip on the publish critical
-        // path (measured at ~3.7s for a 20KB thumbnail).
+        // The capability probe only feeds supportsResumable, so a caller that
+        // already opted out of resumable cannot be routed by the answer — the
+        // HEAD would be a provably inert round-trip (and always a cold one on
+        // the publish path: the OS-first video upload never warms this cache).
+        // Skipped because it is inert, not because it was measured as the
+        // cost; on-device timing showed the thumbnail PUT dominates with or
+        // without it.
         final capability = allowResumable
             ? await _fetchDivineUploadCapability(serverUrl)
             : null;

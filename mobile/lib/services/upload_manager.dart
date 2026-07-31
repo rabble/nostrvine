@@ -1894,7 +1894,10 @@ class UploadManager implements BackgroundAwareService {
     final existing = upload.thumbnailPath;
     if (existing != null && existing.startsWith('http')) {
       // A prior attempt in this retry chain already uploaded it. The blob is
-      // content-addressed, so re-uploading would land on the same hash.
+      // content-addressed, so re-uploading would land on the same hash. The
+      // zero-duration line keeps the PUBTIME timeline honest on retries —
+      // without it an export reads as "the leg never ran".
+      logPublishPhase('upload.thumbnail', Duration.zero, detail: 'reused');
       return (cdnUrl: existing, blurhash: upload.blurhash);
     }
 
