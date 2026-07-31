@@ -5133,6 +5133,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Copiar chave';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Seu dispositivo bloqueou a cópia, então sua chave não chegou à área de transferência.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Essa senha não confere. Tente novamente.';
 

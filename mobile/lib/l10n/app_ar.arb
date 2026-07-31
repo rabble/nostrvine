@@ -2006,6 +2006,7 @@
     "keyManagementKeycastRemoteSigning": "مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine، وليس على هذا الجهاز. أكِّد كلمة المرور وسنجلبه لك.",
     "keyManagementKeycastPasswordPrompt": "مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك وسنجلبه لك.",
     "keyManagementKeycastCopyKey": "نسخ المفتاح",
+    "keyManagementKeycastCopyBlocked": "جهازك منع النسخ، لذلك لم يصل مفتاحك إلى الحافظة.",
     "keyManagementKeycastWrongPassword": "كلمة المرور غير مطابقة. حاول مرة أخرى.",
     "keyManagementKeycastTooManyAttempts": "محاولات كثيرة جدًا. أغلق هذا وابدأ من جديد.",
     "keyManagementKeycastRateLimited": "طلبات كثيرة جدًا للمفتاح. انتظر بضع دقائق ثم حاول مرة أخرى.",

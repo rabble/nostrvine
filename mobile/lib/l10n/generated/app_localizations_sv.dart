@@ -5098,6 +5098,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Kopiera nyckel';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Din enhet blockerade kopieringen, så din nyckel hamnade inte i urklipp.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Lösenordet stämmer inte. Försök igen.';
 

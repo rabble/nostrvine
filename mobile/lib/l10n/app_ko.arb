@@ -1337,6 +1337,7 @@
     "keyManagementKeycastRemoteSigning": "키는 이 기기가 아니라 Divine 로그인 서비스에 보관되어 있습니다. 비밀번호를 확인하면 가져올 수 있습니다.",
     "keyManagementKeycastPasswordPrompt": "키는 Divine 로그인 서비스가 보관합니다. 계정 비밀번호를 입력하면 가져옵니다.",
     "keyManagementKeycastCopyKey": "키 복사",
+    "keyManagementKeycastCopyBlocked": "기기가 복사를 차단해서 키가 클립보드에 저장되지 않았어요.",
     "keyManagementKeycastWrongPassword": "비밀번호가 일치하지 않습니다. 다시 시도하세요.",
     "keyManagementKeycastTooManyAttempts": "시도가 너무 많아요. 이 창을 닫고 다시 시작해 주세요.",
     "keyManagementKeycastRateLimited": "키 요청이 너무 많아요. 몇 분 기다렸다가 다시 시도해 주세요.",

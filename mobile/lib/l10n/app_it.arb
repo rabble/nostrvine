@@ -2014,6 +2014,7 @@
     "keyManagementKeycastRemoteSigning": "La tua chiave è sul servizio di accesso di Divine, non su questo dispositivo. Conferma la password e la recuperiamo per te.",
     "keyManagementKeycastPasswordPrompt": "La tua chiave è conservata dal servizio di accesso di Divine. Inserisci la password del tuo account e la recuperiamo.",
     "keyManagementKeycastCopyKey": "Copia la chiave",
+    "keyManagementKeycastCopyBlocked": "Il tuo dispositivo ha bloccato la copia, quindi la tua chiave non è arrivata negli appunti.",
     "keyManagementKeycastWrongPassword": "La password non corrisponde. Riprova.",
     "keyManagementKeycastTooManyAttempts": "Troppi tentativi. Chiudi e ricomincia.",
     "keyManagementKeycastRateLimited": "Troppe richieste della chiave. Aspetta qualche minuto e riprova.",

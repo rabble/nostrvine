@@ -213,6 +213,28 @@ void main() {
       },
     );
 
+    /// Installs a platform clipboard, returning the list of values it kept.
+    ///
+    /// When [accepts] is false the write is answered with success and dropped —
+    /// what a device or enterprise policy that blocks the clipboard looks like
+    /// to Flutter, since neither engine implementation reports a failed write.
+    List<String> mockClipboard({required bool accepts}) {
+      final kept = <String>[];
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            switch (call.method) {
+              case 'Clipboard.setData':
+                final text = (call.arguments as Map)['text'] as String;
+                if (accepts) kept.add(text);
+                return null;
+              case 'Clipboard.getData':
+                return kept.isEmpty ? null : {'text': kept.last};
+            }
+            return null;
+          });
+      return kept;
+    }
+
     /// Pump an RPC-only Keycast account on a surface tall enough for the card's
     /// button to be on-stage, then open the password sheet.
     Future<AppLocalizations> openPasswordSheet(WidgetTester tester) async {
@@ -261,14 +283,7 @@ void main() {
     ) async {
       const fetchedNsec =
           'nsec1testkeymaterialthatisnotarealkey00000000000000000000000000';
-      final copied = <String>[];
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-            if (call.method == 'Clipboard.setData') {
-              copied.add((call.arguments as Map)['text'] as String);
-            }
-            return null;
-          });
+      final copied = mockClipboard(accepts: true);
 
       authService = _FakeKeyManagementAuthService(
         currentNpub: testNpub,
@@ -300,6 +315,37 @@ void main() {
         find.textContaining('testkeymaterial', skipOffstage: false),
         findsNothing,
       );
+      expect(find.text(l10n.keyManagementKeycastCopyBlocked), findsNothing);
+    });
+
+    // Neither platform reports a refused clipboard write — Android's
+    // setPrimaryClip returns void, iOS assigns pasteboard.string, and the
+    // engine answers success either way. Without reading the value back the
+    // user is told they have a backup of the one thing they cannot re-derive.
+    testWidgets('does not claim a copy the device refused', (tester) async {
+      const fetchedNsec =
+          'nsec1testkeymaterialthatisnotarealkey00000000000000000000000000';
+      final copied = mockClipboard(accepts: false);
+
+      authService = _FakeKeyManagementAuthService(
+        currentNpub: testNpub,
+        authenticationSource: AuthenticationSource.divineOAuth,
+        canExportLocalNsec: false,
+      )..exportKeycastResult = ExportKeyResult.success(fetchedNsec);
+
+      final l10n = await openPasswordSheet(tester);
+
+      await tester.enterText(find.byType(TextField).last, 'hunter2');
+      await tester.tap(find.text(l10n.keyManagementKeycastCopyKey));
+      await tester.pumpAndSettle();
+
+      expect(copied, isEmpty, reason: 'the clipboard refused the write');
+      expect(find.text(l10n.keyManagementExportSuccess), findsNothing);
+      expect(find.text(l10n.keyManagementKeycastCopyBlocked), findsOne);
+
+      // Still closes, and still never renders the key.
+      expect(find.text(l10n.keyManagementKeycastPasswordPrompt), findsNothing);
+      expect(find.text(fetchedNsec, skipOffstage: false), findsNothing);
     });
 
     testWidgets('lifts the sheet clear of the keyboard', (tester) async {

@@ -5150,6 +5150,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Копирай ключа';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Устройството ти блокира копирането, така че ключът ти не стигна до клипборда.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Паролата не съвпада. Опитай отново.';
 

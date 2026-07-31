@@ -5150,6 +5150,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Copia la chiave';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Il tuo dispositivo ha bloccato la copia, quindi la tua chiave non è arrivata negli appunti.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'La password non corrisponde. Riprova.';
 

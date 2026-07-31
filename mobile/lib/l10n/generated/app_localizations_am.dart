@@ -4998,6 +4998,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'ቁልፍ ቅዳ';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'መሣሪያዎ ቅጂውን አግዷል፣ ስለዚህ ቁልፍዎ ወደ ቅንጥብ ሰሌዳ አልደረሰም።';
+
+  @override
   String get keyManagementKeycastWrongPassword => 'የይለፍ ቃሉ አይዛመድም። እንደገና ይሞክሩ።';
 
   @override

@@ -2006,6 +2006,7 @@
     "keyManagementKeycastRemoteSigning": "鍵はこの端末ではなく、Divine のログインサービスに保管されています。パスワードを確認すれば取得できます。",
     "keyManagementKeycastPasswordPrompt": "鍵は Divine のログインサービスが保管しています。アカウントのパスワードを入力すれば取得します。",
     "keyManagementKeycastCopyKey": "鍵をコピー",
+    "keyManagementKeycastCopyBlocked": "端末がコピーをブロックしたため、鍵はクリップボードに届きませんでした。",
     "keyManagementKeycastWrongPassword": "パスワードが一致しません。もう一度お試しください。",
     "keyManagementKeycastTooManyAttempts": "試行が多すぎるよ。これを閉じて最初からやり直してね。",
     "keyManagementKeycastRateLimited": "鍵の取得リクエストが多すぎるよ。数分待ってからもう一度試してね。",

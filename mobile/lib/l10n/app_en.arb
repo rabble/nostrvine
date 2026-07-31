@@ -2866,6 +2866,10 @@
   "@keyManagementKeycastCopyKey": {
     "description": "Confirm button in the password sheet. Confirming fetches the private key from Divine's login service and copies it straight to the clipboard; the key is never shown on screen."
   },
+  "keyManagementKeycastCopyBlocked": "Your device blocked the copy, so your key didn't reach the clipboard.",
+  "@keyManagementKeycastCopyBlocked": {
+    "description": "Error shown when the private key was fetched but the device refused the clipboard write, so nothing was copied. Neither platform reports a failed clipboard write, so this is only reachable because the value is read back and compared."
+  },
   "keyManagementKeycastWrongPassword": "That password doesn't match. Try again.",
   "@keyManagementKeycastWrongPassword": {
     "description": "Inline error under the password field when the account password was rejected. The dialog stays open so the user can retry."

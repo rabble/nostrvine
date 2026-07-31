@@ -5164,6 +5164,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Kopyahin ang key';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Hinarangan ng device mo ang pagkopya, kaya hindi nakarating sa clipboard ang key mo.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Hindi tugma ang password. Subukan muli.';
 

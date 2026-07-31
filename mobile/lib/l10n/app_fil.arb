@@ -1291,6 +1291,7 @@
     "keyManagementKeycastRemoteSigning": "Nasa login service ng Divine ang key mo, hindi sa device na ito. Kumpirmahin ang password mo at kukunin namin ito.",
     "keyManagementKeycastPasswordPrompt": "Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo at kukunin namin ito.",
     "keyManagementKeycastCopyKey": "Kopyahin ang key",
+    "keyManagementKeycastCopyBlocked": "Hinarangan ng device mo ang pagkopya, kaya hindi nakarating sa clipboard ang key mo.",
     "keyManagementKeycastWrongPassword": "Hindi tugma ang password. Subukan muli.",
     "keyManagementKeycastTooManyAttempts": "Sobrang dami nang subok. Isara ito at magsimula ulit.",
     "keyManagementKeycastRateLimited": "Sobrang dami nang hiling para sa key. Maghintay ng ilang minuto at subukan muli.",

@@ -5072,6 +5072,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Anahtarı kopyala';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Cihazın kopyalamayı engelledi, bu yüzden anahtarın panoya ulaşmadı.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Şifre eşleşmiyor. Tekrar dene.';
 

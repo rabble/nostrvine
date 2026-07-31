@@ -2018,6 +2018,7 @@
     "keyManagementKeycastRemoteSigning": "Tu clave está en el servicio de inicio de sesión de Divine, no en este dispositivo. Confirma tu contraseña y la traemos por ti.",
     "keyManagementKeycastPasswordPrompt": "Tu clave la guarda el servicio de inicio de sesión de Divine. Introduce la contraseña de tu cuenta y la traemos.",
     "keyManagementKeycastCopyKey": "Copiar clave",
+    "keyManagementKeycastCopyBlocked": "Tu dispositivo bloqueó la copia, así que tu clave no llegó al portapapeles.",
     "keyManagementKeycastWrongPassword": "Esa contraseña no coincide. Vuelve a intentarlo.",
     "keyManagementKeycastTooManyAttempts": "Demasiados intentos. Cierra esto y empieza de nuevo.",
     "keyManagementKeycastRateLimited": "Demasiadas solicitudes de la clave. Espera unos minutos y vuelve a intentarlo.",

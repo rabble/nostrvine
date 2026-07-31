@@ -209,11 +209,22 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
       // Copy before the pop — the confirmation goes through this context, and a
       // popped sheet's context is unmounted.
       try {
-        await ClipboardUtils.copy(
+        final copied = await ClipboardUtils.copyVerified(
           context,
           result.key!,
           message: l10n.keyManagementExportSuccess,
         );
+        // A clipboard the device refused is reported, not assumed: this is the
+        // one hand-over the user cannot re-derive, and a silent "copied" would
+        // leave them believing they have a backup they do not have.
+        if (!copied && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              l10n.keyManagementKeycastCopyBlocked,
+              error: true,
+            ),
+          );
+        }
       } finally {
         // Closed either way: both actions are disabled while submitting, so a
         // clipboard that throws would otherwise strand the sheet with nothing

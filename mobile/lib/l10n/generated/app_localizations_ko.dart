@@ -4881,6 +4881,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get keyManagementKeycastCopyKey => '키 복사';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      '기기가 복사를 차단해서 키가 클립보드에 저장되지 않았어요.';
+
+  @override
   String get keyManagementKeycastWrongPassword => '비밀번호가 일치하지 않습니다. 다시 시도하세요.';
 
   @override

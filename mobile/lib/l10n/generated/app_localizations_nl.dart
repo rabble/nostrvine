@@ -5123,6 +5123,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Sleutel kopiëren';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Je apparaat blokkeerde het kopiëren, dus je sleutel is niet op het klembord beland.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Dat wachtwoord klopt niet. Probeer het opnieuw.';
 

@@ -5167,6 +5167,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Copier la clé';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Ton appareil a bloqué la copie, ta clé n\'est donc pas arrivée dans le presse-papiers.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Ce mot de passe ne correspond pas. Réessaie.';
 

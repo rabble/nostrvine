@@ -5064,6 +5064,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'نسخ المفتاح';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'جهازك منع النسخ، لذلك لم يصل مفتاحك إلى الحافظة.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'كلمة المرور غير مطابقة. حاول مرة أخرى.';
 

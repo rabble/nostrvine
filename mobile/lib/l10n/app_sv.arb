@@ -2014,6 +2014,7 @@
     "keyManagementKeycastRemoteSigning": "Din nyckel finns hos Divines inloggningstjänst, inte på den här enheten. Bekräfta ditt lösenord så hämtar vi den.",
     "keyManagementKeycastPasswordPrompt": "Din nyckel förvaras av Divines inloggningstjänst. Ange kontots lösenord så hämtar vi den.",
     "keyManagementKeycastCopyKey": "Kopiera nyckel",
+    "keyManagementKeycastCopyBlocked": "Din enhet blockerade kopieringen, så din nyckel hamnade inte i urklipp.",
     "keyManagementKeycastWrongPassword": "Lösenordet stämmer inte. Försök igen.",
     "keyManagementKeycastTooManyAttempts": "För många försök. Stäng det här och börja om.",
     "keyManagementKeycastRateLimited": "För många nyckelförfrågningar. Vänta några minuter och försök igen.",

@@ -5144,6 +5144,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Copiar clave';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Tu dispositivo bloqueó la copia, así que tu clave no llegó al portapapeles.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Esa contraseña no coincide. Vuelve a intentarlo.';
 

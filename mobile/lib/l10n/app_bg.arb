@@ -2215,6 +2215,7 @@
     "keyManagementKeycastRemoteSigning": "Ключът ти се съхранява в услугата за вход на Divine, а не на това устройство. Потвърди паролата си и ще го изтеглим.",
     "keyManagementKeycastPasswordPrompt": "Ключът ти се съхранява от услугата за вход на Divine. Въведи паролата на профила си и ще го изтеглим.",
     "keyManagementKeycastCopyKey": "Копирай ключа",
+    "keyManagementKeycastCopyBlocked": "Устройството ти блокира копирането, така че ключът ти не стигна до клипборда.",
     "keyManagementKeycastWrongPassword": "Паролата не съвпада. Опитай отново.",
     "keyManagementKeycastTooManyAttempts": "Твърде много опити. Затвори това и започни отначало.",
     "keyManagementKeycastRateLimited": "Твърде много заявки за ключа. Изчакай няколко минути и опитай пак.",

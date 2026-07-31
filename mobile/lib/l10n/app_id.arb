@@ -2013,6 +2013,7 @@
     "keyManagementKeycastRemoteSigning": "Kuncimu tersimpan di layanan login Divine, bukan di perangkat ini. Konfirmasi kata sandimu dan kami akan mengambilnya.",
     "keyManagementKeycastPasswordPrompt": "Kuncimu disimpan oleh layanan login Divine. Masukkan kata sandi akunmu dan kami akan mengambilnya.",
     "keyManagementKeycastCopyKey": "Salin kunci",
+    "keyManagementKeycastCopyBlocked": "Perangkatmu memblokir penyalinan, jadi kuncimu tidak sampai ke papan klip.",
     "keyManagementKeycastWrongPassword": "Kata sandi tidak cocok. Coba lagi.",
     "keyManagementKeycastTooManyAttempts": "Terlalu banyak percobaan. Tutup ini dan mulai lagi.",
     "keyManagementKeycastRateLimited": "Terlalu banyak permintaan kunci. Tunggu beberapa menit lalu coba lagi.",

@@ -2013,6 +2013,7 @@
     "keyManagementKeycastRemoteSigning": "Anahtarın bu cihazda değil, Divine'ın giriş servisinde tutuluyor. Şifreni onayla, biz de anahtarı getirelim.",
     "keyManagementKeycastPasswordPrompt": "Anahtarın Divine'ın giriş servisinde tutuluyor. Hesap şifreni gir, biz de getirelim.",
     "keyManagementKeycastCopyKey": "Anahtarı kopyala",
+    "keyManagementKeycastCopyBlocked": "Cihazın kopyalamayı engelledi, bu yüzden anahtarın panoya ulaşmadı.",
     "keyManagementKeycastWrongPassword": "Şifre eşleşmiyor. Tekrar dene.",
     "keyManagementKeycastTooManyAttempts": "Çok fazla deneme oldu. Bunu kapat ve baştan başla.",
     "keyManagementKeycastRateLimited": "Çok fazla anahtar isteği oldu. Birkaç dakika bekleyip tekrar dene.",

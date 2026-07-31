@@ -2350,6 +2350,7 @@
     "keyManagementKeycastRemoteSigning": "ቁልፍዎ በዚህ መሣሪያ ላይ አይደለም፤ በDivine የመግቢያ አገልግሎት ውስጥ ተቀምጧል። የይለፍ ቃልዎን ያረጋግጡ፤ እኛም እናመጣዋለን።",
     "keyManagementKeycastPasswordPrompt": "ቁልፍዎ በDivine የመግቢያ አገልግሎት ተቀምጧል። የመለያዎን የይለፍ ቃል ያስገቡ፤ እኛም እናመጣዋለን።",
     "keyManagementKeycastCopyKey": "ቁልፍ ቅዳ",
+    "keyManagementKeycastCopyBlocked": "መሣሪያዎ ቅጂውን አግዷል፣ ስለዚህ ቁልፍዎ ወደ ቅንጥብ ሰሌዳ አልደረሰም።",
     "keyManagementKeycastWrongPassword": "የይለፍ ቃሉ አይዛመድም። እንደገና ይሞክሩ።",
     "keyManagementKeycastTooManyAttempts": "በጣም ብዙ ሙከራዎች። ይህን ዝጋና ከመጀመሪያው ጀምር።",
     "keyManagementKeycastRateLimited": "በጣም ብዙ የቁልፍ ጥያቄዎች። ጥቂት ደቂቃዎች ጠብቀው እንደገና ይሞክሩ።",

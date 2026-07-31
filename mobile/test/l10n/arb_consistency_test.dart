@@ -54,6 +54,7 @@ void main() {
         'keyManagementKeycastRemoteSigning',
         'keyManagementKeycastPasswordPrompt',
         'keyManagementKeycastCopyKey',
+        'keyManagementKeycastCopyBlocked',
         'keyManagementKeycastWrongPassword',
         'keyManagementKeycastTooManyAttempts',
         'keyManagementKeycastRateLimited',

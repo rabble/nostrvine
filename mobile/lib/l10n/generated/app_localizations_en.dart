@@ -5100,6 +5100,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Copy key';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Your device blocked the copy, so your key didn\'t reach the clipboard.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'That password doesn\'t match. Try again.';
 

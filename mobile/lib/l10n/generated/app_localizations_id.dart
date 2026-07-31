@@ -5064,6 +5064,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Salin kunci';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Perangkatmu memblokir penyalinan, jadi kuncimu tidak sampai ke papan klip.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Kata sandi tidak cocok. Coba lagi.';
 

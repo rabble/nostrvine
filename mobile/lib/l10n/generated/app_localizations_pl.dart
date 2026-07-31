@@ -5234,6 +5234,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Kopiuj klucz';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Twoje urządzenie zablokowało kopiowanie, więc klucz nie trafił do schowka.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'To hasło się nie zgadza. Spróbuj ponownie.';
 

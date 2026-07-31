@@ -2014,6 +2014,7 @@
     "keyManagementKeycastRemoteSigning": "Je sleutel staat bij de inlogservice van Divine, niet op dit apparaat. Bevestig je wachtwoord en we halen hem op.",
     "keyManagementKeycastPasswordPrompt": "Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in en we halen hem op.",
     "keyManagementKeycastCopyKey": "Sleutel kopiëren",
+    "keyManagementKeycastCopyBlocked": "Je apparaat blokkeerde het kopiëren, dus je sleutel is niet op het klembord beland.",
     "keyManagementKeycastWrongPassword": "Dat wachtwoord klopt niet. Probeer het opnieuw.",
     "keyManagementKeycastTooManyAttempts": "Te veel pogingen. Sluit dit en begin opnieuw.",
     "keyManagementKeycastRateLimited": "Te veel sleutelverzoeken. Wacht een paar minuten en probeer het opnieuw.",

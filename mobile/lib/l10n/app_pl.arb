@@ -2014,6 +2014,7 @@
     "keyManagementKeycastRemoteSigning": "Twój klucz jest przechowywany przez serwis logowania Divine, a nie na tym urządzeniu. Potwierdź hasło, a go pobierzemy.",
     "keyManagementKeycastPasswordPrompt": "Twój klucz przechowuje serwis logowania Divine. Podaj hasło do konta, a go pobierzemy.",
     "keyManagementKeycastCopyKey": "Kopiuj klucz",
+    "keyManagementKeycastCopyBlocked": "Twoje urządzenie zablokowało kopiowanie, więc klucz nie trafił do schowka.",
     "keyManagementKeycastWrongPassword": "To hasło się nie zgadza. Spróbuj ponownie.",
     "keyManagementKeycastTooManyAttempts": "Za dużo prób. Zamknij to i zacznij od nowa.",
     "keyManagementKeycastRateLimited": "Za dużo próśb o klucz. Odczekaj kilka minut i spróbuj ponownie.",

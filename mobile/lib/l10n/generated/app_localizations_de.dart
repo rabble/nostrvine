@@ -5161,6 +5161,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Schlüssel kopieren';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Dein Gerät hat das Kopieren blockiert, dein Schlüssel ist also nicht in der Zwischenablage gelandet.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Das Passwort stimmt nicht. Versuch es noch einmal.';
 

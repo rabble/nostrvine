@@ -4863,6 +4863,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get keyManagementKeycastCopyKey => '鍵をコピー';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      '端末がコピーをブロックしたため、鍵はクリップボードに届きませんでした。';
+
+  @override
   String get keyManagementKeycastWrongPassword => 'パスワードが一致しません。もう一度お試しください。';
 
   @override

@@ -8870,6 +8870,12 @@ abstract class AppLocalizations {
   /// **'Copy key'**
   String get keyManagementKeycastCopyKey;
 
+  /// Error shown when the private key was fetched but the device refused the clipboard write, so nothing was copied. Neither platform reports a failed clipboard write, so this is only reachable because the value is read back and compared.
+  ///
+  /// In en, this message translates to:
+  /// **'Your device blocked the copy, so your key didn\'t reach the clipboard.'**
+  String get keyManagementKeycastCopyBlocked;
+
   /// Inline error under the password field when the account password was rejected. The dialog stays open so the user can retry.
   ///
   /// In en, this message translates to:

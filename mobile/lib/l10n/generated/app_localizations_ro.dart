@@ -5243,6 +5243,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get keyManagementKeycastCopyKey => 'Copiază cheia';
 
   @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Dispozitivul tău a blocat copierea, așa că cheia ta nu a ajuns în clipboard.';
+
+  @override
   String get keyManagementKeycastWrongPassword =>
       'Parola nu se potrivește. Încearcă din nou.';
 
