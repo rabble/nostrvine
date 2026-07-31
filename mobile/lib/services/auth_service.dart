@@ -3114,26 +3114,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
 
     try {
-      // Get session, refreshing if expired (token may have expired during
-      // the NIP-62 deletion step that runs before this call)
-      final session = await _oauthClient.getSessionOrRefresh();
-      if (session == null || session.accessToken == null) {
+      // Refreshes if the token expired during the NIP-62 deletion step that
+      // runs before this call, and refuses a session the signed-in account
+      // cannot claim — deletion is irreversible, so the account it lands on
+      // has to be the one that asked for it.
+      final accessToken = await activeAccountKeycastToken();
+      if (accessToken == null) {
         Log.warning(
           'Cannot delete Keycast account: '
-          'session unavailable after refresh attempt',
+          'no session bound to the signed-in account',
           name: 'AuthService',
           category: LogCategory.auth,
         );
         return (
           success: false,
-          error: 'Session expired and could not be refreshed',
+          error: 'No usable session for the signed-in account',
           requiresReauthentication: true,
         );
       }
 
-      final accessToken = session.accessToken!;
-
-      // Delete the account using the session's access token
       final result = await _oauthClient.deleteAccount(accessToken);
 
       if (result.success) {

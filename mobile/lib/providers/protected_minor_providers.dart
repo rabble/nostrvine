@@ -25,8 +25,10 @@ final protectedMinorRepositoryProvider = Provider<ProtectedMinorRepository>((
   final oauthClient = ref.watch(oauthClientProvider);
   return ProtectedMinorRepository(
     oauthClient: oauthClient,
-    readAccessToken: () async =>
-        (await oauthClient.getSessionOrRefresh())?.accessToken,
+    // Owner-bound rather than a bare getSessionOrRefresh(): a session left
+    // behind by another account would otherwise answer the minor question for
+    // this one.
+    readAccessToken: ref.watch(authServiceProvider).activeAccountKeycastToken,
   );
 });
 
@@ -39,9 +41,11 @@ final protectedMinorRepositoryProvider = Provider<ProtectedMinorRepository>((
 ///
 /// Notes for consumers (#175/#176):
 /// - Resolving this may trigger a Keycast token refresh via
-///   `getSessionOrRefresh()` (a network call + storage write) when the cached
-///   session is stale. In the common case a valid session is reused with no
-///   refresh.
+///   `AuthService.activeAccountKeycastToken()` (a network call + storage write)
+///   when the cached session is stale. In the common case a valid session is
+///   reused with no refresh. A session that is not bound to the signed-in
+///   account yields no token at all, which reads as unknown — the fail-safe
+///   answer for a session whose owner cannot be named.
 /// - This only recomputes when auth state changes. An account approved as a
 ///   minor mid-session (no auth-state transition) will not refetch until the
 ///   provider is invalidated — call `ref.invalidate(protectedMinorStatusProvider)`
