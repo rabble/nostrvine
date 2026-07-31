@@ -240,7 +240,7 @@ void main() {
       expect(
         find.widgetWithText(
           SwitchListTile,
-          l10n.videoMetadataAudioReuseTitle,
+          l10n.soundAllowRemix,
         ),
         findsOneWidget,
       );
@@ -268,7 +268,7 @@ void main() {
         expect(
           find.widgetWithText(
             SwitchListTile,
-            l10n.videoMetadataAudioReuseTitle,
+            l10n.soundAllowRemix,
           ),
           findsNothing,
         );
@@ -300,7 +300,7 @@ void main() {
       expect(
         find.widgetWithText(
           SwitchListTile,
-          l10n.videoMetadataAudioReuseTitle,
+          l10n.soundAllowRemix,
         ),
         findsOneWidget,
       );
