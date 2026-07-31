@@ -8547,6 +8547,15 @@ void main() {
               sendBatchId: any(named: 'sendBatchId'),
             ),
           ).thenAnswer((_) async => false);
+          // Without this stub the transaction body throws on the first
+          // unstubbed call after the guard, and `verifyNever` below would
+          // pass on the swallowed exception instead of on the guard.
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
 
           final controller = StreamController<Event>();
           when(
