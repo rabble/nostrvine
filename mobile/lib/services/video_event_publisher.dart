@@ -31,6 +31,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
@@ -1590,6 +1591,7 @@ class VideoEventPublisher {
       );
 
       final reusedEvent = _loadRetryableSignedEvent(upload);
+      final signWatch = Stopwatch()..start();
       final event =
           reusedEvent ??
           await _authService.createAndSignEvent(
@@ -1598,6 +1600,12 @@ class VideoEventPublisher {
             content: content,
             tags: tags,
           );
+      signWatch.stop();
+      logPublishPhase(
+        'nostr.sign',
+        signWatch.elapsed,
+        detail: reusedEvent != null ? 'reused' : 'signed',
+      );
 
       if (event == null) {
         Log.error(
@@ -1625,11 +1633,14 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
+      final publishWatch = Stopwatch()..start();
       final publishResult = await publishSignedVideoEvent(
         upload: upload,
         event: event,
         isRetry: reusedEvent != null,
       );
+      publishWatch.stop();
+      logPublishPhase('nostr.publish', publishWatch.elapsed);
 
       if (publishResult) {
         final shouldAddToDiscoveryCache =
