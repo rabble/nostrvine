@@ -7312,6 +7312,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Устройството ти е с малко свободна памет. Затвори няколко приложения и опитай пак.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Текстът и стикерите в тази чернова не можаха да се подготвят. Отвори я в редактора и публикувай пак.';
+
+  @override
   String get publishErrorUnknownServer => 'Неизвестен сървър';
 
   @override

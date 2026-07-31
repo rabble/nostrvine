@@ -40,12 +40,15 @@ void main() {
     DivineVideoDraft createDraft({
       String? id,
       String title = 'Test Draft',
-      List<DivineVideoClip> clips = const [],
+      // Defaults to one clip because a draft without any is not a state the
+      // library can produce — and post eligibility keys off having something
+      // to publish.
+      List<DivineVideoClip>? clips,
       DivineVideoClip? finalRenderedClip,
     }) {
       return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
-        clips: clips,
+        clips: clips ?? [_createTestClip()],
         title: title,
         description: 'Test Description',
         hashtags: const {},
@@ -201,7 +204,11 @@ void main() {
     });
 
     group('post action', () {
-      testWidgets('hides post action when draft has no final render', (
+      // #5203 hid this action for drafts with no cached render, because
+      // publishing one shipped the raw recording without its editor layers.
+      // Publish now renders on demand with those layers restored, so the
+      // action stays available.
+      testWidgets('shows post action when draft has no final render', (
         tester,
       ) async {
         when(
@@ -212,7 +219,7 @@ void main() {
         await tester.tap(find.byType(IconButton));
         await tester.pumpAndSettle();
 
-        expect(find.text(en.libraryDraftActionPost), findsNothing);
+        expect(find.text(en.libraryDraftActionPost), findsOneWidget);
         expect(find.text(en.libraryDraftActionEdit), findsOneWidget);
         expect(find.text(en.libraryDraftActionDelete), findsOneWidget);
       });
@@ -234,28 +241,6 @@ void main() {
 
         expect(find.text(en.libraryDraftActionPost), findsOneWidget);
       });
-
-      testWidgets(
-        'shows post action for multi-clip draft without final render',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            DraftsLibraryLoaded(
-              drafts: [
-                createDraft(
-                  id: 'draft1',
-                  clips: [_createTestClip(), _createTestClip('clip_2')],
-                ),
-              ],
-            ),
-          );
-
-          await tester.pumpWidget(buildWidget());
-          await tester.tap(find.byType(IconButton));
-          await tester.pumpAndSettle();
-
-          expect(find.text(en.libraryDraftActionPost), findsOneWidget);
-        },
-      );
     });
 
     group('duplicate action', () {

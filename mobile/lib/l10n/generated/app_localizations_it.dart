@@ -7307,6 +7307,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Memoria insufficiente sul dispositivo. Chiudi alcune app e riprova.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Non è stato possibile preparare testo e sticker di questa bozza. Aprila nell’editor e ripubblica.';
+
+  @override
   String get publishErrorUnknownServer => 'Server sconosciuto';
 
   @override

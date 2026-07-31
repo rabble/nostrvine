@@ -15,7 +15,6 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/publish_error_kind_l10n.dart';
@@ -25,6 +24,7 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/preferences_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -42,10 +42,12 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
+import 'package:openvine/services/video_editor/draft_render_parameters_service.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:pro_image_editor/pro_image_editor.dart' show CompleteParameters;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -386,13 +388,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       // BuildContext-across-async-gap) but only when a stop-motion render is
       // actually needed — a normal publish never depends on l10n being wired
       // up, and materialize is a no-op passthrough for a clip that already
-      // has a video.
-      final needsStopMotionRender =
-          (finalRenderedClip?.isStopMotion ?? false) ||
-          (finalRenderedClip == null &&
-              draft.clips.length == 1 &&
-              draft.clips.first.isStopMotion);
-      final stopMotionFailedMessage = needsStopMotionRender
+      // has a video. A draft with no render of its own goes through
+      // renderVideoToClip below, which materializes its own stop-motion clips.
+      final stopMotionFailedMessage = finalRenderedClip?.isStopMotion ?? false
           ? context.l10n.videoRecorderStopMotionAssembleFailed
           : null;
 
@@ -408,54 +406,72 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       }
 
       if (finalRenderedClip == null) {
-        if (draft.clips.length == 1) {
-          final singleClip = draft.clips.first;
-          if (singleClip.isStopMotion) {
-            final materialized = await StopMotionRenderService.materialize(
-              singleClip,
-            );
-            if (materialized == null) {
-              setError(stopMotionFailedMessage!);
-              return;
-            }
-            finalRenderedClip = materialized;
-          } else {
-            finalRenderedClip = singleClip;
-          }
-        } else {
-          // Multiple clips without rendered output - render now
-          Log.info(
-            '🎬 Rendering ${draft.clips.length} clips for publish',
+        // Always render, never publish a source clip as-is. A draft persists
+        // its editing parameters through `CompleteParameters.toMap`, which
+        // drops the captured layers, timed filters, tune adjustments and audio
+        // tracks — so the parameters restored from storage describe far less
+        // than the user authored. `buildForDraft` rebuilds them (re-baking the
+        // layers offscreen) before the render.
+        //
+        // The old shortcut of publishing a lone clip directly skipped the
+        // render entirely and shipped the raw recording: no overlays, and no
+        // trim, speed or volume either. That is what #5203 papered over by
+        // hiding the Post action; rendering here is the actual fix.
+        Log.info(
+          '🎬 Rendering ${draft.clips.length} clip(s) for publish',
+          name: 'VideoPublishNotifier',
+          category: LogCategory.video,
+        );
+
+        final CompleteParameters? parameters;
+        try {
+          parameters = await DraftRenderParametersService(
+            rasterizer: ref.read(layerRasterizerProvider),
+          ).buildForDraft(draft);
+        } on DraftOverlayRestoreException catch (error) {
+          // The draft has overlays we cannot reproduce. Publishing anyway would
+          // ship a video silently missing text/stickers the user can still see
+          // in the draft — the #5203 failure — and a Nostr event cannot be
+          // quietly corrected. Point them at the editor, which re-renders and
+          // repopulates whatever went missing.
+          Log.warning(
+            '⚠️ Blocking publish: $error',
             name: 'VideoPublishNotifier',
             category: LogCategory.video,
           );
-
-          final parameters = draft.editorEditingParameters.isNotEmpty
-              ? completeParametersFromDraftMap(draft.editorEditingParameters)
-              : null;
-
-          final result = await VideoEditorRenderService.renderVideoToClip(
-            clips: draft.clips,
-            parameters: parameters,
-            editorStateHistory: draft.editorStateHistory,
-            taskId: draft.id,
-          );
-
-          if (result == null) {
-            setError('Video rendering failed');
-            return;
-          }
-
-          final (clip, proofJson) = result;
-          finalRenderedClip = clip;
-          proofManifestJson = proofJson;
-
-          Log.info(
-            '✅ Video rendered successfully for publish',
-            name: 'VideoPublishNotifier',
-            category: LogCategory.video,
-          );
+          final message = currentAppL10n(
+            ref.read(sharedPreferencesProvider),
+          ).publishErrorOverlaysUnavailable;
+          setError(message);
+          _showPublishError(message);
+          return;
         }
+
+        final result = await VideoEditorRenderService.renderVideoToClip(
+          clips: draft.clips,
+          parameters: parameters,
+          editorStateHistory: draft.editorStateHistory,
+          taskId: draft.id,
+        );
+
+        if (result == null) {
+          setError(
+            currentAppL10n(
+              ref.read(sharedPreferencesProvider),
+            ).publishErrorMessage(PublishErrorKind.generic),
+          );
+          return;
+        }
+
+        final (clip, proofJson) = result;
+        finalRenderedClip = clip;
+        proofManifestJson = proofJson;
+
+        Log.info(
+          '✅ Video rendered successfully for publish',
+          name: 'VideoPublishNotifier',
+          category: LogCategory.video,
+        );
       }
 
       if (shouldAttachCreatorIdentityProof(proofManifestJson)) {

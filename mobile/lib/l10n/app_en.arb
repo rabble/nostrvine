@@ -4104,6 +4104,7 @@
   "publishErrorUploadSessionExpired": "Your upload session expired. Please try again.",
   "publishErrorPermissionDenied": "Divine doesn’t have permission to upload. Check app permissions in your settings and try again.",
   "publishErrorOutOfMemory": "Your device is low on memory. Close some apps and try again.",
+  "publishErrorOverlaysUnavailable": "The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.",
   "publishErrorUnknownServer": "Unknown server",
   "searchFilterPillSemanticLabel": "Filter: {filter}",
   "@searchFilterPillSemanticLabel": {"placeholders": {"filter": {"type": "String"}}},

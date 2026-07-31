@@ -7288,6 +7288,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Seu dispositivo está com pouca memória. Feche alguns apps e tente novamente.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Não foi possível preparar o texto e os stickers deste rascunho. Abra no editor e poste de novo.';
+
+  @override
   String get publishErrorUnknownServer => 'Servidor desconhecido';
 
   @override

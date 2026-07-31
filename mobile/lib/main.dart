@@ -69,6 +69,7 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
+import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -133,6 +134,8 @@ import 'package:openvine/widgets/upload_failure_sheet.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permissions_service/permissions_service.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show LayerRasterizerHost;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:window_manager/window_manager.dart';
@@ -2578,6 +2581,24 @@ class _DivineAppState extends ConsumerState<DivineApp>
       return false; // Not handled - let PopScope handle it (may exit app)
     }
 
+    // One gate above every route: once the local database reports corruption
+    // there is no screen left that can work, so ask for the restart that
+    // repairs it instead of failing route by route. The review coordinator
+    // lives inside that gate so the recovery screen cannot be interrupted by
+    // an OS-native review card.
+    //
+    // The rasterizer host sits above both: baking a draft's editor layers
+    // needs them mounted somewhere, and that has to keep working while the
+    // corruption gate swaps out everything below it.
+    Widget buildAppShell(BuildContext context, Widget? child) {
+      return LayerRasterizerHost(
+        rasterizer: ref.read(layerRasterizerProvider),
+        child: DatabaseCorruptionGate(
+          child: AppReviewCoordinator(child: child ?? const SizedBox.shrink()),
+        ),
+      );
+    }
+
     // Build MaterialApp with locale from LocaleCubit.
     // The BlocBuilder is used because the cubit is provided further down
     // in the widget tree by MultiBlocProvider.
@@ -2614,16 +2635,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             localeListResolutionCallback: resolveAppUiLocale,
-            // One gate above every route: once the local database reports
-            // corruption there is no screen left that can work, so ask for the
-            // restart that repairs it instead of failing route by route. The
-            // review coordinator lives inside that gate so the recovery screen
-            // cannot be interrupted by an OS-native review card.
-            builder: (context, child) => DatabaseCorruptionGate(
-              child: AppReviewCoordinator(
-                child: child ?? const SizedBox.shrink(),
-              ),
-            ),
+            builder: buildAppShell,
           ),
         );
       }
@@ -2646,16 +2658,7 @@ class _DivineAppState extends ConsumerState<DivineApp>
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             localeListResolutionCallback: resolveAppUiLocale,
-            // One gate above every route: once the local database reports
-            // corruption there is no screen left that can work, so ask for the
-            // restart that repairs it instead of failing route by route. The
-            // review coordinator lives inside that gate so the recovery screen
-            // cannot be interrupted by an OS-native review card.
-            builder: (context, child) => DatabaseCorruptionGate(
-              child: AppReviewCoordinator(
-                child: child ?? const SizedBox.shrink(),
-              ),
-            ),
+            builder: buildAppShell,
           ),
         ),
       );

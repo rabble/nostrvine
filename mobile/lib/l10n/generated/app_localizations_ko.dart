@@ -6957,6 +6957,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get publishErrorOutOfMemory => '기기 메모리가 부족해요. 앱을 몇 개 닫고 다시 시도해주세요.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      '이 초안의 텍스트와 스티커를 준비하지 못했어요. 편집기에서 연 다음 다시 게시해주세요.';
+
+  @override
   String get publishErrorUnknownServer => '알 수 없는 서버';
 
   @override

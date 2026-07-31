@@ -7203,6 +7203,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Memori perangkatmu menipis. Tutup beberapa aplikasi lalu coba lagi.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Teks dan stiker di draf ini tidak bisa disiapkan. Buka di editor, lalu posting lagi.';
+
+  @override
   String get publishErrorUnknownServer => 'Server tidak dikenal';
 
   @override

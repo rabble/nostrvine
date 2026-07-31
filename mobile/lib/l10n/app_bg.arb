@@ -26,6 +26,7 @@
     "publishErrorUploadSessionExpired": "Сесията ти за качване изтече. Опитай пак.",
     "publishErrorPermissionDenied": "Divine няма разрешение да качва. Провери разрешенията на приложението в настройките и опитай пак.",
     "publishErrorOutOfMemory": "Устройството ти е с малко свободна памет. Затвори няколко приложения и опитай пак.",
+    "publishErrorOverlaysUnavailable": "Текстът и стикерите в тази чернова не можаха да се подготвят. Отвори я в редактора и публикувай пак.",
     "publishErrorUnknownServer": "Неизвестен сървър",
     "dmReactionsSheetTitle": "Реакции",
     "dmReactionsViewA11yLabel": "Вижте кой реагира",

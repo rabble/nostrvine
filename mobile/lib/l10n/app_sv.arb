@@ -26,6 +26,7 @@
     "publishErrorUploadSessionExpired": "Din uppladdningssession har gått ut. Försök igen.",
     "publishErrorPermissionDenied": "Divine har inte behörighet att ladda upp. Kontrollera appens behörigheter i dina inställningar och försök igen.",
     "publishErrorOutOfMemory": "Enheten har ont om minne. Stäng några appar och försök igen.",
+    "publishErrorOverlaysUnavailable": "Texten och dekalerna i det här utkastet kunde inte förberedas. Öppna det i redigeraren och posta igen.",
     "publishErrorUnknownServer": "Okänd server",
     "dmReactionsSheetTitle": "Reaktioner",
     "dmReactionsViewA11yLabel": "Se vilka som reagerat",

@@ -7308,6 +7308,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu dispositivo se está quedando sin memoria. Cerrá algunas apps e intentá de nuevo.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'No se pudieron preparar el texto y los stickers de este borrador. Abrilo en el editor y publicá de nuevo.';
+
+  @override
   String get publishErrorUnknownServer => 'Servidor desconocido';
 
   @override

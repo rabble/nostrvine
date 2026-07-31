@@ -7407,6 +7407,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Dispozitivul are puțină memorie disponibilă. Închide câteva aplicații și încearcă din nou.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Textul și stickerele din această schiță nu au putut fi pregătite. Deschide-o în editor, apoi postează din nou.';
+
+  @override
   String get publishErrorUnknownServer => 'Server necunoscut';
 
   @override

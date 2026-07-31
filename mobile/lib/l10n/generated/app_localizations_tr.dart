@@ -7204,6 +7204,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Cihazının belleği azaldı. Bazı uygulamaları kapatıp tekrar dene.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Bu taslaktaki yazı ve çıkartmalar hazırlanamadı. Düzenleyicide aç ve tekrar paylaş.';
+
+  @override
   String get publishErrorUnknownServer => 'Bilinmeyen sunucu';
 
   @override

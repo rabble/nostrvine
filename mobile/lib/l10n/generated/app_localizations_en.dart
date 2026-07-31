@@ -7232,6 +7232,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your device is low on memory. Close some apps and try again.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.';
+
+  @override
   String get publishErrorUnknownServer => 'Unknown server';
 
   @override
