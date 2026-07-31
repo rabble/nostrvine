@@ -1633,9 +1633,6 @@ class VideoEventPublisher {
         signWatch.elapsed,
         detail: reusedEvent != null ? 'reused' : 'signed',
       );
-      // Signing is a remote Keycast round-trip (~0.3-1.4s measured), so the
-      // caller gets a step here rather than waiting out the whole phase.
-      onEventSigned?.call();
 
       if (event == null) {
         Log.error(
@@ -1645,6 +1642,11 @@ class VideoEventPublisher {
         );
         return false;
       }
+
+      // Signing is a remote Keycast round-trip (~0.3-1.4s measured), so the
+      // caller gets a step here rather than waiting out the whole phase. Kept
+      // below the null check so a failed signing cannot advance the bar.
+      onEventSigned?.call();
 
       if (upload.nostrEventId != event.id) {
         await _persistRetryableSignedEvent(upload, event);
