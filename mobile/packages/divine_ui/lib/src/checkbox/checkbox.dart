@@ -19,6 +19,14 @@ enum DivineCheckboxState {
 
 /// A 24x24 sprite-based checkbox that displays different states
 /// by showing different portions of a sprite image.
+///
+/// Two sprites share the same geometry and differ only in the unselected
+/// band's box fill — a dark green that reads as an empty box on a dark
+/// surface, and a pale one that does the same on a light surface. The
+/// selected and indeterminate bands are brand green in both, so they are
+/// identical across the pair. Keeping a single widget (rather than swapping
+/// in a drawn box for the unselected state) preserves the sliding
+/// state-transition animation.
 class DivineSpriteCheckbox extends StatelessWidget {
   /// Creates a sprite-based checkbox.
   const DivineSpriteCheckbox({
@@ -26,6 +34,12 @@ class DivineSpriteCheckbox extends StatelessWidget {
     this.animationDuration = const Duration(milliseconds: 100),
     super.key,
   });
+
+  /// Sprite used on the dark palette.
+  static const darkSpriteAsset = 'assets/icon/checkbox-sprite.svg';
+
+  /// Sprite used on the light palette.
+  static const lightSpriteAsset = 'assets/icon/checkbox-sprite-light.svg';
 
   /// The current state of the checkbox.
   final DivineCheckboxState state;
@@ -62,7 +76,9 @@ class DivineSpriteCheckbox extends StatelessWidget {
                 top: yOffset,
                 left: 0,
                 child: SvgPicture.asset(
-                  'assets/icon/checkbox-sprite.svg',
+                  context.vineColors.isLight
+                      ? lightSpriteAsset
+                      : darkSpriteAsset,
                   width: 24,
                   height: 72,
                 ),
@@ -168,7 +184,9 @@ class DivineRowCheckbox extends StatelessWidget {
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
               border: Border.all(
-                color: isSelected ? VineTheme.primary : VineTheme.outlineMuted,
+                color: isSelected
+                    ? VineTheme.primary
+                    : context.vineColors.outlineMuted,
               ),
               borderRadius: BorderRadius.circular(20),
             ),

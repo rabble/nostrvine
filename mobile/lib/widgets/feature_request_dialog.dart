@@ -81,10 +81,10 @@ class _FeatureRequestFormState extends State<_FeatureRequestForm> {
         final isSuccess = state.status == FeatureRequestStatus.success;
         final isFailure = state.status == FeatureRequestStatus.failure;
         return AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
+          backgroundColor: context.vineColors.card,
           title: Text(
             context.l10n.supportRequestFeature,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
           content: SizedBox(
             width: 400,
@@ -96,7 +96,7 @@ class _FeatureRequestFormState extends State<_FeatureRequestForm> {
                   TextField(
                     controller: _subjectController,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.supportSubjectRequiredLabel,
                       hint: context.l10n.featureRequestSubjectHint,
@@ -109,7 +109,7 @@ class _FeatureRequestFormState extends State<_FeatureRequestForm> {
                     controller: _descriptionController,
                     maxLines: 3,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label:
                           context.l10n.featureRequestDescriptionRequiredLabel,
@@ -123,7 +123,7 @@ class _FeatureRequestFormState extends State<_FeatureRequestForm> {
                     controller: _usefulnessController,
                     maxLines: 3,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.featureRequestUsefulnessLabel,
                       hint: context.l10n.featureRequestUsefulnessHint,
@@ -135,7 +135,7 @@ class _FeatureRequestFormState extends State<_FeatureRequestForm> {
                     controller: _whenToUseController,
                     maxLines: 2,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.featureRequestWhenLabel,
                       hint: context.l10n.featureRequestWhenHint,
@@ -172,7 +172,7 @@ class _FeatureRequestFormState extends State<_FeatureRequestForm> {
                 onPressed: isSubmitting ? null : context.pop,
                 child: Text(
                   context.l10n.commonCancel,
-                  style: const TextStyle(color: VineTheme.lightText),
+                  style: TextStyle(color: context.vineColors.mutedText),
                 ),
               ),
             ElevatedButton(

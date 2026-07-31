@@ -197,7 +197,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       body: Consumer(
         builder: (context, ref, child) {
           final webAuth = ref.watch(webAuthServiceProvider);
@@ -224,13 +224,15 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                                 const SizedBox(height: 24),
                                 Text(
                                   context.l10n.webAuthConnectTitle,
-                                  style: VineTheme.headlineLargeFont(),
+                                  style: VineTheme.headlineLargeFont(
+                                    color: context.vineColors.primaryText,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   context.l10n.webAuthChooseMethod,
                                   style: VineTheme.bodyLargeFont(
-                                    color: VineTheme.onSurfaceVariant,
+                                    color: context.vineColors.onSurfaceVariant,
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -296,7 +298,7 @@ class _Nip07AuthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.surfaceContainer,
+      color: context.vineColors.surfaceContainer,
       child: InkWell(
         onTap: isAuthenticating ? null : onTap,
         borderRadius: BorderRadius.circular(8),
@@ -328,7 +330,9 @@ class _Nip07AuthCard extends StatelessWidget {
                       children: [
                         Text(
                           context.l10n.webAuthBrowserExtension,
-                          style: VineTheme.titleSmallFont(),
+                          style: VineTheme.titleSmallFont(
+                            color: context.vineColors.primaryText,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Container(
@@ -353,25 +357,25 @@ class _Nip07AuthCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
               if (isAuthenticating)
-                const SizedBox(
+                SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: VineTheme.onSurface,
+                    color: context.vineColors.onSurface,
                   ),
                 )
               else
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.caretRight,
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                   size: 16,
                 ),
             ],
@@ -399,7 +403,7 @@ class _BunkerAuthCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.surfaceContainer,
+      color: context.vineColors.surfaceContainer,
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -425,12 +429,14 @@ class _BunkerAuthCard extends StatelessWidget {
                     children: [
                       Text(
                         context.l10n.webAuthNsecBunker,
-                        style: VineTheme.titleSmallFont(),
+                        style: VineTheme.titleSmallFont(
+                          color: context.vineColors.primaryText,
+                        ),
                       ),
                       Text(
                         context.l10n.webAuthConnectRemoteSigner,
                         style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurfaceVariant,
+                          color: context.vineColors.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -443,14 +449,16 @@ class _BunkerAuthCard extends StatelessWidget {
               controller: controller,
               enabled: !isAuthenticating,
               enableInteractiveSelection: true,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurface,
+              ),
               decoration: InputDecoration(
                 hintText: context.l10n.webAuthBunkerHint,
                 hintStyle: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceDisabled,
+                  color: context.vineColors.disabled,
                 ),
                 filled: true,
-                fillColor: VineTheme.surfaceBackground,
+                fillColor: context.vineColors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
@@ -460,9 +468,9 @@ class _BunkerAuthCard extends StatelessWidget {
                   children: [
                     IconButton(
                       onPressed: isAuthenticating ? null : onPaste,
-                      icon: const DivineIcon(
+                      icon: DivineIcon(
                         icon: DivineIconName.clipboard,
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                       tooltip: context.l10n.webAuthPasteFromClipboard,
                     ),
@@ -528,7 +536,7 @@ class _NostrHelpBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Builder(
@@ -544,14 +552,18 @@ class _NostrHelpBox extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.webAuthNewToNostr,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               context.l10n.webAuthNostrHelp,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ],
         ),

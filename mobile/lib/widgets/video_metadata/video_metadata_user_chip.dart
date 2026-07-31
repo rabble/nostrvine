@@ -86,16 +86,16 @@ class VideoMetadataUserChip extends ConsumerWidget {
               profileAsync.value?.bestDisplayName ?? _fallbackDisplay,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(color: VineTheme.whiteText),
             ),
           ),
           if (isLoading)
-            const SizedBox(
+            SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
               ),
             )
           else if (onRemove != null)
@@ -111,8 +111,8 @@ class VideoMetadataUserChip extends ConsumerWidget {
                   height: 16,
                   child: SvgPicture.asset(
                     DivineIconName.x.assetPath,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.onSurfaceMuted,
+                    colorFilter: ColorFilter.mode(
+                      context.vineColors.onSurfaceMuted,
                       BlendMode.srcIn,
                     ),
                   ),

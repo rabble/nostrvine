@@ -206,7 +206,7 @@ class SearchVideoTile extends StatelessWidget {
                   embeddedName: video.authorName,
                   maxLines: 1,
                   style: const TextStyle(
-                    color: VineTheme.whiteText,
+                    color: VineTheme.primaryText,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     shadows: [
@@ -237,7 +237,7 @@ class _VideosSkeletonLoader extends StatelessWidget {
         identifier: 'videos_loading_indicator',
         label: context.l10n.searchVideosLoadingLabel,
         child: Skeletonizer(
-          effect: vineSkeletonEffect,
+          effect: vineSkeletonEffectOf(context),
           child: GridView.count(
             crossAxisCount: 2,
             mainAxisSpacing: 4,
@@ -250,7 +250,7 @@ class _VideosSkeletonLoader extends StatelessWidget {
               (_) => Skeleton.leaf(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: VineTheme.skeletonSurface,
+                    color: context.vineColors.skeleton,
                     borderRadius: BorderRadius.circular(4),
                   ),
                 ),

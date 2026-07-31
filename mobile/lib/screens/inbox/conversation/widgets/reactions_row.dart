@@ -188,19 +188,19 @@ class _ReactionPill extends StatelessWidget {
         ownReaction?.publishStatus == DmReactionPublishStatus.failed;
 
     final background = isOwnFailed
-        ? VineTheme.errorContainer
+        ? context.vineColors.errorContainer
         : hasOwn
-        ? VineTheme.primaryDarkGreen
-        : VineTheme.containerLow;
+        ? context.vineColors.primaryContainer
+        : context.vineColors.containerLow;
     final borderColor = isOwnFailed
         ? VineTheme.error
         : hasOwn
         ? VineTheme.vineGreen
-        : VineTheme.outlineVariant;
+        : context.vineColors.outline;
     final borderRadius = BorderRadius.circular(_height / 2);
 
     final overflowStyle = VineTheme.labelSmallFont(
-      color: VineTheme.onSurface,
+      color: context.vineColors.onSurface,
     ).copyWith(fontSize: 11, height: 1);
 
     final rowChildren = <Widget>[
@@ -414,7 +414,7 @@ class _PillAvatar extends ConsumerWidget {
     final avatar = DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: VineTheme.whiteText, width: 1.5),
+        border: Border.all(color: context.vineColors.primaryText, width: 1.5),
       ),
       child: UserAvatar(
         imageUrl: profile?.picture,
@@ -440,14 +440,14 @@ class _ExtraReactorsCircle extends StatelessWidget {
       height: 20,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: VineTheme.containerLow,
-        border: Border.all(color: VineTheme.whiteText, width: 1.5),
+        color: context.vineColors.containerLow,
+        border: Border.all(color: context.vineColors.primaryText, width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
         '+$count',
         style: VineTheme.labelSmallFont(
-          color: VineTheme.onSurface,
+          color: context.vineColors.onSurface,
         ).copyWith(fontSize: 9, height: 1),
       ),
     );

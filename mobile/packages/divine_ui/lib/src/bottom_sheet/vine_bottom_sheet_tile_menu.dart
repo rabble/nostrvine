@@ -95,11 +95,12 @@ class _VineBottomSheetListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     final effectiveColor = data.onTap != null
         ? data.isDestructive
-              ? VineTheme.whiteText
+              ? colors.primaryText
               : VineTheme.error
-        : VineTheme.onSurfaceDisabled;
+        : colors.disabled;
 
     return ListTile(
       iconColor: effectiveColor,
@@ -116,7 +117,7 @@ class _VineBottomSheetListTile extends StatelessWidget {
       ),
       title: Text(
         data.label,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: colors.primaryText),
         maxLines: 1,
         overflow: .ellipsis,
       ),

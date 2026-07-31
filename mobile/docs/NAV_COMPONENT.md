@@ -232,9 +232,12 @@ appBar: VineAppBar(
   onBackPressed: () => _handleBackNavigation(context, ref),
   onSearchPressed: () => context.goSearch(),
   onCameraPressed: () => context.pushCamera(),
-  backgroundColor: getEnvironmentAppBarColor(environment),
 ),
 ```
+
+The app bar takes no `backgroundColor` here: it follows the active palette
+(`VineThemeColors.nav`), and the environment is signalled by the
+`EnvironmentBadge` next to the title rather than by tinting the bar.
 
 ### 4. Update Other Screens
 

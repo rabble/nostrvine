@@ -81,7 +81,7 @@ class _Segments extends ConsumerWidget {
             Container(
               height: 16,
               width: 2,
-              color: VineTheme.surfaceContainerHigh,
+              color: context.vineColors.surfaceContainerHigh,
             ),
           );
         }

@@ -140,7 +140,7 @@ class FeatureFlagScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.featureFlagAppRecoveryDescription,
-            style: const TextStyle(color: VineTheme.lightText),
+            style: TextStyle(color: context.vineColors.mutedText),
           ),
           const SizedBox(height: 12),
           Row(

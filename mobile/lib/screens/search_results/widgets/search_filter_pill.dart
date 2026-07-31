@@ -50,7 +50,7 @@ class _SearchFilterButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
@@ -100,7 +100,7 @@ class _VideoSearchSortButton extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(

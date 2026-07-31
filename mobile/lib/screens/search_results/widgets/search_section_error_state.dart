@@ -21,14 +21,16 @@ class SearchSectionErrorState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: 16,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.warningCircle,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               size: 48,
             ),
             Text(
               context.l10n.searchSomethingWentWrong,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             DivineButton(
               type: DivineButtonType.secondary,

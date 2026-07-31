@@ -49,7 +49,9 @@ class CategoryChip extends StatelessWidget {
           // Emoji renders with system font; only fontSize matters.
           Text(
             category.emoji,
-            style: VineTheme.titleMediumFont().copyWith(fontSize: 18),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ).copyWith(fontSize: 18),
           ),
           Flexible(
             child: Text(

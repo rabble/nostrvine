@@ -77,7 +77,7 @@ class VineBottomSheetHeader extends StatelessWidget {
                   width: 64,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: VineTheme.alphaLight25,
+                    color: context.vineColors.disabled,
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
@@ -99,7 +99,9 @@ class VineBottomSheetHeader extends StatelessWidget {
                       Flexible(
                         child: Center(
                           child: DefaultTextStyle(
-                            style: VineTheme.titleMediumFont(),
+                            style: VineTheme.titleMediumFont(
+                              color: context.vineColors.onSurface,
+                            ),
                             textAlign: .center,
                             child: title!,
                           ),
@@ -123,10 +125,10 @@ class VineBottomSheetHeader extends StatelessWidget {
 
         // Divider separating header from content
         if (showDivider)
-          const Divider(
+          Divider(
             height: 2,
             thickness: 2,
-            color: VineTheme.outlinedDisabled,
+            color: context.vineColors.surfaceContainer,
           ),
       ],
     );

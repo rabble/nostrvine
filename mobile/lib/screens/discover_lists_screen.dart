@@ -377,7 +377,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.discoverListsTitle,
         showBackButton: true,
@@ -402,8 +402,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             const SizedBox(height: 16),
             Text(
               context.l10n.discoverListsLoading,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
               ),
             ),
@@ -436,8 +436,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _errorMessage!,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
@@ -448,12 +448,12 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
               onPressed: _streamPublicLists,
               icon: const DivineIcon(
                 icon: DivineIconName.arrowClockwise,
-                color: VineTheme.backgroundColor,
+                color: VineTheme.onPrimary,
               ),
               label: Text(context.l10n.commonRetry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.backgroundColor,
+                foregroundColor: context.vineColors.background,
               ),
             ),
           ],
@@ -466,16 +466,16 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.search,
               size: 64,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             const SizedBox(height: 16),
             Text(
               context.l10n.discoverListsEmptyTitle,
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -483,8 +483,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
             const SizedBox(height: 8),
             Text(
               context.l10n.discoverListsEmptySubtitle,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
               ),
             ),
@@ -533,7 +533,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
         false;
 
     return Card(
-      color: VineTheme.cardBackground,
+      color: context.vineColors.card,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: () {
@@ -573,8 +573,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                       children: [
                         Text(
                           list.name,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -583,8 +583,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                           const SizedBox(height: 4),
                           Text(
                             list.description!,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 14,
                             ),
                             maxLines: 2,
@@ -603,11 +603,11 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                       onPressed: () => _toggleSubscription(list),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isSubscribed
-                            ? VineTheme.cardBackground
+                            ? context.vineColors.card
                             : VineTheme.vineGreen,
                         foregroundColor: isSubscribed
                             ? VineTheme.vineGreen
-                            : VineTheme.backgroundColor,
+                            : context.vineColors.background,
                         side: isSubscribed
                             ? const BorderSide(color: VineTheme.vineGreen)
                             : null,
@@ -623,7 +623,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                         size: 20,
                         color: isSubscribed
                             ? VineTheme.vineGreen
-                            : VineTheme.backgroundColor,
+                            : context.vineColors.background,
                       ),
                     ),
                   ),
@@ -636,8 +636,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                   if (list.pubkey != null) ...[
                     Text(
                       context.l10n.discoverListsByAuthorPrefix,
-                      style: const TextStyle(
-                        color: VineTheme.secondaryText,
+                      style: TextStyle(
+                        color: context.vineColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -656,10 +656,10 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       '•',
                       style: TextStyle(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),
@@ -667,17 +667,17 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                   ],
                   Text(
                     context.l10n.listVideoCount(list.videoEventIds.length),
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 12,
                     ),
                   ),
                   if (list.tags.isNotEmpty) ...[
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       '•',
                       style: TextStyle(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),

@@ -60,7 +60,7 @@ class _BannerContent extends StatelessWidget {
             icon: DivineIcon(
               icon: DivineIconName.x,
               size: 18,
-              color: VineTheme.lightText.withValues(alpha: 0.6),
+              color: context.vineColors.mutedText.withValues(alpha: 0.6),
             ),
             onPressed: () {
               context.read<AppUpdateBloc>().add(const AppUpdateDismissed());

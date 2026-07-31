@@ -160,7 +160,7 @@ class _StabilizationButton extends StatelessWidget {
       context: context,
       title: Text(
         l10n.videoRecorderStabilizationLabel,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       selectedValue: state.videoStabilizationMode.toNativeString(),
       options: [

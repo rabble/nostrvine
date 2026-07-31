@@ -67,14 +67,15 @@ class DivineSnackbarContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = VineTheme.labelLargeFont();
+    final colors = context.vineColors;
+    final textStyle = VineTheme.labelLargeFont(color: colors.primaryText);
     final hasSecondary =
         secondaryActionLabel != null && onSecondaryActionPressed != null;
     late final Widget bannerText;
     if (error) {
       bannerText = Text(
         label,
-        style: textStyle.copyWith(color: VineTheme.likeRed),
+        style: textStyle.copyWith(color: colors.onErrorContainer),
       );
     } else {
       bannerText = Text(label, style: textStyle);
@@ -82,7 +83,7 @@ class DivineSnackbarContainer extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: error ? VineTheme.errorContainer : VineTheme.cardBackground,
+        color: error ? colors.errorContainer : colors.card,
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Padding(

@@ -16,7 +16,7 @@ class CommentsDragHandle extends StatelessWidget {
       height: 4,
       margin: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: VineTheme.onSurfaceMuted,
+        color: context.vineColors.onSurfaceMuted,
         borderRadius: BorderRadius.circular(2),
       ),
     ),

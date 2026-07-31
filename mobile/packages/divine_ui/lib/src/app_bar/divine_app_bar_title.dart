@@ -124,7 +124,7 @@ class _TitleContent extends StatelessWidget {
               child: SvgPicture.asset(
                 DiVineAppBarTitle.caretDownAsset,
                 colorFilter: ColorFilter.mode(
-                  style.iconColor ?? VineTheme.whiteText,
+                  style.foregroundColor ?? context.vineColors.onNav,
                   BlendMode.srcIn,
                 ),
               ),
@@ -155,7 +155,11 @@ class _TitleText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: style.titleStyle ?? VineTheme.titleLargeFont(),
+      style:
+          style.titleStyle ??
+          VineTheme.titleLargeFont(
+            color: style.foregroundColor ?? context.vineColors.onNav,
+          ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -177,7 +181,11 @@ class _SubtitleText extends StatelessWidget {
       subtitle,
       style:
           style.subtitleStyle ??
-          VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+          VineTheme.bodySmallFont(
+            // 75% matches the dark-mode `onSurfaceVariant` this replaced.
+            color: (style.foregroundColor ?? context.vineColors.onNav)
+                .withValues(alpha: 0.75),
+          ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );

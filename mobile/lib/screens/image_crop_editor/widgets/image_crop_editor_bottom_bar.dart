@@ -28,7 +28,7 @@ class ImageCropEditorBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return ColoredBox(
-      color: VineTheme.surfaceBackground,
+      color: context.vineColors.surface,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -87,10 +87,12 @@ class _CropAction extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               spacing: 4,
               children: [
-                DivineIcon(icon: icon, color: VineTheme.lightText),
+                DivineIcon(icon: icon, color: context.vineColors.mutedText),
                 Text(
                   label,
-                  style: VineTheme.labelSmallFont(color: VineTheme.lightText),
+                  style: VineTheme.labelSmallFont(
+                    color: context.vineColors.mutedText,
+                  ),
                 ),
               ],
             ),

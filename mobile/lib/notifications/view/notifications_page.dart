@@ -41,9 +41,9 @@ class NotificationsPage extends ConsumerWidget {
 
     // Dependencies not yet available (e.g. ProfileRepository during auth).
     if (notificationRepository == null) {
-      return const ColoredBox(
-        color: VineTheme.backgroundColor,
-        child: Center(
+      return ColoredBox(
+        color: context.vineColors.background,
+        child: const Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
       );

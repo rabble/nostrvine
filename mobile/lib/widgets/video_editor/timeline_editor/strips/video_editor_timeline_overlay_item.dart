@@ -181,14 +181,18 @@ class _OverlaySelectionOverlay extends StatelessWidget {
       case OverlayMultiSelectState.disabled:
         return DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.backgroundColor.withValues(alpha: 0.6),
+            color: context.vineColors.surfaceContainerHigh.withValues(
+              alpha: 0.6,
+            ),
             borderRadius: radius,
           ),
         );
       case OverlayMultiSelectState.unselected:
         return DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.backgroundColor.withValues(alpha: 0.35),
+            color: context.vineColors.surfaceContainerHigh.withValues(
+              alpha: 0.35,
+            ),
             borderRadius: radius,
           ),
         );

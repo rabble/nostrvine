@@ -37,7 +37,7 @@ abstract class ReactionsDetailSheet {
       context: context,
       title: Text(
         context.l10n.dmReactionsSheetTitle,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       initialChildSize: 0.5,
       maxChildSize: 0.85,
@@ -182,7 +182,9 @@ class _ReactorRow extends ConsumerWidget {
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           trailing: _Trailing(
             emoji: reaction.emoji,
@@ -250,12 +252,12 @@ class _Trailing extends StatelessWidget {
 
     final Widget action;
     if (isPending) {
-      action = const SizedBox(
+      action = SizedBox(
         width: 16,
         height: 16,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: VineTheme.onSurfaceVariant,
+          color: context.vineColors.onSurfaceVariant,
         ),
       );
     } else if (isFailed) {
@@ -267,7 +269,7 @@ class _Trailing extends StatelessWidget {
     } else {
       action = _ActionLabel(
         text: context.l10n.dmReactionRemoveAction,
-        color: VineTheme.onSurfaceVariant,
+        color: context.vineColors.onSurfaceVariant,
       );
     }
 

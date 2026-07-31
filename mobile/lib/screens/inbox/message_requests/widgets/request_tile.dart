@@ -70,9 +70,9 @@ class RequestTile extends ConsumerWidget {
         },
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+              bottom: BorderSide(color: context.vineColors.outlineDisabled),
             ),
           ),
           child: Padding(
@@ -98,7 +98,9 @@ class RequestTile extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               displayName,
-                              style: VineTheme.titleMediumFont(),
+                              style: VineTheme.titleMediumFont(
+                                color: context.vineColors.primaryText,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -108,7 +110,7 @@ class RequestTile extends ConsumerWidget {
                             Text(
                               relativeTime,
                               style: VineTheme.bodyMediumFont(
-                                color: VineTheme.onSurfaceMuted,
+                                color: context.vineColors.onSurfaceMuted,
                               ),
                             ),
                           ],
@@ -122,7 +124,7 @@ class RequestTile extends ConsumerWidget {
                       Text(
                         context.l10n.inboxRequestTileSubtitle,
                         style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurfaceVariant,
+                          color: context.vineColors.onSurfaceVariant,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

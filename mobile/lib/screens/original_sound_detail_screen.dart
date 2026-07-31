@@ -58,12 +58,12 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.soundTitle,
         showBackButton: true,
         onBackPressed: context.safePop,
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
       ),
       body: Semantics(
         identifier: 'original_sound_detail_screen',
@@ -78,7 +78,7 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
               videoThumbnailUrl: sourceVideo?.thumbnailUrl,
             ),
 
-            const Divider(color: VineTheme.cardBackground, height: 1),
+            Divider(color: context.vineColors.card, height: 1),
 
             // Info section
             Expanded(
@@ -91,13 +91,15 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
                       Icon(
                         Icons.music_off_outlined,
                         size: 64,
-                        color: VineTheme.lightText.withValues(alpha: 0.5),
+                        color: context.vineColors.mutedText.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Text(
                         context.l10n.audioAttributionOriginalSound,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
+                        style: TextStyle(
+                          color: context.vineColors.primaryText,
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
                         ),
@@ -105,8 +107,8 @@ class OriginalSoundDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         context.l10n.originalSoundUnavailableBody,
-                        style: const TextStyle(
-                          color: VineTheme.onSurfaceMuted,
+                        style: TextStyle(
+                          color: context.vineColors.onSurfaceMuted,
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -141,7 +143,7 @@ class _OriginalSoundHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: VineTheme.cardBackground,
+      color: context.vineColors.card,
       child: Row(
         children: [
           // Sound icon with thumbnail or placeholder
@@ -176,8 +178,8 @@ class _OriginalSoundHeader extends StatelessWidget {
               children: [
                 Text(
                   context.l10n.originalSoundByCreator(creatorName),
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -187,8 +189,8 @@ class _OriginalSoundHeader extends StatelessWidget {
                 if (videoTitle != null && videoTitle!.isNotEmpty)
                   Text(
                     videoTitle!,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                     maxLines: 1,

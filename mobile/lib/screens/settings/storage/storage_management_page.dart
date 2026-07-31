@@ -55,7 +55,7 @@ class StorageManagementView extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: BlocListener<StorageCubit, StorageState>(
         listenWhen: (prev, curr) =>
             prev.cacheStatus != curr.cacheStatus ||
@@ -144,13 +144,17 @@ class _CacheSection extends StatelessWidget {
         children: [
           Text(
             l10n.settingsStorageCacheDescription,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           Text(
             busy
                 ? l10n.settingsStorageMeasuring
                 : l10n.settingsStorageCacheInUse(_formatBytes(bytes)),
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const _CacheLimitControl(),
           DivineButton(
@@ -178,7 +182,9 @@ class _CacheSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
             l10n.settingsStorageClearConfirmMessage(_formatBytes(bytes)),
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
         ),
         Padding(
@@ -231,7 +237,9 @@ class _CacheLimitControl extends StatelessWidget {
           children: [
             Text(
               l10n.settingsStorageMaxSizeLabel,
-              style: VineTheme.bodyMediumFont(),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             Text(
               _formatBytes(limit),
@@ -251,7 +259,7 @@ class _CacheLimitControl extends StatelessWidget {
         ),
         Text(
           l10n.settingsStorageApproxVideos(approxVideos),
-          style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+          style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
         ),
       ],
     );
@@ -280,7 +288,9 @@ class _LibrarySection extends StatelessWidget {
         children: [
           Text(
             l10n.settingsStorageLibraryDescription,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           if (status == StorageLibraryStatus.scanned && brokenCount == 0 ||
               status == StorageLibraryStatus.cleaned)
@@ -291,7 +301,9 @@ class _LibrarySection extends StatelessWidget {
           else if (status == StorageLibraryStatus.scanned && brokenCount > 0)
             Text(
               l10n.settingsStorageBrokenClipsFound(brokenCount),
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
           if (status == StorageLibraryStatus.scanned && brokenCount > 0)
             DivineButton(

@@ -173,8 +173,8 @@ class _WelcomeView extends StatelessWidget {
         final isReturningUser = state.hasReturningUsers;
         return Scaffold(
           backgroundColor: isReturningUser
-              ? VineTheme.navGreen
-              : VineTheme.backgroundColor,
+              ? context.vineColors.nav
+              : context.vineColors.background,
           appBar: isReturningUser
               ? DiVineAppBar(
                   title: '',
@@ -232,7 +232,9 @@ class _NewUserLayout extends StatelessWidget {
           Text(
             context.l10n.authMinAgeNotice,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           const _Under16Choices(),
@@ -467,13 +469,17 @@ class _ReturningUserProfile extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           displayName,
-          style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+          style: VineTheme.headlineSmallFont(
+            color: context.vineColors.onSurface,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
         Text(
           identifier,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
         ),
       ],
@@ -550,8 +556,8 @@ class _TermsNoticeState extends State<_TermsNotice> {
 
   @override
   Widget build(BuildContext context) {
-    const linkStyle = TextStyle(
-      color: VineTheme.whiteText,
+    final linkStyle = TextStyle(
+      color: context.vineColors.primaryText,
       decoration: TextDecoration.underline,
       decorationColor: VineTheme.vineGreen,
     );
@@ -560,7 +566,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
       textAlign: TextAlign.center,
       textScaler: MediaQuery.textScalerOf(context),
       text: TextSpan(
-        style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
         children: [
           TextSpan(text: context.l10n.authTermsPrefix),
           TextSpan(
@@ -630,7 +636,9 @@ class _Under16ChoicesState extends State<_Under16Choices> {
         textAlign: TextAlign.center,
         textScaler: MediaQuery.textScalerOf(context),
         text: TextSpan(
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
           children: [
             TextSpan(text: context.l10n.authUnder16Prefix),
             TextSpan(

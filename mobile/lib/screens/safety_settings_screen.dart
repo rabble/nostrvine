@@ -81,7 +81,7 @@ class SafetySettingsView extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -153,15 +153,15 @@ class _ContentFiltersTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.contentPreferencesContentFilters,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.contentPreferencesContentFiltersSubtitle,
-        style: const TextStyle(color: VineTheme.secondaryText),
+        style: TextStyle(color: context.vineColors.secondaryText),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
       onTap: () => context.push(ContentFiltersScreen.path),
     );
@@ -190,16 +190,16 @@ class _AgeVerificationTile extends StatelessWidget {
             },
       title: Text(
         context.l10n.safetySettingsAgeConfirmation,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         isLocked
             ? context.l10n.safetySettingsAgeLockedForMinor
             : context.l10n.safetySettingsAgeRequired,
-        style: const TextStyle(color: VineTheme.secondaryText),
+        style: TextStyle(color: context.vineColors.secondaryText),
       ),
       activeColor: VineTheme.vineGreen,
-      checkColor: VineTheme.backgroundColor,
+      checkColor: context.vineColors.background,
       controlAffinity: ListTileControlAffinity.leading,
     );
   }
@@ -223,11 +223,11 @@ class _DivineHostedOnlyTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.safetySettingsShowDivineHostedOnly,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.safetySettingsShowDivineHostedOnlySubtitle,
-        style: const TextStyle(color: VineTheme.secondaryText),
+        style: TextStyle(color: context.vineColors.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
     );
@@ -249,11 +249,11 @@ class _DivineProviderTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.safetySettingsDivine,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.safetySettingsDivineSubtitle,
-        style: const TextStyle(color: VineTheme.secondaryText),
+        style: TextStyle(color: context.vineColors.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
     );
@@ -274,16 +274,16 @@ class _PeopleIFollowProviderTile extends StatelessWidget {
           context.read<SafetySettingsCubit>().setPeopleIFollowEnabled(value),
       title: Text(
         context.l10n.safetySettingsPeopleIFollow,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.safetySettingsPeopleIFollowSubtitle,
-        style: const TextStyle(color: VineTheme.secondaryText),
+        style: TextStyle(color: context.vineColors.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: DivineIcon(
         icon: DivineIconName.users,
-        color: isEnabled ? VineTheme.vineGreen : VineTheme.onSurfaceDisabled,
+        color: isEnabled ? VineTheme.vineGreen : context.vineColors.disabled,
       ),
     );
   }
@@ -301,20 +301,20 @@ class _CustomLabelersSection extends StatelessWidget {
       children: [
         ...customLabelers.map(
           (pubkey) => ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.label_outline,
-              color: VineTheme.onSurfaceDisabled,
+              color: context.vineColors.disabled,
             ),
             title: Text(
               NostrKeyUtils.truncateNpub(pubkey),
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             trailing: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.remove_circle_outline,
-                color: VineTheme.secondaryText,
+                color: context.vineColors.secondaryText,
               ),
               onPressed: () =>
                   context.read<SafetySettingsCubit>().removeLabeler(pubkey),
@@ -322,17 +322,17 @@ class _CustomLabelersSection extends StatelessWidget {
           ),
         ),
         ListTile(
-          leading: const Icon(
+          leading: Icon(
             Icons.add_circle_outline,
-            color: VineTheme.onSurfaceDisabled,
+            color: context.vineColors.disabled,
           ),
           title: Text(
             context.l10n.safetySettingsAddCustomLabelerListTitle,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
           subtitle: Text(
             context.l10n.safetySettingsAddCustomLabelerListSubtitle,
-            style: const TextStyle(color: VineTheme.secondaryText),
+            style: TextStyle(color: context.vineColors.secondaryText),
           ),
           onTap: () => _showAddLabelerDialog(context),
         ),
@@ -371,19 +371,19 @@ class _AddLabelerDialogState extends State<_AddLabelerDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       title: Text(
         context.l10n.safetySettingsAddCustomLabeler,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       content: TextField(
         controller: _controller,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
         decoration: InputDecoration(
           hintText: context.l10n.safetySettingsAddCustomLabelerHint,
-          hintStyle: const TextStyle(color: VineTheme.secondaryText),
-          enabledBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: VineTheme.secondaryText),
+          hintStyle: TextStyle(color: context.vineColors.secondaryText),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(color: context.vineColors.secondaryText),
           ),
           focusedBorder: const UnderlineInputBorder(
             borderSide: BorderSide(color: VineTheme.vineGreen),
@@ -395,7 +395,7 @@ class _AddLabelerDialogState extends State<_AddLabelerDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(
             context.l10n.safetySettingsCancel,
-            style: const TextStyle(color: VineTheme.secondaryText),
+            style: TextStyle(color: context.vineColors.secondaryText),
           ),
         ),
         TextButton(
@@ -423,8 +423,8 @@ class _BlockedUsersSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Text(
           context.l10n.safetySettingsNoBlockedUsers,
-          style: const TextStyle(
-            color: VineTheme.secondaryText,
+          style: TextStyle(
+            color: context.vineColors.secondaryText,
             fontStyle: FontStyle.italic,
           ),
         ),
@@ -476,7 +476,7 @@ class _BlockedUserTile extends ConsumerWidget {
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: VineTheme.onSurfaceDisabled),
+          border: Border.all(color: context.vineColors.disabled),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(11),
@@ -508,13 +508,13 @@ class _BlockedUserTile extends ConsumerWidget {
       ),
       title: Text(
         displayName,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         truncatedNpub,
-        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),

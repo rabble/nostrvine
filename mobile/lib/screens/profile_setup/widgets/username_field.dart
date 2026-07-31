@@ -45,15 +45,13 @@ class _UsernameFieldState extends State<UsernameField> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                left: 16,
-              ),
+              padding: const EdgeInsets.only(left: 16),
               child: Text(
                 context.l10n.profileSetupUsernameLabel,
                 style: VineTheme.labelMediumFont(
                   color: _focusNode.hasFocus && !isExternal
                       ? VineTheme.primary
-                      : VineTheme.onSurfaceMuted,
+                      : context.vineColors.onSurfaceMuted,
                 ),
               ),
             ),
@@ -63,37 +61,33 @@ class _UsernameFieldState extends State<UsernameField> {
               enabled: !isExternal,
               style: VineTheme.bodyLargeFont(
                 color: isExternal
-                    ? VineTheme.onSurfaceMuted
-                    : VineTheme.onSurface,
+                    ? context.vineColors.onSurfaceMuted
+                    : context.vineColors.onSurface,
               ),
               autovalidateMode: AutovalidateMode.onUserInteraction,
               decoration: InputDecoration(
                 isCollapsed: true,
                 hintText: context.l10n.profileSetupUsernameHint,
                 helperText: context.l10n.profileSetupUsernameHelper,
-                helperStyle: const TextStyle(
-                  color: VineTheme.onSurfaceMuted,
+                helperStyle: TextStyle(
+                  color: context.vineColors.onSurfaceMuted,
                   fontSize: 12,
                 ),
-                hintStyle: const TextStyle(
-                  color: VineTheme.onSurfaceMuted,
-                ),
-                border: profileFieldBorder,
-                enabledBorder: profileFieldBorder,
-                disabledBorder: profileFieldBorder,
-                focusedBorder: profileFieldBorder,
-                errorBorder: profileFieldBorder,
-                focusedErrorBorder: profileFieldBorder,
-                contentPadding: const EdgeInsets.all(
-                  16,
-                ),
+                hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
+                border: profileFieldBorderOf(context),
+                enabledBorder: profileFieldBorderOf(context),
+                disabledBorder: profileFieldBorderOf(context),
+                focusedBorder: profileFieldBorderOf(context),
+                errorBorder: profileFieldBorderOf(context),
+                focusedErrorBorder: profileFieldBorderOf(context),
+                contentPadding: const EdgeInsets.all(16),
                 prefixText: '@',
                 prefixStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 suffixText: '.divine.video',
                 suffixStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 errorMaxLines: 2,
               ),
@@ -106,9 +100,7 @@ class _UsernameFieldState extends State<UsernameField> {
               // for a typed capital letter.
               inputFormatters: [
                 const LowercaseTextInputFormatter(),
-                FilteringTextInputFormatter.allow(
-                  RegExp('[a-z0-9-]'),
-                ),
+                FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
               ],
               textInputAction: TextInputAction.next,
               onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),

@@ -41,8 +41,8 @@ class _AccountContentLabelsTileView extends StatelessWidget {
           ),
           title: Text(
             context.l10n.contentPreferencesAccountLabels,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -56,11 +56,11 @@ class _AccountContentLabelsTileView extends StatelessWidget {
                       )
                       .join(', ')
                 : context.l10n.contentPreferencesAccountLabelsEmpty,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
           ),
-          trailing: const DivineIcon(
+          trailing: DivineIcon(
             icon: DivineIconName.caretRight,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           onTap: () => _selectLabels(context, state.labels),
         );
@@ -75,7 +75,7 @@ class _AccountContentLabelsTileView extends StatelessWidget {
     final cubit = context.read<AccountContentLabelsCubit>();
     final result = await showModalBottomSheet<Set<ContentLabel>>(
       context: context,
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -140,7 +140,7 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -155,7 +155,9 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                       context.l10n.contentPreferencesAccountContentLabels,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: VineTheme.titleLargeFont(),
+                      style: VineTheme.titleLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                   ),
                   if (_selected.isNotEmpty)
@@ -173,8 +175,8 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 context.l10n.contentPreferencesSelectAllThatApply,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 13,
                 ),
               ),
@@ -192,8 +194,8 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                     onChanged: (_) => _toggle(label),
                     title: Text(
                       localizedContentLabelName(context.l10n, label),
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 15,
                       ),
                     ),

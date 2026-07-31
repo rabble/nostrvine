@@ -51,7 +51,7 @@ class _MinorAccountReviewParentContactScreenState
         onBackPressed: () =>
             context.safePop(fallback: MinorAccountReviewScreen.path),
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -194,12 +194,16 @@ class _ParentContactBody extends StatelessWidget {
             children: [
               Text(
                 l10n.minorAccountReviewParentContactHeading,
-                style: VineTheme.headlineMediumFont(),
+                style: VineTheme.headlineMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
                 l10n.minorAccountReviewParentContactBody(reviewCase.id),
-                style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.mutedText,
+                ),
               ),
               const SizedBox(height: 24),
               DivineAuthTextField(
@@ -262,12 +266,16 @@ class _SuccessView extends StatelessWidget {
         children: [
           Text(
             context.l10n.minorAccountReviewSubmissionReceivedTitle,
-            style: VineTheme.headlineMediumFont(),
+            style: VineTheme.headlineMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             context.l10n.minorAccountReviewSubmissionReceivedBody(email),
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           const SizedBox(height: 24),
           DivineButton(
@@ -304,7 +312,9 @@ class _MissingCaseView extends StatelessWidget {
           children: [
             Text(
               context.l10n.minorAccountReviewMissingCase,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -333,7 +343,9 @@ class _UnsupportedCaseView extends StatelessWidget {
           children: [
             Text(
               context.l10n.minorAccountReviewUnder13SupportBody,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -364,13 +376,17 @@ class _ParentContactLoadErrorView extends StatelessWidget {
         children: [
           Text(
             context.l10n.minorAccountReviewErrorTitle,
-            style: VineTheme.titleMediumFont(),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
             context.l10n.minorAccountReviewErrorBody,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),

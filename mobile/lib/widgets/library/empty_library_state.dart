@@ -40,24 +40,31 @@ class EmptyLibraryState extends StatelessWidget {
             Container(
               width: 120,
               height: 120,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: VineTheme.cardBackground,
+                color: context.vineColors.card,
               ),
               child: Center(
                 child: DivineIcon(
                   icon: icon,
                   size: 48,
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            Text(title, style: VineTheme.headlineSmallFont()),
+            Text(
+              title,
+              style: VineTheme.headlineSmallFont(
+                color: context.vineColors.primaryText,
+              ),
+            ),
             const SizedBox(height: 8),
             Text(
               subtitle,
-              style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.secondaryText,
+              ),
               textAlign: .center,
             ),
             if (showRecordButton) ...[

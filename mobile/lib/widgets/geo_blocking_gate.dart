@@ -59,11 +59,13 @@ class _GeoBlockingGateState extends ConsumerState<GeoBlockingGate> {
   Widget build(BuildContext context) {
     // Show loading indicator while checking
     if (_isChecking) {
-      return const ColoredBox(
-        color: VineTheme.backgroundColor,
+      return ColoredBox(
+        color: context.vineColors.background,
         child: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(VineTheme.whiteText),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              context.vineColors.primaryText,
+            ),
           ),
         ),
       );

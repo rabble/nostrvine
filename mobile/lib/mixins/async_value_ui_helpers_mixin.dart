@@ -59,9 +59,9 @@ class _DefaultAsyncLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.backgroundColor,
-      child: Center(
+    return ColoredBox(
+      color: context.vineColors.background,
+      child: const Center(
         child: CircularProgressIndicator(color: VineTheme.vineGreen),
       ),
     );
@@ -93,7 +93,7 @@ class _DefaultAsyncError extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               context.l10n.commonSomethingWentWrong,
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
               textAlign: TextAlign.center,
             ),
           ),

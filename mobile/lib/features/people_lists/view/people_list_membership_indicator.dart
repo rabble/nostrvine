@@ -50,7 +50,7 @@ class PeopleListMembershipIndicator extends ConsumerWidget {
 
     return Text(
       context.l10n.peopleListsInNLists(count),
-      style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
+      style: VineTheme.labelSmallFont(color: context.vineColors.secondaryText),
     );
   }
 }

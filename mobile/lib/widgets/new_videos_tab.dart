@@ -257,16 +257,16 @@ class _NewVideosEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.video_library,
             size: 64,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.newVideosTabEmptyTitle,
-            style: const TextStyle(
-              color: VineTheme.primaryText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -274,8 +274,8 @@ class _NewVideosEmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.newVideosTabEmptySubtitle,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 14,
             ),
           ),
@@ -310,8 +310,8 @@ class _NewVideosErrorState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$error',
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 12,
             ),
           ),

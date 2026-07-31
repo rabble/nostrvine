@@ -58,7 +58,7 @@ class _DisplayNameFieldState extends State<DisplayNameField> {
             style: VineTheme.labelMediumFont(
               color: widget.focusNode.hasFocus
                   ? VineTheme.primary
-                  : VineTheme.onSurfaceMuted,
+                  : context.vineColors.onSurfaceMuted,
             ),
           ),
         ),
@@ -66,21 +66,21 @@ class _DisplayNameFieldState extends State<DisplayNameField> {
           controller: widget.controller,
           focusNode: widget.focusNode,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           decoration: InputDecoration(
             isCollapsed: true,
             hintText: context.l10n.profileSetupDisplayNameHint,
             helperText: context.l10n.profileSetupDisplayNameHelper,
-            helperStyle: const TextStyle(
-              color: VineTheme.onSurfaceMuted,
+            helperStyle: TextStyle(
+              color: context.vineColors.onSurfaceMuted,
               fontSize: 12,
             ),
-            hintStyle: profileFieldHintStyle,
-            border: profileFieldBorder,
-            enabledBorder: profileFieldBorder,
-            focusedBorder: profileFieldBorder,
-            errorBorder: profileFieldBorder,
-            focusedErrorBorder: profileFieldBorder,
+            hintStyle: profileFieldHintStyleOf(context),
+            border: profileFieldBorderOf(context),
+            enabledBorder: profileFieldBorderOf(context),
+            focusedBorder: profileFieldBorderOf(context),
+            errorBorder: profileFieldBorderOf(context),
+            focusedErrorBorder: profileFieldBorderOf(context),
             contentPadding: const EdgeInsets.all(16),
           ),
           textInputAction: TextInputAction.next,

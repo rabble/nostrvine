@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 /// A labeled section in the metadata expanded sheet.
 ///
 /// Each section has:
-/// - A bottom border in [VineTheme.outlineDisabled]
+/// - A bottom border in the semantic `outlineDisabled` color
 /// - 16px padding on all sides
-/// - A small label in [VineTheme.onSurfaceVariant]
+/// - A small label in the semantic `onSurfaceVariant` color
 /// - 16px gap between label and content
 ///
 /// Sections conditionally render: pass `null` to [child] or wrap the
@@ -26,8 +26,10 @@ class MetadataSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -38,7 +40,7 @@ class MetadataSection extends StatelessWidget {
             Text(
               label,
               style: VineTheme.labelSmallFont(
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
               ),
             ),
             child,

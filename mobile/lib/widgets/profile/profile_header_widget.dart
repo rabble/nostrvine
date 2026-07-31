@@ -350,7 +350,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
           // during the loading window (#4183 review).
           Skeletonizer(
             enabled: showIdentitySkeleton,
-            effect: vineSkeletonEffect,
+            effect: vineSkeletonEffectOf(context),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

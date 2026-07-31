@@ -39,13 +39,17 @@ class BlockConfirmationView extends StatelessWidget {
           // Title
           Text(
             context.l10n.profileBlockTitle(displayName),
-            style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
+            style: VineTheme.titleLargeFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           // Explanation content
           Text(
             context.l10n.profileBlockExplanation,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 8),
           Padding(

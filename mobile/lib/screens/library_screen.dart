@@ -489,11 +489,11 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
               : null;
 
           return Scaffold(
-            backgroundColor: VineTheme.onPrimary,
+            backgroundColor: context.vineColors.surface,
             body: Stack(
               children: [
                 Material(
-                  color: VineTheme.onPrimary,
+                  color: context.vineColors.surface,
                   child: SafeArea(
                     bottom: false,
                     child: Column(
@@ -579,7 +579,9 @@ class _LibraryViewState extends ConsumerState<_LibraryView>
                           if (isPreparing)
                             Text(
                               context.l10n.libraryPreparingVideo,
-                              style: VineTheme.bodyMediumFont(),
+                              style: VineTheme.bodyMediumFont(
+                                color: context.vineColors.primaryText,
+                              ),
                             ),
                         ],
                       ),
@@ -622,7 +624,7 @@ class _LibraryContent extends StatelessWidget {
         Radius.circular(VineTheme.shellInnerCornerRadius),
       ),
       child: ColoredBox(
-        color: VineTheme.surfaceContainerHigh,
+        color: context.vineColors.surfaceContainerHigh,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -637,12 +639,14 @@ class _LibraryContent extends StatelessWidget {
                 indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: VineTheme.transparent,
-                labelColor: VineTheme.whiteText,
-                unselectedLabelColor: VineTheme.onSurfaceMuted55,
+                labelColor: context.vineColors.primaryText,
+                unselectedLabelColor: context.vineColors.onSurfaceMuted,
                 labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                labelStyle: VineTheme.titleMediumFont(),
+                labelStyle: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
                 unselectedLabelStyle: VineTheme.titleMediumFont(
-                  color: VineTheme.onSurfaceMuted55,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 tabs: [
                   Tab(text: context.l10n.libraryTabDrafts),
@@ -695,7 +699,7 @@ class _CreateVideoBar extends StatelessWidget {
           ? SafeArea(
               top: false,
               child: ColoredBox(
-                color: VineTheme.onPrimary,
+                color: context.vineColors.surface,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: DivineButton(
@@ -718,13 +722,15 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.onPrimary,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: context.l10n.profileMyLibraryLabel,
-        backgroundColor: VineTheme.onPrimary,
+        // No background override: the default `nav` surface already matches
+        // the scaffold's `surface` in both appearance modes, so the bar stays
+        // flush with the page.
         surfaceTintColor: VineTheme.transparent,
-        shape: const Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
+        shape: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
         ),
         showBackButton: true,
         onBackPressed: () {
@@ -745,12 +751,16 @@ class _LibraryWebUnavailableScreen extends StatelessWidget {
               Text(
                 context.l10n.libraryWebUnavailableHeadline,
                 textAlign: TextAlign.center,
-                style: VineTheme.titleMediumFont(),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               Text(
                 context.l10n.libraryWebUnavailableDescription,
                 textAlign: TextAlign.center,
-                style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.secondaryText,
+                ),
               ),
             ],
           ),

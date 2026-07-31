@@ -115,9 +115,10 @@ class _OverlayReplyLink extends StatelessWidget {
               Flexible(
                 child: Text(
                   label,
-                  style: VineTheme.labelSmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
+                  style: VineTheme.labelSmallFont(color: VineTheme.whiteText)
+                      .copyWith(
+                        shadows: VineTheme.buttonShadows,
+                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -139,8 +140,10 @@ class _MetadataReplyLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.vineColors.outlineDisabled),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -159,13 +162,15 @@ class _MetadataReplyLink extends StatelessWidget {
                   Text(
                     l10n.commentsReplyParentSectionTitle,
                     style: VineTheme.labelMediumFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     label,
-                    style: VineTheme.titleSmallFont(),
+                    style: VineTheme.titleSmallFont(
+                      color: context.vineColors.primaryText,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -173,9 +178,9 @@ class _MetadataReplyLink extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.caretRight,
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
             ),
           ],
         ),

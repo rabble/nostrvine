@@ -229,9 +229,12 @@ class _ZoomRuler extends StatelessWidget {
         children: [
           Text(
             _valueLabel(zoom),
-            style: VineTheme.titleMediumFont().copyWith(
-              shadows: const [Shadow(color: VineTheme.scrim70, blurRadius: 6)],
-            ),
+            style: VineTheme.titleMediumFont(color: VineTheme.whiteText)
+                .copyWith(
+                  shadows: const [
+                    Shadow(color: VineTheme.scrim70, blurRadius: 6),
+                  ],
+                ),
           ),
           const SizedBox(height: 6),
           SizedBox(

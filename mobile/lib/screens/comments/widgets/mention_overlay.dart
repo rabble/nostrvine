@@ -61,7 +61,7 @@ class MentionOverlay extends ConsumerWidget {
       constraints: const BoxConstraints(maxHeight: 240),
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -157,7 +157,7 @@ class _MentionSuggestionItem extends ConsumerWidget {
                     Text(
                       displayName,
                       style: VineTheme.labelLargeFont(
-                        color: VineTheme.onSurface,
+                        color: context.vineColors.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -165,7 +165,7 @@ class _MentionSuggestionItem extends ConsumerWidget {
                   Text(
                     identifier,
                     style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis, // UI truncation only

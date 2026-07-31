@@ -51,7 +51,7 @@ class BannerEditingBlock extends StatelessWidget {
             child: Text(
               l10n.profileSetupBannerSectionTitle,
               style: VineTheme.labelMediumFont(
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
               ),
             ),
           ),
@@ -128,9 +128,9 @@ class _BannerPreview extends StatelessWidget {
       previewKey = const ValueKey('profile_banner_empty_preview');
       child = DecoratedBox(
         decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
+          color: context.vineColors.surfaceContainer,
           borderRadius: radius,
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+          border: Border.all(color: context.vineColors.outlineMuted, width: 2),
         ),
       );
     }
@@ -186,8 +186,8 @@ class _BannerActionRow extends StatelessWidget {
             onPressed: isUploading ? null : () => _pickBannerImage(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: VineTheme.vineGreen,
-              side: const BorderSide(
-                color: VineTheme.outlineMuted,
+              side: BorderSide(
+                color: context.vineColors.outlineMuted,
                 width: 2,
               ),
               shape: RoundedRectangleBorder(
@@ -210,9 +210,9 @@ class _BannerActionRow extends StatelessWidget {
                     const ProfileBannerCleared(),
                   ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: VineTheme.lightText,
-              side: const BorderSide(
-                color: VineTheme.outlineMuted,
+              foregroundColor: context.vineColors.mutedText,
+              side: BorderSide(
+                color: context.vineColors.outlineMuted,
                 width: 2,
               ),
               shape: RoundedRectangleBorder(
@@ -222,7 +222,9 @@ class _BannerActionRow extends StatelessWidget {
             ),
             child: Text(
               l10n.profileSetupBannerClearButton,
-              style: VineTheme.titleMediumFont(color: VineTheme.lightText),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.mutedText,
+              ),
             ),
           ),
         ),
@@ -314,14 +316,16 @@ class _BannerColorSwatch extends StatelessWidget {
             color: color,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? VineTheme.whiteText : VineTheme.transparent,
+              color: isSelected
+                  ? context.vineColors.primaryText
+                  : VineTheme.transparent,
               width: 3,
             ),
           ),
           child: isSelected
-              ? const DivineIcon(
+              ? DivineIcon(
                   icon: DivineIconName.check,
-                  color: VineTheme.whiteText,
+                  color: context.vineColors.primaryText,
                   size: 20,
                 )
               : null,

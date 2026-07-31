@@ -101,9 +101,9 @@ class _CreateAccountView extends StatelessWidget {
               inviteAccessGrant: inviteAccessGrant,
             );
           }
-          return const Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
-            body: Center(
+          return Scaffold(
+            backgroundColor: context.vineColors.background,
+            body: const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
           );
@@ -169,7 +169,7 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: VineTheme.surfaceContainer,
+      backgroundColor: context.vineColors.surfaceContainer,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -284,11 +284,11 @@ class _CreatorInviteContext extends StatelessWidget {
 
     return Text(
       lines.join('\n'),
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Inter',
         fontSize: 15,
         height: 1.4,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
       ),
     );
   }
@@ -314,17 +314,17 @@ class _SkipButton extends StatelessWidget {
       child: TextButton(
         onPressed: isDisabled ? null : onPressed,
         style: TextButton.styleFrom(
-          foregroundColor: VineTheme.secondaryText,
+          foregroundColor: context.vineColors.secondaryText,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
         ),
         child: isSkipping
-            ? const SizedBox(
+            ? SizedBox(
                 height: 18,
                 width: 18,
                 child: CircularProgressIndicator(
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                   strokeWidth: 2,
                 ),
               )
@@ -362,7 +362,7 @@ class _SkipConfirmationSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: VineTheme.outlineMuted,
+              color: context.vineColors.outlineMuted,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -378,11 +378,11 @@ class _SkipConfirmationSheet extends StatelessWidget {
           // Title
           Text(
             context.l10n.authSkipConfirmTitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: VineTheme.fontFamilyBricolage,
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: VineTheme.whiteText,
+              color: context.vineColors.primaryText,
             ),
           ),
           const SizedBox(height: 16),
@@ -391,9 +391,9 @@ class _SkipConfirmationSheet extends StatelessWidget {
           Text(
             context.l10n.authSkipConfirmKeyCreated,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               height: 1.4,
             ),
           ),
@@ -401,9 +401,9 @@ class _SkipConfirmationSheet extends StatelessWidget {
           Text(
             context.l10n.authSkipConfirmKeyOnly,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               height: 1.4,
             ),
           ),
@@ -411,9 +411,9 @@ class _SkipConfirmationSheet extends StatelessWidget {
           Text(
             context.l10n.authSkipConfirmRecommendEmail,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               height: 1.4,
             ),
           ),
@@ -434,7 +434,7 @@ class _SkipConfirmationSheet extends StatelessWidget {
             child: TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(
-                foregroundColor: VineTheme.secondaryText,
+                foregroundColor: context.vineColors.secondaryText,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),

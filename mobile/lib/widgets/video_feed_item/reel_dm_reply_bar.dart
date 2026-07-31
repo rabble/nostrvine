@@ -393,7 +393,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
         ),
       ],
       child: ColoredBox(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         child: Padding(
           // Same keyboard-inset math as InlineCommentComposerBar: the bar
           // lives in the body so it rides above the keyboard.
@@ -469,7 +469,7 @@ class _ComposerPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.iconButtonBackground,
+        color: context.vineColors.iconButton,
         borderRadius: BorderRadius.circular(20),
       ),
       child: ConstrainedBox(
@@ -498,11 +498,13 @@ class _ComposerPill extends StatelessWidget {
                     onTapOutside: (_) =>
                         FocusManager.instance.primaryFocus?.unfocus(),
                     cursorColor: VineTheme.tabIndicatorGreen,
-                    style: VineTheme.bodyLargeFont(),
+                    style: VineTheme.bodyLargeFont(
+                      color: context.vineColors.primaryText,
+                    ),
                     decoration: InputDecoration(
                       hintText: hint,
                       hintStyle: VineTheme.bodyLargeFont(
-                        color: VineTheme.onSurfaceMuted55,
+                        color: context.vineColors.onSurfaceMuted,
                       ),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.zero,
@@ -693,14 +695,14 @@ class _MorePickerButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: const SizedBox(
+        child: SizedBox(
           width: 48,
           height: 48,
           child: Center(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: VineTheme.iconButtonBackground,
+                color: context.vineColors.iconButton,
               ),
               child: SizedBox(
                 width: 40,
@@ -708,7 +710,7 @@ class _MorePickerButton extends StatelessWidget {
                 child: Center(
                   child: DivineIcon(
                     icon: DivineIconName.plus,
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                     size: 22,
                   ),
                 ),

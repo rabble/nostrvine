@@ -190,13 +190,26 @@ class VideoEditorConstants {
   /// Background color for the text editor overlay.
   static const Color textEditorBackground = Color(0x9B000000);
 
-  static const uiOverlayStyle = SystemUiOverlayStyle(
-    statusBarColor: VineTheme.transparent,
-    statusBarIconBrightness: Brightness.light,
-    systemNavigationBarIconBrightness: Brightness.light,
-    statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor: VineTheme.surfaceContainerHigh,
-  );
+  /// System overlay style for the full-screen media surfaces — recorder,
+  /// editor, metadata preview and the camera permission gate.
+  ///
+  /// Both bars follow the palette. The camera preview and the editor canvas
+  /// are inset behind a [SafeArea], so the status bar sits on the screen's own
+  /// background rather than on content — light icons there would be invisible
+  /// once that background goes light. The Android system navigation bar sits
+  /// under the screen's chrome for the same reason.
+  static SystemUiOverlayStyle uiOverlayStyleFor(VineThemeColors colors) {
+    final isLight = colors.isLight;
+    return SystemUiOverlayStyle(
+      statusBarColor: VineTheme.transparent,
+      statusBarIconBrightness: isLight ? Brightness.dark : Brightness.light,
+      statusBarBrightness: isLight ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor: colors.surfaceContainerHigh,
+      systemNavigationBarIconBrightness: isLight
+          ? Brightness.dark
+          : Brightness.light,
+    );
+  }
 
   /// Height of the bottom action bar in the video editor.
   static const double bottomBarHeight = 90;

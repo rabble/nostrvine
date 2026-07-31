@@ -23,7 +23,7 @@ class ProfileVideosGridSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Skeletonizer(
-      effect: vineSkeletonEffect,
+      effect: vineSkeletonEffectOf(context),
       child: CustomScrollView(
         physics: const NeverScrollableScrollPhysics(),
         slivers: [

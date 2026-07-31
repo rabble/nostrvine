@@ -65,6 +65,7 @@ class VideoEditorTimelineRulesIndicator extends StatelessWidget {
             scrollPadding: scrollPadding,
             clips: clips,
             timelineMap: timelineMap,
+            labelColor: context.vineColors.onSurfaceMuted,
           ),
         ),
       ),
@@ -80,6 +81,7 @@ class _RulerPainter extends CustomPainter {
     required this.scrollPadding,
     required this.clips,
     required this.timelineMap,
+    required this.labelColor,
   }) : super(repaint: scrollController);
 
   final Duration totalDuration;
@@ -88,6 +90,9 @@ class _RulerPainter extends CustomPainter {
   final double scrollPadding;
   final List<DivineVideoClip> clips;
   final TransitionTimelineMap timelineMap;
+
+  /// Tick-label colour for the active appearance mode.
+  final Color labelColor;
 
   static const double _minLabelSpacing = 30;
   static const int _fps = 30;
@@ -106,14 +111,15 @@ class _RulerPainter extends CustomPainter {
     1800,
   ];
 
-  static final TextStyle _labelStyle = VineTheme.labelSmallFont(
-    color: VineTheme.onSurfaceMuted,
+  TextStyle get _labelStyle => VineTheme.labelSmallFont(
+    color: labelColor,
   ).copyWith(fontFeatures: [const FontFeature.tabularFigures()]);
 
-  /// Laid-out [TextPainter] instances keyed by label string.
+  /// Laid-out [TextPainter] instances keyed by label *and* colour.
   ///
-  /// Safe only while [_labelStyle] is a compile-time-stable constant —
-  /// cached painters become invalid the moment the style changes.
+  /// A cached painter bakes in the style it was laid out with, so the key
+  /// has to carry the colour too — otherwise switching appearance mode would
+  /// keep repainting the previous mode's labels.
   /// Avoids creating and laying out a new [TextPainter] for every
   /// visible label on every scroll frame (~600–1200 allocations/sec
   /// at 60 Hz). Bounded to [_tpCacheMax] to cap native paragraph
@@ -172,7 +178,7 @@ class _RulerPainter extends CustomPainter {
       final label = _formatLabel(i * frameStep);
 
       final tp = _tpCache.putIfAbsent(
-        label,
+        '$label@${labelColor.toARGB32()}',
         () {
           if (_tpCache.length >= _tpCacheMax) {
             final oldestKey = _tpCache.keys.first;
@@ -225,5 +231,6 @@ class _RulerPainter extends CustomPainter {
       oldDelegate.totalDuration != totalDuration ||
       oldDelegate.pixelsPerSecond != pixelsPerSecond ||
       oldDelegate.scrollPadding != scrollPadding ||
+      oldDelegate.labelColor != labelColor ||
       !identical(oldDelegate.clips, clips);
 }

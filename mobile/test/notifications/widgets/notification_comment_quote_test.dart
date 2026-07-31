@@ -96,7 +96,7 @@ void main() {
       expect(richText.overflow, equals(TextOverflow.ellipsis));
     });
 
-    testWidgets('timestamp uses muted onSurfaceMuted55', (tester) async {
+    testWidgets('timestamp uses the muted on-surface color', (tester) async {
       await _pump(tester, text: 'Hi', timestamp: '2d');
 
       // Walk the rendered RichText's span tree to find the timestamp
@@ -109,7 +109,10 @@ void main() {
         matching: (span) => span.text == ' 2d',
       );
       expect(timestampSpan, isNotNull);
-      expect(timestampSpan!.style?.color, equals(VineTheme.onSurfaceMuted55));
+      expect(
+        timestampSpan!.style?.color,
+        equals(VineTheme.darkColors.onSurfaceMuted),
+      );
     });
 
     testWidgets('renders nostr profile references as tappable profile spans', (

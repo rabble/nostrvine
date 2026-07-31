@@ -38,7 +38,7 @@ class _AboutTextState extends State<_AboutText> {
   @override
   Widget build(BuildContext context) {
     final textStyle = VineTheme.bodyMediumFont(
-      color: VineTheme.onSurfaceVariant,
+      color: context.vineColors.onSurfaceVariant,
     );
 
     return LayoutBuilder(
@@ -111,8 +111,8 @@ class ProfileBanner extends StatelessWidget {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          VineTheme.surfaceBackground.withValues(alpha: 0),
-          VineTheme.surfaceBackground,
+          context.vineColors.surface.withValues(alpha: 0),
+          context.vineColors.surface,
         ],
       ),
     );
@@ -131,10 +131,13 @@ class ProfileBanner extends StatelessWidget {
             end: Alignment.bottomCenter,
             colors: [profileColor!, profileColor!],
           )
-        : const LinearGradient(
+        : LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [VineTheme.containerLow, VineTheme.surfaceBackground],
+            colors: [
+              context.vineColors.containerLow,
+              context.vineColors.surface,
+            ],
           );
 
     return Container(
@@ -167,7 +170,7 @@ class _BannerImage extends StatelessWidget {
       height: height,
       foregroundDecoration: scrimDecoration,
       clipBehavior: Clip.hardEdge,
-      decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
+      decoration: BoxDecoration(color: context.vineColors.surface),
       child: VineCachedImage(
         imageUrl: bannerUrl,
         errorWidget: (_, _, _) => const SizedBox.shrink(),
@@ -274,7 +277,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
     return Skeletonizer(
       enabled: isLoading && !_timeoutExpired,
       enableSwitchAnimation: true,
-      effect: vineSkeletonEffect,
+      effect: vineSkeletonEffectOf(context),
       child: Semantics(
         identifier: SemanticIds.profileStatsRow,
         child: Row(
@@ -296,10 +299,10 @@ class _StatDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    return SizedBox(
       width: 2,
       height: 44,
-      child: ColoredBox(color: VineTheme.outlineMuted),
+      child: ColoredBox(color: context.vineColors.outlineMuted),
     );
   }
 }
@@ -461,7 +464,7 @@ class _ProfileActionLabel extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 badgeCount.toString(),
-                style: VineTheme.labelSmallFont(),
+                style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
               ),
             ),
           ),

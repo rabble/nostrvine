@@ -238,7 +238,7 @@ class _TappableUserChip extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -254,14 +254,16 @@ class _TappableUserChip extends ConsumerWidget {
               name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
           ),
           if (isPending)
             Text(
               context.l10n.videoCollaboratorPendingDecoration,
               style: VineTheme.labelSmallFont(
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
               ),
             ),
         ],

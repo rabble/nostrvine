@@ -59,7 +59,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -87,7 +87,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                         // Title
                         Text(
                           context.l10n.keyImportTitle,
-                          style: VineTheme.headlineLargeFont(),
+                          style: VineTheme.headlineLargeFont(
+                            color: context.vineColors.primaryText,
+                          ),
                         ),
 
                         const SizedBox(height: 12),
@@ -95,9 +97,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                         // Subtitle
                         Text(
                           context.l10n.keyImportSubtitle,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: VineTheme.secondaryText,
+                            color: context.vineColors.secondaryText,
                             height: 1.4,
                           ),
                         ),

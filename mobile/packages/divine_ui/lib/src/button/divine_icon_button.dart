@@ -244,34 +244,39 @@ class _DivineIconButtonContent extends StatelessWidget {
     _ => 0.32,
   };
 
-  Color get _backgroundColor =>
+  Color _resolveBackgroundColor(VineThemeColors colors) =>
       backgroundColor ??
       switch (type) {
         DivineIconButtonType.primary => VineTheme.primary,
-        DivineIconButtonType.secondary => VineTheme.surfaceContainer,
-        DivineIconButtonType.tertiary => VineTheme.inverseSurface,
+        DivineIconButtonType.secondary => colors.surfaceContainer,
+        DivineIconButtonType.tertiary => colors.inverseSurface,
         DivineIconButtonType.ghost => VineTheme.scrim65,
         DivineIconButtonType.ghostSecondary => VineTheme.scrim15,
         DivineIconButtonType.error => VineTheme.error,
       };
 
-  Color get _iconColor =>
+  Color _resolveIconColor(VineThemeColors colors) =>
       foregroundColor ??
       switch (type) {
         DivineIconButtonType.primary => VineTheme.onPrimary,
-        DivineIconButtonType.secondary => VineTheme.primary,
-        DivineIconButtonType.tertiary => VineTheme.inverseOnSurface,
-        DivineIconButtonType.ghost ||
-        DivineIconButtonType.ghostSecondary => VineTheme.onSurface,
+        DivineIconButtonType.secondary =>
+          colors.isLight ? colors.onSurface : VineTheme.primary,
+        DivineIconButtonType.tertiary => colors.inverseOnSurface,
+        // The stronger ghost scrim can carry fixed light content in both modes.
+        DivineIconButtonType.ghost => VineTheme.onSurface,
+        DivineIconButtonType.ghostSecondary =>
+          colors.isLight ? colors.onSurface : VineTheme.onSurface,
         DivineIconButtonType.error => VineTheme.onErrorContainer,
       };
 
-  Color? get _borderColor => switch (type) {
-    DivineIconButtonType.secondary => VineTheme.outlineMuted,
-    _ => null,
-  };
+  /// Whether this [type] paints a visible border. Kept independent of the
+  /// resolved palette so padding geometry does not need a [BuildContext].
+  bool get _hasBorder => type == DivineIconButtonType.secondary;
 
-  List<BoxShadow>? get _boxShadow {
+  Color? _borderColor(VineThemeColors colors) =>
+      _hasBorder ? colors.outlineMuted : null;
+
+  List<BoxShadow>? _boxShadow(VineThemeColors colors) {
     if (!showShadow) {
       return null;
     }
@@ -283,21 +288,10 @@ class _DivineIconButtonContent extends StatelessWidget {
       return null;
     }
 
-    return const [
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(0.4, 0.4),
-        blurRadius: 0.6,
-      ),
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(1, 1),
-        blurRadius: 1,
-      ),
-    ];
+    return VineTheme.buttonBoxShadowsFor(colors);
   }
 
-  Widget get _iconWidget {
+  Widget _iconWidget(Color iconColor) {
     final source = iconSource;
     if (source != null) {
       return switch (source) {
@@ -305,7 +299,7 @@ class _DivineIconButtonContent extends StatelessWidget {
           assetPath,
           width: 24,
           height: 24,
-          colorFilter: ColorFilter.mode(_iconColor, BlendMode.srcIn),
+          colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
         ),
         // Still rendered for existing deprecated MaterialIconSource call
         // sites (e.g. DivineAppBarIconButton) — this is the type's
@@ -313,28 +307,31 @@ class _DivineIconButtonContent extends StatelessWidget {
         // ignore: deprecated_member_use_from_same_package
         MaterialIconSource(:final iconData) => Icon(
           iconData,
-          color: _iconColor,
+          color: iconColor,
           size: 24,
         ),
       };
     }
-    return DivineIcon(icon: icon!, color: _iconColor);
+    return DivineIcon(icon: icon!, color: iconColor);
   }
 
   @override
   Widget build(BuildContext context) {
-    var iconWidget = _iconWidget;
+    final colors = context.vineColors;
+    final iconColor = _resolveIconColor(colors);
+    final borderColor = _borderColor(colors);
+    var iconWidget = _iconWidget(iconColor);
     if (tooltip != null) {
       iconWidget = Tooltip(message: tooltip, child: iconWidget);
     }
 
     final decoration = BoxDecoration(
-      color: _backgroundColor,
+      color: _resolveBackgroundColor(colors),
       borderRadius: BorderRadius.circular(_borderRadius),
-      border: _borderColor != null
-          ? Border.all(color: _borderColor!, width: _borderWidth)
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: _borderWidth)
           : null,
-      boxShadow: _isEnabled ? _boxShadow : null,
+      boxShadow: _isEnabled ? _boxShadow(colors) : null,
     );
     final inkBox = Ink(
       decoration: decoration,
@@ -361,7 +358,7 @@ class _DivineIconButtonContent extends StatelessWidget {
       button: true,
       enabled: _isEnabled,
       child: Padding(
-        padding: .all(_borderColor == null ? _borderWidth : 0),
+        padding: .all(_hasBorder ? 0 : _borderWidth),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 150),
           opacity: _isEnabled ? 1.0 : _disabledOpacity,
@@ -371,8 +368,8 @@ class _DivineIconButtonContent extends StatelessWidget {
               onTap: onPressed,
               onLongPress: onLongPress,
               borderRadius: BorderRadius.circular(_borderRadius),
-              splashColor: _iconColor.withValues(alpha: 0.1),
-              highlightColor: _iconColor.withValues(alpha: 0.05),
+              splashColor: iconColor.withValues(alpha: 0.1),
+              highlightColor: iconColor.withValues(alpha: 0.05),
               child: tapTarget,
             ),
           ),

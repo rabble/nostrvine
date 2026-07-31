@@ -61,7 +61,7 @@ class ReactionPickerOverlay {
 
     return showModalBottomSheet<ReactionPickerResult>(
       context: context,
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
@@ -184,14 +184,14 @@ class _MoreButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: const SizedBox(
+        child: SizedBox(
           width: 48,
           height: 48,
           child: Center(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: VineTheme.iconButtonBackground,
+                color: context.vineColors.iconButton,
               ),
               child: SizedBox(
                 width: 32,
@@ -199,7 +199,7 @@ class _MoreButton extends StatelessWidget {
                 child: Center(
                   child: DivineIcon(
                     icon: DivineIconName.plus,
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                     size: 18,
                   ),
                 ),
@@ -281,11 +281,14 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: DivineIcon(icon: icon, color: color ?? VineTheme.onSurface),
+      leading: DivineIcon(
+        icon: icon,
+        color: color ?? context.vineColors.onSurface,
+      ),
       title: Text(
         label,
         style: VineTheme.bodyLargeFont(
-          color: color ?? VineTheme.onSurface,
+          color: color ?? context.vineColors.onSurface,
         ),
       ),
       onTap: onTap,

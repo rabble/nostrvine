@@ -196,9 +196,10 @@ class _AudioAttributionPill extends StatelessWidget {
           Flexible(
             child: Text(
               '$soundName · $creatorName',
-              style: VineTheme.labelMediumFont().copyWith(
-                shadows: [const Shadow(blurRadius: 4)],
-              ),
+              style: VineTheme.labelMediumFont(color: VineTheme.whiteText)
+                  .copyWith(
+                    shadows: [const Shadow(blurRadius: 4)],
+                  ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

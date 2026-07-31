@@ -155,7 +155,7 @@ class CategoryGalleryView extends StatelessWidget {
     final visuals = CategoryVisuals.forCategory(category, 0);
 
     return ColoredBox(
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: Column(
         children: [
           _CategoryGalleryHeader(
@@ -211,8 +211,8 @@ class _CategoryGalleryBody extends StatelessWidget {
             children: [
               Text(
                 context.l10n.categoryGalleryCouldNotLoadVideos,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 16,
                 ),
               ),
@@ -229,8 +229,8 @@ class _CategoryGalleryBody extends StatelessWidget {
           return Center(
             child: Text(
               context.l10n.categoryGalleryNoVideosInCategory,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 16,
               ),
             ),
@@ -270,7 +270,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.navGreen,
+      color: context.vineColors.nav,
       child: SafeArea(
         bottom: false,
         minimum: const EdgeInsets.only(top: 24),
@@ -297,9 +297,12 @@ class _CategoryGalleryHeader extends StatelessWidget {
                       localizedCategoryName(context.l10n, category.name),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: VineTheme.titleMediumFont().copyWith(
-                        decoration: TextDecoration.none,
-                      ),
+                      style:
+                          VineTheme.titleMediumFont(
+                            color: context.vineColors.onNav,
+                          ).copyWith(
+                            decoration: TextDecoration.none,
+                          ),
                     ),
                   ),
                 ),
@@ -358,7 +361,6 @@ List<VineBottomSheetSelectionOptionData> _categorySortOptions(
 
 const _categoryHeaderActionFill = Color(0xFF3E0C1F);
 const _categoryHeaderActionBorder = Color(0x40FFFFFF);
-const _categorySortDivider = Color(0xFF001A12);
 const _categoryActionShadows = <BoxShadow>[
   BoxShadow(
     color: Color(0x1A000000),
@@ -416,7 +418,7 @@ class _CategoryHeaderActionButton extends StatelessWidget {
             ),
             child: Padding(
               padding: const EdgeInsets.all(8),
-              child: DivineIcon(icon: icon, color: VineTheme.onSurface),
+              child: DivineIcon(icon: icon, color: VineTheme.whiteText),
             ),
           ),
         ),
@@ -469,9 +471,9 @@ class _CategorySortSheet extends StatelessWidget {
       top: false,
       child: Container(
         key: const Key('category-sort-sheet'),
-        decoration: const BoxDecoration(
-          color: VineTheme.navGreen,
-          borderRadius: BorderRadius.vertical(
+        decoration: BoxDecoration(
+          color: context.vineColors.surface,
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(VineTheme.bottomSheetBorderRadius),
           ),
         ),
@@ -480,8 +482,10 @@ class _CategorySortSheet extends StatelessWidget {
           children: [
             Container(
               height: 32,
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: _categorySortDivider)),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: context.vineColors.outlineDisabled),
+                ),
               ),
               child: Center(
                 child: Container(
@@ -537,10 +541,10 @@ class _CategorySortSheetOption extends StatelessWidget {
           key: Key('category-sort-option-${option.value}'),
           decoration: BoxDecoration(
             color: isSelected
-                ? VineTheme.iconButtonBackground
-                : VineTheme.navGreen,
-            border: const Border(
-              bottom: BorderSide(color: _categorySortDivider),
+                ? context.vineColors.iconButton
+                : context.vineColors.surface,
+            border: Border(
+              bottom: BorderSide(color: context.vineColors.outlineDisabled),
             ),
           ),
           child: Padding(
@@ -548,7 +552,12 @@ class _CategorySortSheetOption extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(option.label, style: VineTheme.titleMediumFont()),
+                  child: Text(
+                    option.label,
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
+                  ),
                 ),
                 if (isSelected)
                   const DivineIcon(

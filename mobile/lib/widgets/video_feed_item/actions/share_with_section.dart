@@ -51,8 +51,8 @@ class _ShareWithSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 context.l10n.shareWithTitle,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -145,8 +145,8 @@ class _FindPeopleItem extends StatelessWidget {
               ),
               Text(
                 context.l10n.shareFindPeopleMultiline,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 11,
                 ),
                 textAlign: TextAlign.center,
@@ -219,7 +219,7 @@ class _ContactItem extends StatelessWidget {
                 style: TextStyle(
                   color: isSelected
                       ? VineTheme.vineGreen
-                      : VineTheme.secondaryText,
+                      : context.vineColors.secondaryText,
                   fontSize: 11,
                 ),
                 textAlign: TextAlign.center,

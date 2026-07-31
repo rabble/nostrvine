@@ -43,20 +43,20 @@ class DivineAppBarIconButton extends StatelessWidget {
 
   /// Background color of the button container.
   ///
-  /// Defaults to [VineTheme.iconButtonBackground].
+  /// Defaults to the `iconButton` color of the active appearance mode.
   final Color? backgroundColor;
 
   /// Optional border for the button container.
   ///
   /// When non-null, the button renders as [DivineIconButtonType.secondary],
-  /// whose built-in 2px [VineTheme.outlineMuted] border matches every
+  /// whose built-in 2px semantic `outlineMuted` border matches every
   /// current usage of this param exactly. The supplied [BorderSide]'s own
   /// color/width are not independently honored.
   final BorderSide? borderSide;
 
   /// Color of the icon.
   ///
-  /// Defaults to [VineTheme.whiteText].
+  /// Defaults to the `onNav` color of the active appearance mode.
   final Color? iconColor;
 
   @override
@@ -68,8 +68,8 @@ class DivineAppBarIconButton extends StatelessWidget {
           ? DivineIconButtonType.secondary
           : DivineIconButtonType.primary,
       size: DivineIconButtonSize.small,
-      backgroundColor: backgroundColor ?? VineTheme.iconButtonBackground,
-      foregroundColor: iconColor ?? VineTheme.whiteText,
+      backgroundColor: backgroundColor ?? context.vineColors.iconButton,
+      foregroundColor: iconColor ?? context.vineColors.onNav,
       showShadow: false,
       tooltip: tooltip,
       semanticLabel: semanticLabel,

@@ -411,9 +411,9 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
             }
           },
           child: AnnotatedRegion<SystemUiOverlayStyle>(
-            value: VideoEditorConstants.uiOverlayStyle,
+            value: VideoEditorConstants.uiOverlayStyleFor(context.vineColors),
             child: Scaffold(
-              backgroundColor: VineTheme.backgroundCamera,
+              backgroundColor: context.vineColors.surfaceContainerHigh,
               resizeToAvoidBottomInset: false,
               body: Column(
                 children: [

@@ -25,7 +25,7 @@ Future<CaptionCustomStyle?> showCaptionCustomStyleSheet(
     minChildSize: 0.6,
     title: Text(
       context.l10n.videoEditorCaptionsCustomStyleTitle,
-      style: VineTheme.titleMediumFont(),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     ),
     buildScrollBody: (scrollController) => _CaptionCustomStyleView(
       initial: initial,
@@ -132,7 +132,9 @@ class _CaptionCustomStyleViewState extends State<_CaptionCustomStyleView>
                 }),
                 label: Text(
                   l10n.videoEditorCaptionsCustomBackground,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               if (hasBackground) ...[
@@ -160,10 +162,10 @@ class _CaptionCustomStyleViewState extends State<_CaptionCustomStyleView>
             ],
           ),
         ),
-        const Divider(
+        Divider(
           height: 2,
           thickness: 2,
-          color: VineTheme.outlinedDisabled,
+          color: context.vineColors.surfaceContainer,
         ),
         SafeArea(
           top: false,
@@ -242,7 +244,9 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         label,
-        style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+        style: VineTheme.labelMediumFont(
+          color: context.vineColors.secondaryText,
+        ),
       ),
     );
   }
@@ -269,9 +273,12 @@ class _FontField extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            border: Border.all(
+              color: context.vineColors.outlineMuted,
+              width: 2,
+            ),
           ),
           child: Row(
             spacing: 8,
@@ -280,7 +287,10 @@ class _FontField extends StatelessWidget {
                 child: Text(
                   font.localizedDisplayName(l10n),
                   overflow: TextOverflow.ellipsis,
-                  style: font(fontSize: 20, color: VineTheme.whiteText),
+                  style: font(
+                    fontSize: 20,
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               const DivineIcon(
@@ -359,10 +369,12 @@ class _ColorSwatch extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: Container(
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? VineTheme.primary : VineTheme.outlineMuted,
+              color: selected
+                  ? VineTheme.primary
+                  : context.vineColors.outlineMuted,
               width: 2,
             ),
           ),
@@ -445,17 +457,21 @@ class _AnimationChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: selected ? VineTheme.primary : VineTheme.outlineMuted,
+              color: selected
+                  ? VineTheme.primary
+                  : context.vineColors.outlineMuted,
               width: 2,
             ),
           ),
           child: Text(
             label,
             style: VineTheme.bodyMediumFont(
-              color: selected ? VineTheme.primary : VineTheme.onSurfaceVariant,
+              color: selected
+                  ? VineTheme.primary
+                  : context.vineColors.onSurfaceVariant,
             ),
           ),
         ),

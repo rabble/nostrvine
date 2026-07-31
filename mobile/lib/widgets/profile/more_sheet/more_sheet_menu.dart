@@ -88,7 +88,7 @@ class MoreSheetMenu extends StatelessWidget {
               ? l10n.profileUnblockDisplayName(displayName)
               : l10n.profileBlockDisplayName(displayName),
           onTap: onBlockTap,
-          color: isBlocked ? VineTheme.onSurface : VineTheme.error,
+          color: isBlocked ? context.vineColors.onSurface : VineTheme.error,
         ),
       ],
     );
@@ -100,16 +100,17 @@ class _MoreSheetMenuItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = VineTheme.whiteText,
+    this.color,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? context.vineColors.primaryText;
     return Semantics(
       button: true,
       label: label,
@@ -121,8 +122,11 @@ class _MoreSheetMenuItem extends StatelessWidget {
             child: Row(
               spacing: 16,
               children: [
-                DivineIcon(icon: icon, color: color),
-                Text(label, style: VineTheme.titleMediumFont(color: color)),
+                DivineIcon(icon: icon, color: effectiveColor),
+                Text(
+                  label,
+                  style: VineTheme.titleMediumFont(color: effectiveColor),
+                ),
               ],
             ),
           ),

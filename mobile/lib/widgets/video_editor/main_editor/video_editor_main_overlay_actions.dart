@@ -281,7 +281,7 @@ class _StopMotionFramesChip extends StatelessWidget {
             heightFactor: 1,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: VineTheme.surfaceBackground.withValues(alpha: 0.85),
+                color: context.vineColors.surface.withValues(alpha: 0.85),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Padding(
@@ -293,12 +293,17 @@ class _StopMotionFramesChip extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   spacing: 6,
                   children: [
-                    const DivineIcon(
+                    DivineIcon(
                       icon: .imagesSquare,
-                      color: VineTheme.lightText,
+                      color: context.vineColors.mutedText,
                       size: 16,
                     ),
-                    Text(label, style: VineTheme.labelLargeFont()),
+                    Text(
+                      label,
+                      style: VineTheme.labelLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
+                    ),
                   ],
                 ),
               ),

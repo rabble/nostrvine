@@ -29,19 +29,19 @@ Future<void> showRemoveKeysWarningDialog({
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       title: Text(
         context.l10n.deleteAccountRemoveKeysTitle,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
       ),
       content: Text(
         context.l10n.deleteAccountRemoveKeysBody,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontSize: 16,
           height: 1.5,
         ),
@@ -51,7 +51,7 @@ Future<void> showRemoveKeysWarningDialog({
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             context.l10n.commonCancel,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 16),
           ),
         ),
         ElevatedButton(
@@ -157,7 +157,7 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
     final c = widget.confirmation;
     final canConfirm = c.matches(_confirmationController.text);
     return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       scrollable: true,
       title: Text(
         context.l10n.deleteAccountFinalConfirmationTitle,
@@ -175,8 +175,8 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
           const SizedBox(height: 16),
           Text(
             context.l10n.deleteAccountWarningBody,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 16,
               height: 1.5,
             ),
@@ -186,7 +186,9 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
             c.isUsernameConfirmation
                 ? context.l10n.deleteAccountConfirmUsernamePrompt
                 : context.l10n.deleteAccountConfirmDeletePrompt,
-            style: VineTheme.bodyLargeFont(),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -201,7 +203,7 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
           const SizedBox(height: 16),
           TextField(
             controller: _confirmationController,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
             autocorrect: false,
             textCapitalization: c.isUsernameConfirmation
                 ? TextCapitalization.none
@@ -210,9 +212,9 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
               hintText: c.isUsernameConfirmation
                   ? context.l10n.deleteAccountConfirmationHintUsername
                   : context.l10n.deleteAccountConfirmationHint,
-              hintStyle: const TextStyle(color: VineTheme.lightText),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.cardBackground),
+              hintStyle: TextStyle(color: context.vineColors.mutedText),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: context.vineColors.card),
               ),
               focusedBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: VineTheme.error),
@@ -234,7 +236,9 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
                 context.l10n.deleteAccountBurnUsernameToggle(
                   '@${owned.name}.divine.video',
                 ),
-                style: VineTheme.bodyMediumFont(),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
             ),
           ],
@@ -246,7 +250,7 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
           onPressed: context.pop,
           child: Text(
             context.l10n.commonCancel,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 16),
+            style: TextStyle(color: context.vineColors.mutedText, fontSize: 16),
           ),
         ),
         ElevatedButton(
@@ -262,8 +266,8 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.error,
             foregroundColor: VineTheme.whiteText,
-            disabledBackgroundColor: VineTheme.cardBackground,
-            disabledForegroundColor: VineTheme.lightText,
+            disabledBackgroundColor: context.vineColors.card,
+            disabledForegroundColor: context.vineColors.mutedText,
           ),
           child: Text(
             context.l10n.deleteAccountDeleteAllContentButton,
@@ -303,14 +307,16 @@ class _DeleteIdentityHeader extends StatelessWidget {
               children: [
                 Text(
                   confirmation.displayName,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   confirmation.identifierLine,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -332,7 +338,7 @@ class _DeletionProgressDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Card(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         child: Padding(
           padding: const EdgeInsets.all(24),
           child:
@@ -352,13 +358,13 @@ class _DeletionProgressDialog extends StatelessWidget {
                           CircularProgressIndicator(
                             value: current / total,
                             color: VineTheme.vineGreen,
-                            backgroundColor: VineTheme.cardBackground,
+                            backgroundColor: context.vineColors.card,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             context.l10n.videoGridDeletingContent,
-                            style: const TextStyle(
-                              color: VineTheme.whiteText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -369,8 +375,8 @@ class _DeletionProgressDialog extends StatelessWidget {
                               current,
                               total,
                             ),
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 14,
                             ),
                           ),
@@ -382,8 +388,8 @@ class _DeletionProgressDialog extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           context.l10n.deleteAccountPreparingDeletion,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),

@@ -56,11 +56,11 @@ class _LikedVideosScreenRouterState
         category: LogCategory.ui,
       );
       return Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         body: Center(
           child: Text(
             context.l10n.likedVideosInvalidRoute,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
         ),
       );
@@ -84,11 +84,11 @@ class _LikedVideosScreenRouterState
         category: LogCategory.ui,
       );
       return Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
+        backgroundColor: context.vineColors.background,
         appBar: DiVineAppBar(
           title: context.l10n.likedVideosTitle,
           showBackButton: true,
-          backgroundColor: VineTheme.backgroundColor,
+          backgroundColor: context.vineColors.background,
           onBackPressed: () {
             // Navigate to own profile grid
             final authService = ref.read(authServiceProvider);
@@ -178,9 +178,9 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
         if (state.status == ProfileLikedVideosStatus.initial ||
             state.status == ProfileLikedVideosStatus.syncing ||
             state.status == ProfileLikedVideosStatus.loading) {
-          return const Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
-            body: Center(
+          return Scaffold(
+            backgroundColor: context.vineColors.background,
+            body: const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
           );
@@ -188,11 +188,11 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
         if (state.status == ProfileLikedVideosStatus.failure) {
           return Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
+            backgroundColor: context.vineColors.background,
             body: Center(
               child: Text(
                 context.l10n.profileErrorLoadingLiked,
-                style: const TextStyle(color: VineTheme.whiteText),
+                style: TextStyle(color: context.vineColors.primaryText),
               ),
             ),
           );
@@ -202,11 +202,11 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
         if (videos.isEmpty) {
           return Scaffold(
-            backgroundColor: VineTheme.backgroundColor,
+            backgroundColor: context.vineColors.background,
             body: Center(
               child: Text(
                 context.l10n.likedVideosEmpty,
-                style: const TextStyle(color: VineTheme.whiteText),
+                style: TextStyle(color: context.vineColors.primaryText),
               ),
             ),
           );

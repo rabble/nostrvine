@@ -67,14 +67,14 @@ class _MessageInputBarState extends State<MessageInputBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: VineTheme.surfaceBackground,
+      color: context.vineColors.surface,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: SafeArea(
         top: false,
         child: Container(
           constraints: const BoxConstraints(minHeight: 48),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -86,7 +86,9 @@ class _MessageInputBarState extends State<MessageInputBar> {
                 // Field honours font scaling (#4620): no withNoTextScaling.
                 child: TextField(
                   controller: _controller,
-                  style: VineTheme.bodyLargeFont(),
+                  style: VineTheme.bodyLargeFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   cursorColor: VineTheme.primary,
                   keyboardType: TextInputType.multiline,
                   // Return = newline; send via button only (#4620).
@@ -97,7 +99,7 @@ class _MessageInputBarState extends State<MessageInputBar> {
                   decoration: InputDecoration(
                     hintText: context.l10n.dmMessageInputHint,
                     hintStyle: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: context.vineColors.onSurfaceMuted,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
@@ -125,9 +127,9 @@ class _MessageInputBarState extends State<MessageInputBar> {
                         child: IconButton(
                           onPressed: _handleSend,
                           padding: EdgeInsets.zero,
-                          icon: const DivineIcon(
+                          icon: DivineIcon(
                             icon: DivineIconName.arrowUp,
-                            color: VineTheme.surfaceBackground,
+                            color: context.vineColors.surface,
                             size: 20,
                           ),
                         ),

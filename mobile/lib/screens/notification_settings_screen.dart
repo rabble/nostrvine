@@ -70,7 +70,7 @@ class NotificationSettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: VineTheme.backgroundColor,
+    backgroundColor: context.vineColors.background,
     appBar: DiVineAppBar(
       title: context.l10n.notificationSettingsTitle,
       showBackButton: true,
@@ -217,10 +217,10 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     title,
-    style: const TextStyle(
+    style: TextStyle(
       fontSize: 18,
       fontWeight: FontWeight.bold,
-      color: VineTheme.primaryText,
+      color: context.vineColors.primaryText,
     ),
   );
 }
@@ -244,7 +244,7 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    color: VineTheme.cardBackground,
+    color: context.vineColors.card,
     margin: const EdgeInsets.only(bottom: 8),
     child: ListTile(
       leading: Container(
@@ -257,14 +257,14 @@ class _NotificationCard extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: VineTheme.primaryText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
       ),
       trailing: Switch(
         value: value,
@@ -292,7 +292,7 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    color: VineTheme.cardBackground,
+    color: context.vineColors.card,
     margin: const EdgeInsets.only(bottom: 8),
     child: ListTile(
       leading: Container(
@@ -305,18 +305,18 @@ class _ActionCard extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          color: VineTheme.primaryText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
       ),
-      trailing: const DivineIcon(
+      trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: VineTheme.lightText,
+        color: context.vineColors.mutedText,
         size: 16,
       ),
       onTap: onTap,
@@ -329,7 +329,7 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    color: VineTheme.cardBackground,
+    color: context.vineColors.card,
     child: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -345,10 +345,10 @@ class _InfoCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 context.l10n.notificationSettingsAbout,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: VineTheme.primaryText,
+                  color: context.vineColors.primaryText,
                 ),
               ),
             ],
@@ -356,9 +356,9 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.notificationSettingsAboutDescription,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               height: 1.4,
             ),
           ),

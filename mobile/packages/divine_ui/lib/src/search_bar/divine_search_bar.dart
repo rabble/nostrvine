@@ -57,6 +57,7 @@ class DivineSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
       child: Material(
@@ -74,14 +75,14 @@ class DivineSearchBar extends StatelessWidget {
           // Surface the search action directly on the soft keyboard instead of
           // the generic return key.
           textInputAction: TextInputAction.search,
-          style: VineTheme.bodyLargeFont(),
+          style: VineTheme.bodyLargeFont(color: colors.primaryText),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceMuted55,
+              color: colors.onSurfaceMuted,
             ),
             filled: true,
-            fillColor: VineTheme.iconButtonBackground,
+            fillColor: colors.iconButton,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(20),
               borderSide: BorderSide.none,
@@ -119,7 +120,7 @@ class _PrefixIcon extends StatelessWidget {
                 ),
               ),
             )
-          : const DivineIcon(icon: .search, color: VineTheme.onSurfaceMuted55),
+          : DivineIcon(icon: .search, color: context.vineColors.onSurfaceMuted),
     );
   }
 }

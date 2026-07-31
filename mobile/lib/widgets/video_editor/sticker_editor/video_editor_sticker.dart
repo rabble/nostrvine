@@ -135,10 +135,10 @@ class _ErrorImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const DivineIcon(
+    return DivineIcon(
       icon: DivineIconName.warningCircle,
       size: 48,
-      color: VineTheme.lightText,
+      color: context.vineColors.mutedText,
     );
   }
 }

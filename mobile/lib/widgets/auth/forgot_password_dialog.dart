@@ -72,8 +72,8 @@ class _ForgotPasswordSheetContentState
           children: [
             Text(
               context.l10n.forgotPasswordDescription,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
               ),
             ),
@@ -82,14 +82,14 @@ class _ForgotPasswordSheetContentState
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               autocorrect: false,
-              style: const TextStyle(color: VineTheme.primaryText),
+              style: TextStyle(color: context.vineColors.primaryText),
               decoration: InputDecoration(
                 labelText: context.l10n.forgotPasswordEmailLabel,
-                labelStyle: const TextStyle(color: VineTheme.lightText),
+                labelStyle: TextStyle(color: context.vineColors.mutedText),
                 prefixIcon: const Icon(Icons.email_outlined),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: VineTheme.outlineVariant),
+                  borderSide: BorderSide(color: context.vineColors.outline),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -110,14 +110,14 @@ class _ForgotPasswordSheetContentState
                   onPressed: () => context.pop(),
                   child: Text(
                     context.l10n.forgotPasswordCancel,
-                    style: const TextStyle(color: VineTheme.onSurfaceMuted),
+                    style: TextStyle(color: context.vineColors.onSurfaceMuted),
                   ),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: VineTheme.backgroundColor,
+                    foregroundColor: context.vineColors.background,
                   ),
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {

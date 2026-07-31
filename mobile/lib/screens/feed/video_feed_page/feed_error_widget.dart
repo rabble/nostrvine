@@ -30,13 +30,16 @@ class FeedErrorWidget extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.feedFailedToLoadVideos,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
+            style: TextStyle(
+              color: context.vineColors.primaryText,
+              fontSize: 18,
+            ),
           ),
           if (error != null) ...[
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: const TextStyle(color: VineTheme.lightText),
+              style: TextStyle(color: context.vineColors.mutedText),
             ),
           ],
           const SizedBox(height: 24),

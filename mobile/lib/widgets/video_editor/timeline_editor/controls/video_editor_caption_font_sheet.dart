@@ -18,7 +18,7 @@ Future<int?> showCaptionFontSheet(
     context: context,
     title: Text(
       context.l10n.videoEditorCaptionsCustomFont,
-      style: VineTheme.titleMediumFont(),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     ),
     buildScrollBody: (scrollController) => ListView.builder(
       controller: scrollController,
@@ -68,8 +68,8 @@ class _FontListItem extends StatelessWidget {
                   style: font(
                     fontSize: 24,
                     color: selected
-                        ? VineTheme.whiteText
-                        : VineTheme.onSurfaceVariant,
+                        ? context.vineColors.primaryText
+                        : context.vineColors.onSurfaceVariant,
                   ),
                 ),
               ),

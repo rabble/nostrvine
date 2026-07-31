@@ -18,12 +18,12 @@ class WebIframeSandboxScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+    return Scaffold(
+      backgroundColor: context.vineColors.surface,
       body: Center(
         child: Text(
           'WebIframeSandboxScreen is web-only',
-          style: TextStyle(color: VineTheme.lightText),
+          style: TextStyle(color: context.vineColors.mutedText),
         ),
       ),
     );

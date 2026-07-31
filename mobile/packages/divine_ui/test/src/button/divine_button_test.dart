@@ -17,8 +17,10 @@ void main() {
       DivineIconName? trailingIcon,
       bool expanded = false,
       bool isLoading = false,
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         home: Scaffold(
           body: Center(
             child: DivineButton(
@@ -110,6 +112,24 @@ void main() {
         expect(divineIcon.color, VineTheme.primary);
       });
 
+      testWidgets('secondary type icon uses onSurface in light mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            theme: VineTheme.lightTheme,
+            type: DivineButtonType.secondary,
+            leadingIcon: DivineIconName.key,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.color, VineTheme.lightColors.onSurface);
+      });
+
       testWidgets('tertiary type icon uses inverseOnSurface color', (
         tester,
       ) async {
@@ -140,6 +160,24 @@ void main() {
           find.byType(DivineIcon),
         );
         expect(divineIcon.color, VineTheme.onSurface);
+      });
+
+      testWidgets('ghostSecondary type icon uses onSurface in light mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            theme: VineTheme.lightTheme,
+            type: DivineButtonType.ghostSecondary,
+            leadingIcon: DivineIconName.x,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.color, VineTheme.lightColors.onSurface);
       });
 
       testWidgets('error type icon uses onErrorContainer color', (
@@ -1310,6 +1348,7 @@ void main() {
         final span = DivineTextLink.span(
           text: 'Link',
           onTap: () {},
+          colors: VineTheme.darkColors,
         );
 
         expect(span.text, 'Link');
@@ -1320,6 +1359,7 @@ void main() {
         final span = DivineTextLink.span(
           text: 'Disabled Link',
           onTap: null,
+          colors: VineTheme.darkColors,
         );
 
         expect(span.text, 'Disabled Link');
@@ -1331,6 +1371,7 @@ void main() {
         final span = DivineTextLink.span(
           text: 'Link',
           onTap: () => tapped = true,
+          colors: VineTheme.darkColors,
         );
 
         (span.recognizer! as TapGestureRecognizer).onTap!();

@@ -336,7 +336,9 @@ class _BottomControls extends StatelessWidget {
           padding: const .symmetric(horizontal: 16),
           child: Text(
             context.l10n.videoEditorAudioSegmentInstruction,
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: .center,
           ),
         ),
@@ -618,7 +620,7 @@ class _AudioWaveformSelector extends StatelessWidget {
       child: Container(
         padding: const .fromLTRB(16, 8, 16, 11),
         height: 85,
-        color: VineTheme.backgroundColor,
+        color: context.vineColors.background,
         child: ClipRect(
           child: BlocBuilder<SoundWaveformBloc, SoundWaveformState>(
             builder: (context, waveformState) {

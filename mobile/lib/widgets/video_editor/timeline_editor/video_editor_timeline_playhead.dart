@@ -20,15 +20,17 @@ class VideoEditorTimelinePlayhead extends StatelessWidget {
       duration: reduceMotion
           ? Duration.zero
           : const Duration(milliseconds: 200),
-      child: const IgnorePointer(
+      child: IgnorePointer(
         child: Align(
           child: SizedBox(
             width: TimelineConstants.playheadWidth,
             height: .infinity,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: VineTheme.onSurface,
-                boxShadow: [BoxShadow(color: VineTheme.backgroundCamera)],
+                color: context.vineColors.onSurface,
+                boxShadow: [
+                  BoxShadow(color: context.vineColors.surfaceContainerHigh),
+                ],
               ),
             ),
           ),

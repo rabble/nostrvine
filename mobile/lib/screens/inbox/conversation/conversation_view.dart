@@ -171,7 +171,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       child: BlocListener<SharedVideoSaveCubit, SharedVideoSaveState>(
         listener: _onSharedVideoSaveState,
         child: Scaffold(
-          backgroundColor: VineTheme.surfaceBackground,
+          backgroundColor: context.vineColors.surface,
           body: BlocListener<ConversationBloc, ConversationState>(
             // A hard failure is shown on the bubble itself (tap → resend/delete),
             // so this listener only handles the toasts that have no bubble —
@@ -238,7 +238,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(32),
                               child: ColoredBox(
-                                color: VineTheme.surfaceContainerHigh,
+                                color: context.vineColors.surfaceContainerHigh,
                                 child: _ConversationContent(
                                   currentPubkey: currentPubkey,
                                   otherPubkey: otherPubkey,
@@ -455,7 +455,9 @@ class _ConversationContent extends StatelessWidget {
           ConversationStatus.error => Center(
             child: Text(
               context.l10n.dmConversationLoadError,
-              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
           ),
           ConversationStatus.loaded =>

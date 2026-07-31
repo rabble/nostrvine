@@ -79,7 +79,7 @@ class ExploreListsTab extends ConsumerWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: VineTheme.cardBackground,
+              color: context.vineColors.card,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: VineTheme.vineGreen.withValues(alpha: 0.3),
@@ -98,8 +98,8 @@ class ExploreListsTab extends ConsumerWidget {
                     const SizedBox(width: 8),
                     Text(
                       context.l10n.exploreAboutLists,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -109,8 +109,8 @@ class ExploreListsTab extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   context.l10n.exploreAboutListsDescription,
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 14,
                     height: 1.5,
                   ),
@@ -131,8 +131,8 @@ class ExploreListsTab extends ConsumerWidget {
                         children: [
                           Text(
                             context.l10n.explorePeopleLists,
-                            style: const TextStyle(
-                              color: VineTheme.whiteText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -140,8 +140,8 @@ class ExploreListsTab extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Text(
                             context.l10n.explorePeopleListsDescription,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -167,8 +167,8 @@ class ExploreListsTab extends ConsumerWidget {
                         children: [
                           Text(
                             context.l10n.exploreVideoLists,
-                            style: const TextStyle(
-                              color: VineTheme.whiteText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -176,8 +176,8 @@ class ExploreListsTab extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Text(
                             context.l10n.exploreVideoListsDescription,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -225,8 +225,8 @@ class ExploreListsTab extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Text(
                             context.l10n.exploreMyLists,
-                            style: const TextStyle(
-                              color: VineTheme.primaryText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                             ),
@@ -271,8 +271,8 @@ class ExploreListsTab extends ConsumerWidget {
                           const SizedBox(width: 8),
                           Text(
                             context.l10n.explorePeopleLists,
-                            style: const TextStyle(
-                              color: VineTheme.primaryText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                             ),
@@ -347,8 +347,8 @@ class _SubscribedListsSection extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.exploreSubscribedLists,
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -389,8 +389,8 @@ class _SubscribedListsSection extends ConsumerWidget {
               const SizedBox(width: 8),
               Text(
                 context.l10n.exploreSubscribedLists,
-                style: const TextStyle(
-                  color: VineTheme.primaryText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                 ),

@@ -20,20 +20,24 @@ class NotificationEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.bellSimple,
               size: 48,
-              color: VineTheme.lightText,
+              color: context.vineColors.mutedText,
             ),
             const SizedBox(height: 16),
             Text(
               context.l10n.notificationsEmptyTitle,
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               context.l10n.notificationsEmptySubtitle,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

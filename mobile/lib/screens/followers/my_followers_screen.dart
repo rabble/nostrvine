@@ -65,7 +65,7 @@ class _MyFollowersView extends ConsumerWidget {
         : context.l10n.followersTitle;
 
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         titleWidget: FollowerCountTitle<MyFollowersBloc, MyFollowersState>(
           title: appBarTitle,
@@ -184,16 +184,16 @@ class _FollowersEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.users,
             size: 64,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.followersEmptyTitle,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 16,
             ),
           ),
@@ -214,16 +214,16 @@ class _FollowersErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.warningCircle,
             size: 64,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.followersFailedToLoadList,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 16,
             ),
           ),

@@ -68,7 +68,9 @@ class VideoMetadataCaptureAppBar extends ConsumerWidget
             Expanded(
               child: Text(
                 context.l10n.videoMetadataPostDetailsTitle,
-                style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.onSurface,
+                ),
               ),
             ),
 

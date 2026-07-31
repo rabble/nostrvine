@@ -63,7 +63,7 @@ class SpecialProfileCheckmark extends StatelessWidget {
         ),
         child: DivineIcon(
           icon: DivineIconName.check,
-          color: VineTheme.whiteText,
+          color: context.vineColors.primaryText,
           size: iconSize,
         ),
       ),

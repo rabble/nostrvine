@@ -31,7 +31,9 @@ class VideoRecorderCountdownOverlay extends StatelessWidget {
           child: Center(
             child: Text(
               countdownValue.toString(),
-              style: VineTheme.displayLargeFont().copyWith(fontSize: 114),
+              style: VineTheme.displayLargeFont(
+                color: VineTheme.whiteText,
+              ).copyWith(fontSize: 114),
             ),
           ),
         ),

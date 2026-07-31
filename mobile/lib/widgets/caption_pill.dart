@@ -22,7 +22,7 @@ class CaptionPill extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: VineTheme.captionPillFont().copyWith(
+        style: VineTheme.captionPillFont(color: VineTheme.whiteText).copyWith(
           shadows: const [Shadow(blurRadius: 4, color: VineTheme.shadow25)],
         ),
       ),

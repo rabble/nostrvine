@@ -82,7 +82,7 @@ class _HashtagChip extends StatelessWidget {
     final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -95,7 +95,9 @@ class _HashtagChip extends StatelessWidget {
               tag,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
           ),
         ],

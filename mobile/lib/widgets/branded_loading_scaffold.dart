@@ -15,7 +15,7 @@ class BrandedLoadingScaffold extends StatelessWidget {
   final double size;
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: VineTheme.backgroundColor,
+    backgroundColor: context.vineColors.background,
     body: Center(child: BrandedLoadingIndicator(size: size)),
   );
 }

@@ -31,9 +31,10 @@ class _InvitesScreenState extends State<InvitesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: AppBar(
-        backgroundColor: VineTheme.navGreen,
+        // No override: appBarTheme already paints the nav surface, which is
+        // the dark brand green this used to hardcode.
         title: Text(context.l10n.invitesTitle),
       ),
       body: const InvitesView(),
@@ -89,9 +90,9 @@ class _LoadedView extends StatelessWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             context.l10n.invitesNoneAvailable,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             textAlign: TextAlign.center,
           ),
@@ -107,7 +108,9 @@ class _LoadedView extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               context.l10n.invitesShareWithPeople,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           ...unclaimed.map((code) => _InviteCodeCard(code: code)),
@@ -122,7 +125,9 @@ class _LoadedView extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               context.l10n.invitesUsedInvites,
-              style: VineTheme.titleSmallFont(color: VineTheme.secondaryText),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           ...claimed.map((code) => _ClaimedCodeRow(code: code)),
@@ -141,7 +146,7 @@ class _GenerateInviteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Card(
-      color: VineTheme.surfaceContainer,
+      color: context.vineColors.surfaceContainer,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -150,11 +155,15 @@ class _GenerateInviteCard extends StatelessWidget {
           children: [
             Text(
               l10n.invitesGenerateCardTitle(remaining),
-              style: VineTheme.titleMediumFont(),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             Text(
               l10n.invitesGenerateCardSubtitle,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
             DivineButton(
               label: l10n.invitesGenerateButtonLabel,
@@ -180,13 +189,20 @@ class _InviteCodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.surfaceContainer,
+      color: context.vineColors.surfaceContainer,
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            Expanded(child: Text(code.code, style: VineTheme.titleLargeFont())),
+            Expanded(
+              child: Text(
+                code.code,
+                style: VineTheme.titleLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+            ),
             IconButton(
               icon: const DivineIcon(
                 icon: DivineIconName.copy,
@@ -233,7 +249,9 @@ class _ClaimedCodeRow extends StatelessWidget {
           Expanded(
             child: Text(
               code.code,
-              style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.mutedText,
+              ),
             ),
           ),
           const DivineIcon(
@@ -244,7 +262,9 @@ class _ClaimedCodeRow extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             context.l10n.invitesClaimed,
-            style: VineTheme.labelSmallFont(color: VineTheme.lightText),
+            style: VineTheme.labelSmallFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
         ],
       ),
@@ -265,9 +285,9 @@ class _ErrorView extends StatelessWidget {
         children: [
           Text(
             context.l10n.invitesCouldNotLoad,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
           ),
           const SizedBox(height: 16),

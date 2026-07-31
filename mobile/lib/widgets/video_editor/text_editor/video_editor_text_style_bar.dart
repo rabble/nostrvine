@@ -152,9 +152,12 @@ class _ColorSwatchButton extends StatelessWidget {
         highlightColor: VineTheme.primary.withValues(alpha: 0.05),
         child: Ink(
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            border: Border.all(
+              color: context.vineColors.outlineMuted,
+              width: 2,
+            ),
           ),
           child: Padding(
             padding: const EdgeInsets.all(10),
@@ -201,9 +204,12 @@ class _FontSelectorButton extends StatelessWidget {
           child: Container(
             padding: const .symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               borderRadius: .circular(16),
-              border: Border.all(color: VineTheme.outlineMuted, width: 2),
+              border: Border.all(
+                color: context.vineColors.outlineMuted,
+                width: 2,
+              ),
             ),
             child: Row(
               mainAxisSize: .min,

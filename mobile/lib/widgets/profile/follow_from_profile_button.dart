@@ -113,11 +113,11 @@ class FollowFromProfileButtonView extends StatelessWidget {
       return OutlinedButton(
         onPressed: onBlockedTap,
         style: OutlinedButton.styleFrom(
-          backgroundColor: VineTheme.errorContainer,
-          disabledBackgroundColor: VineTheme.errorContainer,
+          backgroundColor: context.vineColors.errorContainer,
+          disabledBackgroundColor: context.vineColors.errorContainer,
           foregroundColor: VineTheme.error,
           disabledForegroundColor: VineTheme.error,
-          side: const BorderSide(color: VineTheme.errorContainer, width: 2),
+          side: BorderSide(color: context.vineColors.errorContainer, width: 2),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),

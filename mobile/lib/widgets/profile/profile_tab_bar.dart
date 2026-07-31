@@ -146,7 +146,9 @@ class _ProfileTab extends StatelessWidget {
           width: 28,
           height: 28,
           colorFilter: ColorFilter.mode(
-            isSelected ? VineTheme.whiteText : VineTheme.onSurfaceMuted,
+            isSelected
+                ? context.vineColors.primaryText
+                : context.vineColors.onSurfaceMuted,
             BlendMode.srcIn,
           ),
         ),
@@ -161,7 +163,7 @@ class _ProfileTab extends StatelessWidget {
 /// behind the status bar, the tab bar icons sit below the status bar
 /// rather than behind it.
 ///
-/// Also renders the 2px [VineTheme.outlineMuted] divider at the bottom of
+/// Also renders the 2px semantic `outlineMuted` divider at the bottom of
 /// the header. The rounded top corners of the tab content viewport are
 /// applied separately, on the body's [ColoredBox] wrapper.
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
@@ -196,7 +198,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) => DecoratedBox(
-    decoration: const BoxDecoration(color: VineTheme.surfaceBackground),
+    decoration: BoxDecoration(color: context.vineColors.surface),
     child: Stack(
       clipBehavior: .none,
       children: [
@@ -206,9 +208,12 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
               padding: EdgeInsets.only(top: topInset),
               child: _tabBar,
             ),
-            const ColoredBox(
-              color: VineTheme.outlineMuted,
-              child: SizedBox(height: _dividerHeight, width: double.infinity),
+            ColoredBox(
+              color: context.vineColors.outlineMuted,
+              child: const SizedBox(
+                height: _dividerHeight,
+                width: double.infinity,
+              ),
             ),
           ],
         ),

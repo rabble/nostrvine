@@ -23,7 +23,7 @@ Future<void> showWatermarkDownloadSheet({
 }) {
   return showModalBottomSheet<void>(
     context: context,
-    backgroundColor: VineTheme.surfaceBackground,
+    backgroundColor: context.vineColors.surface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(VineTheme.bottomSheetBorderRadius),
@@ -111,7 +111,7 @@ class _WatermarkDownloadProgressViewState
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: VineTheme.onSurfaceMuted,
+                        color: context.vineColors.onSurfaceMuted,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -128,13 +128,15 @@ class _WatermarkDownloadProgressViewState
                       const SizedBox(height: 16),
                       Text(
                         _stageLabel(state.stage, context),
-                        style: VineTheme.titleMediumFont(),
+                        style: VineTheme.titleMediumFont(
+                          color: context.vineColors.primaryText,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _stageDescription(state.stage, context),
                         style: VineTheme.bodySmallFont(
-                          color: VineTheme.secondaryText,
+                          color: context.vineColors.secondaryText,
                         ),
                       ),
                     ] else
@@ -163,7 +165,9 @@ class _WatermarkDownloadProgressViewState
         const SizedBox(height: 16),
         Text(
           l10n.watermarkDownloadSavedToCameraRoll,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -187,7 +191,9 @@ class _WatermarkDownloadProgressViewState
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.watermarkDownloadDone,
-            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],
@@ -200,12 +206,16 @@ class _WatermarkDownloadProgressViewState
         const SizedBox(height: 16),
         Text(
           l10n.watermarkDownloadPhotosAccessNeeded,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           l10n.watermarkDownloadPhotosAccessDescription,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -226,7 +236,9 @@ class _WatermarkDownloadProgressViewState
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.watermarkDownloadNotNow,
-            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],
@@ -239,12 +251,16 @@ class _WatermarkDownloadProgressViewState
         const SizedBox(height: 16),
         Text(
           l10n.watermarkDownloadFailed,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           reason,
-          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodySmallFont(
+            color: context.vineColors.secondaryText,
+          ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
@@ -252,7 +268,9 @@ class _WatermarkDownloadProgressViewState
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             l10n.watermarkDownloadDismiss,
-            style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+            style: VineTheme.labelLargeFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ],

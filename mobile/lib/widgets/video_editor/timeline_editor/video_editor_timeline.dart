@@ -326,12 +326,12 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
                   playheadPosition: _playheadPosition,
                   volumePreviewNotifier: _volumePreviewNotifier,
                 ),
-                const Padding(
-                  padding: .only(top: 12),
+                Padding(
+                  padding: const .only(top: 12),
                   child: Divider(
                     height: 1,
                     thickness: 1,
-                    color: VineTheme.outlinedDisabled,
+                    color: context.vineColors.surfaceContainer,
                   ),
                 ),
 

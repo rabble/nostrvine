@@ -80,14 +80,16 @@ class DraftsTab extends ConsumerWidget {
                   Text(
                     context.l10n.libraryCouldNotLoadDrafts,
                     textAlign: TextAlign.center,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     context.l10n.libraryOpenErrorDescription,
                     textAlign: TextAlign.center,
                     style: VineTheme.bodyLargeFont(
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -265,23 +267,29 @@ class DraftsTab extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.libraryDeleteDraftTitle,
-          style: VineTheme.titleSmallFont(),
+          style: VineTheme.titleSmallFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           context.l10n.libraryDeleteDraftMessage(
             draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
           ),
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               context.l10n.commonCancel,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           ElevatedButton(
@@ -366,14 +374,14 @@ class DraftListTile extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: ShapeDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
         foregroundDecoration: ShapeDecoration(
           shape: RoundedRectangleBorder(
-            side: const BorderSide(color: VineTheme.onSurfaceDisabled),
+            side: BorderSide(color: context.vineColors.disabled),
             borderRadius: BorderRadius.circular(16),
           ),
         ),
@@ -383,36 +391,36 @@ class DraftListTile extends StatelessWidget {
                 child: ClipThumbnailImage(
                   path: thumbnailPath,
                   fit: BoxFit.cover,
-                  placeholder: const DivineIcon(
+                  placeholder: DivineIcon(
                     icon: DivineIconName.filmSlate,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                     size: 20,
                   ),
                 ),
               )
-            : const DivineIcon(
+            : DivineIcon(
                 icon: DivineIconName.filmSlate,
-                color: VineTheme.secondaryText,
+                color: context.vineColors.secondaryText,
                 size: 20,
               ),
       ),
       title: Text(
         draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
-        style: VineTheme.titleSmallFont(),
+        style: VineTheme.titleSmallFont(color: context.vineColors.primaryText),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         _formatDraftSubtitle(context, draft.lastModified),
-        style: VineTheme.bodySmallFont(),
+        style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
       ),
       trailing: onOpenMore == null
           ? null
           : IconButton(
               onPressed: onOpenMore,
-              icon: const DivineIcon(
+              icon: DivineIcon(
                 icon: DivineIconName.dotsThreeVertical,
-                color: VineTheme.onSurface,
+                color: context.vineColors.onSurface,
                 size: 28,
               ),
             ),

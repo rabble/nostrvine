@@ -43,10 +43,14 @@ class VerifiedAccountChip extends StatelessWidget {
         claim.identity,
       ),
       child: Material(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: VineTheme.neutral10),
+          side: BorderSide(
+            color: context.vineColors.isLight
+                ? context.vineColors.outlineMuted
+                : VineTheme.neutral10,
+          ),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -56,15 +60,17 @@ class VerifiedAccountChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.globe,
                   size: 14,
-                  color: VineTheme.lightText,
+                  color: context.vineColors.mutedText,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '${claim.platform}/${claim.identity}',
-                  style: VineTheme.labelMediumFont(),
+                  style: VineTheme.labelMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

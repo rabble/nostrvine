@@ -304,7 +304,9 @@ class _TuningIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isMore = direction == FeedTuningDirection.more;
-    final color = isMore ? VineTheme.vineGreen : VineTheme.onSurfaceMuted;
+    final color = isMore
+        ? VineTheme.vineGreen
+        : context.vineColors.onSurfaceMuted;
     final label = isMore ? l10n.feedTuningMoreLabel : l10n.feedTuningLessLabel;
     final icon = isMore ? DivineIconName.arrowUp : DivineIconName.arrowDown;
 

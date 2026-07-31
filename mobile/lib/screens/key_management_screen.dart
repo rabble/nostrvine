@@ -48,7 +48,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         showBackButton: true,
         onBackPressed: context.safePop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -121,8 +121,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           const SizedBox(height: 12),
           Text(
             l10n.keyManagementExplanation,
-            style: const TextStyle(
-              color: VineTheme.onSurfaceVariant,
+            style: TextStyle(
+              color: context.vineColors.onSurfaceVariant,
               fontSize: 14,
               height: 1.5,
             ),
@@ -138,8 +138,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       children: [
         Text(
           context.l10n.keyManagementImportTitle,
-          style: const TextStyle(
-            color: VineTheme.whiteText,
+          style: TextStyle(
+            color: context.vineColors.primaryText,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -147,8 +147,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const SizedBox(height: 8),
         Text(
           context.l10n.keyManagementImportSubtitle,
-          style: const TextStyle(
-            color: VineTheme.onSurfaceMuted,
+          style: TextStyle(
+            color: context.vineColors.onSurfaceMuted,
             fontSize: 14,
             height: 1.4,
           ),
@@ -156,9 +156,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            color: VineTheme.cardBackground,
+            color: context.vineColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: VineTheme.cardBackground),
+            border: Border.all(color: context.vineColors.card),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -166,25 +166,25 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
             children: [
               TextField(
                 controller: _importController,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 14,
                 ),
                 decoration: InputDecoration(
                   hintText: 'nsec1...',
-                  hintStyle: const TextStyle(color: VineTheme.lightText),
+                  hintStyle: TextStyle(color: context.vineColors.mutedText),
                   filled: true,
-                  fillColor: VineTheme.backgroundColor,
+                  fillColor: context.vineColors.background,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: VineTheme.cardBackground,
+                    borderSide: BorderSide(
+                      color: context.vineColors.card,
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(
-                      color: VineTheme.cardBackground,
+                    borderSide: BorderSide(
+                      color: context.vineColors.card,
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
@@ -192,9 +192,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                     borderSide: const BorderSide(color: VineTheme.vineGreen),
                   ),
                   suffixIcon: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.paste,
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                     onPressed: () async {
                       final data = await Clipboard.getData('text/plain');
@@ -223,12 +223,12 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                     ),
                   ),
                   child: _isProcessing
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: VineTheme.whiteText,
+                            color: context.vineColors.primaryText,
                           ),
                         )
                       : Text(
@@ -261,8 +261,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                     Expanded(
                       child: Text(
                         context.l10n.keyManagementImportWarning,
-                        style: const TextStyle(
-                          color: VineTheme.onSurfaceVariant,
+                        style: TextStyle(
+                          color: context.vineColors.onSurfaceVariant,
                           fontSize: 13,
                         ),
                       ),
@@ -289,8 +289,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       children: [
         Text(
           context.l10n.keyManagementBackupTitle,
-          style: const TextStyle(
-            color: VineTheme.whiteText,
+          style: TextStyle(
+            color: context.vineColors.primaryText,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -298,8 +298,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const SizedBox(height: 8),
         Text(
           context.l10n.keyManagementBackupSubtitle,
-          style: const TextStyle(
-            color: VineTheme.onSurfaceMuted,
+          style: TextStyle(
+            color: context.vineColors.onSurfaceMuted,
             fontSize: 14,
             height: 1.4,
           ),
@@ -307,9 +307,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
-            color: VineTheme.cardBackground,
+            color: context.vineColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: VineTheme.cardBackground),
+            border: Border.all(color: context.vineColors.card),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -319,10 +319,10 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: _isProcessing ? null : () => _exportKey(context),
-                    icon: const DivineIcon(
+                    icon: DivineIcon(
                       icon: DivineIconName.copy,
                       size: 20,
-                      color: VineTheme.whiteText,
+                      color: context.vineColors.primaryText,
                     ),
                     label: Text(
                       context.l10n.keyManagementCopyNsec,
@@ -362,8 +362,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                       Expanded(
                         child: Text(
                           context.l10n.keyManagementNeverShare,
-                          style: const TextStyle(
-                            color: VineTheme.onSurfaceVariant,
+                          style: TextStyle(
+                            color: context.vineColors.onSurfaceVariant,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -402,8 +402,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           Expanded(
             child: Text(
               context.l10n.keyManagementKeycastRemoteSigning,
-              style: const TextStyle(
-                color: VineTheme.onSurfaceVariant,
+              style: TextStyle(
+                color: context.vineColors.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
@@ -441,14 +441,14 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
         title: Text(
           dialogContext.l10n.keyManagementConfirmImportTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: TextStyle(color: context.vineColors.primaryText),
         ),
         content: Text(
           dialogContext.l10n.keyManagementConfirmImportBody,
-          style: const TextStyle(color: VineTheme.onSurfaceVariant),
+          style: TextStyle(color: context.vineColors.onSurfaceVariant),
         ),
         actions: [
           TextButton(
@@ -581,7 +581,7 @@ class _NpubDisplayBlock extends ConsumerWidget {
                 Text(
                   l10n.keyManagementYourPublicKeyLabel,
                   style: VineTheme.labelMediumFont(
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -589,16 +589,18 @@ class _NpubDisplayBlock extends ConsumerWidget {
                   npub,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),
           ),
           IconButton(
             tooltip: l10n.keyManagementCopyPublicKeyTooltip,
-            icon: const DivineIcon(
+            icon: DivineIcon(
               icon: DivineIconName.copy,
-              color: VineTheme.onSurface,
+              color: context.vineColors.onSurface,
             ),
             onPressed: () => _copyNpub(context, npub),
           ),
@@ -653,7 +655,7 @@ class _KeyManagementLockedCard extends StatelessWidget {
                 Text(
                   l10n.keyManagementRestrictedBody,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
                 ),
               ],

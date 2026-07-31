@@ -118,12 +118,12 @@ class _FilterItem extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: VineTheme.surfaceContainer,
+                  color: context.vineColors.surfaceContainer,
                   borderRadius: .circular(20),
                   border: .all(
                     color: isSelected
                         ? VineTheme.primary
-                        : VineTheme.outlineMuted,
+                        : context.vineColors.outlineMuted,
                     width: 2,
                   ),
                 ),
@@ -146,7 +146,9 @@ class _FilterItem extends StatelessWidget {
               ),
               Text(
                 filter.name,
-                style: VineTheme.bodySmallFont(color: VineTheme.onSurface),
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurface,
+                ),
                 maxLines: 1,
                 textAlign: .center,
                 overflow: .ellipsis,

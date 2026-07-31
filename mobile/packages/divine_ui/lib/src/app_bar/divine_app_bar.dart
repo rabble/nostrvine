@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 /// Background rendering mode for [DiVineAppBar].
 enum DiVineAppBarBackgroundMode {
-  /// Solid navGreen background (default).
+  /// Solid nav-surface background (default).
   solid,
 
   /// Transparent background for overlay mode.
@@ -242,7 +242,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Custom background color for solid mode.
   ///
-  /// When null, uses [VineTheme.navGreen].
+  /// When null, uses the semantic `nav` surface of the active appearance mode.
   final Color? backgroundColor;
 
   /// Style configuration for child widgets.
@@ -264,7 +264,9 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   /// Controls the status bar icon brightness.
   ///
-  /// Use [SystemUiOverlayStyle.light] for white icons over dark content.
+  /// When null, solid and transparent app bars inherit the palette-derived
+  /// style from `appBarTheme`. Gradient app bars keep light status-bar icons
+  /// because their gradient is the darkening scrim over media.
   final SystemUiOverlayStyle? systemOverlayStyle;
 
   @override
@@ -277,17 +279,20 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     final modeDefaultStyle = switch (backgroundMode) {
-      DiVineAppBarBackgroundMode.solid => DiVineAppBarStyle.solidStyle,
-      DiVineAppBarBackgroundMode.transparent ||
-      DiVineAppBarBackgroundMode.gradient => DiVineAppBarStyle.transparentStyle,
+      DiVineAppBarBackgroundMode.solid => DiVineAppBarStyle.solid(colors),
+      DiVineAppBarBackgroundMode.transparent => DiVineAppBarStyle.transparent(
+        colors,
+      ),
+      DiVineAppBarBackgroundMode.gradient => DiVineAppBarStyle.overMediaStyle,
     };
     final effectiveStyle = modeDefaultStyle.merge(style);
 
     final hasLeading = showBackButton || showMenuButton || leadingIcon != null;
 
     final appBarContent = AppBar(
-      backgroundColor: _getBackgroundColor(),
+      backgroundColor: _getBackgroundColor(colors),
       surfaceTintColor: surfaceTintColor,
       elevation: 0,
       scrolledUnderElevation: 0,
@@ -297,7 +302,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: false,
       automaticallyImplyLeading: false,
       forceMaterialTransparency: forceMaterialTransparency,
-      systemOverlayStyle: systemOverlayStyle,
+      systemOverlayStyle: systemOverlayStyle ?? _defaultSystemOverlayStyle,
       shape: shape,
       bottom: bottom,
       leading: hasLeading
@@ -331,10 +336,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
           ? null
           : [
               if (actions.isNotEmpty)
-                DiVineAppBarActions(
-                  actions: actions,
-                  style: effectiveStyle,
-                ),
+                DiVineAppBarActions(actions: actions, style: effectiveStyle),
               if (customActions.isNotEmpty)
                 Padding(
                   padding: EdgeInsetsDirectional.only(
@@ -359,9 +361,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     if (backgroundMode == DiVineAppBarBackgroundMode.gradient) {
       return Container(
-        decoration: BoxDecoration(
-          gradient: gradient!.toLinearGradient(),
-        ),
+        decoration: BoxDecoration(gradient: gradient!.toLinearGradient()),
         child: appBarContent,
       );
     }
@@ -369,9 +369,20 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     return appBarContent;
   }
 
-  Color? _getBackgroundColor() {
+  /// Null lets `appBarTheme.systemOverlayStyle` — which follows the
+  /// appearance mode — apply. Only gradient mode, whose gradient is a
+  /// darkening scrim over video, pins light icons.
+  SystemUiOverlayStyle? get _defaultSystemOverlayStyle {
     return switch (backgroundMode) {
-      DiVineAppBarBackgroundMode.solid => backgroundColor ?? VineTheme.navGreen,
+      DiVineAppBarBackgroundMode.solid ||
+      DiVineAppBarBackgroundMode.transparent => null,
+      DiVineAppBarBackgroundMode.gradient => VineTheme.statusBarStyle,
+    };
+  }
+
+  Color? _getBackgroundColor(VineThemeColors colors) {
+    return switch (backgroundMode) {
+      DiVineAppBarBackgroundMode.solid => backgroundColor ?? colors.nav,
       DiVineAppBarBackgroundMode.transparent => VineTheme.transparent,
       DiVineAppBarBackgroundMode.gradient => VineTheme.transparent,
     };

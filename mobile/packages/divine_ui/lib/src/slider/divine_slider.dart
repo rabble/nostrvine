@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 ///
 /// Wraps a Material [Slider] with a themed track (pill-shaped, uniform
 /// height) and a tall rectangular thumb indicator. The active portion uses
-/// the primary color and the inactive portion uses
-/// [VineTheme.onSurfaceDisabled].
+/// the primary color and the inactive portion follows the `disabled` color
+/// of the active appearance mode.
 class DivineSlider extends StatelessWidget {
   /// Creates a [DivineSlider].
   ///
@@ -22,8 +22,8 @@ class DivineSlider extends StatelessWidget {
     this.thumbWidth = 4,
     this.thumbHeight = 32,
     this.activeColor = VineTheme.primary,
-    this.inactiveColor = VineTheme.onSurfaceDisabled,
-    this.thumbColor = VineTheme.onSurface,
+    this.inactiveColor,
+    this.thumbColor,
     this.semanticLabel,
     super.key,
   }) : assert(min <= max, 'min must be <= max'),
@@ -67,10 +67,16 @@ class DivineSlider extends StatelessWidget {
   final int? divisions;
 
   /// Color of the unfilled (inactive) track portion.
-  final Color inactiveColor;
+  ///
+  /// Defaults to the `disabled` color of the active appearance mode.
+  final Color? inactiveColor;
 
   /// Color of the thumb indicator.
-  final Color thumbColor;
+  ///
+  /// Defaults to the `onSurface` color of the active appearance mode. Pass
+  /// [VineTheme.onSurface] explicitly for sliders that sit on a scrim over
+  /// media, where the thumb must stay light in both modes.
+  final Color? thumbColor;
 
   /// Optional accessibility label describing what the slider controls (e.g.
   /// "Volume"). Passed to the Material [Slider.label] so it lands on the
@@ -82,14 +88,15 @@ class DivineSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     return SliderTheme(
       data: SliderThemeData(
         padding: EdgeInsets.zero,
         activeTrackColor: activeColor,
-        inactiveTrackColor: inactiveColor,
+        inactiveTrackColor: inactiveColor ?? colors.disabled,
         trackHeight: trackHeight,
         trackShape: DivineSliderTrackShape(trackHeight: trackHeight),
-        thumbColor: thumbColor,
+        thumbColor: thumbColor ?? colors.onSurface,
         thumbShape: DivineSliderThumbShape(
           width: thumbWidth,
           height: thumbHeight,

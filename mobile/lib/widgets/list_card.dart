@@ -17,7 +17,7 @@ class UserListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.cardBackground,
+      color: context.vineColors.card,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: onTap,
@@ -40,8 +40,8 @@ class UserListCard extends StatelessWidget {
                       children: [
                         Text(
                           userList.name,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -50,8 +50,8 @@ class UserListCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           LinkifiedText(
                             text: userList.description!,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 14,
                             ),
                             maxLines: 2,
@@ -61,17 +61,17 @@ class UserListCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Text(
                 context.l10n.listPersonCount(userList.pubkeys.length),
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 12,
                 ),
               ),
@@ -97,7 +97,7 @@ class CuratedListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: VineTheme.cardBackground,
+      color: context.vineColors.card,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: onTap,
@@ -121,8 +121,8 @@ class CuratedListCard extends StatelessWidget {
                       children: [
                         Text(
                           curatedList.name,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
+                          style: TextStyle(
+                            color: context.vineColors.primaryText,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -131,8 +131,8 @@ class CuratedListCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           LinkifiedText(
                             text: curatedList.description!,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 14,
                             ),
                             maxLines: 2,
@@ -142,9 +142,9 @@ class CuratedListCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                 ],
               ),
@@ -155,17 +155,17 @@ class CuratedListCard extends StatelessWidget {
                     context.l10n.listVideoCount(
                       curatedList.videoEventIds.length,
                     ),
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 12,
                     ),
                   ),
                   if (curatedList.tags.isNotEmpty) ...[
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       '•',
                       style: TextStyle(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                         fontSize: 12,
                       ),
                     ),

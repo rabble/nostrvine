@@ -66,16 +66,23 @@ void main() {
       test(
         'ignores persisted internal flag overrides when internal access is off',
         () async {
-          when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
-          when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
+          when(
+            () => mockPrefs.getBool('ff_adaptiveMediaChrome'),
+          ).thenReturn(true);
+          when(
+            () => mockPrefs.containsKey('ff_adaptiveMediaChrome'),
+          ).thenReturn(true);
 
           await service.initialize();
 
-          expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
-          expect(service.hasUserOverride(FeatureFlag.lightMode), isFalse);
+          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
+          expect(
+            service.hasUserOverride(FeatureFlag.adaptiveMediaChrome),
+            isFalse,
+          );
           // Ignored, not deleted — the choice is honoured again if the flag is
           // promoted back to a user audience or internal access is restored.
-          verifyNever(() => mockPrefs.remove('ff_lightMode'));
+          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
         },
       );
 
@@ -87,14 +94,21 @@ void main() {
             const BuildConfiguration(),
             canOverrideInternalFlags: () => true,
           );
-          when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
-          when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
+          when(
+            () => mockPrefs.getBool('ff_adaptiveMediaChrome'),
+          ).thenReturn(true);
+          when(
+            () => mockPrefs.containsKey('ff_adaptiveMediaChrome'),
+          ).thenReturn(true);
 
           await service.initialize();
 
-          expect(service.isEnabled(FeatureFlag.lightMode), isTrue);
-          expect(service.hasUserOverride(FeatureFlag.lightMode), isTrue);
-          verifyNever(() => mockPrefs.remove('ff_lightMode'));
+          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isTrue);
+          expect(
+            service.hasUserOverride(FeatureFlag.adaptiveMediaChrome),
+            isTrue,
+          );
+          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
         },
       );
 
@@ -130,11 +144,11 @@ void main() {
       test(
         'should not persist internal flags when internal access is off',
         () async {
-          await service.setFlag(FeatureFlag.lightMode, true);
+          await service.setFlag(FeatureFlag.adaptiveMediaChrome, true);
 
-          verifyNever(() => mockPrefs.setBool('ff_lightMode', true));
-          verifyNever(() => mockPrefs.remove('ff_lightMode'));
-          expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
+          verifyNever(() => mockPrefs.setBool('ff_adaptiveMediaChrome', true));
+          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
+          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
         },
       );
 
@@ -147,10 +161,12 @@ void main() {
             canOverrideInternalFlags: () => true,
           );
 
-          await service.setFlag(FeatureFlag.lightMode, true);
+          await service.setFlag(FeatureFlag.adaptiveMediaChrome, true);
 
-          verify(() => mockPrefs.setBool('ff_lightMode', true)).called(1);
-          expect(service.isEnabled(FeatureFlag.lightMode), isTrue);
+          verify(
+            () => mockPrefs.setBool('ff_adaptiveMediaChrome', true),
+          ).called(1);
+          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isTrue);
         },
       );
 
@@ -198,21 +214,28 @@ void main() {
       test(
         'preserves internal flag overrides when resetting all without access',
         () async {
-          when(() => mockPrefs.getBool('ff_lightMode')).thenReturn(true);
-          when(() => mockPrefs.containsKey('ff_lightMode')).thenReturn(true);
+          when(
+            () => mockPrefs.getBool('ff_adaptiveMediaChrome'),
+          ).thenReturn(true);
+          when(
+            () => mockPrefs.containsKey('ff_adaptiveMediaChrome'),
+          ).thenReturn(true);
 
           await service.initialize();
           await service.resetAllFlags();
 
-          verifyNever(() => mockPrefs.remove('ff_lightMode'));
-          expect(service.isEnabled(FeatureFlag.lightMode), isFalse);
-          expect(service.hasUserOverride(FeatureFlag.lightMode), isFalse);
+          verifyNever(() => mockPrefs.remove('ff_adaptiveMediaChrome'));
+          expect(service.isEnabled(FeatureFlag.adaptiveMediaChrome), isFalse);
+          expect(
+            service.hasUserOverride(FeatureFlag.adaptiveMediaChrome),
+            isFalse,
+          );
         },
       );
     });
 
     group('state queries', () {
-      test('exposes light mode experiment metadata', () {
+      test('exposes light mode and media chrome metadata', () {
         final lightMode = service.getFlagMetadata(FeatureFlag.lightMode);
         final adaptiveMedia = service.getFlagMetadata(
           FeatureFlag.adaptiveMediaChrome,

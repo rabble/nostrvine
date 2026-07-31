@@ -110,7 +110,7 @@ Future<CaptionsEditorResult?> showCaptionsEditorSheet(
       minChildSize: 0.8,
       title: Text(
         l10n.videoEditorCaptionsEditTitle,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       headerLeadingAction: canDeleteTrack
           ? DivineIconButton(
@@ -206,10 +206,10 @@ class _CaptionsSheetBody extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: _CaptionsModeControls(state: state),
             ),
-            const Divider(
+            Divider(
               height: 2,
               thickness: 2,
-              color: VineTheme.outlinedDisabled,
+              color: context.vineColors.surfaceContainer,
             ),
             Expanded(
               child: ListView(
@@ -218,7 +218,10 @@ class _CaptionsSheetBody extends StatelessWidget {
                 children: [
                   for (var i = 0; i < state.cues.length; i++) ...[
                     if (i > 0)
-                      const Divider(height: 32, color: VineTheme.outlineMuted),
+                      Divider(
+                        height: 32,
+                        color: context.vineColors.outlineMuted,
+                      ),
                     _CueRow(
                       key: ValueKey(state.cues[i].id),
                       cue: state.cues[i],
@@ -228,10 +231,10 @@ class _CaptionsSheetBody extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(
+            Divider(
               height: 2,
               thickness: 2,
-              color: VineTheme.outlinedDisabled,
+              color: context.vineColors.surfaceContainer,
             ),
             SafeArea(
               top: false,
@@ -266,12 +269,16 @@ class _GeneratingView extends StatelessWidget {
         Text(
           l10n.videoEditorCaptionsGeneratingTitle,
           textAlign: TextAlign.center,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         Text(
           l10n.videoEditorCaptionsGeneratingSubtitle,
           textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
       ],
     );
@@ -308,7 +315,9 @@ class _FallbackView extends StatelessWidget {
         Text(
           _message(l10n),
           textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         DivineButton(
           label: l10n.videoEditorCaptionsStartEmptyButton,
@@ -361,7 +370,9 @@ class _CaptionsModeControls extends StatelessWidget {
               context.read<CaptionsEditorCubit>().setBurnIn(burnIn: checked),
           label: Text(
             l10n.videoEditorCaptionsBurnInLabel,
-            style: VineTheme.bodyMediumFont(),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ),
 
@@ -436,7 +447,9 @@ class _CueRowState extends State<_CueRow> {
           children: [
             Text(
               _label(cue.start),
-              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
             Expanded(
               child: DivineRangeSlider(
@@ -453,7 +466,9 @@ class _CueRowState extends State<_CueRow> {
             ),
             Text(
               _label(cue.end),
-              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ],
         ),
@@ -497,7 +512,7 @@ class _InputSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.containerLow,
+        color: context.vineColors.containerLow,
         borderRadius: BorderRadius.circular(16),
       ),
       child: child,

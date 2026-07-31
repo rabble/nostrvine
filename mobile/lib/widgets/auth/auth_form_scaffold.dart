@@ -111,7 +111,7 @@ class AuthFormScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Padding(
@@ -136,11 +136,11 @@ class AuthFormScaffold extends StatelessWidget {
                           // Title
                           Text(
                             title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: VineTheme.fontFamilyBricolage,
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: VineTheme.whiteText,
+                              color: context.vineColors.primaryText,
                             ),
                           ),
 

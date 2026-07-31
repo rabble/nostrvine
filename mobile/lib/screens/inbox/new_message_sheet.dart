@@ -90,7 +90,7 @@ class _NewMessageSheetViewState extends State<_NewMessageSheetView> {
     final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Material(
-      color: VineTheme.surfaceBackground,
+      color: context.vineColors.surface,
       borderRadius: const BorderRadius.vertical(
         top: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
@@ -168,14 +168,23 @@ class _SheetHeader extends StatelessWidget {
           width: 64,
           height: 4,
           decoration: BoxDecoration(
-            color: VineTheme.onSurfaceDisabled,
+            color: context.vineColors.disabled,
             borderRadius: BorderRadius.circular(8),
           ),
         ),
         const SizedBox(height: 20),
-        Text(context.l10n.newMessageTitle, style: VineTheme.titleMediumFont()),
+        Text(
+          context.l10n.newMessageTitle,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
         const SizedBox(height: 8),
-        const Divider(height: 1, thickness: 1, color: VineTheme.outlineMuted),
+        Divider(
+          height: 1,
+          thickness: 1,
+          color: context.vineColors.outlineMuted,
+        ),
       ],
     );
   }
@@ -192,26 +201,28 @@ class _SearchField extends StatelessWidget {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         spacing: 8,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.search,
-            color: VineTheme.onSurfaceMuted,
+            color: context.vineColors.onSurfaceMuted,
           ),
           Expanded(
             child: TextField(
               controller: controller,
               autofocus: true,
-              style: VineTheme.bodyLargeFont(),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.primaryText,
+              ),
               decoration: InputDecoration(
                 hintText: context.l10n.newMessageFindPeople,
                 hintStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -240,7 +251,9 @@ class _UserProfileList extends StatelessWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             emptyMessage!,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -249,10 +262,10 @@ class _UserProfileList extends StatelessWidget {
 
     return ListView.separated(
       itemCount: profiles.length,
-      separatorBuilder: (_, _) => const Divider(
+      separatorBuilder: (_, _) => Divider(
         height: 1,
         thickness: 1,
-        color: VineTheme.outlineMuted,
+        color: context.vineColors.outlineMuted,
         indent: 72,
       ),
       itemBuilder: (context, index) {
@@ -296,14 +309,18 @@ class _UserTile extends StatelessWidget {
                     profile.bestDisplayName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   if (profile.handle.isNotEmpty)
                     Text(
                       profile.handle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: VineTheme.bodyMediumFont(),
+                      style: VineTheme.bodyMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                 ],
               ),

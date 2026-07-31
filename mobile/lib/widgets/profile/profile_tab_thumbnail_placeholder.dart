@@ -13,7 +13,7 @@ class ProfileTabThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: .circular(4),
-      color: VineTheme.surfaceContainer,
+      color: context.vineColors.surfaceContainer,
     ),
   );
 }

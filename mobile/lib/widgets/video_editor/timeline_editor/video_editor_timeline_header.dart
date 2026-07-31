@@ -108,7 +108,9 @@ class _VolumeTextDisplay extends StatelessWidget {
         }
         return Text(
           context.l10n.videoEditorTimelineSlideToAdjust,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         );
       },
     );
@@ -156,12 +158,11 @@ class _TimeDisplay extends StatelessWidget {
 
   final ValueNotifier<Duration> playheadPosition;
 
-  static final TextStyle _timeStyle = VineTheme.labelLargeFont().copyWith(
-    fontFeatures: [const FontFeature.tabularFigures()],
-  );
-
   @override
   Widget build(BuildContext context) {
+    final timeStyle = VineTheme.labelLargeFont(
+      color: context.vineColors.primaryText,
+    ).copyWith(fontFeatures: [const FontFeature.tabularFigures()]);
     // The editor timeline draws clips at full length, but an overlap transition
     // (dissolve/slide/push/wipe) blends two clips so the rendered output is
     // shorter. Show the output length — and the playhead mapped onto it — so the
@@ -181,17 +182,17 @@ class _TimeDisplay extends StatelessWidget {
         final positionText = TextSpan(
           text: TimeFormatter.formatCompactDuration(outputPosition),
           style: isOver
-              ? _timeStyle.copyWith(color: VineTheme.warning)
-              : _timeStyle,
+              ? timeStyle.copyWith(color: VineTheme.warning)
+              : timeStyle,
         );
         return Text.rich(
           TextSpan(
             children: [
               positionText,
-              TextSpan(text: ' / ', style: _timeStyle),
+              TextSpan(text: ' / ', style: timeStyle),
               TextSpan(
                 text: TimeFormatter.formatCompactDuration(outputDuration),
-                style: _timeStyle,
+                style: timeStyle,
               ),
             ],
           ),

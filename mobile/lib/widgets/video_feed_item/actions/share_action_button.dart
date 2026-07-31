@@ -585,14 +585,16 @@ class _ClipTitleSheetState extends State<_ClipTitleSheet> {
               Text(
                 context.l10n.shareSheetNameClipTitle,
                 textAlign: TextAlign.center,
-                style: VineTheme.headlineSmallFont(),
+                style: VineTheme.headlineSmallFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 context.l10n.shareSheetNameClipSubtitle,
                 textAlign: TextAlign.center,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
@@ -668,7 +670,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: Material(
-        color: VineTheme.surfaceBackground,
+        color: context.vineColors.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: SafeArea(
           child: SingleChildScrollView(
@@ -689,7 +691,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                   children: [
                     const _DragIndicator(),
                     _ShareSheetHeader(video: video),
-                    const Divider(color: VineTheme.cardBackground, height: 1),
+                    Divider(color: context.vineColors.card, height: 1),
                     _ShareWithSection(
                       contacts: state.contacts,
                       contactsLoaded: state.contactsLoaded,
@@ -721,7 +723,7 @@ class _UnifiedShareSheetView extends StatelessWidget {
                         ),
                       ),
                     if (state.selectedRecipients.isEmpty) ...[
-                      const Divider(color: VineTheme.cardBackground, height: 1),
+                      Divider(color: context.vineColors.card, height: 1),
                       _MoreActionsSection(
                         video: video,
                         isOwnContent: isOwnContent,

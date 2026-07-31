@@ -33,9 +33,14 @@ class VideoEngagementListView extends StatelessWidget {
     };
 
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
-        titleWidget: Text(title, style: VineTheme.titleMediumFont()),
+        titleWidget: Text(
+          title,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
         backButtonSemanticLabel: context.l10n.commonBack,
@@ -112,11 +117,13 @@ class _EngagementEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          DivineIcon(icon: icon, size: 64, color: VineTheme.lightText),
+          DivineIcon(icon: icon, size: 64, color: context.vineColors.mutedText),
           const SizedBox(height: 16),
           Text(
             message,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ],
       ),
@@ -133,15 +140,17 @@ class _EngagementErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.warningCircle,
             size: 64,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.videoEngagementLoadFailed,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
           const SizedBox(height: 8),
           TextButton(

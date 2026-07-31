@@ -74,14 +74,19 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         : ref.watch(curatedListVideoEventsProvider(widget.listId));
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: _activeVideoIndex == null
           ? DiVineAppBar(
               titleWidget: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(widget.listName, style: VineTheme.titleLargeFont()),
+                  Text(
+                    widget.listName,
+                    style: VineTheme.titleLargeFont(
+                      color: context.vineColors.onNav,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   _buildSubheading(),
                 ],
@@ -107,16 +112,16 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.video_library,
                     size: 64,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     context.l10n.curatedListEmptyTitle,
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
+                    style: TextStyle(
+                      color: context.vineColors.primaryText,
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
@@ -124,8 +129,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   const SizedBox(height: 8),
                   Text(
                     context.l10n.curatedListEmptySubtitle,
-                    style: const TextStyle(
-                      color: VineTheme.secondaryText,
+                    style: TextStyle(
+                      color: context.vineColors.secondaryText,
                       fontSize: 14,
                     ),
                   ),
@@ -155,8 +160,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               const SizedBox(height: 16),
               Text(
                 context.l10n.curatedListLoadingVideos,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 14,
                 ),
               ),
@@ -178,8 +183,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   error.toString(),
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 12,
                   ),
                   textAlign: TextAlign.center,
@@ -192,12 +197,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 },
                 icon: const DivineIcon(
                   icon: DivineIconName.arrowClockwise,
-                  color: VineTheme.backgroundColor,
+                  color: VineTheme.onPrimary,
                 ),
                 label: Text(context.l10n.commonRetry),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
-                  foregroundColor: VineTheme.backgroundColor,
+                  foregroundColor: context.vineColors.background,
                 ),
               ),
             ],
@@ -227,7 +232,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       emptyBuilder: () => Center(
         child: Text(
           context.l10n.curatedListNoVideosAvailable,
-          style: const TextStyle(color: VineTheme.secondaryText),
+          style: TextStyle(color: context.vineColors.secondaryText),
         ),
       ),
     );
@@ -244,7 +249,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       return Center(
         child: Text(
           context.l10n.curatedListVideoNotAvailable,
-          style: const TextStyle(color: VineTheme.secondaryText),
+          style: TextStyle(color: context.vineColors.secondaryText),
         ),
       );
     }
@@ -287,8 +292,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           children: [
             Text(
               context.l10n.listByAuthorPrefix,
-              style: const TextStyle(
-                color: VineTheme.onSurfaceVariant,
+              style: TextStyle(
+                color: context.vineColors.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -296,8 +301,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               flex: 0,
               child: UserName.fromPubKey(
                 widget.authorPubkey!,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -307,8 +312,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             ),
             Text(
               ' • $videoText',
-              style: const TextStyle(
-                color: VineTheme.onSurfaceVariant,
+              style: TextStyle(
+                color: context.vineColors.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -320,7 +325,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     // No author - just show video count
     return Text(
       videoText,
-      style: const TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 12),
+      style: TextStyle(
+        color: context.vineColors.onSurfaceVariant,
+        fontSize: 12,
+      ),
     );
   }
 
@@ -349,9 +357,11 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             : DivineIconName.plus.assetPath,
       ),
       backgroundColor: isSubscribed
-          ? VineTheme.iconButtonBackground
+          ? context.vineColors.iconButton
           : VineTheme.vineGreen,
-      iconColor: isSubscribed ? VineTheme.vineGreen : VineTheme.whiteText,
+      iconColor: isSubscribed
+          ? VineTheme.vineGreen
+          : context.vineColors.primaryText,
       onPressed: _isTogglingSubscription ? null : _toggleSubscription,
       tooltip: isSubscribed ? 'Subscribed' : 'Subscribe',
     );
@@ -405,21 +415,27 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.surfaceContainer,
+        backgroundColor: context.vineColors.surfaceContainer,
         title: Text(
           l10n.curatedListDeleteConfirmTitle,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
         content: Text(
           l10n.curatedListDeleteConfirmBody,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: Text(
               l10n.commonCancel,
-              style: VineTheme.labelMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.labelMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
           ),
           TextButton(
@@ -588,10 +604,10 @@ class _CuratedListActionsMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopupMenuButton<_CuratedListAction>(
       tooltip: context.l10n.curatedListActionsTooltip,
-      color: VineTheme.surfaceContainer,
-      icon: const DivineIcon(
+      color: context.vineColors.surfaceContainer,
+      icon: DivineIcon(
         icon: DivineIconName.dotsThreeVertical,
-        color: VineTheme.whiteText,
+        color: context.vineColors.primaryText,
       ),
       onSelected: onSelected,
       itemBuilder: (context) => [
@@ -601,7 +617,7 @@ class _CuratedListActionsMenu extends StatelessWidget {
             _CuratedListAction.delete => context.l10n.listDeleteAction,
             _CuratedListAction.unfollow =>
               context.l10n.curatedListUnfollowAction,
-          }, style: const TextStyle(color: VineTheme.primaryText)),
+          }, style: TextStyle(color: context.vineColors.primaryText)),
         ),
       ],
     );

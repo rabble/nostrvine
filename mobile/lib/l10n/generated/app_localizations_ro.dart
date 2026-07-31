@@ -226,20 +226,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get generalSettingsSectionApp => 'APLICAȚIE';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'Aspect';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Alege cum arată Divine pe acest dispozitiv';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'Implicit de sistem';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'Luminos';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'Întunecat';
 
   @override
   String get generalSettingsClosedCaptions => 'Subtitrări';

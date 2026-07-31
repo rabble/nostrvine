@@ -70,7 +70,7 @@ class _Nip05SettingsLoadingScreen extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: const Center(
         child: BrandedLoadingIndicator(size: 60),
       ),
@@ -129,7 +129,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: MultiBlocListener(
         listeners: [
           BlocListener<MyProfileBloc, MyProfileState>(
@@ -191,7 +191,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         context.l10n.nostrSettingsNip05AddressSubtitle,
-        style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
     );
   }
@@ -211,7 +211,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             style: VineTheme.labelMediumFont(
               color: _usernameFocusNode.hasFocus && !isExternal
                   ? VineTheme.primary
-                  : VineTheme.onSurfaceMuted,
+                  : context.vineColors.onSurfaceMuted,
             ),
           ),
           const SizedBox(height: 4),
@@ -221,51 +221,51 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             enabled: !isExternal,
             style: VineTheme.bodyLargeFont(
               color: isExternal
-                  ? VineTheme.onSurfaceMuted
-                  : VineTheme.onSurface,
+                  ? context.vineColors.onSurfaceMuted
+                  : context.vineColors.onSurface,
             ),
             autovalidateMode: AutovalidateMode.onUserInteraction,
             decoration: InputDecoration(
               isCollapsed: true,
               hintText: context.l10n.profileSetupUsernameHint,
               helperText: context.l10n.profileSetupUsernameHelper,
-              helperStyle: const TextStyle(
-                color: VineTheme.onSurfaceMuted,
+              helperStyle: TextStyle(
+                color: context.vineColors.onSurfaceMuted,
                 fontSize: 12,
               ),
-              hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-              border: const UnderlineInputBorder(
+              hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
+              border: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              enabledBorder: const UnderlineInputBorder(
+              enabledBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              disabledBorder: const UnderlineInputBorder(
+              disabledBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              focusedBorder: const UnderlineInputBorder(
+              focusedBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              errorBorder: const UnderlineInputBorder(
+              errorBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              focusedErrorBorder: const UnderlineInputBorder(
+              focusedErrorBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
               contentPadding: const EdgeInsets.all(16),
               prefixText: '@',
               prefixStyle: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
               ),
               suffixText: _divineVideoDomainSuffix,
               suffixStyle: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
               ),
               errorMaxLines: 2,
             ),
@@ -302,14 +302,16 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
               isExternal ? Icons.check_box : Icons.check_box_outline_blank,
               color: isExternal
                   ? VineTheme.vineGreen
-                  : VineTheme.onSurfaceMuted,
+                  : context.vineColors.onSurfaceMuted,
               size: 22,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 context.l10n.profileSetupUseOwnNip05,
-                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.onSurface,
+                ),
               ),
             ),
           ],
@@ -333,37 +335,37 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             style: VineTheme.labelMediumFont(
               color: _externalFocusNode.hasFocus
                   ? VineTheme.primary
-                  : VineTheme.onSurfaceMuted,
+                  : context.vineColors.onSurfaceMuted,
             ),
           ),
           const SizedBox(height: 4),
           TextFormField(
             controller: _externalController,
             focusNode: _externalFocusNode,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+            style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
             decoration: InputDecoration(
               isCollapsed: true,
               hintText: context.l10n.nostrSettingsNip05AddressHint,
-              hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-              border: const UnderlineInputBorder(
+              hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
+              border: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              enabledBorder: const UnderlineInputBorder(
+              enabledBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              focusedBorder: const UnderlineInputBorder(
+              focusedBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              errorBorder: const UnderlineInputBorder(
+              errorBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
-              focusedErrorBorder: const UnderlineInputBorder(
+              focusedErrorBorder: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: VineTheme.neutral10),
+                borderSide: BorderSide(color: context.vineColors.outlineMuted),
               ),
               contentPadding: const EdgeInsets.all(16),
               errorMaxLines: 2,
@@ -486,14 +488,16 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.surfaceBackground,
+        backgroundColor: context.vineColors.surface,
         title: Text(
           l10n.profileSetupNip05ConfirmTitle,
-          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+          style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
         ),
         content: Text(
           l10n.profileSetupNip05ConfirmBody,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
         actions: [
           TextButton(
@@ -501,7 +505,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             child: Text(
               l10n.profileSetupNip05ConfirmCancel,
               style: VineTheme.labelLargeFont(
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
               ),
             ),
           ),
@@ -557,15 +561,17 @@ class _Nip05SettingsLoadError extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: 16,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.warningCircle,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
               size: 48,
             ),
             Text(
               context.l10n.profilePleaseTryAgain,
               textAlign: TextAlign.center,
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
             ),
             DivineButton(
               type: DivineButtonType.secondary,

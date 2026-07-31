@@ -30,14 +30,18 @@ class AudioListTile extends StatelessWidget {
         title: Text(
           audio.title ?? context.l10n.videoEditorAudioUntitledSound,
           style: VineTheme.titleMediumFont(
-            color: isSelected ? VineTheme.primary : VineTheme.onSurface,
+            color: isSelected
+                ? VineTheme.primary
+                : context.vineColors.onSurface,
           ),
           maxLines: 1,
           overflow: .ellipsis,
         ),
         subtitle: Text.rich(
           TextSpan(
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
             children: [
               TextSpan(
                 text: Duration(

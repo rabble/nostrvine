@@ -37,12 +37,16 @@ class NostrAppPermissionPromptSheet extends StatelessWidget {
         children: [
           Text(
             l10n.nostrAppPermissionTitle(appName),
-            style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
+            style: VineTheme.titleLargeFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             l10n.nostrAppPermissionDescription,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 20),
           _DetailRow(label: l10n.nostrAppPermissionOrigin, value: origin),
@@ -95,21 +99,23 @@ class _DetailRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurfaceMuted),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             value,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+            style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
           ),
         ],
       ),

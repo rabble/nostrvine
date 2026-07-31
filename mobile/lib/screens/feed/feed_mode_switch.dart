@@ -196,9 +196,12 @@ class _FeedModeContent extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: VineTheme.headlineSmallFont().copyWith(
-                          shadows: VineTheme.buttonShadows,
-                        ),
+                        style:
+                            VineTheme.headlineSmallFont(
+                              color: VineTheme.whiteText,
+                            ).copyWith(
+                              shadows: VineTheme.buttonShadows,
+                            ),
                       ),
                     ),
                     const _FeedModeCaret(),

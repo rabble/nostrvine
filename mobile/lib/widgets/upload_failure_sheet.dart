@@ -114,7 +114,9 @@ class _UploadFailureSheetContent extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               context.l10n.uploadFailureSheetTitle,
-              style: VineTheme.headlineSmallFont(),
+              style: VineTheme.headlineSmallFont(
+                color: context.vineColors.primaryText,
+              ),
               textAlign: TextAlign.center,
             ),
             if (errorMessage != null) ...[
@@ -122,7 +124,7 @@ class _UploadFailureSheetContent extends StatelessWidget {
               Text(
                 errorMessage,
                 style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 textAlign: .center,
               ),

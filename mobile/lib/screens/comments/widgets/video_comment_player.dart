@@ -170,7 +170,7 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
       child: AspectRatio(
         aspectRatio: 9 / 16,
         child: DecoratedBox(
-          decoration: const BoxDecoration(color: VineTheme.containerLow),
+          decoration: BoxDecoration(color: context.vineColors.containerLow),
           child: GestureDetector(
             onTap: _togglePlay,
             child: Stack(
@@ -183,12 +183,12 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer>
                   ),
                 ),
                 if (_isInitializing)
-                  const Center(
+                  Center(
                     child: SizedBox.square(
                       dimension: 28,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: VineTheme.onSurface,
+                        color: context.vineColors.onSurface,
                       ),
                     ),
                   )
@@ -255,7 +255,7 @@ class _PlayOverlay extends StatelessWidget {
           child: Center(
             child: DivineIcon(
               icon: DivineIconName.play,
-              color: VineTheme.whiteText,
+              color: VineTheme.primaryText,
             ),
           ),
         ),
@@ -309,12 +309,12 @@ class _VideoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.containerLow,
+    return ColoredBox(
+      color: context.vineColors.containerLow,
       child: Center(
         child: DivineIcon(
           icon: DivineIconName.videoCamera,
-          color: VineTheme.onSurfaceMuted,
+          color: context.vineColors.onSurfaceMuted,
           size: 32,
         ),
       ),

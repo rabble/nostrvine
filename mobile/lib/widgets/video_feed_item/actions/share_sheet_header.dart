@@ -15,7 +15,7 @@ class _DragIndicator extends StatelessWidget {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: VineTheme.secondaryText,
+          color: context.vineColors.secondaryText,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -67,8 +67,8 @@ class _ShareSheetHeader extends ConsumerWidget {
                   ),
                 UserName.fromPubKey(
                   video.pubkey,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                   maxLines: 1,

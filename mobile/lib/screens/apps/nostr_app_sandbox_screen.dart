@@ -220,7 +220,10 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   ) async {
     await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
     if (defaultTargetPlatform != TargetPlatform.macOS) {
-      await controller.setBackgroundColor(VineTheme.backgroundColor);
+      // Read after the first await: this runs from initState, and
+      // Theme.of() is illegal until initState has returned.
+      if (!mounted) return;
+      await controller.setBackgroundColor(context.vineColors.background);
     }
 
     await controller.setNavigationDelegate(
@@ -654,7 +657,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
           unawaited(_handleBackPressed());
         },
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Stack(
         children: [
           Positioned.fill(child: _buildSandboxBody()),
@@ -708,7 +711,7 @@ class _SandboxStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420),
@@ -716,9 +719,9 @@ class _SandboxStatusCard extends StatelessWidget {
             margin: const EdgeInsets.all(24),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: VineTheme.cardBackground,
+              color: context.vineColors.card,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: VineTheme.outlineMuted),
+              border: Border.all(color: context.vineColors.outlineMuted),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -738,7 +741,7 @@ class _SandboxStatusCard extends StatelessWidget {
                   title,
                   textAlign: TextAlign.center,
                   style: VineTheme.headlineSmallFont(
-                    color: VineTheme.onSurface,
+                    color: context.vineColors.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -746,7 +749,7 @@ class _SandboxStatusCard extends StatelessWidget {
                   subtitle,
                   textAlign: TextAlign.center,
                   style: VineTheme.bodyLargeFont(
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
                 ),
               ],

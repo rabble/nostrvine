@@ -355,7 +355,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           child: Container(
             margin: const .fromLTRB(16, 16, 16, 4),
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               borderRadius: .circular(_searchInputBorderRadius),
             ),
             child: TextField(
@@ -370,17 +370,19 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchChanged,
               cursorColor: VineTheme.vineGreen,
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurface,
+              ),
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
-                prefixIcon: const Padding(
-                  padding: .only(left: 16, right: 8),
+                prefixIcon: Padding(
+                  padding: const .only(left: 16, right: 8),
                   child: DivineIcon(
                     icon: DivineIconName.search,
-                    color: VineTheme.onSurfaceMuted,
+                    color: context.vineColors.onSurfaceMuted,
                   ),
                 ),
                 border: .none,
@@ -473,7 +475,7 @@ class _UserSearchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const textColor = VineTheme.onSurface;
+    final textColor = context.vineColors.onSurface;
 
     return Semantics(
       button: true,
@@ -523,16 +525,16 @@ class _UserSearchTile extends StatelessWidget {
                 padding: const .all(8),
                 decoration: ShapeDecoration(
                   color: isDisabled
-                      ? VineTheme.surfaceContainer
+                      ? context.vineColors.surfaceContainer
                       : isSelected
-                      ? VineTheme.surfaceContainer
+                      ? context.vineColors.surfaceContainer
                       : VineTheme.primary,
                   shape: RoundedRectangleBorder(borderRadius: .circular(16)),
                 ),
                 child: DivineIcon(
                   icon: (isDisabled || isSelected) ? .check : .plus,
                   color: (isDisabled || isSelected)
-                      ? VineTheme.onSurfaceMuted
+                      ? context.vineColors.onSurfaceMuted
                       : VineTheme.onPrimary,
                 ),
               ),
@@ -556,13 +558,17 @@ class _EmptyFollowList extends StatelessWidget {
         children: [
           Text(
             context.l10n.userPickerEmptyFollowListTitle,
-            style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.headlineSmallFont(
+              color: context.vineColors.onSurface,
+            ),
             textAlign: .center,
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.userPickerEmptyFollowListBody,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
             textAlign: .center,
           ),
           const SizedBox(height: 32),
@@ -575,11 +581,11 @@ class _EmptyFollowList extends StatelessWidget {
               child: Container(
                 padding: const .symmetric(horizontal: 24, vertical: 12),
                 decoration: ShapeDecoration(
-                  color: VineTheme.surfaceContainer,
+                  color: context.vineColors.surfaceContainer,
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(
+                    side: BorderSide(
                       width: 2,
-                      color: VineTheme.outlineMuted,
+                      color: context.vineColors.outlineMuted,
                     ),
                     borderRadius: .circular(20),
                   ),
@@ -608,7 +614,9 @@ class _EmptyHint extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userPickerTypeNameToSearch,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         ),
       ),
     );
@@ -625,7 +633,9 @@ class _ProfileRepoUnavailable extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userPickerUnavailable,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
           textAlign: TextAlign.center,
         ),
       ),
@@ -643,7 +653,9 @@ class _ErrorState extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userPickerSearchFailedTryAgain,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         ),
       ),
     );
@@ -660,7 +672,9 @@ class _NoResults extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userSearchNoResults,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         ),
       ),
     );
@@ -698,10 +712,10 @@ class _ResultsList extends StatelessWidget {
         0,
         32 + MediaQuery.viewPaddingOf(context).bottom,
       ),
-      separatorBuilder: (context, index) => const Divider(
+      separatorBuilder: (context, index) => Divider(
         height: 40,
         thickness: 1,
-        color: VineTheme.outlineDisabled,
+        color: context.vineColors.outlineDisabled,
       ),
       itemBuilder: (context, index) {
         final profile = visible[index];
@@ -824,10 +838,10 @@ class _LocalResults extends StatelessWidget {
         0,
         32 + MediaQuery.viewPaddingOf(context).bottom,
       ),
-      separatorBuilder: (context, index) => const Divider(
+      separatorBuilder: (context, index) => Divider(
         height: 40,
         thickness: 1,
-        color: VineTheme.outlineDisabled,
+        color: context.vineColors.outlineDisabled,
       ),
       itemBuilder: (context, index) {
         final profile = visible[index];
@@ -868,12 +882,14 @@ class _UserPickerTitle extends StatelessWidget {
       children: [
         Text(
           displayTitle,
-          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+          style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
         ),
         if (subtitle != null && subtitle!.isNotEmpty)
           Text(
             subtitle!,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
       ],
     );
@@ -965,7 +981,7 @@ class _SelectionChipState extends State<_SelectionChip>
         scale: _scaleAnimation,
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -975,7 +991,9 @@ class _SelectionChipState extends State<_SelectionChip>
                 padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
                 child: Text(
                   widget.label,
-                  style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.onSurface,
+                  ),
                 ),
               ),
               Semantics(
@@ -985,8 +1003,8 @@ class _SelectionChipState extends State<_SelectionChip>
                 ),
                 child: GestureDetector(
                   onTap: _handleRemove,
-                  child: const Padding(
-                    padding: EdgeInsets.only(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
                       left: 8,
                       right: 12,
                       top: 8,
@@ -995,7 +1013,7 @@ class _SelectionChipState extends State<_SelectionChip>
                     child: DivineIcon(
                       icon: .x,
                       size: 16,
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                   ),
                 ),

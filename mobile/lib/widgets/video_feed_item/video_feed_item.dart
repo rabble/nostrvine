@@ -377,7 +377,9 @@ class VideoOverlayActions extends ConsumerWidget {
                                               ),
                                           child: Text(
                                             displayName,
-                                            style: VineTheme.titleSmallFont(),
+                                            style: VineTheme.titleSmallFont(
+                                              color: VineTheme.whiteText,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -401,6 +403,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                       fontFamily: 'Inter',
                                       fontSize: 14,
                                       height: 20 / 14,
+                                      // Sits on the video next to the
+                                      // white author name.
                                       color: VineTheme.onSurfaceVariant,
                                     ),
                                   ),
@@ -479,9 +483,12 @@ class VideoOverlayActions extends ConsumerWidget {
                                 },
                           child: Text(
                             titleText,
-                            style: VineTheme.labelMediumFont().copyWith(
-                              shadows: VineTheme.buttonShadows,
-                            ),
+                            style:
+                                VineTheme.labelMediumFont(
+                                  color: VineTheme.whiteText,
+                                ).copyWith(
+                                  shadows: VineTheme.buttonShadows,
+                                ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -512,12 +519,18 @@ class VideoOverlayActions extends ConsumerWidget {
                                 },
                           child: LinkifiedText(
                             text: descriptionText,
-                            style: VineTheme.bodySmallFont().copyWith(
-                              shadows: VineTheme.buttonShadows,
-                            ),
-                            linkStyle: VineTheme.bodySmallFont().copyWith(
-                              shadows: VineTheme.buttonShadows,
-                            ),
+                            style:
+                                VineTheme.bodySmallFont(
+                                  color: VineTheme.whiteText,
+                                ).copyWith(
+                                  shadows: VineTheme.buttonShadows,
+                                ),
+                            linkStyle:
+                                VineTheme.bodySmallFont(
+                                  color: VineTheme.whiteText,
+                                ).copyWith(
+                                  shadows: VineTheme.buttonShadows,
+                                ),
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -922,7 +935,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -941,15 +954,17 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.contentWarningDetailsTitle,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
               context.l10n.contentWarningDetailsSubtitle,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 13,
               ),
             ),
@@ -985,8 +1000,8 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             _ContentWarningBadge._describe(context, label),
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 13,
                             ),
                           ),
@@ -998,7 +1013,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Divider(color: VineTheme.outlineVariant),
+            Divider(color: context.vineColors.outline),
             const SizedBox(height: 8),
             // Manage content filters button
             SizedBox(

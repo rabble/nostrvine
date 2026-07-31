@@ -88,7 +88,10 @@ void main() {
         find.text(FeatureFlag.enhancedAnalytics.displayName),
         findsOneWidget,
       );
-      expect(find.text(FeatureFlag.lightMode.displayName), findsNothing);
+      expect(
+        find.text(FeatureFlag.adaptiveMediaChrome.displayName),
+        findsNothing,
+      );
       expect(
         find.text(FeatureFlag.publishDmRelayList.displayName),
         findsNothing,
@@ -110,7 +113,10 @@ void main() {
         find.text(FeatureFlag.enhancedAnalytics.displayName),
         findsOneWidget,
       );
-      expect(find.text(FeatureFlag.lightMode.displayName), findsOneWidget);
+      expect(
+        find.text(FeatureFlag.adaptiveMediaChrome.displayName),
+        findsOneWidget,
+      );
       expect(
         find.text(FeatureFlag.publishDmRelayList.displayName),
         findsOneWidget,

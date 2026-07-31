@@ -123,7 +123,9 @@ class VideoEditorAudioChip extends StatelessWidget {
                         ? Text.rich(
                             textScaler: TextScaler.noScaling,
                             TextSpan(
-                              style: VineTheme.labelLargeFont(),
+                              style: VineTheme.labelLargeFont(
+                                color: VineTheme.whiteText,
+                              ),
                               children: [
                                 TextSpan(
                                   text:
@@ -134,7 +136,9 @@ class VideoEditorAudioChip extends StatelessWidget {
                                   const TextSpan(text: ' ∙ '),
                                   TextSpan(
                                     text: selectedSound!.source,
-                                    style: VineTheme.bodyMediumFont(),
+                                    style: VineTheme.bodyMediumFont(
+                                      color: VineTheme.whiteText,
+                                    ),
                                   ),
                                 ],
                               ],
@@ -147,7 +151,9 @@ class VideoEditorAudioChip extends StatelessWidget {
                             context.l10n.videoEditorAudioAddAudio,
                             textAlign: .center,
                             textScaler: TextScaler.noScaling,
-                            style: VineTheme.titleMediumFont(),
+                            style: VineTheme.titleMediumFont(
+                              color: VineTheme.whiteText,
+                            ),
                           ),
                   ),
                 ),

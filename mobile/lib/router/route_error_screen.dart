@@ -54,7 +54,7 @@ class RouteErrorScreen extends StatelessWidget {
         : (onBackPressed ?? () => context.safePop());
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: title ?? context.l10n.routeErrorTitle,
         showBackButton: showBackButton,

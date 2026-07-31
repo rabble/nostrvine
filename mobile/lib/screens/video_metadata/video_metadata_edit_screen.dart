@@ -83,9 +83,9 @@ class _VideoMetadataEditScreenState
     if (_resolveFailed) {
       return RouteErrorScreen(message: context.l10n.routeInvalidVideoId);
     }
-    return const Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
-      body: Center(
+    return Scaffold(
+      backgroundColor: context.vineColors.background,
+      body: const Center(
         child: CircularProgressIndicator(color: VineTheme.vineGreen),
       ),
     );

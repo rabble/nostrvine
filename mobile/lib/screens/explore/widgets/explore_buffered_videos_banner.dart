@@ -45,7 +45,7 @@ class ExploreBufferedVideosBanner extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: VineTheme.backgroundColor.withValues(alpha: 0.3),
+                    color: context.vineColors.background.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -54,16 +54,16 @@ class ExploreBufferedVideosBanner extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.arrowUp,
-                    color: VineTheme.backgroundColor,
+                    color: context.vineColors.background,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     context.l10n.exploreNewVideosCount(bufferedCount),
-                    style: const TextStyle(
-                      color: VineTheme.backgroundColor,
+                    style: TextStyle(
+                      color: context.vineColors.background,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

@@ -91,8 +91,8 @@ class _UsernameCheckingIndicator extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             context.l10n.profileSetupUsernameChecking,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 12,
             ),
           ),
@@ -343,10 +343,10 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       title: Text(
         context.l10n.profileSetupUsernameReservedTitle,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -354,19 +354,24 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
         children: [
           Text(
             context.l10n.profileSetupUsernameReservedBody(widget.username),
-            style: const TextStyle(color: VineTheme.secondaryText),
+            style: TextStyle(color: context.vineColors.secondaryText),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _reasonController,
             maxLines: 3,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
+            style: TextStyle(
+              color: context.vineColors.primaryText,
+              fontSize: 14,
+            ),
             decoration: InputDecoration(
               hintText: context.l10n.profileSetupUsernameReservedHint,
-              hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+              hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
               border: const OutlineInputBorder(),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.surfaceContainer),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: context.vineColors.surfaceContainer,
+                ),
               ),
               focusedBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: VineTheme.vineGreen),
@@ -377,8 +382,8 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
           const SizedBox(height: 12),
           Text(
             context.l10n.profileSetupUsernameReservedCheckHint,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 12,
             ),
           ),
@@ -389,7 +394,7 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(
             context.l10n.commonClose,
-            style: const TextStyle(color: VineTheme.lightText),
+            style: TextStyle(color: context.vineColors.mutedText),
           ),
         ),
         TextButton(
@@ -406,12 +411,12 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
           onPressed: _submitting ? null : _contactSupport,
           style: FilledButton.styleFrom(backgroundColor: VineTheme.vineGreen),
           child: _submitting
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: VineTheme.whiteText,
+                    color: context.vineColors.primaryText,
                   ),
                 )
               : Text(context.l10n.profileSetupSendRequest),

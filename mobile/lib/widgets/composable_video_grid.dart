@@ -257,7 +257,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -267,16 +267,16 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.dotsThreeVertical,
-                    color: VineTheme.whiteText,
+                    color: context.vineColors.primaryText,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       context.l10n.videoGridOptionsTitle,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -284,9 +284,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                   ),
                   IconButton(
                     onPressed: context.pop,
-                    icon: const DivineIcon(
+                    icon: DivineIcon(
                       icon: DivineIconName.x,
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                   ),
                 ],
@@ -299,7 +299,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: VineTheme.cardBackground,
+                  color: context.vineColors.card,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const DivineIcon(
@@ -310,15 +310,15 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
               ),
               title: Text(
                 context.l10n.videoGridEditVideo,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               subtitle: Text(
                 context.l10n.videoGridEditVideoSubtitle,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 12,
                 ),
               ),
@@ -334,7 +334,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: VineTheme.cardBackground,
+                  color: context.vineColors.card,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const DivineIcon(
@@ -345,15 +345,15 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
               ),
               title: Text(
                 context.l10n.videoGridDeleteVideo,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               subtitle: Text(
                 context.l10n.videoGridDeleteVideoSubtitle,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 12,
                 ),
               ),
@@ -378,10 +378,10 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
+        backgroundColor: context.vineColors.card,
         title: Text(
           context.l10n.videoGridDeleteConfirmTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: TextStyle(color: context.vineColors.primaryText),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -389,13 +389,13 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
           children: [
             Text(
               context.l10n.videoGridDeleteConfirmMessage,
-              style: const TextStyle(color: VineTheme.whiteText),
+              style: TextStyle(color: context.vineColors.primaryText),
             ),
             const SizedBox(height: 12),
             Text(
               context.l10n.videoGridDeleteConfirmNote,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 12,
               ),
             ),
@@ -433,12 +433,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
           SnackBar(
             content: Row(
               children: [
-                const SizedBox(
+                SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: VineTheme.whiteText,
+                    color: context.vineColors.primaryText,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -469,7 +469,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
               children: [
                 Icon(
                   result.success ? Icons.check_circle : Icons.error,
-                  color: VineTheme.whiteText,
+                  color: context.vineColors.primaryText,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -549,10 +549,10 @@ class _VideoItem extends StatelessWidget {
                       color: VineTheme.vineGreen.withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const DivineIcon(
+                    child: DivineIcon(
                       icon: DivineIconName.images,
                       size: 14,
-                      color: VineTheme.whiteText,
+                      color: context.vineColors.primaryText,
                     ),
                   ),
                 ),
@@ -604,16 +604,17 @@ class _VideoInfoSection extends StatelessWidget {
               video.pubkey,
               embeddedName: video.displayAuthorName,
               maxLines: 1,
-              style: VineTheme.titleTinyFont().copyWith(
-                decoration: TextDecoration.none,
-                shadows: const [
-                  Shadow(
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
-                    color: VineTheme.scrim15,
+              style: VineTheme.titleTinyFont(color: VineTheme.whiteText)
+                  .copyWith(
+                    decoration: TextDecoration.none,
+                    shadows: const [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                        color: VineTheme.scrim15,
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ),
           ),
           if (hasDescription)
@@ -626,16 +627,17 @@ class _VideoInfoSection extends StatelessWidget {
               ),
               child: Text(
                 video.displayTitle ?? video.displayContent,
-                style: VineTheme.bodyMediumFont().copyWith(
-                  decoration: TextDecoration.none,
-                  shadows: const [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 2,
-                      color: VineTheme.scrim15,
+                style: VineTheme.bodyMediumFont(color: VineTheme.whiteText)
+                    .copyWith(
+                      decoration: TextDecoration.none,
+                      shadows: const [
+                        Shadow(
+                          offset: Offset(0, 1),
+                          blurRadius: 2,
+                          color: VineTheme.scrim15,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -654,7 +656,7 @@ class _VideoThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.cardBackground,
+      color: context.vineColors.card,
       child: VideoThumbnailWidget(video: video),
     );
   }

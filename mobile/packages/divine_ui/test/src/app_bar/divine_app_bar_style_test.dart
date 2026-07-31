@@ -65,47 +65,73 @@ void main() {
       });
     });
 
-    group('solidStyle', () {
-      test('has surfaceContainer background color', () {
+    group('solid', () {
+      test('takes its icon-button surface from the palette', () {
         expect(
-          DiVineAppBarStyle.solidStyle.iconButtonBackgroundColor,
-          VineTheme.surfaceContainer,
+          DiVineAppBarStyle.solid(
+            VineTheme.darkColors,
+          ).iconButtonBackgroundColor,
+          VineTheme.darkColors.surfaceContainer,
+        );
+        expect(
+          DiVineAppBarStyle.solid(
+            VineTheme.lightColors,
+          ).iconButtonBackgroundColor,
+          VineTheme.lightColors.surfaceContainer,
         );
       });
 
-      test('has primary icon color', () {
+      test(
+        'uses the brand green on dark and the accessible green on light',
+        () {
+          expect(
+            DiVineAppBarStyle.solid(VineTheme.darkColors).iconColor,
+            VineTheme.primary,
+          );
+          expect(
+            DiVineAppBarStyle.solid(VineTheme.lightColors).iconColor,
+            VineTheme.primaryAccessible,
+          );
+        },
+      );
+
+      test('takes its title colour from the nav foreground', () {
         expect(
-          DiVineAppBarStyle.solidStyle.iconColor,
-          VineTheme.primary,
+          DiVineAppBarStyle.solid(VineTheme.darkColors).foregroundColor,
+          VineTheme.darkColors.onNav,
+        );
+        expect(
+          DiVineAppBarStyle.solid(VineTheme.lightColors).foregroundColor,
+          VineTheme.lightColors.onNav,
         );
       });
 
-      test('has outlineMuted border with width 2', () {
+      test('has an outlineMuted border with width 2', () {
         expect(
-          DiVineAppBarStyle.solidStyle.iconButtonBorderSide,
-          const BorderSide(color: VineTheme.outlineMuted, width: 2),
+          DiVineAppBarStyle.solid(VineTheme.darkColors).iconButtonBorderSide,
+          BorderSide(color: VineTheme.darkColors.outlineMuted, width: 2),
         );
       });
     });
 
-    group('transparentStyle', () {
+    group('overMediaStyle', () {
       test('has 15% black scrim background color', () {
         expect(
-          DiVineAppBarStyle.transparentStyle.iconButtonBackgroundColor,
+          DiVineAppBarStyle.overMediaStyle.iconButtonBackgroundColor,
           const Color(0x26000000),
         );
       });
 
       test('has white icon color', () {
         expect(
-          DiVineAppBarStyle.transparentStyle.iconColor,
+          DiVineAppBarStyle.overMediaStyle.iconColor,
           VineTheme.whiteText,
         );
       });
 
       test('has no border', () {
         expect(
-          DiVineAppBarStyle.transparentStyle.iconButtonBorderSide,
+          DiVineAppBarStyle.overMediaStyle.iconButtonBorderSide,
           isNull,
         );
       });

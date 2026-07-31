@@ -396,8 +396,8 @@ void main() {
           ),
         );
 
-        // The chrome divider is a 1 px Container in 5 % white alpha —
-        // gated by showHeaderDivider, which defaults to true.
+        // The chrome divider is a 1 px Container gated by
+        // showHeaderDivider, which defaults to true.
         expect(
           find.byWidgetPredicate((w) {
             if (w is! Container) return false;
@@ -431,6 +431,32 @@ void main() {
                 w.constraints?.maxHeight == 1;
           }),
           findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'showHeader: false divider follows the light palette',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.lightTheme,
+            home: const Scaffold(
+              body: VineBottomSheet(
+                showHeader: false,
+                body: Text('Content'),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is! Container) return false;
+            return w.color == VineTheme.lightColors.outlineDisabled &&
+                w.constraints?.maxHeight == 1;
+          }),
+          findsOneWidget,
         );
       },
     );

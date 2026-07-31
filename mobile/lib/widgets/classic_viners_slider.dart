@@ -29,7 +29,7 @@ class ClassicVinersSlider extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.only(top: 16),
-      color: VineTheme.backgroundColor,
+      color: context.vineColors.background,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -41,7 +41,9 @@ class ClassicVinersSlider extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   context.l10n.classicVinersTitle,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),
@@ -86,7 +88,7 @@ class _VinersLoadingPlaceholder extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: VineTheme.cardBackground,
+                  color: context.vineColors.card,
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
@@ -95,7 +97,7 @@ class _VinersLoadingPlaceholder extends StatelessWidget {
                 width: 50,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: VineTheme.cardBackground,
+                  color: context.vineColors.card,
                   borderRadius: BorderRadius.circular(6),
                 ),
               ),
@@ -179,7 +181,9 @@ class _VinerAvatar extends ConsumerWidget {
                   width: 70,
                   child: Text(
                     displayName,
-                    style: VineTheme.titleTinyFont(),
+                    style: VineTheme.titleTinyFont(
+                      color: context.vineColors.primaryText,
+                    ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

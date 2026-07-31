@@ -89,7 +89,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.backgroundCamera,
+        color: context.vineColors.surfaceContainerHigh,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.4),
@@ -277,7 +277,10 @@ class _ControlButton extends StatelessWidget {
             type: type,
             size: .small,
           ),
-        Text(label, style: VineTheme.bodySmallFont()),
+        Text(
+          label,
+          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
+        ),
       ],
     );
   }

@@ -44,7 +44,7 @@ class VideoEditorStickerSheet extends StatelessWidget {
               child: Text(
                 context.l10n.videoEditorStickersDivineOriginals,
                 style: VineTheme.titleSmallFont(
-                  color: VineTheme.onSurfaceMuted,
+                  color: context.vineColors.onSurfaceMuted,
                 ),
               ),
             ),
@@ -120,7 +120,9 @@ class _EmptyState extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Text(
         message,
-        style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+        style: VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
         textAlign: .center,
       ),
     );
@@ -162,7 +164,7 @@ class _SearchBarState extends State<_SearchBar> {
       floating: true,
       snap: true,
       automaticallyImplyLeading: false,
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       surfaceTintColor: VineTheme.transparent,
       toolbarHeight: 64,
       flexibleSpace: Padding(
@@ -172,22 +174,27 @@ class _SearchBarState extends State<_SearchBar> {
           focusNode: _focusNode,
           keyboardType: .text,
           textInputAction: .search,
-          style: VineTheme.bodyLargeFont(),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
           onChanged: _setQuery,
           onSubmitted: (_) => _focusNode.unfocus(),
           decoration: InputDecoration(
             hintText: context.l10n.videoEditorStickerSearchHint,
-            hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+            hintStyle: VineTheme.bodyLargeFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
             filled: true,
-            fillColor: VineTheme.surfaceContainer,
+            fillColor: context.vineColors.surfaceContainer,
             border: OutlineInputBorder(
               borderRadius: .circular(20),
               borderSide: .none,
             ),
             contentPadding: const .symmetric(horizontal: 16, vertical: 12),
-            prefixIcon: const Padding(
-              padding: .only(left: 16, right: 12),
-              child: DivineIcon(icon: .search, color: VineTheme.onSurfaceMuted),
+            prefixIcon: Padding(
+              padding: const .only(left: 16, right: 12),
+              child: DivineIcon(
+                icon: .search,
+                color: context.vineColors.onSurfaceMuted,
+              ),
             ),
             prefixIconConstraints: const BoxConstraints(
               minWidth: 24,
@@ -204,9 +211,9 @@ class _SearchBarState extends State<_SearchBar> {
                   builder: (context, hasSearchQuery) {
                     return hasSearchQuery
                         ? IconButton(
-                            icon: const DivineIcon(
+                            icon: DivineIcon(
                               icon: .x,
-                              color: VineTheme.onSurfaceMuted,
+                              color: context.vineColors.onSurfaceMuted,
                             ),
                             onPressed: _clearSearch,
                           )

@@ -140,7 +140,7 @@ class _TimelineClipControlsState extends State<TimelineClipControls> {
     final transform = await Navigator.of(context).push<ExportTransform>(
       PageRouteBuilder<ExportTransform>(
         opaque: false,
-        barrierColor: VineTheme.backgroundCamera,
+        barrierColor: context.vineColors.surfaceContainerHigh,
         pageBuilder: (_, _, _) => VideoClipTransformScreen(clip: clip),
         transitionsBuilder: (_, animation, _, child) =>
             FadeTransition(opacity: animation, child: child),
@@ -550,7 +550,7 @@ class _StopMotionFramesButton extends StatelessWidget {
         ),
         Text(
           context.l10n.videoEditorStopMotionFramesPerImageButtonLabel,
-          style: VineTheme.bodySmallFont(),
+          style: VineTheme.bodySmallFont(color: context.vineColors.primaryText),
         ),
       ],
     );

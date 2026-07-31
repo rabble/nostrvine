@@ -195,9 +195,9 @@ class _OriginalSoundRow extends StatelessWidget {
     final row = Row(
       spacing: 16,
       children: [
-        const DivineIcon(
+        DivineIcon(
           icon: DivineIconName.waveform,
-          color: VineTheme.onSurfaceVariant,
+          color: context.vineColors.onSurfaceVariant,
         ),
         Expanded(
           child: Column(
@@ -207,23 +207,25 @@ class _OriginalSoundRow extends StatelessWidget {
                 context.l10n.metadataOriginalSound,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: VineTheme.titleMediumFont(),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               Text(
                 creatorName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
               ),
             ],
           ),
         ),
         if (onTap != null)
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.caretRight,
-            color: VineTheme.onSurfaceVariant,
+            color: context.vineColors.onSurfaceVariant,
             size: 20,
           ),
       ],
@@ -278,9 +280,9 @@ class _SoundListItem extends ConsumerWidget {
         child: Row(
           spacing: 16,
           children: [
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.waveform,
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
             ),
             Expanded(
               child: Column(
@@ -290,22 +292,24 @@ class _SoundListItem extends ConsumerWidget {
                     soundName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   Text(
                     creatorName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: VineTheme.bodyMediumFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                 ],
               ),
             ),
-            const DivineIcon(
+            DivineIcon(
               icon: DivineIconName.caretRight,
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
               size: 20,
             ),
           ],
@@ -351,7 +355,7 @@ class _SoundSkeleton extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(12),
           ),
         ),
@@ -364,7 +368,7 @@ class _SoundSkeleton extends StatelessWidget {
                 width: 120,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: VineTheme.surfaceContainer,
+                  color: context.vineColors.surfaceContainer,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -372,7 +376,7 @@ class _SoundSkeleton extends StatelessWidget {
                 width: 80,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: VineTheme.surfaceContainer,
+                  color: context.vineColors.surfaceContainer,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),

@@ -73,7 +73,9 @@ class CategoriesDiscoveryView extends StatelessWidget {
           children: [
             Text(
               context.l10n.categoriesCouldNotLoadCategories,
-              style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
             ElevatedButton(
               onPressed: onRetry,
@@ -112,7 +114,9 @@ class _CategoriesListBody extends StatelessWidget {
       return Center(
         child: Text(
           context.l10n.categoriesNoCategoriesAvailable,
-          style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyLargeFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
       );
     }

@@ -33,9 +33,9 @@ class MessageRequestsBanner extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+              bottom: BorderSide(color: context.vineColors.outlineDisabled),
             ),
           ),
           child: Padding(
@@ -45,14 +45,16 @@ class MessageRequestsBanner extends StatelessWidget {
                 Expanded(
                   child: Text(
                     context.l10n.inboxMessageRequestsTitle,
-                    style: VineTheme.titleMediumFont(),
+                    style: VineTheme.titleMediumFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                 ),
                 if (requestCount > 0) _RequestCountBadge(count: requestCount),
                 const SizedBox(width: 8),
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.caretRight,
-                  color: VineTheme.onSurface,
+                  color: context.vineColors.onSurface,
                 ),
               ],
             ),
@@ -81,7 +83,7 @@ class _RequestCountBadge extends StatelessWidget {
       child: Center(
         child: Text(
           label,
-          style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
+          style: VineTheme.labelSmallFont(color: context.vineColors.onSurface),
         ),
       ),
     );

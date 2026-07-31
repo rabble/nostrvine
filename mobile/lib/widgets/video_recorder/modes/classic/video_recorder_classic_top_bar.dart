@@ -91,7 +91,10 @@ class _ProgressBar extends ConsumerWidget {
           if (remainingMs > 0)
             Flexible(
               flex: remainingMs,
-              child: Container(color: VineTheme.neutral10),
+              // Unfilled track. `mediaCard` is neutral10 on the dark palette
+              // — the exact value this has always had — and a light neutral
+              // grey on the light one.
+              child: Container(color: context.vineColors.mediaCard),
             ),
         ],
       ),

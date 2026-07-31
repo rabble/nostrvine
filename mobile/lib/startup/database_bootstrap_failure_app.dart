@@ -64,6 +64,10 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Fixed dark colors in both appearance modes. This screen replaces the
+    // whole app when the database cannot be unlocked, so it runs before the
+    // appearance setting is readable — and `context` here sits above its own
+    // `MaterialApp`, where no palette exists to resolve.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(

@@ -76,7 +76,7 @@ class _ListNotFoundScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.peopleListsAddPeopleTitle,
         showBackButton: true,
@@ -88,7 +88,9 @@ class _ListNotFoundScaffold extends StatelessWidget {
           child: Text(
             context.l10n.peopleListsListNotFoundSubtitle,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ),
       ),
@@ -114,7 +116,7 @@ class AddPeopleToListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.peopleListsAddToListName(userList.name),
         showBackButton: true,
@@ -168,14 +170,14 @@ class _SearchFieldState extends State<_SearchField> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: TextField(
         controller: _controller,
-        style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.onSurface),
         decoration: InputDecoration(
           hintText: context.l10n.peopleListsAddPeopleSearchHint,
-          prefixIcon: const Padding(
-            padding: EdgeInsets.all(12),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.all(12),
             child: DivineIcon(
               icon: DivineIconName.search,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
           ),
         ),
@@ -227,7 +229,9 @@ class _FailureState extends StatelessWidget {
             Text(
               context.l10n.peopleListsAddPeopleError,
               textAlign: TextAlign.center,
-              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
             ),
             const SizedBox(height: 16),
             DivineButton(
@@ -271,7 +275,9 @@ class _EmptyCandidatesState extends StatelessWidget {
         child: Text(
           context.l10n.peopleListsNoPeopleToAdd,
           textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
         ),
       ),
     );

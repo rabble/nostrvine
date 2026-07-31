@@ -203,12 +203,12 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
+          Icon(Icons.music_off, size: 64, color: context.vineColors.mutedText),
           const SizedBox(height: 16),
           Text(
             context.l10n.soundsSavedEmptyTitle,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -218,8 +218,8 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               context.l10n.soundsSavedEmptyDescription,
-              style: const TextStyle(
-                color: VineTheme.onSurfaceMuted,
+              style: TextStyle(
+                color: context.vineColors.onSurfaceMuted,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -235,12 +235,12 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.search_off, size: 64, color: VineTheme.lightText),
+          Icon(Icons.search_off, size: 64, color: context.vineColors.mutedText),
           const SizedBox(height: 16),
           Text(
             context.l10n.soundsNoSoundsFound,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -279,24 +279,24 @@ class _SearchInput extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        style: const TextStyle(color: VineTheme.whiteText),
+        style: TextStyle(color: context.vineColors.primaryText),
         decoration: InputDecoration(
           hintText: context.l10n.soundsSearchHint,
-          hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+          hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
           prefixIconConstraints: const BoxConstraints(),
-          prefixIcon: const Padding(
-            padding: EdgeInsetsDirectional.only(start: 12, end: 8),
+          prefixIcon: Padding(
+            padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
             child: DivineIcon(
               icon: DivineIconName.search,
-              color: VineTheme.onSurfaceMuted,
+              color: context.vineColors.onSurfaceMuted,
             ),
           ),
           filled: true,
-          fillColor: VineTheme.surfaceContainer,
+          fillColor: context.vineColors.surfaceContainer,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -335,9 +335,9 @@ class _SavedSoundsSection extends StatelessWidget {
     return context.l10n.soundsAvailabilityCommunity;
   }
 
-  Color _availabilityColor(AudioEvent sound) {
+  Color _availabilityColor(BuildContext context, AudioEvent sound) {
     if (sound.isOriginalSound) {
-      return VineTheme.lightText;
+      return context.vineColors.mutedText;
     }
     return VineTheme.vineGreen;
   }
@@ -359,8 +359,8 @@ class _SavedSoundsSection extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 context.l10n.soundsSavedLibraryTitle,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
+                style: TextStyle(
+                  color: context.vineColors.primaryText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -368,8 +368,8 @@ class _SavedSoundsSection extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '(${sounds.length})',
-                style: const TextStyle(
-                  color: VineTheme.onSurfaceMuted,
+                style: TextStyle(
+                  color: context.vineColors.onSurfaceMuted,
                   fontSize: 14,
                 ),
               ),
@@ -387,15 +387,15 @@ class _SavedSoundsSection extends StatelessWidget {
               sound: sound,
               isPlaying: previewingSoundId == sound.id,
               statusBadgeLabel: _availabilityLabel(context, sound),
-              statusBadgeColor: _availabilityColor(sound),
+              statusBadgeColor: _availabilityColor(context, sound),
               onTap: () => onTap(sound),
               onPlayPreview: () => onPreview(sound),
               onDetailTap: sound.isBundled ? null : () => onDetail(sound),
               trailing: IconButton(
                 tooltip: context.l10n.soundsRemoveSavedSound,
-                icon: const Icon(
+                icon: Icon(
                   Icons.bookmark_remove_outlined,
-                  color: VineTheme.lightText,
+                  color: context.vineColors.mutedText,
                 ),
                 onPressed: () => onRemove(sound),
               ),

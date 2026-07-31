@@ -140,9 +140,9 @@ class _VideoRecorderLibraryButtonState
             width: 40,
             height: 40,
             decoration: ShapeDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               shape: RoundedRectangleBorder(
-                side: const BorderSide(width: 2, color: VineTheme.onSurface),
+                side: BorderSide(width: 2, color: context.vineColors.onSurface),
                 borderRadius: .circular(16),
               ),
             ),
@@ -211,7 +211,10 @@ class _SelectionCountBadge extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: VineTheme.error,
                     shape: .circle,
-                    border: .all(width: 2, color: VineTheme.backgroundCamera),
+                    border: .all(
+                      width: 2,
+                      color: context.vineColors.surfaceContainerHigh,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: .min,
@@ -221,9 +224,12 @@ class _SelectionCountBadge extends StatelessWidget {
                         child: Text(
                           count.toString(),
                           textAlign: .center,
-                          style: VineTheme.labelSmallFont().copyWith(
-                            fontFeatures: [const .tabularFigures()],
-                          ),
+                          style:
+                              VineTheme.labelSmallFont(
+                                color: VineTheme.whiteText,
+                              ).copyWith(
+                                fontFeatures: [const .tabularFigures()],
+                              ),
                         ),
                       ),
                     ],

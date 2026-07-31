@@ -139,8 +139,8 @@ class _MoreActionsSection extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               context.l10n.shareSheetMoreActions,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -224,8 +224,8 @@ class _ActionCircle extends StatelessWidget {
               ),
               Text(
                 label,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
+                style: TextStyle(
+                  color: context.vineColors.secondaryText,
                   fontSize: 11,
                 ),
                 textScaler: TextScaler.noScaling,

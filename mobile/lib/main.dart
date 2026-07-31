@@ -1214,7 +1214,7 @@ Future<void> _startOpenVineApp() async {
                 const Text(
                   'Oops, something went wrong',
                   style: TextStyle(
-                    color: VineTheme.whiteText,
+                    color: VineTheme.primaryText,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     decoration: TextDecoration.none,
@@ -3051,9 +3051,9 @@ bool _showPublishSuccessSnackbar(int count) {
     SnackBar(
       content: Text(
         l10n.uploadPublishedCountMessage(count),
-        style: VineTheme.bodyMediumFont(),
+        style: VineTheme.bodyMediumFont(color: navContext.vineColors.onNav),
       ),
-      backgroundColor: VineTheme.navGreen,
+      backgroundColor: navContext.vineColors.nav,
       behavior: SnackBarBehavior.floating,
     ),
   );

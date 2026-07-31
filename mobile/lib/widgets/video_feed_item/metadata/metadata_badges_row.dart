@@ -80,15 +80,24 @@ class _HumanMadeBadge extends StatelessWidget {
               children: [
                 TextSpan(
                   text: context.l10n.metadataBadgeHumanMade,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.top,
                   child: Text(
                     'HM',
-                    style: VineTheme.titleSmallFont().copyWith(
-                      fontSize: VineTheme.titleSmallFont().fontSize! / 1.555,
-                    ),
+                    style:
+                        VineTheme.titleSmallFont(
+                          color: context.vineColors.primaryText,
+                        ).copyWith(
+                          fontSize:
+                              VineTheme.titleSmallFont(
+                                color: context.vineColors.primaryText,
+                              ).fontSize! /
+                              1.555,
+                        ),
                   ),
                 ),
               ],
@@ -108,7 +117,10 @@ class _TextBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(label, style: VineTheme.titleSmallFont());
+    return Text(
+      label,
+      style: VineTheme.titleSmallFont(color: context.vineColors.primaryText),
+    );
   }
 }
 
@@ -120,7 +132,7 @@ class _DotSeparator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       '\u2219',
-      style: VineTheme.titleSmallFont(color: VineTheme.outlineMuted),
+      style: VineTheme.titleSmallFont(color: context.vineColors.outlineMuted),
     );
   }
 }

@@ -14,7 +14,7 @@ class GeoBlockedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -33,8 +33,8 @@ class GeoBlockedScreen extends StatelessWidget {
                 // Title
                 Text(
                   context.l10n.geoBlockedTitle,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -57,8 +57,8 @@ class GeoBlockedScreen extends StatelessWidget {
                 // Explanation
                 Text(
                   geoInfo.reason ?? context.l10n.geoBlockedDefaultReason,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
+                  style: TextStyle(
+                    color: context.vineColors.mutedText,
                     fontSize: 16,
                     height: 1.5,
                   ),
@@ -70,22 +70,25 @@ class GeoBlockedScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: VineTheme.cardBackground,
+                    color: context.vineColors.card,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Column(
                     children: [
                       _buildInfoRow(
+                        context,
                         context.l10n.geoBlockedCountryLabel,
                         geoInfo.country,
                       ),
                       const SizedBox(height: 8),
                       _buildInfoRow(
+                        context,
                         context.l10n.geoBlockedRegionLabel,
                         geoInfo.region,
                       ),
                       const SizedBox(height: 8),
                       _buildInfoRow(
+                        context,
                         context.l10n.geoBlockedCityLabel,
                         geoInfo.city,
                       ),
@@ -97,8 +100,8 @@ class GeoBlockedScreen extends StatelessWidget {
                 // Legal notice
                 Text(
                   context.l10n.geoBlockedLegalNotice,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
+                  style: TextStyle(
+                    color: context.vineColors.mutedText,
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                   ),
@@ -112,18 +115,18 @@ class GeoBlockedScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(BuildContext context, String label, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+          style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
         ),
         Text(
           value,
-          style: const TextStyle(
-            color: VineTheme.whiteText,
+          style: TextStyle(
+            color: context.vineColors.primaryText,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),

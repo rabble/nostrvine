@@ -146,7 +146,10 @@ Future<void> _showTransitionSheet(
     expanded: false,
     scrollable: false,
     isScrollControlled: true,
-    title: Text(title, style: VineTheme.titleMediumFont()),
+    title: Text(
+      title,
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
+    ),
     body: BlocProvider<TransitionBoundaryCubit>(
       // The cubit shows the outgoing clip's ghost frame and the incoming clip's
       // thumbnail immediately, then swaps in the exact boundary frames (the
@@ -412,7 +415,7 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                       Text(
                         _durationLabel(_duration),
                         style: VineTheme.labelSmallFont(
-                          color: VineTheme.lightText,
+                          color: context.vineColors.mutedText,
                         ),
                       ),
                     ],
@@ -438,7 +441,7 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                     Text(
                       l10n.videoEditorTransitionDurationLimitedHint,
                       style: VineTheme.labelSmallFont(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                       ),
                     ),
                   ],
@@ -468,7 +471,7 @@ class _TransitionPickerViewState extends State<TransitionPickerView>
                               size: 18,
                               color: direction == _direction
                                   ? VineTheme.primary
-                                  : VineTheme.secondaryText,
+                                  : context.vineColors.secondaryText,
                             ),
                           ),
                       ],
@@ -525,16 +528,16 @@ class _TransitionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final fromFrame = _PreviewFrame(
       path: fromThumbnailPath,
-      fallback: const [
-        VineTheme.primaryDarkGreen,
-        VineTheme.surfaceBackground,
+      fallback: [
+        context.vineColors.primaryContainer,
+        context.vineColors.surface,
       ],
     );
     final toFrame = _PreviewFrame(
       path: toThumbnailPath,
-      fallback: const [
-        VineTheme.cardBackground,
-        VineTheme.surfaceContainerHigh,
+      fallback: [
+        context.vineColors.card,
+        context.vineColors.surfaceContainerHigh,
       ],
     );
     // Merge the explicit button node with the GestureDetector's tap action into
@@ -586,7 +589,9 @@ class _TransitionTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: VineTheme.labelSmallFont(
-                    color: selected ? VineTheme.primary : VineTheme.lightText,
+                    color: selected
+                        ? VineTheme.primary
+                        : context.vineColors.mutedText,
                   ),
                 ),
               ),
@@ -633,14 +638,14 @@ class _TransitionEffect extends StatelessWidget {
             Opacity(opacity: clamped, child: to),
           ],
         ),
+        // These name the rendered effect, not a surface: a "fade to black"
+        // has to dip to black and a "fade to white" to white, whatever the
+        // appearance mode is.
         ClipTransitionType.fadeToBlack => _dip(
           VineTheme.backgroundColor,
           clamped,
         ),
-        ClipTransitionType.fadeToWhite => _dip(
-          VineTheme.inverseSurface,
-          clamped,
-        ),
+        ClipTransitionType.fadeToWhite => _dip(VineTheme.whiteText, clamped),
         ClipTransitionType.slide => Stack(
           fit: .expand,
           children: [

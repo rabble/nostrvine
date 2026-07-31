@@ -139,7 +139,7 @@ class _ColorPickerButton extends StatelessWidget {
           padding: const .all(2),
           decoration: BoxDecoration(
             borderRadius: .circular(18),
-            border: .all(color: VineTheme.onSurface, width: 2),
+            border: .all(color: context.vineColors.onSurface, width: 2),
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(

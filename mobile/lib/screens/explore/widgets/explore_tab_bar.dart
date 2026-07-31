@@ -48,12 +48,14 @@ class ExploreTabBar extends StatelessWidget {
               indicatorWeight: 4,
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: VineTheme.transparent,
-              labelColor: VineTheme.whiteText,
-              unselectedLabelColor: VineTheme.onSurfaceMuted55,
+              labelColor: context.vineColors.primaryText,
+              unselectedLabelColor: context.vineColors.onSurfaceMuted,
               labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-              labelStyle: VineTheme.titleMediumFont(),
+              labelStyle: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
               unselectedLabelStyle: VineTheme.titleMediumFont(
-                color: VineTheme.onSurfaceMuted55,
+                color: context.vineColors.onSurfaceMuted,
               ),
               onTap: onTap,
               tabs: [
@@ -70,7 +72,7 @@ class ExploreTabBar extends StatelessWidget {
               ],
             ),
             // Right-edge fade gradient shim
-            const Positioned(
+            Positioned(
               top: 0,
               bottom: 0,
               right: 0,
@@ -81,9 +83,14 @@ class ExploreTabBar extends StatelessWidget {
                     gradient: LinearGradient(
                       begin: Alignment.centerRight,
                       end: Alignment.centerLeft,
+                      // Both stops are the same surface at different alpha.
+                      // Fading to a hardcoded transparent *black* instead
+                      // muddies the midpoint once the surface is light.
                       colors: [
-                        VineTheme.surfaceContainerHigh,
-                        Color(0x00000A06),
+                        context.vineColors.surfaceContainerHigh,
+                        context.vineColors.surfaceContainerHigh.withValues(
+                          alpha: 0,
+                        ),
                       ],
                     ),
                   ),

@@ -73,7 +73,7 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
     final screenHeight = MediaQuery.sizeOf(context).height;
 
     return Material(
-      color: VineTheme.surfaceBackground,
+      color: context.vineColors.surface,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       child: SizedBox(
         height: screenHeight * 0.92,
@@ -85,20 +85,23 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
-                style: const TextStyle(color: VineTheme.whiteText),
+                style: TextStyle(color: context.vineColors.primaryText),
                 decoration: InputDecoration(
                   hintText: context.l10n.shareFindPeople,
-                  hintStyle: const TextStyle(color: VineTheme.secondaryText),
+                  hintStyle: TextStyle(color: context.vineColors.secondaryText),
                   prefixIconConstraints: const BoxConstraints(),
-                  prefixIcon: const Padding(
-                    padding: EdgeInsetsDirectional.only(start: 12, end: 8),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      start: 12,
+                      end: 8,
+                    ),
                     child: DivineIcon(
                       icon: DivineIconName.search,
-                      color: VineTheme.secondaryText,
+                      color: context.vineColors.secondaryText,
                     ),
                   ),
                   filled: true,
-                  fillColor: VineTheme.containerLow,
+                  fillColor: context.vineColors.containerLow,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -158,7 +161,7 @@ class _DragIndicator extends StatelessWidget {
         width: 40,
         height: 4,
         decoration: BoxDecoration(
-          color: VineTheme.secondaryText,
+          color: context.vineColors.secondaryText,
           borderRadius: BorderRadius.circular(2),
         ),
       ),
@@ -228,7 +231,7 @@ class _ResultsList extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   context.l10n.userSearchNoResults,
-                  style: const TextStyle(color: VineTheme.secondaryText),
+                  style: TextStyle(color: context.vineColors.secondaryText),
                 ),
               ),
             ),
@@ -237,7 +240,7 @@ class _ResultsList extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   context.l10n.userPickerSearchFailedTryAgain,
-                  style: const TextStyle(color: VineTheme.secondaryText),
+                  style: TextStyle(color: context.vineColors.secondaryText),
                 ),
               ),
             ),
@@ -268,7 +271,7 @@ class _ContactsList extends StatelessWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             context.l10n.findPeopleNoContacts,
-            style: const TextStyle(color: VineTheme.secondaryText),
+            style: TextStyle(color: context.vineColors.secondaryText),
             textAlign: TextAlign.center,
           ),
         ),
@@ -307,14 +310,14 @@ class _UserResultTile extends ConsumerWidget {
       ),
       title: Text(
         user.displayName ?? context.l10n.findPeopleAnonymousUser,
-        style: const TextStyle(
-          color: VineTheme.whiteText,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
           fontWeight: FontWeight.w600,
         ),
       ),
       subtitle: Text(
         displayId.startsWith('npub') ? displayId : '@$displayId',
-        style: const TextStyle(color: VineTheme.secondaryText),
+        style: TextStyle(color: context.vineColors.secondaryText),
         overflow: TextOverflow.ellipsis,
       ),
       onTap: onTap,

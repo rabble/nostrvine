@@ -25,7 +25,7 @@ class NotificationBadge extends StatelessWidget {
       return child;
     }
 
-    final foreground = textColor ?? VineTheme.whiteText;
+    final foreground = textColor ?? context.vineColors.primaryText;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -143,7 +143,7 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
       return widget.child;
     }
 
-    final foreground = widget.textColor ?? VineTheme.whiteText;
+    final foreground = widget.textColor ?? context.vineColors.primaryText;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -168,7 +168,9 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color: VineTheme.backgroundColor.withValues(alpha: 0.2),
+                        color: VineTheme.backgroundColor.withValues(
+                          alpha: 0.2,
+                        ),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),

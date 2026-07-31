@@ -211,20 +211,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get generalSettingsSectionApp => 'APP';
 
   @override
-  String get appearanceSettingsTitle => 'Appearance';
+  String get appearanceSettingsTitle => 'Aspetto';
 
   @override
   String get appearanceSettingsSubtitle =>
-      'Choose how Divine looks on this device';
+      'Scegli come appare Divine su questo dispositivo';
 
   @override
-  String get appearanceSettingsSystem => 'System default';
+  String get appearanceSettingsSystem => 'Predefinito di sistema';
 
   @override
-  String get appearanceSettingsLight => 'Light';
+  String get appearanceSettingsLight => 'Chiaro';
 
   @override
-  String get appearanceSettingsDark => 'Dark';
+  String get appearanceSettingsDark => 'Scuro';
 
   @override
   String get generalSettingsClosedCaptions => 'Sottotitoli';

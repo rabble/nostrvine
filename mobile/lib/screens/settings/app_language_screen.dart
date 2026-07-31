@@ -30,7 +30,7 @@ class AppLanguageScreen extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -47,12 +47,12 @@ class AppLanguageScreen extends StatelessWidget {
                     child: Text(
                       context.l10n.settingsAppLanguageDescription,
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   ),
                   _DeviceDefaultTile(isSelected: isDeviceDefault),
-                  const Divider(color: VineTheme.outlineMuted, height: 1),
+                  Divider(color: context.vineColors.outlineMuted, height: 1),
                   ...LocalePreferenceService.supportedLocales.entries.map(
                     (entry) => _LocaleTile(
                       code: entry.key,
@@ -91,11 +91,13 @@ class _DeviceDefaultTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.settingsAppLanguageUseDeviceLanguage,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       subtitle: Text(
         deviceLanguageName,
-        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+        style: VineTheme.bodySmallFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
       ),
       onTap: () => context.read<LocaleCubit>().clearLocale(),
     );
@@ -122,11 +124,13 @@ class _LocaleTile extends StatelessWidget {
       ),
       title: Text(
         nativeName,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
       subtitle: Text(
         code.toUpperCase(),
-        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+        style: VineTheme.bodySmallFont(
+          color: context.vineColors.onSurfaceVariant,
+        ),
       ),
       onTap: () => context.read<LocaleCubit>().setLocale(code),
     );

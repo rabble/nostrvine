@@ -223,7 +223,11 @@ class _DivineButtonContent extends StatelessWidget {
   /// outer bounds — and the same content position — as an unbordered one
   /// of the same [size]. Without this, a secondary button renders 2px
   /// larger on every edge than a primary one.
-  double get _borderInset => _borderColor != null ? _kBorderWidth : 0;
+  /// Whether this [type] paints a visible border. Kept independent of the
+  /// resolved palette so padding geometry does not need a [BuildContext].
+  bool get _hasBorder => type == DivineButtonType.secondary;
+
+  double get _borderInset => _hasBorder ? _kBorderWidth : 0;
 
   /// Vertical inner padding. Fixed per size — it sets the button height
   /// (32 / 40 / 48px) and never changes with stretch state. The border
@@ -267,34 +271,36 @@ class _DivineButtonContent extends StatelessWidget {
     _ => 0.32,
   };
 
-  Color get _backgroundColor => switch (type) {
+  Color _backgroundColor(VineThemeColors colors) => switch (type) {
     DivineButtonType.primary => VineTheme.primary,
-    DivineButtonType.secondary => VineTheme.surfaceContainer,
-    DivineButtonType.tertiary => VineTheme.inverseSurface,
+    DivineButtonType.secondary => colors.surfaceContainer,
+    DivineButtonType.tertiary => colors.inverseSurface,
     DivineButtonType.ghost => VineTheme.scrim65,
     DivineButtonType.ghostSecondary => VineTheme.scrim15,
     DivineButtonType.link => VineTheme.transparent,
     DivineButtonType.error => VineTheme.error,
   };
 
-  Color get _foregroundColor => switch (type) {
+  Color _foregroundColor(VineThemeColors colors) => switch (type) {
     DivineButtonType.primary => VineTheme.onPrimary,
-    DivineButtonType.secondary => VineTheme.primary,
-    DivineButtonType.tertiary => VineTheme.inverseOnSurface,
-    DivineButtonType.ghost ||
-    DivineButtonType.ghostSecondary => VineTheme.onSurface,
-    DivineButtonType.link => VineTheme.onSurfaceVariant,
+    DivineButtonType.secondary =>
+      colors.isLight ? colors.onSurface : VineTheme.primary,
+    DivineButtonType.tertiary => colors.inverseOnSurface,
+    // The stronger ghost scrim can carry fixed light content in both modes.
+    DivineButtonType.ghost => VineTheme.onSurface,
+    DivineButtonType.ghostSecondary =>
+      colors.isLight ? colors.onSurface : VineTheme.onSurface,
+    DivineButtonType.link => colors.onSurfaceVariant,
     DivineButtonType.error => VineTheme.onErrorContainer,
   };
 
-  Color? get _borderColor => switch (type) {
-    DivineButtonType.secondary => VineTheme.outlineMuted,
-    _ => null,
-  };
+  Color? _borderColor(VineThemeColors colors) =>
+      _hasBorder ? colors.outlineMuted : null;
 
-  TextStyle get _textStyle {
+  TextStyle _textStyle(VineThemeColors colors) {
+    final foreground = _foregroundColor(colors);
     if (type == DivineButtonType.link) {
-      return VineTheme.bodyLargeFont(color: _foregroundColor).copyWith(
+      return VineTheme.bodyLargeFont(color: foreground).copyWith(
         decoration: TextDecoration.underline,
         decorationColor: VineTheme.primary,
         decorationThickness: 2,
@@ -307,34 +313,26 @@ class _DivineButtonContent extends StatelessWidget {
     // weight and brand font keep the small chip reading as a primary
     // action.
     if (size == DivineButtonSize.tiny) {
-      return VineTheme.titleSmallFont(color: _foregroundColor);
+      return VineTheme.titleSmallFont(color: foreground);
     }
 
-    return VineTheme.titleMediumFont(color: _foregroundColor);
+    return VineTheme.titleMediumFont(color: foreground);
   }
 
-  List<BoxShadow>? get _boxShadow {
+  List<BoxShadow>? _boxShadow(VineThemeColors colors) {
     // Link buttons have no shadow
     if (type == DivineButtonType.link) return null;
     // Disabled primary buttons have no shadow
     if (!_isEnabled && type == DivineButtonType.primary) return null;
 
-    return const [
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(0.4, 0.4),
-        blurRadius: 0.6,
-      ),
-      BoxShadow(
-        color: Color(0x1A000000),
-        offset: Offset(1, 1),
-        blurRadius: 1,
-      ),
-    ];
+    return VineTheme.buttonBoxShadowsFor(colors);
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
+    final foregroundColor = _foregroundColor(colors);
+    final borderColor = _borderColor(colors);
     final content = Row(
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -348,20 +346,20 @@ class _DivineButtonContent extends StatelessWidget {
             height: _iconSize,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_foregroundColor),
+              valueColor: AlwaysStoppedAnimation<Color>(foregroundColor),
             ),
           )
         else if (leadingIcon != null)
           DivineIcon(
             icon: leadingIcon!,
-            color: _foregroundColor,
+            color: foregroundColor,
             size: _iconSize,
           ),
         if (!_noLabel)
           Flexible(
             child: Text(
               label,
-              style: _textStyle,
+              style: _textStyle(colors),
               textAlign: .center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -370,19 +368,19 @@ class _DivineButtonContent extends StatelessWidget {
         if (trailingIcon != null)
           DivineIcon(
             icon: trailingIcon!,
-            color: _foregroundColor,
+            color: foregroundColor,
             size: _iconSize,
           ),
       ],
     );
 
     final decoration = BoxDecoration(
-      color: _backgroundColor,
+      color: _backgroundColor(colors),
       borderRadius: BorderRadius.circular(_borderRadius),
-      border: _borderColor != null
-          ? Border.all(color: _borderColor!, width: _kBorderWidth)
+      border: borderColor != null
+          ? Border.all(color: borderColor, width: _kBorderWidth)
           : null,
-      boxShadow: _isEnabled ? _boxShadow : null,
+      boxShadow: _isEnabled ? _boxShadow(colors) : null,
     );
 
     final inkChild = Ink(
@@ -403,8 +401,8 @@ class _DivineButtonContent extends StatelessWidget {
         child: InkWell(
           onTap: _isEnabled ? onPressed : null,
           borderRadius: BorderRadius.circular(_borderRadius),
-          splashColor: _foregroundColor.withValues(alpha: 0.1),
-          highlightColor: _foregroundColor.withValues(alpha: 0.05),
+          splashColor: foregroundColor.withValues(alpha: 0.1),
+          highlightColor: foregroundColor.withValues(alpha: 0.05),
           excludeFromSemantics: size == DivineButtonSize.small,
           child: inkChild,
         ),
@@ -682,49 +680,39 @@ class DivineTextLink extends StatelessWidget {
   /// Returns a [TextSpan] for use in [Text.rich] or [RichText].
   ///
   /// This is useful when you need to embed the link within a larger text flow.
+  /// Pass the palette of the surrounding appearance mode via [colors] — a
+  /// [TextSpan] has no build context of its own to resolve it from.
   static TextSpan span({
     required String text,
     required VoidCallback? onTap,
+    required VineThemeColors colors,
     TextStyle? style,
   }) {
-    final isEnabled = onTap != null;
-    final baseStyle =
-        VineTheme.bodyLargeFont(
-          color: isEnabled
-              ? VineTheme.onSurfaceVariant
-              : VineTheme.onSurfaceDisabled,
-        ).copyWith(
-          decoration: TextDecoration.underline,
-          decorationColor: isEnabled
-              ? VineTheme.primary
-              : VineTheme.onSurfaceDisabled,
-          decorationThickness: 2,
-        );
-
     return TextSpan(
       text: text,
-      style: style ?? baseStyle,
+      style: style ?? _baseStyle(colors, isEnabled: onTap != null),
       recognizer: onTap != null
           ? (TapGestureRecognizer()..onTap = onTap)
           : null,
     );
   }
 
+  static TextStyle _baseStyle(
+    VineThemeColors colors, {
+    required bool isEnabled,
+  }) =>
+      VineTheme.bodyLargeFont(
+        color: isEnabled ? colors.onSurfaceVariant : colors.disabled,
+      ).copyWith(
+        decoration: TextDecoration.underline,
+        decorationColor: isEnabled ? VineTheme.primary : colors.disabled,
+        decorationThickness: 2,
+      );
+
   @override
   Widget build(BuildContext context) {
     final isEnabled = onTap != null;
-    final baseStyle =
-        VineTheme.bodyLargeFont(
-          color: isEnabled
-              ? VineTheme.onSurfaceVariant
-              : VineTheme.onSurfaceDisabled,
-        ).copyWith(
-          decoration: TextDecoration.underline,
-          decorationColor: isEnabled
-              ? VineTheme.primary
-              : VineTheme.onSurfaceDisabled,
-          decorationThickness: 2,
-        );
+    final baseStyle = _baseStyle(context.vineColors, isEnabled: isEnabled);
 
     return GestureDetector(
       onTap: onTap,

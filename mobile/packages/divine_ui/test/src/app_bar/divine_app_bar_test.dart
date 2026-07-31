@@ -4,6 +4,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -31,6 +32,7 @@ void main() {
       DiVineAppBarGradient? gradient,
       Color? backgroundColor,
       DiVineAppBarStyle? style,
+      SystemUiOverlayStyle? systemOverlayStyle,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -56,6 +58,7 @@ void main() {
             gradient: gradient,
             backgroundColor: backgroundColor,
             style: style,
+            systemOverlayStyle: systemOverlayStyle,
           ),
           body: const SizedBox(),
         ),
@@ -280,7 +283,7 @@ void main() {
               showBackButton: true,
               onBackPressed: () => pressed = true,
               expandLeadingHitArea: true,
-              style: DiVineAppBarStyle.transparentStyle.copyWith(
+              style: DiVineAppBarStyle.overMediaStyle.copyWith(
                 horizontalPadding: 12,
                 leadingWidth: 72,
               ),
@@ -311,7 +314,7 @@ void main() {
               title: 'Test',
               showBackButton: true,
               onBackPressed: () => pressed = true,
-              style: DiVineAppBarStyle.transparentStyle.copyWith(
+              style: DiVineAppBarStyle.overMediaStyle.copyWith(
                 horizontalPadding: 12,
                 leadingWidth: 72,
               ),
@@ -455,6 +458,54 @@ void main() {
 
         expect(find.byKey(const Key('custom-1')), findsOneWidget);
         expect(find.byKey(const Key('custom-2')), findsOneWidget);
+      });
+    });
+
+    group('status bar style', () {
+      testWidgets('gradient mode keeps light icons over media', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            backgroundMode: DiVineAppBarBackgroundMode.gradient,
+            gradient: DiVineAppBarGradient.videoOverlay,
+          ),
+        );
+
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.systemOverlayStyle, VineTheme.statusBarStyle);
+      });
+
+      testWidgets('solid and transparent defer to the themed appBarTheme', (
+        tester,
+      ) async {
+        // Transparent only means "paints no background of its own" — the page
+        // behind it follows the palette, so the status bar must too.
+        for (final mode in [
+          DiVineAppBarBackgroundMode.solid,
+          DiVineAppBarBackgroundMode.transparent,
+        ]) {
+          await tester.pumpWidget(
+            buildTestWidget(title: 'Test', backgroundMode: mode),
+          );
+
+          final appBar = tester.widget<AppBar>(find.byType(AppBar));
+          expect(appBar.systemOverlayStyle, isNull, reason: '$mode');
+        }
+      });
+
+      testWidgets('an explicit style still wins', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            backgroundMode: DiVineAppBarBackgroundMode.transparent,
+            systemOverlayStyle: VineTheme.lightStatusBarStyle,
+          ),
+        );
+
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.systemOverlayStyle, VineTheme.lightStatusBarStyle);
       });
     });
 
@@ -680,7 +731,7 @@ void main() {
         );
       });
 
-      testWidgets('transparent mode applies transparentStyle icon color', (
+      testWidgets('transparent mode follows the nav foreground', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -694,12 +745,12 @@ void main() {
         final iconButton = tester.widget<DivineAppBarIconButton>(
           find.byType(DivineAppBarIconButton),
         );
-        expect(iconButton.iconColor, VineTheme.whiteText);
+        expect(iconButton.iconColor, VineTheme.darkColors.onNav);
         expect(iconButton.backgroundColor, const Color(0x26000000));
         expect(iconButton.borderSide, isNull);
       });
 
-      testWidgets('gradient mode applies transparentStyle icon color', (
+      testWidgets('gradient mode keeps the over-media icon color', (
         tester,
       ) async {
         await tester.pumpWidget(

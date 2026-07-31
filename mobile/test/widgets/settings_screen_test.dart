@@ -186,12 +186,14 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('scaffold has navGreen background', (tester) async {
+    testWidgets('scaffold takes its background from the palette', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
-      expect(scaffold.backgroundColor, equals(VineTheme.navGreen));
+      expect(scaffold.backgroundColor, equals(VineTheme.darkColors.surface));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

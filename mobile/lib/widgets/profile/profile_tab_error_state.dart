@@ -30,15 +30,17 @@ class ProfileTabErrorState extends StatelessWidget {
               mainAxisSize: .min,
               spacing: 16,
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: .warningCircle,
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                   size: 40,
                 ),
                 Text(
                   message,
                   textAlign: .center,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ],
             ),

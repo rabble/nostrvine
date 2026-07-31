@@ -34,7 +34,7 @@ class SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     text,
-    style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
+    style: VineTheme.labelSmallFont(color: context.vineColors.secondaryText),
   );
 }
 
@@ -57,6 +57,8 @@ class AnimationPickerChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
+    final isLight = colors.isLight;
     return Semantics(
       button: true,
       selected: selected,
@@ -72,11 +74,21 @@ class AnimationPickerChip extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: selected
-                  ? VineTheme.primary.withValues(alpha: 0.18)
+                  ? isLight
+                        ? colors.primaryContainer
+                        : VineTheme.primary.withValues(alpha: 0.18)
+                  : isLight
+                  ? colors.containerLow
                   : VineTheme.lightText.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: selected ? VineTheme.primary : Colors.transparent,
+                color: selected
+                    ? isLight
+                          ? colors.outline
+                          : VineTheme.primary
+                    : isLight
+                    ? colors.outlineMuted
+                    : VineTheme.transparent,
               ),
             ),
             child: Padding(
@@ -123,8 +135,10 @@ class CurvePickerRow extends StatelessWidget {
                 painter: CurveGlyphPainter(
                   curve: flutterCurveFor(AnimationCurve.values[i]),
                   color: AnimationCurve.values[i] == selected
-                      ? VineTheme.primary
-                      : VineTheme.secondaryText,
+                      ? context.vineColors.isLight
+                            ? context.vineColors.onSurface
+                            : VineTheme.primary
+                      : context.vineColors.secondaryText,
                 ),
               ),
             ),

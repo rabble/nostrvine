@@ -54,7 +54,9 @@ class EmptyConversation extends StatelessWidget {
           // User info
           Text(
             displayName,
-            style: VineTheme.titleLargeFont(),
+            style: VineTheme.titleLargeFont(
+              color: context.vineColors.primaryText,
+            ),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -63,7 +65,9 @@ class EmptyConversation extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               nip05!,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -76,7 +80,9 @@ class EmptyConversation extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               context.l10n.conversationRestorePausedTitle,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -98,8 +104,8 @@ class _ViewProfileButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+          color: context.vineColors.surfaceContainer,
+          border: Border.all(color: context.vineColors.outlineMuted, width: 2),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(

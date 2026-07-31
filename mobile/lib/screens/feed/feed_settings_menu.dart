@@ -294,7 +294,9 @@ class _OwnerVideoAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? VineTheme.error : VineTheme.onSurface;
+    final color = isDestructive
+        ? VineTheme.error
+        : context.vineColors.onSurface;
     return Semantics(
       button: true,
       label: label,

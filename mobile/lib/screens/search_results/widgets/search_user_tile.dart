@@ -79,12 +79,14 @@ class SearchUserTile extends ConsumerWidget {
                   children: [
                     Text(
                       profile.bestDisplayName,
-                      style: VineTheme.titleMediumFont(),
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                     Text(
                       secondaryText,
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.secondaryText,
+                        color: context.vineColors.secondaryText,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -94,11 +96,11 @@ class SearchUserTile extends ConsumerWidget {
               ),
               if (showAddToList)
                 IconButton(
-                  icon: const DivineIcon(
+                  icon: DivineIcon(
                     icon: DivineIconName.listPlus,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                   ),
-                  color: VineTheme.secondaryText,
+                  color: context.vineColors.secondaryText,
                   tooltip: context.l10n.peopleListsAddToList,
                   onPressed: () => AddToPeopleListsSheet.show(
                     context,

@@ -184,7 +184,7 @@ class _PooledVideoErrorOverlayState
       fit: StackFit.expand,
       children: [
         ColoredBox(
-          color: VineTheme.backgroundColor,
+          color: context.vineColors.background,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -220,7 +220,7 @@ class _PooledVideoErrorOverlayState
                 DivineIcon(icon: icon, color: VineTheme.whiteText, size: 48),
                 Text(
                   message,
-                  style: VineTheme.bodyMediumFont(),
+                  style: VineTheme.bodyMediumFont(color: VineTheme.whiteText),
                   textAlign: TextAlign.center,
                 ),
                 if (body != null)
@@ -228,7 +228,9 @@ class _PooledVideoErrorOverlayState
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       body,
-                      style: VineTheme.bodySmallFont(),
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.whiteText,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ),

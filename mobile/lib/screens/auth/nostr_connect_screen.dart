@@ -260,7 +260,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -279,15 +279,15 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: VineTheme.onSurfaceMuted,
+                color: context.vineColors.onSurfaceMuted,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(height: 24),
             Text(
               context.l10n.authPasteBunkerUrl,
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -296,15 +296,15 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
             TextField(
               controller: controller,
               autofocus: true,
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 16,
               ),
               decoration: InputDecoration(
                 hintText: context.l10n.authBunkerUrlHint,
                 hintStyle: const TextStyle(color: VineTheme.vineGreen),
                 filled: true,
-                fillColor: VineTheme.surfaceContainer,
+                fillColor: context.vineColors.surfaceContainer,
                 enabledBorder: OutlineInputBorder(
                   borderSide: const BorderSide(color: VineTheme.vineGreen),
                   borderRadius: BorderRadius.circular(16),
@@ -385,7 +385,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: switch (_sessionState) {
           NostrConnectState.idle || NostrConnectState.generating =>
@@ -468,15 +468,17 @@ class _LoadingContent extends StatelessWidget {
           const SizedBox(height: 72),
           Text(
             context.l10n.authScanSignerApp,
-            style: VineTheme.headlineLargeFont(),
+            style: VineTheme.headlineLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           const Spacer(),
           const CircularProgressIndicator(color: VineTheme.vineGreen),
           const SizedBox(height: 24),
           Text(
             message,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 16,
             ),
           ),
@@ -521,11 +523,11 @@ class _QrContent extends StatelessWidget {
           // Title
           Text(
             context.l10n.authScanSignerApp,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: VineTheme.fontFamilyBricolage,
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: VineTheme.whiteText,
+              color: context.vineColors.primaryText,
             ),
           ),
 
@@ -572,21 +574,24 @@ class _QrCodeCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
+        color: context.vineColors.surfaceContainer,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: VineTheme.outlineVariant),
+        border: Border.all(color: context.vineColors.outline),
       ),
       child: Center(
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: VineTheme.inverseSurface,
+            // A QR code is machine-readable, not chrome: the quiet zone has
+            // to stay white behind the black modules in both appearance
+            // modes, or scanners lose the contrast they need.
+            color: VineTheme.whiteText,
             borderRadius: BorderRadius.circular(12),
           ),
           child: QrImageView(
             data: connectUrl,
             size: 200,
-            backgroundColor: VineTheme.inverseSurface,
+            backgroundColor: VineTheme.whiteText,
             errorCorrectionLevel: QrErrorCorrectLevel.M,
           ),
         ),
@@ -617,8 +622,8 @@ class _WaitingIndicator extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             context.l10n.authWaitingForConnection(elapsedSeconds),
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
+            style: TextStyle(
+              color: context.vineColors.secondaryText,
               fontSize: 14,
             ),
           ),
@@ -649,9 +654,9 @@ class _ActionBar extends StatelessWidget {
           child: Container(
             constraints: BoxConstraints(minWidth: constraints.maxWidth),
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
+              color: context.vineColors.surfaceContainer,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: VineTheme.outlineVariant),
+              border: Border.all(color: context.vineColors.outline),
             ),
             padding: const .symmetric(horizontal: 12),
             child: Row(
@@ -750,17 +755,17 @@ class _CompatibilityTable extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.l10n.authCompatibleSignerApps,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                 ),
               ),
-              _platformIcon(DivineIconName.androidLogo),
+              _platformIcon(context, DivineIconName.androidLogo),
               const SizedBox(width: 24),
-              _platformIcon(DivineIconName.appleLogo),
+              _platformIcon(context, DivineIconName.appleLogo),
               const SizedBox(width: 24),
-              _platformIcon(DivineIconName.globe),
+              _platformIcon(context, DivineIconName.globe),
             ],
           ),
         ),
@@ -784,8 +789,12 @@ class _CompatibilityTable extends StatelessWidget {
     );
   }
 
-  Widget _platformIcon(DivineIconName icon) {
-    return DivineIcon(icon: icon, color: VineTheme.secondaryText, size: 22);
+  Widget _platformIcon(BuildContext context, DivineIconName icon) {
+    return DivineIcon(
+      icon: icon,
+      color: context.vineColors.secondaryText,
+      size: 22,
+    );
   }
 }
 
@@ -806,8 +815,8 @@ class _SignerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: VineTheme.outlineVariant)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.vineColors.outline)),
       ),
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
@@ -815,8 +824,8 @@ class _SignerRow extends StatelessWidget {
           Expanded(
             child: Text(
               name,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -881,8 +890,8 @@ class _ErrorContent extends StatelessWidget {
                 const SizedBox(height: 24),
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -891,8 +900,8 @@ class _ErrorContent extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 14,
                   ),
                 ),
@@ -904,7 +913,7 @@ class _ErrorContent extends StatelessWidget {
                     onPressed: onRetry,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: VineTheme.backgroundColor,
+                      foregroundColor: context.vineColors.background,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -913,7 +922,7 @@ class _ErrorContent extends StatelessWidget {
                     icon: DivineIcon(
                       icon: DivineIconName.arrowClockwise,
                       size: MediaQuery.textScalerOf(context).scale(16),
-                      color: VineTheme.backgroundColor,
+                      color: VineTheme.onPrimary,
                     ),
                     label: Text(
                       context.l10n.authTryAgain,

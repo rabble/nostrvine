@@ -268,14 +268,14 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     final usageCountAsync = ref.watch(soundUsageCountProvider(soundEventId));
 
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: _showingVideoFeed
           ? null
           : DiVineAppBar(
               title: context.l10n.soundTitle,
               showBackButton: true,
               onBackPressed: context.safePop,
-              backgroundColor: VineTheme.cardBackground,
+              backgroundColor: context.vineColors.card,
             ),
       body: Stack(
         children: [
@@ -296,7 +296,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                 ),
 
                 // Divider
-                const Divider(color: VineTheme.cardBackground, height: 1),
+                Divider(color: context.vineColors.card, height: 1),
 
                 // Videos section header
                 Padding(
@@ -313,8 +313,8 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                         showsSourceVideo
                             ? context.l10n.soundSourceVideo
                             : context.l10n.soundVideosUsingThisSound,
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
+                        style: TextStyle(
+                          color: context.vineColors.primaryText,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -426,7 +426,7 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: VineTheme.cardBackground,
+      color: context.vineColors.card,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -454,8 +454,8 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                   children: [
                     Text(
                       widget.sound.title ?? context.l10n.soundOriginalSound,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
@@ -530,12 +530,12 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                       icon: const DivineIcon(
                         icon: DivineIconName.plus,
                         size: 20,
-                        color: VineTheme.backgroundColor,
+                        color: VineTheme.onPrimary,
                       ),
                       label: Text(context.l10n.soundUseSound),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: VineTheme.vineGreen,
-                        foregroundColor: VineTheme.backgroundColor,
+                        foregroundColor: context.vineColors.background,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -564,7 +564,7 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
 
     return Text(
       items.join(' · '),
-      style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+      style: TextStyle(color: context.vineColors.secondaryText, fontSize: 14),
     );
   }
 }
@@ -590,7 +590,7 @@ class _AttributionInfo extends StatelessWidget {
 
     return Text.rich(
       TextSpan(
-        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
         children: [
           TextSpan(text: attributionText),
           if (sourceUrl != null) ...[
@@ -697,16 +697,16 @@ class _VideosGrid extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.videocam_off_outlined,
                       size: 64,
-                      color: VineTheme.lightText,
+                      color: context.vineColors.mutedText,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       l10n.soundNoVideosYet,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
@@ -715,8 +715,8 @@ class _VideosGrid extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Text(
                       l10n.soundBeFirstToUse,
-                      style: const TextStyle(
-                        color: VineTheme.onSurfaceMuted,
+                      style: TextStyle(
+                        color: context.vineColors.onSurfaceMuted,
                         fontSize: 14,
                       ),
                       textAlign: TextAlign.center,
@@ -756,8 +756,8 @@ class _VideosGrid extends ConsumerWidget {
                     const SizedBox(height: 16),
                     Text(
                       l10n.soundFailedToLoadVideos,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
@@ -766,8 +766,8 @@ class _VideosGrid extends ConsumerWidget {
                     const SizedBox(height: 8),
                     Text(
                       error.toString(),
-                      style: const TextStyle(
-                        color: VineTheme.onSurfaceMuted,
+                      style: TextStyle(
+                        color: context.vineColors.onSurfaceMuted,
                         fontSize: 12,
                       ),
                       textAlign: TextAlign.center,
@@ -779,12 +779,12 @@ class _VideosGrid extends ConsumerWidget {
                       onPressed: onRetry,
                       icon: const DivineIcon(
                         icon: DivineIconName.arrowClockwise,
-                        color: VineTheme.backgroundColor,
+                        color: VineTheme.onPrimary,
                       ),
                       label: Text(l10n.soundRetry),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: VineTheme.vineGreen,
-                        foregroundColor: VineTheme.backgroundColor,
+                        foregroundColor: context.vineColors.background,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,
@@ -903,16 +903,16 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.videocam_off_outlined,
               size: 64,
-              color: VineTheme.lightText,
+              color: context.vineColors.mutedText,
             ),
             const SizedBox(height: 16),
             Text(
               l10n.soundVideosUnavailable,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -920,8 +920,8 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
             const SizedBox(height: 8),
             Text(
               l10n.soundCouldNotLoadDetails,
-              style: const TextStyle(
-                color: VineTheme.onSurfaceMuted,
+              style: TextStyle(
+                color: context.vineColors.onSurfaceMuted,
                 fontSize: 14,
               ),
             ),
@@ -970,7 +970,7 @@ class _VideoGridTile extends StatelessWidget {
       onTap: onTap,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
+          color: context.vineColors.card,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Stack(
@@ -981,10 +981,10 @@ class _VideoGridTile extends StatelessWidget {
                 child: _VideoThumbnail(thumbnailUrl: video.thumbnailUrl),
               ),
             ),
-            const Center(
+            Center(
               child: DivineIcon(
                 icon: DivineIconName.playCircleFill,
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
                 size: 32,
               ),
             ),
@@ -1030,10 +1030,10 @@ class _ThumbnailPlaceholder extends StatelessWidget {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: DivineIcon(
           icon: DivineIconName.playCircle,
-          color: VineTheme.whiteText,
+          color: context.vineColors.primaryText,
         ),
       ),
     );
@@ -1092,7 +1092,7 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                   IconButton(
                     icon: const DivineIcon(
                       icon: DivineIconName.x,
-                      color: VineTheme.whiteText,
+                      color: VineTheme.primaryText,
                     ),
                     onPressed: onClose,
                     tooltip: context.l10n.soundCloseTooltip,
@@ -1112,8 +1112,8 @@ class _SoundVideoFeedOverlay extends ConsumerWidget {
                         Flexible(
                           child: Text(
                             soundTitle,
-                            style: const TextStyle(
-                              color: VineTheme.whiteText,
+                            style: TextStyle(
+                              color: context.vineColors.primaryText,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),

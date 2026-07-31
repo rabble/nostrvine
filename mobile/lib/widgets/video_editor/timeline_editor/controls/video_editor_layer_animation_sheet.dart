@@ -70,7 +70,7 @@ Future<void> editLayerAnimation(
     isScrollControlled: true,
     title: Text(
       context.l10n.videoEditorLayerAnimationLabel,
-      style: VineTheme.titleMediumFont(),
+      style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
     ),
     body: LayerAnimationPickerView(
       initialEnter: layer.divineEnterAnimations,
@@ -347,7 +347,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                               Text(
                                 _durationLabel(active.duration),
                                 style: VineTheme.labelSmallFont(
-                                  color: VineTheme.lightText,
+                                  color: context.vineColors.mutedText,
                                 ),
                               ),
                             ],
@@ -400,7 +400,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                       size: 18,
                                       color: direction == active.direction
                                           ? VineTheme.primary
-                                          : VineTheme.secondaryText,
+                                          : context.vineColors.secondaryText,
                                     ),
                                   ),
                               ],
@@ -419,7 +419,7 @@ class _LayerAnimationPickerViewState extends State<LayerAnimationPickerView>
                                 Text(
                                   '${(active.scaleFrom * 100).round()}%',
                                   style: VineTheme.labelSmallFont(
-                                    color: VineTheme.lightText,
+                                    color: context.vineColors.mutedText,
                                   ),
                                 ),
                               ],
@@ -552,10 +552,17 @@ class _PhaseToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final colors = context.vineColors;
+    final isLight = colors.isLight;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.lightText.withValues(alpha: 0.08),
+        color: isLight
+            ? colors.containerLow
+            : VineTheme.lightText.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isLight ? colors.outlineMuted : VineTheme.transparent,
+        ),
       ),
       child: Row(
         children: [
@@ -588,6 +595,8 @@ class _PhaseSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
+    final isLight = colors.isLight;
     return Expanded(
       child: Semantics(
         button: true,
@@ -603,17 +612,27 @@ class _PhaseSegment extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: selected
-                  ? VineTheme.primary.withValues(alpha: 0.18)
+                  ? isLight
+                        ? colors.primaryContainer
+                        : VineTheme.primary.withValues(alpha: 0.18)
                   : null,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: selected ? VineTheme.primary : Colors.transparent,
+                color: selected
+                    ? isLight
+                          ? colors.outline
+                          : VineTheme.primary
+                    : VineTheme.transparent,
               ),
             ),
             child: Text(
               label,
               style: VineTheme.labelMediumFont(
-                color: selected ? VineTheme.primary : VineTheme.lightText,
+                color: selected
+                    ? isLight
+                          ? colors.onSurface
+                          : VineTheme.primary
+                    : colors.mutedText,
               ),
             ),
           ),
@@ -672,7 +691,7 @@ class _LayerTypeTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: selected ? VineTheme.primary : Colors.transparent,
+                    color: selected ? VineTheme.primary : VineTheme.transparent,
                     width: 2,
                   ),
                 ),
@@ -701,7 +720,9 @@ class _LayerTypeTile extends StatelessWidget {
                 child: Text(
                   label,
                   style: VineTheme.labelSmallFont(
-                    color: selected ? VineTheme.primary : VineTheme.lightText,
+                    color: selected
+                        ? VineTheme.primary
+                        : context.vineColors.mutedText,
                   ),
                 ),
               ),
@@ -740,11 +761,14 @@ class _LayerEffect extends StatelessWidget {
     return DecoratedBox(
       // Tinted backdrop (not a flat surface) so the placeholder layer reads
       // clearly against it during fade/slide/scale.
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [VineTheme.primaryDarkGreen, VineTheme.surfaceBackground],
+          colors: [
+            context.vineColors.primaryContainer,
+            context.vineColors.surface,
+          ],
         ),
       ),
       child: SizedBox(
@@ -792,14 +816,14 @@ class _PlaceholderLayer extends StatelessWidget {
         color: VineTheme.primary.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: const SizedBox(
+      child: SizedBox(
         width: 30,
         height: 30,
         child: Center(
           child: DivineIcon(
             icon: .sparkle,
             size: 16,
-            color: VineTheme.backgroundColor,
+            color: context.vineColors.background,
           ),
         ),
       ),

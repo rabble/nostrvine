@@ -27,6 +27,10 @@ class PartialCircleSpinner extends StatefulWidget {
   final Color backgroundColor;
 
   /// The color of the progress arc.
+  ///
+  /// Fixed rather than palette-driven: it is drawn on [backgroundColor],
+  /// itself a fixed mid-grey, so the pair has to keep its own contrast
+  /// independently of the appearance mode.
   final Color progressColor;
 
   @override

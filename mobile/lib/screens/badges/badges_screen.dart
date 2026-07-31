@@ -47,7 +47,7 @@ class _BadgesView extends StatelessWidget {
         showBackButton: true,
         onBackPressed: context.pop,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: BlocBuilder<BadgesCubit, BadgesState>(
         builder: (context, state) {
           return RefreshIndicator(
@@ -105,12 +105,16 @@ class _BadgesIntro extends StatelessWidget {
         children: [
           Text(
             context.l10n.badgesIntroTitle,
-            style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
+            style: VineTheme.titleLargeFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             context.l10n.badgesIntroBody,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           if (errorMessage != null) ...[
             const SizedBox(height: 12),
@@ -190,7 +194,7 @@ class _AwardedBadgeCard extends StatelessWidget {
                     Text(
                       award.displayName,
                       style: VineTheme.titleMediumFont(
-                        color: VineTheme.onSurface,
+                        color: context.vineColors.onSurface,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -209,7 +213,9 @@ class _AwardedBadgeCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               award.definition!.description!,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: 14),
@@ -288,13 +294,17 @@ class _IssuedBadgeCard extends StatelessWidget {
           Text(
             badge.definition?.name ??
                 _definitionNameFromCoordinate(badge.award.definitionCoordinate),
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
           if (badge.recipients.isEmpty)
             Text(
               context.l10n.badgesIssuedNoRecipients,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             )
           else
             for (final recipient in badge.recipients) ...[
@@ -322,7 +332,9 @@ class _RecipientStatusRow extends StatelessWidget {
             recipient.pubkey,
             overflow: TextOverflow.fade,
             softWrap: false,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -348,7 +360,7 @@ class _SectionTitle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
       child: Text(
         label,
-        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
       ),
     );
   }
@@ -363,9 +375,9 @@ class _Panel extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
+        color: context.vineColors.card,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.outlineMuted),
+        border: Border.all(color: context.vineColors.outlineMuted),
       ),
       child: Padding(padding: const EdgeInsets.all(16), child: child),
     );
@@ -384,11 +396,18 @@ class _EmptyPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: VineTheme.titleSmallFont()),
+          Text(
+            title,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -414,7 +433,12 @@ class _BadgesErrorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(context.l10n.badgesLoadError, style: VineTheme.titleSmallFont()),
+          Text(
+            context.l10n.badgesLoadError,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
+          ),
           const SizedBox(height: 12),
           DivineButton(
             label: context.l10n.commonRetry,

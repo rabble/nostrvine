@@ -75,8 +75,8 @@ class EnvironmentBanner extends ConsumerWidget {
         child: Center(
           child: Text(
             'Environment: ${environment.displayName} - Tap for options',
-            style: const TextStyle(
-              color: VineTheme.whiteText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
@@ -85,10 +85,4 @@ class EnvironmentBanner extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// Helper function to get app bar color based on environment
-/// Always uses nav green — environment is indicated by the EnvironmentBadge tag
-Color getEnvironmentAppBarColor(EnvironmentConfig environment) {
-  return VineTheme.navGreen;
 }

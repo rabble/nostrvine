@@ -156,7 +156,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -242,7 +242,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
             onTap: () => _showAlgorithmExplainer(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: VineTheme.backgroundColor,
+              color: context.vineColors.background,
               child: Row(
                 children: [
                   const DivineIcon(
@@ -260,9 +260,9 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const DivineIcon(
+                  DivineIcon(
                     icon: DivineIconName.info,
-                    color: VineTheme.secondaryText,
+                    color: context.vineColors.secondaryText,
                     size: 16,
                   ),
                 ],
@@ -299,7 +299,9 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: VineTheme.secondaryText.withValues(alpha: 0.3),
+                    color: context.vineColors.secondaryText.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -316,8 +318,8 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                   Expanded(
                     child: Text(
                       context.l10n.forYouAlgorithmTitle,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
+                      style: TextStyle(
+                        color: context.vineColors.primaryText,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                       ),
@@ -337,36 +339,43 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: How it works
-              _buildSectionTitle(context.l10n.forYouAlgorithmHowItWorksTitle),
+              _buildSectionTitle(
+                context,
+                context.l10n.forYouAlgorithmHowItWorksTitle,
+              ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.forYouAlgorithmHowItWorksBody,
-                style: _bodyTextStyle,
+                style: _bodyTextStyleOf(context),
               ),
               const SizedBox(height: 16),
               Text(
                 context.l10n.forYouAlgorithmInteractionsIntro,
-                style: _bodyTextStyle,
+                style: _bodyTextStyleOf(context),
               ),
               const SizedBox(height: 12),
 
               // Interaction weights
               _buildInteractionItem(
+                context,
                 Icons.repeat,
                 context.l10n.metadataRepostsLabel,
                 context.l10n.forYouAlgorithmRepostsDescription,
               ),
               _buildInteractionItem(
+                context,
                 Icons.chat_bubble_outline,
                 context.l10n.profileCommentsSection,
                 context.l10n.forYouAlgorithmCommentsDescription,
               ),
               _buildInteractionItem(
+                context,
                 Icons.favorite_outline,
                 context.l10n.forYouAlgorithmReactionsTitle,
                 context.l10n.forYouAlgorithmReactionsDescription,
               ),
               _buildInteractionItem(
+                context,
                 Icons.play_circle_outline,
                 context.l10n.analyticsViews,
                 context.l10n.forYouAlgorithmViewsDescription,
@@ -374,43 +383,53 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Section: Cold start
-              _buildSectionTitle(context.l10n.forYouAlgorithmNewToDivineTitle),
+              _buildSectionTitle(
+                context,
+                context.l10n.forYouAlgorithmNewToDivineTitle,
+              ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.forYouAlgorithmNewToDivineBody1,
-                style: _bodyTextStyle,
+                style: _bodyTextStyleOf(context),
               ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.forYouAlgorithmNewToDivineBody2,
-                style: _bodyTextStyle,
+                style: _bodyTextStyleOf(context),
               ),
               const SizedBox(height: 24),
 
               // Section: Future vision
-              _buildSectionTitle(context.l10n.forYouAlgorithmChoiceTitle),
+              _buildSectionTitle(
+                context,
+                context.l10n.forYouAlgorithmChoiceTitle,
+              ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.forYouAlgorithmChoiceBody,
-                style: _bodyTextStyle,
+                style: _bodyTextStyleOf(context),
               ),
               const SizedBox(height: 12),
               _buildFutureFeatureItem(
+                context,
                 context.l10n.forYouAlgorithmChoicePersonalizedFeed,
               ),
               _buildFutureFeatureItem(
+                context,
                 context.l10n.forYouAlgorithmChoiceChronological,
               ),
               _buildFutureFeatureItem(
+                context,
                 context.l10n.forYouAlgorithmChoiceTrending,
               ),
               _buildFutureFeatureItem(
+                context,
                 context.l10n.forYouAlgorithmChoiceCustomFeeds,
               ),
               const SizedBox(height: 16),
               Text(
                 context.l10n.forYouAlgorithmChoiceClosing,
-                style: _bodyTextStyle,
+                style: _bodyTextStyleOf(context),
               ),
               const SizedBox(height: 24),
 
@@ -448,8 +467,8 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                           const SizedBox(height: 4),
                           Text(
                             context.l10n.forYouAlgorithmOpenSourceBody,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
+                            style: TextStyle(
+                              color: context.vineColors.secondaryText,
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -468,11 +487,11 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: const TextStyle(
-        color: VineTheme.whiteText,
+      style: TextStyle(
+        color: context.vineColors.primaryText,
         fontSize: 17,
         fontWeight: FontWeight.w600,
       ),
@@ -480,6 +499,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
   }
 
   Widget _buildInteractionItem(
+    BuildContext context,
     IconData icon,
     String title,
     String description,
@@ -492,7 +512,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: VineTheme.cardBackground,
+              color: context.vineColors.card,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: VineTheme.vineGreen, size: 18),
@@ -504,8 +524,8 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: VineTheme.whiteText,
+                  style: TextStyle(
+                    color: context.vineColors.primaryText,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -513,8 +533,8 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
+                  style: TextStyle(
+                    color: context.vineColors.secondaryText,
                     fontSize: 13,
                     height: 1.3,
                   ),
@@ -527,7 +547,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildFutureFeatureItem(String text) {
+  Widget _buildFutureFeatureItem(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 8, bottom: 8),
       child: Row(
@@ -539,14 +559,17 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
             size: 18,
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(text, style: _bodyTextStyle)),
+          Expanded(child: Text(text, style: _bodyTextStyleOf(context))),
         ],
       ),
     );
   }
 
-  static TextStyle get _bodyTextStyle =>
-      const TextStyle(color: VineTheme.primaryText, fontSize: 14, height: 1.5);
+  static TextStyle _bodyTextStyleOf(BuildContext context) => TextStyle(
+    color: context.vineColors.primaryText,
+    fontSize: 14,
+    height: 1.5,
+  );
 }
 
 /// Unavailable state when recommendations are not available
@@ -561,16 +584,16 @@ class _ForYouUnavailableState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.cloud_off,
               size: 64,
-              color: VineTheme.secondaryText,
+              color: context.vineColors.secondaryText,
             ),
             const SizedBox(height: 16),
             Text(
               context.l10n.forYouUnavailableTitle,
-              style: const TextStyle(
-                color: VineTheme.primaryText,
+              style: TextStyle(
+                color: context.vineColors.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -579,8 +602,8 @@ class _ForYouUnavailableState extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               context.l10n.forYouUnavailableDescription,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
                 height: 1.4,
               ),
@@ -603,16 +626,16 @@ class _ForYouEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.sparkle,
             size: 64,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.forYouEmptyTitle,
-            style: const TextStyle(
-              color: VineTheme.primaryText,
+            style: TextStyle(
+              color: context.vineColors.primaryText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
@@ -622,8 +645,8 @@ class _ForYouEmptyState extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               context.l10n.forYouEmptyDescription,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 14,
               ),
               textAlign: TextAlign.center,
@@ -658,8 +681,8 @@ class _ForYouErrorState extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               error,
-              style: const TextStyle(
-                color: VineTheme.secondaryText,
+              style: TextStyle(
+                color: context.vineColors.secondaryText,
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,

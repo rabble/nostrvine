@@ -232,11 +232,11 @@ class _ItemButton extends StatelessWidget {
               aspectRatio: 1,
               child: DecoratedBox(
                 decoration: ShapeDecoration(
-                  color: VineTheme.surfaceContainer,
+                  color: context.vineColors.surfaceContainer,
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(
+                    side: BorderSide(
                       width: 2,
-                      color: VineTheme.outlineMuted,
+                      color: context.vineColors.outlineMuted,
                     ),
                     borderRadius: .circular(24),
                   ),
@@ -254,7 +254,9 @@ class _ItemButton extends StatelessWidget {
             label,
             maxLines: 1,
             textAlign: .center,
-            style: VineTheme.bodySmallFont(),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ),
       ],

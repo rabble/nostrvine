@@ -169,7 +169,7 @@ class _Track extends StatelessWidget {
       size: Size(16, height),
       painter: _TrackPainter(
         value: value,
-        activeColor: VineTheme.onSurface,
+        activeColor: context.vineColors.onSurface,
         inactiveColor: VineTheme.onSurface.withValues(alpha: 0.5),
       ),
     );
@@ -320,6 +320,9 @@ class _Thumb extends StatelessWidget {
                 child: Text(
                   (value * 100).toStringAsFixed(0),
                   style: VineTheme.labelMediumFont(
+                    // Was inheriting the ambient bodyMedium, i.e. exactly this
+                    // token — spelled out so it follows the palette in light.
+                    color: context.vineColors.secondaryText,
                     fontFeatures: [const .tabularFigures()],
                   ),
                 ),

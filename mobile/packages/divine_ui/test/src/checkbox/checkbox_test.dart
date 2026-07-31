@@ -8,8 +8,10 @@ void main() {
     Widget buildTestWidget({
       DivineCheckboxState state = DivineCheckboxState.unselected,
       Duration animationDuration = const Duration(milliseconds: 100),
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         home: Scaffold(
           body: Center(
             child: DivineSpriteCheckbox(
@@ -20,6 +22,31 @@ void main() {
         ),
       );
     }
+
+    group('appearance mode', () {
+      // The unselected band is a filled box: dark green reads as an empty
+      // checkbox on a dark surface and as a black blob on a light one, so
+      // each palette gets its own sprite.
+      testWidgets('uses the dark sprite on the dark palette', (tester) async {
+        await tester.pumpWidget(buildTestWidget(theme: VineTheme.theme));
+
+        final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        expect(
+          (svg.bytesLoader as SvgAssetLoader).assetName,
+          DivineSpriteCheckbox.darkSpriteAsset,
+        );
+      });
+
+      testWidgets('uses the light sprite on the light palette', (tester) async {
+        await tester.pumpWidget(buildTestWidget(theme: VineTheme.lightTheme));
+
+        final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        expect(
+          (svg.bytesLoader as SvgAssetLoader).assetName,
+          DivineSpriteCheckbox.lightSpriteAsset,
+        );
+      });
+    });
 
     group('rendering', () {
       testWidgets('renders SVG sprite', (tester) async {

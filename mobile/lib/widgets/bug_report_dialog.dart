@@ -156,10 +156,10 @@ class _BugReportFormState extends State<_BugReportForm> {
         final isSuccess = state.status == BugReportStatus.success;
         final isFailure = state.status == BugReportStatus.failure;
         return AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
+          backgroundColor: context.vineColors.card,
           title: Text(
             context.l10n.supportReportBug,
-            style: const TextStyle(color: VineTheme.whiteText),
+            style: TextStyle(color: context.vineColors.primaryText),
           ),
           content: SizedBox(
             width: 400,
@@ -171,7 +171,7 @@ class _BugReportFormState extends State<_BugReportForm> {
                   TextField(
                     controller: _subjectController,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.supportSubjectRequiredLabel,
                       hint: context.l10n.bugReportSubjectHint,
@@ -184,7 +184,7 @@ class _BugReportFormState extends State<_BugReportForm> {
                     controller: _descriptionController,
                     maxLines: 3,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.bugReportDescriptionRequiredLabel,
                       hint: context.l10n.bugReportDescriptionHint,
@@ -197,7 +197,7 @@ class _BugReportFormState extends State<_BugReportForm> {
                     controller: _stepsController,
                     maxLines: 3,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.bugReportStepsLabel,
                       hint: context.l10n.bugReportStepsHint,
@@ -209,7 +209,7 @@ class _BugReportFormState extends State<_BugReportForm> {
                     controller: _expectedController,
                     maxLines: 2,
                     enabled: !isSubmitting,
-                    style: const TextStyle(color: VineTheme.whiteText),
+                    style: TextStyle(color: context.vineColors.primaryText),
                     decoration: buildSupportInputDecoration(
                       label: context.l10n.bugReportExpectedBehaviorLabel,
                       hint: context.l10n.bugReportExpectedBehaviorHint,
@@ -224,7 +224,9 @@ class _BugReportFormState extends State<_BugReportForm> {
                   const SizedBox(height: 8),
                   Text(
                     context.l10n.bugReportDiagnosticsNotice,
-                    style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+                    style: VineTheme.bodySmallFont(
+                      color: context.vineColors.mutedText,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (isSubmitting)
@@ -256,7 +258,7 @@ class _BugReportFormState extends State<_BugReportForm> {
                 onPressed: isSubmitting ? null : context.pop,
                 child: Text(
                   context.l10n.commonCancel,
-                  style: const TextStyle(color: VineTheme.lightText),
+                  style: TextStyle(color: context.vineColors.mutedText),
                 ),
               ),
             ElevatedButton(

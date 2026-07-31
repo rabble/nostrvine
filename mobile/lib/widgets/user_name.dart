@@ -110,8 +110,8 @@ class UserName extends ConsumerWidget {
 
     final textStyle =
         style ??
-        const TextStyle(
-          color: VineTheme.secondaryText,
+        TextStyle(
+          color: context.vineColors.secondaryText,
           fontSize: 10,
           fontWeight: FontWeight.w400,
         );

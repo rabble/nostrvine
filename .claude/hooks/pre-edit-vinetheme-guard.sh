@@ -32,9 +32,16 @@ if [ -z "$CONTENT" ]; then
   exit 0
 fi
 
-# Check for any Colors.* usage except Colors.transparent
-# Remove Colors.transparent from content first, then check for remaining Colors.*
-FILTERED_CONTENT=$(echo "$CONTENT" | sed 's/Colors\.transparent//g')
+# Check for any Colors.* usage except Colors.transparent.
+# Strip the allowed forms first, then check for remaining Colors.*:
+#   - Colors.transparent          universal constant
+#   - <x>.vineColors.<token>      semantic palette accessor (VineThemeColors),
+#                                 whose member reads end in "Colors.<token>"
+#   - VineThemeColors             the palette type itself
+FILTERED_CONTENT=$(echo "$CONTENT" |
+  sed -e 's/Colors\.transparent//g' \
+      -e 's/vineColors\.//g' \
+      -e 's/VineThemeColors//g')
 
 if echo "$FILTERED_CONTENT" | grep -qE 'Colors\.[a-zA-Z]'; then
   # Extract the specific violation for the error message

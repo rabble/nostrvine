@@ -71,21 +71,25 @@ Future<bool?> _confirmExternalLink(BuildContext context, Uri uri) {
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
+      backgroundColor: context.vineColors.card,
       title: Text(
         ctx.l10n.messageExternalLinkDialogTitle,
-        style: VineTheme.titleMediumFont(),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       content: Text(
         ctx.l10n.messageExternalLinkDialogBody(uri.toString()),
-        style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+        style: VineTheme.bodyMediumFont(
+          color: context.vineColors.secondaryText,
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
           child: Text(
             ctx.l10n.commonCancel,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
         ),
         TextButton(

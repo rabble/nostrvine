@@ -63,7 +63,7 @@ class NotificationVideoThumbnail extends StatelessWidget {
                     imageUrl: imageUrl!,
                     memCacheWidth: _thumbnailMemCacheWidth,
                   )
-                : const ColoredBox(color: VineTheme.cardBackground),
+                : ColoredBox(color: context.vineColors.card),
           ),
         ),
       ),

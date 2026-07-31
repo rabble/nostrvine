@@ -136,7 +136,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Padding(
@@ -159,11 +159,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       // Title
                       Text(
                         context.l10n.authResetPasswordTitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: VineTheme.fontFamilyBricolage,
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: VineTheme.whiteText,
+                          color: context.vineColors.primaryText,
                         ),
                       ),
 
@@ -172,9 +172,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       // Subtitle
                       Text(
                         context.l10n.authResetPasswordSubtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: VineTheme.secondaryText,
+                          color: context.vineColors.secondaryText,
                           height: 1.4,
                         ),
                       ),

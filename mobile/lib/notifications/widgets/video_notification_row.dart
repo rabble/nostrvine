@@ -55,7 +55,7 @@ class VideoNotificationRow extends StatelessWidget {
     final l10n = context.l10n;
     final shouldStackThumbnail = _shouldStackThumbnail(context);
     return Material(
-      color: VineTheme.surfaceContainerHigh,
+      color: context.vineColors.surfaceContainerHigh,
       child: Semantics(
         button: true,
         container: true,
@@ -63,9 +63,9 @@ class VideoNotificationRow extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: DecoratedBox(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: VineTheme.outlineDisabled),
+                bottom: BorderSide(color: context.vineColors.outlineDisabled),
               ),
             ),
             child: Padding(
@@ -201,38 +201,52 @@ class _MessageText extends StatelessWidget {
         localizedActorSentenceSpans(
           fullText: _messageFor(l10n, type, actors.first.displayName),
           actorName: actors.first.displayName,
+          colors: context.vineColors,
         ),
       );
     } else {
       spans.add(
         TextSpan(
           text: actors.first.displayName,
-          style: VineTheme.labelLargeFont(),
+          style: VineTheme.labelLargeFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
       spans.add(
         TextSpan(
           text: ' ${l10n.notificationAndConnector} ',
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
       spans.add(
         TextSpan(
           text: l10n.notificationOthersCount(othersCount),
-          style: VineTheme.labelLargeFont(),
+          style: VineTheme.labelLargeFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
       spans.add(
         TextSpan(
           text: ' ${_verbFor(l10n, type)}',
-          style: VineTheme.bodyMediumFont(),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
         ),
       );
     }
 
     if (videoTitle != null && _typeShowsTitle(type)) {
       spans.add(
-        TextSpan(text: ' $videoTitle', style: VineTheme.labelLargeFont()),
+        TextSpan(
+          text: ' $videoTitle',
+          style: VineTheme.labelLargeFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
       );
     }
 
@@ -241,7 +255,9 @@ class _MessageText extends StatelessWidget {
       spans.add(
         TextSpan(
           text: ' $ts',
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
         ),
       );
     }

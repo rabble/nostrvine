@@ -29,14 +29,18 @@ class VideoMetadataHelpSheet extends StatelessWidget {
 
             Text(
               title,
-              style: VineTheme.headlineSmallFont(),
+              style: VineTheme.headlineSmallFont(
+                color: context.vineColors.primaryText,
+              ),
               textAlign: .center,
             ),
             const SizedBox(height: 8),
 
             Text(
               message,
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
               textAlign: .center,
             ),
             const SizedBox(height: 32),
@@ -46,11 +50,11 @@ class VideoMetadataHelpSheet extends StatelessWidget {
               label: context.l10n.videoMetadataDismissHelpDialogSemanticLabel,
 
               child: Material(
-                color: VineTheme.surfaceContainer,
+                color: context.vineColors.surfaceContainer,
                 shape: RoundedRectangleBorder(
-                  side: const BorderSide(
+                  side: BorderSide(
                     width: 2,
-                    color: VineTheme.outlineMuted,
+                    color: context.vineColors.outlineMuted,
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),

@@ -65,7 +65,9 @@ class _StopMotionFramesPerImageSheetState
               Flexible(
                 child: Text(
                   context.l10n.videoEditorStopMotionFramesPerImageLabel,
-                  style: VineTheme.titleMediumFont(),
+                  style: VineTheme.titleMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               DivineIconButton(
@@ -76,10 +78,10 @@ class _StopMotionFramesPerImageSheetState
             ],
           ),
         ),
-        const Divider(
+        Divider(
           height: 2,
           thickness: 2,
-          color: VineTheme.outlinedDisabled,
+          color: context.vineColors.surfaceContainer,
         ),
         SizedBox(
           height: 200,
@@ -88,13 +90,15 @@ class _StopMotionFramesPerImageSheetState
           child: CupertinoPicker.builder(
             scrollController: _controller,
             itemExtent: 44,
-            backgroundColor: VineTheme.surfaceBackground,
+            backgroundColor: context.vineColors.surface,
             onSelectedItemChanged: (index) => _value = _min + index,
             childCount: _max - _min + 1,
             itemBuilder: (context, index) => Center(
               child: Text(
                 context.l10n.videoEditorStopMotionFramesCount(_min + index),
-                style: VineTheme.titleMediumFont(),
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
             ),
           ),

@@ -64,19 +64,23 @@ class _HashtagSearchEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.search,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.hashtagSearchTitle,
-            style: VineTheme.titleSmallFont(),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           Text(
             context.l10n.hashtagSearchSubtitle,
-            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
         ],
       ),
@@ -189,15 +193,17 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const DivineIcon(
+          DivineIcon(
             icon: DivineIconName.search,
-            color: VineTheme.secondaryText,
+            color: context.vineColors.secondaryText,
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             context.l10n.hashtagSearchNoResults(query),
-            style: VineTheme.titleSmallFont(),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
         ],
       ),
@@ -222,7 +228,9 @@ class _HashtagSearchErrorState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.hashtagSearchFailed,
-            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
         ],
       ),

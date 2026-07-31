@@ -132,7 +132,9 @@ class _RenderFailedOverlayState extends State<_RenderFailedOverlay> {
               Text(
                 context.l10n.videoMetadataGenerationFailed,
                 textAlign: TextAlign.center,
-                style: VineTheme.bodyMediumFont(),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
               ),
               if (widget.onRetry != null)
                 DivineIconButton(

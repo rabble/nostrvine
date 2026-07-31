@@ -38,15 +38,17 @@ class ProfileStatColumn extends StatelessWidget {
             key: ValueKey(isLoading ? 'loading' : count),
             style: VineTheme.statNumberFont(
               color: isLoading || count == null
-                  ? VineTheme.onSurfaceMuted
-                  : VineTheme.whiteText,
+                  ? context.vineColors.onSurfaceMuted
+                  : context.vineColors.primaryText,
             ),
           ),
         ),
         Skeleton.keep(
           child: Text(
             label,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
       ],

@@ -117,7 +117,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
             message,
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
         Padding(
@@ -292,7 +294,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           showBackButton: true,
           onBackPressed: context.pop,
         ),
-        backgroundColor: VineTheme.navGreen,
+        backgroundColor: context.vineColors.surface,
         body: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -471,10 +473,10 @@ class _AccountHeader extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: VineTheme.surfaceContainer,
+                          color: context.vineColors.surfaceContainer,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: VineTheme.outlineMuted,
+                            color: context.vineColors.outlineMuted,
                             width: 2,
                           ),
                         ),
@@ -505,7 +507,7 @@ class _AccountHeader extends StatelessWidget {
                                 child: Text(
                                   '${inviteState.availableInviteCount}',
                                   style: VineTheme.labelSmallFont(
-                                    color: VineTheme.backgroundColor,
+                                    color: VineTheme.onPrimary,
                                   ),
                                 ),
                               ),
@@ -529,10 +531,10 @@ class _AccountHeader extends StatelessWidget {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: VineTheme.surfaceContainer,
+                        color: context.vineColors.surfaceContainer,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: VineTheme.outlineMuted,
+                          color: context.vineColors.outlineMuted,
                           width: 2,
                         ),
                       ),
@@ -608,14 +610,18 @@ class _AccountHeaderProfile extends ConsumerWidget {
         const SizedBox(height: 16),
         Text(
           displayName,
-          style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+          style: VineTheme.headlineSmallFont(
+            color: context.vineColors.onSurface,
+          ),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         Text(
           uniqueIdentifier,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -689,7 +695,9 @@ class _VersionTile extends ConsumerWidget {
                 _appVersion.isEmpty
                     ? context.l10n.settingsVersionEmpty
                     : context.l10n.settingsVersion(_appVersion),
-                style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.mutedText,
+                ),
               ),
             ),
           ),
@@ -724,18 +732,23 @@ class _SettingsTile extends StatelessWidget {
     final Widget leadingWidget = divineIcon != null
         ? DivineIcon(
             icon: divineIcon!,
-            color: iconColor ?? VineTheme.onSurfaceVariant,
+            color: iconColor ?? context.vineColors.onSurfaceVariant,
           )
-        : Icon(icon, color: iconColor ?? VineTheme.onSurfaceVariant);
+        : Icon(icon, color: iconColor ?? context.vineColors.onSurfaceVariant);
 
     return ListTile(
       minTileHeight: 64,
       leading: leadingWidget,
-      title: Text(title, style: VineTheme.titleMediumFont()),
+      title: Text(
+        title,
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
+      ),
       subtitle: subtitle != null
           ? Text(
               subtitle!,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             )
           : null,
       trailing: const DivineIcon(
@@ -802,14 +815,14 @@ class _AccountSwitchTile extends ConsumerWidget {
                       Text(
                         displayName,
                         style: VineTheme.titleMediumFont(
-                          color: VineTheme.onSurface,
+                          color: context.vineColors.onSurface,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
                         identifier,
                         style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurfaceVariant,
+                          color: context.vineColors.onSurfaceVariant,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -850,15 +863,15 @@ class _AddAccountTile extends StatelessWidget {
             child: Row(
               spacing: 12,
               children: [
-                const DivineIcon(
+                DivineIcon(
                   icon: DivineIconName.userPlus,
-                  color: VineTheme.onSurfaceVariant,
+                  color: context.vineColors.onSurfaceVariant,
                 ),
                 Expanded(
                   child: Text(
                     context.l10n.settingsAddAnotherAccount,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                   ),
                 ),

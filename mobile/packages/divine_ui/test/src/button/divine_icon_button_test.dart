@@ -23,8 +23,10 @@ void main() {
       String? tooltip,
       String? semanticLabel,
       String? semanticLongPressHint,
+      ThemeData? theme,
     }) {
       return MaterialApp(
+        theme: theme,
         home: Scaffold(
           body: Center(
             child: DivineIconButton(
@@ -305,6 +307,23 @@ void main() {
         expect(divineIcon.color, VineTheme.primary);
       });
 
+      testWidgets('secondary type uses onSurface in light mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            theme: VineTheme.lightTheme,
+            type: DivineIconButtonType.secondary,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.color, VineTheme.lightColors.onSurface);
+      });
+
       testWidgets('tertiary type uses inverseOnSurface color', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
@@ -345,6 +364,23 @@ void main() {
           find.byType(DivineIcon),
         );
         expect(divineIcon.color, VineTheme.onSurface);
+      });
+
+      testWidgets('ghostSecondary type uses onSurface in light mode', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            theme: VineTheme.lightTheme,
+            type: DivineIconButtonType.ghostSecondary,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.color, VineTheme.lightColors.onSurface);
       });
 
       testWidgets('error type uses onErrorContainer color', (tester) async {

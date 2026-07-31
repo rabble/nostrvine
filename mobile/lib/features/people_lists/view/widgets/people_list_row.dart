@@ -76,7 +76,7 @@ class PeopleListRow extends StatelessWidget {
                   child: Text(
                     listName,
                     style: VineTheme.titleMediumFont(
-                      color: VineTheme.onSurface,
+                      color: context.vineColors.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

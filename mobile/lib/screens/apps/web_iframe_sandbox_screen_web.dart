@@ -80,7 +80,7 @@ class _WebIframeSandboxScreenState extends State<WebIframeSandboxScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: context.vineColors.surface,
       appBar: DiVineAppBar(
         title: widget.app.name,
         backgroundMode: DiVineAppBarBackgroundMode.transparent,

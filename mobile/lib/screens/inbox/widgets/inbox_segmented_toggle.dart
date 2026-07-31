@@ -49,8 +49,8 @@ class InboxSegmentedToggle extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
-        border: Border.all(color: VineTheme.outlineMuted, width: 2),
+        color: context.vineColors.surfaceContainer,
+        border: Border.all(color: context.vineColors.outlineMuted, width: 2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Stack(
@@ -143,9 +143,16 @@ class _ToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontSize = MediaQuery.textScalerOf(
-      context,
-    ).scale(VineTheme.titleMediumFont().fontSize!).clamp(0.0, 20.0);
+    final fontSize =
+        MediaQuery.textScalerOf(
+              context,
+            )
+            .scale(
+              VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ).fontSize!,
+            )
+            .clamp(0.0, 20.0);
     final duration = MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : kInboxTabTransitionDuration;
@@ -169,7 +176,7 @@ class _ToggleButton extends StatelessWidget {
                   style: VineTheme.titleMediumFont(
                     color: isSelected
                         ? VineTheme.onPrimaryButton
-                        : VineTheme.onSurfaceMuted,
+                        : context.vineColors.onSurfaceMuted,
                   ).copyWith(fontSize: fontSize),
                   child: Text(
                     label,
@@ -210,7 +217,7 @@ class _NotificationBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         count > 99 ? '99+' : '$count',
-        style: VineTheme.labelSmallFont(),
+        style: VineTheme.labelSmallFont(color: context.vineColors.primaryText),
       ),
     );
   }

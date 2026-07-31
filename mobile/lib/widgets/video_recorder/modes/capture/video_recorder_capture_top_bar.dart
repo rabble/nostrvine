@@ -157,7 +157,7 @@ class _RecordingProgressBar extends ConsumerWidget {
             ),
             Text(
               (totalDuration + activeDuration).toMmSs(),
-              style: VineTheme.titleSmallFont(),
+              style: VineTheme.titleSmallFont(color: VineTheme.whiteText),
             ),
           ],
         ),

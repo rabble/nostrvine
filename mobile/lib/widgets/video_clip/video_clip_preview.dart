@@ -265,7 +265,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: VineTheme.titleMediumFont(
-                        color: VineTheme.onSurface,
+                        color: context.vineColors.onSurface,
                       ),
                     ),
 

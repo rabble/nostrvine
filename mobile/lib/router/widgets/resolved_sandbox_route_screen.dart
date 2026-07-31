@@ -57,7 +57,7 @@ class _SandboxRouteContent extends StatelessWidget {
               showBackButton: true,
               onBackPressed: context.pop,
             ),
-            backgroundColor: VineTheme.backgroundColor,
+            backgroundColor: context.vineColors.background,
             body: const Center(child: CircularProgressIndicator()),
           ),
           SandboxRouteNotFound() => const MissingSandboxAppScreen(),

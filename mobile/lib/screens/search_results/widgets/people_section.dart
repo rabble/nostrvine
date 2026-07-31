@@ -156,7 +156,7 @@ class _PeopleSkeletonLoader extends StatelessWidget {
         identifier: 'people_loading_indicator',
         label: context.l10n.searchPeopleLoadingLabel,
         child: Skeletonizer(
-          effect: vineSkeletonEffect,
+          effect: vineSkeletonEffectOf(context),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(
@@ -185,7 +185,7 @@ class _UserTileSkeletonItem extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: VineTheme.skeletonSurface,
+                color: context.vineColors.skeleton,
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
@@ -200,7 +200,7 @@ class _UserTileSkeletonItem extends StatelessWidget {
                     width: 140,
                     height: 18,
                     decoration: BoxDecoration(
-                      color: VineTheme.skeletonSurface,
+                      color: context.vineColors.skeleton,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -210,7 +210,7 @@ class _UserTileSkeletonItem extends StatelessWidget {
                     width: 100,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: VineTheme.skeletonSurface,
+                      color: context.vineColors.skeleton,
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),

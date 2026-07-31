@@ -100,7 +100,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: ColoredBox(
-                color: VineTheme.cardBackground,
+                color: context.vineColors.card,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -161,18 +161,18 @@ class _Thumbnail extends StatelessWidget {
                       MediaQuery.devicePixelRatioOf(context) /
                       2)
                   .round(),
-          placeholder: const DivineIcon(
+          placeholder: DivineIcon(
             icon: DivineIconName.videoCamera,
-            color: VineTheme.lightText,
+            color: context.vineColors.mutedText,
             size: 32,
           ),
         ),
       );
     }
 
-    return const DivineIcon(
+    return DivineIcon(
       icon: DivineIconName.videoCamera,
-      color: VineTheme.lightText,
+      color: context.vineColors.mutedText,
       size: 32,
     );
   }
@@ -201,7 +201,7 @@ class _TitleBadge extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.labelSmallFont(),
+            style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
           ),
         ),
       ),
@@ -244,7 +244,10 @@ class _StopMotionBadge extends StatelessWidget {
                   color: VineTheme.lightText,
                   size: 14,
                 ),
-                Text('$frameCount', style: VineTheme.labelSmallFont()),
+                Text(
+                  '$frameCount',
+                  style: VineTheme.labelSmallFont(color: VineTheme.whiteText),
+                ),
               ],
             ),
           ),
@@ -275,7 +278,7 @@ class _DurationBadge extends StatelessWidget {
         ),
         child: Text(
           clip.durationInSeconds.toStringAsFixed(2),
-          style: VineTheme.labelSmallFont().copyWith(
+          style: VineTheme.labelSmallFont(color: VineTheme.whiteText).copyWith(
             fontFeatures: [const .tabularFigures()],
           ),
         ),
@@ -322,10 +325,13 @@ class _SelectionOverlay extends StatelessWidget {
                       child: Text(
                         selectionIndex.toString(),
                         maxLines: 1,
-                        style: VineTheme.labelLargeFont().copyWith(
-                          fontFeatures: [const .tabularFigures()],
-                          height: 1,
-                        ),
+                        style:
+                            VineTheme.labelLargeFont(
+                              color: VineTheme.primaryText,
+                            ).copyWith(
+                              fontFeatures: [const .tabularFigures()],
+                              height: 1,
+                            ),
                       ),
                     ),
                   )

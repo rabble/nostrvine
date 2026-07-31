@@ -232,7 +232,9 @@ class _CaptionTileFrame extends StatelessWidget {
                 child: Text(
                   label,
                   style: VineTheme.labelSmallFont(
-                    color: selected ? VineTheme.primary : VineTheme.lightText,
+                    color: selected
+                        ? VineTheme.primary
+                        : context.vineColors.mutedText,
                   ),
                 ),
               ),
@@ -301,6 +303,9 @@ class _CustomStyleTile extends StatelessWidget {
       label: label,
       selected: selected,
       onTap: onTap,
+      // Fixed colors in both appearance modes: this tile stands in for a
+      // preset preview, so it repeats the dark stage `CaptionStylePreview`
+      // paints its own previews on rather than following the palette.
       preview: const DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(

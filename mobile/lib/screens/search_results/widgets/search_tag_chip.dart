@@ -20,7 +20,7 @@ class SearchTagChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
@@ -34,7 +34,9 @@ class SearchTagChip extends StatelessWidget {
               Flexible(
                 child: Text(
                   tag,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   maxLines: 1,
                   overflow: .ellipsis,
                 ),

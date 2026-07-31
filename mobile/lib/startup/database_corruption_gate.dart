@@ -71,7 +71,7 @@ class DatabaseCorruptionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -92,13 +92,15 @@ class DatabaseCorruptionScreen extends StatelessWidget {
                   Text(
                     l10n.databaseCorruptionTitle,
                     textAlign: TextAlign.center,
-                    style: VineTheme.titleLargeFont(),
+                    style: VineTheme.titleLargeFont(
+                      color: context.vineColors.primaryText,
+                    ),
                   ),
                   Text(
                     l10n.databaseCorruptionBody,
                     textAlign: TextAlign.center,
                     style: VineTheme.bodyMediumFont(
-                      color: VineTheme.onSurfaceVariant,
+                      color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
                   _CloseAppButton(

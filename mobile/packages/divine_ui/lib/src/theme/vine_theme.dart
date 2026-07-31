@@ -12,27 +12,66 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   const VineThemeColors({
     required this.background,
     required this.card,
+    required this.mediaCard,
     required this.surface,
     required this.surfaceContainer,
     required this.surfaceContainerHigh,
+    required this.containerLow,
+    required this.primaryContainer,
     required this.nav,
+    required this.onNav,
+    required this.onNavMuted,
     required this.iconButton,
     required this.primaryText,
     required this.secondaryText,
     required this.mutedText,
     required this.onSurface,
     required this.onSurfaceVariant,
+    required this.onSurfaceMuted,
     required this.outline,
+    required this.outlineMuted,
+    required this.outlineDisabled,
     required this.disabled,
+    required this.skeleton,
+    required this.errorContainer,
+    required this.onErrorContainer,
+    required this.inverseSurface,
+    required this.inverseOnSurface,
     required this.mediaChrome,
     required this.mediaChromeForeground,
   });
+
+  /// How often [VineThemeColorsContext.vineColors] resolved the dark fallback
+  /// because the ambient [Theme] carried no [VineThemeColors] extension.
+  ///
+  /// Counted in debug builds only — the increment sits inside an `assert`.
+  /// A bare `assert(colors != null)` is not an option: hundreds of widget
+  /// tests pump a plain `MaterialApp`, which is precisely the case the
+  /// fallback exists to serve. Counting instead lets a test that *does* pump
+  /// the Divine theme prove the fallback never fired, which is what catches a
+  /// nested `Theme`, a dialog builder with its own `ThemeData`, or an
+  /// `Overlay` route silently dropping the extension on a light page.
+  ///
+  /// Tests that read this must reset it to `0` in `setUp` and `tearDown`.
+  static int debugFallbackCount = 0;
 
   /// App background.
   final Color background;
 
   /// Card background.
   final Color card;
+
+  /// Neutral surface that stays neutral in both modes, for chrome that must
+  /// not pick up the palette's green cast — the shared-video chat bubble's
+  /// frame (its thumbnail has to read as a media card rather than a coloured
+  /// pill) and the classic recorder's unfilled progress track.
+  ///
+  /// Its dark value is [VineTheme.neutral10], which both of those had before
+  /// the light-mode migration, so dark mode is unchanged. The light value is
+  /// kept clear of every surface it is drawn on: [card] is white on the light
+  /// palette and would vanish against the conversation, and
+  /// [surfaceContainerHigh] is the recorder's own background.
+  final Color mediaCard;
 
   /// Primary surface.
   final Color surface;
@@ -43,8 +82,21 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// High-emphasis surface container.
   final Color surfaceContainerHigh;
 
-  /// Navigation background.
+  /// Low-emphasis container background for inset rows and chips.
+  final Color containerLow;
+
+  /// Primary-tinted container, for chips and pills that read as "active"
+  /// (a selected reaction, an applied filter). Pair with [onSurface] content.
+  final Color primaryContainer;
+
+  /// Navigation background, shared by the bottom nav and app bars.
   final Color nav;
+
+  /// Content color on [nav] for titles, back arrows and selected tabs.
+  final Color onNav;
+
+  /// Content color on [nav] for unselected tabs and disabled nav actions.
+  final Color onNavMuted;
 
   /// Icon button background.
   final Color iconButton;
@@ -64,11 +116,35 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Variant content on surfaces.
   final Color onSurfaceVariant;
 
+  /// Muted content on surfaces, for hints and placeholder text.
+  final Color onSurfaceMuted;
+
   /// Border and divider color.
   final Color outline;
 
+  /// Low-contrast border color for containers and chips.
+  final Color outlineMuted;
+
+  /// Lowest-contrast border color, used for separators inside containers.
+  final Color outlineDisabled;
+
   /// Disabled content color.
   final Color disabled;
+
+  /// Placeholder color for skeleton shapes and shimmer bases.
+  final Color skeleton;
+
+  /// Background for error banners and destructive containers.
+  final Color errorContainer;
+
+  /// Content color on [errorContainer].
+  final Color onErrorContainer;
+
+  /// Surface that contrasts with [background], used by tertiary actions.
+  final Color inverseSurface;
+
+  /// Content color on [inverseSurface].
+  final Color inverseOnSurface;
 
   /// Media controls background.
   final Color mediaChrome;
@@ -76,39 +152,71 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
   /// Media controls foreground.
   final Color mediaChromeForeground;
 
+  /// Whether this palette describes a light appearance.
+  ///
+  /// Derived from [background] rather than stored, so it stays correct for
+  /// palettes produced by [lerp] during a theme cross-fade.
+  bool get isLight => background.computeLuminance() > 0.5;
+
   @override
   VineThemeColors copyWith({
     Color? background,
     Color? card,
+    Color? mediaCard,
     Color? surface,
     Color? surfaceContainer,
     Color? surfaceContainerHigh,
+    Color? containerLow,
+    Color? primaryContainer,
     Color? nav,
+    Color? onNav,
+    Color? onNavMuted,
     Color? iconButton,
     Color? primaryText,
     Color? secondaryText,
     Color? mutedText,
     Color? onSurface,
     Color? onSurfaceVariant,
+    Color? onSurfaceMuted,
     Color? outline,
+    Color? outlineMuted,
+    Color? outlineDisabled,
     Color? disabled,
+    Color? skeleton,
+    Color? errorContainer,
+    Color? onErrorContainer,
+    Color? inverseSurface,
+    Color? inverseOnSurface,
     Color? mediaChrome,
     Color? mediaChromeForeground,
   }) => VineThemeColors(
     background: background ?? this.background,
     card: card ?? this.card,
+    mediaCard: mediaCard ?? this.mediaCard,
     surface: surface ?? this.surface,
     surfaceContainer: surfaceContainer ?? this.surfaceContainer,
     surfaceContainerHigh: surfaceContainerHigh ?? this.surfaceContainerHigh,
+    containerLow: containerLow ?? this.containerLow,
+    primaryContainer: primaryContainer ?? this.primaryContainer,
     nav: nav ?? this.nav,
+    onNav: onNav ?? this.onNav,
+    onNavMuted: onNavMuted ?? this.onNavMuted,
     iconButton: iconButton ?? this.iconButton,
     primaryText: primaryText ?? this.primaryText,
     secondaryText: secondaryText ?? this.secondaryText,
     mutedText: mutedText ?? this.mutedText,
     onSurface: onSurface ?? this.onSurface,
     onSurfaceVariant: onSurfaceVariant ?? this.onSurfaceVariant,
+    onSurfaceMuted: onSurfaceMuted ?? this.onSurfaceMuted,
     outline: outline ?? this.outline,
+    outlineMuted: outlineMuted ?? this.outlineMuted,
+    outlineDisabled: outlineDisabled ?? this.outlineDisabled,
     disabled: disabled ?? this.disabled,
+    skeleton: skeleton ?? this.skeleton,
+    errorContainer: errorContainer ?? this.errorContainer,
+    onErrorContainer: onErrorContainer ?? this.onErrorContainer,
+    inverseSurface: inverseSurface ?? this.inverseSurface,
+    inverseOnSurface: inverseOnSurface ?? this.inverseOnSurface,
     mediaChrome: mediaChrome ?? this.mediaChrome,
     mediaChromeForeground: mediaChromeForeground ?? this.mediaChromeForeground,
   );
@@ -119,6 +227,7 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
     return copyWith(
       background: Color.lerp(background, other.background, t),
       card: Color.lerp(card, other.card, t),
+      mediaCard: Color.lerp(mediaCard, other.mediaCard, t),
       surface: Color.lerp(surface, other.surface, t),
       surfaceContainer: Color.lerp(surfaceContainer, other.surfaceContainer, t),
       surfaceContainerHigh: Color.lerp(
@@ -126,15 +235,27 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
         other.surfaceContainerHigh,
         t,
       ),
+      containerLow: Color.lerp(containerLow, other.containerLow, t),
+      primaryContainer: Color.lerp(primaryContainer, other.primaryContainer, t),
       nav: Color.lerp(nav, other.nav, t),
+      onNav: Color.lerp(onNav, other.onNav, t),
+      onNavMuted: Color.lerp(onNavMuted, other.onNavMuted, t),
       iconButton: Color.lerp(iconButton, other.iconButton, t),
       primaryText: Color.lerp(primaryText, other.primaryText, t),
       secondaryText: Color.lerp(secondaryText, other.secondaryText, t),
       mutedText: Color.lerp(mutedText, other.mutedText, t),
       onSurface: Color.lerp(onSurface, other.onSurface, t),
       onSurfaceVariant: Color.lerp(onSurfaceVariant, other.onSurfaceVariant, t),
+      onSurfaceMuted: Color.lerp(onSurfaceMuted, other.onSurfaceMuted, t),
       outline: Color.lerp(outline, other.outline, t),
+      outlineMuted: Color.lerp(outlineMuted, other.outlineMuted, t),
+      outlineDisabled: Color.lerp(outlineDisabled, other.outlineDisabled, t),
       disabled: Color.lerp(disabled, other.disabled, t),
+      skeleton: Color.lerp(skeleton, other.skeleton, t),
+      errorContainer: Color.lerp(errorContainer, other.errorContainer, t),
+      onErrorContainer: Color.lerp(onErrorContainer, other.onErrorContainer, t),
+      inverseSurface: Color.lerp(inverseSurface, other.inverseSurface, t),
+      inverseOnSurface: Color.lerp(inverseOnSurface, other.inverseOnSurface, t),
       mediaChrome: Color.lerp(mediaChrome, other.mediaChrome, t),
       mediaChromeForeground: Color.lerp(
         mediaChromeForeground,
@@ -150,40 +271,90 @@ class VineThemeColors extends ThemeExtension<VineThemeColors> {
       other is VineThemeColors &&
           background == other.background &&
           card == other.card &&
+          mediaCard == other.mediaCard &&
           surface == other.surface &&
           surfaceContainer == other.surfaceContainer &&
           surfaceContainerHigh == other.surfaceContainerHigh &&
+          containerLow == other.containerLow &&
+          primaryContainer == other.primaryContainer &&
           nav == other.nav &&
+          onNav == other.onNav &&
+          onNavMuted == other.onNavMuted &&
           iconButton == other.iconButton &&
           primaryText == other.primaryText &&
           secondaryText == other.secondaryText &&
           mutedText == other.mutedText &&
           onSurface == other.onSurface &&
           onSurfaceVariant == other.onSurfaceVariant &&
+          onSurfaceMuted == other.onSurfaceMuted &&
           outline == other.outline &&
+          outlineMuted == other.outlineMuted &&
+          outlineDisabled == other.outlineDisabled &&
           disabled == other.disabled &&
+          skeleton == other.skeleton &&
+          errorContainer == other.errorContainer &&
+          onErrorContainer == other.onErrorContainer &&
+          inverseSurface == other.inverseSurface &&
+          inverseOnSurface == other.inverseOnSurface &&
           mediaChrome == other.mediaChrome &&
           mediaChromeForeground == other.mediaChromeForeground;
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     background,
     card,
+    mediaCard,
     surface,
     surfaceContainer,
     surfaceContainerHigh,
+    containerLow,
+    primaryContainer,
     nav,
+    onNav,
+    onNavMuted,
     iconButton,
     primaryText,
     secondaryText,
     mutedText,
     onSurface,
     onSurfaceVariant,
+    onSurfaceMuted,
     outline,
+    outlineMuted,
+    outlineDisabled,
     disabled,
+    skeleton,
+    errorContainer,
+    onErrorContainer,
+    inverseSurface,
+    inverseOnSurface,
     mediaChrome,
     mediaChromeForeground,
-  );
+  ]);
+}
+
+/// Convenient access to the semantic palette of the active theme.
+extension VineThemeColorsContext on BuildContext {
+  /// Semantic colors for the resolved appearance mode.
+  ///
+  /// Falls back to [VineTheme.darkColors] so widgets pumped without the
+  /// Divine theme (older widget tests, isolated previews) keep the
+  /// pre-light-mode appearance instead of Material defaults.
+  ///
+  /// The fallback is silent by design, so a light-mode page whose ambient
+  /// [Theme] lost the extension renders dark tokens with nothing to notice
+  /// it. Debug builds count those resolutions in
+  /// [VineThemeColors.debugFallbackCount] so a test can assert the fallback
+  /// never fires on a themed tree.
+  VineThemeColors get vineColors {
+    final colors = Theme.of(this).extension<VineThemeColors>();
+    if (colors != null) return colors;
+    assert(() {
+      VineThemeColors.debugFallbackCount++;
+      return true;
+    }(), 'counter-only assert; never fails');
+    return VineTheme.darkColors;
+  }
 }
 
 /// Vine-inspired theme with characteristic green colors and clean design.
@@ -207,7 +378,7 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Display large: Bricolage Grotesque 700 57/64/0
-  static TextStyle displayLargeFont({Color color = whiteText}) =>
+  static TextStyle displayLargeFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 57,
         fontWeight: FontWeight.w700,
@@ -217,7 +388,7 @@ class VineTheme {
       );
 
   /// Display medium: Bricolage Grotesque 700 45/52/0
-  static TextStyle displayMediumFont({Color color = whiteText}) =>
+  static TextStyle displayMediumFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 45,
         fontWeight: FontWeight.w700,
@@ -227,7 +398,7 @@ class VineTheme {
       );
 
   /// Display small: Bricolage Grotesque 700 36/44/0
-  static TextStyle displaySmallFont({Color color = whiteText}) =>
+  static TextStyle displaySmallFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 36,
         fontWeight: FontWeight.w700,
@@ -241,7 +412,7 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Headline large: Bricolage Grotesque 700 32/40/0
-  static TextStyle headlineLargeFont({Color color = whiteText}) =>
+  static TextStyle headlineLargeFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 32,
         fontWeight: FontWeight.w700,
@@ -251,7 +422,7 @@ class VineTheme {
       );
 
   /// Headline medium: Bricolage Grotesque 700 28/36/0
-  static TextStyle headlineMediumFont({Color color = whiteText}) =>
+  static TextStyle headlineMediumFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 28,
         fontWeight: FontWeight.w700,
@@ -261,7 +432,7 @@ class VineTheme {
       );
 
   /// Headline small: Bricolage Grotesque 700 24/32/0
-  static TextStyle headlineSmallFont({Color color = whiteText}) =>
+  static TextStyle headlineSmallFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 24,
         fontWeight: FontWeight.w700,
@@ -275,7 +446,7 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Title large: Bricolage Grotesque 800 22/28/0
-  static TextStyle titleLargeFont({Color color = whiteText}) =>
+  static TextStyle titleLargeFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 22,
         fontWeight: FontWeight.w800,
@@ -287,7 +458,7 @@ class VineTheme {
   /// Stat number: Bricolage Grotesque 800 20/28/0 — matches the Figma
   /// profile stat-column number style (Followers / Following / Likes /
   /// Loops). Sits between `titleLargeFont` (22) and `titleMediumFont` (16).
-  static TextStyle statNumberFont({Color color = whiteText}) =>
+  static TextStyle statNumberFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 20,
         fontWeight: FontWeight.w800,
@@ -297,7 +468,7 @@ class VineTheme {
       );
 
   /// Title medium: Bricolage Grotesque 800 16/24/0.15
-  static TextStyle titleMediumFont({Color color = whiteText}) =>
+  static TextStyle titleMediumFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 16,
         fontWeight: FontWeight.w800,
@@ -307,7 +478,7 @@ class VineTheme {
       );
 
   /// Title small: Bricolage Grotesque 800 14/20/0.1
-  static TextStyle titleSmallFont({Color color = whiteText}) =>
+  static TextStyle titleSmallFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 14,
         fontWeight: FontWeight.w800,
@@ -317,7 +488,7 @@ class VineTheme {
       );
 
   /// Title tiny: Bricolage Grotesque 800 12/20/0.1
-  static TextStyle titleTinyFont({Color color = whiteText}) =>
+  static TextStyle titleTinyFont({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 12,
         fontWeight: FontWeight.w800,
@@ -331,28 +502,26 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Body large: Inter 400 16/24/0.15
-  static TextStyle bodyLargeFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-        height: 24 / 16,
-        letterSpacing: 0.15,
-        color: color,
-      );
+  static TextStyle bodyLargeFont({Color? color}) => GoogleFonts.inter(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 24 / 16,
+    letterSpacing: 0.15,
+    color: color,
+  );
 
   /// Body medium: Inter 400 14/20/0.25
-  static TextStyle bodyMediumFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        height: 20 / 14,
-        letterSpacing: 0.25,
-        color: color,
-      );
+  static TextStyle bodyMediumFont({Color? color}) => GoogleFonts.inter(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 20 / 14,
+    letterSpacing: 0.25,
+    color: color,
+  );
 
   /// Body small: Inter 400 12/16/0.4
   static TextStyle bodySmallFont({
-    Color color = whiteText,
+    Color? color,
     List<FontFeature>? fontFeatures,
   }) => GoogleFonts.inter(
     fontSize: 12,
@@ -368,18 +537,17 @@ class VineTheme {
   // --------------------------------------------------------------------------
 
   /// Label large: Inter 600 14/20/0.1
-  static TextStyle labelLargeFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        height: 20 / 14,
-        letterSpacing: 0.1,
-        color: color,
-      );
+  static TextStyle labelLargeFont({Color? color}) => GoogleFonts.inter(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    height: 20 / 14,
+    letterSpacing: 0.1,
+    color: color,
+  );
 
   /// Label medium: Inter 600 12/16/0.5
   static TextStyle labelMediumFont({
-    Color color = whiteText,
+    Color? color,
     List<FontFeature>? fontFeatures,
   }) => GoogleFonts.inter(
     fontSize: 12,
@@ -391,14 +559,13 @@ class VineTheme {
   );
 
   /// Label small: Inter 600 11/16/0.5
-  static TextStyle labelSmallFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        height: 16 / 11,
-        letterSpacing: 0.5,
-        color: color,
-      );
+  static TextStyle labelSmallFont({Color? color}) => GoogleFonts.inter(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    height: 16 / 11,
+    letterSpacing: 0.5,
+    color: color,
+  );
 
   /// Caption pill: Chivo Mono 300 16/24/0.5 — used by the inline subtitle
   /// pill above the author row in the home / fullscreen video overlays.
@@ -406,14 +573,13 @@ class VineTheme {
   /// app's Inter / Bricolage Grotesque body families. Callers add the
   /// `shadow25` drop shadow via `.copyWith(shadows: ...)` when rendering
   /// over video content.
-  static TextStyle captionPillFont({Color color = whiteText}) =>
-      GoogleFonts.chivoMono(
-        fontSize: 16,
-        fontWeight: FontWeight.w300,
-        height: 24 / 16,
-        letterSpacing: 0.5,
-        color: color,
-      );
+  static TextStyle captionPillFont({Color? color}) => GoogleFonts.chivoMono(
+    fontSize: 16,
+    fontWeight: FontWeight.w300,
+    height: 24 / 16,
+    letterSpacing: 0.5,
+    color: color,
+  );
 
   /// Inline code: Chivo Mono 300 13/20/0.25 — sized to sit flush with
   /// `bodyMediumFont` in chat bubbles so a monospace run inside a DM
@@ -423,7 +589,7 @@ class VineTheme {
   /// background paint so the code chip reads on both sent-bubble
   /// (primaryAccessible) and received-bubble (surfaceContainer)
   /// backgrounds.
-  static TextStyle codeFont({Color color = whiteText}) => GoogleFonts.chivoMono(
+  static TextStyle codeFont({Color? color}) => GoogleFonts.chivoMono(
     fontSize: 13,
     fontWeight: FontWeight.w300,
     height: 20 / 13,
@@ -515,9 +681,6 @@ class VineTheme {
   /// Muted content color on surfaces (50% white).
   static const Color onSurfaceMuted = Color(0x80FFFFFF);
 
-  /// Muted content color on surfaces (55% white).
-  static const Color onSurfaceMuted55 = Color(0x8CFFFFFF);
-
   /// Variant content color on surfaces (75% white).
   static const Color onSurfaceVariant = Color(0xBFFFFFFF);
 
@@ -547,9 +710,6 @@ class VineTheme {
 
   /// Border color (25% white).
   static const Color borderWhite25 = Color(0x40FFFFFF);
-
-  /// Disabled outline color.
-  static const Color outlinedDisabled = Color(0xFF032017);
 
   /// Disabled outline color for separators.
   static const Color outlineDisabled = Color(0xFF001A12);
@@ -581,12 +741,6 @@ class VineTheme {
   /// Base color for skeleton shimmer effects.
   static const Color skeletonBase = iconButtonBackground;
 
-  /// Highlight color for skeleton shimmer sweep (60% alpha of base).
-  static const Color skeletonHighlight = Color(0x99032017);
-
-  /// Surface color for skeleton placeholder shapes.
-  static const Color skeletonSurface = outlinedDisabled;
-
   /// Duration of a single skeleton shimmer sweep.
   static const Duration skeletonDuration = Duration(milliseconds: 1500);
 
@@ -594,7 +748,7 @@ class VineTheme {
   static const Duration defaultAnimationDuration = Duration(milliseconds: 300);
 
   /// Tab text style using Bricolage Grotesque bold.
-  static TextStyle tabTextStyle({Color color = whiteText}) =>
+  static TextStyle tabTextStyle({Color? color}) =>
       GoogleFonts.bricolageGrotesque(
         fontSize: 18,
         fontWeight: FontWeight.w800,
@@ -719,13 +873,24 @@ class VineTheme {
   /// [BoxDecoration.boxShadow]. Same offsets/blur as [buttonShadows]
   /// but as [BoxShadow] instead of [Shadow].
   static const List<BoxShadow> buttonBoxShadows = [
-    BoxShadow(
-      color: innerShadow,
-      offset: Offset(0.4, 0.4),
-      blurRadius: 0.6,
-    ),
+    BoxShadow(color: innerShadow, offset: Offset(0.4, 0.4), blurRadius: 0.6),
     BoxShadow(color: innerShadow, offset: Offset(1, 1), blurRadius: 1),
   ];
+
+  /// Raised-button drop shadow for the appearance mode described by [colors].
+  ///
+  /// Null on the light palette. [buttonBoxShadows] is an *inward* emboss that
+  /// lifts a button off a near-black surface; a light surface needs an outward
+  /// drop shadow instead, and the buttons cannot draw one — they paint their
+  /// decoration through [Ink], and Material hard-clips ink features to its own
+  /// bounds (`_RenderInkFeatures.paint`), so the outward half is guillotined
+  /// at the button's edge and reads as a cut line. Every light-mode fill
+  /// (saturated green, saturated red, dark green, or grey with an explicit
+  /// outline) already separates itself from the page, so the button goes flat
+  /// there rather than shipping a clipped shadow. Giving light mode a real
+  /// drop shadow means moving the decoration outside the [Material] first.
+  static List<BoxShadow>? buttonBoxShadowsFor(VineThemeColors colors) =>
+      colors.isLight ? null : buttonBoxShadows;
 
   // --------------------------------------------------------------------------
   // Additional scrims
@@ -777,18 +942,31 @@ class VineTheme {
   static const VineThemeColors darkColors = VineThemeColors(
     background: backgroundColor,
     card: cardBackground,
+    mediaCard: neutral10,
     surface: surfaceBackground,
     surfaceContainer: surfaceContainer,
     surfaceContainerHigh: surfaceContainerHigh,
+    containerLow: containerLow,
+    primaryContainer: primaryDarkGreen,
     nav: navGreen,
+    onNav: whiteText,
+    onNavMuted: onSurfaceDisabled,
     iconButton: iconButtonBackground,
     primaryText: primaryText,
     secondaryText: secondaryText,
     mutedText: lightText,
     onSurface: onSurface,
     onSurfaceVariant: onSurfaceVariant,
+    onSurfaceMuted: onSurfaceMuted,
     outline: outlineVariant,
+    outlineMuted: outlineMuted,
+    outlineDisabled: outlineDisabled,
     disabled: onSurfaceDisabled,
+    skeleton: skeletonBase,
+    errorContainer: errorContainer,
+    onErrorContainer: likeRed,
+    inverseSurface: inverseSurface,
+    inverseOnSurface: inverseOnSurface,
     mediaChrome: scrim80,
     mediaChromeForeground: whiteText,
   );
@@ -798,18 +976,31 @@ class VineTheme {
   static const VineThemeColors lightColors = VineThemeColors(
     background: Color(0xFFF9F7F6),
     card: Color(0xFFFFFFFF),
+    mediaCard: Color(0xFFDCD7D2),
     surface: Color(0xFFFFFFFF),
     surfaceContainer: Color(0xFFF0EEEC),
     surfaceContainerHigh: Color(0xFFE7E4E1),
-    nav: Color(0xFF07241B),
+    containerLow: Color(0xFFEDF3EF),
+    primaryContainer: Color(0xFFE7F5EE),
+    nav: Color(0xFFFFFFFF),
+    onNav: Color(0xFF07241B),
+    onNavMuted: Color(0x6607241B),
     iconButton: Color(0xFFE7F5EE),
     primaryText: Color(0xFF07241B),
     secondaryText: Color(0xFF385149),
-    mutedText: Color(0xFF6F817A),
+    mutedText: Color(0xFF5F7069),
     onSurface: Color(0xFF17382D),
     onSurfaceVariant: Color(0xFF526B61),
+    onSurfaceMuted: Color(0x8C17382D),
     outline: Color(0xFFB7C9C1),
+    outlineMuted: Color(0xFFDCE7E2),
+    outlineDisabled: Color(0xFFEBF1EE),
     disabled: Color(0x6638584C),
+    skeleton: Color(0xFFE7E4E1),
+    errorContainer: Color(0xFFFFE7E2),
+    onErrorContainer: Color(0xFF8C1D18),
+    inverseSurface: Color(0xFF07241B),
+    inverseOnSurface: Color(0xFFFFFFFF),
     mediaChrome: Color(0xF2F9F7F6),
     mediaChromeForeground: Color(0xFF07241B),
   );
@@ -845,25 +1036,16 @@ class VineTheme {
       extensions: <ThemeExtension<dynamic>>[colors],
       appBarTheme: AppBarTheme(
         backgroundColor: colors.nav,
-        foregroundColor: whiteText,
+        foregroundColor: colors.onNav,
         elevation: 1,
         centerTitle: true,
         systemOverlayStyle: isLight ? lightStatusBarStyle : statusBarStyle,
-        titleTextStyle: const TextStyle(
-          color: whiteText,
+        titleTextStyle: TextStyle(
+          color: colors.onNav,
           fontSize: 20,
           fontWeight: FontWeight.w600,
           fontFamily: 'System',
         ),
-      ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: isLight ? colors.nav : vineGreen,
-        selectedItemColor: whiteText,
-        unselectedItemColor: isLight
-            ? whiteText.withAlpha(0xAA)
-            : const Color(0xAAFFFFFF),
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
       ),
       textTheme: TextTheme(
         displayLarge: TextStyle(

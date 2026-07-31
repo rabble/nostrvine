@@ -28,10 +28,10 @@ class VideoRecorderCameraPlaceholder extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 spacing: 16,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.videocam_off_rounded,
                     size: 56,
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -39,7 +39,7 @@ class VideoRecorderCameraPlaceholder extends StatelessWidget {
                       errorMessage!,
                       textAlign: TextAlign.center,
                       style: VineTheme.bodyMediumFont(
-                        color: VineTheme.onSurfaceVariant,
+                        color: context.vineColors.onSurfaceVariant,
                       ),
                     ),
                   ),

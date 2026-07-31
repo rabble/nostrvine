@@ -472,12 +472,12 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               );
 
               return Scaffold(
-                backgroundColor: VineTheme.surfaceBackground,
+                backgroundColor: context.vineColors.surface,
                 body: switch (feedState.status) {
                   ProfileFeedStatus.failure => Center(
                     child: Text(
                       context.l10n.profileFeedError,
-                      style: const TextStyle(color: VineTheme.whiteText),
+                      style: TextStyle(color: context.vineColors.primaryText),
                     ),
                   ),
                   // During the cold load we render the real layout (header
@@ -526,7 +526,7 @@ class _ProfileErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: context.vineColors.background,
       appBar: DiVineAppBar(
         title: context.l10n.profileTitle,
         showBackButton: true,
@@ -535,7 +535,7 @@ class _ProfileErrorScreen extends StatelessWidget {
       body: Center(
         child: Text(
           message,
-          style: const TextStyle(color: VineTheme.whiteText),
+          style: TextStyle(color: context.vineColors.primaryText),
         ),
       ),
     );

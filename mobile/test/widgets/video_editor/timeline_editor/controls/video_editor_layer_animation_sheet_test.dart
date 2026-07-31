@@ -30,6 +30,7 @@ void main() {
       List<editor.LayerAnimation> initialEnter = const [],
       List<editor.LayerAnimation> initialLeave = const [],
       double viewHeight = 1600,
+      ThemeData? theme,
     }) async {
       result = null;
       returned = false;
@@ -42,6 +43,7 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         MaterialApp(
+          theme: theme,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -87,6 +89,34 @@ void main() {
 
       expect(find.text(l10n.videoEditorLayerAnimationEnter), findsOneWidget);
       expect(find.text(l10n.videoEditorLayerAnimationLeave), findsOneWidget);
+    });
+
+    testWidgets('picker chrome follows the light palette', (tester) async {
+      await openPicker(tester, theme: VineTheme.lightTheme);
+
+      expect(
+        find.byWidgetPredicate((w) {
+          if (w is! DecoratedBox) return false;
+          final decoration = w.decoration;
+          return decoration is BoxDecoration &&
+              decoration.color == VineTheme.lightColors.containerLow;
+        }),
+        findsWidgets,
+      );
+
+      expect(
+        find.byWidgetPredicate((w) {
+          if (w is! DecoratedBox && w is! Container) return false;
+          final decoration = switch (w) {
+            DecoratedBox(:final decoration) => decoration,
+            Container(:final decoration) => decoration,
+            _ => null,
+          };
+          return decoration is BoxDecoration &&
+              decoration.color == VineTheme.lightColors.primaryContainer;
+        }),
+        findsWidgets,
+      );
     });
 
     testWidgets('shows duration + curve even for None', (tester) async {
@@ -483,11 +513,8 @@ void main() {
             child: Scaffold(
               body: Builder(
                 builder: (context) => ElevatedButton(
-                  onPressed: () => editLayerAnimation(
-                    context,
-                    layer,
-                    totalDuration: total,
-                  ),
+                  onPressed: () =>
+                      editLayerAnimation(context, layer, totalDuration: total),
                   child: const Text('open'),
                 ),
               ),

@@ -12,7 +12,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
@@ -269,7 +268,7 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
           ? GoogleFonts.pacifico(
               textStyle: const TextStyle(fontSize: 24, letterSpacing: 0.2),
             )
-          : VineTheme.titleLargeFont(),
+          : VineTheme.titleLargeFont(color: context.vineColors.primaryText),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -380,9 +379,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
 
     final showBackButton = _showBackButton(chromeCtx);
 
-    // Get environment config for app bar styling
-    final environment = ref.watch(currentEnvironmentProvider);
-
     return Scaffold(
       // Don't resize the shell body for the keyboard when a modal route is on
       // top (e.g. the share sheet's message composer). The modal handles its
@@ -402,7 +398,6 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
           : DiVineAppBar(
               titleWidget: _buildTappableTitle(context, ref, title, chromeCtx),
               titleSuffix: const EnvironmentBadge(),
-              backgroundColor: getEnvironmentAppBarColor(environment),
               showBackButton: showBackButton,
               onBackPressed: showBackButton
                   ? () {
