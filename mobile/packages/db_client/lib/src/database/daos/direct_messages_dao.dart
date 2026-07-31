@@ -218,9 +218,12 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// conversation within a ±5 second window. Used for cross-protocol dedup
   /// when both a NIP-17 and NIP-04 copy of the same message arrive.
   ///
-  /// The time window prevents false positives when a user genuinely sends
-  /// the same text again moments later, while still catching dual-send
-  /// duplicates where timestamps differ by at most a few seconds.
+  /// The window is deliberately narrow: a genuine repeat of the same text
+  /// (e.g. "ok") is only collapsed when it lands within ±[windowSeconds],
+  /// which is still wide enough for dual-send duplicates, whose timestamps
+  /// differ by at most a few seconds. Widening it drops more legitimate
+  /// repeats — it does not gain a retry signal, because a re-minted rumor
+  /// is indistinguishable from a genuine second send.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
