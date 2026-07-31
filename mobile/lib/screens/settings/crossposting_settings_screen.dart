@@ -317,7 +317,9 @@ class _PlatformSection extends StatelessWidget {
                   children: [
                     Text(
                       entry.platform.displayName,
-                      style: VineTheme.titleMediumFont(),
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.primaryText,
+                      ),
                     ),
                     if (identity != null)
                       Text(
