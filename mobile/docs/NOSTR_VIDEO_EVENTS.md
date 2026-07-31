@@ -138,6 +138,20 @@ from cache on every later proof. A verifier needs two branches:
   attestation nonce binds the current proof hash and the plain nonce check
   applies.
 
+Both branches check against the client data hash the app signs, which is not the
+proof hash itself but `SHA-256(UTF-8(proofHash))` — one more hash over the
+hex-encoded digest, where `proofHash` is the same string the `proofmode` tag
+carries as `videoHash`.
+
+**Replay boundary.** Nothing in this payload binds the event pubkey, and the
+challenge is derivable by anyone holding the video. The three fields can be
+lifted from one event and republished verbatim under a different pubkey carrying
+the same media, and both branches above still pass. A verifier following this
+contract learns that a genuine Apple device attested *this media hash* — not
+that *this publisher's* device did, and not that the publisher holds the key.
+Binding the payload to the publisher means mixing the event pubkey into the
+challenge, which changes what the client signs and is not part of this shape.
+
 Because the key lives for the life of the install, `keyID` and
 `attestationString` are a stable public identifier: every video published from
 one install carries the same pair, including videos published from different

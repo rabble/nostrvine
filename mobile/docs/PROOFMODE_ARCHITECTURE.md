@@ -92,7 +92,9 @@ final isValid = await keyService.verifySignature(
 **iOS (App Attest)**:
 - Uses `app_device_integrity` plugin
 - Generates hardware-backed attestation tokens
-- Includes challenge nonce to prevent replay attacks
+- Signs a challenge derived from the media proof hash, which binds the payload
+  to the media but not to the publisher — see the replay boundary in
+  [NOSTR_VIDEO_EVENTS.md](NOSTR_VIDEO_EVENTS.md#device_attestation-payload-ios)
 - Always hardware-backed on iOS 14+
 
 **Android (Play Integrity)**:
