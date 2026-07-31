@@ -43,13 +43,14 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       streamingHlsUrl: fields[22] as String?,
       fallbackUrl: fields[23] as String?,
       resumableSession: fields[24] as BlossomResumableUploadSession?,
+      blurhash: fields[26] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, PendingUpload obj) {
     writer
-      ..writeByte(26)
+      ..writeByte(27)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -101,7 +102,9 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       ..writeByte(24)
       ..write(obj.resumableSession)
       ..writeByte(25)
-      ..write(obj.thumbnailTimestampMillis);
+      ..write(obj.thumbnailTimestampMillis)
+      ..writeByte(26)
+      ..write(obj.blurhash);
   }
 
   @override

@@ -24,6 +24,7 @@ import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
+import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -194,12 +195,61 @@ class VideoPublishService {
 
   static const Duration _defaultSubtitlePublishTimeout = Duration(seconds: 30);
 
+  /// Share of the publish bar owned by the upload.
+  ///
+  /// Everything after it — resolving mentions, signing and broadcasting the
+  /// Nostr event, reclaiming the draft — measured ~2s on device, and the bar
+  /// used to reach 100% before any of it ran. The remainder is handed out at
+  /// the boundaries below so the bar never claims to be done while it isn't.
+  static const double _uploadProgressShare = 0.85;
+
+  /// Reached once mentions and subtitle assets are resolved.
+  static const double _progressAfterMetadata = 0.88;
+
+  /// Reached once the Nostr event is signed. Signing is a remote Keycast
+  /// round-trip, so it is worth its own step inside the publish phase.
+  static const double _progressAfterSigning = 0.92;
+
+  /// Reached once the Nostr event is accepted.
+  static const double _progressAfterNostr = 0.97;
+
+  /// Maps an upload's own 0..1 progress onto the share of the bar it owns.
+  void _reportUploadProgress(String draftId, double uploadProgress) {
+    onProgressChanged(
+      draftId: draftId,
+      progress: uploadProgress.clamp(0.0, 1.0) * _uploadProgressShare,
+    );
+  }
+
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
 
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
+  ///
+  /// Wraps the publish in a [PublishTimeline] so every run emits per-phase
+  /// timing plus a summary line, whichever way it ends.
   Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
+    final timeline = PublishTimeline(draft.id);
+    PublishResult? result;
+    try {
+      result = await _publishVideo(draft: draft, timeline: timeline);
+      return result;
+    } finally {
+      timeline.logSummary(
+        outcome: switch (result) {
+          PublishSuccess() => 'success',
+          PublishError(:final kind) => 'error:${kind.name}',
+          null => 'threw',
+        },
+      );
+    }
+  }
+
+  Future<PublishResult> _publishVideo({
+    required DivineVideoDraft draft,
+    required PublishTimeline timeline,
+  }) async {
     // An account switch while the upload was in flight leaves the previous
     // account's draft reachable from this session. Publishing it would sign the
     // video with the wrong identity, and the `publishing` save below would
@@ -245,7 +295,10 @@ class VideoPublishService {
       final pubkey = authService.currentPublicKeyHex!;
 
       // Use existing upload if available, otherwise start new upload
-      final pendingUpload = await _getOrCreateUpload(pubkey, draft);
+      final pendingUpload = await timeline.measure(
+        'upload',
+        () => _getOrCreateUpload(pubkey, draft),
+      );
       if (pendingUpload == null) {
         Log.error('❌ Upload creation failed', category: .video);
         final failedUpload = _backgroundUploadId != null
@@ -286,43 +339,58 @@ class VideoPublishService {
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
-      final mentionedPubkeys = await _resolveMentionedPubkeys(
-        draft,
-        currentUserPubkey: pubkey,
+      final mentionedPubkeys = await timeline.measure(
+        'mentions',
+        () => _resolveMentionedPubkeys(draft, currentUserPubkey: pubkey),
       );
 
       final captionTrack = _captionTrackForPublish(draft);
       final textTrackRefs = captionTrack != null
-          ? await _publishSubtitleAssets(captionTrack, pendingUpload)
+          ? await timeline.measure(
+              'subtitles',
+              () => _publishSubtitleAssets(captionTrack, pendingUpload),
+            )
           : const <String>[];
 
-      final published = await videoEventPublisher.publishVideoEvent(
-        upload: pendingUpload,
-        title: draft.title,
-        description: draft.description,
-        hashtags: draft.hashtags.toList(),
-        expirationTimestamp: draft.expireTime != null
-            ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
-                  draft.expireTime!.inSeconds
-            : null,
-        allowAudioReuse: draft.allowAudioReuse,
-        collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
-        mentionedPubkeys: mentionedPubkeys,
-        inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
-        inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
-        inspiredByNpub: draft.inspiredByNpub,
-        selectedAudio: draft.selectedSound,
-        selectedAudioEventId: draft.selectedSound?.id,
-        selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
-        language: languagePreferenceService?.contentLanguage,
-        contentWarning: draft.contentWarning,
-        thumbnailTimestamp: draft.thumbnailTimestamp,
-        replyContext: draft.videoReplyContext,
-        addReplyToFeed: draft.shareReplyToFeed,
-        textTrackRefs: textTrackRefs,
-        textTrackLang: captionTrack != null
-            ? _languageCode(captionTrack.languageTag)
-            : 'en',
+      onProgressChanged(
+        draftId: draft.id,
+        progress: _progressAfterMetadata,
+      );
+
+      final published = await timeline.measure(
+        'nostr',
+        () => videoEventPublisher.publishVideoEvent(
+          upload: pendingUpload,
+          title: draft.title,
+          description: draft.description,
+          hashtags: draft.hashtags.toList(),
+          expirationTimestamp: draft.expireTime != null
+              ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
+                    draft.expireTime!.inSeconds
+              : null,
+          allowAudioReuse: draft.allowAudioReuse,
+          collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
+          mentionedPubkeys: mentionedPubkeys,
+          inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
+          inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
+          inspiredByNpub: draft.inspiredByNpub,
+          selectedAudio: draft.selectedSound,
+          selectedAudioEventId: draft.selectedSound?.id,
+          selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
+          language: languagePreferenceService?.contentLanguage,
+          contentWarning: draft.contentWarning,
+          thumbnailTimestamp: draft.thumbnailTimestamp,
+          replyContext: draft.videoReplyContext,
+          addReplyToFeed: draft.shareReplyToFeed,
+          textTrackRefs: textTrackRefs,
+          textTrackLang: captionTrack != null
+              ? _languageCode(captionTrack.languageTag)
+              : 'en',
+          onEventSigned: () => onProgressChanged(
+            draftId: draft.id,
+            progress: _progressAfterSigning,
+          ),
+        ),
       );
 
       if (!published) {
@@ -334,15 +402,22 @@ class VideoPublishService {
         );
       }
 
-      final inviteWarnings = await _sendCollaboratorInvites(
-        draft: draft,
-        upload: pendingUpload,
-        creatorPubkey: pubkey,
+      onProgressChanged(draftId: draft.id, progress: _progressAfterNostr);
+
+      final inviteWarnings = await timeline.measure(
+        'invites',
+        () => _sendCollaboratorInvites(
+          draft: draft,
+          upload: pendingUpload,
+          creatorPubkey: pubkey,
+        ),
       );
 
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
       Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
+
+      onProgressChanged(draftId: draft.id, progress: 1);
 
       Log.info('📝 Published successfully', category: .video);
       return PublishSuccess(inviteWarnings: inviteWarnings);
@@ -701,7 +776,7 @@ class VideoPublishService {
     final upload = uploadManager.getUpload(uploadId);
     if (upload == null) return false;
 
-    onProgressChanged(draftId: draftId, progress: upload.uploadProgress ?? 0.0);
+    _reportUploadProgress(draftId, upload.uploadProgress ?? 0.0);
 
     switch (upload.status) {
       case .readyToPublish:
@@ -737,8 +812,7 @@ class VideoPublishService {
     final pendingUpload = await uploadManager.startUploadFromDraft(
       draft: draft,
       nostrPubkey: pubkey,
-      onProgress: (value) =>
-          onProgressChanged(draftId: draft.id, progress: value),
+      onProgress: (value) => _reportUploadProgress(draft.id, value),
     );
     _backgroundUploadId = pendingUpload.id;
 

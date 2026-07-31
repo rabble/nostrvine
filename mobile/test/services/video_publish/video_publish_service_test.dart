@@ -142,6 +142,84 @@ void main() {
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
       });
 
+      test('holds the bar below 100% until the event lands', () async {
+        // Arrange
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+
+        // Snapshot the bar at the moment the Nostr publish begins — signing
+        // and broadcasting took ~2s on device, and the bar used to sit at
+        // 100% for all of it.
+        late List<double> beforeEvent;
+        when(
+          () => mockVideoEventPublisher.publishVideoEvent(
+            upload: any(named: 'upload'),
+            title: any(named: 'title'),
+            description: any(named: 'description'),
+            hashtags: any(named: 'hashtags'),
+            expirationTimestamp: any(named: 'expirationTimestamp'),
+            allowAudioReuse: any(named: 'allowAudioReuse'),
+            collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
+            mentionedPubkeys: any(named: 'mentionedPubkeys'),
+            inspiredByAddressableId: any(named: 'inspiredByAddressableId'),
+            inspiredByRelayUrl: any(named: 'inspiredByRelayUrl'),
+            inspiredByNpub: any(named: 'inspiredByNpub'),
+            selectedAudio: any(named: 'selectedAudio'),
+            selectedAudioEventId: any(named: 'selectedAudioEventId'),
+            selectedAudioRelay: any(named: 'selectedAudioRelay'),
+            language: any(named: 'language'),
+            contentWarning: any(named: 'contentWarning'),
+            thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
+            replyContext: any(named: 'replyContext'),
+            addReplyToFeed: any(named: 'addReplyToFeed'),
+            textTrackRefs: any(named: 'textTrackRefs'),
+            textTrackLang: any(named: 'textTrackLang'),
+            onEventSigned: any(named: 'onEventSigned'),
+          ),
+        ).thenAnswer((invocation) async {
+          beforeEvent = List<double>.of(progressChanges);
+          // Standing in for the publisher: it reports back once the event is
+          // signed, part-way through a phase that measured ~1.5s on device.
+          // This pins the service's end of the contract — that it passes a
+          // callback which moves the bar to the signing step. The publisher's
+          // own forwarding is mocked out here.
+          (invocation.namedArguments[#onEventSigned] as void Function()?)
+              ?.call();
+          return true;
+        });
+
+        // Act
+        final result = await service.publishVideo(draft: _createTestDraft());
+
+        // Assert
+        expect(result, isA<PublishSuccess>());
+        expect(beforeEvent, isNotEmpty);
+        for (final value in beforeEvent) {
+          expect(
+            value,
+            lessThan(1.0),
+            reason: 'bar reported done while the event was still unpublished',
+          );
+        }
+        expect(progressChanges.last, equals(1.0));
+        expect(
+          progressChanges,
+          contains(0.92),
+          reason: 'the signing step never reached the bar',
+        );
+        for (var i = 1; i < progressChanges.length; i++) {
+          expect(
+            progressChanges[i],
+            greaterThanOrEqualTo(progressChanges[i - 1]),
+            reason: 'progress went backwards: $progressChanges',
+          );
+        }
+      });
+
       group('caption publishing', () {
         const overlayTrack = CaptionTrack(
           presetId: 'classic',
@@ -586,6 +664,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           );
         },
@@ -669,6 +748,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           ).called(1);
         },
@@ -753,6 +833,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           ).called(1);
         },
@@ -798,6 +879,7 @@ void main() {
             thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             replyContext: any(named: 'replyContext'),
             addReplyToFeed: any(named: 'addReplyToFeed'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         )..called(1);
         expect(captured.captured.single, isEmpty);
@@ -943,6 +1025,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
             () => mockCollaboratorInviteService.sendInvites(
               collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
@@ -989,6 +1072,7 @@ void main() {
               expirationTimestamp: any(named: 'expirationTimestamp'),
               allowAudioReuse: any(named: 'allowAudioReuse'),
               selectedAudio: any(named: 'selectedAudio'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           ).thenAnswer((_) async => false);
           when(
@@ -1155,6 +1239,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -1222,6 +1307,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1314,6 +1400,7 @@ void main() {
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         );
       });
@@ -1347,6 +1434,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1435,6 +1523,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1998,6 +2087,7 @@ Future<bool> _verifyPublishVideoEvent(
   addReplyToFeed: any(named: 'addReplyToFeed'),
   textTrackRefs: textTrackRefs,
   textTrackLang: textTrackLang,
+  onEventSigned: any(named: 'onEventSigned'),
 );
 
 DivineVideoDraft _createTestDraft({
@@ -2085,6 +2175,7 @@ void _setupSuccessfulPublish({
       addReplyToFeed: any(named: 'addReplyToFeed'),
       textTrackRefs: any(named: 'textTrackRefs'),
       textTrackLang: any(named: 'textTrackLang'),
+      onEventSigned: any(named: 'onEventSigned'),
     ),
   ).thenAnswer((_) async => true);
 }

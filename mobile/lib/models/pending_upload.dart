@@ -70,6 +70,7 @@ class PendingUpload {
     this.streamingHlsUrl,
     this.fallbackUrl,
     this.resumableSession,
+    this.blurhash,
   });
 
   /// Create a new pending upload
@@ -179,6 +180,15 @@ class PendingUpload {
   @HiveField(25)
   final int? thumbnailTimestampMillis; // Store as milliseconds for Hive
 
+  /// Blurhash of the upload's thumbnail frame.
+  ///
+  /// Computed in the thumbnail leg, which already holds the decoded frame and
+  /// runs beside the video transfer. Publishing reads it from here instead of
+  /// decoding the video a second time on the critical path. Null on records
+  /// written before this field existed — publishing falls back to computing it.
+  @HiveField(26)
+  final String? blurhash;
+
   /// Get video duration as Duration object
   Duration? get videoDuration => videoDurationMillis != null
       ? Duration(milliseconds: videoDurationMillis!)
@@ -241,6 +251,7 @@ class PendingUpload {
     Object? streamingHlsUrl = _pendingUploadUnset,
     Object? fallbackUrl = _pendingUploadUnset,
     Object? resumableSession = _pendingUploadUnset,
+    String? blurhash,
   }) => PendingUpload(
     id: id ?? this.id,
     localVideoPath: localVideoPath ?? this.localVideoPath,
@@ -281,6 +292,7 @@ class PendingUpload {
     resumableSession: identical(resumableSession, _pendingUploadUnset)
         ? this.resumableSession
         : resumableSession as BlossomResumableUploadSession?,
+    blurhash: blurhash ?? this.blurhash,
   );
 
   /// Check if the upload is in a terminal state

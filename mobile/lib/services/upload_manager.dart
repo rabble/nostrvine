@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/services/upload/upload_session_errors.dart';
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_editor/stop_motion_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -120,6 +122,21 @@ class CrashReportingUploadReporter implements UploadCrashReporter {
       CrashReportingService.instance.recordError(error, stack, reason: reason);
 }
 
+/// What the thumbnail leg produces: the CDN URL of the uploaded frame, and the
+/// blurhash derived from that same frame.
+typedef ThumbnailLegResult = ({String? cdnUrl, String? blurhash});
+
+/// Pulls a thumbnail frame out of a local video file.
+///
+/// Mirrors [VideoThumbnailService.extractThumbnail]; exists so [UploadManager]
+/// can be handed a stand-in that does not need a decodable video.
+typedef ThumbnailExtractor =
+    Future<ThumbnailFileResult?> Function({
+      required String videoPath,
+      required Duration targetTimestamp,
+      required int quality,
+    });
+
 /// Manages video uploads and their persistent state with enhanced reliability
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class UploadManager implements BackgroundAwareService {
@@ -133,7 +150,9 @@ class UploadManager implements BackgroundAwareService {
     UploadCrashReporter? crashReporter,
     this.useBackgroundUpload = false,
     BackgroundActivityManager? backgroundActivityManager,
+    ThumbnailExtractor? thumbnailExtractor,
   }) : _blossomService = blossomService,
+       _extractThumbnail = thumbnailExtractor ?? _defaultThumbnailExtractor,
        _defaultBlossomUrl =
            defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
@@ -156,6 +175,16 @@ class UploadManager implements BackgroundAwareService {
     );
   }
 
+  /// Share of the progress bar driven by the video transfer.
+  ///
+  /// The remainder covers joining the thumbnail leg, which runs in parallel and
+  /// is virtually always finished first — so the bar reaches this mark and then
+  /// completes, rather than sitting at 100% while the publish is still working.
+  ///
+  /// [UploadRetryPolicy] persists its resumable checkpoint on the same scale,
+  /// so the two writers of `uploadProgress` cannot disagree on the ceiling.
+  static const double videoProgressShare = 0.95;
+
   /// Attempts the OS background uploader
   /// ([BlossomUploadService.uploadVideoInBackground]) *first* for a fresh
   /// publish — it survives app suspension and is fastest on a healthy
@@ -169,6 +198,22 @@ class UploadManager implements BackgroundAwareService {
   // Core services
   final PendingUploadStore _store;
   final BlossomUploadService _blossomService;
+
+  /// Pulls the thumbnail frame out of the local video. Injectable so the
+  /// thumbnail leg can be exercised without a decodable video and the native
+  /// plugin behind [VideoThumbnailService].
+  final ThumbnailExtractor _extractThumbnail;
+
+  static Future<ThumbnailFileResult?> _defaultThumbnailExtractor({
+    required String videoPath,
+    required Duration targetTimestamp,
+    required int quality,
+  }) => VideoThumbnailService.extractThumbnail(
+    videoPath: videoPath,
+    targetTimestamp: targetTimestamp,
+    quality: quality,
+  );
+
   final String _defaultBlossomUrl;
   final VideoCircuitBreaker _circuitBreaker;
   final UploadRetryConfig _retryConfig;
@@ -953,6 +998,17 @@ class UploadManager implements BackgroundAwareService {
       category: LogCategory.video,
     );
 
+    // Start the thumbnail beside the video transfer rather than after it. It
+    // only needs the local file, never the transfer's result, and running it
+    // sequentially put 3.2-4.1s of extract + sign + PUT on the critical path
+    // for a 16KB payload — a fifth to a quarter of the whole publish. It is
+    // reliably the shorter leg (measured against 6.8-16.8s for the video), so
+    // it lands before the transfer does and costs nothing extra.
+    final thumbnailFuture = _startThumbnailUpload(
+      videoFile: videoFile,
+      upload: upload,
+    );
+
     try {
       // Use Blossom upload service exclusively
       Log.info(
@@ -987,8 +1043,13 @@ class UploadManager implements BackgroundAwareService {
         );
       }
 
+      // The video transfer owns the bar on its own. The thumbnail runs beside
+      // it and deliberately reports nothing: two legs writing progress
+      // concurrently would make the bar jump backwards. The reserved top slice
+      // covers joining the thumbnail, so the bar never claims 100% while work
+      // is still outstanding.
       void reportProgress(double value) {
-        final progress = value * 0.8; // Reserve 20% for thumbnail
+        final progress = value * videoProgressShare;
         _reporter.updateProgress(upload.id, progress);
         onProgress?.call(progress);
       }
@@ -1007,6 +1068,11 @@ class UploadManager implements BackgroundAwareService {
       // (passed as resumableTimeout), so a stalled socket does not hang
       // forever. `useBackgroundUpload` is the kill-switch for the OS-first
       // attempt: flip it to false to go straight to chunked resumable.
+      // Bytes are read before the transfer so the timing line can report
+      // throughput even if the file is gone by the time the phase ends.
+      final videoBytes = videoFile.existsSync() ? videoFile.lengthSync() : null;
+      final transferWatch = Stopwatch()..start();
+
       BlossomUploadResult result;
       try {
         result = await _blossomService.uploadVideoWithResume(
@@ -1050,32 +1116,35 @@ class UploadManager implements BackgroundAwareService {
         });
 
         rethrow;
+      } finally {
+        transferWatch.stop();
+        logPublishPhase(
+          'upload.transfer',
+          transferWatch.elapsed,
+          detail: formatTransferDetail(videoBytes, transferWatch.elapsed),
+        );
       }
+
+      // Join the parallel leg before any early return below, so it can never
+      // outlive this call.
+      final thumbnailResult = await thumbnailFuture;
+      final thumbnailCdnUrl = thumbnailResult.cdnUrl;
 
       if (_userStoppedUploadIds.contains(upload.id)) {
         Log.info(
           'Upload ${upload.id} stopped by user after video transfer; '
-          'skipping thumbnail and success handling',
+          'skipping success handling',
           name: 'UploadManager',
           category: LogCategory.video,
         );
         return result;
       }
 
-      // Generate and upload thumbnail after video upload succeeds
-      String? thumbnailCdnUrl;
       if (result.success && result.cdnUrl != null) {
         Log.info(
           '✅ Video uploaded successfully',
           name: 'UploadManager',
           category: LogCategory.video,
-        );
-
-        // Generate and upload thumbnail to Blossom CDN
-        thumbnailCdnUrl = await _generateAndUploadThumbnail(
-          videoFile: videoFile,
-          nostrPubkey: upload.nostrPubkey,
-          upload: upload,
         );
 
         if (thumbnailCdnUrl != null) {
@@ -1107,11 +1176,6 @@ class UploadManager implements BackgroundAwareService {
         onProgress?.call(1.0);
       }
 
-      // Store thumbnail URL in upload for later use
-      if (thumbnailCdnUrl != null) {
-        await _store.update(upload.copyWith(thumbnailPath: thumbnailCdnUrl));
-      }
-
       Log.info(
         '✅ Upload execution completed',
         name: 'UploadManager',
@@ -1119,6 +1183,11 @@ class UploadManager implements BackgroundAwareService {
       );
       return result;
     } catch (e) {
+      // A transfer failure must not strand the parallel thumbnail leg: settle
+      // it before propagating so it cannot still be running when the retry
+      // policy starts the next attempt. [_startThumbnailUpload] guarantees it
+      // never throws, so this cannot mask the original error.
+      await thumbnailFuture;
       Log.error(
         '❌ Upload execution failed: $e',
         name: 'UploadManager',
@@ -1809,8 +1878,78 @@ class UploadManager implements BackgroundAwareService {
         _isHttpUrl(existingThumbnailUrl);
   }
 
-  /// Generate and upload thumbnail to Blossom CDN
-  Future<String?> _generateAndUploadThumbnail({
+  /// Runs the thumbnail leg for [upload], or short-circuits when a previous
+  /// attempt already landed one on the CDN.
+  ///
+  /// Never throws: [_generateAndUploadThumbnail] reports failure as `null` and
+  /// the persist swallows its own errors, so the caller turns a missing
+  /// thumbnail into the publish-level error. That matters here because this
+  /// future is started before the video transfer and awaited after it — an
+  /// escaping error would spend the whole transfer with no listener, and would
+  /// then replace the transfer's own failure at the join.
+  Future<ThumbnailLegResult> _startThumbnailUpload({
+    required File videoFile,
+    required PendingUpload upload,
+  }) async {
+    final existing = upload.thumbnailPath;
+    if (existing != null && existing.startsWith('http')) {
+      // A prior attempt in this retry chain already uploaded it. The blob is
+      // content-addressed, so re-uploading would land on the same hash. The
+      // zero-duration line keeps the PUBTIME timeline honest on retries —
+      // without it an export reads as "the leg never ran".
+      logPublishPhase('upload.thumbnail', Duration.zero, detail: 'reused');
+      return (cdnUrl: existing, blurhash: upload.blurhash);
+    }
+
+    final watch = Stopwatch()..start();
+    try {
+      final result = await _generateAndUploadThumbnail(
+        videoFile: videoFile,
+        nostrPubkey: upload.nostrPubkey,
+        upload: upload,
+      );
+
+      // Persist as soon as the leg lands, not once the whole attempt
+      // succeeds. A failing video transfer aborts this method's caller before
+      // its own store write, so deferring would make every retry re-extract
+      // and re-upload a thumbnail that is already on the CDN — and the
+      // short-circuit above would never fire.
+      if (result.cdnUrl != null || result.blurhash != null) {
+        try {
+          final current = _store.getUpload(upload.id) ?? upload;
+          await _store.update(
+            current.copyWith(
+              thumbnailPath: result.cdnUrl ?? current.thumbnailPath,
+              blurhash: result.blurhash,
+            ),
+          );
+        } catch (e) {
+          // The persist is an optimization — without it the next attempt just
+          // re-extracts. A closed box or a full disk must not escape: this
+          // future is unlistened for the length of the transfer, so it would
+          // surface as an uncaught error, and at the join it would replace the
+          // transfer's real failure with a storage one.
+          Log.error(
+            'Failed to persist thumbnail result for ${upload.id}: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        }
+      }
+
+      return result;
+    } finally {
+      watch.stop();
+      logPublishPhase('upload.thumbnail', watch.elapsed);
+    }
+  }
+
+  /// Extracts a thumbnail from [videoFile], uploads it to Blossom, and derives
+  /// the blurhash from the same decoded frame.
+  ///
+  /// Reports no progress: it runs in parallel with the video transfer, which
+  /// owns the bar alone. See [videoProgressShare].
+  Future<ThumbnailLegResult> _generateAndUploadThumbnail({
     required File videoFile,
     required String nostrPubkey,
     required PendingUpload upload,
@@ -1823,13 +1962,16 @@ class UploadManager implements BackgroundAwareService {
       );
 
       // Generate thumbnail at optimal timestamp
-      final thumbnailExtraction = await VideoThumbnailService.extractThumbnail(
+      final extractWatch = Stopwatch()..start();
+      final thumbnailExtraction = await _extractThumbnail(
         videoPath: videoFile.path,
         quality: 85,
         targetTimestamp:
             upload.thumbnailTimestamp ??
             VideoEditorConstants.defaultThumbnailExtractTime,
       );
+      extractWatch.stop();
+      logPublishPhase('upload.thumbnail.extract', extractWatch.elapsed);
 
       if (thumbnailExtraction == null) {
         Log.warning(
@@ -1837,7 +1979,7 @@ class UploadManager implements BackgroundAwareService {
           name: 'UploadManager',
           category: LogCategory.video,
         );
-        return null;
+        return (cdnUrl: null, blurhash: null);
       }
 
       final thumbnailFile = File(thumbnailExtraction.path);
@@ -1847,7 +1989,7 @@ class UploadManager implements BackgroundAwareService {
           name: 'UploadManager',
           category: LogCategory.video,
         );
-        return null;
+        return (cdnUrl: null, blurhash: null);
       }
 
       Log.info(
@@ -1856,12 +1998,21 @@ class UploadManager implements BackgroundAwareService {
         category: LogCategory.video,
       );
 
-      _reporter.updateProgress(upload.id, 0.85);
+      // Derive the blurhash from the frame we just decoded. Publishing used to
+      // decode the video a second time for this, on the critical path.
+      final blurhashWatch = Stopwatch()..start();
+      final blurhash = await BlurhashService.generateBlurhash(
+        thumbnailFile.readAsBytesSync(),
+      );
+      blurhashWatch.stop();
+      logPublishPhase('upload.thumbnail.blurhash', blurhashWatch.elapsed);
 
       // Upload thumbnail to Blossom server. Divine relay publishing requires
       // a CDN thumbnail, so keep the image upload's own retry enabled here.
       // If no HTTP thumbnail URL is available after that, the outer video
       // pipeline treats it as terminal to avoid re-uploading the whole video.
+      final thumbnailBytes = thumbnailFile.lengthSync();
+      final putWatch = Stopwatch()..start();
       final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,
@@ -1869,10 +2020,12 @@ class UploadManager implements BackgroundAwareService {
         // init/chunk/complete handshake (two extra round-trips plus extra auth
         // signings) that otherwise dominated short-clip publish time.
         allowResumable: false,
-        onProgress: (progress) {
-          // Map thumbnail progress to 85%-100% of total upload
-          _reporter.updateProgress(upload.id, 0.85 + (progress * 0.15));
-        },
+      );
+      putWatch.stop();
+      logPublishPhase(
+        'upload.thumbnail.put',
+        putWatch.elapsed,
+        detail: formatTransferDetail(thumbnailBytes, putWatch.elapsed),
       );
 
       // Clean up local thumbnail file
@@ -1892,17 +2045,17 @@ class UploadManager implements BackgroundAwareService {
       }
 
       if (uploadResult.success && uploadResult.cdnUrl != null) {
-        return uploadResult.cdnUrl;
+        return (cdnUrl: uploadResult.cdnUrl, blurhash: blurhash);
       }
 
-      return null;
+      return (cdnUrl: null, blurhash: blurhash);
     } catch (e) {
       Log.error(
         'Error generating/uploading thumbnail: $e',
         name: 'UploadManager',
         category: LogCategory.video,
       );
-      return null;
+      return (cdnUrl: null, blurhash: null);
     }
   }
 

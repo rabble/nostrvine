@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:blurhash_service/blurhash_service.dart';
-import 'package:crypto/crypto.dart';
 //adding c2pa support for publishing c2pa manifest data into nostr
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
@@ -31,6 +30,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
@@ -830,6 +830,7 @@ class VideoEventPublisher {
     bool addReplyToFeed = false,
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
+    void Function()? onEventSigned,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -857,6 +858,7 @@ class VideoEventPublisher {
       addReplyToFeed: addReplyToFeed,
       textTrackRefs: textTrackRefs,
       textTrackLang: textTrackLang,
+      onEventSigned: onEventSigned,
     );
   }
 
@@ -887,6 +889,7 @@ class VideoEventPublisher {
     bool addReplyToFeed = false,
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
+    void Function()? onEventSigned,
   }) async {
     final videoId = upload.videoId;
     if (videoId == null || upload.cdnUrl == null) {
@@ -928,6 +931,7 @@ class VideoEventPublisher {
       addReplyToFeed: addReplyToFeed,
       textTrackRefs: textTrackRefs,
       textTrackLang: textTrackLang,
+      onEventSigned: onEventSigned,
     );
     _inFlightDirectPublishes[videoId] = publish;
     try {
@@ -962,6 +966,7 @@ class VideoEventPublisher {
     bool addReplyToFeed = false,
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
+    void Function()? onEventSigned,
   }) async {
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
     // This prevents local file paths from being published to Nostr
@@ -1137,19 +1142,27 @@ class VideoEventPublisher {
         imetaComponents.add('dim ${upload.videoWidth}x${upload.videoHeight}');
       }
 
-      // Add file size and SHA256 if available from local video file
+      // x: the digest is the upload's videoId, which every upload path sets
+      // from the locally streamed HashUtil.sha256File over this same file —
+      // _parseUploadResponse takes fileHash as a parameter and never reads a
+      // hash off the response body, so this is value-identical to re-hashing
+      // the file (which used to cost a measurable slice of the publish and
+      // pulled the whole video into memory). Deliberately independent of the
+      // local file still existing: funnelcake materializes events_local.sha256
+      // from this sub-field and joins moderation labels on it, so a publish
+      // landing after local cleanup must still carry it.
+      final hash = upload.videoId;
+      if (hash != null && hash.isNotEmpty) {
+        imetaComponents.add('x $hash');
+      }
+
+      // size genuinely needs the file on disk.
       if (upload.localVideoPath.isNotEmpty) {
         try {
           final videoFile = File(upload.localVideoPath);
           if (videoFile.existsSync()) {
-            // Add file size
             final fileSize = videoFile.lengthSync();
             imetaComponents.add('size $fileSize');
-
-            // Calculate SHA256 hash
-            final bytes = await videoFile.readAsBytes();
-            final hash = sha256.convert(bytes);
-            imetaComponents.add('x $hash');
 
             Log.verbose(
               'Added file metadata - size: $fileSize bytes, hash: $hash',
@@ -1166,8 +1179,22 @@ class VideoEventPublisher {
         }
       }
 
-      // Generate blurhash for progressive image loading
-      if (upload.localVideoPath.isNotEmpty) {
+      // Blurhash for progressive image loading. The upload's thumbnail leg
+      // already decoded the frame and derived it there, beside the video
+      // transfer; deriving it again here meant a second video decode on the
+      // critical path (measured at 568ms). Records written before the field
+      // existed, and uploads whose thumbnail was reused from an earlier
+      // attempt, still fall through to computing it.
+      final storedBlurhash = upload.blurhash;
+      if (storedBlurhash != null && storedBlurhash.isNotEmpty) {
+        imetaComponents.add('blurhash $storedBlurhash');
+        Log.info(
+          '✅ Reused blurhash from upload: $storedBlurhash',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      } else if (upload.localVideoPath.isNotEmpty) {
+        final blurhashWatch = Stopwatch()..start();
         try {
           Log.debug(
             '🎨 Generating blurhash from video thumbnail',
@@ -1239,6 +1266,9 @@ class VideoEventPublisher {
             category: LogCategory.video,
           );
           // Continue publishing without blurhash - it's optional metadata
+        } finally {
+          blurhashWatch.stop();
+          logPublishPhase('nostr.blurhash', blurhashWatch.elapsed);
         }
       }
 
@@ -1590,6 +1620,7 @@ class VideoEventPublisher {
       );
 
       final reusedEvent = _loadRetryableSignedEvent(upload);
+      final signWatch = Stopwatch()..start();
       final event =
           reusedEvent ??
           await _authService.createAndSignEvent(
@@ -1598,6 +1629,12 @@ class VideoEventPublisher {
             content: content,
             tags: tags,
           );
+      signWatch.stop();
+      logPublishPhase(
+        'nostr.sign',
+        signWatch.elapsed,
+        detail: reusedEvent != null ? 'reused' : 'signed',
+      );
 
       if (event == null) {
         Log.error(
@@ -1607,6 +1644,11 @@ class VideoEventPublisher {
         );
         return false;
       }
+
+      // Signing is a remote Keycast round-trip (~0.3-1.4s measured), so the
+      // caller gets a step here rather than waiting out the whole phase. Kept
+      // below the null check so a failed signing cannot advance the bar.
+      onEventSigned?.call();
 
       if (upload.nostrEventId != event.id) {
         await _persistRetryableSignedEvent(upload, event);
@@ -1625,11 +1667,14 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
+      final publishWatch = Stopwatch()..start();
       final publishResult = await publishSignedVideoEvent(
         upload: upload,
         event: event,
         isRetry: reusedEvent != null,
       );
+      publishWatch.stop();
+      logPublishPhase('nostr.publish', publishWatch.elapsed);
 
       if (publishResult) {
         final shouldAddToDiscoveryCache =

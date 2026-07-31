@@ -555,11 +555,37 @@ void main() {
       expect(captured, hasLength(1));
       final updated = captured.first as PendingUpload;
       expect(updated.resumableSession, equals(session));
-      // progress = (512000 / 1024000) * 0.8 = 0.4
-      expect(updated.uploadProgress, closeTo(0.4, 0.001));
+      // progress = (512000 / 1024000) * videoProgressShare = 0.475
+      expect(updated.uploadProgress, closeTo(0.475, 0.001));
     });
 
-    test('clamps progress to [0.0, 0.8]', () async {
+    test(
+      'never lowers progress already reported by the live transfer',
+      () async {
+        final upload = _makeUpload().copyWith(uploadProgress: 0.7);
+        when(() => store.getUpload('upload-1')).thenReturn(upload);
+        when(() => store.update(any())).thenAnswer((_) async {});
+
+        // The live callback and this checkpoint run on different curves, so a
+        // checkpoint computed below the reported value must not drag it back.
+        const session = BlossomResumableUploadSession(
+          uploadId: 'session-1',
+          uploadUrl: 'https://example.com/upload',
+          chunkSize: 1024 * 1024,
+          nextOffset: 512000,
+        );
+
+        policy.enqueueSessionPersist('upload-1', session, 1024000);
+        await Future<void>.delayed(Duration.zero);
+
+        final captured = verify(() => store.update(captureAny())).captured;
+        final updated = captured.first as PendingUpload;
+        expect(updated.resumableSession, equals(session));
+        expect(updated.uploadProgress, closeTo(0.7, 0.001));
+      },
+    );
+
+    test('clamps progress to the video share', () async {
       final upload = _makeUpload();
       when(() => store.getUpload('upload-1')).thenReturn(upload);
       when(() => store.update(any())).thenAnswer((_) async {});
@@ -577,7 +603,10 @@ void main() {
 
       final captured = verify(() => store.update(captureAny())).captured;
       final updated = captured.first as PendingUpload;
-      expect(updated.uploadProgress, lessThanOrEqualTo(0.8));
+      expect(
+        updated.uploadProgress,
+        lessThanOrEqualTo(UploadManager.videoProgressShare),
+      );
     });
 
     test('no-op when upload not found in store', () async {

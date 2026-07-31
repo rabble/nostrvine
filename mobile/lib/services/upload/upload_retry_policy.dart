@@ -407,9 +407,18 @@ class UploadRetryPolicy {
     final upload = _store.getUpload(uploadId);
     if (upload == null) return;
 
-    final persistedProgress = fileSizeBytes <= 0
+    // The live transfer callback persists progress on every tick and owns the
+    // bar; this checkpoint exists so a restart resumes from a sane mark. The
+    // two run on different curves, so the checkpoint may only ever raise the
+    // stored value — otherwise it drags the publish bar backwards mid-upload.
+    final checkpoint = fileSizeBytes <= 0
         ? upload.uploadProgress
-        : ((session.nextOffset / fileSizeBytes) * 0.8).clamp(0.0, 0.8);
+        : ((session.nextOffset / fileSizeBytes) *
+                  UploadManager.videoProgressShare)
+              .clamp(0.0, UploadManager.videoProgressShare);
+    final persistedProgress = checkpoint == null
+        ? upload.uploadProgress
+        : math.max(checkpoint, upload.uploadProgress ?? 0.0);
 
     await _store.update(
       upload.copyWith(
