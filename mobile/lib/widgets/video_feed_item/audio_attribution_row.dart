@@ -80,27 +80,39 @@ class _AudioAttributionContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final soundName = audio.title ?? context.l10n.audioAttributionOriginalSound;
-    final String creatorName;
+    final String publisherName;
 
     if (audio.isBundled) {
       // For bundled sounds, use the source field (e.g. "ThePauny via Freesound")
-      creatorName = audio.source ?? 'diVine';
+      publisherName = audio.source ?? 'diVine';
     } else {
-      // For Nostr sounds, fetch the creator's profile
-      final creatorProfile = ref
+      // The Kind 1063 signer may be sharing another creator's work.
+      final publisherProfile = ref
           .watch(userProfileReactiveProvider(audio.pubkey))
           .value;
-      creatorName =
-          creatorProfile?.bestDisplayName ??
+      publisherName =
+          publisherProfile?.bestDisplayName ??
           UserProfile.defaultDisplayNameFor(audio.pubkey);
     }
+    final creditedCreator = audio.creatorName;
+    final creditText = [
+      if (creditedCreator == null)
+        publisherName
+      else ...[
+        context.l10n.soundCreatorBy(creditedCreator),
+        if (audio.creatorPubkey == null || audio.creatorPubkey != audio.pubkey)
+          context.l10n.soundSharedBy(publisherName),
+      ],
+      ?audio.licenseName,
+      ...audio.publicTags.map((tag) => '#$tag'),
+    ].join(' · ');
 
     return _AudioAttributionPill(
       soundName: soundName,
-      creatorName: creatorName,
+      creatorName: creditText,
       semanticLabel: context.l10n.audioAttributionRowSemanticLabel(
         soundName,
-        creatorName,
+        creditText,
       ),
       onTap: () => _navigateToSoundDetail(context, audio),
     );

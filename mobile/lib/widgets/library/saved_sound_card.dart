@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -23,18 +24,19 @@ class SavedSoundCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onRemove;
 
-  String get _displayTitle =>
+  String _displayTitle(BuildContext context) =>
       sound.personalLabel ??
       sound.sourceContext?.title ??
       sound.audio.title ??
-      'Saved sound';
+      context.l10n.savedSoundFallbackTitle;
 
   @override
   Widget build(BuildContext context) {
     final source = sound.sourceContext;
     final duration = sound.audio.formattedDuration;
+    final displayTitle = _displayTitle(context);
     return Semantics(
-      label: duration.isEmpty ? _displayTitle : '$_displayTitle, $duration',
+      label: duration.isEmpty ? displayTitle : '$displayTitle, $duration',
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -53,7 +55,7 @@ class SavedSoundCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _SavedSoundText(
-                      displayTitle: _displayTitle,
+                      displayTitle: displayTitle,
                       sound: sound,
                     ),
                   ),
@@ -75,7 +77,7 @@ class SavedSoundCard extends StatelessWidget {
                   DivineIconButton(
                     key: const Key('saved_sound_preview'),
                     icon: DivineIconName.play,
-                    semanticLabel: 'Preview sound',
+                    semanticLabel: context.l10n.savedSoundPreviewAction,
                     size: DivineIconButtonSize.small,
                     type: DivineIconButtonType.secondary,
                     onPressed: onPreview,
@@ -84,7 +86,7 @@ class SavedSoundCard extends StatelessWidget {
                   DivineIconButton(
                     key: const Key('saved_sound_edit'),
                     icon: DivineIconName.pencilSimple,
-                    semanticLabel: 'Edit sound details',
+                    semanticLabel: context.l10n.savedSoundEditAction,
                     size: DivineIconButtonSize.small,
                     type: DivineIconButtonType.secondary,
                     onPressed: onEdit,
@@ -93,7 +95,7 @@ class SavedSoundCard extends StatelessWidget {
                   DivineIconButton(
                     key: const Key('saved_sound_remove'),
                     icon: DivineIconName.trash,
-                    semanticLabel: 'Remove saved sound',
+                    semanticLabel: context.l10n.savedSoundRemoveAction,
                     size: DivineIconButtonSize.small,
                     type: DivineIconButtonType.error,
                     onPressed: onRemove,
@@ -188,7 +190,7 @@ class _SavedSoundText extends StatelessWidget {
           ),
         if (source?.creatorName case final creator?)
           Text(
-            'By $creator',
+            context.l10n.soundCreatorBy(creator),
             style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
           ),
         if (source?.description case final description?)

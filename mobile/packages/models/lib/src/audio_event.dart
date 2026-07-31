@@ -66,6 +66,7 @@ class AudioEvent {
     this.endTime,
     this.anchorClipId,
     this.allowsReuse = true,
+    this.hasExplicitReuseConsent = false,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -98,6 +99,7 @@ class AudioEvent {
     String? proxyId;
     String? proxyProtocol;
     var allowsReuse = false;
+    var hasExplicitReuseConsent = false;
 
     // Parse tags according to NIP-94
     for (final tagRaw in event.tags) {
@@ -123,6 +125,7 @@ class AudioEvent {
         case 'source':
           source = tagValue.isNotEmpty ? tagValue : null;
         case 'allow_audio_reuse':
+          hasExplicitReuseConsent = true;
           allowsReuse = tagValue == 'true';
         case 'creator':
           creatorName = tagValue.isNotEmpty ? tagValue : null;
@@ -175,6 +178,7 @@ class AudioEvent {
       proxyId: proxyId,
       proxyProtocol: proxyProtocol,
       allowsReuse: allowsReuse,
+      hasExplicitReuseConsent: hasExplicitReuseConsent,
     );
   }
 
@@ -297,6 +301,8 @@ class AudioEvent {
           : null,
       anchorClipId: json['anchorClipId'] as String?,
       allowsReuse: json['allowsReuse'] as bool? ?? true,
+      hasExplicitReuseConsent:
+          json['hasExplicitReuseConsent'] as bool? ?? false,
     );
   }
 
@@ -528,6 +534,12 @@ class AudioEvent {
   /// `true` default for bundled and existing in-memory app sounds.
   final bool allowsReuse;
 
+  /// Whether a parsed Kind 1063 explicitly carried an audio-reuse decision.
+  ///
+  /// This distinguishes legacy events with no consent tag from an explicit
+  /// `false`, which must remain credit-only.
+  final bool hasExplicitReuseConsent;
+
   /// Whether this audio is currently anchored to a source video clip.
   bool get isAnchored => anchorClipId != null;
 
@@ -675,6 +687,7 @@ class AudioEvent {
     String? anchorClipId,
     bool clearAnchorClipId = false,
     bool? allowsReuse,
+    bool? hasExplicitReuseConsent,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -706,6 +719,8 @@ class AudioEvent {
           ? null
           : (anchorClipId ?? this.anchorClipId),
       allowsReuse: allowsReuse ?? this.allowsReuse,
+      hasExplicitReuseConsent:
+          hasExplicitReuseConsent ?? this.hasExplicitReuseConsent,
     );
   }
 
@@ -756,6 +771,7 @@ class AudioEvent {
     'proxyId': ?proxyId,
     'proxyProtocol': ?proxyProtocol,
     'allowsReuse': allowsReuse,
+    'hasExplicitReuseConsent': hasExplicitReuseConsent,
     // Always serialize volume so history and draft snapshots preserve
     // explicit user edits instead of relying on an implicit default.
     'volume': volume,

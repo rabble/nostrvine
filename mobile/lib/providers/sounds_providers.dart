@@ -4,6 +4,8 @@
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
+import 'package:openvine/providers/video_providers.dart';
+import 'package:openvine/services/audio_reuse_consent_resolver.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sounds_repository/sounds_repository.dart';
 
@@ -136,6 +138,17 @@ Future<int> soundUsageCount(Ref ref, String audioEventId) async {
 
   final repository = ref.watch(soundsRepositoryProvider);
   return repository.fetchVideosUsingSoundCount(audioEventId);
+}
+
+/// Fail-closed reuse consent for explicit and legacy audio events.
+@riverpod
+Future<bool> audioReuseConsent(Ref ref, AudioEvent sound) {
+  if (sound.allowsReuse) return Future.value(true);
+  if (sound.hasExplicitReuseConsent) return Future.value(false);
+  return AudioReuseConsentResolver(
+    soundsRepository: ref.watch(soundsRepositoryProvider),
+    videosRepository: ref.watch(videosRepositoryProvider),
+  ).verify(sound);
 }
 
 /// State provider for the currently selected sound.

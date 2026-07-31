@@ -4,6 +4,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show AudioEvent, InspiredByInfo;
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
@@ -25,6 +26,7 @@ class VideoEditorProviderState {
     this.isSavingDraft = false,
     this.isAutosavedDraft = true,
     this.allowAudioReuse = false,
+    this.audioShareAttribution,
     this.shareReplyToFeed = false,
     this.title = '',
     this.description = '',
@@ -95,6 +97,12 @@ class VideoEditorProviderState {
   /// Whether the audio from the original video can be reused in other videos.
   final bool allowAudioReuse;
 
+  /// Public credit for audio the user chooses to share with this post.
+  ///
+  /// This is publishable metadata and is intentionally separate from private
+  /// saved-library labels and hashtags.
+  final AudioShareAttribution? audioShareAttribution;
+
   /// Whether a video reply should also be eligible for normal feed display.
   ///
   /// The recording is still a single NIP-71 event with reply tags; this only
@@ -131,6 +139,13 @@ class VideoEditorProviderState {
   /// Contains the full AudioEvent data including URL, title, and start offset.
   /// This is persisted in drafts and used for audio playback during editing.
   final AudioEvent? selectedSound;
+
+  /// Audio that will be credited at publish time, including editor tracks.
+  AudioEvent? get audioForAttribution {
+    if (selectedSound != null) return selectedSound;
+    final tracks = editorEditingParameters?.audioTracksFromMeta ?? const [];
+    return tracks.isEmpty ? null : tracks.first;
+  }
 
   /// Whether [selectedSound] was recorded against in the recorder and should
   /// be seeded into the editor timeline as a concrete audio track.
@@ -211,6 +226,8 @@ class VideoEditorProviderState {
     bool? isSavingDraft,
     bool? isAutosavedDraft,
     bool? allowAudioReuse,
+    AudioShareAttribution? audioShareAttribution,
+    bool clearAudioShareAttribution = false,
     bool? shareReplyToFeed,
     GlobalKey? deleteButtonKey,
     String? title,
@@ -260,6 +277,9 @@ class VideoEditorProviderState {
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
       isAutosavedDraft: isAutosavedDraft ?? this.isAutosavedDraft,
       allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
+      audioShareAttribution: clearAudioShareAttribution
+          ? null
+          : (audioShareAttribution ?? this.audioShareAttribution),
       shareReplyToFeed: shareReplyToFeed ?? this.shareReplyToFeed,
       deleteButtonKey: deleteButtonKey ?? this.deleteButtonKey,
       title: title ?? this.title,

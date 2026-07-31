@@ -597,6 +597,84 @@ final class SoundUsageCountFamily extends $Family
   String toString() => r'soundUsageCountProvider';
 }
 
+/// Fail-closed reuse consent for explicit and legacy audio events.
+
+@ProviderFor(audioReuseConsent)
+final audioReuseConsentProvider = AudioReuseConsentFamily._();
+
+/// Fail-closed reuse consent for explicit and legacy audio events.
+
+final class AudioReuseConsentProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// Fail-closed reuse consent for explicit and legacy audio events.
+  AudioReuseConsentProvider._({
+    required AudioReuseConsentFamily super.from,
+    required AudioEvent super.argument,
+  }) : super(
+         retry: null,
+         name: r'audioReuseConsentProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioReuseConsentHash();
+
+  @override
+  String toString() {
+    return r'audioReuseConsentProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    final argument = this.argument as AudioEvent;
+    return audioReuseConsent(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AudioReuseConsentProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$audioReuseConsentHash() => r'b2b4384ec642cc92d3bba72125a07a4e2a5b6c53';
+
+/// Fail-closed reuse consent for explicit and legacy audio events.
+
+final class AudioReuseConsentFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<bool>, AudioEvent> {
+  AudioReuseConsentFamily._()
+    : super(
+        retry: null,
+        name: r'audioReuseConsentProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Fail-closed reuse consent for explicit and legacy audio events.
+
+  AudioReuseConsentProvider call(AudioEvent sound) =>
+      AudioReuseConsentProvider._(argument: sound, from: this);
+
+  @override
+  String toString() => r'audioReuseConsentProvider';
+}
+
 /// State provider for the currently selected sound.
 ///
 /// Used when user selects a sound to use in recording.

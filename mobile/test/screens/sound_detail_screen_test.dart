@@ -459,6 +459,44 @@ void main() {
     });
 
     group('Action Buttons', () {
+      testWidgets('shows public credit, license, tags, and remix status', (
+        tester,
+      ) async {
+        final testSound = createTestAudioEvent(id: 'sound1').copyWith(
+          creatorName: 'Original Artist',
+          source: 'https://example.com/source',
+          licenseName: 'CC BY 4.0',
+          publicTags: const ['field-recording'],
+          allowsReuse: false,
+          hasExplicitReuseConsent: true,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioReuseConsentProvider(
+                testSound,
+              ).overrideWith((ref) => Future.value(false)),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('By Original Artist'), findsOneWidget);
+        expect(find.textContaining('CC BY 4.0'), findsOneWidget);
+        expect(find.text('#field-recording'), findsOneWidget);
+        expect(find.text('Credit only'), findsOneWidget);
+        expect(find.text('Use Sound'), findsNothing);
+      });
+
       testWidgets('has Preview button', (tester) async {
         final testSound = createTestAudioEvent(id: 'sound1');
 

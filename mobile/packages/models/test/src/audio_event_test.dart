@@ -85,6 +85,7 @@ void main() {
         expect(audioEvent.duration, isNull);
         expect(audioEvent.title, isNull);
         expect(audioEvent.sourceVideoReference, isNull);
+        expect(audioEvent.hasExplicitReuseConsent, isFalse);
         expect(audioEvent.allowsReuse, isFalse);
       });
 
@@ -104,6 +105,8 @@ void main() {
         expect(parseWith('true').allowsReuse, isTrue);
         expect(parseWith('false').allowsReuse, isFalse);
         expect(parseWith('TRUE').allowsReuse, isFalse);
+        expect(parseWith('true').hasExplicitReuseConsent, isTrue);
+        expect(parseWith('false').hasExplicitReuseConsent, isTrue);
       });
 
       test('parses public credit, tags, and proxy provenance', () {

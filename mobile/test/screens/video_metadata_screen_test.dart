@@ -160,18 +160,169 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.videoMetadataAudioReuseTitle), findsOneWidget);
+        expect(
+          find.text('Allow others to remix this sound'),
+          findsOneWidget,
+        );
         expect(find.text(l10n.videoMetadataAudioReuseSubtitle), findsOneWidget);
         expect(container.read(videoEditorProvider).allowAudioReuse, isFalse);
 
         await tester.ensureVisible(
-          find.text(l10n.videoMetadataAudioReuseTitle),
+          find.text('Allow others to remix this sound'),
         );
         await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.videoMetadataAudioReuseTitle));
+        await tester.tap(find.text('Allow others to remix this sound'));
         await tester.pumpAndSettle();
 
         expect(container.read(videoEditorProvider).allowAudioReuse, isTrue);
+        expect(find.text('Public sound credit'), findsOneWidget);
+        expect(find.text('Shared as'), findsOneWidget);
+        expect(
+          container
+              .read(videoEditorProvider)
+              .audioShareAttribution
+              ?.confirmedOwnWork,
+          isTrue,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      });
+
+      testWidgets('requires public creator and source for imported audio', (
+        tester,
+      ) async {
+        final imported = models.AudioEvent.fromLocalImport(
+          id: 'local_import_test',
+          filePath: '/tmp/test.m4a',
+          title: 'Kitchen rhythm',
+          createdAt: 1700000000,
+          mimeType: 'audio/mp4',
+        );
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(
+                  finalRenderedClip: testClip,
+                  selectedSound: imported,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(
+          find.text('Allow others to remix this sound'),
+        );
+        await tester.tap(find.text('Allow others to remix this sound'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('audio_credit_creator')), findsOneWidget);
+        expect(find.byKey(const Key('audio_credit_source')), findsOneWidget);
+        expect(
+          container.read(videoEditorProvider).audioShareAttribution?.isValid,
+          isFalse,
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('audio_credit_creator')),
+          'Bucket drummer',
+        );
+        await tester.enterText(
+          find.byKey(const Key('audio_credit_source')),
+          'https://example.com/source',
+        );
+        await tester.pump();
+
+        final credit = container
+            .read(videoEditorProvider)
+            .audioShareAttribution;
+        expect(credit?.creatorName, 'Bucket drummer');
+        expect(credit?.sourceUrl, 'https://example.com/source');
+        expect(credit?.isValid, isTrue);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      });
+
+      testWidgets('shows provider credit read-only and honors license limits', (
+        tester,
+      ) async {
+        const providerSound = models.AudioEvent(
+          id: 'external_provider_freesound_42',
+          pubkey: models.AudioEvent.externalProviderMarker,
+          createdAt: 1700000000,
+          title: 'Rain on glass',
+          externalSource: models.AudioExternalSource(
+            provider: 'freesound',
+            providerSoundId: '42',
+            providerName: 'Freesound',
+            creatorName: 'Field Recorder',
+            sourceUrl: 'https://freesound.org/s/42',
+            previewUrl: 'https://cdn.example.com/42.mp3',
+            license: models.AudioLicenseMetadata(
+              type: 'cc-by-nd',
+              name: 'CC BY-ND 4.0',
+              url: 'https://creativecommons.org/licenses/by-nd/4.0/',
+              allowsCommercialUse: true,
+              allowsDerivatives: false,
+              requiresAttribution: true,
+            ),
+          ),
+        );
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(
+                  finalRenderedClip: testClip,
+                  selectedSound: providerSound,
+                  allowAudioReuse: true,
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Public sound credit'), findsOneWidget);
+        expect(find.text('By Field Recorder'), findsOneWidget);
+        expect(find.text('CC BY-ND 4.0'), findsOneWidget);
+        expect(find.text('Credit only'), findsOneWidget);
+        expect(find.byKey(const Key('audio_credit_creator')), findsNothing);
+        expect(find.byKey(const Key('audio_credit_source')), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());
         container.dispose();

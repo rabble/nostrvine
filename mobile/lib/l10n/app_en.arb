@@ -6350,5 +6350,36 @@
   "profileNotifyUpdateFailed": "Couldn't save that. Try again?",
   "@profileNotifyUpdateFailed": {
     "description": "Transient message when publishing the notification-subscription list fails. The bell has already reverted to its previous state."
-  }
+  },
+  "savedSoundYourLabel": "Your label",
+  "savedSoundAddHashtags": "Add hashtags",
+  "savedSoundDeviceOnly": "Saved on this device",
+  "savedSoundDetailsRetry": "Couldn’t save those details. Tap to retry.",
+  "savedSoundFallbackTitle": "Saved sound",
+  "savedSoundPreviewAction": "Preview sound",
+  "savedSoundEditAction": "Edit sound details",
+  "savedSoundRemoveAction": "Remove saved sound",
+  "savedSoundClearHashtagFilter": "Clear hashtag filter",
+  "soundAllowRemix": "Allow others to remix this sound",
+  "soundPublicCredit": "Public sound credit",
+  "soundSharedAs": "Shared as",
+  "soundOwnWork": "I made this sound",
+  "soundCreatorBy": "By {creator}",
+  "@soundCreatorBy": {
+    "placeholders": {
+      "creator": {"type": "String"}
+    }
+  },
+  "soundSharedBy": "Shared by {publisher}",
+  "@soundSharedBy": {
+    "placeholders": {
+      "publisher": {"type": "String"}
+    }
+  },
+  "soundRemixingAllowed": "Remixing allowed",
+  "soundCreditOnly": "Credit only",
+  "soundCreditTitleLabel": "Sound title",
+  "soundCreditCreatorLabel": "Creator",
+  "soundCreditSourceUrlLabel": "Source URL",
+  "soundCreditPublicHashtagsLabel": "Public hashtags"
 }

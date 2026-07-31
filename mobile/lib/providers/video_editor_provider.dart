@@ -13,6 +13,7 @@ import 'package:models/models.dart'
     show AudioEvent, InspiredByInfo, NativeProofData, VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/complete_parameters_extensions.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
@@ -410,6 +411,16 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Update durable public credit for audio shared with the current post.
+  void setAudioShareAttribution(AudioShareAttribution? attribution) {
+    if (state.audioShareAttribution == attribution) return;
+    state = state.copyWith(
+      audioShareAttribution: attribution,
+      clearAudioShareAttribution: attribution == null,
+    );
+    triggerAutosave();
+  }
+
   /// Set whether a video reply should also be eligible for normal feed display.
   void setShareReplyToFeed(bool shareReplyToFeed) {
     if (state.shareReplyToFeed == shareReplyToFeed) return;
@@ -479,6 +490,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       selectedSound: sound,
       clearSelectedSound: sound == null,
       seedSelectedSoundAsAudioTrack: false,
+      clearAudioShareAttribution: true,
     );
     invalidateFinalRenderedClip();
     triggerAutosave();
@@ -499,6 +511,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       selectedSound: sound,
       clearSelectedSound: sound == null,
       seedSelectedSoundAsAudioTrack: sound != null,
+      clearAudioShareAttribution: true,
     );
     invalidateFinalRenderedClip();
     triggerAutosave();
@@ -506,7 +519,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Clear the currently selected sound.
   void clearSound() {
-    state = state.copyWith(clearSelectedSound: true);
+    state = state.copyWith(
+      clearSelectedSound: true,
+      clearAudioShareAttribution: true,
+    );
     invalidateFinalRenderedClip();
     triggerAutosave();
   }
@@ -559,6 +575,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       description: state.description,
       hashtags: state.tags,
       allowAudioReuse: state.allowAudioReuse,
+      audioShareAttribution: state.audioShareAttribution,
       expireTime: state.expiration.value,
       selectedApproach: 'video',
       editorStateHistory: state.editorStateHistory,
@@ -1024,6 +1041,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       description: draft.description,
       tags: draft.hashtags,
       allowAudioReuse: draft.allowAudioReuse,
+      audioShareAttribution: draft.audioShareAttribution,
       shareReplyToFeed: draft.shareReplyToFeed,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,

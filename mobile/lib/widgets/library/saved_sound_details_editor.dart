@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/saved_sound.dart';
 
 class SavedSoundDetailsEditor extends StatefulWidget {
@@ -132,7 +133,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
             key: const Key('saved_sound_label_field'),
             controller: _labelController,
             focusNode: _labelFocus,
-            labelText: 'Your label',
+            labelText: context.l10n.savedSoundYourLabel,
             spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
             onChanged: (_) => _scheduleSave(),
           ),
@@ -141,7 +142,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
             key: const Key('saved_sound_hashtag_field'),
             controller: _hashtagController,
             focusNode: _hashtagFocus,
-            labelText: 'Add hashtags',
+            labelText: context.l10n.savedSoundAddHashtags,
             textInputAction: TextInputAction.done,
             autocorrect: false,
             spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
@@ -165,7 +166,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
           ],
           const SizedBox(height: 8),
           Text(
-            'Saved on this device',
+            context.l10n.savedSoundDeviceOnly,
             style: VineTheme.labelSmallFont(
               color: VineTheme.onSurfaceVariant,
             ),
@@ -173,7 +174,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
           if (hasSaveError)
             DivineButton(
               key: const Key('saved_sound_details_retry'),
-              label: 'Couldn’t save those details. Tap to retry.',
+              label: context.l10n.savedSoundDetailsRetry,
               type: DivineButtonType.link,
               size: DivineButtonSize.small,
               onPressed: _saveNow,

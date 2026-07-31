@@ -347,17 +347,22 @@ class _SavedSoundsSection extends StatelessWidget {
               runSpacing: 8,
               children: [
                 for (final hashtag in hashtags)
-                  FilterChip(
-                    key: Key('saved_sound_filter_$hashtag'),
-                    label: Text('#$hashtag'),
-                    selected: state.selectedHashtag == hashtag,
-                    onSelected: (selected) {
-                      context.read<SavedSoundsBloc>().add(
-                        SavedSoundsHashtagSelected(
-                          selected ? hashtag : null,
-                        ),
-                      );
-                    },
+                  Semantics(
+                    label: state.selectedHashtag == hashtag
+                        ? context.l10n.savedSoundClearHashtagFilter
+                        : '#$hashtag',
+                    child: FilterChip(
+                      key: Key('saved_sound_filter_$hashtag'),
+                      label: Text('#$hashtag'),
+                      selected: state.selectedHashtag == hashtag,
+                      onSelected: (selected) {
+                        context.read<SavedSoundsBloc>().add(
+                          SavedSoundsHashtagSelected(
+                            selected ? hashtag : null,
+                          ),
+                        );
+                      },
+                    ),
                   ),
               ],
             ),

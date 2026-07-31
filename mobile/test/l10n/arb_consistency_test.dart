@@ -243,7 +243,31 @@ void main() {
 }
 
 // Add keys here only when a translation pass is intentionally deferred.
-const _knownUntranslatedDebt = <String>{};
+const _knownUntranslatedDebt = <String>{
+  // Saved-sound organization and public-credit copy; translation is deferred
+  // to the next sound-library localization pass.
+  'savedSoundYourLabel',
+  'savedSoundAddHashtags',
+  'savedSoundDeviceOnly',
+  'savedSoundDetailsRetry',
+  'savedSoundFallbackTitle',
+  'savedSoundPreviewAction',
+  'savedSoundEditAction',
+  'savedSoundRemoveAction',
+  'savedSoundClearHashtagFilter',
+  'soundAllowRemix',
+  'soundPublicCredit',
+  'soundSharedAs',
+  'soundOwnWork',
+  'soundCreatorBy',
+  'soundSharedBy',
+  'soundRemixingAllowed',
+  'soundCreditOnly',
+  'soundCreditTitleLabel',
+  'soundCreditCreatorLabel',
+  'soundCreditSourceUrlLabel',
+  'soundCreditPublicHashtagsLabel',
+};
 
 const _signatureVerificationKeys = <String>{
   'nostrSettingsSignatureVerification',
