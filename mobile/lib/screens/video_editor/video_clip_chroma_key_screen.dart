@@ -299,7 +299,7 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
         // system back gesture waits with everything else.
         canPop: !isBaking,
         child: Scaffold(
-          backgroundColor: VineTheme.surfaceBackground,
+          backgroundColor: context.vineColors.surfaceContainerHigh,
           body: SafeArea(
             child: MultiBlocListener(
               listeners: [
@@ -347,7 +347,7 @@ class _VideoClipChromaKeyScreenState extends State<VideoClipChromaKeyScreen> {
                         center: Text(
                           context.l10n.videoEditorChromaKeyTitle,
                           style: VineTheme.titleMediumFont(
-                            color: VineTheme.onSurface,
+                            color: context.vineColors.onSurface,
                           ),
                         ),
                       ),
