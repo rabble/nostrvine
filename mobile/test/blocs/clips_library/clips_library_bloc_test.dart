@@ -1096,7 +1096,18 @@ void main() {
           selectedDuration: const Duration(seconds: 1),
         ),
         build: createBloc,
-        act: (bloc) => bloc.add(const ClipsLibrarySaveToGallery()),
+        // Wait for the save-result state before asserting on disk. The cleanup
+        // runs in the save loop's `finally`, which the handler awaits before
+        // emitting that state — but `blocTest` closes the bloc without waiting
+        // for an in-flight handler, so a bare `add` would race the real (async)
+        // file delete and see the mp4 still there.
+        act: (bloc) async {
+          final saved = bloc.stream.firstWhere(
+            (s) => s.lastGallerySaveResult is GallerySaveResultSuccess,
+          );
+          bloc.add(const ClipsLibrarySaveToGallery());
+          await saved;
+        },
         verify: (_) {
           final captured =
               verify(
