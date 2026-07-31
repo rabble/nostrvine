@@ -206,6 +206,10 @@ class VideoPublishService {
   /// Reached once mentions and subtitle assets are resolved.
   static const double _progressAfterMetadata = 0.88;
 
+  /// Reached once the Nostr event is signed. Signing is a remote Keycast
+  /// round-trip, so it is worth its own step inside the publish phase.
+  static const double _progressAfterSigning = 0.92;
+
   /// Reached once the Nostr event is accepted.
   static const double _progressAfterNostr = 0.97;
 
@@ -382,6 +386,10 @@ class VideoPublishService {
           textTrackLang: captionTrack != null
               ? _languageCode(captionTrack.languageTag)
               : 'en',
+          onEventSigned: () => onProgressChanged(
+            draftId: draft.id,
+            progress: _progressAfterSigning,
+          ),
         ),
       );
 

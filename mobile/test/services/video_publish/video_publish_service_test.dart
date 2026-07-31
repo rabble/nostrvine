@@ -178,9 +178,16 @@ void main() {
             addReplyToFeed: any(named: 'addReplyToFeed'),
             textTrackRefs: any(named: 'textTrackRefs'),
             textTrackLang: any(named: 'textTrackLang'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
-        ).thenAnswer((_) async {
+        ).thenAnswer((invocation) async {
           beforeEvent = List<double>.of(progressChanges);
+          // Standing in for the publisher: it reports back once the event is
+          // signed, part-way through a phase that measured ~1.5s on device.
+          // If the callback ever stops being forwarded down the publisher's
+          // three-deep call chain, the step assertion below fails.
+          (invocation.namedArguments[#onEventSigned] as void Function()?)
+              ?.call();
           return true;
         });
 
@@ -198,6 +205,11 @@ void main() {
           );
         }
         expect(progressChanges.last, equals(1.0));
+        expect(
+          progressChanges,
+          contains(0.92),
+          reason: 'the signing step never reached the bar',
+        );
         for (var i = 1; i < progressChanges.length; i++) {
           expect(
             progressChanges[i],
@@ -651,6 +663,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           );
         },
@@ -734,6 +747,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           ).called(1);
         },
@@ -818,6 +832,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           ).called(1);
         },
@@ -863,6 +878,7 @@ void main() {
             thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
             replyContext: any(named: 'replyContext'),
             addReplyToFeed: any(named: 'addReplyToFeed'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         )..called(1);
         expect(captured.captured.single, isEmpty);
@@ -1008,6 +1024,7 @@ void main() {
               thumbnailTimestamp: any(named: 'thumbnailTimestamp'),
               replyContext: any(named: 'replyContext'),
               addReplyToFeed: any(named: 'addReplyToFeed'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
             () => mockCollaboratorInviteService.sendInvites(
               collaboratorPubkeys: any(named: 'collaboratorPubkeys'),
@@ -1054,6 +1071,7 @@ void main() {
               expirationTimestamp: any(named: 'expirationTimestamp'),
               allowAudioReuse: any(named: 'allowAudioReuse'),
               selectedAudio: any(named: 'selectedAudio'),
+              onEventSigned: any(named: 'onEventSigned'),
             ),
           ).thenAnswer((_) async => false);
           when(
@@ -1220,6 +1238,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => false);
         when(
@@ -1287,6 +1306,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1379,6 +1399,7 @@ void main() {
             title: any(named: 'title'),
             description: any(named: 'description'),
             hashtags: any(named: 'hashtags'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         );
       });
@@ -1412,6 +1433,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -1500,6 +1522,7 @@ void main() {
             expirationTimestamp: any(named: 'expirationTimestamp'),
             allowAudioReuse: any(named: 'allowAudioReuse'),
             selectedAudio: any(named: 'selectedAudio'),
+            onEventSigned: any(named: 'onEventSigned'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -2063,6 +2086,7 @@ Future<bool> _verifyPublishVideoEvent(
   addReplyToFeed: any(named: 'addReplyToFeed'),
   textTrackRefs: textTrackRefs,
   textTrackLang: textTrackLang,
+  onEventSigned: any(named: 'onEventSigned'),
 );
 
 DivineVideoDraft _createTestDraft({
@@ -2150,6 +2174,7 @@ void _setupSuccessfulPublish({
       addReplyToFeed: any(named: 'addReplyToFeed'),
       textTrackRefs: any(named: 'textTrackRefs'),
       textTrackLang: any(named: 'textTrackLang'),
+      onEventSigned: any(named: 'onEventSigned'),
     ),
   ).thenAnswer((_) async => true);
 }

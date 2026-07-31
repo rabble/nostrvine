@@ -830,6 +830,7 @@ class VideoEventPublisher {
     bool addReplyToFeed = false,
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
+    void Function()? onEventSigned,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -857,6 +858,7 @@ class VideoEventPublisher {
       addReplyToFeed: addReplyToFeed,
       textTrackRefs: textTrackRefs,
       textTrackLang: textTrackLang,
+      onEventSigned: onEventSigned,
     );
   }
 
@@ -887,6 +889,7 @@ class VideoEventPublisher {
     bool addReplyToFeed = false,
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
+    void Function()? onEventSigned,
   }) async {
     final videoId = upload.videoId;
     if (videoId == null || upload.cdnUrl == null) {
@@ -928,6 +931,7 @@ class VideoEventPublisher {
       addReplyToFeed: addReplyToFeed,
       textTrackRefs: textTrackRefs,
       textTrackLang: textTrackLang,
+      onEventSigned: onEventSigned,
     );
     _inFlightDirectPublishes[videoId] = publish;
     try {
@@ -962,6 +966,7 @@ class VideoEventPublisher {
     bool addReplyToFeed = false,
     List<String> textTrackRefs = const [],
     String textTrackLang = 'en',
+    void Function()? onEventSigned,
   }) async {
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
     // This prevents local file paths from being published to Nostr
@@ -1628,6 +1633,9 @@ class VideoEventPublisher {
         signWatch.elapsed,
         detail: reusedEvent != null ? 'reused' : 'signed',
       );
+      // Signing is a remote Keycast round-trip (~0.3-1.4s measured), so the
+      // caller gets a step here rather than waiting out the whole phase.
+      onEventSigned?.call();
 
       if (event == null) {
         Log.error(
