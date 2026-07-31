@@ -26,6 +26,9 @@ void main() {
 
     const claimRouteMarker = 'NIP05 CLAIM ROUTE';
     const returnFromClaimFlow = 'Return from claim flow';
+    const homePath = '/';
+    const openSettings = 'Open Bluesky settings';
+    late GoRouter router;
 
     setUp(() {
       authService = _MockAuthService();
@@ -43,10 +46,19 @@ void main() {
       );
     });
 
-    Widget buildApp() {
-      final router = GoRouter(
-        initialLocation: BlueskySettingsScreen.path,
+    Widget buildApp({bool startAtHome = false}) {
+      router = GoRouter(
+        initialLocation: startAtHome ? homePath : BlueskySettingsScreen.path,
         routes: [
+          GoRoute(
+            path: homePath,
+            builder: (context, _) => Scaffold(
+              body: TextButton(
+                onPressed: () => context.push(BlueskySettingsScreen.path),
+                child: const Text(openSettings),
+              ),
+            ),
+          ),
           GoRoute(
             path: BlueskySettingsScreen.path,
             builder: (_, _) => const BlueskySettingsScreen(),
@@ -300,6 +312,44 @@ void main() {
           find.widgetWithText(TextButton, l10n.blueskySetUpHandle),
           findsNothing,
         );
+      },
+    );
+
+    testWidgets(
+      'snackbar claim action survives the settings route being popped',
+      (tester) async {
+        when(
+          () => profileRepository.lookupUsernameByPubkey(
+            pubkeyHex: any(named: 'pubkeyHex'),
+          ),
+        ).thenAnswer((_) async => const DivineUsernameNotFound());
+        when(() => apiClient.getStatus()).thenAnswer(
+          (_) async => const CrosspostStatus(crosspostEnabled: false),
+        );
+
+        await tester.pumpWidget(buildApp(startAtHome: true));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(openSettings));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(Switch));
+        await tester.pumpAndSettle();
+        expect(find.byType(SnackBarAction), findsOneWidget);
+
+        // The root ScaffoldMessenger sits above the Navigator, so the snackbar
+        // migrates to the previous route's Scaffold instead of going away.
+        router.pop();
+        await tester.pumpAndSettle();
+        expect(find.text(openSettings), findsOneWidget);
+        expect(find.byType(SnackBarAction), findsOneWidget);
+
+        await tester.tap(find.text(l10n.blueskySetUpHandle).last);
+        await tester.pumpAndSettle();
+
+        // The action is inert rather than throwing on the defunct context.
+        expect(tester.takeException(), isNull);
+        expect(find.text(claimRouteMarker), findsNothing);
       },
     );
 

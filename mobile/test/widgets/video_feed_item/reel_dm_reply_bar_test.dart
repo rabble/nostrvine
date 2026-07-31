@@ -6,11 +6,13 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
 
@@ -93,6 +95,34 @@ void main() {
       ),
     ),
   );
+
+  /// The bar under a switch, so a test can take it out of the tree the way
+  /// scrolling to the next reel does.
+  Widget toggleableBarApp(ValueNotifier<bool> barVisible, DmReplyContext ctx) =>
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (inner) => MediaQuery(
+                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: barVisible,
+                  builder: (_, visible, _) => visible
+                      ? ReelDmReplyBarHost(dmReplyContext: ctx)
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
   testWidgets('renders composer + the 6 quick emojis + picker button', (
     tester,
@@ -436,5 +466,211 @@ void main() {
       ),
     ).called(1);
     expect(reacted, isNull);
+  });
+
+  testWidgets('retry action closes when the bar leaves the tree', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenThrow(Exception('send failed'));
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+
+    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text(l10n.dmSendFailedRetry), findsNothing);
+
+    expect(tester.takeException(), isNull);
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'hello',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+  });
+
+  testWidgets('leaves a queued retry snackbar for whatever is on screen', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenThrow(Exception('send failed'));
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+
+    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+    await tester.pump();
+
+    // Something else on the reel route got to the messenger first, so the
+    // retry snackbar queues behind it instead of showing.
+    tester
+        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger).first)
+        .showSnackBar(
+          const SnackBar(
+            content: Text('unrelated'),
+            duration: Duration(seconds: 30),
+          ),
+        );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+
+    // Closing a queued snackbar would have dismissed this one instead.
+    expect(tester.takeException(), isNull);
+    expect(find.text('unrelated'), findsOneWidget);
+  });
+
+  testWidgets('closes the retry snackbar when navigation is accessible', (
+    tester,
+  ) async {
+    // The messenger skips the exit animation in this mode and rebuilds
+    // synchronously, which the framework rejects while it is unmounting the
+    // bar unless the close is deferred past the state lock.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(accessibleNavigation: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenThrow(Exception('send failed'));
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+
+    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(l10n.dmSendFailedRetry), findsNothing);
+  });
+
+  testWidgets('view chat action navigates after the bar leaves the tree', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: _peer,
+      ),
+    );
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+    final dmContext = context();
+
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, _) => Scaffold(
+            body: Builder(
+              builder: (inner) => MediaQuery(
+                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: barVisible,
+                  builder: (_, visible, _) => visible
+                      ? ReelDmReplyBarHost(dmReplyContext: dmContext)
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: ConversationPage.pathPattern,
+          builder: (_, state) => Scaffold(
+            body: Text('conversation ${state.pathParameters['id']}'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+
+    await tester.tap(find.text(l10n.dmReelReplyViewChat));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('conversation convo-id'), findsOneWidget);
   });
 }

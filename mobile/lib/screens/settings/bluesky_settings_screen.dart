@@ -117,6 +117,13 @@ class _BlueskySettingsView extends StatelessWidget {
     if (state.status != CrosspostSettingsStatus.failure) return;
 
     final messenger = ScaffoldMessenger.of(context);
+    // Captured here, while the route is still mounted. The root
+    // ScaffoldMessenger lives above the Navigator, so this snackbar outlives a
+    // pop — reading the cubit off [context] inside the action would then hit a
+    // defunct element, whose inherited-widget map the framework has already
+    // cleared.
+    final cubit = context.read<CrosspostSettingsCubit>();
+    final router = GoRouter.of(context);
     switch (state.error) {
       case CrosspostSettingsError.usernameNotClaimed:
         messenger.showSnackBar(
@@ -127,8 +134,11 @@ class _BlueskySettingsView extends StatelessWidget {
               label: context.l10n.blueskySetUpHandle,
               textColor: context.vineColors.primaryText,
               onPressed: () {
-                context.read<CrosspostSettingsCubit>().acknowledgeError();
-                unawaited(_openClaimFlowAndRefresh(context));
+                // BlocProvider closes the cubit when the route pops, so this
+                // tracks whether the screen the action refers to still exists.
+                if (cubit.isClosed) return;
+                cubit.acknowledgeError();
+                unawaited(_openClaimFlowAndRefresh(router, cubit));
               },
             ),
           ),
@@ -206,7 +216,12 @@ class _UsernameRequiredNotice extends StatelessWidget {
         style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
       ),
       trailing: TextButton(
-        onPressed: () => unawaited(_openClaimFlowAndRefresh(context)),
+        onPressed: () => unawaited(
+          _openClaimFlowAndRefresh(
+            GoRouter.of(context),
+            context.read<CrosspostSettingsCubit>(),
+          ),
+        ),
         child: Text(
           context.l10n.blueskySetUpHandle,
           style: const TextStyle(color: VineTheme.vineGreen),
@@ -216,10 +231,12 @@ class _UsernameRequiredNotice extends StatelessWidget {
   }
 }
 
-Future<void> _openClaimFlowAndRefresh(BuildContext context) async {
-  final cubit = context.read<CrosspostSettingsCubit>();
-  await context.push(Nip05SettingsScreen.path);
-  if (!context.mounted) return;
+Future<void> _openClaimFlowAndRefresh(
+  GoRouter router,
+  CrosspostSettingsCubit cubit,
+) async {
+  await router.push(Nip05SettingsScreen.path);
+  if (cubit.isClosed) return;
   await cubit.loadStatus();
 }
 

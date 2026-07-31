@@ -160,6 +160,19 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   /// Optimistically-selected emoji, highlighted immediately on tap.
   String? _optimisticEmoji;
 
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+  _retrySnackBarController;
+
+  /// Whether the retry snackbar reached the front of the messenger's queue.
+  ///
+  /// `close()` asserts the controller it belongs to is that front entry, so one
+  /// still waiting behind another snackbar must be left alone.
+  bool _retrySnackBarVisible = false;
+
+  /// Captured while mounted so the deferred close in [dispose] can check the
+  /// messenger is still alive without a lookup on a defunct element.
+  ScaffoldMessengerState? _messenger;
+
   DmReplyContext get _ctx => widget.dmReplyContext;
 
   @override
@@ -175,8 +188,15 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _messenger = ScaffoldMessenger.of(context);
+  }
+
+  @override
   void dispose() {
     _throttleTimer?.cancel();
+    _closeRetrySnackBar(deferred: true);
     _controller
       ..removeListener(_handleTextChanged)
       ..dispose();
@@ -302,16 +322,22 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     }
   }
 
-  void _openChat() {
-    context.push(
-      ConversationPage.pathForId(_ctx.conversationId),
-      extra: _ctx.participantPubkeys,
-    );
+  void _openChat(
+    GoRouter router, {
+    required String conversationPath,
+    required List<String> participantPubkeys,
+  }) {
+    router.push(conversationPath, extra: participantPubkeys);
   }
 
   void _onReplyOutcome(InlineReelReplyState state) {
     final draft = _pendingDraft;
     _pendingDraft = '';
+
+    // Captured while the bar is still mounted. Snackbars are hosted by the root
+    // ScaffoldMessenger, above the Navigator, so their actions can fire after
+    // the player route is gone and this element is defunct.
+    final cubit = context.read<InlineReelReplyCubit>();
 
     if (state.status == InlineReelReplyStatus.failure) {
       // Restore the draft so the user can retry without retyping.
@@ -320,45 +346,102 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
         _controller.selection = TextSelection.collapsed(offset: draft.length);
       }
       _announce(context.l10n.dmReelReplyFailed);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.dmReelReplyFailed),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: context.l10n.dmSendFailedRetry,
-              onPressed: () {
-                if (draft.isNotEmpty) {
-                  _pendingDraft = draft;
-                  context.read<InlineReelReplyCubit>().submit(draft);
-                  _controller.clear();
-                }
-              },
-            ),
+      _showRetrySnackBar(
+        (markVisible) => SnackBar(
+          content: Text(context.l10n.dmReelReplyFailed),
+          behavior: SnackBarBehavior.floating,
+          onVisible: markVisible,
+          action: SnackBarAction(
+            label: context.l10n.dmSendFailedRetry,
+            onPressed: () {
+              // `mounted` also guards `_controller`, which dispose() tears
+              // down along with the rest of this State.
+              if (draft.isEmpty || !mounted || cubit.isClosed) return;
+              _pendingDraft = draft;
+              cubit.submit(draft);
+              _controller.clear();
+            },
           ),
-        );
+        ),
+      );
     } else {
+      final router = GoRouter.maybeOf(context);
+      final conversationPath = ConversationPage.pathForId(_ctx.conversationId);
+      final participantPubkeys = List<String>.of(_ctx.participantPubkeys);
       _announce(context.l10n.dmReelReplySentAnnouncement);
       ScreenAnalyticsService().trackInteraction(
         ReelReplyConstants.analyticsScreen,
         'dm_reel_reply_sent',
         params: {'is_group': _ctx.isGroup ? 1 : 0},
       );
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareSent),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: context.l10n.dmReelReplyViewChat,
-              onPressed: _openChat,
-            ),
-          ),
-        );
+      _closeRetrySnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.shareSent),
+          behavior: SnackBarBehavior.floating,
+          action: router == null
+              ? null
+              : SnackBarAction(
+                  label: context.l10n.dmReelReplyViewChat,
+                  onPressed: () => _openChat(
+                    router,
+                    conversationPath: conversationPath,
+                    participantPubkeys: participantPubkeys,
+                  ),
+                ),
+        ),
+      );
     }
-    context.read<InlineReelReplyCubit>().acknowledge();
+    cubit.acknowledge();
+  }
+
+  void _showRetrySnackBar(
+    SnackBar Function(VoidCallback markVisible) buildSnackBar,
+  ) {
+    _closeRetrySnackBar();
+    late ScaffoldFeatureController<SnackBar, SnackBarClosedReason> controller;
+    controller = ScaffoldMessenger.of(context).showSnackBar(
+      buildSnackBar(() {
+        if (_retrySnackBarController == controller) {
+          _retrySnackBarVisible = true;
+        }
+      }),
+    );
+    _retrySnackBarController = controller;
+    _retrySnackBarVisible = false;
+    unawaited(
+      controller.closed.then((_) {
+        if (_retrySnackBarController == controller) {
+          _retrySnackBarController = null;
+          _retrySnackBarVisible = false;
+        }
+      }),
+    );
+  }
+
+  /// Dismisses the retry snackbar so its now-inert CTA leaves with the bar.
+  ///
+  /// Left alone while it is still queued behind another snackbar: `close()`
+  /// asserts it is the front of the messenger's queue, and without the assert
+  /// it dismisses whichever snackbar *is* in front. The action is harmless
+  /// either way — it checks `mounted` before touching anything.
+  ///
+  /// From [dispose] the close must be [deferred]. Under `accessibleNavigation`
+  /// the messenger skips the exit animation and rebuilds synchronously, which
+  /// the framework forbids while it holds the state lock to unmount us.
+  void _closeRetrySnackBar({bool deferred = false}) {
+    final controller = _retrySnackBarController;
+    if (controller == null || !_retrySnackBarVisible) return;
+    _retrySnackBarController = null;
+    _retrySnackBarVisible = false;
+    if (!deferred) {
+      controller.close();
+      return;
+    }
+    final messenger = _messenger;
+    scheduleMicrotask(() {
+      if (messenger?.mounted ?? false) controller.close();
+    });
   }
 
   void _announce(String message) {
