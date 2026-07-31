@@ -5095,9 +5095,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Din nyckel förvaras av Divines inloggningstjänst. Ange kontots lösenord så hämtar vi den.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Hämta min nyckel';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Kopiera nyckel';
 
   @override
@@ -5127,9 +5124,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Det finns ingen nyckel registrerad för det här kontot.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Din privata nyckel (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

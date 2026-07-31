@@ -5164,9 +5164,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ta clé est conservée par le service de connexion de Divine. Saisis le mot de passe de ton compte et on va la chercher.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Récupérer ma clé';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Copier la clé';
 
   @override
@@ -5196,9 +5193,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Aucune clé n\'est enregistrée pour ce compte.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Ta clé privée (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

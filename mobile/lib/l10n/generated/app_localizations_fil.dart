@@ -5161,9 +5161,6 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo at kukunin namin ito.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Kunin ang key ko';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Kopyahin ang key';
 
   @override
@@ -5193,9 +5190,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Walang key na nakatala para sa account na ito.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Ang private key mo (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

@@ -8858,19 +8858,13 @@ abstract class AppLocalizations {
   /// **'Your key lives on Divine\'s login service, not on this device. Confirm your password and we\'ll fetch it for you.'**
   String get keyManagementKeycastRemoteSigning;
 
-  /// Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Says fetch rather than copy because confirming only brings the key back; a second step shows it and copies it.
+  /// Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Confirming copies the key straight to the clipboard; it is never shown on screen.
   ///
   /// In en, this message translates to:
   /// **'Your key is kept by Divine\'s login service. Enter your account password and we\'ll fetch it.'**
   String get keyManagementKeycastPasswordPrompt;
 
-  /// Confirm button in the password step. It fetches the private key from Divine's login service and moves to the step that shows it; it does not copy anything itself.
-  ///
-  /// In en, this message translates to:
-  /// **'Get my key'**
-  String get keyManagementKeycastFetchKey;
-
-  /// Button on the step that shows the fetched private key; copies it to the clipboard.
+  /// Confirm button in the password sheet. Confirming fetches the private key from Divine's login service and copies it straight to the clipboard; the key is never shown on screen.
   ///
   /// In en, this message translates to:
   /// **'Copy key'**
@@ -8917,12 +8911,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'There\'s no key on record for this account.'**
   String get keyManagementKeycastNoKey;
-
-  /// Label on the read-only field that shows the fetched private key. The value is hidden until the user taps the reveal control.
-  ///
-  /// In en, this message translates to:
-  /// **'Your private key (nsec)'**
-  String get keyManagementYourPrivateKeyLabel;
 
   /// Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence.
   ///

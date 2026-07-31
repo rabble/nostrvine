@@ -4860,9 +4860,6 @@ class AppLocalizationsJa extends AppLocalizations {
       '鍵は Divine のログインサービスが保管しています。アカウントのパスワードを入力すれば取得します。';
 
   @override
-  String get keyManagementKeycastFetchKey => '鍵を取得';
-
-  @override
   String get keyManagementKeycastCopyKey => '鍵をコピー';
 
   @override
@@ -4890,9 +4887,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementKeycastNoKey => 'このアカウントに登録されている鍵はありません。';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'あなたの秘密鍵 (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure => 'ログインサービスに接続できませんでした';

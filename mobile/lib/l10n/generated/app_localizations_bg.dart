@@ -5147,9 +5147,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Ключът ти се съхранява от услугата за вход на Divine. Въведи паролата на профила си и ще го изтеглим.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Вземи ключа ми';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Копирай ключа';
 
   @override
@@ -5178,9 +5175,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastNoKey => 'За този профил няма записан ключ.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Твоят частен ключ (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

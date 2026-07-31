@@ -5240,9 +5240,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Cheia ta este păstrată de serviciul de autentificare Divine. Introdu parola contului și o aducem.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Adu cheia mea';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Copiază cheia';
 
   @override
@@ -5272,9 +5269,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Nu există nicio cheie înregistrată pentru acest cont.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Cheia ta privată (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

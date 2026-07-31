@@ -2860,15 +2860,11 @@
   },
   "keyManagementKeycastPasswordPrompt": "Your key is kept by Divine's login service. Enter your account password and we'll fetch it.",
   "@keyManagementKeycastPasswordPrompt": {
-    "description": "Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Says fetch rather than copy because confirming only brings the key back; a second step shows it and copies it."
-  },
-  "keyManagementKeycastFetchKey": "Get my key",
-  "@keyManagementKeycastFetchKey": {
-    "description": "Confirm button in the password step. It fetches the private key from Divine's login service and moves to the step that shows it; it does not copy anything itself."
+    "description": "Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Confirming copies the key straight to the clipboard; it is never shown on screen."
   },
   "keyManagementKeycastCopyKey": "Copy key",
   "@keyManagementKeycastCopyKey": {
-    "description": "Button on the step that shows the fetched private key; copies it to the clipboard."
+    "description": "Confirm button in the password sheet. Confirming fetches the private key from Divine's login service and copies it straight to the clipboard; the key is never shown on screen."
   },
   "keyManagementKeycastWrongPassword": "That password doesn't match. Try again.",
   "@keyManagementKeycastWrongPassword": {
@@ -2897,10 +2893,6 @@
   "keyManagementKeycastNoKey": "There's no key on record for this account.",
   "@keyManagementKeycastNoKey": {
     "description": "Error shown when the login service answers definitively that it holds no exportable key for this account, so retrying will not help."
-  },
-  "keyManagementYourPrivateKeyLabel": "Your private key (nsec)",
-  "@keyManagementYourPrivateKeyLabel": {
-    "description": "Label on the read-only field that shows the fetched private key. The value is hidden until the user taps the reveal control."
   },
   "keyManagementKeycastGenericFailure": "the login service could not be reached",
   "@keyManagementKeycastGenericFailure": {

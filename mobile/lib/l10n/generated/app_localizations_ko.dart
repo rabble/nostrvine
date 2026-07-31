@@ -4878,9 +4878,6 @@ class AppLocalizationsKo extends AppLocalizations {
       '키는 Divine 로그인 서비스가 보관합니다. 계정 비밀번호를 입력하면 가져옵니다.';
 
   @override
-  String get keyManagementKeycastFetchKey => '키 가져오기';
-
-  @override
   String get keyManagementKeycastCopyKey => '키 복사';
 
   @override
@@ -4907,9 +4904,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastNoKey => '이 계정에 등록된 키가 없어요.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => '내 비밀 키 (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure => '로그인 서비스에 연결할 수 없습니다';

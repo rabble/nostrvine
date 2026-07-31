@@ -5097,9 +5097,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your key is kept by Divine\'s login service. Enter your account password and we\'ll fetch it.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Get my key';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Copy key';
 
   @override
@@ -5129,9 +5126,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'There\'s no key on record for this account.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Your private key (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

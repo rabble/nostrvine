@@ -5231,9 +5231,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Twój klucz przechowuje serwis logowania Divine. Podaj hasło do konta, a go pobierzemy.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Pobierz mój klucz';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Kopiuj klucz';
 
   @override
@@ -5263,9 +5260,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Dla tego konta nie ma zapisanego klucza.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Twój klucz prywatny (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

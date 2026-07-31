@@ -5069,9 +5069,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Anahtarın Divine\'ın giriş servisinde tutuluyor. Hesap şifreni gir, biz de getirelim.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Anahtarımı getir';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Anahtarı kopyala';
 
   @override
@@ -5101,9 +5098,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Bu hesap için kayıtlı bir anahtar yok.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Özel anahtarın (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

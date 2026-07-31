@@ -19,9 +19,10 @@ import 'package:openvine/utils/clipboard_utils.dart';
 /// preconditions server-side — a verified email, and the `verified_minor`
 /// custody refusal — so nothing here is a way around them.
 ///
-/// Nothing is stored: the key goes from the response to the sheet that shows
-/// it and to the clipboard the user asked for, and is never written to disk or
-/// logged.
+/// Nothing is stored and nothing is shown: the key goes from the response
+/// straight to the clipboard the user asked for, and is never rendered,
+/// written to disk, or logged. The clipboard is therefore the only route to
+/// it — a deliberate trade for keeping key material out of every frame.
 class KeycastKeyExportCard extends ConsumerWidget {
   const KeycastKeyExportCard({super.key});
 
@@ -90,8 +91,9 @@ class KeycastKeyExportCard extends ConsumerWidget {
     );
 
     // The sheet returns a value only when it has a refusal to report: a wrong
-    // password stays inline, and on success the key is shown and copied inside
-    // the sheet, so neither comes back here.
+    // password stays inline, and a success copies the key and confirms it from
+    // inside the sheet. The key itself never crosses this boundary, so there is
+    // nothing here to hold or render.
     if (result == null || !context.mounted) return;
 
     final l10n = context.l10n;
@@ -126,19 +128,17 @@ class KeycastKeyExportCard extends ConsumerWidget {
   }
 }
 
-/// The two steps behind the export: confirm the account password, then show the
-/// key it returned.
+/// The password confirmation behind the export.
 ///
 /// The export runs here rather than in the caller so a wrong password can stay
 /// inline — the field keeps its place and contents, and the retry costs one
 /// keystroke instead of a reopen. Any refusal a retry cannot clear pops with the
 /// result for the caller to report.
 ///
-/// The key is shown rather than only copied, because a device that blocks
-/// clipboard access would otherwise leave the owner with no way to reach it. It
-/// is hidden behind the field's own reveal control by default, and lives only in
-/// a controller that is disposed with the sheet — never written to disk, cached,
-/// or logged. Same for the password.
+/// A success copies the key and closes: it is never rendered, never held in a
+/// controller, and never handed back through the pop, so no frame of this flow
+/// contains key material to screenshot or record. The password is the same — it
+/// lives only in a controller disposed with the sheet.
 class _KeycastKeyExportFlow extends ConsumerStatefulWidget {
   const _KeycastKeyExportFlow();
 
@@ -163,7 +163,6 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
   static const int _maxAttempts = 5;
 
   final _passwordController = TextEditingController();
-  final _keyController = TextEditingController();
   bool _submitting = false;
   String? _errorText;
 
@@ -174,15 +173,9 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
   /// disabled until the sheet is dismissed.
   bool _lockedOut = false;
 
-  /// True once the key has been fetched, which swaps the password step for the
-  /// reveal step.
-  bool _fetched = false;
-
   @override
   void dispose() {
     _passwordController.dispose();
-    // Drops the only in-memory copy of the key material with the sheet.
-    _keyController.dispose();
     super.dispose();
   }
 
@@ -209,14 +202,24 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
     if (!mounted) return;
 
     if (result.success && result.key != null) {
-      setState(() {
-        _submitting = false;
-        _keyController.text = result.key!;
-        _fetched = true;
-        // The password has done its job; do not keep it alive behind the
-        // revealed key.
-        _passwordController.clear();
-      });
+      // Straight from the response to the clipboard: the key never reaches a
+      // controller and never rebuilds into the tree, so no frame holds it. The
+      // spinner stays up through the copy, which also blocks a second tap.
+      // Copy before the pop — the confirmation goes through this context, and a
+      // popped sheet's context is unmounted.
+      try {
+        await ClipboardUtils.copy(
+          context,
+          result.key!,
+          message: l10n.keyManagementExportSuccess,
+        );
+      } finally {
+        // Closed either way: both actions are disabled while submitting, so a
+        // clipboard that throws would otherwise strand the sheet with nothing
+        // left to tap. Nothing is handed back — the caller reports refusals,
+        // and this success has already reported itself.
+        if (mounted) Navigator.of(context).pop();
+      }
       return;
     }
 
@@ -242,14 +245,6 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
     Navigator.of(context).pop(result);
   }
 
-  Future<void> _copyKey() async {
-    await ClipboardUtils.copy(
-      context,
-      _keyController.text,
-      message: context.l10n.keyManagementExportSuccess,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
@@ -262,34 +257,28 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
       ),
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: _fetched
-            ? _RevealStep(
-                controller: _keyController,
-                onCopy: _copyKey,
-                onClose: () => Navigator.of(context).pop(),
-              )
-            : _PasswordStep(
-                controller: _passwordController,
-                errorText: _errorText,
-                submitting: _submitting,
-                lockedOut: _lockedOut,
-                onSubmit: _submit,
-                onCancel: () => Navigator.of(context).pop(),
-                // Clear a stale "wrong password" as soon as the user edits, so
-                // the error refers to the attempt rather than the previous one.
-                // A spent attempt budget is not stale, so it stays put.
-                onEdited: () {
-                  if (_errorText != null && !_lockedOut) {
-                    setState(() => _errorText = null);
-                  }
-                },
-              ),
+        child: _PasswordStep(
+          controller: _passwordController,
+          errorText: _errorText,
+          submitting: _submitting,
+          lockedOut: _lockedOut,
+          onSubmit: _submit,
+          onCancel: () => Navigator.of(context).pop(),
+          // Clear a stale "wrong password" as soon as the user edits, so the
+          // error refers to the attempt rather than the previous one. A spent
+          // attempt budget is not stale, so it stays put.
+          onEdited: () {
+            if (_errorText != null && !_lockedOut) {
+              setState(() => _errorText = null);
+            }
+          },
+        ),
       ),
     );
   }
 }
 
-/// Step one: confirm the account password.
+/// Confirm the account password, which copies the key it brings back.
 class _PasswordStep extends StatelessWidget {
   const _PasswordStep({
     required this.controller,
@@ -323,75 +312,9 @@ class _PasswordStep extends StatelessWidget {
           l10n.keyManagementKeycastPasswordPrompt,
           style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
         ),
-        DivineAuthTextField(
-          label: l10n.authPasswordLabel,
-          controller: controller,
-          obscureText: true,
-          autofillHints: const [AutofillHints.password],
-          errorText: errorText,
-          enabled: !blocked,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) {
-            if (!blocked) onSubmit();
-          },
-          onChanged: (_) => onEdited(),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          spacing: 8,
-          children: [
-            DivineButton(
-              label: l10n.commonCancel,
-              type: DivineButtonType.tertiary,
-              size: DivineButtonSize.small,
-              onPressed: submitting ? null : onCancel,
-            ),
-            // Fetches the key and moves to the reveal step; copying is that
-            // step's action, so neither this label nor its icon may promise it.
-            DivineButton(
-              label: l10n.keyManagementKeycastFetchKey,
-              leadingIcon: DivineIconName.key,
-              size: DivineButtonSize.small,
-              isLoading: submitting,
-              onPressed: blocked ? null : onSubmit,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-/// Step two: hand over the key that came back.
-class _RevealStep extends StatelessWidget {
-  const _RevealStep({
-    required this.controller,
-    required this.onCopy,
-    required this.onClose,
-  });
-
-  final TextEditingController controller;
-  final VoidCallback onCopy;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 16,
-      children: [
-        // Read-only: the field is a viewer for the fetched key, and its own
-        // reveal control is what un-hides it.
-        DivineAuthTextField(
-          label: l10n.keyManagementYourPrivateKeyLabel,
-          controller: controller,
-          obscureText: true,
-          readOnly: true,
-          autocorrect: false,
-        ),
+        // The local-nsec path warns beside its copy button, before the key
+        // moves. Confirming here is that same moment, so the warning belongs
+        // ahead of the field rather than after the copy has already happened.
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -418,21 +341,37 @@ class _RevealStep extends StatelessWidget {
             ],
           ),
         ),
+        DivineAuthTextField(
+          label: l10n.authPasswordLabel,
+          controller: controller,
+          obscureText: true,
+          autofillHints: const [AutofillHints.password],
+          errorText: errorText,
+          enabled: !blocked,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) {
+            if (!blocked) onSubmit();
+          },
+          onChanged: (_) => onEdited(),
+        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           spacing: 8,
           children: [
             DivineButton(
-              label: l10n.commonClose,
+              label: l10n.commonCancel,
               type: DivineButtonType.tertiary,
               size: DivineButtonSize.small,
-              onPressed: onClose,
+              onPressed: submitting ? null : onCancel,
             ),
+            // Confirming fetches the key and copies it in one step, so the
+            // label and the icon both name the clipboard.
             DivineButton(
               label: l10n.keyManagementKeycastCopyKey,
               leadingIcon: DivineIconName.copy,
               size: DivineButtonSize.small,
-              onPressed: onCopy,
+              isLoading: submitting,
+              onPressed: blocked ? null : onSubmit,
             ),
           ],
         ),

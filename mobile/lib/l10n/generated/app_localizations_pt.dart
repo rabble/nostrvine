@@ -5130,9 +5130,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Sua chave é guardada pelo serviço de login da Divine. Digite a senha da sua conta e nós a buscamos.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Buscar minha chave';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Copiar chave';
 
   @override
@@ -5162,9 +5159,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Não há nenhuma chave registrada para esta conta.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Sua chave privada (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

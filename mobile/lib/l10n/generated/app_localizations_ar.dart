@@ -5061,9 +5061,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك وسنجلبه لك.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'أحضِر مفتاحي';
-
-  @override
   String get keyManagementKeycastCopyKey => 'نسخ المفتاح';
 
   @override
@@ -5092,9 +5089,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastNoKey => 'لا يوجد مفتاح مسجّل لهذا الحساب.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'مفتاحك الخاص (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

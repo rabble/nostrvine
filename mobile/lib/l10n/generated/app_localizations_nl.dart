@@ -5120,9 +5120,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in en we halen hem op.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Mijn sleutel ophalen';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Sleutel kopiëren';
 
   @override
@@ -5152,9 +5149,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Voor dit account staat geen sleutel geregistreerd.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Je private key (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

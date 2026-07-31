@@ -4995,9 +4995,6 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቁልፍዎ በDivine የመግቢያ አገልግሎት ተቀምጧል። የመለያዎን የይለፍ ቃል ያስገቡ፤ እኛም እናመጣዋለን።';
 
   @override
-  String get keyManagementKeycastFetchKey => 'ቁልፌን አምጣ';
-
-  @override
   String get keyManagementKeycastCopyKey => 'ቁልፍ ቅዳ';
 
   @override
@@ -5025,9 +5022,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementKeycastNoKey => 'ለዚህ መለያ የተመዘገበ ቁልፍ የለም።';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'የእርስዎ የግል ቁልፍ (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';

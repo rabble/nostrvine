@@ -5141,9 +5141,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tu clave la guarda el servicio de inicio de sesión de Divine. Introduce la contraseña de tu cuenta y la traemos.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Traer mi clave';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Copiar clave';
 
   @override
@@ -5173,9 +5170,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'No hay ninguna clave registrada para esta cuenta.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Tu clave privada (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>

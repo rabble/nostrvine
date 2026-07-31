@@ -5158,9 +5158,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dein Schlüssel wird beim Login-Dienst von Divine aufbewahrt. Gib dein Konto-Passwort ein, dann holen wir ihn.';
 
   @override
-  String get keyManagementKeycastFetchKey => 'Schlüssel holen';
-
-  @override
   String get keyManagementKeycastCopyKey => 'Schlüssel kopieren';
 
   @override
@@ -5190,9 +5187,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get keyManagementKeycastNoKey =>
       'Für dieses Konto ist kein Schlüssel hinterlegt.';
-
-  @override
-  String get keyManagementYourPrivateKeyLabel => 'Dein Private Key (nsec)';
 
   @override
   String get keyManagementKeycastGenericFailure =>
