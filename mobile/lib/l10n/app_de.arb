@@ -2021,6 +2021,7 @@
     "keyManagementKeycastSignInAgain": "Deine Sitzung ist abgelaufen. Melde dich erneut an, um deinen Schlüssel zu kopieren.",
     "keyManagementKeycastEmailUnverified": "Bestätige deine E-Mail-Adresse, bevor du deinen Schlüssel kopierst.",
     "keyManagementKeycastDenied": "Divine verwaltet die Schlüssel dieses Kontos, daher können sie hier nicht kopiert werden.",
+    "keyManagementKeycastNoKey": "Für dieses Konto ist kein Schlüssel hinterlegt.",
     "keyManagementYourPrivateKeyLabel": "Dein Private Key (nsec)",
     "keyManagementKeycastGenericFailure": "der Login-Dienst war nicht erreichbar",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

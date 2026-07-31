@@ -5099,6 +5099,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Bu hesap için kayıtlı bir anahtar yok.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Özel anahtarın (nsec)';
 
   @override

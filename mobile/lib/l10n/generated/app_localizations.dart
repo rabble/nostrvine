@@ -8912,6 +8912,12 @@ abstract class AppLocalizations {
   /// **'Divine looks after this account\'s keys, so they can\'t be copied here.'**
   String get keyManagementKeycastDenied;
 
+  /// Error shown when the login service answers definitively that it holds no exportable key for this account, so retrying will not help.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no key on record for this account.'**
+  String get keyManagementKeycastNoKey;
+
   /// Label on the read-only field that shows the fetched private key. The value is hidden until the user taps the reveal control.
   ///
   /// In en, this message translates to:

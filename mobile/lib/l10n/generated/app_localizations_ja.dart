@@ -4889,6 +4889,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'このアカウントの鍵は Divine が管理しているため、ここではコピーできません。';
 
   @override
+  String get keyManagementKeycastNoKey => 'このアカウントに登録されている鍵はありません。';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'あなたの秘密鍵 (nsec)';
 
   @override

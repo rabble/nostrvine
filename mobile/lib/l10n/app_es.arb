@@ -2025,6 +2025,7 @@
     "keyManagementKeycastSignInAgain": "Tu sesión ha caducado. Inicia sesión de nuevo para copiar tu clave.",
     "keyManagementKeycastEmailUnverified": "Verifica tu dirección de correo electrónico antes de copiar tu clave.",
     "keyManagementKeycastDenied": "Divine gestiona las claves de esta cuenta, así que no se pueden copiar aquí.",
+    "keyManagementKeycastNoKey": "No hay ninguna clave registrada para esta cuenta.",
     "keyManagementYourPrivateKeyLabel": "Tu clave privada (nsec)",
     "keyManagementKeycastGenericFailure": "no se pudo conectar con el servicio de inicio de sesión",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

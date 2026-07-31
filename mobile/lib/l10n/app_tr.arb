@@ -2020,6 +2020,7 @@
     "keyManagementKeycastSignInAgain": "Oturumun sona erdi. Anahtarını kopyalamak için tekrar giriş yap.",
     "keyManagementKeycastEmailUnverified": "Anahtarını kopyalamadan önce e-posta adresini doğrula.",
     "keyManagementKeycastDenied": "Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.",
+    "keyManagementKeycastNoKey": "Bu hesap için kayıtlı bir anahtar yok.",
     "keyManagementYourPrivateKeyLabel": "Özel anahtarın (nsec)",
     "keyManagementKeycastGenericFailure": "giriş servisine ulaşılamadı",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

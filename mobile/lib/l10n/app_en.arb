@@ -2894,6 +2894,10 @@
   "@keyManagementKeycastDenied": {
     "description": "Error shown when the login service refuses to release the key by policy, such as an account whose keys Divine manages custodially."
   },
+  "keyManagementKeycastNoKey": "There's no key on record for this account.",
+  "@keyManagementKeycastNoKey": {
+    "description": "Error shown when the login service answers definitively that it holds no exportable key for this account, so retrying will not help."
+  },
   "keyManagementYourPrivateKeyLabel": "Your private key (nsec)",
   "@keyManagementYourPrivateKeyLabel": {
     "description": "Label on the read-only field that shows the fetched private key. The value is hidden until the user taps the reveal control."

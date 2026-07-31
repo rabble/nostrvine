@@ -5091,6 +5091,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Tidak ada kunci yang tercatat untuk akun ini.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Kunci pribadimu (nsec)';
 
   @override

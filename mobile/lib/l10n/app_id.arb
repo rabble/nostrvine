@@ -2020,6 +2020,7 @@
     "keyManagementKeycastSignInAgain": "Sesimu telah berakhir. Masuk lagi untuk menyalin kuncimu.",
     "keyManagementKeycastEmailUnverified": "Verifikasi alamat emailmu sebelum menyalin kunci.",
     "keyManagementKeycastDenied": "Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.",
+    "keyManagementKeycastNoKey": "Tidak ada kunci yang tercatat untuk akun ini.",
     "keyManagementYourPrivateKeyLabel": "Kunci pribadimu (nsec)",
     "keyManagementKeycastGenericFailure": "layanan login tidak dapat dihubungi",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

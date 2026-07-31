@@ -2222,6 +2222,7 @@
     "keyManagementKeycastSignInAgain": "Сесията ти изтече. Влез отново, за да копираш ключа си.",
     "keyManagementKeycastEmailUnverified": "Потвърди имейл адреса си, преди да копираш ключа.",
     "keyManagementKeycastDenied": "Divine управлява ключовете на този профил, така че те не могат да се копират тук.",
+    "keyManagementKeycastNoKey": "За този профил няма записан ключ.",
     "keyManagementYourPrivateKeyLabel": "Твоят частен ключ (nsec)",
     "keyManagementKeycastGenericFailure": "услугата за вход е недостъпна",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

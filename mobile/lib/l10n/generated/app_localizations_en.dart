@@ -5127,6 +5127,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Divine looks after this account\'s keys, so they can\'t be copied here.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'There\'s no key on record for this account.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Your private key (nsec)';
 
   @override

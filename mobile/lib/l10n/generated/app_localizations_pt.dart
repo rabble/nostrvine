@@ -5160,6 +5160,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'A Divine cuida das chaves desta conta, então elas não podem ser copiadas aqui.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Não há nenhuma chave registrada para esta conta.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Sua chave privada (nsec)';
 
   @override

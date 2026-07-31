@@ -4906,6 +4906,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '이 계정의 키는 Divine이 관리하므로 여기에서 복사할 수 없습니다.';
 
   @override
+  String get keyManagementKeycastNoKey => '이 계정에 등록된 키가 없어요.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => '내 비밀 키 (nsec)';
 
   @override

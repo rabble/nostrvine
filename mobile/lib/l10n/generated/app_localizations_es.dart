@@ -5171,6 +5171,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Divine gestiona las claves de esta cuenta, así que no se pueden copiar aquí.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'No hay ninguna clave registrada para esta cuenta.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Tu clave privada (nsec)';
 
   @override

@@ -2021,6 +2021,7 @@
     "keyManagementKeycastSignInAgain": "Ta session a expiré. Reconnecte-toi pour copier ta clé.",
     "keyManagementKeycastEmailUnverified": "Vérifie ton adresse e-mail avant de copier ta clé.",
     "keyManagementKeycastDenied": "Divine gère les clés de ce compte, elles ne peuvent donc pas être copiées ici.",
+    "keyManagementKeycastNoKey": "Aucune clé n'est enregistrée pour ce compte.",
     "keyManagementYourPrivateKeyLabel": "Ta clé privée (nsec)",
     "keyManagementKeycastGenericFailure": "le service de connexion est injoignable",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

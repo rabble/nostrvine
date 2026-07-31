@@ -5191,6 +5191,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ang Divine ang nangangalaga sa mga key ng account na ito, kaya hindi ito makokopya dito.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Walang key na nakatala para sa account na ito.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Ang private key mo (nsec)';
 
   @override

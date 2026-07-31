@@ -5125,6 +5125,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Divine sköter nycklarna för det här kontot, så de kan inte kopieras här.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Det finns ingen nyckel registrerad för det här kontot.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Din privata nyckel (nsec)';
 
   @override

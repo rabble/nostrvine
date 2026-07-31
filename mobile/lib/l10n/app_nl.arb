@@ -2021,6 +2021,7 @@
     "keyManagementKeycastSignInAgain": "Je sessie is verlopen. Meld je opnieuw aan om je sleutel te kopiëren.",
     "keyManagementKeycastEmailUnverified": "Bevestig je e-mailadres voordat je je sleutel kopieert.",
     "keyManagementKeycastDenied": "Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.",
+    "keyManagementKeycastNoKey": "Voor dit account staat geen sleutel geregistreerd.",
     "keyManagementYourPrivateKeyLabel": "Je private key (nsec)",
     "keyManagementKeycastGenericFailure": "de inlogservice was niet bereikbaar",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

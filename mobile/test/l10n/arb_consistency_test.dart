@@ -62,6 +62,7 @@ void main() {
         'keyManagementKeycastSignInAgain',
         'keyManagementKeycastEmailUnverified',
         'keyManagementKeycastDenied',
+        'keyManagementKeycastNoKey',
         'keyManagementKeycastGenericFailure',
       ];
 

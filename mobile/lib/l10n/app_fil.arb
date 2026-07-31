@@ -1298,6 +1298,7 @@
     "keyManagementKeycastSignInAgain": "Nag-expire na ang session mo. Mag-sign in muli para makopya ang key mo.",
     "keyManagementKeycastEmailUnverified": "I-verify ang email address mo bago kopyahin ang key.",
     "keyManagementKeycastDenied": "Ang Divine ang nangangalaga sa mga key ng account na ito, kaya hindi ito makokopya dito.",
+    "keyManagementKeycastNoKey": "Walang key na nakatala para sa account na ito.",
     "keyManagementYourPrivateKeyLabel": "Ang private key mo (nsec)",
     "keyManagementKeycastGenericFailure": "hindi maabot ang login service",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

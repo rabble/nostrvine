@@ -5194,6 +5194,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Divine gère les clés de ce compte, elles ne peuvent donc pas être copiées ici.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Aucune clé n\'est enregistrée pour ce compte.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Ta clé privée (nsec)';
 
   @override

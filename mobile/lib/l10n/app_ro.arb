@@ -2021,6 +2021,7 @@
     "keyManagementKeycastSignInAgain": "Sesiunea ta a expirat. Autentifică-te din nou pentru a copia cheia.",
     "keyManagementKeycastEmailUnverified": "Confirmă adresa de e-mail înainte de a copia cheia.",
     "keyManagementKeycastDenied": "Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.",
+    "keyManagementKeycastNoKey": "Nu există nicio cheie înregistrată pentru acest cont.",
     "keyManagementYourPrivateKeyLabel": "Cheia ta privată (nsec)",
     "keyManagementKeycastGenericFailure": "serviciul de autentificare nu a putut fi contactat",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

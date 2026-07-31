@@ -5270,6 +5270,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Nu există nicio cheie înregistrată pentru acest cont.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Cheia ta privată (nsec)';
 
   @override

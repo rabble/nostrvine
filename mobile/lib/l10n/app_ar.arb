@@ -2013,6 +2013,7 @@
     "keyManagementKeycastSignInAgain": "انتهت صلاحية جلستك. سجّل الدخول مرة أخرى لنسخ مفتاحك.",
     "keyManagementKeycastEmailUnverified": "أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.",
     "keyManagementKeycastDenied": "تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.",
+    "keyManagementKeycastNoKey": "لا يوجد مفتاح مسجّل لهذا الحساب.",
     "keyManagementYourPrivateKeyLabel": "مفتاحك الخاص (nsec)",
     "keyManagementKeycastGenericFailure": "تعذّر الوصول إلى خدمة تسجيل الدخول",
     "keyManagementRestrictedTitle": "Your keys are managed by Divine",

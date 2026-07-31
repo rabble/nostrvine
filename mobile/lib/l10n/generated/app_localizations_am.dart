@@ -5024,6 +5024,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።';
 
   @override
+  String get keyManagementKeycastNoKey => 'ለዚህ መለያ የተመዘገበ ቁልፍ የለም።';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'የእርስዎ የግል ቁልፍ (nsec)';
 
   @override

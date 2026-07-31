@@ -5150,6 +5150,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.';
 
   @override
+  String get keyManagementKeycastNoKey =>
+      'Voor dit account staat geen sleutel geregistreerd.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'Je private key (nsec)';
 
   @override

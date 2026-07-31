@@ -5091,6 +5091,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.';
 
   @override
+  String get keyManagementKeycastNoKey => 'لا يوجد مفتاح مسجّل لهذا الحساب.';
+
+  @override
   String get keyManagementYourPrivateKeyLabel => 'مفتاحك الخاص (nsec)';
 
   @override
