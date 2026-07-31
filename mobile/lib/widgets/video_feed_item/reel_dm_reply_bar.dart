@@ -160,6 +160,9 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   /// Optimistically-selected emoji, highlighted immediately on tap.
   String? _optimisticEmoji;
 
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+  _retrySnackBarController;
+
   DmReplyContext get _ctx => widget.dmReplyContext;
 
   @override
@@ -177,6 +180,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   @override
   void dispose() {
     _throttleTimer?.cancel();
+    _retrySnackBarController?.close();
     _controller
       ..removeListener(_handleTextChanged)
       ..dispose();
@@ -302,14 +306,12 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
     }
   }
 
-  void _openChat() {
-    // Reachable from a snackbar action that outlives the player route, where
-    // the lookup would fail with "No GoRouter found in context".
-    if (!mounted) return;
-    context.push(
-      ConversationPage.pathForId(_ctx.conversationId),
-      extra: _ctx.participantPubkeys,
-    );
+  void _openChat(
+    GoRouter router, {
+    required String conversationPath,
+    required List<String> participantPubkeys,
+  }) {
+    router.push(conversationPath, extra: participantPubkeys);
   }
 
   void _onReplyOutcome(InlineReelReplyState state) {
@@ -328,46 +330,65 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
         _controller.selection = TextSelection.collapsed(offset: draft.length);
       }
       _announce(context.l10n.dmReelReplyFailed);
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.dmReelReplyFailed),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: context.l10n.dmSendFailedRetry,
-              onPressed: () {
-                // `mounted` also guards `_controller`, which dispose() tears
-                // down along with the rest of this State.
-                if (draft.isEmpty || !mounted || cubit.isClosed) return;
-                _pendingDraft = draft;
-                cubit.submit(draft);
-                _controller.clear();
-              },
-            ),
+      _showRetrySnackBar(
+        SnackBar(
+          content: Text(context.l10n.dmReelReplyFailed),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: context.l10n.dmSendFailedRetry,
+            onPressed: () {
+              // `mounted` also guards `_controller`, which dispose() tears
+              // down along with the rest of this State.
+              if (draft.isEmpty || !mounted || cubit.isClosed) return;
+              _pendingDraft = draft;
+              cubit.submit(draft);
+              _controller.clear();
+            },
           ),
-        );
+        ),
+      );
     } else {
+      final router = GoRouter.maybeOf(context);
+      final conversationPath = ConversationPage.pathForId(_ctx.conversationId);
+      final participantPubkeys = List<String>.of(_ctx.participantPubkeys);
       _announce(context.l10n.dmReelReplySentAnnouncement);
       ScreenAnalyticsService().trackInteraction(
         ReelReplyConstants.analyticsScreen,
         'dm_reel_reply_sent',
         params: {'is_group': _ctx.isGroup ? 1 : 0},
       );
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.shareSent),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: context.l10n.dmReelReplyViewChat,
-              onPressed: _openChat,
-            ),
-          ),
-        );
+      _retrySnackBarController?.close();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.shareSent),
+          behavior: SnackBarBehavior.floating,
+          action: router == null
+              ? null
+              : SnackBarAction(
+                  label: context.l10n.dmReelReplyViewChat,
+                  onPressed: () => _openChat(
+                    router,
+                    conversationPath: conversationPath,
+                    participantPubkeys: participantPubkeys,
+                  ),
+                ),
+        ),
+      );
     }
     cubit.acknowledge();
+  }
+
+  void _showRetrySnackBar(SnackBar snackBar) {
+    _retrySnackBarController?.close();
+    final controller = ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    _retrySnackBarController = controller;
+    unawaited(
+      controller.closed.then((_) {
+        if (_retrySnackBarController == controller) {
+          _retrySnackBarController = null;
+        }
+      }),
+    );
   }
 
   void _announce(String message) {

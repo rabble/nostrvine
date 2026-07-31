@@ -123,6 +123,7 @@ class _BlueskySettingsView extends StatelessWidget {
     // defunct element, whose inherited-widget map the framework has already
     // cleared.
     final cubit = context.read<CrosspostSettingsCubit>();
+    final router = GoRouter.of(context);
     switch (state.error) {
       case CrosspostSettingsError.usernameNotClaimed:
         messenger.showSnackBar(
@@ -137,7 +138,7 @@ class _BlueskySettingsView extends StatelessWidget {
                 // tracks whether the screen the action refers to still exists.
                 if (cubit.isClosed) return;
                 cubit.acknowledgeError();
-                unawaited(_openClaimFlowAndRefresh(context, cubit));
+                unawaited(_openClaimFlowAndRefresh(router, cubit));
               },
             ),
           ),
@@ -217,7 +218,7 @@ class _UsernameRequiredNotice extends StatelessWidget {
       trailing: TextButton(
         onPressed: () => unawaited(
           _openClaimFlowAndRefresh(
-            context,
+            GoRouter.of(context),
             context.read<CrosspostSettingsCubit>(),
           ),
         ),
@@ -231,14 +232,11 @@ class _UsernameRequiredNotice extends StatelessWidget {
 }
 
 Future<void> _openClaimFlowAndRefresh(
-  BuildContext context,
+  GoRouter router,
   CrosspostSettingsCubit cubit,
 ) async {
-  await context.push(Nip05SettingsScreen.path);
-  // `context.mounted` only goes false once the element is unmounted, and the
-  // framework clears the inherited-widget map one step earlier — so pair it
-  // with the cubit's own liveness rather than trusting it alone.
-  if (!context.mounted || cubit.isClosed) return;
+  await router.push(Nip05SettingsScreen.path);
+  if (cubit.isClosed) return;
   await cubit.loadStatus();
 }
 

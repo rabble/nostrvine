@@ -6,11 +6,13 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/dm_reply_context.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/video_feed_item/reel_dm_reply_bar.dart';
 
@@ -438,7 +440,9 @@ void main() {
     expect(reacted, isNull);
   });
 
-  testWidgets('retry action survives the bar leaving the tree', (tester) async {
+  testWidgets('retry action closes when the bar leaves the tree', (
+    tester,
+  ) async {
     when(
       () => dmRepo.sendMessage(
         recipientPubkey: any(named: 'recipientPubkey'),
@@ -486,17 +490,11 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
 
-    // The player route goes away; the app-level ScaffoldMessenger keeps the
-    // snackbar — and its action — on screen.
     barVisible.value = false;
     await tester.pumpAndSettle();
     expect(find.byType(TextField), findsNothing);
-    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+    expect(find.text(l10n.dmSendFailedRetry), findsNothing);
 
-    await tester.tap(find.text(l10n.dmSendFailedRetry));
-    await tester.pumpAndSettle();
-
-    // Inert rather than throwing on the defunct context: no second send.
     expect(tester.takeException(), isNull);
     verify(
       () => dmRepo.sendMessage(
@@ -505,5 +503,90 @@ void main() {
         replyToId: _reelId,
       ),
     ).called(1);
+  });
+
+  testWidgets('view chat action navigates after the bar leaves the tree', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: _peer,
+      ),
+    );
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+    final dmContext = context();
+
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, _) => Scaffold(
+            body: Builder(
+              builder: (inner) => MediaQuery(
+                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: barVisible,
+                  builder: (_, visible, _) => visible
+                      ? ReelDmReplyBarHost(dmReplyContext: dmContext)
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: ConversationPage.pathPattern,
+          builder: (_, state) => Scaffold(
+            body: Text('conversation ${state.pathParameters['id']}'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text(l10n.dmReelReplyViewChat), findsOneWidget);
+
+    await tester.tap(find.text(l10n.dmReelReplyViewChat));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('conversation convo-id'), findsOneWidget);
   });
 }
