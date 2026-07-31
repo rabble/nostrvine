@@ -132,8 +132,7 @@ class _BadgesIntro extends StatelessWidget {
             leadingIcon: DivineIconName.arrowUpRight,
             onPressed: () {
               context.push(
-                NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.id),
-                extra: divineBadgesNostrApp,
+                NostrAppSandboxScreen.pathForAppId(divineBadgesNostrApp.slug),
               );
             },
           ),

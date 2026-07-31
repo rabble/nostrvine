@@ -82,7 +82,7 @@ void main() {
     });
 
     testWidgets(
-      'opens bundled badges sandbox when remote badges ID differs',
+      'resolves the remote badges entry by slug when its ID differs',
       (tester) async {
         final mergedDirectoryApps = [_remoteBadgesApp()];
         final router = GoRouter(
@@ -94,11 +94,10 @@ void main() {
             GoRoute(
               path: NostrAppSandboxScreen.path,
               builder: (_, state) {
-                final app =
-                    state.extra as NostrAppDirectoryEntry? ??
-                    mergedDirectoryApps.singleWhere(
-                      (entry) => entry.id == state.pathParameters['appId'],
-                    );
+                final appId = state.pathParameters['appId'];
+                final app = mergedDirectoryApps.singleWhere(
+                  (entry) => entry.id == appId || entry.slug == appId,
+                );
                 return Material(child: Text('Sandbox app: ${app.id}'));
               },
             ),
@@ -126,8 +125,7 @@ void main() {
         await tester.tap(find.text(l10n.badgesOpenApp));
         await tester.pumpAndSettle();
 
-        expect(find.text('Sandbox app: bundled-badges'), findsOneWidget);
-        expect(find.text('Sandbox app: app-badges'), findsNothing);
+        expect(find.text('Sandbox app: app-badges'), findsOneWidget);
       },
     );
   });

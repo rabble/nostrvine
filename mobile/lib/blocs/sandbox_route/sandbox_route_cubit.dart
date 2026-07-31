@@ -1,5 +1,5 @@
 // ABOUTME: Cubit that resolves a NostrAppDirectoryEntry by
-// ABOUTME: app ID for the sandbox route screen.
+// ABOUTME: app ID or slug for the sandbox route screen.
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,7 +7,13 @@ import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 
 part 'sandbox_route_state.dart';
 
-/// Resolves an [NostrAppDirectoryEntry] by app ID.
+/// Resolves an [NostrAppDirectoryEntry] by app ID or slug.
+///
+/// The directory merges remote entries over bundled ones by slug, so
+/// matching on slug as well as ID keeps deep links working when the
+/// remote directory replaces a bundled app under a different ID, and
+/// keeps revocation (a non-approved remote entry hides the app)
+/// enforced for every launch path.
 class SandboxRouteCubit extends Cubit<SandboxRouteState> {
   /// Creates the cubit.
   ///
@@ -28,13 +34,14 @@ class SandboxRouteCubit extends Cubit<SandboxRouteState> {
   final String _appId;
   final NostrAppDirectoryService _directoryService;
 
-  /// Fetches the entry from the directory service.
+  /// Fetches the entry from the directory service, matching on app ID
+  /// or slug.
   Future<void> load() async {
     if (state is SandboxRouteResolved) return;
     try {
       final apps = await _directoryService.fetchApprovedApps();
       for (final app in apps) {
-        if (app.id == _appId) {
+        if (app.id == _appId || app.slug == _appId) {
           emit(SandboxRouteResolved(app));
           return;
         }
