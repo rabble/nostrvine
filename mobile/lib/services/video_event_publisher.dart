@@ -20,6 +20,7 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -822,6 +823,7 @@ class VideoEventPublisher {
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
     AudioEvent? selectedAudio,
+    AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -849,6 +851,7 @@ class VideoEventPublisher {
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
       selectedAudio: selectedAudio,
+      audioShareAttribution: audioShareAttribution,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
@@ -881,6 +884,7 @@ class VideoEventPublisher {
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
     AudioEvent? selectedAudio,
+    AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -923,6 +927,7 @@ class VideoEventPublisher {
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
       selectedAudio: selectedAudio,
+      audioShareAttribution: audioShareAttribution,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
@@ -958,6 +963,7 @@ class VideoEventPublisher {
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
     AudioEvent? selectedAudio,
+    AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -1365,28 +1371,65 @@ class VideoEventPublisher {
       var selectedAudioReferenceRelay = selectedAudioRelay;
 
       if (selectedAudio?.isLocalImport == true) {
+        if (!allowAudioReuse) {
+          selectedAudioReferenceId = null;
+          selectedAudioReferenceRelay = null;
+        } else {
+          final attribution = audioShareAttribution;
+          if (attribution == null || !attribution.isValid) {
+            Log.error(
+              'Reusable imported audio requires valid public attribution',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+
+          final userPubkey = _authService?.currentPublicKeyHex;
+          final relayHint = _audioRelayHint();
+          if (userPubkey == null) {
+            Log.error(
+              'Cannot publish imported audio without an authenticated pubkey',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+
+          selectedAudioReferenceId = await _publishImportedAudioEvent(
+            audio: selectedAudio!,
+            attribution: attribution,
+            allowAudioReuse: true,
+            videoDTag: dTag,
+            pubkey: userPubkey,
+            relayHint: relayHint,
+          );
+          selectedAudioReferenceRelay = relayHint;
+
+          if (selectedAudioReferenceId == null) {
+            Log.error(
+              'Imported audio publishing failed; blocking video publish',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+        }
+      } else if (selectedAudio?.isExternalProviderSound == true) {
         final userPubkey = _authService?.currentPublicKeyHex;
         final relayHint = _audioRelayHint();
-        if (userPubkey == null) {
-          Log.error(
-            'Cannot publish imported audio without an authenticated pubkey',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-          return false;
-        }
-
-        selectedAudioReferenceId = await _publishImportedAudioEvent(
+        if (userPubkey == null) return false;
+        selectedAudioReferenceId = await _publishProviderAudioBridge(
           audio: selectedAudio!,
+          allowAudioReuse: allowAudioReuse,
           videoDTag: dTag,
           pubkey: userPubkey,
           relayHint: relayHint,
         );
         selectedAudioReferenceRelay = relayHint;
-
         if (selectedAudioReferenceId == null) {
           Log.error(
-            'Imported audio publishing failed; blocking video publish',
+            'Provider credit publishing failed; blocking video publish',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
@@ -1465,6 +1508,7 @@ class VideoEventPublisher {
             pubkey: userPubkey,
             relayHint: relayHint,
             videoTitle: upload.title,
+            attribution: audioShareAttribution,
           );
 
           if (audioEventId != null) {
@@ -1477,18 +1521,20 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
           } else {
-            Log.warning(
-              'Audio publishing failed - continuing with video-only publish',
+            Log.error(
+              'Requested reusable audio failed to publish',
               name: 'VideoEventPublisher',
               category: LogCategory.video,
             );
+            return false;
           }
         } else {
-          Log.warning(
-            'No user pubkey available - skipping audio publishing',
+          Log.error(
+            'No user pubkey available for requested reusable audio',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
+          return false;
         }
       }
 
