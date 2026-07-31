@@ -17,27 +17,42 @@ class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class MockVideoLocalStorage extends Mock implements VideoLocalStorage {}
 
-/// [Random] that pins the very first `nextInt` result and records the bounds
-/// it was asked for.
+/// [Random] that scripts the Classics archive-offset draws and records the
+/// bounds it was asked for.
 ///
-/// The Classics feed draws its archive offset before it shuffles the page, so
-/// pinning the first draw fixes which page it lands on while the shuffle's
-/// draws fall through to a seeded [Random] and stay deterministic.
+/// The offset draw is the only call bounded by the reachable page count
+/// ([offsetDrawMax]); the page shuffle's draws are bounded by the page length,
+/// so the two are distinguishable. Scripted draws are handed out in order and
+/// every other call falls through to a seeded [Random] so shuffles stay
+/// deterministic. Asking for an unscripted offset throws rather than silently
+/// drawing, so a test that fetches more pages than it planned for fails loudly.
 class _StubRandom implements Random {
-  _StubRandom({this.firstDraw = 0});
+  _StubRandom({this.offsetDraws = const [0]});
 
-  /// Result handed to the offset draw.
-  final int firstDraw;
+  /// Results handed to successive offset draws, in call order.
+  final List<int> offsetDraws;
+
+  /// The `max` that identifies an offset draw: the reachable page count for
+  /// the `limit: 20` pages these tests use.
+  static const int offsetDrawMax = (classicsMaxRandomStartOffset ~/ 20) + 1;
 
   final Random _shuffleRandom = Random(0);
 
   /// Every `max` passed to [nextInt], in call order.
   final List<int> recordedMaxima = [];
 
+  int _offsetDrawCount = 0;
+
   @override
   int nextInt(int max) {
     recordedMaxima.add(max);
-    return recordedMaxima.length == 1 ? firstDraw : _shuffleRandom.nextInt(max);
+    if (max != offsetDrawMax) return _shuffleRandom.nextInt(max);
+
+    final index = _offsetDrawCount++;
+    if (index >= offsetDraws.length) {
+      throw StateError('Unscripted Classics offset draw #${index + 1}');
+    }
+    return offsetDraws[index];
   }
 
   @override
@@ -4222,6 +4237,18 @@ void main() {
           ),
       ];
 
+      /// Full-length archive page whose rows are all filtered out of Classics
+      /// because they are not original vines.
+      List<VideoStats> nonVinePage(int count) => [
+        for (var i = 0; i < count; i++)
+          _createVideoStats(
+            id: 'divine-$i',
+            pubkey: 'pubkey-$i',
+            dTag: 'divine-$i',
+            videoUrl: 'https://example.com/divine-$i.mp4',
+          ),
+      ];
+
       void stubArchive(List<VideoStats> page) {
         when(
           () => mockFunnelcakeClient.getClassicVines(
@@ -4231,6 +4258,24 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) async => page);
+      }
+
+      /// Serves a different page per archive offset, so top-up behaviour can
+      /// be driven page by page.
+      void stubArchiveByOffset(
+        List<VideoStats> Function(int offset) pageForOffset,
+      ) {
+        when(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (invocation) async =>
+              pageForOffset(invocation.namedArguments[#offset] as int),
+        );
       }
 
       VideosRepository buildRepository({Random? random}) => VideosRepository(
@@ -4251,7 +4296,7 @@ void main() {
         stubArchive(archivePage(20));
 
         // Random.nextInt is called once, over the number of reachable pages.
-        final random = _StubRandom(firstDraw: 7);
+        final random = _StubRandom(offsetDraws: [7]);
         await buildRepository(random: random).getClassicVideos(limit: 20);
 
         // The offset is drawn over the reachable page count, not a raw index.
@@ -4264,6 +4309,64 @@ void main() {
             before: any(named: 'before'),
           ),
         ).called(1);
+      });
+
+      test('reads the loops-sorted archive, like Explore → Classics', () async {
+        stubArchive(archivePage(20));
+
+        await buildRepository(
+          random: _StubRandom(),
+        ).getClassicVideos(limit: 20);
+
+        // The shared window only lines up with the Explore tab while both
+        // read the same sort; 'trending' or 'recent' would be a different
+        // feed wearing the same name.
+        final captured = verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: captureAny(named: 'sort'),
+            limit: captureAny(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).captured;
+        expect(captured, ['loops', 20]);
+      });
+
+      test('tops up when a page filters down to nothing', () async {
+        // The archive answers at full length, but nothing on the first page
+        // survives the Classics filter.
+        stubArchiveByOffset(
+          (offset) => offset == 0 ? nonVinePage(20) : archivePage(20),
+        );
+
+        final result = await buildRepository(
+          random: _StubRandom(),
+        ).getClassicVideos(limit: 20);
+
+        expect(result.videos, hasLength(20));
+        expect(result.paginationCursor, 'classic-offset:40');
+        expect(result.hasMore, isTrue);
+      });
+
+      test('stops topping up after a bounded number of pages', () async {
+        stubArchive(nonVinePage(20));
+
+        final result = await buildRepository(
+          random: _StubRandom(),
+        ).getClassicVideos(limit: 20);
+
+        expect(result.videos, isEmpty);
+        // The cursor still advances past every page that was read, so a
+        // retry resumes beyond the filtered-out run instead of repeating it.
+        expect(result.paginationCursor, 'classic-offset:60');
+        verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).called(3);
       });
 
       test('shuffles the page rather than preserving archive order', () async {
@@ -4281,7 +4384,9 @@ void main() {
       test('draws a different slice on each cache-missing fetch', () async {
         stubArchive(archivePage(20));
 
-        final repository = buildRepository(random: Random(7));
+        final repository = buildRepository(
+          random: _StubRandom(offsetDraws: [7, 3]),
+        );
         await repository.getClassicVideos(limit: 20);
         await repository.getClassicVideos(limit: 20, skipCache: true);
 
@@ -4293,8 +4398,7 @@ void main() {
             before: any(named: 'before'),
           ),
         ).captured;
-        expect(offsets, hasLength(2));
-        expect(offsets.first, isNot(offsets.last));
+        expect(offsets, [140, 60]); // 7 * 20, then 3 * 20
       });
 
       test('advances the cursor by a page and resumes from it', () async {
