@@ -21,7 +21,9 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/saved_sound_context_builder.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:provider/provider.dart' as inherited_provider;
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -274,6 +276,15 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     final showsSourceVideo =
         widget.sound.isOriginalSound && widget.sourceVideo != null;
     final usageCountAsync = ref.watch(soundUsageCountProvider(soundEventId));
+    SavedSoundsBloc? savedSoundsBloc;
+    try {
+      savedSoundsBloc = inherited_provider.Provider.of<SavedSoundsBloc>(
+        context,
+        listen: false,
+      );
+    } on inherited_provider.ProviderNotFoundException {
+      // Standalone embeds can display sound details without a saved library.
+    }
 
     return Scaffold(
       backgroundColor: context.vineColors.background,
@@ -302,6 +313,18 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   onPreviewTap: _togglePreview,
                   onUseSoundTap: _canReuseSound() ? _onUseSound : null,
                 ),
+
+                if (savedSoundsBloc != null)
+                  BlocBuilder<SavedSoundsBloc, SavedSoundsState>(
+                    bloc: savedSoundsBloc,
+                    builder: (context, state) {
+                      final records = state.sounds.where(
+                        (record) => record.id == widget.sound.id,
+                      );
+                      if (records.isEmpty) return const SizedBox.shrink();
+                      return SavedSoundDetailsEditor(sound: records.first);
+                    },
+                  ),
 
                 // Divider
                 Divider(color: context.vineColors.card, height: 1),
