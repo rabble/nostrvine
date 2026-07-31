@@ -195,6 +195,28 @@ class VideoPublishService {
 
   static const Duration _defaultSubtitlePublishTimeout = Duration(seconds: 30);
 
+  /// Share of the publish bar owned by the upload.
+  ///
+  /// Everything after it — resolving mentions, signing and broadcasting the
+  /// Nostr event, reclaiming the draft — measured ~2s on device, and the bar
+  /// used to reach 100% before any of it ran. The remainder is handed out at
+  /// the boundaries below so the bar never claims to be done while it isn't.
+  static const double _uploadProgressShare = 0.85;
+
+  /// Reached once mentions and subtitle assets are resolved.
+  static const double _progressAfterMetadata = 0.88;
+
+  /// Reached once the Nostr event is accepted.
+  static const double _progressAfterNostr = 0.97;
+
+  /// Maps an upload's own 0..1 progress onto the share of the bar it owns.
+  void _reportUploadProgress(String draftId, double uploadProgress) {
+    onProgressChanged(
+      draftId: draftId,
+      progress: uploadProgress.clamp(0.0, 1.0) * _uploadProgressShare,
+    );
+  }
+
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
 
@@ -326,6 +348,11 @@ class VideoPublishService {
             )
           : const <String>[];
 
+      onProgressChanged(
+        draftId: draft.id,
+        progress: _progressAfterMetadata,
+      );
+
       final published = await timeline.measure(
         'nostr',
         () => videoEventPublisher.publishVideoEvent(
@@ -367,6 +394,8 @@ class VideoPublishService {
         );
       }
 
+      onProgressChanged(draftId: draft.id, progress: _progressAfterNostr);
+
       final inviteWarnings = await timeline.measure(
         'invites',
         () => _sendCollaboratorInvites(
@@ -379,6 +408,8 @@ class VideoPublishService {
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
       Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
+
+      onProgressChanged(draftId: draft.id, progress: 1);
 
       Log.info('📝 Published successfully', category: .video);
       return PublishSuccess(inviteWarnings: inviteWarnings);
@@ -737,7 +768,7 @@ class VideoPublishService {
     final upload = uploadManager.getUpload(uploadId);
     if (upload == null) return false;
 
-    onProgressChanged(draftId: draftId, progress: upload.uploadProgress ?? 0.0);
+    _reportUploadProgress(draftId, upload.uploadProgress ?? 0.0);
 
     switch (upload.status) {
       case .readyToPublish:
@@ -773,8 +804,7 @@ class VideoPublishService {
     final pendingUpload = await uploadManager.startUploadFromDraft(
       draft: draft,
       nostrPubkey: pubkey,
-      onProgress: (value) =>
-          onProgressChanged(draftId: draft.id, progress: value),
+      onProgress: (value) => _reportUploadProgress(draft.id, value),
     );
     _backgroundUploadId = pendingUpload.id;
 
