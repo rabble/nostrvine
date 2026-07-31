@@ -245,6 +245,32 @@ void main() {
       expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
     });
 
+    testWidgets('delete cancel dismisses without deleting', (tester) async {
+      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+
+      await tester.pumpWidget(
+        buildSubject(
+          listId: 'owned-list',
+          listName: 'Owned List',
+          authorPubkey: 'owned-pubkey',
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.listDeleteAction));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
+
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockService.deleteOwnedList('owned-list'));
+      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsNothing);
+    });
+
     testWidgets(
       'delete confirmation buttons no-op once their route is torn down',
       (tester) async {
@@ -287,7 +313,6 @@ void main() {
 
         expect(cancel, returnsNormally);
         expect(confirm, returnsNormally);
-        verifyNever(() => mockService.deleteOwnedList('owned-list'));
       },
     );
 
