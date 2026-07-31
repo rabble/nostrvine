@@ -388,17 +388,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: () => context.push(AppsDirectoryScreen.path),
                   ),
                 _SettingsTile(
-                  icon: Icons.science,
-                  title: context.l10n.settingsExperimentalFeatures,
-                  subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const FeatureFlagScreen(),
-                    ),
-                  ),
-                ),
-                _SettingsTile(
                   title: context.l10n.settingsLegal,
                   icon: Icons.gavel,
                   onTap: () => context.push(LegalScreen.path),
@@ -409,7 +398,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
                   onTap: () => context.push(AppsPermissionsScreen.path),
                 ),
-                if (isDeveloperMode)
+                if (isDeveloperMode) ...[
+                  _SettingsTile(
+                    icon: Icons.science,
+                    title: context.l10n.settingsExperimentalFeatures,
+                    subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const FeatureFlagScreen(),
+                      ),
+                    ),
+                  ),
                   _SettingsTile(
                     divineIcon: DivineIconName.bracketsAngle,
                     title: context.l10n.settingsDeveloperOptions,
@@ -417,6 +417,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     iconColor: VineTheme.warning,
                     onTap: () => context.push(DeveloperOptionsScreen.path),
                   ),
+                ],
 
                 const SizedBox(height: 24),
                 _VersionTile(appVersion: _appVersion),
