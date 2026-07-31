@@ -103,6 +103,28 @@ AudioTrack? audioTrackFromMetaForRender(AudioEvent track) {
   );
 }
 
+/// Builds the render audio tracks for a session from its timeline
+/// [metaTracks], falling back to the recorder's [selectedSound].
+///
+/// [selectedSound] is legacy single-sound state from the recorder flow. When
+/// the timeline already carries audio it is the same sound, so adding it again
+/// duplicates the audio — hence the fallback only applies to an empty
+/// timeline. Tracks that resolve to no usable source are dropped by the
+/// mappers and logged there.
+///
+/// Both render entry points go through this: the in-editor export and the
+/// headless draft render used when publishing from the library. Keeping it in
+/// one place is what stops the two from disagreeing about whether a
+/// recorder-picked sound survives.
+List<AudioTrack> buildRenderAudioTracks({
+  required List<AudioEvent> metaTracks,
+  required AudioEvent? selectedSound,
+}) => [
+  for (final track in metaTracks) ?audioTrackFromMetaForRender(track),
+  if (metaTracks.isEmpty && selectedSound != null)
+    ?audioTrackFromSoundForRender(selectedSound),
+];
+
 /// Clamps an audio composition window so it cannot extend past [videoDuration],
 /// or returns `null` when the window lies entirely past the video and the track
 /// should be dropped.

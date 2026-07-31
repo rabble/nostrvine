@@ -6,7 +6,7 @@ import 'dart:ui' show ImageByteFormat;
 
 import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show AspectRatio;
+import 'package:models/models.dart' show AspectRatio, AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -27,6 +27,7 @@ DivineVideoClip _clip() => DivineVideoClip(
 DivineVideoDraft _draft({
   Map<String, dynamic> editorStateHistory = const {},
   Map<String, dynamic> editorEditingParameters = const {},
+  AudioEvent? selectedSound,
 }) => DivineVideoDraft(
   id: 'draft_1',
   clips: [_clip()],
@@ -40,6 +41,7 @@ DivineVideoDraft _draft({
   publishAttempts: 0,
   editorStateHistory: editorStateHistory,
   editorEditingParameters: editorEditingParameters,
+  selectedSound: selectedSound,
 );
 
 /// The persisted shape of a session laid out against [bodySize].
@@ -121,19 +123,107 @@ void main() {
       },
     );
 
-    // The three cases below all mean "this draft has overlays we cannot
+    test(
+      'restores the recorder-picked sound the timeline never carries',
+      () async {
+        // `selectSound` writes no timeline track, so without the fallback the
+        // same draft publishes with music from the editor and silent from the
+        // library.
+        final draft = _draft(
+          editorEditingParameters: _persistedParameters(),
+          selectedSound: const AudioEvent(
+            id: 'sound-1',
+            pubkey: 'pubkey-1',
+            createdAt: 1735689600,
+            url: 'https://example.com/track.mp3',
+            duration: 6,
+          ),
+        );
+
+        final parameters = await service.buildForDraft(draft);
+
+        expect(parameters!.audioTracks, hasLength(1));
+        expect(parameters.audioTracks.single.id, equals('sound-1'));
+      },
+    );
+
+    test('falls back to the size the state history was laid out at', () async {
+      // `bodySize` only reaches storage through the editor's Done callback, so
+      // a draft saved by backing out has layers and no parameters at all.
+      // Blocking those would hide Post behind an error for the most ordinary
+      // way to end up with overlays.
+      final stub = _StubLayerRasterizer();
+      addTearDown(stub.dispose);
+
+      final draft = _draft(
+        editorStateHistory: {
+          ..._historyWithTextLayer(),
+          'lastRenderedImgSize': {'width': 390.0, 'height': 694.0},
+        },
+      );
+
+      final parameters = await DraftRenderParametersService(
+        rasterizer: stub,
+      ).buildForDraft(draft);
+
+      expect(stub.editorBodySize, equals(const Size(390, 694)));
+      expect(
+        parameters!.bodySize,
+        equals(const Size(390, 694)),
+        reason:
+            'the render scales the captured layers against this, so it has '
+            'to match the size they were captured at',
+      );
+    });
+
+    // The four cases below all mean "this draft has overlays we cannot
     // reproduce". Returning parameters without them would publish a video
     // silently missing text/stickers the user still sees on the draft — the
     // #5203 failure — so the publish is blocked instead.
-    test('refuses to build when the draft has no editor body size', () async {
+    test('refuses to build when no body size can be resolved', () async {
+      final stub = _StubLayerRasterizer();
+      addTearDown(stub.dispose);
+
+      // No `lastRenderedImgSize` either — `safeParseSize` yields `Size.zero`.
       final draft = _draft(
         editorEditingParameters: _persistedParameters(),
         editorStateHistory: _historyWithTextLayer(),
       );
 
       await expectLater(
-        service.buildForDraft(draft),
-        throwsA(isA<DraftOverlayRestoreException>()),
+        DraftRenderParametersService(rasterizer: stub).buildForDraft(draft),
+        throwsA(
+          isA<DraftOverlayRestoreException>().having(
+            (e) => e.message,
+            'message',
+            contains('no editor body size'),
+          ),
+        ),
+      );
+    });
+
+    test('refuses to build when only some layers rasterize', () async {
+      // `captureAllLayers` drops a layer that produced no image instead of
+      // reporting it, so a short result is a silent partial bake.
+      final stub = _StubLayerRasterizer(dropLayers: true);
+      addTearDown(stub.dispose);
+
+      final draft = _draft(
+        editorEditingParameters: _persistedParameters(
+          bodySize: const Size(300, 500),
+        ),
+        editorStateHistory: _historyWithTextLayer(),
+      );
+
+      await expectLater(
+        DraftRenderParametersService(rasterizer: stub).buildForDraft(draft),
+        throwsA(
+          isA<DraftOverlayRestoreException>().having(
+            (e) => e.message,
+            'message',
+            contains('Only 0 of 1 layer(s)'),
+          ),
+        ),
       );
     });
 
@@ -220,7 +310,14 @@ void main() {
 
 /// Stands in for the real rasterizer so the service can be exercised without
 /// a widget tree, recording what it was asked to bake.
+///
+/// [dropLayers] reproduces `captureAllLayers` returning fewer layers than it
+/// was given, which is how the package reports a layer that produced no image.
 class _StubLayerRasterizer extends LayerRasterizer {
+  _StubLayerRasterizer({this.dropLayers = false});
+
+  final bool dropLayers;
+
   int? capturedLayerCount;
   Size? editorBodySize;
   double? basePixelRatio;
@@ -240,6 +337,7 @@ class _StubLayerRasterizer extends LayerRasterizer {
     this.editorBodySize = editorBodySize;
     this.basePixelRatio = basePixelRatio;
     await awaitContentReady?.call();
+    if (dropLayers) return const [];
     return [
       for (final layer in layers)
         ExportedLayer(

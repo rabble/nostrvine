@@ -15,8 +15,10 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/publish_error_kind_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/models/stop_motion_clip_frame.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -25,7 +27,10 @@ import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
+import 'package:pro_image_editor/pro_image_editor.dart'
+    show LayerRasterizer, TextLayer;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -457,4 +462,257 @@ void main() {
       },
     );
   });
+
+  // #5203 hid Post for drafts with no cached render because publishing one
+  // shipped the raw recording without its editor layers. Publish now renders
+  // on demand instead, so these tests pin that the render actually happens and
+  // that its failures reach the user.
+  group(
+    'VideoPublishNotifier publishVideo renders drafts without a render',
+    () {
+      setUpAll(() {
+        registerFallbackValue(_FakeDivineVideoDraft());
+      });
+
+      tearDown(() {
+        VideoEditorRenderService.renderVideoToClipOverride = null;
+      });
+
+      DivineVideoClip clip({List<StopMotionClipFrame>? stopMotionFrames}) =>
+          DivineVideoClip(
+            id: 'clip_1',
+            video: stopMotionFrames == null
+                ? EditorVideo.file('/tmp/test.mp4')
+                : null,
+            stopMotionFrames: stopMotionFrames,
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025),
+            originalAspectRatio: 9 / 16,
+            targetAspectRatio: .vertical,
+          );
+
+      DivineVideoDraft draft({List<DivineVideoClip>? clips}) =>
+          DivineVideoDraft(
+            id: 'draft_1',
+            clips: clips ?? [clip()],
+            title: 'Plants',
+            description: '',
+            hashtags: const {},
+            selectedApproach: 'camera',
+            createdAt: DateTime(2025),
+            lastModified: DateTime(2025),
+            publishStatus: PublishStatus.draft,
+            publishAttempts: 0,
+            // No finalRenderedClip: this is the branch under test.
+          );
+
+      /// Pumps the app shell the notifier needs: mocked draft storage, real
+      /// prefs for the l10n lookup, and a navigator the snackbars land in.
+      ///
+      /// [rasterizer] defaults to one with no mounted host, which is what a
+      /// draft whose layers cannot be baked looks like — capture throws.
+      Future<ProviderContainer> pumpHarness(
+        WidgetTester tester, {
+        LayerRasterizer? rasterizer,
+      }) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockDraftStorage = _MockDraftStorageService();
+        when(() => mockDraftStorage.saveDraft(any())).thenAnswer((_) async {});
+
+        final container = ProviderContainer(
+          overrides: [
+            draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            if (rasterizer != null)
+              layerRasterizerProvider.overrideWithValue(rasterizer),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              navigatorKey: NavigatorKeys.root,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: const Scaffold(body: SizedBox()),
+            ),
+          ),
+        );
+        return container;
+      }
+
+      testWidgets('renders a single-clip draft instead of publishing it raw', (
+        tester,
+      ) async {
+        final container = await pumpHarness(tester);
+        var renderCalls = 0;
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async {
+              renderCalls++;
+              return null; // stop the publish here; the render is the assertion
+            };
+
+        final context = tester.element(find.byType(SizedBox));
+        await container
+            .read(videoPublishProvider.notifier)
+            .publishVideo(context, draft());
+
+        expect(
+          renderCalls,
+          equals(1),
+          reason:
+              'a lone clip used to skip the render and ship the raw recording, '
+              'losing every layer plus trim, speed and volume',
+        );
+      });
+
+      testWidgets('surfaces a snackbar when the render fails', (tester) async {
+        final container = await pumpHarness(tester);
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async => null;
+
+        final context = tester.element(find.byType(SizedBox));
+        await container
+            .read(videoPublishProvider.notifier)
+            .publishVideo(context, draft());
+        await tester.pump();
+
+        expect(
+          find.widgetWithText(
+            SnackBar,
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).publishErrorMessage(PublishErrorKind.generic),
+          ),
+          findsOneWidget,
+          reason:
+              'nothing on screen reads the error state, so setError alone just '
+              'makes the preparing scrim vanish (#6058)',
+        );
+      });
+
+      testWidgets('reports a failed stop-motion assembly in its own words', (
+        tester,
+      ) async {
+        final container = await pumpHarness(tester);
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async => null;
+
+        final context = tester.element(find.byType(SizedBox));
+        await container
+            .read(videoPublishProvider.notifier)
+            .publishVideo(
+              context,
+              draft(
+                clips: [
+                  clip(
+                    stopMotionFrames: const [
+                      StopMotionClipFrame(
+                        path: '/tmp/frame_1.jpg',
+                        duration: Duration(milliseconds: 100),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+        await tester.pump();
+
+        expect(
+          find.widgetWithText(
+            SnackBar,
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).videoRecorderStopMotionAssembleFailed,
+          ),
+          findsOneWidget,
+          reason:
+              'a frames-only draft that reaches here failed its assembly pass, '
+              'which the generic render copy does not describe',
+        );
+      });
+
+      testWidgets('blocks the publish when the overlays cannot be restored', (
+        tester,
+      ) async {
+        final rasterizer = LayerRasterizer();
+        addTearDown(rasterizer.dispose);
+        final container = await pumpHarness(tester, rasterizer: rasterizer);
+        var renderCalls = 0;
+        VideoEditorRenderService.renderVideoToClipOverride =
+            ({
+              required clips,
+              required editorStateHistory,
+              parameters,
+              taskId,
+            }) async {
+              renderCalls++;
+              return null;
+            };
+
+        final context = tester.element(find.byType(SizedBox));
+        await container
+            .read(videoPublishProvider.notifier)
+            .publishVideo(
+              context,
+              draft().copyWith(
+                editorEditingParameters: const {
+                  'bodySize': {'width': 300.0, 'height': 500.0},
+                },
+                editorStateHistory: {
+                  'position': 0,
+                  'references': {
+                    'text-1': TextLayer(id: 'text-1', text: 'hello').toMap(),
+                  },
+                  'history': [
+                    {
+                      'layers': [
+                        {'id': 'text-1'},
+                      ],
+                    },
+                  ],
+                },
+              ),
+            );
+        await tester.pump();
+
+        expect(
+          renderCalls,
+          isZero,
+          reason:
+              'a video published without the text the user still sees on the '
+              'draft is the #5203 failure, and a Nostr event cannot be quietly '
+              'corrected',
+        );
+        expect(
+          find.widgetWithText(
+            SnackBar,
+            lookupAppLocalizations(
+              const Locale('en'),
+            ).publishErrorOverlaysUnavailable,
+          ),
+          findsOneWidget,
+        );
+      });
+    },
+  );
 }

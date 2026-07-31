@@ -1487,15 +1487,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state.editorEditingParameters ?? CompleteParameters.fromMap({});
 
     final audioEvents = baseParams.audioTracksFromMeta;
-    final audioTracks = <AudioTrack>[
-      for (final track in audioEvents) ?audioTrackFromMetaForRender(track),
-      // selectedSound is legacy single-sound state from the recorder flow.
-      // When the timeline already carries audio (meta tracks) it is the same
-      // sound, so adding it again duplicates the audio. Only fall back to it
-      // when the timeline has no audio of its own.
-      if (audioEvents.isEmpty && soundTrack != null)
-        ?audioTrackFromSoundForRender(soundTrack),
-    ];
+    final audioTracks = buildRenderAudioTracks(
+      metaTracks: audioEvents,
+      selectedSound: soundTrack,
+    );
 
     // Surface the resolution result so a silent export (no audio) is
     // diagnosable from logs instead of failing quietly — the common cause is

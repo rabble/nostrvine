@@ -389,8 +389,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       // actually needed — a normal publish never depends on l10n being wired
       // up, and materialize is a no-op passthrough for a clip that already
       // has a video. A draft with no render of its own goes through
-      // renderVideoToClip below, which materializes its own stop-motion clips.
-      final stopMotionFailedMessage = finalRenderedClip?.isStopMotion ?? false
+      // renderVideoToClip below, which materializes its own stop-motion clips
+      // and reports an assembly failure the same way as any other render
+      // failure — so that path needs the copy too.
+      final needsStopMotionRender =
+          (finalRenderedClip?.isStopMotion ?? false) ||
+          (finalRenderedClip == null &&
+              draft.clips.any((clip) => clip.isStopMotion));
+      final stopMotionFailedMessage = needsStopMotionRender
           ? context.l10n.videoRecorderStopMotionAssembleFailed
           : null;
 
@@ -455,11 +461,17 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         );
 
         if (result == null) {
-          setError(
-            currentAppL10n(
-              ref.read(sharedPreferencesProvider),
-            ).publishErrorMessage(PublishErrorKind.generic),
-          );
+          // `setError` alone is invisible here: nothing on screen reads the
+          // error state, so the `.preparing` scrim would just vanish (#6058).
+          // A frames-only draft that got this far failed its stop-motion
+          // assembly, which has its own copy.
+          final message =
+              stopMotionFailedMessage ??
+              currentAppL10n(
+                ref.read(sharedPreferencesProvider),
+              ).publishErrorMessage(PublishErrorKind.generic);
+          setError(message);
+          _showPublishError(message);
           return;
         }
 
