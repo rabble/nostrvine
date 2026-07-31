@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -46,6 +47,29 @@ DivineVideoDraft _createDraft({AudioEvent? selectedSound}) => DivineVideoDraft(
 
 void main() {
   group(DivineVideoDraft, () {
+    test('preserves public audio attribution through JSON and copyWith', () {
+      const attribution = AudioShareAttribution(
+        title: 'My sound',
+        creatorName: 'Rabble',
+        creatorPubkey: _testPubkey,
+        publicTags: ['original'],
+        confirmedOwnWork: true,
+      );
+      final draft = _createDraft().copyWith(
+        audioShareAttribution: attribution,
+        skipUpdateLastModified: true,
+      );
+
+      final copied = draft.copyWith(
+        title: 'Changed',
+        skipUpdateLastModified: true,
+      );
+      final restored = DivineVideoDraft.fromJson(draft.toJson(), '/tmp');
+
+      expect(copied.audioShareAttribution, attribution);
+      expect(restored.audioShareAttribution, attribution);
+    });
+
     group('copyWith clearSelectedSound', () {
       test('clears selectedSound when clearSelectedSound is true', () {
         final draft = _createDraft();
