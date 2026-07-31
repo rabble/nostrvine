@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/sounds_tab.dart';
@@ -48,12 +51,16 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: VineTheme.theme,
-            home: Scaffold(
-              body: SoundsTab(showAudioPicker: showAudioPicker),
+          child: SavedSoundsScope(
+            service: SavedSoundsService(sharedPreferences),
+            mediaProbe: const _NoopSavedSoundMediaProbe(),
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: SoundsTab(showAudioPicker: showAudioPicker),
+              ),
             ),
           ),
         ),
@@ -99,12 +106,42 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Wednesday My Dudes'), findsOneWidget);
+      expect(find.byKey(const Key('saved_sound_label_field')), findsOneWidget);
 
-      final savedSounds = SavedSoundsService(sharedPreferences).loadSounds();
+      final savedSounds = SavedSoundsService(
+        sharedPreferences,
+      ).loadSavedSounds();
       expect(
-        savedSounds.map((sound) => sound.title),
+        savedSounds.map((sound) => sound.audio.title),
         contains('Wednesday My Dudes'),
       );
+    });
+
+    testWidgets('filters rich cards by personal hashtag', (tester) async {
+      final service = SavedSoundsService(sharedPreferences);
+      await service.saveSavedSound(
+        SavedSound(
+          audio: _sound(id: 'sound1', title: 'Drum Loop'),
+          personalHashtags: const ['practice'],
+          catalogTags: const [],
+          waveformSamples: const [],
+        ),
+      );
+      await service.saveSavedSound(
+        SavedSound(
+          audio: _sound(id: 'sound2', title: 'Piano Loop'),
+          personalHashtags: const ['favorite'],
+          catalogTags: const [],
+          waveformSamples: const [],
+        ),
+      );
+
+      await pumpSoundsTab(tester);
+      await tester.tap(find.byKey(const Key('saved_sound_filter_practice')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Drum Loop'), findsOneWidget);
+      expect(find.text('Piano Loop'), findsNothing);
     });
 
     testWidgets('shows empty state when no sounds have been saved', (
@@ -125,11 +162,18 @@ void main() {
       );
 
       await pumpSoundsTab(tester);
-      await tester.tap(find.byTooltip('Remove sound'));
+      await tester.tap(find.byKey(const Key('saved_sound_remove')));
       await tester.pumpAndSettle();
 
       expect(find.text('Original sound - rabble'), findsNothing);
       expect(find.text('No saved sounds yet'), findsOneWidget);
     });
   });
+}
+
+class _NoopSavedSoundMediaProbe implements SavedSoundMediaProbe {
+  const _NoopSavedSoundMediaProbe();
+
+  @override
+  Future<SavedSoundMediaResult?> probe(AudioEvent sound) async => null;
 }

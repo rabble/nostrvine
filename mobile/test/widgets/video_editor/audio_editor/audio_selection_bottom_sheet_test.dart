@@ -4,14 +4,17 @@
 
 import 'dart:async';
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
+import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/sound_library_service.dart';
@@ -66,26 +69,42 @@ void main() {
       List<VineSound> bundledSounds = const [],
       AudioPlaybackService? audioService,
     }) {
-      return ProviderScope(
-        overrides: [
-          soundLibraryServiceProvider.overrideWith(
-            (_) async => _FakeSoundLibraryService(bundledSounds),
-          ),
-          savedSoundsProvider.overrideWith(
-            () => _FakeSavedSoundsNotifier(savedSounds),
-          ),
-          if (trendingSoundsAsync != null)
-            trendingSoundsProvider.overrideWith(
-              () => _FakeTrendingSounds(trendingSoundsAsync),
+      final savedSoundsBloc = _MockSavedSoundsBloc();
+      when(() => savedSoundsBloc.state).thenReturn(
+        SavedSoundsState(
+          status: SavedSoundsStatus.loaded,
+          sounds: savedSounds
+              .map(
+                (sound) => SavedSound(
+                  audio: sound,
+                  personalHashtags: const [],
+                  catalogTags: const [],
+                  waveformSamples: const [],
+                ),
+              )
+              .toList(growable: false),
+        ),
+      );
+      return BlocProvider<SavedSoundsBloc>.value(
+        value: savedSoundsBloc,
+        child: ProviderScope(
+          overrides: [
+            soundLibraryServiceProvider.overrideWith(
+              (_) async => _FakeSoundLibraryService(bundledSounds),
             ),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: AudioSelectionBottomSheet(
-              scrollController: scrollController,
-              audioService: audioService,
+            if (trendingSoundsAsync != null)
+              trendingSoundsProvider.overrideWith(
+                () => _FakeTrendingSounds(trendingSoundsAsync),
+              ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: AudioSelectionBottomSheet(
+                scrollController: scrollController,
+                audioService: audioService,
+              ),
             ),
           ),
         ),
@@ -514,14 +533,8 @@ class _FakeTrendingSounds extends TrendingSounds {
   }
 }
 
-class _FakeSavedSoundsNotifier extends SavedSoundsNotifier {
-  _FakeSavedSoundsNotifier(this._sounds);
-
-  final List<AudioEvent> _sounds;
-
-  @override
-  List<AudioEvent> build() => _sounds;
-}
+class _MockSavedSoundsBloc extends MockBloc<SavedSoundsEvent, SavedSoundsState>
+    implements SavedSoundsBloc {}
 
 class _FakeSoundLibraryService extends SoundLibraryService {
   _FakeSoundLibraryService(this._bundledSounds);

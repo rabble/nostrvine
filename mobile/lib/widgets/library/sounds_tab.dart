@@ -4,15 +4,16 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
-import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
-import 'package:openvine/widgets/sound_tile.dart';
+import 'package:openvine/widgets/library/saved_sound_card.dart';
+import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -32,8 +33,8 @@ class SoundsTab extends ConsumerStatefulWidget {
 
 class _SoundsTabState extends ConsumerState<SoundsTab> {
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
   String? _previewingSoundId;
+  String? _editingSoundId;
 
   /// Cached reference to audio service for safe disposal.
   AudioPlaybackService? _audioService;
@@ -48,9 +49,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   }
 
   void _onSearchChanged(String query) {
-    setState(() {
-      _searchQuery = query.toLowerCase().trim();
-    });
+    context.read<SavedSoundsBloc>().add(SavedSoundsQueryChanged(query));
   }
 
   Future<void> _stopPreview() async {
@@ -96,23 +95,13 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     }
   }
 
-  Future<void> _onSoundTap(AudioEvent sound) async {
+  Future<void> _onRemoveTap(SavedSound sound) async {
     await _stopPreview();
     if (!mounted) return;
-    context.push(SoundDetailScreen.pathForId(sound.id), extra: sound);
-  }
-
-  Future<void> _onDetailTap(AudioEvent sound) async {
-    if (sound.isBundled) return;
-    await _stopPreview();
-    if (!mounted) return;
-    context.push(SoundDetailScreen.pathForId(sound.id), extra: sound);
-  }
-
-  Future<void> _onRemoveTap(AudioEvent sound) async {
-    await _stopPreview();
-    await ref.read(savedSoundsProvider.notifier).removeSound(sound.id);
-    if (!mounted) return;
+    context.read<SavedSoundsBloc>().add(SavedSoundRemoveRequested(sound.id));
+    if (_editingSoundId == sound.id) {
+      setState(() => _editingSoundId = null);
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -131,10 +120,11 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
             AudioSelectionBottomSheet.show(context));
     if (selectedSound == null || !mounted) return;
 
-    final result = await ref
-        .read(savedSoundsProvider.notifier)
-        .saveSound(selectedSound);
+    final result = await context.read<SavedSoundsBloc>().saveSound(
+      selectedSound,
+    );
     if (!mounted) return;
+    setState(() => _editingSoundId = selectedSound.id);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -146,14 +136,6 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
         duration: const Duration(seconds: 2),
       ),
     );
-  }
-
-  List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
-    if (_searchQuery.isEmpty) return sounds;
-    return sounds.where((sound) {
-      final title = sound.title?.toLowerCase() ?? '';
-      return title.contains(_searchQuery);
-    }).toList();
   }
 
   @override
@@ -172,29 +154,23 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   }
 
   Widget _buildContent() {
-    final savedSounds = ref.watch(savedSoundsProvider);
-    return _buildSoundsContent(savedSounds);
-  }
+    return BlocBuilder<SavedSoundsBloc, SavedSoundsState>(
+      builder: (context, state) {
+        if (state.sounds.isEmpty) return _buildEmptyState();
+        if (state.visibleSounds.isEmpty) return _buildNoResultsState();
 
-  Widget _buildSoundsContent(List<AudioEvent> sounds) {
-    if (sounds.isEmpty) return _buildEmptyState();
-
-    final filteredSounds = _filterSounds(sounds);
-    if (_searchQuery.isNotEmpty && filteredSounds.isEmpty) {
-      return _buildNoResultsState();
-    }
-
-    return ListView(
-      children: [
-        _SavedSoundsSection(
-          sounds: filteredSounds,
-          previewingSoundId: _previewingSoundId,
-          onTap: _onSoundTap,
-          onPreview: _onPreviewTap,
-          onDetail: _onDetailTap,
+        return _SavedSoundsSection(
+          state: state,
+          editingSoundId: _editingSoundId,
+          onPreview: (sound) => _onPreviewTap(sound.audio),
+          onEdit: (sound) {
+            setState(() {
+              _editingSoundId = _editingSoundId == sound.id ? null : sound.id;
+            });
+          },
           onRemove: _onRemoveTap,
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -313,39 +289,26 @@ class _SearchInput extends StatelessWidget {
 
 class _SavedSoundsSection extends StatelessWidget {
   const _SavedSoundsSection({
-    required this.sounds,
-    required this.previewingSoundId,
-    required this.onTap,
+    required this.state,
+    required this.editingSoundId,
     required this.onPreview,
-    required this.onDetail,
+    required this.onEdit,
     required this.onRemove,
   });
 
-  final List<AudioEvent> sounds;
-  final String? previewingSoundId;
-  final ValueChanged<AudioEvent> onTap;
-  final ValueChanged<AudioEvent> onPreview;
-  final ValueChanged<AudioEvent> onDetail;
-  final ValueChanged<AudioEvent> onRemove;
-
-  String _availabilityLabel(BuildContext context, AudioEvent sound) {
-    if (sound.isOriginalSound) {
-      return context.l10n.soundsAvailabilityPrivate;
-    }
-    return context.l10n.soundsAvailabilityCommunity;
-  }
-
-  Color _availabilityColor(BuildContext context, AudioEvent sound) {
-    if (sound.isOriginalSound) {
-      return context.vineColors.mutedText;
-    }
-    return VineTheme.vineGreen;
-  }
+  final SavedSoundsState state;
+  final String? editingSoundId;
+  final ValueChanged<SavedSound> onPreview;
+  final ValueChanged<SavedSound> onEdit;
+  final ValueChanged<SavedSound> onRemove;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final sounds = state.visibleSounds;
+    final hashtags =
+        state.sounds.expand((sound) => sound.personalHashtags).toSet().toList()
+          ..sort();
+    return ListView(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -367,7 +330,7 @@ class _SavedSoundsSection extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                '(${sounds.length})',
+                '(${state.sounds.length})',
                 style: TextStyle(
                   color: context.vineColors.onSurfaceMuted,
                   fontSize: 14,
@@ -376,32 +339,48 @@ class _SavedSoundsSection extends StatelessWidget {
             ],
           ),
         ),
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: sounds.length,
-          itemBuilder: (context, index) {
-            final sound = sounds[index];
-            return SoundTile(
-              sound: sound,
-              isPlaying: previewingSoundId == sound.id,
-              statusBadgeLabel: _availabilityLabel(context, sound),
-              statusBadgeColor: _availabilityColor(context, sound),
-              onTap: () => onTap(sound),
-              onPlayPreview: () => onPreview(sound),
-              onDetailTap: sound.isBundled ? null : () => onDetail(sound),
-              trailing: IconButton(
-                tooltip: context.l10n.soundsRemoveSavedSound,
-                icon: Icon(
-                  Icons.bookmark_remove_outlined,
-                  color: context.vineColors.mutedText,
-                ),
-                onPressed: () => onRemove(sound),
+        if (hashtags.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final hashtag in hashtags)
+                  FilterChip(
+                    key: Key('saved_sound_filter_$hashtag'),
+                    label: Text('#$hashtag'),
+                    selected: state.selectedHashtag == hashtag,
+                    onSelected: (selected) {
+                      context.read<SavedSoundsBloc>().add(
+                        SavedSoundsHashtagSelected(
+                          selected ? hashtag : null,
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        for (final sound in sounds)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                children: [
+                  SavedSoundCard(
+                    sound: sound,
+                    onPreview: () => onPreview(sound),
+                    onEdit: () => onEdit(sound),
+                    onRemove: () => onRemove(sound),
+                  ),
+                  if (editingSoundId == sound.id)
+                    SavedSoundDetailsEditor(sound: sound),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          ),
       ],
     );
   }

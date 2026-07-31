@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent, VineSound;
+import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -388,7 +389,12 @@ class _AudioSelectionBottomSheetState
   Widget build(BuildContext context) {
     final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
     final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
-    final savedSounds = ref.watch(savedSoundsProvider);
+    final savedSounds = context
+        .watch<SavedSoundsBloc>()
+        .state
+        .sounds
+        .map((sound) => sound.audio)
+        .toList(growable: false);
 
     final bundledVineSounds =
         bundledSoundsAsync.whenOrNull(data: (service) => service.sounds) ??
