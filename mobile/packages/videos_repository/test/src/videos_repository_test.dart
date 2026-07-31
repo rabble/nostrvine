@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,36 @@ class MockNostrClient extends Mock implements NostrClient {}
 class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class MockVideoLocalStorage extends Mock implements VideoLocalStorage {}
+
+/// [Random] that pins the very first `nextInt` result and records the bounds
+/// it was asked for.
+///
+/// The Classics feed draws its archive offset before it shuffles the page, so
+/// pinning the first draw fixes which page it lands on while the shuffle's
+/// draws fall through to a seeded [Random] and stay deterministic.
+class _StubRandom implements Random {
+  _StubRandom({this.firstDraw = 0});
+
+  /// Result handed to the offset draw.
+  final int firstDraw;
+
+  final Random _shuffleRandom = Random(0);
+
+  /// Every `max` passed to [nextInt], in call order.
+  final List<int> recordedMaxima = [];
+
+  @override
+  int nextInt(int max) {
+    recordedMaxima.add(max);
+    return recordedMaxima.length == 1 ? firstDraw : _shuffleRandom.nextInt(max);
+  }
+
+  @override
+  bool nextBool() => _shuffleRandom.nextBool();
+
+  @override
+  double nextDouble() => _shuffleRandom.nextDouble();
+}
 
 /// Test helper that tracks content filter calls.
 class TestContentFilter {
@@ -4179,125 +4210,197 @@ void main() {
     group('getClassicVideos', () {
       late MockFunnelcakeApiClient mockFunnelcakeClient;
 
+      /// Archive page large enough that a shuffle is observable.
+      List<VideoStats> archivePage(int count) => [
+        for (var i = 0; i < count; i++)
+          _createVideoStats(
+            id: 'vine-$i',
+            pubkey: 'pubkey-$i',
+            dTag: 'vine-$i',
+            videoUrl: 'https://example.com/vine-$i.mp4',
+            rawTags: const {'platform': 'vine'},
+          ),
+      ];
+
+      void stubArchive(List<VideoStats> page) {
+        when(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async => page);
+      }
+
+      VideosRepository buildRepository({Random? random}) => VideosRepository(
+        nostrClient: mockNostrClient,
+        funnelcakeApiClient: mockFunnelcakeClient,
+        random: random,
+      );
+
       setUp(() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getBulkVideoStats(any()),
         ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
-        when(
-          () => mockFunnelcakeClient.getV2PopularVideosPage(
-            variant: any(named: 'variant'),
-            limit: any(named: 'limit'),
-            cursor: any(named: 'cursor'),
-            before: any(named: 'before'),
-            preferredLanguages: any(named: 'preferredLanguages'),
-            viewerCountry: any(named: 'viewerCountry'),
-          ),
-        ).thenAnswer((invocation) async {
-          final stats = await mockFunnelcakeClient.getV2PopularVideos(
-            variant:
-                invocation.namedArguments[#variant] as PopularVideosVariant,
-            limit: invocation.namedArguments[#limit] as int? ?? 25,
-            before: invocation.namedArguments[#before] as int?,
-          );
-          return V2PopularVideosResponse(videos: stats);
-        });
       });
 
-      test(
-        'delegates to the classic popular feed and maps it to a HomeFeedResult',
-        () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getV2PopularVideos(
-              variant: any(named: 'variant'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              _createVideoStats(
-                id: 'vine-1',
-                pubkey: 'pubkey-1',
-                dTag: 'vine-1',
-                videoUrl: 'https://example.com/vine-1.mp4',
-                rawTags: const {'platform': 'vine'},
-              ),
-            ],
-          );
+      test('reads the archive at a page-aligned random start offset', () async {
+        stubArchive(archivePage(20));
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        // Random.nextInt is called once, over the number of reachable pages.
+        final random = _StubRandom(firstDraw: 7);
+        await buildRepository(random: random).getClassicVideos(limit: 20);
 
-          final result = await repositoryWithApi.getClassicVideos();
+        // The offset is drawn over the reachable page count, not a raw index.
+        expect(random.recordedMaxima.first, 21); // (400 ~/ 20) + 1
+        verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: 20,
+            offset: 140, // 7 * 20
+            before: any(named: 'before'),
+          ),
+        ).called(1);
+      });
 
-          expect(result.videos.map((v) => v.id), ['vine-1']);
-          verify(
-            () => mockFunnelcakeClient.getV2PopularVideosPage(
-              variant: PopularVideosVariant.classic,
-              limit: any(named: 'limit'),
-              cursor: any(named: 'cursor'),
-              before: any(named: 'before'),
-              preferredLanguages: any(named: 'preferredLanguages'),
-              viewerCountry: any(named: 'viewerCountry'),
-            ),
-          ).called(1);
-        },
-      );
+      test('shuffles the page rather than preserving archive order', () async {
+        stubArchive(archivePage(20));
 
-      test(
-        'maps a non-null page cursor to paginationCursor with hasMore',
-        () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getV2PopularVideosPage(
-              variant: any(named: 'variant'),
-              limit: any(named: 'limit'),
-              cursor: any(named: 'cursor'),
-              before: any(named: 'before'),
-              preferredLanguages: any(named: 'preferredLanguages'),
-              viewerCountry: any(named: 'viewerCountry'),
-            ),
-          ).thenAnswer(
-            (_) async => V2PopularVideosResponse(
-              videos: [
-                _createVideoStats(
-                  id: 'vine-1',
-                  pubkey: 'pubkey-1',
-                  dTag: 'vine-1',
-                  videoUrl: 'https://example.com/vine-1.mp4',
-                  rawTags: const {'platform': 'vine'},
-                ),
-              ],
-              nextCursor: 'page-2',
-              hasMore: true,
-            ),
-          );
+        final result = await buildRepository(
+          random: Random(7),
+        ).getClassicVideos(limit: 20);
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final archiveOrder = [for (var i = 0; i < 20; i++) 'vine-$i'];
+        expect(result.videos.map((v) => v.id), isNot(archiveOrder));
+        expect(result.videos.map((v) => v.id), unorderedEquals(archiveOrder));
+      });
 
-          final result = await repositoryWithApi.getClassicVideos(limit: 1);
+      test('draws a different slice on each cache-missing fetch', () async {
+        stubArchive(archivePage(20));
 
-          expect(result.videos.map((v) => v.id), ['vine-1']);
-          expect(result.paginationCursor, 'page-2');
-          expect(result.hasMore, isTrue);
-        },
-      );
+        final repository = buildRepository(random: Random(7));
+        await repository.getClassicVideos(limit: 20);
+        await repository.getClassicVideos(limit: 20, skipCache: true);
+
+        final offsets = verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: captureAny(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).captured;
+        expect(offsets, hasLength(2));
+        expect(offsets.first, isNot(offsets.last));
+      });
+
+      test('advances the cursor by a page and resumes from it', () async {
+        stubArchive(archivePage(20));
+
+        final repository = buildRepository(random: _StubRandom());
+        final first = await repository.getClassicVideos(limit: 20);
+        expect(first.paginationCursor, 'classic-offset:20');
+        expect(first.hasMore, isTrue);
+
+        await repository.getClassicVideos(
+          limit: 20,
+          cursor: first.paginationCursor,
+        );
+
+        verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: 20,
+            before: any(named: 'before'),
+          ),
+        ).called(1);
+      });
+
+      test('ends pagination when the archive returns a short page', () async {
+        stubArchive(archivePage(3));
+
+        final result = await buildRepository(
+          random: _StubRandom(),
+        ).getClassicVideos(limit: 20);
+
+        expect(result.paginationCursor, isNull);
+        expect(result.hasMore, isFalse);
+      });
+
+      test('keeps the slice stable across cache-eligible fetches', () async {
+        stubArchive(archivePage(20));
+
+        final repository = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          inMemoryFeedCache: InMemoryFeedCache(),
+          random: _StubRandom(),
+        );
+
+        final first = await repository.getClassicVideos(limit: 20);
+        final second = await repository.getClassicVideos(limit: 20);
+
+        expect(second.videos.map((v) => v.id), first.videos.map((v) => v.id));
+        verify(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).called(1);
+      });
+
+      test('drops archive rows that are not original vines', () async {
+        stubArchive([
+          _createVideoStats(
+            id: 'vine-1',
+            pubkey: 'pubkey-1',
+            dTag: 'vine-1',
+            videoUrl: 'https://example.com/vine-1.mp4',
+            rawTags: const {'platform': 'vine'},
+          ),
+          _createVideoStats(
+            id: 'divine-1',
+            pubkey: 'pubkey-2',
+            dTag: 'divine-1',
+            videoUrl: 'https://example.com/divine-1.mp4',
+          ),
+        ]);
+
+        final result = await buildRepository(
+          random: _StubRandom(),
+        ).getClassicVideos(limit: 20);
+
+        expect(result.videos.map((v) => v.id), ['vine-1']);
+      });
 
       test('returns an empty result when Funnelcake is unavailable', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
 
-        final repositoryWithApi = VideosRepository(
-          nostrClient: mockNostrClient,
-          funnelcakeApiClient: mockFunnelcakeClient,
-        );
+        final result = await buildRepository().getClassicVideos();
 
-        final result = await repositoryWithApi.getClassicVideos();
+        expect(result.videos, isEmpty);
+        expect(result.hasMore, isFalse);
+      });
+
+      test('returns an empty result when the archive request fails', () async {
+        when(
+          () => mockFunnelcakeClient.getClassicVines(
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            before: any(named: 'before'),
+          ),
+        ).thenThrow(const FunnelcakeNotConfiguredException());
+
+        final result = await buildRepository(
+          random: _StubRandom(),
+        ).getClassicVideos();
 
         expect(result.videos, isEmpty);
         expect(result.hasMore, isFalse);

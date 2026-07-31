@@ -4,6 +4,8 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
+import 'dart:math';
+
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -74,6 +76,16 @@ const Duration _recentRelayRefreshTimeout = Duration(seconds: 3);
 const Duration _routeRelayTimeout = Duration(seconds: 3);
 const String _popularCacheKey = 'popular';
 const String _popularLegacyBeforeCursorPrefix = 'before:';
+const String _classicsCacheKey = 'classics';
+const String _classicsOffsetCursorPrefix = 'classic-offset:';
+
+/// Highest archive offset the Classics feed may open a session on.
+///
+/// The loops-sorted archive holds roughly 10k videos; starting anywhere in
+/// the most-looped few hundred keeps the feed varied between sessions without
+/// dropping the user into the unwatched long tail. Mirrors the Explore →
+/// Classics tab so both surfaces draw from the same window.
+const int _classicsMaxRandomStartOffset = 400;
 
 /// Result of a hashtag REST feed fetch.
 class HashtagFeedVideosResult {
@@ -107,6 +119,17 @@ int? _decodePopularLegacyBeforeCursor(String? cursor) {
   return int.tryParse(
     cursor.substring(_popularLegacyBeforeCursorPrefix.length),
   );
+}
+
+String _encodeClassicsOffsetCursor(int offset) =>
+    '$_classicsOffsetCursorPrefix$offset';
+
+int? _decodeClassicsOffsetCursor(String? cursor) {
+  if (cursor == null || !cursor.startsWith(_classicsOffsetCursorPrefix)) {
+    return null;
+  }
+
+  return int.tryParse(cursor.substring(_classicsOffsetCursorPrefix.length));
 }
 
 String _popularPreferenceCacheSuffix({
@@ -153,6 +176,7 @@ class VideosRepository {
     FunnelcakeApiClient? funnelcakeApiClient,
     InMemoryFeedCache? inMemoryFeedCache,
     SeenVideoLookup? seenVideoLookup,
+    Random? random,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
@@ -160,7 +184,8 @@ class VideosRepository {
        _warningLabelsResolver = warningLabelsResolver,
        _funnelcakeApiClient = funnelcakeApiClient,
        _inMemoryFeedCache = inMemoryFeedCache,
-       _seenVideoLookup = seenVideoLookup;
+       _seenVideoLookup = seenVideoLookup,
+       _random = random ?? Random();
 
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
@@ -170,6 +195,11 @@ class VideosRepository {
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final InMemoryFeedCache? _inMemoryFeedCache;
   final SeenVideoLookup? _seenVideoLookup;
+
+  /// Randomness behind the Classics feed's per-session slice and shuffle.
+  /// Injectable so tests can pin an order.
+  final Random _random;
+
   String _recommendationSessionSeed = generateRecommendationSessionSeed();
 
   /// Clears the in-memory feed cache.
@@ -777,37 +807,83 @@ class VideosRepository {
     return visible.take(limit).toList();
   }
 
-  /// Fetches popular classic Vine archive videos for the home feed's
-  /// Classics mode.
+  /// Fetches classic Vine archive videos for the home feed's Classics mode.
   ///
-  /// Delegates to [getPopularVideosPage] with [PopularVideosVariant.classic],
-  /// so the source is identical to Explore → Popular's "Classic" toggle
-  /// (v2 popular feed, `sort=popular&period=month&platform=vine`,
-  /// cursor-paged, server-ordered) — not the standalone Explore → Classics
-  /// tab, which is offset-based and client-side shuffled. Mapped into a
-  /// [HomeFeedResult] so the home feed paginates it via
-  /// [HomeFeedResult.paginationCursor] like the For You feed. Funnelcake-only:
-  /// returns an empty result when no
-  /// Funnelcake relay is connected (relays do not expose the server-side
-  /// `platform` filter).
+  /// Reads the same offset-paginated, loops-sorted archive as the standalone
+  /// Explore → Classics tab — not Explore → Popular's "Classic" toggle, which
+  /// is server-ordered and therefore opens on the same videos in the same
+  /// order every time. Each fetch that misses the cache starts at a random
+  /// offset within [_classicsMaxRandomStartOffset] and shuffles the page, so
+  /// two sessions do not see the same opening run. The next offset rides in
+  /// [HomeFeedResult.paginationCursor], so the home feed paginates this like
+  /// the For You feed.
+  ///
+  /// Caching keeps the slice stable within a session: leaving and re-entering
+  /// the feed preserves the current ordering, while pull-to-refresh
+  /// ([skipCache] `true`) draws a fresh slice.
+  ///
+  /// Funnelcake-only: returns an empty result when no Funnelcake relay is
+  /// connected (relays do not expose the server-side `platform` filter).
   Future<HomeFeedResult> getClassicVideos({
     int limit = _defaultLimit,
-    int? until,
     String? cursor,
     bool skipCache = false,
   }) async {
-    final page = await getPopularVideosPage(
-      variant: PopularVideosVariant.classic,
-      limit: limit,
-      until: until,
-      cursor: cursor,
-      skipCache: skipCache,
-    );
-    return HomeFeedResult(
-      videos: page.videos,
-      paginationCursor: page.nextCursor,
-      hasMore: page.hasMore,
-    );
+    final isFirstPage = cursor == null;
+    if (!skipCache && isFirstPage) {
+      final cached = _inMemoryFeedCache?.get(_classicsCacheKey);
+      if (cached != null) return cached;
+    }
+
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return const HomeFeedResult(videos: [], hasMore: false);
+    }
+
+    final offset =
+        _decodeClassicsOffsetCursor(cursor) ?? _classicsOffset(limit);
+
+    try {
+      final stats = await _funnelcakeApiClient.getClassicVines(
+        limit: limit,
+        offset: offset,
+      );
+
+      final videos = _filterPopularVideosForVariant(
+        await _hydrateVideosWithBulkStats(
+          _transformVideoStats(stats, sortByCreatedAt: false),
+          replaceInteractionCounts: true,
+        ),
+        PopularVideosVariant.classic,
+      );
+
+      final deduped = <VideoEvent>[];
+      _appendUniqueVideos(deduped, videos, seenVideoKeys: <String>{});
+      deduped.shuffle(_random);
+
+      // A short page means the archive ran out at this offset. Length is read
+      // from the raw stats, not the filtered list, so a page that filters down
+      // to nothing still advances instead of ending the feed.
+      final exhausted = stats.length < limit;
+      final result = HomeFeedResult(
+        videos: deduped,
+        paginationCursor: exhausted
+            ? null
+            : _encodeClassicsOffsetCursor(offset + limit),
+        hasMore: !exhausted,
+      );
+
+      if (isFirstPage) _inMemoryFeedCache?.set(_classicsCacheKey, result);
+      return result;
+    } on FunnelcakeException {
+      return const HomeFeedResult(videos: [], hasMore: false);
+    }
+  }
+
+  /// A random archive offset for a Classics session, aligned to [limit]-sized
+  /// pages so successive cursors stay on page boundaries.
+  int _classicsOffset(int limit) {
+    final pageCount = (_classicsMaxRandomStartOffset ~/ limit) + 1;
+    return _random.nextInt(pageCount) * limit;
   }
 
   /// Fetches new divine videos from the popular leaderboard.

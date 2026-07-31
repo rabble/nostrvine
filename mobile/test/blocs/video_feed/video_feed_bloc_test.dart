@@ -962,7 +962,6 @@ void main() {
           when(
             () => mockVideosRepository.getClassicVideos(
               limit: any(named: 'limit'),
-              until: any(named: 'until'),
               cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
@@ -998,7 +997,6 @@ void main() {
           verify(
             () => mockVideosRepository.getClassicVideos(
               limit: any(named: 'limit'),
-              until: any(named: 'until'),
               cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
@@ -1575,7 +1573,6 @@ void main() {
           when(
             () => mockVideosRepository.getClassicVideos(
               limit: any(named: 'limit'),
-              until: any(named: 'until'),
               cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
@@ -1609,7 +1606,6 @@ void main() {
           verify(
             () => mockVideosRepository.getClassicVideos(
               limit: any(named: 'limit'),
-              until: any(named: 'until'),
               cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
@@ -1630,7 +1626,6 @@ void main() {
           when(
             () => mockVideosRepository.getClassicVideos(
               limit: any(named: 'limit'),
-              until: any(named: 'until'),
               cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
@@ -2799,7 +2794,6 @@ void main() {
           verifyNever(
             () => mockVideosRepository.getClassicVideos(
               limit: any(named: 'limit'),
-              until: any(named: 'until'),
               cursor: any(named: 'cursor'),
               skipCache: any(named: 'skipCache'),
             ),
