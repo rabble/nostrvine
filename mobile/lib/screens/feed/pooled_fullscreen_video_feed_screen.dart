@@ -964,47 +964,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 }
 
-class _LoadingIndicator extends StatefulWidget {
-  const _LoadingIndicator();
-
-  @override
-  State<_LoadingIndicator> createState() => _LoadingIndicatorState();
-}
-
-class _LoadingIndicatorState extends State<_LoadingIndicator> {
-  // Delay before the indicator becomes visible. Suppresses sub-threshold
-  // flashes that occur during play/pause and loop-enforcement seeks without
-  // hiding the indicator during genuine long loads.
-  static const _delay = Duration(milliseconds: 100);
-  static const _fadeDuration = Duration(milliseconds: 150);
-
-  bool _visible = false;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer(_delay, () {
-      if (mounted) setState(() => _visible = true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: _fadeDuration,
-      opacity: _visible ? 1.0 : 0.0,
-      child: const Center(child: BrandedLoadingIndicator(size: 60)),
-    );
-  }
-}
-
 /// Wraps the fullscreen video feed in a [NavRoundedShell] when the
 /// inline comment composer bar is on screen, so the bottom of the
 /// video carries the same rounded-corner treatment as the home feed.
