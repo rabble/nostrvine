@@ -437,4 +437,73 @@ void main() {
     ).called(1);
     expect(reacted, isNull);
   });
+
+  testWidgets('retry action survives the bar leaving the tree', (tester) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenThrow(Exception('send failed'));
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (inner) => MediaQuery(
+                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: barVisible,
+                  builder: (_, visible, _) => visible
+                      ? ReelDmReplyBarHost(dmReplyContext: context())
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+
+    // The player route goes away; the app-level ScaffoldMessenger keeps the
+    // snackbar — and its action — on screen.
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+
+    await tester.tap(find.text(l10n.dmSendFailedRetry));
+    await tester.pumpAndSettle();
+
+    // Inert rather than throwing on the defunct context: no second send.
+    expect(tester.takeException(), isNull);
+    verify(
+      () => dmRepo.sendMessage(
+        recipientPubkey: _peer,
+        content: 'hello',
+        replyToId: _reelId,
+      ),
+    ).called(1);
+  });
 }

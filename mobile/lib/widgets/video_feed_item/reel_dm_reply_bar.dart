@@ -303,6 +303,9 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   }
 
   void _openChat() {
+    // Reachable from a snackbar action that outlives the player route, where
+    // the lookup would fail with "No GoRouter found in context".
+    if (!mounted) return;
     context.push(
       ConversationPage.pathForId(_ctx.conversationId),
       extra: _ctx.participantPubkeys,
@@ -312,6 +315,11 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
   void _onReplyOutcome(InlineReelReplyState state) {
     final draft = _pendingDraft;
     _pendingDraft = '';
+
+    // Captured while the bar is still mounted. Snackbars are hosted by the root
+    // ScaffoldMessenger, above the Navigator, so their actions can fire after
+    // the player route is gone and this element is defunct.
+    final cubit = context.read<InlineReelReplyCubit>();
 
     if (state.status == InlineReelReplyStatus.failure) {
       // Restore the draft so the user can retry without retyping.
@@ -329,11 +337,12 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
             action: SnackBarAction(
               label: context.l10n.dmSendFailedRetry,
               onPressed: () {
-                if (draft.isNotEmpty) {
-                  _pendingDraft = draft;
-                  context.read<InlineReelReplyCubit>().submit(draft);
-                  _controller.clear();
-                }
+                // `mounted` also guards `_controller`, which dispose() tears
+                // down along with the rest of this State.
+                if (draft.isEmpty || !mounted || cubit.isClosed) return;
+                _pendingDraft = draft;
+                cubit.submit(draft);
+                _controller.clear();
               },
             ),
           ),
@@ -358,7 +367,7 @@ class _ReelDmReplyBarState extends State<_ReelDmReplyBar> {
           ),
         );
     }
-    context.read<InlineReelReplyCubit>().acknowledge();
+    cubit.acknowledge();
   }
 
   void _announce(String message) {
