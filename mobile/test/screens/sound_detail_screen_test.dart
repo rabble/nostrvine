@@ -11,9 +11,10 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -31,6 +32,11 @@ class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _NoopSavedSoundMediaProbe implements SavedSoundMediaProbe {
+  @override
+  Future<SavedSoundMediaResult?> probe(AudioEvent sound) async => null;
+}
 
 /// Creates a test AudioEvent with the given parameters.
 AudioEvent createTestAudioEvent({
@@ -794,16 +800,20 @@ void main() {
           addTearDown(container.dispose);
 
           await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: MockGoRouterProvider(
-                goRouter: mockGoRouter,
-                child: MaterialApp(
-                  localizationsDelegates:
-                      AppLocalizations.localizationsDelegates,
-                  supportedLocales: AppLocalizations.supportedLocales,
-                  theme: VineTheme.theme,
-                  home: SoundDetailScreen(sound: testSound),
+            SavedSoundsScope(
+              service: SavedSoundsService(sharedPreferences),
+              mediaProbe: _NoopSavedSoundMediaProbe(),
+              child: UncontrolledProviderScope(
+                container: container,
+                child: MockGoRouterProvider(
+                  goRouter: mockGoRouter,
+                  child: MaterialApp(
+                    localizationsDelegates:
+                        AppLocalizations.localizationsDelegates,
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    theme: VineTheme.theme,
+                    home: SoundDetailScreen(sound: testSound),
+                  ),
                 ),
               ),
             ),
@@ -816,9 +826,14 @@ void main() {
 
           verifyNever(() => mockGoRouter.pop<bool>(true));
           expect(find.text('Saved to Sounds'), findsOneWidget);
-          expect(container.read(savedSoundsProvider).map((sound) => sound.id), [
-            testSound.id,
-          ]);
+          expect(
+            SavedSoundsService(
+              sharedPreferences,
+            ).loadSavedSounds().map((sound) => sound.id),
+            [
+              testSound.id,
+            ],
+          );
           expect(container.read(selectedSoundProvider), isNull);
         },
       );
@@ -829,24 +844,31 @@ void main() {
         final sharedPreferences = await SharedPreferences.getInstance();
 
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-              soundUsageCountProvider(
-                testSound.id,
-              ).overrideWith((ref) => Future.value(0)),
-              videosUsingSoundProvider(
-                testSound.id,
-              ).overrideWith((ref) => Future.value(<String>[])),
-              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
-            ],
-            child: MockGoRouterProvider(
-              goRouter: mockGoRouter,
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: VineTheme.theme,
-                home: SoundDetailScreen(sound: testSound),
+          SavedSoundsScope(
+            service: SavedSoundsService(sharedPreferences),
+            mediaProbe: _NoopSavedSoundMediaProbe(),
+            child: ProviderScope(
+              overrides: [
+                sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+                soundUsageCountProvider(
+                  testSound.id,
+                ).overrideWith((ref) => Future.value(0)),
+                videosUsingSoundProvider(
+                  testSound.id,
+                ).overrideWith((ref) => Future.value(<String>[])),
+                audioPlaybackServiceProvider.overrideWithValue(
+                  mockAudioService,
+                ),
+              ],
+              child: MockGoRouterProvider(
+                goRouter: mockGoRouter,
+                child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  theme: VineTheme.theme,
+                  home: SoundDetailScreen(sound: testSound),
+                ),
               ),
             ),
           ),
@@ -1188,24 +1210,31 @@ void main() {
         await SavedSoundsService(sharedPreferences).saveSound(testSound);
 
         await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-              soundUsageCountProvider(
-                testSound.id,
-              ).overrideWith((ref) => Future.value(0)),
-              videosUsingSoundProvider(
-                testSound.id,
-              ).overrideWith((ref) => Future.value(<String>[])),
-              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
-            ],
-            child: MockGoRouterProvider(
-              goRouter: mockGoRouter,
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                theme: VineTheme.theme,
-                home: SoundDetailScreen(sound: testSound),
+          SavedSoundsScope(
+            service: SavedSoundsService(sharedPreferences),
+            mediaProbe: _NoopSavedSoundMediaProbe(),
+            child: ProviderScope(
+              overrides: [
+                sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+                soundUsageCountProvider(
+                  testSound.id,
+                ).overrideWith((ref) => Future.value(0)),
+                videosUsingSoundProvider(
+                  testSound.id,
+                ).overrideWith((ref) => Future.value(<String>[])),
+                audioPlaybackServiceProvider.overrideWithValue(
+                  mockAudioService,
+                ),
+              ],
+              child: MockGoRouterProvider(
+                goRouter: mockGoRouter,
+                child: MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  theme: VineTheme.theme,
+                  home: SoundDetailScreen(sound: testSound),
+                ),
               ),
             ),
           ),

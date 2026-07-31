@@ -7,16 +7,18 @@ import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/saved_sound_context_builder.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -188,9 +190,15 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       });
     }
 
-    final result = await ref
-        .read(savedSoundsProvider.notifier)
-        .saveSound(widget.sound);
+    final result = await context.read<SavedSoundsBloc>().saveSound(
+      widget.sound,
+      sourceContext: widget.sourceVideo == null
+          ? null
+          : const SavedSoundContextBuilder().fromVideo(
+              widget.sourceVideo!,
+              creatorName: widget.sourceVideo!.authorName,
+            ),
+    );
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(

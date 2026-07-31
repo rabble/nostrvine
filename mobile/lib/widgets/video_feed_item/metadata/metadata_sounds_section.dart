@@ -65,7 +65,7 @@ class _SharedAudioSection extends ConsumerWidget {
         }
         return MetadataSection(
           label: context.l10n.metadataSoundsLabel,
-          child: _SoundListItem(audio: audio),
+          child: _SoundListItem(audio: audio, sourceVideo: video),
         );
       },
       loading: () => MetadataSection(
@@ -248,9 +248,10 @@ class _OriginalSoundRow extends StatelessWidget {
 /// A list item showing audio cover, title, and artist name.
 /// Tapping navigates to the [SoundDetailScreen].
 class _SoundListItem extends ConsumerWidget {
-  const _SoundListItem({required this.audio});
+  const _SoundListItem({required this.audio, required this.sourceVideo});
 
   final AudioEvent audio;
+  final VideoEvent sourceVideo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -336,7 +337,10 @@ class _SoundListItem extends ConsumerWidget {
       // "Sound not found".
       hostContext.pushWithVideoPause(
         SoundDetailScreen.pathForId(audio.id),
-        extra: <String, dynamic>{'sound': audio},
+        extra: <String, dynamic>{
+          'sound': audio,
+          'sourceVideo': sourceVideo,
+        },
       );
     });
   }

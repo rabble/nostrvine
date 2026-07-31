@@ -52,7 +52,7 @@ class AudioAttributionRow extends ConsumerWidget {
           return _UnresolvedAudioAttribution(video: video);
         }
 
-        return _AudioAttributionContent(audio: audio);
+        return _AudioAttributionContent(audio: audio, sourceVideo: video);
       },
       loading: () => const _AudioAttributionSkeleton(),
       error: (error, stack) {
@@ -69,9 +69,13 @@ class AudioAttributionRow extends ConsumerWidget {
 
 /// The actual content showing audio attribution.
 class _AudioAttributionContent extends ConsumerWidget {
-  const _AudioAttributionContent({required this.audio});
+  const _AudioAttributionContent({
+    required this.audio,
+    required this.sourceVideo,
+  });
 
   final AudioEvent audio;
+  final VideoEvent sourceVideo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -111,7 +115,10 @@ class _AudioAttributionContent extends ConsumerWidget {
 
     context.pushWithVideoPause(
       SoundDetailScreen.pathForId(audio.id),
-      extra: audio,
+      extra: <String, dynamic>{
+        'sound': audio,
+        'sourceVideo': sourceVideo,
+      },
     );
   }
 }
