@@ -154,6 +154,12 @@ enum _EventPublishOutcome {
 
 enum _RelayPresence { found, notFound, unknown }
 
+/// Checks whether a selected sound may be reused in a newly published video.
+///
+/// The callback is injected by the app provider so this service remains
+/// independent of Riverpod and can fail closed in tests and other wiring.
+typedef AudioReuseConsentChecker = Future<bool> Function(AudioEvent sound);
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -169,6 +175,7 @@ class VideoEventPublisher {
     ProfileStatsDao? profileStatsDao,
     SavedSoundsService? savedSoundsService,
     EventApiClient? eventApiClient,
+    AudioReuseConsentChecker? audioReuseConsentChecker,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
@@ -179,7 +186,8 @@ class VideoEventPublisher {
        _audioExtractionService = audioExtractionService,
        _profileStatsDao = profileStatsDao,
        _savedSoundsService = savedSoundsService,
-       _eventApiClient = eventApiClient;
+       _eventApiClient = eventApiClient,
+       _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
   final AuthService? _authService;
@@ -196,6 +204,43 @@ class VideoEventPublisher {
   /// pool on transient REST failures. When null (legacy / test wiring), the
   /// publisher uses the WebSocket-only retry path.
   final EventApiClient? _eventApiClient;
+  final AudioReuseConsentChecker? _audioReuseConsentChecker;
+
+  /// Verifies that a selected sound is permitted to be reused.
+  ///
+  /// Bundled and local sounds do not represent another creator's Nostr
+  /// event. A creator may also reuse their own sound. Every other sound must
+  /// have explicit consent or pass the legacy source-video resolver; missing
+  /// verification fails closed so a private sound cannot be remixed by
+  /// accident.
+  Future<bool> _canReuseSelectedAudio(AudioEvent sound) async {
+    if (sound.isBundled ||
+        sound.isLocalImport ||
+        sound.isExternalProviderSound ||
+        sound.allowsReuse) {
+      return true;
+    }
+
+    final currentPubkey = _authService?.currentPublicKeyHex;
+    if (currentPubkey != null && currentPubkey == sound.pubkey) {
+      return true;
+    }
+
+    final checker = _audioReuseConsentChecker;
+    if (checker == null) return false;
+
+    try {
+      return await checker(sound);
+    } catch (error, _) {
+      Log.warning(
+        'Unable to verify selected audio reuse consent; blocking reuse: '
+        '$error',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+  }
 
   // Statistics
   int _totalEventsPublished = 0;
@@ -1369,6 +1414,16 @@ class VideoEventPublisher {
 
       var selectedAudioReferenceId = selectedAudioEventId;
       var selectedAudioReferenceRelay = selectedAudioRelay;
+
+      if (selectedAudio != null &&
+          !await _canReuseSelectedAudio(selectedAudio)) {
+        Log.warning(
+          'Selected audio does not permit reuse; blocking video publish',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return false;
+      }
 
       if (selectedAudio?.isLocalImport == true) {
         if (!allowAudioReuse) {

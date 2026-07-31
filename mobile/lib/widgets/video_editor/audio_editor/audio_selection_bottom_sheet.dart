@@ -238,6 +238,15 @@ class _AudioSelectionBottomSheetState
 
   Future<void> _selectSound(AudioEvent sound) async {
     if (_selectedItem?.id == sound.id) return;
+
+    final canReuse =
+        sound.isBundled ||
+        sound.isLocalImport ||
+        sound.isExternalProviderSound ||
+        sound.allowsReuse ||
+        await ref.read(audioReuseConsentProvider(sound).future);
+    if (!canReuse || !mounted) return;
+
     Log.info(
       'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
       name: 'AudioSelectionBottomSheet',

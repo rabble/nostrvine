@@ -123,11 +123,13 @@ void main() {
         // minted. The extraction then fails, matching the observed
         // signature (allow_audio_reuse=true, no audio e-tag).
         final audioGate = Completer<void>();
+        var extractionCount = 0;
         when(
           () => mockAudioExtractionService.extractAudio(
             videoPath: any(named: 'videoPath'),
           ),
         ).thenAnswer((_) async {
+          extractionCount++;
           await audioGate.future;
           throw const AudioExtractionException('extraction failed');
         });
@@ -183,18 +185,21 @@ void main() {
         audioGate.complete();
         final results = await Future.wait([firstPublish, secondPublish]);
 
-        expect(results, everyElement(isTrue));
+        expect(results, everyElement(isFalse));
+        expect(
+          extractionCount,
+          equals(1),
+          reason: 'the concurrent second publish must await the in-flight one',
+        );
         expect(
           videoSignCount,
-          equals(1),
-          reason:
-              'a concurrent second publish must not re-sign a fresh '
-              'event with a new id',
+          equals(0),
+          reason: 'a failed audio-reuse publish must not sign a video event',
         );
         expect(
           broadcastVideoEvents,
-          hasLength(1),
-          reason: 'exactly one kind-34236 event may reach the relays',
+          isEmpty,
+          reason: 'a failed audio-reuse publish must not reach the relays',
         );
       },
     );

@@ -272,6 +272,19 @@ void main() {
       });
     });
 
+    test('restored events without consent fail closed', () {
+      final restored = AudioEvent.fromJson(const {
+        'id': testHexId,
+        'pubkey': testPubkey,
+        'createdAt': 1700000000,
+        'url': 'https://cdn.example/audio.aac',
+        'mimeType': 'audio/aac',
+      });
+
+      expect(restored.allowsReuse, isFalse);
+      expect(restored.hasExplicitReuseConsent, isFalse);
+    });
+
     group('fromBundledSound', () {
       test('creates AudioEvent from VineSound with correct fields', () {
         // Arrange

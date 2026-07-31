@@ -20,6 +20,7 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:sound_service/sound_service.dart';
@@ -206,6 +207,32 @@ void main() {
 
         expect(find.text('Uh Oh'), findsOneWidget);
         expect(find.text('Victory Lap'), findsNothing);
+      });
+
+      testWidgets('does not select a sound that forbids reuse', (tester) async {
+        final forbiddenSound = _createTestAudioEvent(
+          id: 'forbidden-sound',
+          title: 'Credit only',
+        );
+        final explicitForbidden = forbiddenSound.copyWith(
+          allowsReuse: false,
+          hasExplicitReuseConsent: true,
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data([explicitForbidden]),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Credit only'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AudioEditorSelectionOverlay), findsNothing);
       });
 
       testWidgets('renders search empty state when no tab matches', (

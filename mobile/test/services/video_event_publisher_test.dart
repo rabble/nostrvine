@@ -705,6 +705,38 @@ void main() {
       );
 
       test(
+        'blocks selected audio when the source explicitly forbids reuse',
+        () async {
+          stubSignAndPublish();
+
+          final forbiddenSound = AudioEvent(
+            id: 'd' * 64,
+            pubkey: sourceCreator,
+            createdAt: 1700000000,
+            allowsReuse: false,
+            hasExplicitReuseConsent: true,
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: forbiddenSound,
+            selectedAudioEventId: forbiddenSound.id,
+          );
+
+          expect(result, isFalse);
+          expect(
+            _containsTag(capturedTags, [
+              'e',
+              forbiddenSound.id,
+              'wss://relay.divine.video',
+              'audio',
+            ]),
+            isFalse,
+          );
+        },
+      );
+
+      test(
         'recovers the reference from an editor timeline track id',
         () async {
           stubSignAndPublish();

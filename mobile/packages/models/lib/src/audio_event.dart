@@ -300,7 +300,10 @@ class AudioEvent {
           ? Duration(milliseconds: json['endTimeMs'] as int)
           : null,
       anchorClipId: json['anchorClipId'] as String?,
-      allowsReuse: json['allowsReuse'] as bool? ?? true,
+      // Persisted events without a consent field predate the reuse policy.
+      // Treat them as unknown and let the source-video resolver decide;
+      // defaulting to true would silently grant remix permission.
+      allowsReuse: json['allowsReuse'] as bool? ?? false,
       hasExplicitReuseConsent:
           json['hasExplicitReuseConsent'] as bool? ?? false,
     );
