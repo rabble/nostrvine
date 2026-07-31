@@ -71,12 +71,34 @@ void main() {
       expect(colors, isNot(contains(VineTheme.onSurfaceMuted)));
     });
 
-    testWidgets('is unchanged on the dark palette', (tester) async {
+    testWidgets('keeps every label on its dark constant', (tester) async {
       await pump(tester, VineTheme.theme);
 
-      // The dark palette aliases the same constants, so dark rendering must
-      // not move — that is what keeps the dark goldens valid.
-      expect(textColors(tester), contains(VineTheme.darkColors.onSurface));
+      // The dark palette aliases the same constants, so the labels and the
+      // slider readouts resolve exactly what they resolved before.
+      final colors = textColors(tester);
+      expect(colors, contains(VineTheme.darkColors.onSurface));
+      expect(colors, contains(VineTheme.darkColors.onSurfaceVariant));
+    });
+
+    testWidgets('lifts the transparent hint off the muted register on dark', (
+      tester,
+    ) async {
+      await pump(tester, VineTheme.theme);
+
+      // The one value this migration moves on dark. `onSurfaceMuted` is 50%
+      // white — 5.30:1 on the canvas this screen used to paint — and the hint
+      // now takes the same `onSurfaceVariant` as the panel's other secondary
+      // text, 11.19:1 on the canvas it paints today.
+      final hint = tester.widget<Text>(
+        find.text(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).videoEditorChromaKeyTransparentHint,
+        ),
+      );
+      expect(hint.style?.color, VineTheme.darkColors.onSurfaceVariant);
+      expect(hint.style?.color, isNot(VineTheme.onSurfaceMuted));
     });
 
     testWidgets('never uses onSurfaceMuted on the light canvas', (
