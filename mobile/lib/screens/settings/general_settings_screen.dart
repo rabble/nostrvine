@@ -82,15 +82,15 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   ),
                   title: Text(
                     context.l10n.settingsCrosspostingTitle,
-                    style: _titleStyle,
+                    style: _titleStyleOf(context),
                   ),
                   subtitle: Text(
                     context.l10n.settingsCrosspostingSubtitle,
-                    style: _subtitleStyle,
+                    style: _subtitleStyleOf(context),
                   ),
-                  trailing: const DivineIcon(
+                  trailing: DivineIcon(
                     icon: DivineIconName.caretRight,
-                    color: VineTheme.lightText,
+                    color: context.vineColors.mutedText,
                   ),
                   onTap: () => context.push(CrosspostingSettingsScreen.path),
                 ),
