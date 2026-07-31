@@ -151,6 +151,44 @@ void main() {
       });
 
       testWidgets(
+        'renders without crashing when the last message contains an '
+        'unpaired UTF-16 surrogate',
+        (tester) async {
+          // The preview renders through plain Text rather than
+          // LinkifiedText, so it does not inherit the span builder's
+          // guard and has to sanitize the rumor body itself. Without it
+          // the paragraph builder throws during layout.
+          // See https://github.com/divinevideo/divine-mobile/issues/6516.
+          final testProfile = createTestProfile(displayName: 'Alice');
+          final testConversation = createTestConversation(
+            lastMessageContent: 'before${String.fromCharCode(0xD83D)}after',
+            lastMessageTimestamp: nowUnix,
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
+              ],
+              home: Scaffold(
+                body: ConversationTile(
+                  conversation: testConversation,
+                  currentUserPubkey: currentPubkey,
+                  onTap: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('before�after'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
         'last message preview uses VineTheme.onSurfaceVariant',
         (tester) async {
           // PR #3548 picked onSurfaceVariant for the preview; a later

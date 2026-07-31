@@ -21,6 +21,10 @@ class ShareableUser {
     this.isFollower = false,
   });
   final String pubkey;
+
+  /// Populate from `UserProfile.bestDisplayName`, never the raw kind-0
+  /// fields: this renders directly in the share sheet and find-people list,
+  /// where a lone UTF-16 surrogate crashes the paragraph builder.
   final String? displayName;
   final String? picture;
   final bool isFollowing;
@@ -302,7 +306,7 @@ class VideoSharingService {
         return [
           ShareableUser(
             pubkey: query,
-            displayName: profile?.displayName,
+            displayName: profile?.bestDisplayName,
             picture: profile?.picture,
           ),
         ];
@@ -415,7 +419,7 @@ class VideoSharingService {
         0,
         ShareableUser(
           pubkey: pubkey,
-          displayName: profile?.displayName,
+          displayName: profile?.bestDisplayName,
           picture: profile?.picture,
         ),
       );

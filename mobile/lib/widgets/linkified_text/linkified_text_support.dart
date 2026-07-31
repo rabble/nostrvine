@@ -10,9 +10,16 @@ final class LinkifiedTextSupport {
   const LinkifiedTextSupport._();
 
   /// Resolves the display label used for profile references.
+  ///
+  /// The candidates are raw metadata fields, not the sanitizing accessors
+  /// ([UserProfile.bestDisplayName] and friends), because this label keeps its
+  /// own precedence — display name, then name, then NIP-05. So it sanitizes
+  /// the winner itself: an unpaired UTF-16 surrogate in someone's profile name
+  /// otherwise reaches the paragraph builder through every mention of them and
+  /// crashes the render.
   static String profileDisplayText(WidgetRef ref, String hexPubkey) {
     final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
-    final profileText = switch (profile) {
+    final profileText = UserProfile.sanitizeDisplayName(switch (profile) {
       UserProfile(:final displayName?) when displayName.isNotEmpty =>
         displayName,
       UserProfile(:final name?) when name.isNotEmpty => name,
@@ -20,7 +27,7 @@ final class LinkifiedTextSupport {
           when shortDisplayNip05.isNotEmpty =>
         shortDisplayNip05,
       _ => UserProfile.defaultDisplayNameFor(hexPubkey),
-    };
+    });
     return profileText.startsWith('@') ? profileText : '@$profileText';
   }
 

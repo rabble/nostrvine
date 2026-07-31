@@ -12,6 +12,7 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/divine_video_url.dart';
+import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -247,7 +248,14 @@ class _PreviewPayload {
   final bool isDivineVideoShare;
 }
 
-_PreviewPayload _previewPayload(BuildContext context, String content) {
+_PreviewPayload _previewPayload(BuildContext context, String rawContent) {
+  // Sender-controlled text straight from a rumor body, so it can carry
+  // unpaired UTF-16 surrogates that crash the paragraph builder during
+  // layout. This preview renders through plain `Text`/`Text.rich` rather than
+  // `LinkifiedText`, so it does not inherit the span builder's guard and
+  // sanitizes once here, ahead of every split and both output paths.
+  final content = StringUtils.sanitizeUtf16(rawContent);
+
   // The structured collaborator-invite card carries a deterministic
   // plaintext fallback ("...Open diVine to review and accept.") so old
   // clients can still see something. Inside diVine that copy is misleading

@@ -276,6 +276,51 @@ void main() {
       expect(spans.single.style, equals(linkStyle));
       expect(spans.single.recognizer, isNull);
     });
+
+    // Unpaired UTF-16 surrogates make Flutter's paragraph builder throw
+    // "string is not well-formed UTF-16" during layout, which is a crash
+    // rather than a rendering glitch. They reach spans from two independent
+    // directions, so both are pinned here.
+    group('malformed UTF-16', () {
+      // A lone high surrogate, e.g. an emoji cut in half in transit or a
+      // half-escaped `\uD83D` in event JSON.
+      final loneSurrogate = String.fromCharCode(0xD83D);
+
+      test('replaces an unpaired surrogate in the source text', () {
+        final spans = LinkifiedTextSpanBuilder(
+          text: 'hi ${loneSurrogate}there',
+          defaultStyle: defaultStyle,
+          linkStyle: linkStyle,
+        ).build();
+
+        expect(spans.map((span) => span.text).join(), equals('hi �there'));
+      });
+
+      test('replaces an unpaired surrogate in a resolved profile label', () {
+        const profileHex =
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+        final spans = LinkifiedTextSpanBuilder(
+          text: 'author: $profileHex',
+          defaultStyle: defaultStyle,
+          linkStyle: linkStyle,
+          mentionStyle: mentionStyle,
+          profileLabelForHex: (_) => 'ca${loneSurrogate}sey',
+        ).build();
+
+        expect(spans.tappableSpans.single.text, equals('@ca�sey'));
+      });
+
+      test('keeps a valid surrogate pair intact', () {
+        final spans = const LinkifiedTextSpanBuilder(
+          text: 'hi 😀 there',
+          defaultStyle: defaultStyle,
+          linkStyle: linkStyle,
+        ).build();
+
+        expect(spans.map((span) => span.text).join(), equals('hi 😀 there'));
+      });
+    });
   });
 }
 

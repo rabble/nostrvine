@@ -245,12 +245,19 @@ class UserProfile {
   /// Prefers NIP-05 identifier, falls back to [name]. Returns an empty
   /// string when neither is available. Uses [shortDisplayNip05] so
   /// divine.video users render as `@rabble`, not `@rabble.divine.video`.
+  ///
+  /// Sanitized like [bestDisplayName]: both candidates are raw kind-0 fields,
+  /// and an unpaired UTF-16 surrogate in either crashes the paragraph builder
+  /// wherever this renders — the DM conversation header, the new-message
+  /// sheet, and people-list rows all pass it straight to a plain `Text`.
   String get handle {
     if (nip05 != null && nip05!.isNotEmpty) {
       final dn = shortDisplayNip05!;
       return dn.startsWith('@') ? dn : '@$dn';
     }
-    if (name != null && name!.isNotEmpty) return '@$name';
+    if (name != null && name!.isNotEmpty) {
+      return '@${sanitizeForDisplay(name!)}';
+    }
     return '';
   }
 
@@ -263,15 +270,23 @@ class UserProfile {
   /// Use this when the domain is meaningful to the user — settings screens,
   /// the share-video watermark, the NIP-05 editor — so people understand
   /// what they own. For general UI rendering prefer [shortDisplayNip05].
+  ///
+  /// Sanitized: `nip05` is an unverified kind-0 field, and every consumer of
+  /// this getter renders it. Verification compares by pubkey, not by this
+  /// string, so normalizing it cannot affect a verified badge.
   String? get displayNip05 {
     if (nip05 == null || nip05!.isEmpty) return null;
     // New subdomain format: _@username.divine.video → @username.divine.video
-    if (nip05!.startsWith('_@')) return nip05!.substring(1);
+    if (nip05!.startsWith('_@')) {
+      return sanitizeForDisplay(nip05!.substring(1));
+    }
     // Legacy divine.video/openvine.co → @username.divine.video
     final username = divineUsername;
-    if (username != null) return '@$username.divine.video';
+    if (username != null) {
+      return '@${sanitizeForDisplay(username)}.divine.video';
+    }
     // External domain: keep as-is
-    return nip05;
+    return sanitizeForDisplay(nip05!);
   }
 
   /// NIP-05 formatted for display, short form.
@@ -280,11 +295,13 @@ class UserProfile {
   /// user shows up as `@rabble` instead of `@rabble.divine.video`. External
   /// identifiers (e.g. `alice@example.com`) are returned unchanged because
   /// the domain is the user's own and meaningful.
+  ///
+  /// Sanitized for the same reason as [displayNip05].
   String? get shortDisplayNip05 {
     if (nip05 == null || nip05!.isEmpty) return null;
     final username = divineUsername;
-    if (username != null) return '@$username';
-    return nip05;
+    if (username != null) return '@${sanitizeForDisplay(username)}';
+    return sanitizeForDisplay(nip05!);
   }
 
   /// Whether the banner field contains a hex color (Vine import).

@@ -743,8 +743,7 @@ class _MainCommentInputState extends ConsumerState<MainCommentInput> {
                 .watch(userProfileReactiveProvider(replyToAuthorPubkey))
                 .value;
             replyToDisplayName =
-                profile?.displayName ??
-                profile?.name ??
+                profile?.bestDisplayName ??
                 UserProfile.generatedNameFor(replyToAuthorPubkey);
           }
         }
