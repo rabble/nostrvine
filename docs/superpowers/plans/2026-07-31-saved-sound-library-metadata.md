@@ -978,7 +978,329 @@ git add mobile/lib/widgets/library/sounds_tab.dart mobile/test/widgets/library/s
 git commit -m "feat(sounds): browse and organize saved sounds"
 ```
 
-## Task 12: Localize and verify the finished feature
+## Task 12: Separate public sharing attribution from private library metadata
+
+**Files:**
+
+- Create: `mobile/lib/models/audio_share_attribution.dart`
+- Create: `mobile/test/models/audio_share_attribution_test.dart`
+- Modify: `mobile/lib/models/divine_video_draft.dart`
+- Modify: `mobile/test/models/divine_video_draft_copy_with_test.dart`
+
+- [ ] Write failing tests proving:
+
+  - public attribution round-trips through JSON;
+  - public tags normalize independently from personal hashtags;
+  - an owned sound requires title but defaults creator to the publisher;
+  - an external import requires creator name and source URL;
+  - draft JSON/copyWith preserves attribution across autosave and retry;
+  - no constructor accepts `SavedSound`, `personalLabel`, or
+    `personalHashtags`.
+
+- [ ] Run and confirm failure:
+
+```bash
+cd mobile
+flutter test test/models/audio_share_attribution_test.dart test/models/divine_video_draft_copy_with_test.dart
+```
+
+- [ ] Implement the public value:
+
+```dart
+@immutable
+class AudioShareAttribution {
+  const AudioShareAttribution({
+    required this.title,
+    required this.creatorName,
+    required this.publicTags,
+    required this.confirmedOwnWork,
+    this.creatorPubkey,
+    this.creatorUrl,
+    this.sourceUrl,
+    this.licenseName,
+    this.licenseUrl,
+  });
+
+  final String title;
+  final String creatorName;
+  final String? creatorPubkey;
+  final String? creatorUrl;
+  final String? sourceUrl;
+  final String? licenseName;
+  final String? licenseUrl;
+  final List<String> publicTags;
+  final bool confirmedOwnWork;
+
+  bool get isValid =>
+      title.trim().isNotEmpty &&
+      creatorName.trim().isNotEmpty &&
+      (confirmedOwnWork || (sourceUrl?.trim().isNotEmpty ?? false));
+}
+```
+
+Add manual `toJson`, `fromJson`, value equality, and `copyWith`. Add
+`AudioShareAttribution? audioShareAttribution` to `DivineVideoDraft` JSON and
+copy/duplicate paths. Do not import the saved-library model into this file.
+
+- [ ] Run focused tests:
+
+```bash
+cd mobile
+dart format lib/models/audio_share_attribution.dart lib/models/divine_video_draft.dart test/models/audio_share_attribution_test.dart test/models/divine_video_draft_copy_with_test.dart
+flutter test test/models/audio_share_attribution_test.dart test/models/divine_video_draft_copy_with_test.dart
+```
+
+- [ ] Commit:
+
+```bash
+git add mobile/lib/models/audio_share_attribution.dart mobile/test/models/audio_share_attribution_test.dart mobile/lib/models/divine_video_draft.dart mobile/test/models/divine_video_draft_copy_with_test.dart
+git commit -m "feat(sounds): separate public sound attribution"
+```
+
+## Task 13: Parse and publish explicit sound consent and credit tags
+
+**Files:**
+
+- Modify: `mobile/packages/models/lib/src/audio_event.dart`
+- Modify: `mobile/packages/models/test/src/audio_event_test.dart`
+
+- [ ] Add failing tests for:
+
+  - `fromNostrEvent` treats an absent reuse tag as `allowsReuse == false`;
+  - only `allow_audio_reuse=true` enables reuse;
+  - `false` remains credit-only;
+  - public `title`, `source`, `creator`, `creator_url`, `license`,
+    `license_url`, `p`, `t`, and `proxy` metadata round-trips;
+  - existing `a` source-video coordinates remain full and unchanged;
+  - private saved-library field names never appear in `toTags`.
+
+- [ ] Run and confirm failure:
+
+```bash
+cd mobile/packages/models
+flutter test test/src/audio_event_test.dart
+```
+
+- [ ] Extend `AudioEvent` with public credit only:
+
+```dart
+final String? creatorName;
+final String? creatorPubkey;
+final String? creatorUrl;
+final String? licenseName;
+final String? licenseUrl;
+final List<String> publicTags;
+final String? proxyId;
+final String? proxyProtocol;
+```
+
+`fromNostrEvent` initializes `allowsReuse` to `false` and sets it only for the
+exact tag `['allow_audio_reuse', 'true']`. `toTags` emits:
+
+```dart
+if (allowsReuse) {
+  tags.add(['allow_audio_reuse', 'true']);
+} else {
+  tags.add(['allow_audio_reuse', 'false']);
+}
+if (creatorPubkey != null) tags.add(['p', creatorPubkey!]);
+for (final tag in publicTags) {
+  tags.add(['t', tag]);
+}
+if (proxyId != null && proxyProtocol != null) {
+  tags.add(['proxy', proxyId!, proxyProtocol!]);
+}
+```
+
+Emit the documented multi-letter credit tags only when nonblank. Constructor
+defaults may remain reusable for bundled/in-memory sounds, but Nostr parsing
+must fail closed.
+
+- [ ] Run package tests:
+
+```bash
+cd mobile/packages/models
+dart format lib/src/audio_event.dart test/src/audio_event_test.dart
+flutter test test/src/audio_event_test.dart
+```
+
+- [ ] Commit:
+
+```bash
+git add mobile/packages/models/lib/src/audio_event.dart mobile/packages/models/test/src/audio_event_test.dart
+git commit -m "feat(sounds): encode public credit and remix consent"
+```
+
+## Task 14: Enforce consent and attribution in video publishing
+
+**Files:**
+
+- Modify: `mobile/lib/internal/video_event_publisher_audio.dart`
+- Modify: `mobile/lib/services/video_event_publisher.dart`
+- Modify: `mobile/lib/services/video_publish/video_publish_service.dart`
+- Modify: `mobile/test/services/video_event_publisher_test.dart`
+- Modify: `mobile/test/services/video_event_publisher_retry_test.dart`
+
+- [ ] Add failing publisher tests for the full decision matrix:
+
+  - local import + remix off publishes the video without upload/Kind 1063;
+  - local import + remix on but missing attribution rejects before upload;
+  - local import + valid attribution publishes audio first and references it;
+  - own original audio + remix off publishes no Kind 1063;
+  - own original audio + remix on publishes explicit consent and public credit;
+  - existing Nostr audio references the original event and is never
+    republished;
+  - provider audio always publishes a credit bridge with `proxy`, creator,
+    source, license, and trusted catalog `t` tags;
+  - provider bridge uses `allow_audio_reuse=false` when the toggle is off or
+    derivatives are forbidden;
+  - requested reusable-audio failure blocks video publication and remains
+    retryable;
+  - provider-credit failure blocks instead of publishing uncredited audio;
+  - private field names/values never occur in signed event content or tags.
+
+- [ ] Run and confirm the current imported-audio behavior fails:
+
+```bash
+cd mobile
+flutter test test/services/video_event_publisher_test.dart test/services/video_event_publisher_retry_test.dart
+```
+
+- [ ] Thread `AudioShareAttribution?` from the durable draft through
+`VideoPublishService` into `VideoEventPublisher`. Gate local imports before
+calling `_publishImportedAudioEvent`:
+
+```dart
+if (selectedAudio?.isLocalImport == true && !allowAudioReuse) {
+  selectedAudioReferenceId = null;
+} else if (selectedAudio?.isLocalImport == true) {
+  final attribution = audioShareAttribution;
+  if (attribution == null || !attribution.isValid) return false;
+  selectedAudioReferenceId = await _publishImportedAudioEvent(
+    audio: selectedAudio!,
+    attribution: attribution,
+    allowAudioReuse: true,
+    videoDTag: dTag,
+    pubkey: userPubkey,
+    relayHint: relayHint,
+  );
+}
+```
+
+- [ ] Build Kind 1063 content as a readable credit and tags from
+`AudioShareAttribution`; never read `SavedSound`. For provider results, build
+read-only attribution from `AudioExternalSource` and publish a NIP-48 bridge.
+
+- [ ] Change original-audio failure from “continue video-only” to `return
+false` when `allowAudioReuse` was explicitly requested. Keep remix-off
+original/imported publication independent of the audio publisher.
+
+- [ ] Run tests:
+
+```bash
+cd mobile
+dart format lib/internal/video_event_publisher_audio.dart lib/services/video_event_publisher.dart lib/services/video_publish/video_publish_service.dart
+flutter test test/services/video_event_publisher_test.dart test/services/video_event_publisher_retry_test.dart
+```
+
+- [ ] Commit:
+
+```bash
+git add mobile/lib/internal/video_event_publisher_audio.dart mobile/lib/services/video_event_publisher.dart mobile/lib/services/video_publish/video_publish_service.dart mobile/test/services/video_event_publisher_test.dart mobile/test/services/video_event_publisher_retry_test.dart
+git commit -m "fix(sounds): require consent before publishing reusable audio"
+```
+
+## Task 15: Add public-credit UI, display, and legacy consent verification
+
+**Files:**
+
+- Modify: `mobile/lib/widgets/video_metadata/video_metadata_form_fields.dart`
+- Modify: `mobile/test/screens/video_metadata_screen_test.dart`
+- Modify: `mobile/lib/screens/sound_detail_screen.dart`
+- Modify: `mobile/test/screens/sound_detail_screen_test.dart`
+- Modify: `mobile/lib/widgets/video_feed_item/audio_attribution_row.dart`
+- Modify: `mobile/test/widgets/audio_attribution_row_test.dart`
+- Modify: `mobile/lib/widgets/video_feed_item/metadata/metadata_sounds_section.dart`
+- Modify: `mobile/test/widgets/metadata_sounds_section_test.dart`
+- Create: `mobile/lib/services/audio_reuse_consent_resolver.dart`
+- Create: `mobile/test/services/audio_reuse_consent_resolver_test.dart`
+- Modify: `mobile/lib/providers/sounds_providers.dart`
+
+- [ ] Add failing UI tests for:
+
+  - direct “Allow others to remix this sound” copy;
+  - inline public-credit fields and “Shared as” preview when enabled;
+  - owned-audio prefill;
+  - unknown import requiring ownership or creator/source;
+  - provider credit being read-only;
+  - derivative-forbidden provider showing “Credit only”;
+  - “By” and distinct “Shared by” presentation;
+  - source/license/public tags on detail, feed attribution, and metadata;
+  - personal label/hashtags absent from every public widget.
+
+- [ ] Add failing `audio_reuse_consent_resolver_test.dart` cases that query
+`SoundsRepository.fetchVideosUsingSound`, hydrate the returned IDs through
+`VideosRepository.getVideosByIds`, match the audio's full
+`34236:<pubkey>:<d-tag>` address, select the earliest candidate at or after
+audio creation, and fail closed on no/ambiguous/mismatched evidence.
+
+- [ ] Run the focused tests and confirm failure:
+
+```bash
+cd mobile
+flutter test test/screens/video_metadata_screen_test.dart test/screens/sound_detail_screen_test.dart test/widgets/audio_attribution_row_test.dart test/widgets/metadata_sounds_section_test.dart
+```
+
+- [ ] Implement the inline editor using existing Divine inputs and BLoC/state
+patterns; do not introduce a dialog or bottom sheet. Persist every edit into
+the draft's `AudioShareAttribution`.
+
+- [ ] Replace the synchronous “all Kind 1063 is reusable” assumption with a
+resolver:
+
+```dart
+Future<bool> verifyAudioReuseConsent(AudioEvent sound) async {
+  if (sound.allowsReuse) return true;
+  final address = sound.sourceVideoReference;
+  if (address == null) return false;
+  final ids = await soundsRepository.fetchVideosUsingSound(sound.id);
+  final candidates = await videosRepository.getVideosByIds(
+    ids,
+    hydrateBulkStats: false,
+  );
+  final matching = candidates
+      .where((video) => video.addressableId == address)
+      .where((video) => video.createdAt >= sound.createdAt)
+      .toList()
+    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  if (matching.isEmpty) return false;
+  if (matching.length > 1 &&
+      matching[0].createdAt == matching[1].createdAt) {
+    return false;
+  }
+  return matching.first.allowAudioReuse;
+}
+```
+
+Place this logic in `AudioReuseConsentResolver` and expose it through a
+generated family provider in `sounds_providers.dart`. Loading or lookup failure
+displays “Credit only,” never a remix action or error toast.
+
+- [ ] Run focused tests:
+
+```bash
+cd mobile
+flutter test test/services/audio_reuse_consent_resolver_test.dart test/screens/video_metadata_screen_test.dart test/screens/sound_detail_screen_test.dart test/widgets/audio_attribution_row_test.dart test/widgets/metadata_sounds_section_test.dart
+```
+
+- [ ] Commit:
+
+```bash
+git add mobile/lib/widgets/video_metadata/video_metadata_form_fields.dart mobile/test/screens/video_metadata_screen_test.dart mobile/lib/screens/sound_detail_screen.dart mobile/test/screens/sound_detail_screen_test.dart mobile/lib/widgets/video_feed_item/audio_attribution_row.dart mobile/test/widgets/audio_attribution_row_test.dart mobile/lib/widgets/video_feed_item/metadata/metadata_sounds_section.dart mobile/test/widgets/metadata_sounds_section_test.dart mobile/lib/services/audio_reuse_consent_resolver.dart mobile/test/services/audio_reuse_consent_resolver_test.dart mobile/lib/providers/sounds_providers.dart
+git commit -m "feat(sounds): show public credit and verified remix status"
+```
+
+## Task 16: Localize and verify the finished feature
 
 **Files:**
 
@@ -997,6 +1319,14 @@ git commit -m "feat(sounds): browse and organize saved sounds"
   - `Couldn’t save those details. Tap to retry.`
   - `Saved sound`
   - `Clear hashtag filter`
+  - `Allow others to remix this sound`
+  - `Public sound credit`
+  - `Shared as`
+  - `I made this sound`
+  - `By {creator}`
+  - `Shared by {publisher}`
+  - `Remixing allowed`
+  - `Credit only`
 
 - [ ] Mirror keys into every locale. If translations are intentionally
 deferred, add only those exact keys to `_knownUntranslatedDebt`; do not leave
@@ -1081,7 +1411,7 @@ git commit -m "test(sounds): verify saved library metadata"
 
 Stage only paths that actually changed.
 
-## Task 13: Rebase and prepare the pull request
+## Task 17: Rebase and prepare the pull request
 
 - [ ] Confirm every intended change is committed and the worktree is clean:
 
