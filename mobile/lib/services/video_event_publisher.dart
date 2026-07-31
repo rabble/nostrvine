@@ -7,7 +7,6 @@ import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:blurhash_service/blurhash_service.dart';
-import 'package:crypto/crypto.dart';
 //adding c2pa support for publishing c2pa manifest data into nostr
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
@@ -1147,10 +1146,16 @@ class VideoEventPublisher {
             final fileSize = videoFile.lengthSync();
             imetaComponents.add('size $fileSize');
 
-            // Calculate SHA256 hash
-            final bytes = await videoFile.readAsBytes();
-            final hash = sha256.convert(bytes);
-            imetaComponents.add('x $hash');
+            // Blossom is content-addressed, so the upload already streamed
+            // this exact digest and handed it back as the videoId — which
+            // publishDirectUpload has already required to be present. Hashing
+            // the file again here cost a measurable slice of the publish and
+            // pulled the whole video into memory, which is exactly what the
+            // upload path streams to avoid.
+            final hash = upload.videoId;
+            if (hash != null && hash.isNotEmpty) {
+              imetaComponents.add('x $hash');
+            }
 
             Log.verbose(
               'Added file metadata - size: $fileSize bytes, hash: $hash',
@@ -1169,6 +1174,7 @@ class VideoEventPublisher {
 
       // Generate blurhash for progressive image loading
       if (upload.localVideoPath.isNotEmpty) {
+        final blurhashWatch = Stopwatch()..start();
         try {
           Log.debug(
             '🎨 Generating blurhash from video thumbnail',
@@ -1240,6 +1246,9 @@ class VideoEventPublisher {
             category: LogCategory.video,
           );
           // Continue publishing without blurhash - it's optional metadata
+        } finally {
+          blurhashWatch.stop();
+          logPublishPhase('nostr.blurhash', blurhashWatch.elapsed);
         }
       }
 
