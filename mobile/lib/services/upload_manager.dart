@@ -1182,8 +1182,8 @@ class UploadManager implements BackgroundAwareService {
     } catch (e) {
       // A transfer failure must not strand the parallel thumbnail leg: settle
       // it before propagating so it cannot still be running when the retry
-      // policy starts the next attempt. It never throws, so this cannot mask
-      // the original error.
+      // policy starts the next attempt. [_startThumbnailUpload] guarantees it
+      // never throws, so this cannot mask the original error.
       await thumbnailFuture;
       Log.error(
         '❌ Upload execution failed: $e',
@@ -1878,10 +1878,12 @@ class UploadManager implements BackgroundAwareService {
   /// Runs the thumbnail leg for [upload], or short-circuits when a previous
   /// attempt already landed one on the CDN.
   ///
-  /// Never throws: [_generateAndUploadThumbnail] reports failure as `null`, and
-  /// the caller turns a missing thumbnail into the publish-level error. That
-  /// matters here because this future is started before the video transfer and
-  /// awaited after it.
+  /// Never throws: [_generateAndUploadThumbnail] reports failure as `null` and
+  /// the persist swallows its own errors, so the caller turns a missing
+  /// thumbnail into the publish-level error. That matters here because this
+  /// future is started before the video transfer and awaited after it — an
+  /// escaping error would spend the whole transfer with no listener, and would
+  /// then replace the transfer's own failure at the join.
   Future<ThumbnailLegResult> _startThumbnailUpload({
     required File videoFile,
     required PendingUpload upload,
@@ -1907,13 +1909,26 @@ class UploadManager implements BackgroundAwareService {
       // and re-upload a thumbnail that is already on the CDN — and the
       // short-circuit above would never fire.
       if (result.cdnUrl != null || result.blurhash != null) {
-        final current = _store.getUpload(upload.id) ?? upload;
-        await _store.update(
-          current.copyWith(
-            thumbnailPath: result.cdnUrl ?? current.thumbnailPath,
-            blurhash: result.blurhash,
-          ),
-        );
+        try {
+          final current = _store.getUpload(upload.id) ?? upload;
+          await _store.update(
+            current.copyWith(
+              thumbnailPath: result.cdnUrl ?? current.thumbnailPath,
+              blurhash: result.blurhash,
+            ),
+          );
+        } catch (e) {
+          // The persist is an optimization — without it the next attempt just
+          // re-extracts. A closed box or a full disk must not escape: this
+          // future is unlistened for the length of the transfer, so it would
+          // surface as an uncaught error, and at the join it would replace the
+          // transfer's real failure with a storage one.
+          Log.error(
+            'Failed to persist thumbnail result for ${upload.id}: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        }
       }
 
       return result;
