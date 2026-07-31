@@ -1,6 +1,7 @@
-// ABOUTME: Pins that the thumbnail leg reports progress to the publish-facing
-// ABOUTME: callback, not only to the store, so the bar keeps moving past 80%.
+// ABOUTME: Pins that the thumbnail leg runs beside the video transfer and
+// ABOUTME: that the video alone drives a monotonic progress bar.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -19,11 +20,15 @@ class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('UploadManager thumbnail progress', () {
+  group('UploadManager thumbnail leg', () {
     late _MockBlossomUploadService mockBlossom;
     late UploadManager uploadManager;
     late Directory testDir;
     late PathProviderPlatform originalPathProvider;
+
+    /// Completes as soon as the thumbnail upload starts, so the video stub can
+    /// prove the two legs overlap.
+    late Completer<void> thumbnailStarted;
 
     setUpAll(() {
       registerFallbackValue(File(''));
@@ -31,7 +36,7 @@ void main() {
 
     setUp(() async {
       testDir = await Directory.systemTemp.createTemp(
-        'upload_thumbnail_progress_test_',
+        'upload_thumbnail_parallel_test_',
       );
       originalPathProvider = PathProviderPlatform.instance;
       PathProviderPlatform.instance = MockPathProviderPlatform()
@@ -47,6 +52,7 @@ void main() {
             return null;
           });
 
+      thumbnailStarted = Completer<void>();
       mockBlossom = _MockBlossomUploadService();
 
       // Stands in for the native extractor: writes a real file so the
@@ -81,7 +87,30 @@ void main() {
       } catch (_) {}
     });
 
-    test('forwards the thumbnail leg to the publish-facing callback', () async {
+    /// Stubs the image upload to announce its start via [thumbnailStarted].
+    void stubThumbnailUpload() {
+      when(
+        () => mockBlossom.uploadImage(
+          imageFile: any(named: 'imageFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          allowResumable: any(named: 'allowResumable'),
+        ),
+      ).thenAnswer((_) async {
+        if (!thumbnailStarted.isCompleted) thumbnailStarted.complete();
+        return const BlossomUploadResult(
+          success: true,
+          videoId: 'thumb-1',
+          url: 'https://media.divine.video/thumb-1.jpg',
+          fallbackUrl: 'https://media.divine.video/thumb-1.jpg',
+        );
+      });
+    }
+
+    /// Stubs the video transfer, running [duringTransfer] before it resolves.
+    void stubVideoUpload({
+      Future<void> Function(void Function(double) reportProgress)?
+      duringTransfer,
+    }) {
       when(() => mockBlossom.isBlossomEnabled()).thenAnswer((_) async => false);
       when(
         () => mockBlossom.uploadVideoWithResume(
@@ -98,33 +127,65 @@ void main() {
           onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer(
-        (_) async => const BlossomUploadResult(
+      ).thenAnswer((invocation) async {
+        final report =
+            invocation.namedArguments[#onProgress] as void Function(double)?;
+        await duringTransfer?.call(report ?? (_) {});
+        return const BlossomUploadResult(
           success: true,
           videoId: 'vid-1',
           url: 'https://media.divine.video/vid-1',
           fallbackUrl: 'https://media.divine.video/vid-1',
-        ),
-      );
-
-      // Report a mid-transfer tick so the 85%-100% mapping is observable.
-      when(
-        () => mockBlossom.uploadImage(
-          imageFile: any(named: 'imageFile'),
-          nostrPubkey: any(named: 'nostrPubkey'),
-          allowResumable: any(named: 'allowResumable'),
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenAnswer((invocation) async {
-        (invocation.namedArguments[#onProgress] as void Function(double)?)
-            ?.call(0.5);
-        return const BlossomUploadResult(
-          success: true,
-          videoId: 'thumb-1',
-          url: 'https://media.divine.video/thumb-1.jpg',
-          fallbackUrl: 'https://media.divine.video/thumb-1.jpg',
         );
       });
+    }
+
+    test(
+      'uploads the thumbnail while the video transfer is still open',
+      () async {
+        stubThumbnailUpload();
+
+        var overlapped = false;
+        stubVideoUpload(
+          duringTransfer: (_) async {
+            // Resolves only if the thumbnail leg was started before the transfer
+            // finished. Sequential execution would leave it pending.
+            overlapped = await thumbnailStarted.future
+                .timeout(const Duration(seconds: 2))
+                .then((_) => true, onError: (_) => false);
+          },
+        );
+
+        final videoFile = File('${testDir.path}/video.mp4')
+          ..writeAsBytesSync([0, 1, 2, 3]);
+
+        await uploadManager.startUpload(
+          videoFile: videoFile,
+          nostrPubkey: 'pubkey-1',
+        );
+
+        expect(
+          overlapped,
+          isTrue,
+          reason: 'the thumbnail must not wait for the video transfer',
+        );
+      },
+    );
+
+    test('lets the video alone drive a monotonic bar up to 1.0', () async {
+      stubThumbnailUpload();
+      stubVideoUpload(
+        duringTransfer: (reportProgress) async {
+          // Report once the thumbnail leg is underway (parallelism is the
+          // other test's job, so a miss here must not hang this one): if that
+          // leg also wrote progress, these would arrive out of order.
+          await thumbnailStarted.future
+              .timeout(const Duration(seconds: 2))
+              .then((_) => true, onError: (_) => false);
+          reportProgress(0.5);
+          reportProgress(1);
+        },
+      );
 
       final videoFile = File('${testDir.path}/video.mp4')
         ..writeAsBytesSync([0, 1, 2, 3]);
@@ -136,10 +197,17 @@ void main() {
         onProgress: reported.add,
       );
 
-      // Before the fix the callback jumped straight from the end of the video
-      // transfer to 1.0, leaving the publish bar frozen for the whole leg.
-      expect(reported, contains(0.85));
-      expect(reported.any((value) => (value - 0.925).abs() < 0.0001), isTrue);
+      expect(reported, isNotEmpty);
+      for (var i = 1; i < reported.length; i++) {
+        expect(
+          reported[i],
+          greaterThanOrEqualTo(reported[i - 1]),
+          reason: 'progress went backwards: $reported',
+        );
+      }
+      // The transfer tops out at the video's share, and only the join to the
+      // thumbnail completes the bar.
+      expect(reported, contains(0.95));
       expect(reported.last, equals(1.0));
     });
   });
