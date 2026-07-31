@@ -51,7 +51,7 @@ class KeycastKeyExportCard extends ConsumerWidget {
                 child: Text(
                   context.l10n.keyManagementKeycastRemoteSigning,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -322,7 +322,9 @@ class _PasswordStep extends StatelessWidget {
       children: [
         Text(
           l10n.keyManagementKeycastPasswordPrompt,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
         // The local-nsec path warns beside its copy button, before the key
         // moves. Confirming here is that same moment, so the warning belongs
@@ -346,7 +348,7 @@ class _PasswordStep extends StatelessWidget {
                 child: Text(
                   l10n.keyManagementNeverShare,
                   style: VineTheme.bodyMediumFont(
-                    color: VineTheme.onSurfaceVariant,
+                    color: context.vineColors.onSurfaceVariant,
                   ),
                 ),
               ),
