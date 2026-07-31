@@ -110,7 +110,8 @@ class KeycastKeyExportCard extends ConsumerWidget {
   /// Takes the enum rather than the whole result so the server's prose cannot
   /// reach the screen: [ExportKeyResult.error] is written for the web UI, is
   /// never translated, and for a transport failure it is the raw exception.
-  /// It stays in the logs.
+  /// Nothing reads it — `AuthService.exportKeycastNsec` logs the enum alone —
+  /// so the prose is dropped here rather than shown or recorded.
   String _failureMessage(AppLocalizations l10n, ExportKeyFailure? failure) {
     return switch (failure) {
       ExportKeyFailure.needsSignIn => l10n.keyManagementKeycastSignInAgain,
@@ -155,11 +156,11 @@ class _KeycastKeyExportFlowState extends ConsumerState<_KeycastKeyExportFlow> {
 
   /// Wrong passwords this sheet will take before it stops accepting them.
   ///
-  /// Keycast does not rate-limit `POST /user/export-key` and writes no audit
-  /// record for it, so an uncapped retry loop turns a borrowed unlocked phone
-  /// into a password oracle that pays out the account's nsec. Reopening the
-  /// sheet clears the count — this is friction, not a lockout, and the durable
-  /// fix is server-side.
+  /// An uncapped retry loop turns a borrowed unlocked phone into a password
+  /// oracle that pays out the account's nsec. Reopening the sheet clears the
+  /// count, so this is friction rather than a lockout — the durable control is
+  /// the server-side lockout and `key_egress` audit trail that keycast#325
+  /// adds.
   static const int _maxAttempts = 5;
 
   final _passwordController = TextEditingController();
