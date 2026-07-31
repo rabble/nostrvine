@@ -958,6 +958,13 @@ internal class DivineVideoPlayerInstance(
         val trimMs = playbackEndMs - commonEndMs
         if (commonEndMs <= startMs || trimMs <= 0) return null
 
+        // The bound only exists to stop a stub audio track collapsing a real
+        // video into a tiny loop, and that risk only runs one way. Where the
+        // audio track is the longer one the clamp lands on the video's own
+        // end, and everything past it is audio over a frozen frame — which is
+        // the seam itself, whatever its length.
+        if (audioEndMs > videoEndMs) return commonEndMs
+
         val playableDurationMs = playbackEndMs - startMs
         if (playableDurationMs <= 0) return null
 
@@ -1772,7 +1779,12 @@ internal class DivineVideoPlayerInstance(
          */
         private const val MIN_PLAYBACK_SPEED = 0.001f
 
-        /** Maximum tail considered an encoder/export track-end mismatch. */
+        /**
+         * Maximum tail considered an encoder/export track-end mismatch, for
+         * the direction where clamping discards video the viewer can see —
+         * an audio track shorter than the video. The other direction is
+         * unbounded; see [boundedCommonTrackEndMs].
+         */
         private const val MAX_COMMON_TRACK_END_TRIM_MS = 500L
         private const val MAX_COMMON_TRACK_END_TRIM_RATIO = 0.10
 

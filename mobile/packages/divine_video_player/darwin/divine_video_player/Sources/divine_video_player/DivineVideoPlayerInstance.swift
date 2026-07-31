@@ -33,6 +33,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private static let setClipsTimeoutMs = 10_000
     private static let bufferingStallMs = 8_000
+    /// Bounds on the loop-seam clamp, for the direction where clamping
+    /// discards video the viewer can see — an audio track shorter than the
+    /// video. The other direction is unbounded; see `boundedCommonTrackEnd`.
     private static let maxCommonTrackEndTrimMs = 500.0
     private static let maxCommonTrackEndTrimRatio = 0.10
     /// Length of the fade applied to each outer edge of the composition.
@@ -880,6 +883,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
               CMTimeCompare(playbackEnd, commonEnd) > 0
         else {
             return nil
+        }
+
+        // The bound only exists to stop a stub audio track collapsing a real
+        // video into a tiny loop, and that risk only runs one way. Where the
+        // audio track is the longer one the clamp lands on the video's own
+        // end, and everything past it is audio over a frozen frame — which is
+        // the seam itself, whatever its length.
+        if CMTimeCompare(audioEnd, videoEnd) > 0 {
+            return commonEnd
         }
 
         let trimMs = CMTimeSubtract(playbackEnd, commonEnd).seconds * 1000

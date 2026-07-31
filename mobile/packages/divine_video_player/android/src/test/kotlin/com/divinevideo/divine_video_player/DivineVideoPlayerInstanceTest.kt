@@ -899,6 +899,47 @@ class DivineVideoPlayerInstanceTest {
     }
 
     @Test
+    fun `an audio track longer than the video is clamped past the trim bound`() {
+        every { mockPlayer.mediaItemCount } returns 1
+        every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()
+
+        // An archived Vine: 6.533 s of video against a 7.287 s audio track,
+        // whose own last packet is at 6.525 s. The 754 ms the mux claims past
+        // the video are a frozen last frame over silence, and they are over
+        // the 500 ms bound that guards the opposite mismatch.
+        withTrackDurations(videoUs = 6_533_000L, audioUs = 7_287_000L) {
+            instance.onMethodCall(
+                trimmingSetClipsCall("https://cdn.example/long-audio.mp4"),
+                mockk(relaxed = true),
+            )
+            capturePostedRunnables().forEach { it.run() }
+        }
+
+        val replaced = slot<MediaItem>()
+        verify { mockPlayer.replaceMediaItem(0, capture(replaced)) }
+        assertEquals(6_533L, replaced.captured.clippingConfiguration.endPositionMs)
+    }
+
+    @Test
+    fun `a video track longer than the audio keeps the trim bound`() {
+        every { mockPlayer.mediaItemCount } returns 1
+        every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()
+
+        // The same 754 ms mismatch the other way round. Clamping here would
+        // discard video the viewer can see, so a stub audio track must not be
+        // allowed to cut the clip short.
+        withTrackDurations(videoUs = 7_287_000L, audioUs = 6_533_000L) {
+            instance.onMethodCall(
+                trimmingSetClipsCall("https://cdn.example/short-audio.mp4"),
+                mockk(relaxed = true),
+            )
+            capturePostedRunnables().forEach { it.run() }
+        }
+
+        verify(exactly = 0) { mockPlayer.replaceMediaItem(any(), any()) }
+    }
+
+    @Test
     fun `a resolved clamp is not applied over a playlist already playing`() {
         every { mockPlayer.mediaItemCount } returns 1
         every { mockPlayer.getMediaItemAt(0) } returns MediaItem.Builder().build()

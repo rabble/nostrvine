@@ -49,6 +49,14 @@ void main() {
             'The clamp must also be relative to playable duration so short '
             'clips cannot lose an excessive fraction of content.',
       );
+      expect(
+        source,
+        contains('if CMTimeCompare(audioEnd, videoEnd) > 0 {'),
+        reason:
+            'The bound only guards against discarding visible video, so it '
+            'must not apply when the audio track is the longer one — that '
+            'excess is a frozen frame at every loop restart.',
+      );
     });
 
     test('Android clamps the clipping configuration, not just endMs', () {
@@ -88,6 +96,14 @@ void main() {
         reason:
             'The clamp must also be relative to playable duration so short '
             'clips cannot lose an excessive fraction of content.',
+      );
+      expect(
+        source,
+        contains('if (audioEndMs > videoEndMs) return commonEndMs'),
+        reason:
+            'The bound only guards against discarding visible video, so it '
+            'must not apply when the audio track is the longer one — that '
+            'excess is a frozen frame at every loop restart.',
       );
     });
 
