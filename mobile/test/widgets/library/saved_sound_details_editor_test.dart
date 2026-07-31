@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sound_media_probe.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
@@ -59,6 +60,8 @@ Future<(SavedSoundsBloc, SavedSoundsService)> _bloc({
 }
 
 Widget _app(SavedSoundsBloc bloc) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   theme: ThemeData.dark(),
   home: Scaffold(
     body: BlocProvider.value(

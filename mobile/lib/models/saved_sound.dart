@@ -241,7 +241,7 @@ List<String> normalizeSavedSoundHashtags(Iterable<String> values) {
   for (final raw in values) {
     final value = raw
         .trim()
-        .replaceFirst(RegExp(r'^#+'), '')
+        .replaceFirst(RegExp('^#+'), '')
         .trim()
         .toLowerCase();
     if (value.isNotEmpty && seen.add(value)) {

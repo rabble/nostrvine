@@ -99,11 +99,11 @@ class AudioShareAttribution {
   Map<String, dynamic> toJson() => {
     'title': title.trim(),
     'creatorName': creatorName.trim(),
-    if (_nonBlank(creatorPubkey) case final value?) 'creatorPubkey': value,
-    if (_nonBlank(creatorUrl) case final value?) 'creatorUrl': value,
-    if (_nonBlank(sourceUrl) case final value?) 'sourceUrl': value,
-    if (_nonBlank(licenseName) case final value?) 'licenseName': value,
-    if (_nonBlank(licenseUrl) case final value?) 'licenseUrl': value,
+    'creatorPubkey': ?_nonBlank(creatorPubkey),
+    'creatorUrl': ?_nonBlank(creatorUrl),
+    'sourceUrl': ?_nonBlank(sourceUrl),
+    'licenseName': ?_nonBlank(licenseName),
+    'licenseUrl': ?_nonBlank(licenseUrl),
     'publicTags': publicTags,
     'confirmedOwnWork': confirmedOwnWork,
   };
@@ -143,7 +143,7 @@ List<String> normalizePublicAudioTags(Iterable<String> values) {
   for (final raw in values) {
     final normalized = raw
         .trim()
-        .replaceFirst(RegExp(r'^#+'), '')
+        .replaceFirst(RegExp('^#+'), '')
         .trim()
         .toLowerCase();
     if (normalized.isNotEmpty && seen.add(normalized)) result.add(normalized);

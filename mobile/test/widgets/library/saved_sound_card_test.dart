@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/widgets/library/saved_sound_card.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -35,6 +36,8 @@ Widget _app(
   VoidCallback? onEdit,
   VoidCallback? onRemove,
 }) => MaterialApp(
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
   theme: ThemeData.dark(),
   home: Scaffold(
     body: SingleChildScrollView(
