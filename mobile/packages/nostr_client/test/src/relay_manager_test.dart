@@ -846,6 +846,45 @@ void main() {
         },
       );
 
+      test('concurrent ledger loads share one storage read', () async {
+        final removedRelaysCompleter = Completer<List<String>>();
+        var removedRelaysLoadCount = 0;
+        when(() => mockStorage.loadRemovedRelays()).thenAnswer((_) {
+          removedRelaysLoadCount++;
+          return removedRelaysCompleter.future;
+        });
+        when(() => mockStorage.loadRelays()).thenAnswer((_) async => []);
+        when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+        when(
+          () => mockStorage.saveRemovedRelays(any()),
+        ).thenAnswer((_) async {});
+
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: mockStorage),
+          relayPool: mockRelayPool,
+        );
+
+        final initializeFuture = managerWithStorage.initialize();
+        await Future<void>.delayed(Duration.zero);
+        final restoreFuture = managerWithStorage.addRelay(
+          testCustomRelayUrl,
+          source: RelayAddSource.user,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(removedRelaysLoadCount, equals(1));
+
+        removedRelaysCompleter.complete([testCustomRelayUrl]);
+        await initializeFuture;
+
+        expect(await restoreFuture, isTrue);
+        expect(
+          managerWithStorage.configuredRelays,
+          contains(testCustomRelayUrl),
+        );
+        verify(() => mockStorage.saveRemovedRelays([])).called(1);
+      });
+
       test('automatic removal does not persist user removal intent', () async {
         final storage = InMemoryRelayStorage([testCustomRelayUrl]);
         final managerWithStorage = RelayManager(

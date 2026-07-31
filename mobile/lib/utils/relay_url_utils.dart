@@ -85,6 +85,47 @@ bool isRelayUrlAllowed(String url) {
   return false;
 }
 
+/// Normalizes a relay URL for identity comparison in UI state.
+///
+/// Mirrors the connection-layer normalization closely enough for Settings:
+/// explicit `ws` / `wss` URLs are lowercased by Dart's URI parser, bare
+/// host[:port][/path] inputs are treated as `wss://`, and a single trailing
+/// slash is ignored.
+String? normalizeRelayUrlForComparison(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return null;
+
+  String normalized;
+  final initial = Uri.tryParse(trimmed);
+  if (initial != null && initial.hasAuthority) {
+    final scheme = initial.scheme.toLowerCase();
+    if (scheme != 'wss' && scheme != 'ws') return null;
+    if (initial.path.startsWith('//')) return null;
+    normalized = initial.toString();
+  } else {
+    if (trimmed.contains('://')) return null;
+    normalized = 'wss://$trimmed';
+  }
+
+  if (normalized.endsWith('/')) {
+    normalized = normalized.substring(0, normalized.length - 1);
+  }
+
+  final uri = Uri.tryParse(normalized);
+  if (uri == null || uri.host.isEmpty) return null;
+  if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
+  return normalized;
+}
+
+/// True when [a] and [b] identify the same relay endpoint.
+bool relayUrlsEquivalent(String a, String b) {
+  final normalizedA = normalizeRelayUrlForComparison(a);
+  final normalizedB = normalizeRelayUrlForComparison(b);
+  return normalizedA != null &&
+      normalizedB != null &&
+      normalizedA == normalizedB;
+}
+
 /// Convert a relay WebSocket URL to an HTTP(S) base URL.
 ///
 /// Examples:

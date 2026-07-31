@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -214,7 +215,7 @@ class _RelayList extends StatelessWidget {
   Widget build(BuildContext context) {
     final defaultRelayUrl = context.read<RelaySettingsCubit>().defaultRelayUrl;
     final hasDefaultRelay = relays.any(
-      (relay) => _relayUrlsEquivalent(relay, defaultRelayUrl),
+      (relay) => relayUrlsEquivalent(relay, defaultRelayUrl),
     );
 
     return Column(
@@ -277,7 +278,7 @@ class _RelayTile extends ConsumerWidget {
     final stats = statsAsync.whenData((allStats) => allStats[relayUrl]).value;
     final isConnected = stats?.isConnected ?? false;
     final statusSummary = _relayStatusSummary(context, stats);
-    final isDefaultRelay = _relayUrlsEquivalent(
+    final isDefaultRelay = relayUrlsEquivalent(
       relayUrl,
       context.read<RelaySettingsCubit>().defaultRelayUrl,
     );
@@ -685,26 +686,6 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
       ),
     );
   }
-}
-
-String? _normalizeRelayUrlForComparison(String url) {
-  final trimmed = url.trim();
-  if (trimmed.isEmpty) return null;
-  final uri = Uri.tryParse(trimmed);
-  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return null;
-  var normalized = uri.replace(scheme: uri.scheme.toLowerCase()).toString();
-  if (normalized.endsWith('/')) {
-    normalized = normalized.substring(0, normalized.length - 1);
-  }
-  return normalized;
-}
-
-bool _relayUrlsEquivalent(String a, String b) {
-  final normalizedA = _normalizeRelayUrlForComparison(a);
-  final normalizedB = _normalizeRelayUrlForComparison(b);
-  return normalizedA != null &&
-      normalizedB != null &&
-      normalizedA == normalizedB;
 }
 
 // Action helpers — pulled to top-level functions so the private widget

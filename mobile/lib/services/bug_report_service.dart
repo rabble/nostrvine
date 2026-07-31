@@ -31,6 +31,9 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
+typedef BugReportTargetRelayResolver =
+    Future<List<String>?> Function(String recipientPubkey);
+
 /// Service for creating and managing bug reports
 class BugReportService {
   BugReportService({
@@ -38,16 +41,19 @@ class BugReportService {
     BlossomUploadService? blossomUploadService,
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
+    BugReportTargetRelayResolver? targetRelayResolver,
   }) : _nip17MessageService = nip17MessageService,
        _blossomUploadService = blossomUploadService,
        _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
-       _storageManagementService = storageManagementService;
+       _storageManagementService = storageManagementService,
+       _targetRelayResolver = targetRelayResolver;
 
   static const _uuid = Uuid();
   final NIP17MessageService? _nip17MessageService;
   final BlossomUploadService? _blossomUploadService;
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
+  final BugReportTargetRelayResolver? _targetRelayResolver;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -315,12 +321,13 @@ class BugReportService {
         sanitizedData,
         bugReportUrl,
       );
+      final targetRelays = await _resolveTargetRelays(recipientPubkey);
 
       // Send via NIP-17 encrypted message
       final result = await _nip17MessageService.sendPrivateMessage(
         recipientPubkey: recipientPubkey,
         content: messageContent,
-        targetRelays: BugReportConfig.supportDmTargetRelays,
+        targetRelays: targetRelays,
         awaitRecipientOk: true,
         selfWrapOnSoftUnconfirmed: false,
         additionalTags: [
@@ -378,6 +385,22 @@ class BugReportService {
         category: LogCategory.system,
       );
       return sendBugReportViaEmail(data);
+    }
+  }
+
+  Future<List<String>?> _resolveTargetRelays(String recipientPubkey) async {
+    final resolver = _targetRelayResolver;
+    if (resolver == null) return null;
+    try {
+      final relays = await resolver(recipientPubkey);
+      if (relays == null || relays.isEmpty) return null;
+      return relays;
+    } catch (e) {
+      Log.warning(
+        'Failed to resolve bug-report DM target relays; using default relay pool: $e',
+        category: LogCategory.system,
+      );
+      return null;
     }
   }
 

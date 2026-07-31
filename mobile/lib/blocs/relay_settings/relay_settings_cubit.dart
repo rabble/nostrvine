@@ -169,16 +169,8 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
   }
 
   bool _hasDefaultRelayConfigured() {
-    final normalizedDefault = _withoutTrailingSlash(defaultRelayUrl.trim());
-    return state.relays
-        .map((relay) => _withoutTrailingSlash(relay.trim()))
-        .contains(normalizedDefault);
-  }
-
-  String _withoutTrailingSlash(String relayUrl) {
-    if (relayUrl.endsWith('/')) {
-      return relayUrl.substring(0, relayUrl.length - 1);
-    }
-    return relayUrl;
+    return state.relays.any(
+      (relay) => relayUrlsEquivalent(relay, defaultRelayUrl),
+    );
   }
 }

@@ -94,6 +94,9 @@ class RelayManager {
   /// Whether persisted user-removal intent has been loaded.
   bool _userRemovedRelaysLoaded = false;
 
+  /// In-flight load of persisted user-removal intent.
+  Future<void>? _userRemovedRelaysLoadFuture;
+
   // ---------------------------------------------------------------------------
   // Public Getters
   // ---------------------------------------------------------------------------
@@ -187,7 +190,6 @@ class RelayManager {
           _configuredRelays.add(normalized);
         }
       }
-      droppedCount += _dropUserRemovedConfiguredRelays();
       if (blockedCount > 0) {
         _log('Filtered $blockedCount blocked relays from storage');
       }
@@ -712,7 +714,20 @@ class RelayManager {
 
   Future<void> _ensureUserRemovedRelaysLoaded() async {
     if (_userRemovedRelaysLoaded) return;
+    final existingLoad = _userRemovedRelaysLoadFuture;
+    if (existingLoad != null) return existingLoad;
 
+    final loadFuture = _loadUserRemovedRelays();
+    _userRemovedRelaysLoadFuture = loadFuture;
+    try {
+      await loadFuture;
+    } catch (_) {
+      _userRemovedRelaysLoadFuture = null;
+      rethrow;
+    }
+  }
+
+  Future<void> _loadUserRemovedRelays() async {
     final storage = _config.storage;
     if (storage == null) {
       _userRemovedRelaysLoaded = true;
@@ -738,12 +753,6 @@ class RelayManager {
       _log('Saved filtered user-removed relay list to storage');
     }
     _userRemovedRelaysLoaded = true;
-  }
-
-  int _dropUserRemovedConfiguredRelays() {
-    final before = _configuredRelays.length;
-    _configuredRelays.removeWhere(_userRemovedRelays.contains);
-    return before - _configuredRelays.length;
   }
 
   bool _setsEqual<T>(Set<T> a, Set<T> b) =>

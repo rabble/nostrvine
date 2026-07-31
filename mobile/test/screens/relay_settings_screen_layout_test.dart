@@ -140,11 +140,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final l10n = lookupAppLocalizations(const Locale('en'));
-    expect(
-      find.byTooltip(l10n.relaySettingsRemoveRelayTooltip),
-      findsOneWidget,
-    );
-    await tester.tap(find.byType(IconButton).first);
+    final removeButton = find.byTooltip(l10n.relaySettingsRemoveRelayTooltip);
+    expect(removeButton, findsOneWidget);
+    await tester.tap(removeButton);
     await tester.pumpAndSettle();
 
     expect(

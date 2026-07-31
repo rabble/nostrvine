@@ -5,6 +5,7 @@
 import 'package:dm_repository/dm_repository.dart';
 import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/storage_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
@@ -36,5 +37,7 @@ BugReportService bugReportService(Ref ref) {
     blossomUploadService: blossomService,
     errorTracker: ref.watch(errorAnalyticsTrackerProvider),
     storageManagementService: ref.watch(storageManagementServiceProvider),
+    targetRelayResolver: (pubkey) =>
+        ref.read(dmRepositoryProvider).resolveDmInboxRelays(pubkey),
   );
 }
