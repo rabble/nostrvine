@@ -33,9 +33,9 @@ class ClipboardUtils {
   ///
   /// Neither platform reports whether the write took. Android's
   /// `setPrimaryClip` returns `void` and iOS assigns `pasteboard.string`, and
-  /// the engine replies success either way — so a clipboard blocked by device
-  /// or enterprise policy is indistinguishable from a copy. Reading the value
-  /// back is the only confirmation available.
+  /// the engine reports success after every non-throwing call. A silently
+  /// blocked clipboard is therefore indistinguishable from a copy without
+  /// reading the value back.
   ///
   /// Returns whether the clipboard accepted it. The success message is shown
   /// only when it did; a caller handing over something the user cannot
@@ -45,9 +45,13 @@ class ClipboardUtils {
     String text, {
     required String message,
   }) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    final echoed = await Clipboard.getData(Clipboard.kTextPlain);
-    if (echoed?.text != text) return false;
+    try {
+      await Clipboard.setData(ClipboardData(text: text));
+      final echoed = await Clipboard.getData(Clipboard.kTextPlain);
+      if (echoed?.text != text) return false;
+    } on PlatformException {
+      return false;
+    }
 
     if (context.mounted) {
       ScaffoldMessenger.of(

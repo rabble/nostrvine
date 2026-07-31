@@ -109,6 +109,52 @@ void main() {
         expect(copied, isFalse);
         expect(find.text('Copied!'), findsNothing);
       });
+
+      testWidgets('reports failure when writing to the clipboard throws', (
+        tester,
+      ) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'Clipboard.setData') {
+                throw PlatformException(code: 'clipboard_blocked');
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        final copied = await pumpAndCopy(tester, 'secret-value');
+
+        expect(copied, isFalse);
+        expect(find.text('Copied!'), findsNothing);
+      });
+
+      testWidgets('reports failure when reading the clipboard throws', (
+        tester,
+      ) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'Clipboard.getData') {
+                throw PlatformException(code: 'clipboard_blocked');
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        final copied = await pumpAndCopy(tester, 'secret-value');
+
+        expect(copied, isFalse);
+        expect(find.text('Copied!'), findsNothing);
+      });
     });
   });
 }
