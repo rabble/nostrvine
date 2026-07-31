@@ -803,8 +803,8 @@ class DirectMessages extends Table {
   /// message. Lets the send / recovery dedup and the UI's optimistic grouping
   /// match a batch by an exact stored value instead of the collision-prone
   /// `(sender, content, created_at ±5s)` heuristic that `hasMatchingMessage`
-  /// uses — two distinct group sends of identical text seconds apart no longer
-  /// collapse into one.
+  /// uses — distinct group sends of identical text inside that narrow window
+  /// no longer collapse into one.
   TextColumn get sendBatchId => text().nullable().named('send_batch_id')();
 
   @override

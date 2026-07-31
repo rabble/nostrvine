@@ -2465,8 +2465,9 @@ class DmRepository {
       // dual-send fires both NIP-17 and NIP-04 copies. The receiver (also
       // Divine) will process the NIP-17 first, then see the NIP-04 copy.
       // Since the two events have different IDs, hasGiftWrap won't catch it.
-      // Match on sender+content only (no createdAt) because the NIP-17 rumor
-      // and NIP-04 event may have slightly different timestamps.
+      // Match on sender+content within hasMatchingMessage's narrow createdAt
+      // window because the NIP-17 rumor and NIP-04 event may have slightly
+      // different timestamps.
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
         senderPubkey: senderPubkey,

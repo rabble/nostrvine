@@ -33,6 +33,11 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// NIP-17 rumor events are immutable — the same rumor ID always carries
   /// the same content, so skipping duplicates never loses data.
   ///
+  /// The returned value is derived from SQLite `changes()` immediately after
+  /// the insert on the same Drift executor. Keep callers serialized through
+  /// Drift (the current receive paths call this inside transactions) so no
+  /// intervening write can affect the result.
+  ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
   /// fields are populated from the event tags.
@@ -210,20 +215,18 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Check if a message with the same sender and content already exists in a
-  /// conversation within a bounded timestamp window. Used for cross-protocol
-  /// dedup when both a NIP-17 and NIP-04 copy of the same message arrive, and
-  /// for peer clients that retry by recreating a NIP-17 rumor instead of
-  /// re-wrapping the original one.
+  /// conversation within a ±5 second window. Used for cross-protocol dedup
+  /// when both a NIP-17 and NIP-04 copy of the same message arrive.
   ///
   /// The time window prevents false positives when a user genuinely sends
-  /// the same text again later, while still catching retry duplicates whose
-  /// recreated rumor timestamps drift beyond send-confirm latency.
+  /// the same text again moments later, while still catching dual-send
+  /// duplicates where timestamps differ by at most a few seconds.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
     required String content,
     required int createdAt,
-    int windowSeconds = 60,
+    int windowSeconds = 5,
     String? ownerPubkey,
   }) async {
     final query = selectOnly(directMessages)

@@ -538,7 +538,7 @@ void main() {
 
     group('hasMatchingMessage', () {
       test(
-        'matches recreated peer retry within the default 60s window',
+        'matches cross-protocol duplicates within the default 5s window',
         () async {
           await dao.insertMessage(
             id: 'msg_original',
@@ -554,7 +554,7 @@ void main() {
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'Retryable message',
-            createdAt: 1700000059,
+            createdAt: 1700000004,
             ownerPubkey: 'pubkey_owner',
           );
 
@@ -563,7 +563,7 @@ void main() {
       );
 
       test(
-        'does not match repeated identical content outside the window',
+        'does not match repeated identical content after the default window',
         () async {
           await dao.insertMessage(
             id: 'msg_first_ok',
@@ -579,7 +579,7 @@ void main() {
             conversationId: conversationId1,
             senderPubkey: 'pubkey_peer',
             content: 'ok',
-            createdAt: 1700000061,
+            createdAt: 1700000030,
             ownerPubkey: 'pubkey_owner',
           );
 
