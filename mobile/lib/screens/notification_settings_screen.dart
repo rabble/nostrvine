@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/blocs/notification_settings/notification_settings_cubit.dart';
 import 'package:openvine/blocs/notification_settings/notification_settings_state.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -42,6 +44,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
         onMarkAllAsRead: repository == null
             ? null
             : () => _markAllAsRead(repository),
+        showNewPosts: ref.watch(
+          isFeatureEnabledProvider(FeatureFlag.newPostNotifications),
+        ),
       ),
     );
   }
@@ -64,9 +69,18 @@ class NotificationSettingsScreen extends ConsumerWidget {
 /// notification repository (see #4744 scope decision).
 class NotificationSettingsView extends StatelessWidget {
   @visibleForTesting
-  const NotificationSettingsView({required this.onMarkAllAsRead, super.key});
+  const NotificationSettingsView({
+    required this.onMarkAllAsRead,
+    required this.showNewPosts,
+    super.key,
+  });
 
   final Future<bool> Function()? onMarkAllAsRead;
+
+  /// Whether to offer the new-post ("bell") toggle. Hidden until the push
+  /// service delivers kind 34236, since there is no bell to switch off and
+  /// the toggle would change nothing a user could observe.
+  final bool showNewPosts;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -156,17 +170,18 @@ class NotificationSettingsView extends StatelessWidget {
                         prefs.copyWith(repostsEnabled: value),
                       ),
                     ),
-                    _NotificationCard(
-                      icon: DivineIconName.bellSimple,
-                      iconColor: VineTheme.vineGreen,
-                      title: context.l10n.notificationSettingsNewPosts,
-                      subtitle:
-                          context.l10n.notificationSettingsNewPostsSubtitle,
-                      value: prefs.newPostsEnabled,
-                      onChanged: (value) => cubit.setPreferences(
-                        prefs.copyWith(newPostsEnabled: value),
+                    if (showNewPosts)
+                      _NotificationCard(
+                        icon: DivineIconName.bellSimple,
+                        iconColor: VineTheme.vineGreen,
+                        title: context.l10n.notificationSettingsNewPosts,
+                        subtitle:
+                            context.l10n.notificationSettingsNewPostsSubtitle,
+                        value: prefs.newPostsEnabled,
+                        onChanged: (value) => cubit.setPreferences(
+                          prefs.copyWith(newPostsEnabled: value),
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 24),
                     _SectionHeader(context.l10n.notificationSettingsActions),
                     const SizedBox(height: 8),

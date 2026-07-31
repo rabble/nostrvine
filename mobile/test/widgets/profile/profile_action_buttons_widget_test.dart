@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_notify_bell_button.dart';
@@ -88,7 +90,10 @@ void main() {
     await notifySubscriptions.close();
   });
 
-  Widget buildWidget({bool isMessageRestricted = false}) {
+  Widget buildWidget({
+    bool isMessageRestricted = false,
+    bool newPostNotifications = true,
+  }) {
     return testMaterialApp(
       home: Scaffold(
         body: ProfileActionButtons(
@@ -107,6 +112,10 @@ void main() {
         notifySubscriptionsRepositoryProvider.overrideWithValue(
           notifyRepository,
         ),
+        // Ships default-off, so the bell tests have to ask for it.
+        isFeatureEnabledProvider(
+          FeatureFlag.newPostNotifications,
+        ).overrideWithValue(newPostNotifications),
       ],
       mockFollowRepository: followRepository,
       mockNostrService: nostrClient,
@@ -236,6 +245,25 @@ void main() {
 
       expect(find.byType(ProfileNotifyBellButton), findsOneWidget);
     });
+
+    testWidgets(
+      'stays hidden behind the flag, and reads no subscriptions',
+      (tester) async {
+        followingTarget();
+
+        await tester.pumpWidget(buildWidget(newPostNotifications: false));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ProfileNotifyBellButton), findsNothing);
+        // The cubit must not be constructed either — otherwise a flagged-off
+        // build still hits the relay for a list it can never show.
+        verifyNever(
+          () => notifyRepository.watchSubscriptions(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      },
+    );
 
     testWidgets('tapping it subscribes the viewer to the target', (
       tester,

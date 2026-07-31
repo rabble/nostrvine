@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/notify_bell/notify_bell_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -69,7 +71,12 @@ class ProfileActionButtons extends ConsumerWidget {
     // Empty rather than null when no signer is attached (the placeholder
     // LocalKeySigner), so signed-out is an emptiness check.
     final viewerPubkey = nostrClient.publicKey;
-    final hasViewer = viewerPubkey.isNotEmpty;
+    // Off until divine-push-service delivers kind 34236 to d=notify
+    // subscribers; until then the bell would publish a subscription that
+    // never produces a notification.
+    final canShowBell =
+        viewerPubkey.isNotEmpty &&
+        ref.watch(isFeatureEnabledProvider(FeatureFlag.newPostNotifications));
 
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
@@ -90,6 +97,7 @@ class ProfileActionButtons extends ConsumerWidget {
         contentBlocklistRepository,
         notifySubscriptions,
         viewerPubkey,
+        canShowBell,
       )),
       providers: [
         BlocProvider(
@@ -98,7 +106,7 @@ class ProfileActionButtons extends ConsumerWidget {
             contentBlocklistRepository: contentBlocklistRepository,
           )..add(const MyFollowingListLoadRequested()),
         ),
-        if (hasViewer)
+        if (canShowBell)
           BlocProvider(
             create: (_) => NotifyBellCubit(
               repository: notifySubscriptions,
@@ -117,7 +125,7 @@ class ProfileActionButtons extends ConsumerWidget {
         onMessageUser: onMessageUser,
         onShareProfile: onShareProfile,
         onBlockedTap: onBlockedTap,
-        canShowBell: hasViewer,
+        canShowBell: canShowBell,
       ),
     );
   }

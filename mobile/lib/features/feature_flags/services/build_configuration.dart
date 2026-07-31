@@ -56,6 +56,11 @@ class BuildConfiguration {
         // Default OFF: MVP exploration behind the flag until store products
         // are configured in App Store Connect and Google Play Console.
         return const bool.fromEnvironment('FF_DIVINE_SUPPORTERS');
+      case FeatureFlag.newPostNotifications:
+        // Default OFF until divine-push-service fans kind 34236 out to
+        // d=notify subscribers. On without it, the bell publishes a
+        // subscription no service reads.
+        return const bool.fromEnvironment('FF_NEW_POST_NOTIFICATIONS');
     }
   }
 
@@ -102,6 +107,8 @@ class BuildConfiguration {
         return 'FF_EMAIL_VERIFICATION_PIN_FALLBACK';
       case FeatureFlag.divineSupporters:
         return 'FF_DIVINE_SUPPORTERS';
+      case FeatureFlag.newPostNotifications:
+        return 'FF_NEW_POST_NOTIFICATIONS';
     }
   }
 }
