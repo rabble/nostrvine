@@ -5762,6 +5762,74 @@ void main() {
       );
 
       test(
+        'skips the capability probe entirely when allowResumable is false',
+        () async {
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_no_capability_probe_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          // Stubbed so a stray probe would surface as a verify failure rather
+          // than a null-return crash.
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers(),
+            ),
+          );
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/hash',
+                'fallbackUrl': 'https://media.divine.video/hash',
+              },
+            ),
+          );
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+            allowResumable: false,
+          );
+
+          expect(result.success, isTrue);
+          // The probe only picks resumable vs single PUT, so with resumable
+          // off it is a pure round-trip tax on the publish critical path.
+          verifyNever(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          );
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
         'falls back to legacy upload when Divine image resumable init fails',
         () async {
           when(() => mockAuthProvider.isAuthenticated).thenReturn(true);

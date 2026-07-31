@@ -24,6 +24,7 @@ import 'package:openvine/services/subtitle_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
+import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -199,7 +200,30 @@ class VideoPublishService {
 
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
+  ///
+  /// Wraps the publish in a [PublishTimeline] so every run emits per-phase
+  /// timing plus a summary line, whichever way it ends.
   Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
+    final timeline = PublishTimeline(draft.id);
+    PublishResult? result;
+    try {
+      result = await _publishVideo(draft: draft, timeline: timeline);
+      return result;
+    } finally {
+      timeline.logSummary(
+        outcome: switch (result) {
+          PublishSuccess() => 'success',
+          PublishError(:final kind) => 'error:${kind.name}',
+          null => 'threw',
+        },
+      );
+    }
+  }
+
+  Future<PublishResult> _publishVideo({
+    required DivineVideoDraft draft,
+    required PublishTimeline timeline,
+  }) async {
     // An account switch while the upload was in flight leaves the previous
     // account's draft reachable from this session. Publishing it would sign the
     // video with the wrong identity, and the `publishing` save below would
@@ -245,7 +269,10 @@ class VideoPublishService {
       final pubkey = authService.currentPublicKeyHex!;
 
       // Use existing upload if available, otherwise start new upload
-      final pendingUpload = await _getOrCreateUpload(pubkey, draft);
+      final pendingUpload = await timeline.measure(
+        'upload',
+        () => _getOrCreateUpload(pubkey, draft),
+      );
       if (pendingUpload == null) {
         Log.error('❌ Upload creation failed', category: .video);
         final failedUpload = _backgroundUploadId != null
@@ -286,43 +313,49 @@ class VideoPublishService {
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
-      final mentionedPubkeys = await _resolveMentionedPubkeys(
-        draft,
-        currentUserPubkey: pubkey,
+      final mentionedPubkeys = await timeline.measure(
+        'mentions',
+        () => _resolveMentionedPubkeys(draft, currentUserPubkey: pubkey),
       );
 
       final captionTrack = _captionTrackForPublish(draft);
       final textTrackRefs = captionTrack != null
-          ? await _publishSubtitleAssets(captionTrack, pendingUpload)
+          ? await timeline.measure(
+              'subtitles',
+              () => _publishSubtitleAssets(captionTrack, pendingUpload),
+            )
           : const <String>[];
 
-      final published = await videoEventPublisher.publishVideoEvent(
-        upload: pendingUpload,
-        title: draft.title,
-        description: draft.description,
-        hashtags: draft.hashtags.toList(),
-        expirationTimestamp: draft.expireTime != null
-            ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
-                  draft.expireTime!.inSeconds
-            : null,
-        allowAudioReuse: draft.allowAudioReuse,
-        collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
-        mentionedPubkeys: mentionedPubkeys,
-        inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
-        inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
-        inspiredByNpub: draft.inspiredByNpub,
-        selectedAudio: draft.selectedSound,
-        selectedAudioEventId: draft.selectedSound?.id,
-        selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
-        language: languagePreferenceService?.contentLanguage,
-        contentWarning: draft.contentWarning,
-        thumbnailTimestamp: draft.thumbnailTimestamp,
-        replyContext: draft.videoReplyContext,
-        addReplyToFeed: draft.shareReplyToFeed,
-        textTrackRefs: textTrackRefs,
-        textTrackLang: captionTrack != null
-            ? _languageCode(captionTrack.languageTag)
-            : 'en',
+      final published = await timeline.measure(
+        'nostr',
+        () => videoEventPublisher.publishVideoEvent(
+          upload: pendingUpload,
+          title: draft.title,
+          description: draft.description,
+          hashtags: draft.hashtags.toList(),
+          expirationTimestamp: draft.expireTime != null
+              ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
+                    draft.expireTime!.inSeconds
+              : null,
+          allowAudioReuse: draft.allowAudioReuse,
+          collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
+          mentionedPubkeys: mentionedPubkeys,
+          inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
+          inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
+          inspiredByNpub: draft.inspiredByNpub,
+          selectedAudio: draft.selectedSound,
+          selectedAudioEventId: draft.selectedSound?.id,
+          selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
+          language: languagePreferenceService?.contentLanguage,
+          contentWarning: draft.contentWarning,
+          thumbnailTimestamp: draft.thumbnailTimestamp,
+          replyContext: draft.videoReplyContext,
+          addReplyToFeed: draft.shareReplyToFeed,
+          textTrackRefs: textTrackRefs,
+          textTrackLang: captionTrack != null
+              ? _languageCode(captionTrack.languageTag)
+              : 'en',
+        ),
       );
 
       if (!published) {
@@ -334,10 +367,13 @@ class VideoPublishService {
         );
       }
 
-      final inviteWarnings = await _sendCollaboratorInvites(
-        draft: draft,
-        upload: pendingUpload,
-        creatorPubkey: pubkey,
+      final inviteWarnings = await timeline.measure(
+        'invites',
+        () => _sendCollaboratorInvites(
+          draft: draft,
+          upload: pendingUpload,
+          creatorPubkey: pubkey,
+        ),
       );
 
       // Success: delete draft

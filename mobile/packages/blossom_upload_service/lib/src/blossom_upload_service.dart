@@ -19,6 +19,21 @@ import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Emits an upload-phase timing line.
+///
+/// Deliberately mirrors the format of the app layer's `logPublishPhase`
+/// (token `PUBTIME`, logger name `PublishTiming`) so one `grep PUBTIME` spans
+/// both layers in order. The format is duplicated rather than shared because
+/// the helper lives above this package and the dependency only runs one way.
+void _logUploadPhase(String phase, Duration elapsed, {String? detail}) {
+  final suffix = (detail == null || detail.isEmpty) ? '' : ' $detail';
+  Log.info(
+    '⏱️ PUBTIME $phase ${elapsed.inMilliseconds}ms$suffix',
+    name: 'PublishTiming',
+    category: LogCategory.video,
+  );
+}
+
 bool _hasTransientDioSignal(DioException error) {
   final statusCode = error.response?.statusCode;
   if (statusCode != null && statusCode >= 500) return true;
@@ -769,6 +784,7 @@ class BlossomUploadService {
     required String contentDescription,
     Duration authTtl = _defaultAuthTtl,
   }) async {
+    final signWatch = Stopwatch()..start();
     final authEvent = await _createBlossomAuthEvent(
       url: url,
       method: method,
@@ -777,6 +793,13 @@ class BlossomUploadService {
       contentDescription: contentDescription,
       authTtl: authTtl,
     );
+    signWatch.stop();
+    _logUploadPhase(
+      'auth.sign',
+      signWatch.elapsed,
+      detail: '$method ${Uri.tryParse(url)?.path ?? url}',
+    );
+
     if (authEvent == null) {
       return null;
     }
@@ -1713,6 +1736,7 @@ class BlossomUploadService {
       // for file-backed sources (constant-memory upload, used for video and
       // audio) or the raw `Uint8List` for byte-backed sources (used by the
       // web image-upload path where there is no filesystem to stream from).
+      final putWatch = Stopwatch()..start();
       final response = await dio.put<dynamic>(
         '$serverUrl/upload',
         data: source.getStreamingBody(),
@@ -1732,6 +1756,13 @@ class BlossomUploadService {
           }
         },
         // coverage:ignore-end
+      );
+
+      putWatch.stop();
+      _logUploadPhase(
+        'net.put',
+        putWatch.elapsed,
+        detail: '$fileSize bytes -> ${response.statusCode}',
       );
 
       Log.debug(
@@ -2677,11 +2708,19 @@ class BlossomUploadService {
           category: LogCategory.video,
         );
 
-        final capability = await _fetchDivineUploadCapability(serverUrl);
+        // The capability probe only picks between the resumable flow and the
+        // single PUT. A caller that already opted out of resumable cannot be
+        // routed by the answer, so the HEAD is dead weight — and an expensive
+        // one: the OS-first video upload never warms the capability cache, so
+        // the thumbnail leg pays a cold round-trip on the publish critical
+        // path (measured at ~3.7s for a 20KB thumbnail).
+        final capability = allowResumable
+            ? await _fetchDivineUploadCapability(serverUrl)
+            : null;
 
         final result = await _uploadWithRetry(
           attempt: () {
-            if (capability.supportsResumable && allowResumable) {
+            if (capability != null && capability.supportsResumable) {
               return _uploadWithSingleLegacyFallback(
                 serverUrl: serverUrl,
                 uploadResumable: () => _uploadToServerResumable(
