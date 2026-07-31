@@ -347,6 +347,7 @@ class SoundLibraryApiClient {
         creatorName: json['creator'] as String?,
         sourceUrl: json['sourceUrl'] as String?,
         previewUrl: previewUrl,
+        catalogTags: _catalogTags(json['tags']),
         license: license,
       ),
     );
@@ -370,5 +371,18 @@ class SoundLibraryApiClient {
       'openverse' => 'Openverse',
       _ => provider,
     };
+  }
+
+  List<String> _catalogTags(Object? value) {
+    if (value is! List) return const [];
+    final seen = <String>{};
+    final tags = <String>[];
+    for (final raw in value.whereType<String>()) {
+      final tag = raw.trim();
+      if (tag.isNotEmpty && seen.add(tag.toLowerCase())) {
+        tags.add(tag);
+      }
+    }
+    return List.unmodifiable(tags);
   }
 }

@@ -659,6 +659,7 @@ class AudioExternalSource {
     this.creatorUrl,
     this.sourceUrl,
     this.previewUrl,
+    this.catalogTags = const [],
   });
 
   factory AudioExternalSource.fromJson(Map<String, dynamic> json) {
@@ -675,6 +676,7 @@ class AudioExternalSource {
       creatorUrl: json['creatorUrl'] as String?,
       sourceUrl: json['sourceUrl'] as String?,
       previewUrl: json['previewUrl'] as String?,
+      catalogTags: _normalizedStringList(json['catalogTags']),
       license: AudioLicenseMetadata.fromJson(licenseJson),
     );
   }
@@ -686,6 +688,7 @@ class AudioExternalSource {
   final String? creatorUrl;
   final String? sourceUrl;
   final String? previewUrl;
+  final List<String> catalogTags;
   final AudioLicenseMetadata license;
 
   Map<String, dynamic> toJson() => {
@@ -696,6 +699,7 @@ class AudioExternalSource {
     'creatorUrl': ?creatorUrl,
     'sourceUrl': ?sourceUrl,
     'previewUrl': ?previewUrl,
+    'catalogTags': catalogTags,
     'license': license.toJson(),
   };
 
@@ -709,6 +713,7 @@ class AudioExternalSource {
         other.creatorUrl == creatorUrl &&
         other.sourceUrl == sourceUrl &&
         other.previewUrl == previewUrl &&
+        _stringListsEqual(other.catalogTags, catalogTags) &&
         other.license == license;
   }
 
@@ -721,8 +726,31 @@ class AudioExternalSource {
     creatorUrl,
     sourceUrl,
     previewUrl,
+    Object.hashAll(catalogTags),
     license,
   );
+}
+
+List<String> _normalizedStringList(Object? value) {
+  if (value is! List) return const [];
+  final seen = <String>{};
+  final result = <String>[];
+  for (final item in value.whereType<String>()) {
+    final trimmed = item.trim();
+    if (trimmed.isNotEmpty && seen.add(trimmed.toLowerCase())) {
+      result.add(trimmed);
+    }
+  }
+  return List.unmodifiable(result);
+}
+
+bool _stringListsEqual(List<String> left, List<String> right) {
+  if (identical(left, right)) return true;
+  if (left.length != right.length) return false;
+  for (var index = 0; index < left.length; index++) {
+    if (left[index] != right[index]) return false;
+  }
+  return true;
 }
 
 /// License metadata that has already been normalized by the sound proxy.

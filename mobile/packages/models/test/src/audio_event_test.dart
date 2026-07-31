@@ -641,6 +641,7 @@ void main() {
             creatorUrl: 'https://freesound.org/people/ThePauny/',
             sourceUrl: 'https://freesound.org/people/ThePauny/sounds/502915/',
             previewUrl: 'https://cdn.freesound.org/previews/502/502915.mp3',
+            catalogTags: ['crowd', 'field recording'],
             license: AudioLicenseMetadata(
               type: 'cc0',
               name: 'Creative Commons 0',
@@ -662,6 +663,10 @@ void main() {
         expect(decoded.externalSource?.license.allowsCommercialUse, isTrue);
         expect(decoded.externalSource?.license.allowsDerivatives, isTrue);
         expect(decoded.externalSource?.license.requiresAttribution, isFalse);
+        expect(decoded.externalSource?.catalogTags, [
+          'crowd',
+          'field recording',
+        ]);
         expect(decoded.externalSource, equals(audioEvent.externalSource));
       });
 
