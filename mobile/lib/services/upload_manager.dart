@@ -1173,17 +1173,6 @@ class UploadManager implements BackgroundAwareService {
         onProgress?.call(1.0);
       }
 
-      // Store the thumbnail URL and blurhash so publishing can read both
-      // instead of deriving them again.
-      if (thumbnailCdnUrl != null || thumbnailResult.blurhash != null) {
-        await _store.update(
-          upload.copyWith(
-            thumbnailPath: thumbnailCdnUrl ?? upload.thumbnailPath,
-            blurhash: thumbnailResult.blurhash,
-          ),
-        );
-      }
-
       Log.info(
         '✅ Upload execution completed',
         name: 'UploadManager',
@@ -1906,11 +1895,28 @@ class UploadManager implements BackgroundAwareService {
 
     final watch = Stopwatch()..start();
     try {
-      return await _generateAndUploadThumbnail(
+      final result = await _generateAndUploadThumbnail(
         videoFile: videoFile,
         nostrPubkey: upload.nostrPubkey,
         upload: upload,
       );
+
+      // Persist as soon as the leg lands, not once the whole attempt
+      // succeeds. A failing video transfer aborts this method's caller before
+      // its own store write, so deferring would make every retry re-extract
+      // and re-upload a thumbnail that is already on the CDN — and the
+      // short-circuit above would never fire.
+      if (result.cdnUrl != null || result.blurhash != null) {
+        final current = _store.getUpload(upload.id) ?? upload;
+        await _store.update(
+          current.copyWith(
+            thumbnailPath: result.cdnUrl ?? current.thumbnailPath,
+            blurhash: result.blurhash,
+          ),
+        );
+      }
+
+      return result;
     } finally {
       watch.stop();
       logPublishPhase('upload.thumbnail', watch.elapsed);

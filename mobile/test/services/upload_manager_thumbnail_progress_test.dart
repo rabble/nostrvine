@@ -172,6 +172,73 @@ void main() {
       },
     );
 
+    test('does not re-upload the thumbnail after a failed transfer', () async {
+      var thumbnailUploads = 0;
+      when(
+        () => mockBlossom.uploadImage(
+          imageFile: any(named: 'imageFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          allowResumable: any(named: 'allowResumable'),
+        ),
+      ).thenAnswer((_) async {
+        thumbnailUploads++;
+        if (!thumbnailStarted.isCompleted) thumbnailStarted.complete();
+        return const BlossomUploadResult(
+          success: true,
+          videoId: 'thumb-1',
+          url: 'https://media.divine.video/thumb-1.jpg',
+          fallbackUrl: 'https://media.divine.video/thumb-1.jpg',
+        );
+      });
+
+      // Fail the transfer once, then succeed — the retry policy re-enters the
+      // whole execute step, thumbnail leg included.
+      var transferAttempts = 0;
+      when(() => mockBlossom.isBlossomEnabled()).thenAnswer((_) async => false);
+      when(
+        () => mockBlossom.uploadVideoWithResume(
+          videoFile: any(named: 'videoFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          taskId: any(named: 'taskId'),
+          title: any(named: 'title'),
+          description: any(named: 'description'),
+          hashtags: any(named: 'hashtags'),
+          proofManifestJson: any(named: 'proofManifestJson'),
+          useBackgroundFirst: any(named: 'useBackgroundFirst'),
+          resumableTimeout: any(named: 'resumableTimeout'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async {
+        transferAttempts++;
+        if (transferAttempts == 1) {
+          throw const BlossomUploadFailureException('connection refused');
+        }
+        return const BlossomUploadResult(
+          success: true,
+          videoId: 'vid-1',
+          url: 'https://media.divine.video/vid-1',
+          fallbackUrl: 'https://media.divine.video/vid-1',
+        );
+      });
+
+      final videoFile = File('${testDir.path}/video.mp4')
+        ..writeAsBytesSync([0, 1, 2, 3]);
+
+      await uploadManager.startUpload(
+        videoFile: videoFile,
+        nostrPubkey: 'pubkey-1',
+      );
+
+      expect(transferAttempts, equals(2));
+      expect(
+        thumbnailUploads,
+        equals(1),
+        reason: 'the retry must reuse the thumbnail already on the CDN',
+      );
+    });
+
     test('lets the video alone drive a monotonic bar up to 1.0', () async {
       stubThumbnailUpload();
       stubVideoUpload(
