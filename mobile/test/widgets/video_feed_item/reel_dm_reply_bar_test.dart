@@ -96,6 +96,34 @@ void main() {
     ),
   );
 
+  /// The bar under a switch, so a test can take it out of the tree the way
+  /// scrolling to the next reel does.
+  Widget toggleableBarApp(ValueNotifier<bool> barVisible, DmReplyContext ctx) =>
+      ProviderScope(
+        overrides: [
+          dmRepositoryProvider.overrideWithValue(dmRepo),
+          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
+          authServiceProvider.overrideWithValue(auth),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (inner) => MediaQuery(
+                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: barVisible,
+                  builder: (_, visible, _) => visible
+                      ? ReelDmReplyBarHost(dmReplyContext: ctx)
+                      : const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
   testWidgets('renders composer + the 6 quick emojis + picker button', (
     tester,
   ) async {
@@ -454,32 +482,7 @@ void main() {
     final barVisible = ValueNotifier(true);
     addTearDown(barVisible.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          dmRepositoryProvider.overrideWithValue(dmRepo),
-          dmReactionsRepositoryProvider.overrideWithValue(reactionsRepo),
-          authServiceProvider.overrideWithValue(auth),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Builder(
-              builder: (inner) => MediaQuery(
-                data: MediaQuery.of(inner).copyWith(disableAnimations: true),
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: barVisible,
-                  builder: (_, visible, _) => visible
-                      ? ReelDmReplyBarHost(dmReplyContext: context())
-                      : const SizedBox.shrink(),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
     await tester.pump();
 
     await tester.enterText(find.byType(TextField), 'hello');
@@ -503,6 +506,87 @@ void main() {
         replyToId: _reelId,
       ),
     ).called(1);
+  });
+
+  testWidgets('leaves a queued retry snackbar for whatever is on screen', (
+    tester,
+  ) async {
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenThrow(Exception('send failed'));
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+
+    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+    await tester.pump();
+
+    // Something else on the reel route got to the messenger first, so the
+    // retry snackbar queues behind it instead of showing.
+    tester
+        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger).first)
+        .showSnackBar(
+          const SnackBar(
+            content: Text('unrelated'),
+            duration: Duration(seconds: 30),
+          ),
+        );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+
+    // Closing a queued snackbar would have dismissed this one instead.
+    expect(tester.takeException(), isNull);
+    expect(find.text('unrelated'), findsOneWidget);
+  });
+
+  testWidgets('closes the retry snackbar when navigation is accessible', (
+    tester,
+  ) async {
+    // The messenger skips the exit animation in this mode and rebuilds
+    // synchronously, which the framework rejects while it is unmounting the
+    // bar unless the close is deferred past the state lock.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(accessibleNavigation: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+
+    when(
+      () => dmRepo.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+      ),
+    ).thenThrow(Exception('send failed'));
+
+    final barVisible = ValueNotifier(true);
+    addTearDown(barVisible.dispose);
+
+    await tester.pumpWidget(toggleableBarApp(barVisible, context()));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), 'hello');
+    await tester.pump();
+    await tester.tap(find.byType(IconButton));
+    await tester.pumpAndSettle();
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
+    expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+
+    barVisible.value = false;
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(l10n.dmSendFailedRetry), findsNothing);
   });
 
   testWidgets('view chat action navigates after the bar leaves the tree', (
