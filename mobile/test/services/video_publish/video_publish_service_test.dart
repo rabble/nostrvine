@@ -123,24 +123,27 @@ void main() {
         expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
       });
 
-      test('returns success when publish completes successfully', () async {
-        // Arrange
-        _setupSuccessfulPublish(
-          mockAuthService: mockAuthService,
-          mockUploadManager: mockUploadManager,
-          mockDraftService: mockDraftService,
-          mockVideoEventPublisher: mockVideoEventPublisher,
-        );
+      test(
+        'returns success and leaves the draft for the bloc to reclaim',
+        () async {
+          // Draft deletion and its file cleanup are BackgroundPublishBloc's job
+          // and run after the success state is emitted — the video is already
+          // live, so the caller must not wait on garbage collection (#6548).
+          _setupSuccessfulPublish(
+            mockAuthService: mockAuthService,
+            mockUploadManager: mockUploadManager,
+            mockDraftService: mockDraftService,
+            mockVideoEventPublisher: mockVideoEventPublisher,
+          );
 
-        final draft = _createTestDraft();
+          final draft = _createTestDraft();
 
-        // Act
-        final result = await service.publishVideo(draft: draft);
+          final result = await service.publishVideo(draft: draft);
 
-        // Assert
-        expect(result, isA<PublishSuccess>());
-        verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
-      });
+          expect(result, isA<PublishSuccess>());
+          verifyNever(() => mockDraftService.deleteDraft(any()));
+        },
+      );
 
       test('holds the bar below 100% until the event lands', () async {
         // Arrange
@@ -613,7 +616,6 @@ void main() {
           final result = await service.publishVideo(draft: draft);
 
           expect(result, isA<PublishSuccess>());
-          verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
         },
       );
 
@@ -1140,7 +1142,6 @@ void main() {
           final result = await service.publishVideo(draft: draft);
 
           expect(result, isA<PublishSuccess>());
-          verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
         },
       );
 

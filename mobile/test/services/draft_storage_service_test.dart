@@ -2194,12 +2194,15 @@ void main() {
         // A sibling clip row whose data blob can't be parsed. The ghost-frame
         // reference scan runs after the target draft's rows are deleted, so an
         // unguarded throw here would leak the deleted draft's ghost file.
+        // The blob is truncated rather than arbitrary text so it still reaches
+        // the decode step — the scan pre-filters on the serialized
+        // `ghostFramePath` key.
         await database.clipsDao.upsertClip(
           id: 'corrupt_sibling_clip',
           orderIndex: 0,
           durationMs: 6000,
           recordedAt: DateTime(2025),
-          data: 'not-json',
+          data: '{"ghostFramePath":"ghost_target.jpg"',
           filePath: null,
           thumbnailPath: null,
         );

@@ -173,6 +173,51 @@ void main() {
             ).called(1);
           },
         );
+
+        test('emits success before the draft cleanup completes', () async {
+          // Draft deletion reclaims files and rescans the clip table, so it
+          // must never sit in front of the success state — the video is
+          // already live by then (#6548).
+          final cleanupGate = Completer<void>();
+          var cleanupStarted = false;
+          var cleanupFinished = false;
+          when(() => mockDraftStorageService.deleteDraft(draftId)).thenAnswer((
+            _,
+          ) {
+            cleanupStarted = true;
+            return cleanupGate.future.then((_) => cleanupFinished = true);
+          });
+
+          final bloc = BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          );
+          addTearDown(bloc.close);
+
+          final states = <BackgroundPublishState>[];
+          final subscription = bloc.stream.listen(states.add);
+          addTearDown(subscription.cancel);
+
+          bloc.add(
+            BackgroundPublishRequested(
+              draft: draft,
+              publishmentProcess: Future.value(const PublishSuccess()),
+            ),
+          );
+          await pumpEventQueue();
+
+          // The deletion is still gated, yet the UI already sees the publish
+          // land: it is not waiting on garbage collection.
+          expect(states.last.recentlySucceededIds, contains(draftId));
+          expect(states.last.uploads, isEmpty);
+          expect(cleanupStarted, isTrue);
+          expect(cleanupFinished, isFalse);
+
+          // ...and the cleanup still runs to completion afterwards.
+          cleanupGate.complete();
+          await pumpEventQueue();
+          expect(cleanupFinished, isTrue);
+        });
       });
 
       group('when the upload is a failure', () {

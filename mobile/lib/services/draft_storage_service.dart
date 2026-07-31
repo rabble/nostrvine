@@ -703,14 +703,18 @@ class DraftStorageService {
   /// the last referencing clip is gone. Never throws: a corrupt blob is logged
   /// and skipped.
   ///
-  /// Trashed clips are included (`includeTrashed: true`): a soft-deleted clip
-  /// can still be restored, so a ghost frame it shares with the draft being
-  /// deleted must survive. This mirrors [ClipsDao.isFileReferenced], which
-  /// already protects the indexed video/thumbnail files of trashed clips.
+  /// Trashed clips are included: a soft-deleted clip can still be restored, so
+  /// a ghost frame it shares with the draft being deleted must survive. This
+  /// mirrors [ClipsDao.isFileReferenced], which already protects the indexed
+  /// video/thumbnail files of trashed clips.
+  ///
+  /// Uses [ClipsDao.getClipsWithGhostFrames] rather than reading the whole clip
+  /// table: this scan runs on every draft deletion, and decoding every blob in
+  /// the database made it grow with the size of the clip library (#6548).
   Future<Set<String>> _referencedGhostFrameFilenames({
     String? excludeDraftId,
   }) async {
-    final clipRows = await _clipsDao.getAllClips(includeTrashed: true);
+    final clipRows = await _clipsDao.getClipsWithGhostFrames();
     final filenames = <String>{};
 
     for (final row in clipRows) {

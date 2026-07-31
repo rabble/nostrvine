@@ -94,6 +94,9 @@ class BackgroundPublishBloc
         ),
       );
 
+      // Deliberately after the emit above: the video is already live, so the
+      // draft row and its unreferenced media are reclaimed off the publish
+      // critical path rather than in front of the success state (#6548).
       await _deletePublishedDrafts(event.draft);
     } else {
       // Update the upload with the result
@@ -313,6 +316,10 @@ class BackgroundPublishBloc
     emit(state.copyWith(uploads: [...state.uploads, failedUpload]));
   }
 
+  /// Reclaims a published draft: the publish copy, plus the draft it was
+  /// copied from. Sole owner of post-publish draft deletion — the publish
+  /// service intentionally leaves the draft in place (see
+  /// [VideoPublishService.publishVideo]).
   Future<void> _deletePublishedDrafts(DivineVideoDraft publishedDraft) async {
     await _deleteDraft(publishedDraft.id);
 
