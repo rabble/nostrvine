@@ -52,6 +52,14 @@ class AudioEvent {
     this.sourceVideoReference,
     this.sourceVideoRelay,
     this.externalSource,
+    this.creatorName,
+    this.creatorPubkey,
+    this.creatorUrl,
+    this.licenseName,
+    this.licenseUrl,
+    this.publicTags = const [],
+    this.proxyId,
+    this.proxyProtocol,
     this.startOffset = Duration.zero,
     this.volume = 1.0,
     this.startTime = Duration.zero,
@@ -81,6 +89,15 @@ class AudioEvent {
     String? source;
     String? sourceVideoReference;
     String? sourceVideoRelay;
+    String? creatorName;
+    String? creatorPubkey;
+    String? creatorUrl;
+    String? licenseName;
+    String? licenseUrl;
+    final publicTags = <String>[];
+    String? proxyId;
+    String? proxyProtocol;
+    var allowsReuse = false;
 
     // Parse tags according to NIP-94
     for (final tagRaw in event.tags) {
@@ -105,6 +122,27 @@ class AudioEvent {
           title = tagValue.isNotEmpty ? tagValue : null;
         case 'source':
           source = tagValue.isNotEmpty ? tagValue : null;
+        case 'allow_audio_reuse':
+          allowsReuse = tagValue == 'true';
+        case 'creator':
+          creatorName = tagValue.isNotEmpty ? tagValue : null;
+        case 'p':
+          creatorPubkey ??= tagValue.isNotEmpty ? tagValue : null;
+        case 'creator_url':
+          creatorUrl = tagValue.isNotEmpty ? tagValue : null;
+        case 'license':
+          licenseName = tagValue.isNotEmpty ? tagValue : null;
+        case 'license_url':
+          licenseUrl = tagValue.isNotEmpty ? tagValue : null;
+        case 't':
+          if (tagValue.trim().isNotEmpty) {
+            publicTags.add(tagValue.trim());
+          }
+        case 'proxy':
+          if (tagValue.isNotEmpty && tag.length > 2 && tag[2].isNotEmpty) {
+            proxyId = tagValue;
+            proxyProtocol = tag[2];
+          }
         case 'a':
           // Addressable reference to source video: "34236:<pubkey>:<d-tag>"
           sourceVideoReference = tagValue.isNotEmpty ? tagValue : null;
@@ -128,6 +166,15 @@ class AudioEvent {
       source: source,
       sourceVideoReference: sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay,
+      creatorName: creatorName,
+      creatorPubkey: creatorPubkey,
+      creatorUrl: creatorUrl,
+      licenseName: licenseName,
+      licenseUrl: licenseUrl,
+      publicTags: _normalizedStringList(publicTags),
+      proxyId: proxyId,
+      proxyProtocol: proxyProtocol,
+      allowsReuse: allowsReuse,
     );
   }
 
@@ -230,6 +277,14 @@ class AudioEvent {
       sourceVideoReference: json['sourceVideoReference'] as String?,
       sourceVideoRelay: json['sourceVideoRelay'] as String?,
       externalSource: _parseExternalSource(json['externalSource']),
+      creatorName: json['creatorName'] as String?,
+      creatorPubkey: json['creatorPubkey'] as String?,
+      creatorUrl: json['creatorUrl'] as String?,
+      licenseName: json['licenseName'] as String?,
+      licenseUrl: json['licenseUrl'] as String?,
+      publicTags: _normalizedStringList(json['publicTags']),
+      proxyId: json['proxyId'] as String?,
+      proxyProtocol: json['proxyProtocol'] as String?,
       startOffset: json['startOffsetMs'] != null
           ? Duration(milliseconds: json['startOffsetMs'] as int)
           : Duration.zero,
@@ -241,6 +296,7 @@ class AudioEvent {
           ? Duration(milliseconds: json['endTimeMs'] as int)
           : null,
       anchorClipId: json['anchorClipId'] as String?,
+      allowsReuse: json['allowsReuse'] as bool? ?? true,
     );
   }
 
@@ -409,6 +465,30 @@ class AudioEvent {
   /// sounds from Freesound, Openverse, or future providers.
   final AudioExternalSource? externalSource;
 
+  /// Public creator name included when this sound is shared.
+  final String? creatorName;
+
+  /// Public Nostr pubkey of the credited creator.
+  final String? creatorPubkey;
+
+  /// Public profile or portfolio URL for the credited creator.
+  final String? creatorUrl;
+
+  /// Human-readable public license name.
+  final String? licenseName;
+
+  /// Canonical public license URL.
+  final String? licenseUrl;
+
+  /// Public catalog tags. These are distinct from private library hashtags.
+  final List<String> publicTags;
+
+  /// Provider-native identifier used by a sound proxy.
+  final String? proxyId;
+
+  /// Provider protocol paired with [proxyId], such as `freesound`.
+  final String? proxyProtocol;
+
   /// Start offset within the audio track.
   ///
   /// This is the point from which the audio will start
@@ -443,12 +523,9 @@ class AudioEvent {
 
   /// Whether the source creator permits this sound to be reused by others.
   ///
-  /// Meaningful only for a video's synthesized original sound
-  /// ([AudioEvent.fromVideoOriginalSound]), where it carries the source video's
-  /// `allow_audio_reuse` marker so a reuse gate can decide without re-fetching
-  /// the video. Shared Kind 1063 and bundled sounds were published for reuse,
-  /// so this defaults to `true`. Transient — not serialized (an adopted sound
-  /// was reusable when saved) and not part of identity equality.
+  /// Parsed Kind 1063 events fail closed: only an explicit
+  /// `allow_audio_reuse=true` tag enables reuse. The constructor retains a
+  /// `true` default for bundled and existing in-memory app sounds.
   final bool allowsReuse;
 
   /// Whether this audio is currently anchored to a source video clip.
@@ -532,6 +609,31 @@ class AudioEvent {
       tags.add(['source', source!]);
     }
 
+    tags.add(['allow_audio_reuse', allowsReuse.toString()]);
+
+    if (creatorName?.trim().isNotEmpty ?? false) {
+      tags.add(['creator', creatorName!.trim()]);
+    }
+    if (creatorPubkey?.trim().isNotEmpty ?? false) {
+      tags.add(['p', creatorPubkey!.trim()]);
+    }
+    if (creatorUrl?.trim().isNotEmpty ?? false) {
+      tags.add(['creator_url', creatorUrl!.trim()]);
+    }
+    if (licenseName?.trim().isNotEmpty ?? false) {
+      tags.add(['license', licenseName!.trim()]);
+    }
+    if (licenseUrl?.trim().isNotEmpty ?? false) {
+      tags.add(['license_url', licenseUrl!.trim()]);
+    }
+    for (final publicTag in _normalizedStringList(publicTags)) {
+      tags.add(['t', publicTag]);
+    }
+    if ((proxyId?.trim().isNotEmpty ?? false) &&
+        (proxyProtocol?.trim().isNotEmpty ?? false)) {
+      tags.add(['proxy', proxyId!.trim(), proxyProtocol!.trim()]);
+    }
+
     if (sourceVideoReference != null) {
       if (sourceVideoRelay != null) {
         tags.add(['a', sourceVideoReference!, sourceVideoRelay!]);
@@ -558,6 +660,14 @@ class AudioEvent {
     String? sourceVideoReference,
     String? sourceVideoRelay,
     AudioExternalSource? externalSource,
+    String? creatorName,
+    String? creatorPubkey,
+    String? creatorUrl,
+    String? licenseName,
+    String? licenseUrl,
+    List<String>? publicTags,
+    String? proxyId,
+    String? proxyProtocol,
     Duration? startOffset,
     double? volume,
     Duration? startTime,
@@ -580,6 +690,14 @@ class AudioEvent {
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
       externalSource: externalSource ?? this.externalSource,
+      creatorName: creatorName ?? this.creatorName,
+      creatorPubkey: creatorPubkey ?? this.creatorPubkey,
+      creatorUrl: creatorUrl ?? this.creatorUrl,
+      licenseName: licenseName ?? this.licenseName,
+      licenseUrl: licenseUrl ?? this.licenseUrl,
+      publicTags: publicTags ?? this.publicTags,
+      proxyId: proxyId ?? this.proxyId,
+      proxyProtocol: proxyProtocol ?? this.proxyProtocol,
       startOffset: startOffset ?? this.startOffset,
       volume: volume ?? this.volume,
       startTime: startTime ?? this.startTime,
@@ -629,6 +747,15 @@ class AudioEvent {
     'source': ?source,
     'sourceVideoReference': ?sourceVideoReference,
     'sourceVideoRelay': ?sourceVideoRelay,
+    'creatorName': ?creatorName,
+    'creatorPubkey': ?creatorPubkey,
+    'creatorUrl': ?creatorUrl,
+    'licenseName': ?licenseName,
+    'licenseUrl': ?licenseUrl,
+    if (publicTags.isNotEmpty) 'publicTags': publicTags,
+    'proxyId': ?proxyId,
+    'proxyProtocol': ?proxyProtocol,
+    'allowsReuse': allowsReuse,
     // Always serialize volume so history and draft snapshots preserve
     // explicit user edits instead of relying on an implicit default.
     'volume': volume,

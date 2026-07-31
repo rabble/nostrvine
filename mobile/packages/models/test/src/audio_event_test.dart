@@ -85,6 +85,62 @@ void main() {
         expect(audioEvent.duration, isNull);
         expect(audioEvent.title, isNull);
         expect(audioEvent.sourceVideoReference, isNull);
+        expect(audioEvent.allowsReuse, isFalse);
+      });
+
+      test('only explicit true allows reuse for a published sound', () {
+        AudioEvent parseWith(String value) => AudioEvent.fromNostrEvent(
+          Event(
+            testPubkey,
+            1063,
+            [
+              ['allow_audio_reuse', value],
+            ],
+            '',
+            createdAt: 1700000000,
+          ),
+        );
+
+        expect(parseWith('true').allowsReuse, isTrue);
+        expect(parseWith('false').allowsReuse, isFalse);
+        expect(parseWith('TRUE').allowsReuse, isFalse);
+      });
+
+      test('parses public credit, tags, and proxy provenance', () {
+        final nostrEvent = Event(
+          testPubkey,
+          1063,
+          [
+            ['allow_audio_reuse', 'true'],
+            ['creator', 'Field Recordist'],
+            ['creator_url', 'https://creator.example/profile'],
+            ['license', 'CC BY 4.0'],
+            ['license_url', 'https://creativecommons.org/licenses/by/4.0/'],
+            ['p', testHexId],
+            ['t', 'field-recording'],
+            ['t', 'birds'],
+            ['proxy', '12345', 'freesound'],
+          ],
+          '',
+          createdAt: 1700000000,
+        );
+
+        final audioEvent = AudioEvent.fromNostrEvent(nostrEvent);
+
+        expect(audioEvent.creatorName, equals('Field Recordist'));
+        expect(audioEvent.creatorPubkey, equals(testHexId));
+        expect(
+          audioEvent.creatorUrl,
+          equals('https://creator.example/profile'),
+        );
+        expect(audioEvent.licenseName, equals('CC BY 4.0'));
+        expect(
+          audioEvent.licenseUrl,
+          equals('https://creativecommons.org/licenses/by/4.0/'),
+        );
+        expect(audioEvent.publicTags, equals(['field-recording', 'birds']));
+        expect(audioEvent.proxyId, equals('12345'));
+        expect(audioEvent.proxyProtocol, equals('freesound'));
       });
 
       test('throws for non-1063 event kind', () {
@@ -760,6 +816,10 @@ void main() {
           _findTag(tags, 'a'),
           equals(['a', '34236:pubkey:vine-id', 'wss://relay.example']),
         );
+        expect(
+          _findTag(tags, 'allow_audio_reuse'),
+          equals(['allow_audio_reuse', 'true']),
+        );
       });
 
       test('generates minimal tags for sparse event', () {
@@ -787,6 +847,10 @@ void main() {
         expect(_findTag(tags, 'duration'), isNull);
         expect(_findTag(tags, 'title'), isNull);
         expect(_findTag(tags, 'a'), isNull);
+        expect(
+          _findTag(tags, 'allow_audio_reuse'),
+          equals(['allow_audio_reuse', 'true']),
+        );
       });
 
       test('generates a tag without relay when relay is null', () {
@@ -805,6 +869,73 @@ void main() {
 
         // Assert
         expect(_findTag(tags, 'a'), equals(['a', '34236:pubkey:vine-id']));
+      });
+
+      test('publishes explicit consent and durable public credit', () {
+        const audioEvent = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          allowsReuse: false,
+          creatorName: 'Field Recordist',
+          creatorPubkey: testHexId,
+          creatorUrl: 'https://creator.example/profile',
+          licenseName: 'CC BY 4.0',
+          licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+          publicTags: ['birds', ' field-recording ', 'birds', ''],
+          proxyId: '12345',
+          proxyProtocol: 'freesound',
+        );
+
+        final tags = audioEvent.toTags();
+
+        expect(
+          _findTag(tags, 'allow_audio_reuse'),
+          equals(['allow_audio_reuse', 'false']),
+        );
+        expect(
+          _findTag(tags, 'creator'),
+          equals(['creator', 'Field Recordist']),
+        );
+        expect(_findTag(tags, 'p'), equals(['p', testHexId]));
+        expect(
+          _findTag(tags, 'creator_url'),
+          equals(['creator_url', 'https://creator.example/profile']),
+        );
+        expect(_findTag(tags, 'license'), equals(['license', 'CC BY 4.0']));
+        expect(
+          _findTag(tags, 'license_url'),
+          equals([
+            'license_url',
+            'https://creativecommons.org/licenses/by/4.0/',
+          ]),
+        );
+        expect(
+          tags.where((tag) => tag.first == 't').toList(),
+          equals([
+            ['t', 'birds'],
+            ['t', 'field-recording'],
+          ]),
+        );
+        expect(
+          _findTag(tags, 'proxy'),
+          equals(['proxy', '12345', 'freesound']),
+        );
+      });
+
+      test('cannot leak private saved-library metadata into public tags', () {
+        const audioEvent = AudioEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          title: 'Public title',
+          publicTags: ['public-tag'],
+        );
+
+        final published = audioEvent.toTags().expand((tag) => tag).join(' ');
+
+        expect(published, isNot(contains('personalLabel')));
+        expect(published, isNot(contains('personalHashtags')));
       });
     });
 
