@@ -662,10 +662,11 @@ class _ReplyIndicator extends ConsumerWidget {
         .watch(userProfileReactiveProvider(parentAuthorPubkey))
         .value;
 
-    // Get display name with fallback chain
+    // bestDisplayName is the same displayName -> name chain, but sanitized:
+    // a lone UTF-16 surrogate in either field crashes the paragraph builder
+    // when this renders.
     final displayName =
-        profile?.displayName ??
-        profile?.name ??
+        profile?.bestDisplayName ??
         UserProfile.generatedNameFor(parentAuthorPubkey);
 
     return Row(

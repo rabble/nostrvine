@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comment_composer/comment_composer_bloc.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -88,11 +89,16 @@ class MentionOverlay extends ConsumerWidget {
                 final cachedProfile = ref
                     .read(userProfileReactiveProvider(suggestion.pubkey))
                     .value;
-                final displayName =
+                // Sanitized rather than swapped for bestDisplayName: that
+                // getter substitutes a generated name for a profile with no
+                // name at all, which would shadow the npub fallback below.
+                final resolvedName =
                     suggestion.displayName ??
                     cachedProfile?.displayName ??
-                    cachedProfile?.name ??
-                    npub;
+                    cachedProfile?.name;
+                final displayName = resolvedName == null
+                    ? npub
+                    : UserProfile.sanitizeDisplayName(resolvedName);
                 onSelect(suggestion.pubkey, displayName);
               },
             );
@@ -115,8 +121,11 @@ class _MentionSuggestionItem extends ConsumerWidget {
         .watch(userProfileReactiveProvider(suggestion.pubkey))
         .value;
 
-    final displayName =
+    final rawDisplayName =
         suggestion.displayName ?? profile?.displayName ?? profile?.name;
+    final displayName = rawDisplayName == null
+        ? null
+        : UserProfile.sanitizeDisplayName(rawDisplayName);
     final picture = suggestion.picture ?? profile?.picture;
     final rawNip05 = suggestion.nip05 ?? profile?.nip05;
     final displayNip05 = _displayNip05(rawNip05);
@@ -180,6 +189,8 @@ class _MentionSuggestionItem extends ConsumerWidget {
   }
 }
 
+/// Mirrors [UserProfile.shortDisplayNip05], including its sanitization: the
+/// result is rendered directly, and `nip05` is an unverified kind-0 field.
 String? _displayNip05(String? nip05) {
   if (nip05 == null || nip05.isEmpty) return null;
   if (nip05.startsWith('_@')) {
@@ -187,12 +198,14 @@ String? _displayNip05(String? nip05) {
     final match = RegExp(
       r'^@([a-z0-9\-_.]+)\.divine\.video$',
     ).firstMatch(stripped);
-    return match != null ? '@${match.group(1)}' : stripped;
+    return UserProfile.sanitizeDisplayName(
+      match != null ? '@${match.group(1)}' : stripped,
+    );
   }
 
   if (nip05.endsWith('@divine.video') || nip05.endsWith('@openvine.co')) {
-    return '@${nip05.split('@')[0]}';
+    return '@${UserProfile.sanitizeDisplayName(nip05.split('@')[0])}';
   }
 
-  return nip05;
+  return UserProfile.sanitizeDisplayName(nip05);
 }

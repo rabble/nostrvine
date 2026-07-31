@@ -1,3 +1,4 @@
+import 'package:models/models.dart' show UserProfile;
 import 'package:profile_repository/profile_repository.dart';
 
 /// A single mention match, as a record so this helper has no dependency on
@@ -37,7 +38,10 @@ Future<({List<MentionMatch> matches, Set<String> seen})> mentionSearchLocal({
         displayName.toLowerCase().contains(lowercaseQuery)) {
       matches.add((
         pubkey: pubkey,
-        displayName: displayName,
+        // Matched on the raw value so query behaviour is unchanged, but
+        // carried sanitized: this string is rendered in the suggestion list
+        // and inserted into the composer on select.
+        displayName: UserProfile.sanitizeDisplayName(displayName),
         picture: profile?.picture,
         nip05: profile?.nip05,
       ));
@@ -73,7 +77,7 @@ Future<List<MentionMatch>> mentionSearchRemote({
     if (name == null) continue;
     merged.add((
       pubkey: profile.pubkey,
-      displayName: name,
+      displayName: UserProfile.sanitizeDisplayName(name),
       picture: profile.picture,
       nip05: profile.nip05,
     ));
