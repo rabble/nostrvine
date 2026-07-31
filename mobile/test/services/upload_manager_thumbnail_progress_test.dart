@@ -60,6 +60,12 @@ void main() {
       final thumbnailPath = '${testDir.path}/thumb.jpg';
       uploadManager = UploadManager(
         blossomService: mockBlossom,
+        // Zero delays so the retry test does not sleep the default 2s backoff.
+        retryConfig: const UploadRetryConfig(
+          initialDelay: Duration.zero,
+          maxDelay: Duration.zero,
+          networkTimeout: Duration(seconds: 30),
+        ),
         thumbnailExtractor:
             ({
               required String videoPath,

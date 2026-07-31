@@ -184,8 +184,9 @@ void main() {
           beforeEvent = List<double>.of(progressChanges);
           // Standing in for the publisher: it reports back once the event is
           // signed, part-way through a phase that measured ~1.5s on device.
-          // If the callback ever stops being forwarded down the publisher's
-          // three-deep call chain, the step assertion below fails.
+          // This pins the service's end of the contract — that it passes a
+          // callback which moves the bar to the signing step. The publisher's
+          // own forwarding is mocked out here.
           (invocation.namedArguments[#onEventSigned] as void Function()?)
               ?.call();
           return true;
