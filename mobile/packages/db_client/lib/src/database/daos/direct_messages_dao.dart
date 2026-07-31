@@ -23,7 +23,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return column.equals(ownerPubkey) | column.isNull();
   }
 
-  /// Insert a decrypted DM, silently skipping duplicates.
+  /// Insert a decrypted DM, returning whether a row was actually written.
   ///
   /// Uses `INSERT OR IGNORE` so that violations on either the primary key
   /// (`id`) **or** the UNIQUE index on `gift_wrap_id` are handled gracefully
@@ -36,7 +36,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
   /// fields are populated from the event tags.
-  Future<void> insertMessage({
+  Future<bool> insertMessage({
     required String id,
     required String conversationId,
     required String senderPubkey,
@@ -59,8 +59,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String? thumbnailUrl,
     String? ownerPubkey,
     String? sendBatchId,
-  }) {
-    return into(directMessages).insert(
+  }) async {
+    await into(directMessages).insert(
       DirectMessagesCompanion.insert(
         id: id,
         conversationId: conversationId,
@@ -87,6 +87,10 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ),
       mode: InsertMode.insertOrIgnore,
     );
+    final changed = await customSelect(
+      'SELECT changes() AS changed',
+    ).map((row) => row.read<int>('changed')).getSingle();
+    return changed > 0;
   }
 
   /// Get messages for a conversation, newest first.
@@ -206,18 +210,20 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Check if a message with the same sender and content already exists in a
-  /// conversation within a ±5 second window. Used for cross-protocol dedup
-  /// when both a NIP-17 and NIP-04 copy of the same message arrive.
+  /// conversation within a bounded timestamp window. Used for cross-protocol
+  /// dedup when both a NIP-17 and NIP-04 copy of the same message arrive, and
+  /// for peer clients that retry by recreating a NIP-17 rumor instead of
+  /// re-wrapping the original one.
   ///
   /// The time window prevents false positives when a user genuinely sends
-  /// the same text twice (e.g. "ok") while still catching dual-send
-  /// duplicates where timestamps differ by at most a few seconds.
+  /// the same text again later, while still catching retry duplicates whose
+  /// recreated rumor timestamps drift beyond send-confirm latency.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,
     required String content,
     required int createdAt,
-    int windowSeconds = 5,
+    int windowSeconds = 60,
     String? ownerPubkey,
   }) async {
     final query = selectOnly(directMessages)

@@ -182,12 +182,16 @@ void main() {
         );
         addTearDown(cubit.close);
 
+        final countedApprovedConversation = expectLater(
+          cubit.stream,
+          emits(1),
+        );
         acceptedController.add([
           _convo('a', peer: _alice, isRead: false, currentUserHasSent: true),
           _convo('b', peer: _bob, isRead: false, currentUserHasSent: true),
         ]);
         potentialController.add(const []);
-        await _settle();
+        await countedApprovedConversation;
 
         expect(cubit.state, equals(1));
       },

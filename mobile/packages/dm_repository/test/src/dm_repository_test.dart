@@ -1016,7 +1016,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -1190,7 +1190,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -1274,7 +1274,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.upsertConversation(
               id: any(named: 'id'),
@@ -1548,7 +1548,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -1828,6 +1828,7 @@ void main() {
             }
             await Future<void>.delayed(Duration.zero);
             activePersists--;
+            return true;
           });
 
           var servedGiftWrapPage = false;
@@ -2453,6 +2454,7 @@ void main() {
               id: inv.namedArguments[#id] as String,
               batchId: inv.namedArguments[#sendBatchId] as String?,
             ));
+            return true;
           });
           when(
             () => mockDirectMessagesDao.hasMessageWithSendBatchId(
@@ -4848,7 +4850,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.upsertConversation(
               id: any(named: 'id'),
@@ -5418,6 +5420,7 @@ void main() {
           ),
         ).thenAnswer((inv) async {
           persistedGiftWrapIds.add(inv.namedArguments[#giftWrapId] as String);
+          return true;
         });
         when(
           () => mockConversationsDao.getConversation(
@@ -6320,6 +6323,7 @@ void main() {
               inv.namedArguments[#giftWrapId] as String,
             );
             persistedContents.add(inv.namedArguments[#content] as String);
+            return true;
           });
 
           final wraps = <Event>[
@@ -7268,7 +7272,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -7435,7 +7439,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -7793,7 +7797,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -7982,7 +7986,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -8352,7 +8356,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -8896,7 +8900,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -9013,7 +9017,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -9435,7 +9439,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.upsertConversation(
               id: any(named: 'id'),
@@ -9596,7 +9600,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.upsertConversation(
               id: any(named: 'id'),
@@ -9735,7 +9739,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.upsertConversation(
               id: any(named: 'id'),
@@ -9901,7 +9905,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.upsertConversation(
               id: any(named: 'id'),
@@ -10063,7 +10067,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -11324,6 +11328,18 @@ void main() {
         'sig': '',
       });
 
+      Event textRumor({String id = _rumorEventId}) => Event.fromJson({
+        'id': id,
+        'pubkey': _validPubkeyB,
+        'created_at': 1700000000,
+        'kind': EventKind.privateDirectMessage,
+        'tags': [
+          ['p', _validPubkeyA],
+        ],
+        'content': 'Retried peer message',
+        'sig': '',
+      });
+
       late StreamController<Event> controller;
       late _InMemoryProcessedGiftWrapsDao ledger;
 
@@ -11456,6 +11472,142 @@ void main() {
         },
       );
 
+      test(
+        'a duplicate text wrap caught by content/timestamp dedup is recorded '
+        'so redelivery skips decrypt',
+        () async {
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyB,
+              content: 'Retried peer message',
+              createdAt: 1700000000,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return textRumor();
+            },
+          );
+          await repository.startListening();
+
+          await deliverTwice(giftWrap());
+
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+          verifyNever(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
+      test(
+        'a text wrap ignored by database dedup is recorded so redelivery '
+        'skips decrypt',
+        () async {
+          when(
+            () => mockDirectMessagesDao.hasMatchingMessage(
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyB,
+              content: 'Retried peer message',
+              createdAt: 1700000000,
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+              sendBatchId: any(named: 'sendBatchId'),
+            ),
+          ).thenAnswer((_) async => false);
+
+          var decryptCount = 0;
+          final repository = createRepository(
+            processedGiftWrapsDao: ledger,
+            rumorDecryptor: (_, _) async {
+              decryptCount++;
+              return textRumor(id: _giftWrapEventId2);
+            },
+          );
+          await repository.startListening();
+
+          await deliverTwice(giftWrap());
+
+          expect(decryptCount, 1);
+          expect(ledger.recorded, contains(_giftWrapEventId));
+          verifyNever(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          );
+
+          await controller.close();
+          await repository.stopListening();
+        },
+      );
+
       // A NIP-59 rumor is unsigned, so `created_at` is chosen freely by
       // whoever sent the wrap. Left unbounded, one such rumor advances the
       // sync cursor past now and every later subscription returns nothing —
@@ -11503,7 +11655,7 @@ void main() {
               ownerPubkey: any(named: 'ownerPubkey'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
           when(
             () => mockConversationsDao.getConversation(
               any(),
@@ -12035,7 +12187,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
 
         when(
           () => mockConversationsDao.upsertConversation(
@@ -12129,7 +12281,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -12459,7 +12611,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -13086,7 +13238,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
 
           when(
             () => mockConversationsDao.upsertConversation(
@@ -13185,7 +13337,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
 
           when(
             () => mockConversationsDao.upsertConversation(
@@ -13284,7 +13436,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
 
           when(
             () => mockConversationsDao.upsertConversation(
@@ -13388,7 +13540,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
 
           when(
             () => mockConversationsDao.upsertConversation(
@@ -13481,7 +13633,7 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
               sendBatchId: any(named: 'sendBatchId'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async => true);
 
           when(
             () => mockConversationsDao.upsertConversation(
@@ -13630,7 +13782,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -14475,7 +14627,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
@@ -15116,6 +15268,7 @@ void main() {
             persistedBatchIds.add(
               inv.namedArguments[#sendBatchId] as String?,
             );
+            return true;
           });
 
           final repository = createRepository(
@@ -15264,6 +15417,7 @@ void main() {
               id: inv.namedArguments[#id] as String,
               batchId: inv.namedArguments[#sendBatchId] as String?,
             ));
+            return true;
           });
           when(
             () => mockDirectMessagesDao.hasMessageWithSendBatchId(
@@ -16437,7 +16591,7 @@ void main() {
             tagsJson: any(named: 'tagsJson'),
             sendBatchId: any(named: 'sendBatchId'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => true);
         when(
           () => mockConversationsDao.upsertConversation(
             id: any(named: 'id'),
