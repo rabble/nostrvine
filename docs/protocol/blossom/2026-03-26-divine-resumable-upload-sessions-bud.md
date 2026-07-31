@@ -134,12 +134,16 @@ not fit, cheapest-and-most-identifying first.
 
 Measured against `media.divine.video`, combined request headers must stay
 under **128 KiB over HTTP/1.1** (past it the edge answers 502) and under
-**64 KiB over HTTP/2** (past it the connection is closed mid-request). An
-Android hardware attestation chain base64-encodes to ~75 KB in
-`X-ProofMode-Manifest` and another ~72 KB in `X-ProofMode-Attestation`, so an
-uncapped client sends ~147 KB and fails every upload with an opaque 502 — or,
-on the legacy `PUT /upload` path, a connection reset while the body is still
-streaming.
+**64 KiB over HTTP/2** (past it the connection is closed mid-request).
+
+An uncapped client sends the device attestation twice — base64 inside
+`X-ProofMode-Manifest` and again in `X-ProofMode-Attestation` — so it crosses
+128 KiB once the raw attestation passes roughly 47.5 KB, and every upload from
+that device then fails with an opaque 502, or with a connection reset while
+the body is still streaming on the legacy `PUT /upload` path. Android
+attestation size is device-dependent (it is the `X509Certificate.toString()`
+dump of the whole chain), so an uncapped client fails on some devices and not
+others.
 
 Any future proof payload that can exceed the budget must travel in the
 `complete` request body, not in a header.

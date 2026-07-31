@@ -539,13 +539,18 @@ class BlossomUploadService {
 
   /// Combined wire budget for the `X-ProofMode-*` request headers.
   ///
-  /// An Android hardware attestation chain is ~54 KB, and it used to travel
-  /// twice: ~75 KB base64-encoded inside `X-ProofMode-Manifest` plus ~72 KB
-  /// again in `X-ProofMode-Attestation`. Measured against
-  /// `media.divine.video`, combined request headers must stay under 128 KiB
-  /// over HTTP/1.1 (past it the edge answers 502) and under 64 KiB over
-  /// HTTP/2 (past it the connection is closed mid-request). At ~147 KB every
-  /// publish from such a device failed.
+  /// Measured against `media.divine.video`, combined request headers must
+  /// stay under 128 KiB over HTTP/1.1 (past it the edge answers 502) and
+  /// under 64 KiB over HTTP/2 (past it the connection is closed mid-request).
+  ///
+  /// An Android device attestation is the `X509Certificate.toString()` dump
+  /// of the whole cert chain, so its size varies per device, and it used to
+  /// travel twice — base64 inside `X-ProofMode-Manifest` and again in
+  /// `X-ProofMode-Attestation`. Past roughly 47.5 KB of raw attestation the
+  /// request crosses 128 KiB and every publish from that device fails, which
+  /// is why the failure looked sporadic rather than universal: a Pixel 8 Pro
+  /// produced 53,826 bytes and always failed, while shorter chains stayed
+  /// under the line and uploaded fine.
   ///
   /// 8 KiB leaves headroom for the auth header and keeps the request inside
   /// the stricter 8 KB-per-header budget common to nginx-fronted Blossom

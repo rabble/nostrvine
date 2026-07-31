@@ -330,14 +330,20 @@ ProofMode manifest is uploaded alongside video to Blossom server:
 > identifying first (`X-ProofMode-C2PA`, then `-Signature`, `-PublicKey`,
 > `-Attestation`, `-Manifest`). `-Signature` and `-PublicKey` sit above the
 > bulk headers because a signature without its key cannot be verified from
-> headers alone. An Android hardware attestation chain is ~54 KB and used to
-> travel twice — ~75 KB base64-encoded in `X-ProofMode-Manifest` plus ~72 KB
-> again in `X-ProofMode-Attestation`. Measured against `media.divine.video`,
-> combined request headers must stay under **128 KiB over HTTP/1.1** (past it
-> the edge answers 502) and under **64 KiB over HTTP/2** (past it the
-> connection is closed mid-request). At ~147 KB every publish from such a
-> device failed. Do not reintroduce an uncapped header here; put new proof
-> payloads in a request body.
+> headers alone. Measured against `media.divine.video`, combined request
+> headers must stay under **128 KiB over HTTP/1.1** (past it the edge answers
+> 502) and under **64 KiB over HTTP/2** (past it the connection is closed
+> mid-request).
+>
+> An Android device attestation is the `X509Certificate.toString()` dump of
+> the whole cert chain, so its size varies per device, and it used to travel
+> twice — base64 in `X-ProofMode-Manifest` and again in
+> `X-ProofMode-Attestation`. Past roughly **47.5 KB of raw attestation** the
+> request crosses 128 KiB and every publish from that device fails. That is
+> why the bug looked sporadic: a Pixel 8 Pro produced 53,826 bytes and always
+> failed, shorter chains stayed under the line and uploaded fine, and iOS
+> ships a compact integrity token that never came close. Do not reintroduce an
+> uncapped header here; put new proof payloads in a request body.
 
 ```dart
 class BlossomUploadService {
