@@ -532,7 +532,9 @@ See `docs/MANUAL_TEST_VIDEO_UPLOAD.md` for manual upload verification procedures
 - iOS App Attest: one network round trip to Apple on first use (`generateKey` +
   `attestKey`, both rate limited), then local `generateAssertion` per proof. The
   key id and attestation object are cached in `UserDefaults` for the lifetime of
-  the install.
+  the install. A key that was generated but not attested — Apple throttled or
+  offline — is recorded too, so the next proof retries `attestKey` on it instead
+  of spending a second rate-limited generation.
 - Android Play Integrity: ~200-500ms
 - A failed attestation degrades the proof to no `device_attestation` field; it
   never discards the PGP signature or C2PA manifest.

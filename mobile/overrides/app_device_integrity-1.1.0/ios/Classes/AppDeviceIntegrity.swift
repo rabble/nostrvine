@@ -29,6 +29,8 @@ final class AppDeviceIntegrity {
     private enum StorageKey {
         static let keyID = "AppAttestKeyIdentifier"
         static let attestation = "AppAttestAttestationObject"
+        static let pendingKeyID = "AppAttestPendingKeyIdentifier"
+        static let pendingClientDataHash = "AppAttestPendingClientDataHash"
     }
 
     let inputString: String
@@ -179,7 +181,34 @@ final class AppDeviceIntegrity {
         }
     }
 
+    /// Provisions the install's credential, resuming a key an earlier round
+    /// generated but could not attest.
+    ///
+    /// Apple rate limits `generateKey`, so the identifier is recorded before
+    /// `attestKey` runs and only dropped once the key is either attested or
+    /// rejected outright. A throttled or offline `attestKey` therefore leaves a
+    /// resumable key behind rather than burning a second generation on the next
+    /// proof, which is what Apple's guidance to retry attestation with the same
+    /// key and client data hash amounts to here.
     private func provision(completion: @escaping (Credential?) -> Void) {
+        guard let pending = Self.pendingKey() else {
+            generateAndAttest(completion: completion)
+            return
+        }
+
+        attest(keyID: pending.keyID, clientDataHash: pending.clientDataHash) { credential, keyIsDead in
+            // A resumed key Apple no longer recognises — a device restore
+            // between the two calls — can never be attested. Start over
+            // instead of leaving this proof unattested for nothing.
+            guard keyIsDead else {
+                completion(credential)
+                return
+            }
+            self.generateAndAttest(completion: completion)
+        }
+    }
+
+    private func generateAndAttest(completion: @escaping (Credential?) -> Void) {
         // Captured strongly on purpose: a provisioning round must reach
         // `finishProvisioning` to release the queued challenges, even if the
         // instance that started it is already gone.
@@ -196,28 +225,79 @@ final class AppDeviceIntegrity {
                 return
             }
 
-            self.attestService.attestKey(keyIdentifier, clientDataHash: self.challengeHash) { attestation, error in
-                if let error = error {
-                    print("Attestation error: \(error.localizedDescription)")
-                    completion(nil)
-                    return
-                }
+            let clientDataHash = self.challengeHash
+            Self.storePendingKey(keyID: keyIdentifier, clientDataHash: clientDataHash)
 
-                guard let attestation = attestation else {
-                    print("No attestation object received")
-                    completion(nil)
-                    return
-                }
-
-                completion(
-                    Credential(
-                        keyID: keyIdentifier,
-                        attestation: attestation.base64EncodedString(),
-                        isFresh: true
-                    )
-                )
+            self.attest(keyID: keyIdentifier, clientDataHash: clientDataHash) { credential, _ in
+                completion(credential)
             }
         }
+    }
+
+    /// Attests [keyID] against the [clientDataHash] it was generated for.
+    ///
+    /// [clientDataHash] predates the current challenge whenever a previous
+    /// round generated the key but failed to attest it: Apple attests a key
+    /// once, for the request it accepted, so a retry has to repeat the original
+    /// inputs. The attestation that comes back then binds that earlier proof,
+    /// which is why only a hash matching the current challenge yields a fresh
+    /// credential — anything else has to sign its own assertion.
+    ///
+    /// The completion's second value reports a key Apple rejected as dead,
+    /// which no later retry can revive.
+    private func attest(
+        keyID: String,
+        clientDataHash: Data,
+        completion: @escaping (Credential?, Bool) -> Void
+    ) {
+        attestService.attestKey(keyID, clientDataHash: clientDataHash) { attestation, error in
+            if let error = error {
+                print("Attestation error: \(error.localizedDescription)")
+
+                let keyIsDead = (error as? DCError)?.code == .invalidKey
+                if keyIsDead {
+                    Self.clearPendingKey()
+                }
+                completion(nil, keyIsDead)
+                return
+            }
+
+            guard let attestation = attestation else {
+                print("No attestation object received")
+                completion(nil, false)
+                return
+            }
+
+            completion(
+                Credential(
+                    keyID: keyID,
+                    attestation: attestation.base64EncodedString(),
+                    isFresh: clientDataHash == self.challengeHash
+                ),
+                false
+            )
+        }
+    }
+
+    // The pending slot is only ever touched inside a provisioning round, and
+    // `isProvisioning` admits one of those at a time, so these need no lock of
+    // their own.
+    private static func pendingKey() -> (keyID: String, clientDataHash: Data)? {
+        guard let keyID = defaults.string(forKey: StorageKey.pendingKeyID),
+              let clientDataHash = defaults.data(forKey: StorageKey.pendingClientDataHash) else {
+            return nil
+        }
+        return (keyID, clientDataHash)
+    }
+
+    private static func storePendingKey(keyID: String, clientDataHash: Data) {
+        defaults.set(keyID, forKey: StorageKey.pendingKeyID)
+        defaults.set(clientDataHash, forKey: StorageKey.pendingClientDataHash)
+    }
+
+    private static func clearPendingKey() {
+        defaults.removeObject(forKey: StorageKey.pendingKeyID)
+        defaults.removeObject(forKey: StorageKey.pendingClientDataHash)
     }
 
     private func finishProvisioning(with credential: Credential?) {
@@ -226,6 +306,7 @@ final class AppDeviceIntegrity {
         if let credential = credential {
             Self.defaults.set(credential.keyID, forKey: StorageKey.keyID)
             Self.defaults.set(credential.attestation, forKey: StorageKey.attestation)
+            Self.clearPendingKey()
         }
 
         Self.isProvisioning = false
@@ -234,8 +315,9 @@ final class AppDeviceIntegrity {
         Self.lock.unlock()
 
         // Only the caller that triggered provisioning gets the fresh-attestation
-        // shortcut; the queued challenges were not bound by Apple's attestation
-        // and must sign themselves with an assertion.
+        // shortcut, and only when Apple bound the attestation to that caller's
+        // challenge — a resumed key carries the hash of the proof that
+        // generated it. Everyone else must sign themselves with an assertion.
         for (index, callback) in waiting.enumerated() {
             guard let credential = credential else {
                 callback(nil)
@@ -245,7 +327,7 @@ final class AppDeviceIntegrity {
                 Credential(
                     keyID: credential.keyID,
                     attestation: credential.attestation,
-                    isFresh: index == 0
+                    isFresh: index == 0 && credential.isFresh
                 )
             )
         }
