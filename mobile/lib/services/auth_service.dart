@@ -2973,6 +2973,60 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
+  /// The bearer token for the account that is signed in right now, for the
+  /// `/api/user/*` routes Keycast authorizes with it.
+  ///
+  /// Every such call must take its token from here rather than from
+  /// `getSessionOrRefresh()`, which guarantees neither of the two things this
+  /// does:
+  ///
+  /// - Refresh runs through [OAuthSessionCoordinator], so concurrent callers
+  ///   share one exchange of a single-use refresh token, and the refreshed
+  ///   session is persisted **bound** to its owner. An unbound session is
+  ///   skipped by `SignerSecureStore.archive` and deleted as corrupt by the
+  ///   next `restoreActiveKeys`, which costs the account its restore path.
+  /// - The session is proven to belong to the active account before its token
+  ///   is used. Storage keeps one global session slot, so a session left
+  ///   behind by another account would otherwise authorize a call made on this
+  ///   account's behalf.
+  ///
+  /// Returns null when there is no OAuth client, no signed-in account, no
+  /// session after a refresh, or the session is not bound to the signed-in
+  /// account. Each caller maps that to its own re-authentication outcome.
+  ///
+  /// Throws [OAuthNetworkException] when the refresh cannot reach Keycast.
+  Future<String?> activeAccountKeycastToken() async {
+    final client = _oauthClient;
+    if (client == null) return null;
+
+    final ownerPubkey = currentPublicKeyHex;
+    if (ownerPubkey == null) return null;
+
+    // getSession() answers null for an expired session, so this refreshes on
+    // exactly the same condition getSessionOrRefresh() would.
+    var session = await client.getSession();
+    session ??= await _oauthCoordinator.refreshSession(
+      expectedOwnerPubkey: ownerPubkey,
+    );
+    if (session == null) return null;
+
+    // Strict equality also rejects a session that never carried an owner:
+    // it cannot be attributed to this account, and a token whose account we
+    // cannot name must not be spent on that account's behalf.
+    if (session.userPubkey != ownerPubkey) {
+      Log.warning(
+        'Refusing a Keycast session that is not bound to the signed-in '
+        'account: session owner ${session.userPubkey ?? "unbound"}, '
+        'signed-in account $ownerPubkey',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+
+    return session.accessToken;
+  }
+
   /// Fetch the signing key Keycast holds for the signed-in Divine Login
   /// account, so it can be handed to the user who owns it.
   ///
@@ -2982,8 +3036,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// account [password], which Keycast verifies itself.
   ///
   /// Returns [ExportKeyFailure.needsSignIn] when no OAuth client is configured
-  /// or the session cannot be refreshed — both mean the credential this needs
-  /// is unavailable, and only signing in again produces one.
+  /// or [activeAccountKeycastToken] has no token for the signed-in account —
+  /// all of those mean the credential this needs is unavailable, and only
+  /// signing in again produces one.
   ///
   /// The returned key is raw key material. It is deliberately not stored,
   /// cached, or logged here; the caller owns it from the moment it returns.
@@ -2999,14 +3054,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
 
     try {
-      // Refresh first for the same reason deleteKeycastAccount does: the
-      // access token may have expired while the screen was open, and a
-      // refreshable session should not surface to the user as a sign-in prompt.
-      final session = await client.getSessionOrRefresh();
-      final accessToken = session?.accessToken;
+      // Refreshes when the access token expired while the screen was open, so
+      // a refreshable session does not surface to the user as a sign-in
+      // prompt, and refuses a session this account cannot claim.
+      final accessToken = await activeAccountKeycastToken();
       if (accessToken == null) {
         Log.warning(
-          'Cannot export Keycast key: session unavailable after refresh',
+          'Cannot export Keycast key: no session bound to the signed-in '
+          'account',
           name: 'AuthService',
           category: LogCategory.auth,
         );

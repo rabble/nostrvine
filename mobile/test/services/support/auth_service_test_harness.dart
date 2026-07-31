@@ -16,6 +16,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
@@ -138,6 +139,7 @@ AuthService buildTestAuthService({
   required UserDataCleanupService cleanupService,
   RemoteSignerFactory? remoteSignerFactory,
   AuthUrlLauncher? launchAuthUrl,
+  KeycastOAuth? oauthClient,
 }) {
   return AuthService(
     userDataCleanupService: cleanupService,
@@ -147,6 +149,7 @@ AuthService buildTestAuthService({
     flutterSecureStorage: const FlutterSecureStorage(),
     remoteSignerFactory: remoteSignerFactory,
     launchAuthUrl: launchAuthUrl,
+    oauthClient: oauthClient,
   );
 }
 
