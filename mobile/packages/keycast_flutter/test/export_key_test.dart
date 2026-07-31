@@ -227,6 +227,28 @@ void main() {
       expect(result.failure, ExportKeyFailure.unknown);
     });
 
+    // A 200 the parser cannot read leaves the 403 as unresolved as an
+    // unanswerable probe does. Reporting it as the custody denial would tell a
+    // user Divine manages their keys on a response that proves neither cause.
+    test('does not read an unreadable account body as a denial', () async {
+      for (final body in const ['not json', '[1,2]', '"a string"']) {
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: exportClient(
+            status: 403,
+            body: jsonEncode({'error': 'Operation not permitted.'}),
+            account: body,
+          ),
+        );
+
+        expect(
+          (await oauth.exportKey('tok', 'pw')).failure,
+          ExportKeyFailure.unknown,
+          reason: 'account body $body',
+        );
+      }
+    });
+
     test('maps 404 to no key on record', () async {
       final oauth = KeycastOAuth(
         config: config,

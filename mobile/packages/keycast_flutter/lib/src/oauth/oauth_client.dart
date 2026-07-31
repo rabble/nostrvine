@@ -1102,13 +1102,19 @@ class KeycastOAuth {
     // The token still authenticates, so what a 401 rejected was the password.
     if (statusCode == 401) return ExportKeyFailure.wrongPassword;
 
+    // An authenticated 200 whose body would not parse carries no account state
+    // at all, so it proves no more than a probe that never answered. Reading it
+    // as the custody denial would tell a user Divine manages their keys on a
+    // response that says nothing of the kind.
+    final status = probe.status;
+    if (status == null) return ExportKeyFailure.unknown;
+
     // Mirrors the server's own order: the verified_minor custody refusal runs
     // ahead of the email check, so a minor whose email is also unverified is a
     // policy denial rather than a verification prompt. That refusal is worded
     // uniformly on purpose and leaks no account state, which is why the state
     // is read from the endpoint that is meant to carry it.
-    final status = probe.status;
-    if (status == null || status.verifiedMinor) return ExportKeyFailure.denied;
+    if (status.verifiedMinor) return ExportKeyFailure.denied;
     return status.emailVerified
         ? ExportKeyFailure.denied
         : ExportKeyFailure.emailUnverified;
