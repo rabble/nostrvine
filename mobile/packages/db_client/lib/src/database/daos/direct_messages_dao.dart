@@ -33,11 +33,6 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// NIP-17 rumor events are immutable — the same rumor ID always carries
   /// the same content, so skipping duplicates never loses data.
   ///
-  /// The returned value is derived from SQLite `changes()` immediately after
-  /// the insert on the same Drift executor. Keep callers serialized through
-  /// Drift (the current receive paths call this inside transactions) so no
-  /// intervening write can affect the result.
-  ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
   /// fields are populated from the event tags.
@@ -65,7 +60,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String? ownerPubkey,
     String? sendBatchId,
   }) async {
-    await into(directMessages).insert(
+    final inserted = await into(directMessages).insertReturningOrNull(
       DirectMessagesCompanion.insert(
         id: id,
         conversationId: conversationId,
@@ -92,10 +87,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ),
       mode: InsertMode.insertOrIgnore,
     );
-    final changed = await customSelect(
-      'SELECT changes() AS changed',
-    ).map((row) => row.read<int>('changed')).getSingle();
-    return changed > 0;
+    return inserted != null;
   }
 
   /// Get messages for a conversation, newest first.

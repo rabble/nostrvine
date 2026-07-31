@@ -248,9 +248,18 @@ void main() {
           createdAt: 1700000001,
           giftWrapId: 'gw_insert_result_duplicate',
         );
+        final duplicateGiftWrapInserted = await dao.insertMessage(
+          id: 'msg_insert_result_duplicate_gift_wrap',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Ignored duplicate gift wrap',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_insert_result',
+        );
 
         expect(firstInserted, isTrue);
         expect(duplicateInserted, isFalse);
+        expect(duplicateGiftWrapInserted, isFalse);
         final results = await dao.getMessagesForConversation(conversationId1);
         expect(results, hasLength(1));
         expect(results.first.content, equals('Original'));

@@ -1675,10 +1675,6 @@ class DmRepository {
     try {
       // Dedup: skip if already processed (message row or ledger). #5452.
       if (await _alreadyProcessed(giftWrapEvent.id)) {
-        Log.debug(
-          'Skipping already-processed NIP-17 gift wrap ${giftWrapEvent.id}',
-          category: LogCategory.system,
-        );
         return;
       }
 
