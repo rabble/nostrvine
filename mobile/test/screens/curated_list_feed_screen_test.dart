@@ -245,6 +245,77 @@ void main() {
       expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
     });
 
+    testWidgets('delete cancel dismisses without deleting', (tester) async {
+      when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+
+      await tester.pumpWidget(
+        buildSubject(
+          listId: 'owned-list',
+          listName: 'Owned List',
+          authorPubkey: 'owned-pubkey',
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.listDeleteAction));
+      await tester.pumpAndSettle();
+      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsOneWidget);
+
+      await tester.tap(find.text(l10n.commonCancel));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => mockService.deleteOwnedList('owned-list'));
+      expect(find.text(l10n.curatedListDeleteConfirmTitle), findsNothing);
+    });
+
+    testWidgets(
+      'delete confirmation buttons no-op once their route is torn down',
+      (tester) async {
+        when(
+          () => mockService.isSubscribedToList('owned-list'),
+        ).thenReturn(true);
+        when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+
+        await tester.pumpWidget(
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Owned List',
+            authorPubkey: 'owned-pubkey',
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.listDeleteAction));
+        await tester.pumpAndSettle();
+
+        VoidCallback actionFor(String label) => tester
+            .widget<TextButton>(
+              find.ancestor(
+                of: find.text(label),
+                matching: find.byType(TextButton),
+              ),
+            )
+            .onPressed!;
+
+        final cancel = actionFor(l10n.commonCancel);
+        final confirm = actionFor(l10n.commonDelete);
+
+        // Stands in for anything that drops the dialog's route while the tap
+        // is in flight — a feature-flag flip re-inflating the app shell, a
+        // redirect, a deep link.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        expect(cancel, returnsNormally);
+        expect(confirm, returnsNormally);
+      },
+    );
+
     testWidgets('unfollow calls service and updates action state', (
       tester,
     ) async {
