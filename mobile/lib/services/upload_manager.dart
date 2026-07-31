@@ -122,13 +122,6 @@ class CrashReportingUploadReporter implements UploadCrashReporter {
       CrashReportingService.instance.recordError(error, stack, reason: reason);
 }
 
-/// Share of the progress bar driven by the video transfer.
-///
-/// The remainder covers joining the thumbnail leg, which runs in parallel and
-/// is virtually always finished first — so the bar reaches this mark and then
-/// completes, rather than sitting at 100% while the publish is still working.
-const double _videoProgressShare = 0.95;
-
 /// What the thumbnail leg produces: the CDN URL of the uploaded frame, and the
 /// blurhash derived from that same frame.
 typedef ThumbnailLegResult = ({String? cdnUrl, String? blurhash});
@@ -181,6 +174,16 @@ class UploadManager implements BackgroundAwareService {
       crashReporter: crashReporter ?? const CrashReportingUploadReporter(),
     );
   }
+
+  /// Share of the progress bar driven by the video transfer.
+  ///
+  /// The remainder covers joining the thumbnail leg, which runs in parallel and
+  /// is virtually always finished first — so the bar reaches this mark and then
+  /// completes, rather than sitting at 100% while the publish is still working.
+  ///
+  /// [UploadRetryPolicy] persists its resumable checkpoint on the same scale,
+  /// so the two writers of `uploadProgress` cannot disagree on the ceiling.
+  static const double videoProgressShare = 0.95;
 
   /// Attempts the OS background uploader
   /// ([BlossomUploadService.uploadVideoInBackground]) *first* for a fresh
@@ -1046,7 +1049,7 @@ class UploadManager implements BackgroundAwareService {
       // covers joining the thumbnail, so the bar never claims 100% while work
       // is still outstanding.
       void reportProgress(double value) {
-        final progress = value * _videoProgressShare;
+        final progress = value * videoProgressShare;
         _reporter.updateProgress(upload.id, progress);
         onProgress?.call(progress);
       }
@@ -1942,7 +1945,7 @@ class UploadManager implements BackgroundAwareService {
   /// the blurhash from the same decoded frame.
   ///
   /// Reports no progress: it runs in parallel with the video transfer, which
-  /// owns the bar alone. See [_videoProgressShare].
+  /// owns the bar alone. See [videoProgressShare].
   Future<ThumbnailLegResult> _generateAndUploadThumbnail({
     required File videoFile,
     required String nostrPubkey,
