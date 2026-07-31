@@ -108,13 +108,19 @@ Optional request headers:
 
 - `X-ProofMode-Manifest`
 - `X-ProofMode-Signature`
-- `X-ProofMode-Attestation`
 - `X-ProofMode-C2PA`
 
 When present, these headers carry the same ProofMode metadata that legacy
 `PUT /upload` accepts. Clients should send them on `complete` so resumable
-uploads preserve the same server-side ProofMode handling without forcing the
-video bytes back onto the legacy single-request upload path.
+uploads preserve the same ProofMode metadata without forcing the video bytes
+back onto the legacy single-request upload path.
+
+There is deliberately no `X-ProofMode-Attestation` header. The device
+attestation is already carried inside `X-ProofMode-Manifest`, and sending it
+a second time took total request headers past the 128 KiB HTTP/1.1 limit at
+the edge on handsets with a large KeyMint chain — the edge then answered 502
+before any handler ran (#6529). Keep the combined header set well under
+128 KiB; the ceiling is enforced at the edge, not by any handler.
 
 Example successful response:
 

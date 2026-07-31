@@ -1,6 +1,8 @@
 // ABOUTME: Tests for BlossomUploadService ProofMode header integration
 // ABOUTME: Verifies _addProofModeHeaders correctly handles String and Map
-//          values for pgpSignature, deviceAttestation, and c2pa_manifest_id
+//          values for pgpSignature and c2pa_manifest_id, keeps the device
+//          attestation to the manifest header only, and stays under the
+//          128 KiB edge request-header limit
 
 import 'dart:convert';
 import 'dart:io';
@@ -35,6 +37,11 @@ const _pgpSignatureString =
 const _sha256Of123 =
     '039058c6f2c0cb492c533b0a4d14ef77'
     'cc0f78abccced5287d84a1a2011cfb81';
+
+/// The HTTP/1.1 request-header ceiling at the media.divine.video edge.
+///
+/// Requests over this are answered 502 before any handler runs (#6529).
+const int _edgeRequestHeaderLimitBytes = 128 * 1024;
 
 const _deviceAttestationString =
     'Certificate:\n'
@@ -220,7 +227,8 @@ void main() {
       );
 
       test(
-        'encodes String deviceAttestation as base64 without double-encoding',
+        'never sends a standalone attestation header, but keeps the '
+        'attestation reachable inside the manifest',
         () async {
           arrangeUploadMocks();
           final mockFile = createMockFile();
@@ -240,12 +248,23 @@ void main() {
           );
 
           final headers = capturedOptions!.headers!;
-          expect(headers, contains('X-ProofMode-Attestation'));
+          expect(headers, isNot(contains('X-ProofMode-Attestation')));
 
-          final decoded = utf8.decode(
-            base64.decode(headers['X-ProofMode-Attestation'] as String),
+          // No data is lost: the attestation still ships, once, inside the
+          // manifest header a consumer already has to decode.
+          final decodedManifest =
+              jsonDecode(
+                    utf8.decode(
+                      base64.decode(
+                        headers['X-ProofMode-Manifest'] as String,
+                      ),
+                    ),
+                  )
+                  as Map<String, dynamic>;
+          expect(
+            decodedManifest['deviceAttestation'],
+            equals(_deviceAttestationString),
           );
-          expect(decoded, equals(_deviceAttestationString));
         },
       );
 
@@ -331,30 +350,7 @@ void main() {
 
         final headers = capturedOptions!.headers!;
         expect(headers, isNot(contains('X-ProofMode-Signature')));
-        expect(headers, contains('X-ProofMode-Attestation'));
-      });
-
-      test('omits attestation header when deviceAttestation is null', () async {
-        arrangeUploadMocks();
-        final mockFile = createMockFile();
-
-        final manifest = jsonEncode({
-          'videoHash': 'abc123',
-          'pgpSignature': _pgpSignatureString,
-        });
-
-        await service.uploadVideo(
-          description: 'test',
-          videoFile: mockFile,
-          nostrPubkey: _testPubkey,
-          title: 'test',
-          hashtags: const [],
-          proofManifestJson: manifest,
-        );
-
-        final headers = capturedOptions!.headers!;
-        expect(headers, contains('X-ProofMode-Signature'));
-        expect(headers, isNot(contains('X-ProofMode-Attestation')));
+        expect(headers, contains('X-ProofMode-Manifest'));
       });
 
       test('does not add ProofMode headers when manifest is null', () async {
@@ -428,8 +424,53 @@ void main() {
           final headers = capturedOptions!.headers!;
           expect(headers, contains('X-ProofMode-Manifest'));
           expect(headers, contains('X-ProofMode-Signature'));
-          expect(headers, contains('X-ProofMode-Attestation'));
           expect(headers, contains('X-ProofMode-C2PA'));
+          expect(headers, isNot(contains('X-ProofMode-Attestation')));
+        },
+      );
+
+      test(
+        'a Pixel-8-Pro-sized attestation stays under the edge header limit',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          // A KeyMint chain dumped via X509Certificate.toString() measured
+          // 53,826 B on a Pixel 8 Pro (#6529). Duplicating it into a
+          // standalone header took total request headers to ~147 KB, past
+          // the 128 KiB HTTP/1.1 limit at the media.divine.video edge, and
+          // the edge answered 502 before any handler ran.
+          final hugeAttestation = 'A' * 53826;
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+            'deviceAttestation': hugeAttestation,
+            'c2pa_manifest_id': 'c2pa-test-id',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          final totalBytes = headers.entries.fold<int>(
+            0,
+            // +4 for the ": " and CRLF that frame each header line.
+            (sum, e) => sum + e.key.length + '${e.value}'.length + 4,
+          );
+
+          expect(
+            totalBytes,
+            lessThan(_edgeRequestHeaderLimitBytes),
+            reason:
+                'Total request headers must stay under the 128 KiB edge '
+                'limit; exceeding it returns 502 before any handler runs.',
+          );
         },
       );
     });

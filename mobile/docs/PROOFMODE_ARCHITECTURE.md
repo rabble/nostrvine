@@ -346,10 +346,11 @@ class BlossomUploadService {
         headers['X-ProofMode-Signature'] = manifest['pgpSignature']['signature'];
       }
 
-      // Add attestation header
-      if (manifest['deviceAttestation'] != null) {
-        headers['X-ProofMode-Attestation'] = manifest['deviceAttestation']['token'];
-      }
+      // The device attestation is NOT sent as its own header. It already
+      // ships inside X-ProofMode-Manifest above, and duplicating it took
+      // total request headers past the 128 KiB edge limit on handsets with
+      // a large KeyMint chain, which returned 502 before any handler ran
+      // (#6529).
     }
 
     // Upload video with headers

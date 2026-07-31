@@ -2908,9 +2908,15 @@ class BlossomUploadService {
 
   /// Add ProofMode headers to upload request.
   ///
-  /// Generates X-ProofMode-Manifest, X-ProofMode-Signature,
-  /// and X-ProofMode-Attestation headers from the provided
-  /// ProofManifest JSON.
+  /// Generates X-ProofMode-Manifest, X-ProofMode-Signature and
+  /// X-ProofMode-C2PA headers from the provided ProofManifest JSON.
+  ///
+  /// The device attestation is carried inside X-ProofMode-Manifest and is
+  /// deliberately not repeated in a standalone X-ProofMode-Attestation
+  /// header: on handsets whose KeyMint chain dumps large (~53 KB on a Pixel
+  /// 8 Pro) the duplicate pushed total request headers past the 128 KiB
+  /// HTTP/1.1 limit at the media.divine.video edge, which answered 502
+  /// before any handler ran and made every publish fail. See #6529.
   void _addProofModeHeaders(
     Map<String, dynamic> headers,
     String proofManifestJson,
@@ -2927,13 +2933,6 @@ class BlossomUploadService {
       if (manifestMap['pgpSignature'] != null) {
         headers['X-ProofMode-Signature'] = _encodeHeaderValue(
           manifestMap['pgpSignature'],
-        );
-      }
-
-      // Extract and encode attestation if present
-      if (manifestMap['deviceAttestation'] != null) {
-        headers['X-ProofMode-Attestation'] = _encodeHeaderValue(
-          manifestMap['deviceAttestation'],
         );
       }
 
