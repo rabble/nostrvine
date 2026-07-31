@@ -339,11 +339,19 @@ ProofMode manifest is uploaded alongside video to Blossom server:
 > the whole cert chain, so its size varies per device, and it used to travel
 > twice — base64 in `X-ProofMode-Manifest` and again in
 > `X-ProofMode-Attestation`. Past roughly **47.5 KB of raw attestation** the
-> request crosses 128 KiB and every publish from that device fails. That is
-> why the bug looked sporadic: a Pixel 8 Pro produced 53,826 bytes and always
-> failed, shorter chains stayed under the line and uploaded fine, and iOS
-> ships a compact integrity token that never came close. Do not reintroduce an
-> uncapped header here; put new proof payloads in a request body.
+> request crosses 128 KiB and the publish carrying it fails. A Pixel 8 Pro
+> produced 53,826 bytes, shorter chains stayed under the line and uploaded
+> fine, and iOS ships a compact integrity token that never came close.
+>
+> The attestation is a **per-capture** artifact, not a device constant:
+> `readProofMetadata` reads `<proofDir>/<fileHash>.attest` for the file being
+> proofed, and that file only exists for captures where attestation actually
+> succeeded. One handset can therefore hold a clip with no attestation that
+> publishes fine and a 53,826-byte one that does not — a device failing *some*
+> publishes is the expected shape, not evidence against this diagnosis.
+>
+> Do not reintroduce an uncapped header here; put new proof payloads in a
+> request body.
 
 ```dart
 class BlossomUploadService {
