@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/models/saved_sound.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum SavedSoundSaveResult { saved, alreadySaved }
@@ -53,7 +54,10 @@ class SavedSoundsService {
   /// SharedPreferences key for the current account's saved sounds.
   String get storageKey => accountStorageKey(_pubkeyHex ?? '');
 
-  List<AudioEvent> loadSounds() {
+  List<AudioEvent> loadSounds() =>
+      loadSavedSounds().map((sound) => sound.audio).toList(growable: false);
+
+  List<SavedSound> loadSavedSounds() {
     _migrateLegacyBucketIfNeeded();
     final rawSounds = _preferences.getString(storageKey);
     if (rawSounds == null || rawSounds.isEmpty) {
@@ -62,56 +66,132 @@ class SavedSoundsService {
 
     try {
       final decoded = jsonDecode(rawSounds);
-      if (decoded is! List) {
-        return [];
+      if (decoded is List) {
+        return _readLegacySounds(decoded);
       }
-
-      final sounds = <AudioEvent>[];
-      for (final entry in decoded.whereType<Map>()) {
-        try {
-          sounds.add(
-            _persistableSound(
-              AudioEvent.fromJson(Map<String, dynamic>.from(entry)),
-            ),
-          );
-        } catch (_) {
-          continue;
-        }
+      if (decoded is Map) {
+        return _readVersionedSounds(Map<String, dynamic>.from(decoded));
       }
-      return sounds;
+      return [];
     } catch (_) {
       return [];
     }
   }
 
   Future<SavedSoundSaveResult> saveSound(AudioEvent sound) async {
-    final sounds = loadSounds();
+    return saveSavedSound(
+      SavedSound.fromLegacy(
+        _persistableSound(sound),
+      ).copyWith(savedAt: DateTime.now().toUtc()),
+    );
+  }
+
+  Future<SavedSoundSaveResult> saveSavedSound(SavedSound sound) async {
+    final sounds = loadSavedSounds();
     if (sounds.any((savedSound) => savedSound.id == sound.id)) {
       return SavedSoundSaveResult.alreadySaved;
     }
 
-    await _writeSounds([sound, ...sounds]);
+    await _writeSavedSounds([_persistableRecord(sound), ...sounds]);
     return SavedSoundSaveResult.saved;
   }
 
   Future<void> removeSound(String soundId) async {
-    final sounds = loadSounds()
+    final sounds = loadSavedSounds()
         .where((savedSound) => savedSound.id != soundId)
         .toList();
-    await _writeSounds(sounds);
+    await _writeSavedSounds(sounds);
+  }
+
+  Future<void> replaceSavedSound(SavedSound sound) async {
+    final sounds = loadSavedSounds();
+    final replacement = _persistableRecord(sound);
+    final existingIndex = sounds.indexWhere((saved) => saved.id == sound.id);
+    if (existingIndex == -1) {
+      await _writeSavedSounds([replacement, ...sounds]);
+      return;
+    }
+
+    sounds[existingIndex] = replacement;
+    await _writeSavedSounds(sounds);
   }
 
   /// Overwrites the persisted list. Used by the notifier after backfilling
   /// missing fields (e.g. duration) on legacy entries.
-  Future<void> replaceAll(List<AudioEvent> sounds) => _writeSounds(sounds);
-
-  Future<void> _writeSounds(List<AudioEvent> sounds) async {
-    await _preferences.setString(
-      storageKey,
-      jsonEncode(
-        sounds.map((sound) => _persistableSound(sound).toJson()).toList(),
-      ),
+  Future<void> replaceAll(List<AudioEvent> sounds) {
+    final existing = {
+      for (final record in loadSavedSounds()) record.id: record,
+    };
+    return _writeSavedSounds(
+      sounds
+          .map(
+            (sound) => (existing[sound.id] ?? SavedSound.fromLegacy(sound))
+                .copyWith(audio: _persistableSound(sound)),
+          )
+          .toList(growable: false),
     );
+  }
+
+  Future<void> replaceAllSavedSounds(List<SavedSound> sounds) =>
+      _writeSavedSounds(sounds);
+
+  List<SavedSound> _readLegacySounds(List<dynamic> decoded) {
+    final sounds = <SavedSound>[];
+    for (final entry in decoded.whereType<Map>()) {
+      try {
+        sounds.add(
+          SavedSound.fromLegacy(
+            _persistableSound(
+              AudioEvent.fromJson(Map<String, dynamic>.from(entry)),
+            ),
+          ),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+    return sounds;
+  }
+
+  List<SavedSound> _readVersionedSounds(Map<String, dynamic> decoded) {
+    if (decoded['schemaVersion'] !=
+        SavedSoundLibraryPayload.currentSchemaVersion) {
+      return [];
+    }
+    final rawSounds = decoded['sounds'];
+    if (rawSounds is! List) return [];
+
+    final sounds = <SavedSound>[];
+    for (final entry in rawSounds.whereType<Map>()) {
+      try {
+        sounds.add(
+          _persistableRecord(
+            SavedSound.fromJson(Map<String, dynamic>.from(entry)),
+          ),
+        );
+      } catch (_) {
+        continue;
+      }
+    }
+    return sounds;
+  }
+
+  Future<void> _writeSavedSounds(List<SavedSound> sounds) async {
+    final payload = SavedSoundLibraryPayload(
+      schemaVersion: SavedSoundLibraryPayload.currentSchemaVersion,
+      sounds: sounds.map(_persistableRecord).toList(growable: false),
+    );
+    final didWrite = await _preferences.setString(
+      storageKey,
+      jsonEncode(payload.toJson()),
+    );
+    if (!didWrite) {
+      throw StateError('Failed to persist saved sounds');
+    }
+  }
+
+  SavedSound _persistableRecord(SavedSound sound) {
+    return sound.copyWith(audio: _persistableSound(sound.audio));
   }
 
   AudioEvent _persistableSound(AudioEvent sound) {

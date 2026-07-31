@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -133,6 +134,100 @@ void main() {
       );
 
       expect(service.loadSounds(), [validSound]);
+    });
+
+    group('versioned metadata records', () {
+      test('reads a legacy bare list without rewriting it', () {
+        final service = SavedSoundsService(sharedPreferences);
+        final legacy = jsonEncode([_sound(id: 'legacy').toJson()]);
+        sharedPreferences.setString(service.storageKey, legacy);
+
+        final records = service.loadSavedSounds();
+
+        expect(records.single.id, 'legacy');
+        expect(records.single.savedAt, isNull);
+        expect(records.single.personalHashtags, isEmpty);
+        expect(sharedPreferences.getString(service.storageKey), legacy);
+      });
+
+      test('writes a versioned payload with complete metadata', () async {
+        final service = SavedSoundsService(sharedPreferences);
+        final record = SavedSound(
+          audio: _sound(id: 'sound1'),
+          savedAt: DateTime.utc(2026, 7, 31),
+          personalLabel: 'Warm-up',
+          personalHashtags: const ['practice'],
+          catalogTags: const ['guitar'],
+          waveformSamples: const [0.1, 0.4],
+        );
+
+        await service.saveSavedSound(record);
+
+        final raw =
+            jsonDecode(
+                  sharedPreferences.getString(service.storageKey)!,
+                )
+                as Map<String, dynamic>;
+        expect(
+          raw['schemaVersion'],
+          SavedSoundLibraryPayload.currentSchemaVersion,
+        );
+        expect(service.loadSavedSounds(), [record]);
+      });
+
+      test('replaces metadata by full sound ID without duplication', () async {
+        final service = SavedSoundsService(sharedPreferences);
+        final original = SavedSound.fromLegacy(_sound(id: 'sound1'));
+        await service.saveSavedSound(original);
+
+        await service.replaceSavedSound(
+          original.copyWith(
+            personalLabel: 'Use this',
+            personalHashtags: const ['intro'],
+          ),
+        );
+
+        expect(service.loadSavedSounds(), [
+          original.copyWith(
+            personalLabel: 'Use this',
+            personalHashtags: const ['intro'],
+          ),
+        ]);
+      });
+
+      test('skips a corrupt versioned entry without dropping valid ones', () {
+        final service = SavedSoundsService(sharedPreferences);
+        final valid = SavedSound.fromLegacy(_sound(id: 'valid'));
+        sharedPreferences.setString(
+          service.storageKey,
+          jsonEncode({
+            'schemaVersion': 1,
+            'sounds': [
+              valid.toJson(),
+              {'audio': 'not a map'},
+            ],
+          }),
+        );
+
+        expect(service.loadSavedSounds(), [valid]);
+      });
+
+      test('throws when SharedPreferences rejects a write', () async {
+        final preferences = _MockSharedPreferences();
+        final service = SavedSoundsService(preferences);
+        when(() => preferences.containsKey(any())).thenReturn(false);
+        when(() => preferences.getString(any())).thenReturn(null);
+        when(
+          () => preferences.setString(service.storageKey, any()),
+        ).thenAnswer((_) async => false);
+
+        await expectLater(
+          service.saveSavedSound(
+            SavedSound.fromLegacy(_sound(id: 'sound1')),
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
     });
 
     group('per-account isolation', () {
