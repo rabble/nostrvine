@@ -716,6 +716,45 @@ void main() {
 
         expect(profile.handle, equals('@rabble'));
       });
+
+      // An unpaired surrogate reaches the paragraph builder through every
+      // surface that renders a handle and throws during layout, so the
+      // getter sanitizes like its [bestDisplayName] sibling.
+      test('replaces an unpaired UTF-16 surrogate in name', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          name: 'ca${String.fromCharCode(0xD83D)}sey',
+        );
+
+        expect(profile.handle, equals('@ca�sey'));
+      });
+
+      test('replaces an unpaired UTF-16 surrogate in nip05', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'ca${String.fromCharCode(0xDE00)}sey@example.com',
+        );
+
+        expect(profile.handle, equals('@ca�sey@example.com'));
+      });
+
+      test('keeps a valid surrogate pair intact', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          name: 'casey 😀',
+        );
+
+        expect(profile.handle, equals('@casey 😀'));
+      });
     });
 
     group('computed properties', () {
@@ -1135,6 +1174,18 @@ void main() {
 
         expect(profile.displayNip05, isNull);
       });
+
+      test('replaces an unpaired UTF-16 surrogate in an external nip05', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'al${String.fromCharCode(0xDE00)}ice@example.com',
+        );
+
+        expect(profile.displayNip05, equals('al�ice@example.com'));
+      });
     });
 
     group('shortDisplayNip05', () {
@@ -1207,6 +1258,18 @@ void main() {
         );
 
         expect(profile.shortDisplayNip05, isNull);
+      });
+
+      test('replaces an unpaired UTF-16 surrogate in an external nip05', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'al${String.fromCharCode(0xD83D)}ice@example.com',
+        );
+
+        expect(profile.shortDisplayNip05, equals('al�ice@example.com'));
       });
     });
 
