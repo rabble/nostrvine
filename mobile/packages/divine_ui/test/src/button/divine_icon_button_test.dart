@@ -383,6 +383,25 @@ void main() {
         expect(divineIcon.color, VineTheme.lightColors.onSurface);
       });
 
+      testWidgets('ghostOverMedia type keeps the fixed light icon in light '
+          'mode', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            theme: VineTheme.lightTheme,
+            type: DivineIconButtonType.ghostOverMedia,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        // A 15 % scrim over a video frame stays dark whatever the palette
+        // says, so this variant must not follow it into the light palette.
+        expect(divineIcon.color, VineTheme.onSurface);
+        expect(divineIcon.color, isNot(VineTheme.lightColors.onSurface));
+      });
+
       testWidgets('error type uses onErrorContainer color', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(

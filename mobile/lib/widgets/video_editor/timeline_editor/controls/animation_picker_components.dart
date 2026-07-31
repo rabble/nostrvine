@@ -82,9 +82,15 @@ class AnimationPickerChip extends StatelessWidget {
                   : VineTheme.lightText.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
+                // Light mode cannot lean on the accent the way dark does:
+                // `primaryContainer` and `containerLow` are 1.001:1 apart, so
+                // the border is the only thing left to carry the selected
+                // state. `outline` against `outlineMuted` is 1.37:1 — this
+                // pairing puts it at 10.10:1, matching the glyph and label
+                // that already resolve `onSurface` here.
                 color: selected
                     ? isLight
-                          ? colors.outline
+                          ? colors.onSurface
                           : VineTheme.primary
                     : isLight
                     ? colors.outlineMuted

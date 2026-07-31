@@ -64,6 +64,7 @@ void main() {
       required bool isLoading,
       ClipEditorBloc? clipBlocOverride,
       ProImageEditorState? editorOverride,
+      ThemeData? theme,
     }) {
       final editorKey = GlobalKey<ProImageEditorState>();
       final removeAreaKey = GlobalKey();
@@ -96,6 +97,7 @@ void main() {
               BlocProvider<VideoEditorFilterBloc>.value(value: filterBloc),
             ],
             child: MaterialApp(
+              theme: theme,
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: VideoEditorScaffold(isLoading: isLoading),
@@ -112,6 +114,46 @@ void main() {
 
       expect(find.byType(BrandedLoadingScaffold), findsOneWidget);
       expect(find.bySemanticsLabel('Add element'), findsOneWidget);
+    });
+
+    testWidgets('add-element glyph follows the palette on light', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildWidget(isLoading: true, theme: VineTheme.lightTheme),
+      );
+      // Not pumpAndSettle: the loading scaffold animates forever. A fresh
+      // tree resolves its theme on the first frame anyway.
+      await tester.pump();
+
+      final icon = tester.widget<DivineIcon>(
+        find.descendant(
+          of: find.bySemanticsLabel('Add element'),
+          matching: find.byType(DivineIcon),
+        ),
+      );
+
+      // This FAB is a hand-rolled twin of `DivineIconButtonType.secondary`,
+      // so it takes that variant's icon rule. The brand green only reaches
+      // 1.92:1 on the light `surfaceContainer` fill; `onSurface` is 11.06:1.
+      expect(icon.color, VineTheme.lightColors.onSurface);
+      expect(icon.color, isNot(VineTheme.primary));
+    });
+
+    testWidgets('add-element glyph stays brand green on dark', (tester) async {
+      await tester.pumpWidget(
+        buildWidget(isLoading: true, theme: VineTheme.theme),
+      );
+      await tester.pump();
+
+      final icon = tester.widget<DivineIcon>(
+        find.descendant(
+          of: find.bySemanticsLabel('Add element'),
+          matching: find.byType(DivineIcon),
+        ),
+      );
+
+      expect(icon.color, VineTheme.primary);
     });
 
     testWidgets('hides FAB while a sub-editor is open', (tester) async {

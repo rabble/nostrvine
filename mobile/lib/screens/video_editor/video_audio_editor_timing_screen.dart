@@ -235,7 +235,7 @@ class _VideoAudioEditorTimingScreenState
                       closeIcon: widget.enableDeleteButton ? .trash : .x,
                       closeType: widget.enableDeleteButton
                           ? .error
-                          : .ghostSecondary,
+                          : .ghostOverMedia,
                       closeSemanticLabel: widget.enableDeleteButton
                           ? 'Remove audio'
                           : 'Close',

@@ -124,7 +124,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                             excludeSemantics: true,
                             child: DivineIconButton(
                               icon: .pencilSimpleLine,
-                              type: .ghostSecondary,
+                              type: .ghostOverMedia,
                               size: .small,
                               onPressed: () => _openCoverEditor(
                                 context,

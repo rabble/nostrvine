@@ -303,6 +303,7 @@ void main() {
       List<ProfileBadgeViewData> acceptedProfileBadges = const [],
       MockGoRouter? goRouter,
       bool monetizationLinksEnabled = false,
+      ThemeData? theme,
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -414,6 +415,7 @@ void main() {
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
+          theme: theme,
           home: Scaffold(body: SingleChildScrollView(child: header)),
         ),
       );
@@ -623,6 +625,33 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(UserAvatar), findsOneWidget);
+    });
+
+    testWidgets('nav glyphs follow the palette on light', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: createTestProfile(displayName: 'Test User'),
+          theme: VineTheme.lightTheme,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // A profile with no banner image and no profileColor — the default —
+      // gets ProfileBanner's palette gradient (containerLow -> surface), and
+      // the banner scrim is fully transparent at this height. A fixed light
+      // glyph on the 15% scrim over #EDF3EF is ~1.5:1.
+      final gear = tester.widget<DivineIcon>(
+        find.descendant(
+          of: find.byWidgetPredicate(
+            (w) => w is DivineIconButton && w.icon == DivineIconName.gear,
+          ),
+          matching: find.byType(DivineIcon),
+        ),
+      );
+      expect(gear.color, VineTheme.lightColors.onSurface);
+      expect(gear.color, isNot(VineTheme.onSurface));
     });
 
     testWidgets('avatar lightbox seeds placeholder with the pubkey so the '

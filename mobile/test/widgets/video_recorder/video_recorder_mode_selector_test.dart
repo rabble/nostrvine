@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,8 +23,9 @@ void main() {
       modeChanges = [];
     });
 
-    Widget buildWidget({VideoRecorderMode? mode}) {
+    Widget buildWidget({VideoRecorderMode? mode, ThemeData? theme}) {
       return MaterialApp(
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -43,14 +45,29 @@ void main() {
     Future<void> pumpSelector(
       WidgetTester tester, {
       VideoRecorderMode? mode,
+      ThemeData? theme,
     }) async {
       tester.view.physicalSize = const Size(surfaceWidth, 400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      await tester.pumpWidget(buildWidget(mode: mode));
+      await tester.pumpWidget(buildWidget(mode: mode, theme: theme));
       await tester.pumpAndSettle();
     }
+
+    // `Material` also inserts an `AnimatedDefaultTextStyle`, so take the
+    // closest ancestor — the wheel's own.
+    Color labelColor(WidgetTester tester, String label) => tester
+        .widget<AnimatedDefaultTextStyle>(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byType(AnimatedDefaultTextStyle),
+              )
+              .first,
+        )
+        .style
+        .color!;
 
     group('renders', () {
       testWidgets('renders all mode labels', (tester) async {
@@ -77,6 +94,51 @@ void main() {
         await pumpSelector(tester);
 
         expect(find.byType(AnimatedContainer), findsOneWidget);
+      });
+
+      testWidgets('keeps the armed mode readable in light mode', (
+        tester,
+      ) async {
+        await pumpSelector(
+          tester,
+          mode: VideoRecorderMode.capture,
+          theme: VineTheme.lightTheme,
+        );
+
+        // The accent only reaches 1.92:1 on the `surfaceContainer` pill.
+        expect(
+          labelColor(tester, VideoRecorderMode.capture.label),
+          VineTheme.lightColors.onSurface,
+        );
+        expect(
+          labelColor(tester, VideoRecorderMode.classic.label),
+          VineTheme.lightColors.mutedText,
+        );
+
+        final pill = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        final decoration = pill.decoration! as BoxDecoration;
+        expect(decoration.color, VineTheme.lightColors.surfaceContainer);
+        expect(
+          (decoration.border! as Border).top.color,
+          VineTheme.lightColors.outline,
+        );
+      });
+
+      testWidgets('keeps the accent on the armed mode in dark mode', (
+        tester,
+      ) async {
+        await pumpSelector(
+          tester,
+          mode: VideoRecorderMode.capture,
+          theme: VineTheme.theme,
+        );
+
+        expect(
+          labelColor(tester, VideoRecorderMode.capture.label),
+          VineTheme.primary,
+        );
       });
     });
 

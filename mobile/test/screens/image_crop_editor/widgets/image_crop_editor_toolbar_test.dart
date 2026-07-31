@@ -19,18 +19,28 @@ void main() {
       WidgetTester tester, {
       required VoidCallback onClose,
       VoidCallback? onDone,
+      ThemeData? theme,
     }) {
       return tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
+          theme: theme ?? VineTheme.theme,
           home: Scaffold(
             appBar: ImageCropEditorToolbar(onClose: onClose, onDone: onDone),
           ),
         ),
       );
     }
+
+    Color? glyphColor(WidgetTester tester, DivineIconName icon) => tester
+        .widget<DivineIcon>(
+          find.descendant(
+            of: buttonWithIcon(icon),
+            matching: find.byType(DivineIcon),
+          ),
+        )
+        .color;
 
     testWidgets('renders close and done buttons', (tester) async {
       await pump(tester, onClose: () {}, onDone: () {});
@@ -70,6 +80,26 @@ void main() {
         buttonWithIcon(DivineIconName.check),
       );
       expect(doneButton.onPressed, isNull);
+    });
+
+    testWidgets('close glyph follows the palette on light', (tester) async {
+      await pump(tester, onClose: () {}, theme: VineTheme.lightTheme);
+
+      // `CropRotateEditor` puts this bar in a plain `Scaffold.appBar` over
+      // `CropRotateEditorStyle.background`, which the screen sets to
+      // `colors.surface` — #FFFFFF on light. A fixed light glyph on the 15%
+      // scrim over that is 1.39:1; the palette token is 9.07:1.
+      expect(
+        glyphColor(tester, DivineIconName.x),
+        VineTheme.lightColors.onSurface,
+      );
+      expect(glyphColor(tester, DivineIconName.x), isNot(VineTheme.onSurface));
+    });
+
+    testWidgets('close glyph stays light on dark', (tester) async {
+      await pump(tester, onClose: () {}, theme: VineTheme.theme);
+
+      expect(glyphColor(tester, DivineIconName.x), VineTheme.onSurface);
     });
 
     testWidgets('labels the buttons for screen readers', (tester) async {

@@ -514,7 +514,7 @@ class _TopBar extends StatelessWidget {
                 button: true,
                 child: DivineIconButton(
                   icon: .x,
-                  type: .ghostSecondary,
+                  type: .ghostOverMedia,
                   size: .small,
                   onPressed: onClose,
                 ),

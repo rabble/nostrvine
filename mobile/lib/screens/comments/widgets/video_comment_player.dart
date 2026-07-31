@@ -233,7 +233,7 @@ class _OpenVideoButton extends StatelessWidget {
       icon: DivineIconName.arrowUpRight,
       semanticLabel: context.l10n.commentsOpenVideoLabel,
       size: DivineIconButtonSize.small,
-      type: DivineIconButtonType.ghostSecondary,
+      type: DivineIconButtonType.ghostOverMedia,
       onPressed: onTap,
     );
   }
@@ -280,7 +280,7 @@ class _MuteButton extends StatelessWidget {
           ? context.l10n.commentsUnmuteVideoReplyLabel
           : context.l10n.commentsMuteVideoReplyLabel,
       size: DivineIconButtonSize.small,
-      type: DivineIconButtonType.ghostSecondary,
+      type: DivineIconButtonType.ghostOverMedia,
       onPressed: onTap,
     );
   }

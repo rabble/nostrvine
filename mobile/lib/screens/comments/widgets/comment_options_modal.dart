@@ -168,7 +168,10 @@ class _OptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isDestructive
-        ? VineTheme.likeRed
+        // The sheet surface follows the palette now, and fixed `likeRed` only
+        // holds 4.13:1 on the light one. The palette token is `likeRed`
+        // verbatim on dark, so that rendering is unchanged.
+        ? context.vineColors.onErrorContainer
         : context.vineColors.onSurface;
 
     return Semantics(
@@ -291,7 +294,10 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                     ? VineTheme.vineGreen
                     : context.vineColors.containerLow,
                 foregroundColor: _selectedReason != null
-                    ? context.vineColors.background
+                    // The fill above is the fixed brand green, so its label
+                    // has to be fixed too — the palette `background` token
+                    // goes near-white on light and drops to 2.08:1.
+                    ? VineTheme.onPrimary
                     : context.vineColors.onSurfaceMuted,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
@@ -302,7 +308,7 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                 context.l10n.commentOptionsFlagSubmit,
                 style: VineTheme.labelLargeFont(
                   color: _selectedReason != null
-                      ? context.vineColors.background
+                      ? VineTheme.onPrimary
                       : context.vineColors.onSurfaceMuted,
                 ),
               ),
@@ -313,6 +319,16 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
     );
   }
 }
+
+/// Accent for the selected reason's ring and dot.
+///
+/// The ring is the only thing that marks which of the eleven reasons is
+/// chosen, and the brand green reaches just 2.22:1 on the light sheet
+/// surface. [VineTheme.primaryAccessible] is the same hue at 3.17:1, which
+/// clears the 3:1 floor a non-text indicator has to meet.
+Color _selectedIndicatorOf(BuildContext context) => context.vineColors.isLight
+    ? VineTheme.primaryAccessible
+    : VineTheme.vineGreen;
 
 class _ReasonRadioTile extends StatelessWidget {
   const _ReasonRadioTile({
@@ -351,7 +367,7 @@ class _ReasonRadioTile extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isSelected
-                        ? VineTheme.vineGreen
+                        ? _selectedIndicatorOf(context)
                         : context.vineColors.onSurfaceMuted,
                     width: 2,
                   ),
@@ -361,9 +377,9 @@ class _ReasonRadioTile extends StatelessWidget {
                         child: Container(
                           width: 10,
                           height: 10,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: VineTheme.vineGreen,
+                            color: _selectedIndicatorOf(context),
                           ),
                         ),
                       )

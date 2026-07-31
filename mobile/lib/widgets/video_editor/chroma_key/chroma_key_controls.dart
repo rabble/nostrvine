@@ -97,11 +97,13 @@ class _PreviewUnavailableNoticeState extends State<_PreviewUnavailableNotice> {
       spacing: 8,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const DivineIcon(icon: .info, color: VineTheme.onSurfaceVariant),
+        DivineIcon(icon: .info, color: context.vineColors.onSurfaceVariant),
         Expanded(
           child: Text(
             context.l10n.videoEditorChromaKeyPreviewUnavailable,
-            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
       ],
@@ -165,7 +167,9 @@ class _ScreenColorRow extends StatelessWidget {
         Expanded(
           child: Text(
             context.l10n.videoEditorChromaKeyScreenColorLabel,
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
         ),
         _ColorSwatchButton(
@@ -287,13 +291,15 @@ class _LabeledSlider extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.onSurface,
+                ),
               ),
             ),
             Text(
               '${(value * 100).round()}',
               style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceVariant,
+                color: context.vineColors.onSurfaceVariant,
               ),
             ),
           ],
@@ -328,7 +334,9 @@ class _BackgroundSection extends StatelessWidget {
         _Gutter(
           child: Text(
             context.l10n.videoEditorChromaKeyBackgroundLabel,
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.onSurface,
+            ),
           ),
         ),
         // Each chip takes the width its label needs rather than an equal
@@ -356,7 +364,11 @@ class _BackgroundSection extends StatelessWidget {
           _Gutter(
             child: Text(
               context.l10n.videoEditorChromaKeyTransparentHint,
-              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              // `onSurfaceMuted` is only 3.05:1 on the light canvas, so this
+              // hint takes the variant token instead of the muted one.
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ),
       ],

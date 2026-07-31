@@ -261,7 +261,7 @@ class _CloseButton extends StatelessWidget {
           tag: VideoEditorConstants.heroBackButtonId,
           child: DivineIconButton(
             icon: .x,
-            type: .ghostSecondary,
+            type: .ghostOverMedia,
             size: .small,
             semanticLabel: context.l10n.videoMetadataClosePreviewSemanticLabel,
             onPressed: () => context.pop(),

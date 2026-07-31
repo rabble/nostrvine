@@ -75,7 +75,9 @@ class _ClipPickerGrid extends StatelessWidget {
         child: Text(
           context.l10n.videoEditorChromaKeyNoLibraryClips,
           textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceVariant,
+          ),
         ),
       );
     }
@@ -123,7 +125,7 @@ class _ClipTile extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: ColoredBox(
-            color: VineTheme.surfaceContainer,
+            color: context.vineColors.surfaceContainer,
             child: thumbnailPath == null
                 ? const SizedBox.expand()
                 : Image.file(

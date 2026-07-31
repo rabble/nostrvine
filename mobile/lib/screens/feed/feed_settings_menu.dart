@@ -155,7 +155,7 @@ class _FeedSettingsMenuState extends ConsumerState<FeedSettingsMenu> {
           builder: (context, isShowing, _) => DivineIconButton(
             icon: isShowing ? DivineIconName.x : DivineIconName.dotsThree,
             size: DivineIconButtonSize.small,
-            type: DivineIconButtonType.ghostSecondary,
+            type: DivineIconButtonType.ghostOverMedia,
             semanticLabel: isShowing
                 ? context.l10n.videoSettingsMenuClose
                 : context.l10n.videoSettingsMenuOpen,

@@ -618,9 +618,11 @@ class _PhaseSegment extends StatelessWidget {
                   : null,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
+                // See `AnimationPickerChip`: the light fills are 1.001:1
+                // apart, so the border carries the selected state alone.
                 color: selected
                     ? isLight
-                          ? colors.outline
+                          ? colors.onSurface
                           : VineTheme.primary
                     : VineTheme.transparent,
               ),
@@ -671,6 +673,7 @@ class _LayerTypeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     // Merge the explicit button node with the GestureDetector's tap action into
     // one node, and exclude the visible Text below from semantics so its label
     // isn't concatenated onto the explicit one — otherwise the screen reader
@@ -691,7 +694,14 @@ class _LayerTypeTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: selected ? VineTheme.primary : VineTheme.transparent,
+                    // Same reasoning as the phase segments — and `primary`
+                    // only reaches 2.22:1 on a light tile, so it cannot mark
+                    // the selection there either.
+                    color: selected
+                        ? colors.isLight
+                              ? colors.onSurface
+                              : VineTheme.primary
+                        : VineTheme.transparent,
                     width: 2,
                   ),
                 ),
