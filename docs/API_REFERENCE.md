@@ -358,6 +358,7 @@ class EventKind {
   static const int ZAP_REQUEST = 9734;
   static const int ZAP = 9735;
   static const int RELAY_LIST_METADATA = 10002;
+  static const int PROFILE_BADGES = 10008;
   static const int BOOKMARKS_LIST = 10003;
   static const int GROUP_LIST = 10009;
   static const int EMOJIS_LIST = 10030;
@@ -369,7 +370,7 @@ class EventKind {
   static const int BLOSSOM_HTTP_AUTH = 24242;
   static const int HTTP_AUTH = 27235;
   static const int FOLLOW_SETS = 30000;
-  static const int BADGE_ACCEPT = 30008;
+  static const int BADGE_SET = 30008;
   static const int BADGE_DEFINITION = 30009;
   static const int LONG_FORM = 30023;
   static const int LONG_FORM_LINKED = 30024;

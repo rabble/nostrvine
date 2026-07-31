@@ -294,7 +294,11 @@ class BadgeRepository {
 
   /// Accepts [award] by publishing the current user's profile badge list.
   ///
-  /// Throws [BadgePublishException] when no relay confirms the published list.
+  /// Throws:
+  ///
+  /// * [StateError] if there is no current pubkey or the profile badge event
+  ///   cannot be signed.
+  /// * [BadgePublishException] when no relay confirms the published list.
   Future<void> acceptAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
@@ -321,7 +325,11 @@ class BadgeRepository {
 
   /// Removes [award] from the current user's profile badge list.
   ///
-  /// Throws [BadgePublishException] when no relay confirms the published list.
+  /// Throws:
+  ///
+  /// * [StateError] if there is no current pubkey or the profile badge event
+  ///   cannot be signed.
+  /// * [BadgePublishException] when no relay confirms the published list.
   Future<void> removeAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
