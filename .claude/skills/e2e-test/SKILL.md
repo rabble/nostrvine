@@ -39,8 +39,8 @@ lose the timeline and the diagnostics.
 | Service | Port | Purpose |
 |---|---|---|
 | Keycast | 43000 | OAuth + NIP-46 signer |
-| FunnelCake Relay | 47777 | Nostr relay |
-| FunnelCake API | 43001 | REST API |
+| FunnelCake Relay | 47777 | Nostr relay (WebSocket) |
+| FunnelCake API | 47777 | REST API, under `/api/` on the same proxy |
 | Blossom | 43003 | Media server |
 | Postgres | 15432 | Keycast DB |
 | Invite | 43004 | divine-invite-darshan (Viceroy) |
@@ -98,13 +98,22 @@ are routine. The check names the service, the port, and the holder:
 
   port 45173  wanted by service "keycast"
             held by a host process (not a container), listening on: 127.0.0.1:45173
-            find it: ss -ltnp "sport = :45173"   (or: sudo lsof -iTCP:45173 -sTCP:LISTEN)
+            find it: sudo lsof -nP -iTCP:45173 -sTCP:LISTEN
 ```
 
 Ports already published by our own containers are not conflicts —
 `up.sh` is idempotent. The raw daemon error it replaces (`Bind for
 0.0.0.0:16380 failed: port is already allocated`) named neither the
 service nor the holder.
+
+Listening sockets come from `ss` on Linux and `lsof` on macOS, and
+the `find it:` line names whichever of the two the machine has. With
+neither installed the run says so and falls back to container-held
+ports alone, which `docker ps` reports without either tool — and a
+stale container is the usual culprit anyway.
+
+`bash local_stack/test_stack_scripts.sh` covers these paths against a
+stubbed docker/ss/lsof, so it needs no daemon and no free ports.
 
 ### Startup races
 
