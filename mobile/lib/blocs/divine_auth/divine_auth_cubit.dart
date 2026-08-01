@@ -494,11 +494,10 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         category: LogCategory.auth,
       );
 
-      // The account creation above flips AuthService to `authenticated`
-      // before it returns, which reroutes off the create-account screen and
-      // closes this cubit. Emitting the success state is then both
-      // impossible and unnecessary — the navigation it would trigger has
-      // already happened.
+      // Account creation flips AuthService to `authenticated` before it
+      // returns, which reroutes off the create-account screen and closes
+      // this cubit. Nothing is lost: the redirect runs off auth state, and
+      // no listener acts on DivineAuthSuccess here.
       if (isClosed) return;
 
       emit(const DivineAuthSuccess());
