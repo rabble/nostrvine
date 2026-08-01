@@ -661,8 +661,12 @@ class DraftStorageService {
   /// the last referencing draft is deleted. Scans the draft `data` blobs
   /// directly (audio paths live there, not in an indexed column) and never
   /// throws: a corrupt blob is logged and skipped.
+  ///
+  /// [excludeDraftId] is required: unlike the ghost-frame scan there is no
+  /// scan-everything caller, so leaving it nullable would only invite the
+  /// `null == null` skip that #6581 fixed there.
   Future<Set<String>> _referencedLocalAudioFilenames({
-    String? excludeDraftId,
+    required String excludeDraftId,
   }) async {
     final rows = await _draftsDao.getAllDrafts();
     final documentsPath = await getDocumentsPath();
