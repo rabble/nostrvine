@@ -5097,7 +5097,50 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Tài khoản này ký bằng Keycast. Không có khóa riêng tư nào được lưu trên thiết bị này, nên không có nsec để sao chép ở đây.';
+      'Khóa của bạn nằm trên dịch vụ đăng nhập của Divine, không phải trên thiết bị này. Xác nhận bằng mật khẩu của bạn, rồi bọn mình sẽ lấy khóa về cho bạn.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Khóa của bạn do dịch vụ đăng nhập của Divine giữ. Nhập mật khẩu tài khoản và bọn mình sẽ lấy khóa về.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Sao chép khóa';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Thiết bị của bạn đã chặn thao tác sao chép, nên khóa của bạn chưa vào được khay nhớ tạm.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Mật khẩu đó không khớp. Thử lại nhé.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Thử sai quá nhiều lần. Đóng lại rồi bắt đầu lại nhé.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Quá nhiều yêu cầu lấy khóa. Chờ vài phút rồi thử lại.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Phiên đăng nhập của bạn đã hết hạn. Đăng nhập lại để sao chép khóa.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Hãy xác minh địa chỉ email của bạn trước khi sao chép khóa.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Khóa của tài khoản này do Divine quản lý, nên không sao chép được ở đây.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Không có khóa nào được lưu cho tài khoản này.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'không kết nối được với dịch vụ đăng nhập';
 
   @override
   String get keyManagementRestrictedTitle => 'Khóa của bạn do Divine quản lý';
