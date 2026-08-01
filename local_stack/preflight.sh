@@ -11,6 +11,10 @@
 #
 # The port list is read from docker-compose.yml via `docker compose config`,
 # so it cannot drift from the stack definition.
+#
+# `mise run local_up` calls plain `bash`, which on macOS is 3.2. No
+# associative arrays: every port map below is an indexed array subscripted by
+# the port number, which behaves identically on 3.2 and 4+.
 
 # --- Port list, straight from the compose file ------------------------------
 
@@ -68,7 +72,7 @@ preflight_ports() {
     fi
 
     # port -> space-separated local addresses currently listening on it
-    local -A listen_addrs=()
+    local listen_addrs=()
     local local_addr port
     while read -r _ _ _ local_addr _; do
         port="${local_addr##*:}"
@@ -77,7 +81,7 @@ preflight_ports() {
     done < <(ss -Hltn 2>/dev/null || true)
 
     # port -> container name / owning compose project (empty if standalone)
-    local -A port_container=() port_project=()
+    local port_container=() port_project=()
     local name proj portspec host_port
     # `|` rather than tab: tab is IFS whitespace, so bash collapses a run of
     # them and an empty middle field disappears. A standalone container has no
