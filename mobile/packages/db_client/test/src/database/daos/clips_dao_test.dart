@@ -2,6 +2,7 @@
 // ABOUTME: operations. Tests upsertClip, getClipsByDraftId, deleteClip,
 // ABOUTME: deleteClipsByDraftId, watchClipsByDraftId.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
@@ -439,6 +440,90 @@ void main() {
           results.map((c) => c.id),
           containsAll(<String>['clip_active', 'clip_trashed']),
         );
+      });
+    });
+
+    group('getClipsWithGhostFrames', () {
+      Future<void> insertClip({
+        required String id,
+        required String data,
+        String? draftId,
+      }) => dao.upsertClip(
+        id: id,
+        draftId: draftId,
+        orderIndex: 0,
+        durationMs: 3000,
+        recordedAt: DateTime(2023, 11, 14, 10),
+        filePath: null,
+        thumbnailPath: null,
+        data: data,
+      );
+
+      test('returns only clips carrying a ghost frame', () async {
+        await insertClip(
+          id: 'clip_ghost',
+          draftId: testDraftId,
+          data: json.encode({
+            'filePath': 'video.mp4',
+            'ghostFramePath': 'ghost.jpg',
+          }),
+        );
+        await insertClip(
+          id: 'clip_null_ghost',
+          draftId: testDraftId,
+          data: json.encode({'filePath': 'video.mp4', 'ghostFramePath': null}),
+        );
+        await insertClip(
+          id: 'clip_no_key',
+          draftId: testDraftId,
+          data: json.encode({'filePath': 'video.mp4'}),
+        );
+
+        final results = await dao.getClipsWithGhostFrames();
+
+        expect(results, hasLength(1));
+        expect(results.single.id, equals('clip_ghost'));
+        expect(results.single.draftId, equals(testDraftId));
+        expect(results.single.data, contains('ghost.jpg'));
+      });
+
+      test('includes trashed and library clips', () async {
+        // A trashed clip can be restored and a library clip has no draft, so
+        // both still hold their ghost frame alive.
+        await insertClip(
+          id: 'clip_trashed',
+          draftId: testDraftId,
+          data: json.encode({'ghostFramePath': 'trashed_ghost.jpg'}),
+        );
+        await dao.softDeleteClip(
+          id: 'clip_trashed',
+          deletedAt: DateTime(2023, 11, 15),
+        );
+        await insertClip(
+          id: 'clip_library',
+          data: json.encode({'ghostFramePath': 'library_ghost.jpg'}),
+        );
+
+        final results = await dao.getClipsWithGhostFrames();
+
+        expect(
+          results.map((row) => row.id),
+          containsAll(<String>['clip_trashed', 'clip_library']),
+        );
+        expect(
+          results.firstWhere((row) => row.id == 'clip_library').draftId,
+          isNull,
+        );
+      });
+
+      test('returns empty list when no clip has a ghost frame', () async {
+        await insertClip(
+          id: 'clip_plain',
+          draftId: testDraftId,
+          data: json.encode({'filePath': 'video.mp4'}),
+        );
+
+        expect(await dao.getClipsWithGhostFrames(), isEmpty);
       });
     });
 

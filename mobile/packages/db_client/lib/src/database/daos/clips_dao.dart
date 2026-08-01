@@ -82,9 +82,9 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// provided, returns only clips owned by that account **plus** legacy
   /// clips with no owner.
   ///
-  /// [includeTrashed] is for file-reference scans that must keep a
-  /// trashed (restorable) clip's files alive — active-clip listings should
-  /// leave it at its default.
+  /// [includeTrashed] keeps trashed (restorable) clips in the result — useful
+  /// when the caller must account for a clip that can come back. Active-clip
+  /// listings should leave it at its default.
   Future<List<ClipRow>> getAllClips({
     int? limit,
     String? ownerPubkey,
@@ -104,6 +104,47 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     }
     return query.get();
   }
+
+  /// Every clip row that carries a non-null `ghostFramePath`, projected to the
+  /// fields a ghost-frame reference scan needs: `draftId` to skip the draft
+  /// being deleted, `data` to read the frame out of, and `id` to name the row
+  /// if its blob turns out to be corrupt.
+  ///
+  /// Ghost frames have no indexed column — they exist only inside the `data`
+  /// blob — so the alternative is loading and JSON-decoding *every* clip row in
+  /// the database, which grows with the whole clip library. The `LIKE` still
+  /// scans the table, but SQLite discards the non-matching rows before they
+  /// cross into Dart, and clips carrying a ghost frame are a small minority of
+  /// a typical library.
+  ///
+  /// Trashed clips are included: a soft-deleted clip can still be restored, so
+  /// a ghost frame it references must survive a sharing draft's deletion.
+  ///
+  /// The predicate matches the encoding `DivineVideoClip.toJson` produces for
+  /// a set ghost frame. A clip whose `ghostFramePath` is null serializes to
+  /// `"ghostFramePath":null` and is correctly skipped. Because the filter
+  /// depends on that encoding, the app layer pins it end-to-end against the
+  /// real model in `draft_storage_service_test.dart`.
+  Future<List<({String id, String? draftId, String data})>>
+  getClipsWithGhostFrames() async {
+    final rows = await customSelect(
+      'SELECT id, draft_id, data FROM clips WHERE data LIKE ?',
+      variables: [Variable.withString('%$_ghostFramePathJsonPrefix%')],
+      readsFrom: {clips},
+    ).get();
+
+    return [
+      for (final row in rows)
+        (
+          id: row.read<String>('id'),
+          draftId: row.read<String?>('draft_id'),
+          data: row.read<String>('data'),
+        ),
+    ];
+  }
+
+  /// Serialized prefix of a set `ghostFramePath` inside a clip's `data` blob.
+  static const _ghostFramePathJsonPrefix = '"ghostFramePath":"';
 
   /// Update the order index of a clip
   Future<bool> updateOrderIndex({

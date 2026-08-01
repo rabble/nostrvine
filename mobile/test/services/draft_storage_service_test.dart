@@ -2054,7 +2054,7 @@ void main() {
 
       DivineVideoDraft draftWithGhost({
         required String id,
-        required String ghostPath,
+        required String? ghostPath,
       }) => DivineVideoDraft.create(
         id: id,
         clips: [
@@ -2194,12 +2194,15 @@ void main() {
         // A sibling clip row whose data blob can't be parsed. The ghost-frame
         // reference scan runs after the target draft's rows are deleted, so an
         // unguarded throw here would leak the deleted draft's ghost file.
+        // The blob is truncated rather than arbitrary text so it still reaches
+        // the decode step — the scan pre-filters on the serialized
+        // `ghostFramePath` key.
         await database.clipsDao.upsertClip(
           id: 'corrupt_sibling_clip',
           orderIndex: 0,
           durationMs: 6000,
           recordedAt: DateTime(2025),
-          data: 'not-json',
+          data: '{"ghostFramePath":"ghost_target.jpg"',
           filePath: null,
           thumbnailPath: null,
         );
@@ -2211,6 +2214,54 @@ void main() {
           isFalse,
           reason: 'a corrupt sibling clip must not block ghost-frame cleanup',
         );
+      });
+
+      // [ClipsDao.getClipsWithGhostFrames] pre-filters clip blobs on a literal
+      // serialized key instead of an indexed column, so it is only correct for
+      // as long as it agrees with what [DivineVideoClip.toJson] writes. The
+      // deletion tests above cannot catch a drift between the two: when the
+      // filter matches nothing, `FileCleanupService.deleteGhostFrameFiles`
+      // falls back to `deleteFileIfUnreferenced`, whose JSON scan already
+      // covers `ghostFramePath` via `ClipsDao` and keeps the file alive
+      // anyway. These two go straight at the filter, through the real save
+      // path, so either half drifting turns them red instead of silently
+      // emptying the scan.
+      group('ghost-frame filter encoding', () {
+        test('matches a clip persisted with a ghost frame', () async {
+          final draft = draftWithGhost(
+            id: 'draft_encoding_match',
+            ghostPath: writeGhost('ghost_encoding_match.jpg').path,
+          );
+          await service.saveDraft(draft);
+
+          final rows = await database.clipsDao.getClipsWithGhostFrames();
+
+          expect(
+            rows.map((row) => row.draftId),
+            contains(draft.id),
+            reason:
+                'the SQL pre-filter must still match the encoding '
+                'DivineVideoClip.toJson produces for a set ghost frame',
+          );
+        });
+
+        test('skips a clip persisted without a ghost frame', () async {
+          final draft = draftWithGhost(
+            id: 'draft_encoding_skip',
+            ghostPath: null,
+          );
+          await service.saveDraft(draft);
+
+          final rows = await database.clipsDao.getClipsWithGhostFrames();
+
+          expect(
+            rows,
+            isEmpty,
+            reason:
+                'a null ghost frame serializes to "ghostFramePath":null, so a '
+                'filter that matched it would keep every ghost file forever',
+          );
+        });
       });
     });
   });

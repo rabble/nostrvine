@@ -44,7 +44,8 @@ class BackgroundPublishBloc
 
   /// Keeps the process foregrounded for the whole publish so the in-process
   /// steps after the OS-backed upload (signing, relay broadcast) survive app
-  /// suspension. Null disables the behaviour (e.g. in tests).
+  /// suspension, and so do the durable writes that record how the publish
+  /// ended. Null disables the behaviour (e.g. in tests).
   final PublishForegroundSession? _foregroundSession;
 
   Future<void> _onBackgroundPublishRequested(
@@ -64,10 +65,65 @@ class BackgroundPublishBloc
       emit(state.copyWith(uploads: [...state.uploads, newUpload]));
     }
 
-    PublishResult result;
     await _beginForegroundSession(event.draft.id);
     try {
-      result = await event.publishmentProcess;
+      final result = await _awaitPublishResult(event.publishmentProcess);
+
+      // Remove the upload if it was successful
+      if (result is PublishSuccess) {
+        final updatedUploads = state.uploads
+            .where((upload) => upload.draft.id != event.draft.id)
+            .toList();
+
+        emit(
+          state.copyWith(
+            uploads: updatedUploads,
+            recentlySucceededIds: {event.draft.id},
+          ),
+        );
+
+        // After the emit — the video is already live, so the draft row and its
+        // unreferenced media are reclaimed off the publish critical path
+        // rather than in front of the success state (#6548). Still inside the
+        // foreground session: deleting the row is the only record that this
+        // publish finished, so losing the process first makes resume offer a
+        // retry for an already-published video.
+        await _deletePublishedDrafts(event.draft);
+      } else {
+        // Update the upload with the result
+        final updatedUploads = state.uploads.map((upload) {
+          if (upload.draft.id == event.draft.id) {
+            return upload.copyWith(result: result, progress: 1.0);
+          }
+          return upload;
+        }).toList();
+
+        emit(state.copyWith(uploads: updatedUploads));
+
+        // Persist the classified kind (same encoding the service writes), so
+        // the service/bloc writes are idempotent and resume re-localizes
+        // correctly.
+        final publishError = result is PublishError
+            ? result.toPersistedString()
+            : null;
+        await _persistPublishStatus(
+          draftId: event.draft.id,
+          status: PublishStatus.failed,
+          publishError: publishError,
+        );
+      }
+    } finally {
+      await _endForegroundSession(event.draft.id);
+    }
+  }
+
+  /// Awaits the publish, turning a thrown error into a [PublishError] so the
+  /// caller always has a result to record.
+  Future<PublishResult> _awaitPublishResult(
+    Future<PublishResult> publishmentProcess,
+  ) async {
+    try {
+      return await publishmentProcess;
     } catch (e, stackTrace) {
       Log.error(
         'Publish process threw an exception: $e',
@@ -76,46 +132,7 @@ class BackgroundPublishBloc
         stackTrace: stackTrace,
       );
       addError(e, stackTrace);
-      result = const PublishError(PublishErrorKind.generic);
-    } finally {
-      await _endForegroundSession(event.draft.id);
-    }
-
-    // Remove the upload if it was successful
-    if (result is PublishSuccess) {
-      final updatedUploads = state.uploads
-          .where((upload) => upload.draft.id != event.draft.id)
-          .toList();
-
-      emit(
-        state.copyWith(
-          uploads: updatedUploads,
-          recentlySucceededIds: {event.draft.id},
-        ),
-      );
-
-      await _deletePublishedDrafts(event.draft);
-    } else {
-      // Update the upload with the result
-      final updatedUploads = state.uploads.map((upload) {
-        if (upload.draft.id == event.draft.id) {
-          return upload.copyWith(result: result, progress: 1.0);
-        }
-        return upload;
-      }).toList();
-
-      emit(state.copyWith(uploads: updatedUploads));
-
-      // Persist the classified kind (same encoding the service writes), so the
-      // service/bloc writes are idempotent and resume re-localizes correctly.
-      final publishError = result is PublishError
-          ? result.toPersistedString()
-          : null;
-      await _persistPublishStatus(
-        draftId: event.draft.id,
-        status: PublishStatus.failed,
-        publishError: publishError,
-      );
+      return const PublishError(PublishErrorKind.generic);
     }
   }
 
@@ -313,6 +330,10 @@ class BackgroundPublishBloc
     emit(state.copyWith(uploads: [...state.uploads, failedUpload]));
   }
 
+  /// Reclaims a published draft: the publish copy, plus the draft it was
+  /// copied from. Sole owner of post-publish draft deletion — the publish
+  /// service intentionally leaves the draft in place (see
+  /// [VideoPublishService.publishVideo]).
   Future<void> _deletePublishedDrafts(DivineVideoDraft publishedDraft) async {
     await _deleteDraft(publishedDraft.id);
 

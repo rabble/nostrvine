@@ -173,6 +173,58 @@ void main() {
             ).called(1);
           },
         );
+
+        test('emits success before the draft cleanup completes', () async {
+          // Draft deletion reclaims files and rescans the clip table, so it
+          // must never sit in front of the success state — the video is
+          // already live by then (#6548).
+          final cleanupGate = Completer<void>();
+          var cleanupStarted = false;
+          var cleanupFinished = false;
+          when(() => mockDraftStorageService.deleteDraft(draftId)).thenAnswer((
+            _,
+          ) {
+            cleanupStarted = true;
+            return cleanupGate.future.then((_) => cleanupFinished = true);
+          });
+
+          final bloc = BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+          );
+          addTearDown(bloc.close);
+          // Registered after `bloc.close` so it runs before it — tear-downs
+          // are LIFO. Without it, an expectation failing below would skip the
+          // `complete()` at the end and park `close()` on a gate that never
+          // opens, turning a clear failure into a suite-wide timeout.
+          addTearDown(() {
+            if (!cleanupGate.isCompleted) cleanupGate.complete();
+          });
+
+          final states = <BackgroundPublishState>[];
+          final subscription = bloc.stream.listen(states.add);
+          addTearDown(subscription.cancel);
+
+          bloc.add(
+            BackgroundPublishRequested(
+              draft: draft,
+              publishmentProcess: Future.value(const PublishSuccess()),
+            ),
+          );
+          await pumpEventQueue();
+
+          // The deletion is still gated, yet the UI already sees the publish
+          // land: it is not waiting on garbage collection.
+          expect(states.last.recentlySucceededIds, contains(draftId));
+          expect(states.last.uploads, isEmpty);
+          expect(cleanupStarted, isTrue);
+          expect(cleanupFinished, isFalse);
+
+          // ...and the cleanup still runs to completion afterwards.
+          cleanupGate.complete();
+          await pumpEventQueue();
+          expect(cleanupFinished, isTrue);
+        });
       });
 
       group('when the upload is a failure', () {
@@ -946,6 +998,45 @@ void main() {
         ),
         verify: (_) {
           expect(session.beginCalls, [draftId]);
+          expect(session.endCalls, [draftId]);
+        },
+      );
+
+      test(
+        'holds the session open until the draft cleanup completes',
+        () async {
+          // Deleting the draft row is the only record that this publish
+          // finished, so it must stay inside the keep-alive window: losing the
+          // process first makes resume offer a retry for an already-live video.
+          final cleanupGate = Completer<void>();
+          when(
+            () => mockDraftStorageService.deleteDraft(draftId),
+          ).thenAnswer((_) => cleanupGate.future);
+
+          final bloc = BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+            draftStorageService: mockDraftStorageService,
+            foregroundSession: session,
+          );
+          addTearDown(bloc.close);
+          addTearDown(() {
+            if (!cleanupGate.isCompleted) cleanupGate.complete();
+          });
+
+          bloc.add(
+            BackgroundPublishRequested(
+              draft: draft,
+              publishmentProcess: Future.value(const PublishSuccess()),
+            ),
+          );
+          await pumpEventQueue();
+
+          expect(session.beginCalls, [draftId]);
+          expect(session.endCalls, isEmpty);
+
+          cleanupGate.complete();
+          await pumpEventQueue();
+
           expect(session.endCalls, [draftId]);
         },
       );
