@@ -552,6 +552,30 @@ class BlossomUploadService {
   /// The default Divine Blossom media server.
   static const String defaultBlossomServer = 'https://media.divine.video';
 
+  /// Combined wire budget for the `X-ProofMode-*` request headers.
+  ///
+  /// Measured against `media.divine.video`, combined request headers must
+  /// stay under 128 KiB over HTTP/1.1 (past it the edge answers 502) and
+  /// under 64 KiB over HTTP/2 (past it the connection is closed mid-request).
+  ///
+  /// An Android device attestation is the `X509Certificate.toString()` dump
+  /// of the whole cert chain, so its size varies per device, and it used to
+  /// travel twice — base64 inside `X-ProofMode-Manifest` and again in
+  /// `X-ProofMode-Attestation`. Past roughly 47.5 KB of raw attestation the
+  /// request crosses 128 KiB and every publish from that device fails, which
+  /// is why the failure looked sporadic rather than universal: a Pixel 8 Pro
+  /// produced 53,826 bytes and always failed, while shorter chains stayed
+  /// under the line and uploaded fine.
+  ///
+  /// 8 KiB leaves headroom for the auth header and keeps the request inside
+  /// the stricter 8 KB-per-header budget common to nginx-fronted Blossom
+  /// deployments too.
+  ///
+  /// Dropping an oversized header loses nothing: no Blossom server reads
+  /// these, and the canonical copy of the manifest is the `proofmode` tag on
+  /// the kind 34236 event.
+  static const int maxProofModeHeaderBytes = 8192;
+
   /// Maximum retries for a single chunk PUT before bubbling to the caller.
   static const int _maxChunkRetries = 2;
   static const Duration _chunkRetryDelay = Duration(seconds: 1);
@@ -2949,8 +2973,11 @@ class BlossomUploadService {
   /// Add ProofMode headers to upload request.
   ///
   /// Generates X-ProofMode-Manifest, X-ProofMode-Signature,
-  /// and X-ProofMode-Attestation headers from the provided
-  /// ProofManifest JSON.
+  /// X-ProofMode-PublicKey, X-ProofMode-Attestation and X-ProofMode-C2PA
+  /// headers from the provided ProofManifest JSON.
+  ///
+  /// Headers are attached best-effort within [maxProofModeHeaderBytes]. See
+  /// that constant for why an oversized proof is dropped instead of sent.
   void _addProofModeHeaders(
     Map<String, dynamic> headers,
     String proofManifestJson,
@@ -2958,33 +2985,49 @@ class BlossomUploadService {
     try {
       final manifestMap = jsonDecode(proofManifestJson) as Map<String, dynamic>;
 
-      // Base64 encode the full manifest
-      headers['X-ProofMode-Manifest'] = base64.encode(
-        utf8.encode(proofManifestJson),
-      );
+      // Ordered cheapest-and-most-identifying first, so a proof that busts the
+      // budget still carries the C2PA id and a verifiable signature/key pair.
+      final candidates = <String, String>{
+        if (manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id']
+            case final c2paManifestId?)
+          'X-ProofMode-C2PA': _encodeHeaderValue(c2paManifestId),
+        if (manifestMap['pgpSignature'] case final pgpSignature?)
+          'X-ProofMode-Signature': _encodeHeaderValue(pgpSignature),
+        // Paired with the signature: without the key the signature cannot be
+        // verified from headers alone.
+        if (manifestMap['publicKey'] case final publicKey?)
+          'X-ProofMode-PublicKey': _encodeHeaderValue(publicKey),
+        if (manifestMap['deviceAttestation'] case final deviceAttestation?)
+          'X-ProofMode-Attestation': _encodeHeaderValue(deviceAttestation),
+        'X-ProofMode-Manifest': base64.encode(utf8.encode(proofManifestJson)),
+      };
 
-      // Extract and encode signature if present
-      if (manifestMap['pgpSignature'] != null) {
-        headers['X-ProofMode-Signature'] = _encodeHeaderValue(
-          manifestMap['pgpSignature'],
+      var usedBytes = 0;
+      final dropped = <String>[];
+      for (final candidate in candidates.entries) {
+        // `name: value\r\n` is what actually counts against a proxy's budget.
+        final wireBytes = candidate.key.length + candidate.value.length + 4;
+        if (usedBytes + wireBytes > maxProofModeHeaderBytes) {
+          dropped.add('${candidate.key} (${candidate.value.length}B)');
+          continue;
+        }
+        usedBytes += wireBytes;
+        headers[candidate.key] = candidate.value;
+      }
+
+      if (dropped.isEmpty) {
+        Log.info(
+          'Added ProofMode headers to upload ($usedBytes bytes)',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
         );
+        return;
       }
 
-      // Extract and encode attestation if present
-      if (manifestMap['deviceAttestation'] != null) {
-        headers['X-ProofMode-Attestation'] = _encodeHeaderValue(
-          manifestMap['deviceAttestation'],
-        );
-      }
-
-      final c2paManifestId =
-          manifestMap['c2paManifestId'] ?? manifestMap['c2pa_manifest_id'];
-      if (c2paManifestId != null) {
-        headers['X-ProofMode-C2PA'] = _encodeHeaderValue(c2paManifestId);
-      }
-
-      Log.info(
-        'Added ProofMode headers to upload',
+      Log.warning(
+        'ProofMode headers over the $maxProofModeHeaderBytes byte budget; '
+        'sent $usedBytes bytes and dropped ${dropped.join(', ')}. '
+        'The full manifest still ships in the video event proofmode tag.',
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );

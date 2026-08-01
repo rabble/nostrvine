@@ -108,13 +108,46 @@ Optional request headers:
 
 - `X-ProofMode-Manifest`
 - `X-ProofMode-Signature`
+- `X-ProofMode-PublicKey`
 - `X-ProofMode-Attestation`
 - `X-ProofMode-C2PA`
+
+`X-ProofMode-PublicKey` carries the PGP public key matching
+`X-ProofMode-Signature`. The two travel together because a signature cannot be
+verified from headers alone without it; a server that sees one without the
+other must treat the signature as unverified rather than invalid.
 
 When present, these headers carry the same ProofMode metadata that legacy
 `PUT /upload` accepts. Clients should send them on `complete` so resumable
 uploads preserve the same server-side ProofMode handling without forcing the
 video bytes back onto the legacy single-request upload path.
+
+These headers are **supplementary and size-capped**. Servers must not treat
+them as the delivery mechanism for the proof: the canonical manifest is the
+`proofmode` tag on the kind 34236 event, and the C2PA manifest is embedded in
+the uploaded bytes. No Divine Blossom server reads them today.
+
+Clients must keep the combined `X-ProofMode-*` header size within a
+conservative budget — the mobile client uses 8 KiB
+(`BlossomUploadService.maxProofModeHeaderBytes`) — and drop headers that do
+not fit, cheapest-and-most-identifying first.
+
+Measured against `media.divine.video`, combined request headers must stay
+under **128 KiB over HTTP/1.1** (past it the edge answers 502) and under
+**64 KiB over HTTP/2** (past it the connection is closed mid-request).
+
+An uncapped client sends the device attestation twice — base64 inside
+`X-ProofMode-Manifest` and again in `X-ProofMode-Attestation` — so it crosses
+128 KiB once the raw attestation passes roughly 47.5 KB, and the upload
+carrying it then fails with an opaque 502, or with a connection reset while
+the body is still streaming on the legacy `PUT /upload` path. Android
+attestation size is the `X509Certificate.toString()` dump of the whole chain,
+so it varies by device *and* by capture — the client stores it per file hash,
+and only for captures where attestation succeeded. An uncapped client
+therefore fails on some devices, and on those devices only for some uploads.
+
+Any future proof payload that can exceed the budget must travel in the
+`complete` request body, not in a header.
 
 Example successful response:
 

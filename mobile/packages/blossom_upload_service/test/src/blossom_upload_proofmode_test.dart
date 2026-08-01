@@ -432,6 +432,125 @@ void main() {
           expect(headers, contains('X-ProofMode-C2PA'));
         },
       );
+
+      test(
+        'drops the bulk headers when an Android attestation busts the budget',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          // Field sizes taken from a real Android capture: an 821-byte PGP
+          // signature and a ~54 KB hardware attestation chain. The attestation
+          // used to ship twice (base64 in the manifest and again in its own
+          // header) for ~147 KB combined, past the 128 KiB that
+          // media.divine.video accepts over HTTP/1.1 before answering 502.
+          final realWorldSignature = 'S' * 821;
+          final realWorldPublicKey = 'K' * 2048;
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': realWorldSignature,
+            'publicKey': realWorldPublicKey,
+            'deviceAttestation': 'A' * 53826,
+            'c2pa_manifest_id': 'urn:c2pa:7ae319b2-8641-4eea-8203-a1faf72e31e4',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          // The identifying headers survive...
+          expect(headers, contains('X-ProofMode-C2PA'));
+          expect(headers, contains('X-ProofMode-Signature'));
+          expect(headers, contains('X-ProofMode-PublicKey'));
+          // ...the two that blow the budget do not.
+          expect(headers, isNot(contains('X-ProofMode-Attestation')));
+          expect(headers, isNot(contains('X-ProofMode-Manifest')));
+
+          // The signature and the key that verifies it both survive the budget
+          // intact, not merely present: truncating either one leaves a proof
+          // that cannot be checked from headers alone.
+          expect(
+            utf8.decode(
+              base64.decode(headers['X-ProofMode-Signature'] as String),
+            ),
+            equals(realWorldSignature),
+          );
+          expect(
+            utf8.decode(
+              base64.decode(headers['X-ProofMode-PublicKey'] as String),
+            ),
+            equals(realWorldPublicKey),
+          );
+        },
+      );
+
+      test(
+        'omits the public key header when the manifest has no publicKey',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final headers = capturedOptions!.headers!;
+          expect(headers, contains('X-ProofMode-Signature'));
+          expect(headers, isNot(contains('X-ProofMode-PublicKey')));
+        },
+      );
+
+      test(
+        'keeps every proof header inside the wire budget',
+        () async {
+          arrangeUploadMocks();
+          final mockFile = createMockFile();
+
+          final manifest = jsonEncode({
+            'videoHash': 'abc123',
+            'pgpSignature': _pgpSignatureString,
+            'deviceAttestation': 'A' * 54000,
+            'c2pa_manifest_id': 'c2pa-test-id',
+          });
+
+          await service.uploadVideo(
+            description: 'test',
+            videoFile: mockFile,
+            nostrPubkey: _testPubkey,
+            title: 'test',
+            hashtags: const [],
+            proofManifestJson: manifest,
+          );
+
+          final proofBytes = capturedOptions!.headers!.entries
+              .where((e) => e.key.startsWith('X-ProofMode-'))
+              .fold<int>(
+                0,
+                (sum, e) => sum + e.key.length + '${e.value}'.length + 4,
+              );
+
+          expect(
+            proofBytes,
+            lessThanOrEqualTo(BlossomUploadService.maxProofModeHeaderBytes),
+          );
+        },
+      );
     });
   });
 }

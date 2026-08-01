@@ -320,6 +320,39 @@ class VineRecordingController {
 
 ProofMode manifest is uploaded alongside video to Blossom server:
 
+> **The `X-ProofMode-*` headers are best-effort supplementary metadata, not the
+> delivery mechanism for the manifest.** The canonical copy is the `proofmode`
+> tag on the kind 34236 event, and the C2PA manifest is embedded in the video
+> bytes themselves. No Blossom server currently reads these headers.
+>
+> They are also hard-capped: `BlossomUploadService.maxProofModeHeaderBytes`
+> (8 KiB combined) governs what actually goes on the wire, cheapest-and-most-
+> identifying first (`X-ProofMode-C2PA`, then `-Signature`, `-PublicKey`,
+> `-Attestation`, `-Manifest`). `-Signature` and `-PublicKey` sit above the
+> bulk headers because a signature without its key cannot be verified from
+> headers alone. Measured against `media.divine.video`, combined request
+> headers must stay under **128 KiB over HTTP/1.1** (past it the edge answers
+> 502) and under **64 KiB over HTTP/2** (past it the connection is closed
+> mid-request).
+>
+> An Android device attestation is the `X509Certificate.toString()` dump of
+> the whole cert chain, so its size varies per device, and it used to travel
+> twice — base64 in `X-ProofMode-Manifest` and again in
+> `X-ProofMode-Attestation`. Past roughly **47.5 KB of raw attestation** the
+> request crosses 128 KiB and the publish carrying it fails. A Pixel 8 Pro
+> produced 53,826 bytes, shorter chains stayed under the line and uploaded
+> fine, and iOS ships a compact integrity token that never came close.
+>
+> The attestation is a **per-capture** artifact, not a device constant:
+> `readProofMetadata` reads `<proofDir>/<fileHash>.attest` for the file being
+> proofed, and that file only exists for captures where attestation actually
+> succeeded. One handset can therefore hold a clip with no attestation that
+> publishes fine and a 53,826-byte one that does not — a device failing *some*
+> publishes is the expected shape, not evidence against this diagnosis.
+>
+> Do not reintroduce an uncapped header here; put new proof payloads in a
+> request body.
+
 ```dart
 class BlossomUploadService {
   Future<UploadResult> uploadVideo({
