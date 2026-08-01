@@ -718,7 +718,9 @@ class DraftStorageService {
     final filenames = <String>{};
 
     for (final row in clipRows) {
-      if (row.draftId == excludeDraftId) continue;
+      // Guard the null: library clips carry a NULL draftId, so an unguarded
+      // comparison would drop exactly them when no draft is excluded.
+      if (excludeDraftId != null && row.draftId == excludeDraftId) continue;
       try {
         final data = json.decode(row.data) as Map<String, dynamic>;
         final ghostFramePath = data['ghostFramePath'] as String?;

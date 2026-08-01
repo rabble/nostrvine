@@ -2185,6 +2185,46 @@ void main() {
         );
       });
 
+      // The case above survives even a ghost-frame scan that returns nothing:
+      // `deleteGhostFrameFiles` then falls back to `deleteFileIfUnreferenced`,
+      // whose clip JSON scan also covers `ghostFramePath` and keeps the file.
+      // This one takes that backstop away, leaving the scan as the only
+      // protection — so a scan that drops library clips deletes the frame
+      // (#6581).
+      test('keeps a surviving library clip ghost frame when the indexed '
+          'reference backstop misses it', () async {
+        final ghost = writeGhost('ghost_backstop_blind.jpg');
+        final blindService = DraftStorageService(
+          draftsDao: database.draftsDao,
+          clipsDao: _BackstopBlindClipsDao(database),
+        );
+        final draft = draftWithGhost(
+          id: 'draft_backstop_blind',
+          ghostPath: ghost.path,
+        );
+        await blindService.saveDraft(draft);
+
+        await database.clipsDao.upsertClip(
+          id: 'library_clip_backstop_blind',
+          orderIndex: 0,
+          durationMs: 6000,
+          recordedAt: DateTime(2025),
+          data: json.encode({'ghostFramePath': 'ghost_backstop_blind.jpg'}),
+          filePath: null,
+          thumbnailPath: null,
+        );
+
+        await blindService.clearAllDrafts();
+
+        expect(
+          ghost.existsSync(),
+          isTrue,
+          reason:
+              'the ghost-frame scan must include library clips, whose draftId '
+              'is NULL, when no draft is excluded',
+        );
+      });
+
       test('still deletes the target ghost frame when a sibling clip row has a '
           'corrupt data blob', () async {
         final ghost = writeGhost('ghost_target.jpg');
@@ -2265,4 +2305,18 @@ void main() {
       });
     });
   });
+}
+
+/// A [ClipsDao] that never reports a filename as referenced, standing in for a
+/// clip-side reference check that no longer covers `ghostFramePath`.
+///
+/// `FileCleanupService` treats that check as a defensive backstop behind the
+/// caller-supplied ghost-frame set; removing it leaves that set as the only
+/// thing keeping a shared ghost file alive.
+class _BackstopBlindClipsDao extends ClipsDao {
+  _BackstopBlindClipsDao(super.attachedDatabase);
+
+  @override
+  Future<Set<String>> referencedFilenames(Set<String> filenames) async =>
+      const {};
 }
