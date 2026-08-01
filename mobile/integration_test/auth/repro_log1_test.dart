@@ -8,7 +8,6 @@
 // ABOUTME: Requires: local Docker stack (mise run local_up)
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
@@ -24,41 +23,11 @@ import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:patrol/patrol.dart';
 
+import '../helpers/invite_helpers.dart';
 import '../helpers/navigation_helpers.dart';
 import '../helpers/test_setup.dart';
 
 AppLocalizations get _en => lookupAppLocalizations(const Locale('en'));
-
-/// Invites the server grants an identity on its first authenticated
-/// `GET /v1/invite-status` (`initial_allocation_count`, default 10).
-const _initialInviteAllocation = 10;
-
-/// Reads the app-wide invite status straight out of the running app.
-InviteStatusState _inviteState(WidgetTester tester) =>
-    tester.element(find.byType(MaterialApp)).read<InviteStatusCubit>().state;
-
-/// Pump until the invite status cubit holds a server response.
-///
-/// The cubit loads on its own once the signer is ready, so this only waits;
-/// it never triggers the fetch, which is the behaviour under test.
-Future<InviteStatusState> _waitForLoadedInviteStatus(
-  WidgetTester tester, {
-  int maxSeconds = 45,
-}) async {
-  final iterations = maxSeconds * 4;
-  var last = _inviteState(tester);
-  for (var i = 0; i < iterations; i++) {
-    await tester.pump(const Duration(milliseconds: 250));
-    last = _inviteState(tester);
-    if (last.status == InviteStatusLoadingStatus.loaded) return last;
-  }
-  fail(
-    'Invite status never loaded within ${maxSeconds}s '
-    '(last status: ${last.status}, signerReady: ${last.isSignerReady}). '
-    'The invite server should answer the first authenticated '
-    'GET /v1/invite-status for a locally generated identity.',
-  );
-}
 
 void main() {
   group('Bug 2233 Repro Log 1 pubkey-nsec mismatch', () {
@@ -116,7 +85,7 @@ void main() {
         // user nothing while they in fact hold 10 invites.
         // ════════════════════════════════════════════════════════════
 
-        final granted = await _waitForLoadedInviteStatus(tester);
+        final granted = await waitForLoadedInviteStatus(tester);
         final grantedStatus = granted.inviteStatus!;
 
         expect(
@@ -128,10 +97,10 @@ void main() {
               'shows the allocation',
         );
         expect(grantedStatus.canInvite, isTrue);
-        expect(grantedStatus.remaining, _initialInviteAllocation);
-        expect(grantedStatus.total, _initialInviteAllocation);
+        expect(grantedStatus.remaining, initialInviteAllocation);
+        expect(grantedStatus.total, initialInviteAllocation);
         // Nothing minted yet, so the whole allocation is still generatable.
-        expect(grantedStatus.mintableCount, _initialInviteAllocation);
+        expect(grantedStatus.mintableCount, initialInviteAllocation);
 
         logPhase(
           'Phase 1b: invite status loaded — '
@@ -202,10 +171,10 @@ void main() {
         // ── Generating mints a shareable code ──
         await tester.tap(find.text(_en.invitesGenerateButtonLabel));
 
-        var generated = _inviteState(tester);
+        var generated = inviteState(tester);
         for (var i = 0; i < 120; i++) {
           await tester.pump(const Duration(milliseconds: 500));
-          generated = _inviteState(tester);
+          generated = inviteState(tester);
           if (generated.status == InviteStatusLoadingStatus.loaded &&
               generated.hasUnclaimedCodes) {
             break;
@@ -230,12 +199,12 @@ void main() {
         // `remaining` counts unminted entitlement plus minted-but-unclaimed
         // codes, so minting one moves a code into the share list without
         // spending the allocation — nothing is consumed until someone joins.
-        expect(generatedStatus.remaining, _initialInviteAllocation);
-        expect(generatedStatus.total, _initialInviteAllocation);
+        expect(generatedStatus.remaining, initialInviteAllocation);
+        expect(generatedStatus.total, initialInviteAllocation);
         // The mintable count DOES fall: one of the ten has been created. The
         // card must follow this number, not `remaining`, or it keeps offering a
         // button the server rejects once all ten exist.
-        expect(generatedStatus.mintableCount, _initialInviteAllocation - 1);
+        expect(generatedStatus.mintableCount, initialInviteAllocation - 1);
 
         expect(find.text(_en.invitesShareWithPeople), findsOneWidget);
         expect(find.text(generatedCode), findsOneWidget);
