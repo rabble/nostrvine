@@ -115,9 +115,14 @@ class DatabaseEncryptionBootstrap {
   /// populated plaintext database could not be migrated this launch (the
   /// migration left it intact and retries on the next launch).
   ///
-  /// Throws [StateError] when SQLite3MultipleCiphers is not the active SQLite
-  /// build — a build misconfiguration that must fail loudly rather than
-  /// silently ship an unencrypted database.
+  /// Throws:
+  ///
+  /// * [DatabaseCipherUnavailableError] when SQLite3MultipleCiphers is not the
+  ///   active SQLite build — a build misconfiguration that must fail loudly
+  ///   rather than silently ship an unencrypted database.
+  /// * [DatabaseCipherStorageUnavailableException] when the keystore holding
+  ///   the cipher key cannot be read or written, most often a launch before
+  ///   the device's first unlock.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -203,10 +208,7 @@ class DatabaseEncryptionBootstrap {
           );
         }
         final replacementKey = generateCipherKeyHex();
-        await _secureStorage.write(
-          key: dbCipherKeyStorageKey,
-          value: replacementKey,
-        );
+        await _writeCipherKey(replacementKey);
         return (
           await _recoverUnusableEncryptedDatabase(
             replacementKey,
@@ -230,14 +232,42 @@ class DatabaseEncryptionBootstrap {
   }
 
   Future<(String, bool)> _readOrCreateKey() async {
-    final existing = await _secureStorage.read(key: dbCipherKeyStorageKey);
+    final existing = await _readCipherKey();
     if (existing != null && _isValidCipherKey(existing)) {
       return (existing, false);
     }
 
     final key = generateCipherKeyHex();
-    await _secureStorage.write(key: dbCipherKeyStorageKey, value: key);
+    await _writeCipherKey(key);
     return (key, true);
+  }
+
+  /// Reads the stored cipher key, translating a platform secure-storage
+  /// failure into [DatabaseCipherStorageUnavailableException].
+  ///
+  /// Rethrows rather than degrading a failed read into "no key stored": the
+  /// caller would generate a replacement and overwrite the only key that can
+  /// open the existing database.
+  Future<String?> _readCipherKey() async {
+    try {
+      return await _secureStorage.read(key: dbCipherKeyStorageKey);
+    } on Object catch (error, stack) {
+      Error.throwWithStackTrace(
+        DatabaseCipherStorageUnavailableException(error),
+        stack,
+      );
+    }
+  }
+
+  Future<void> _writeCipherKey(String key) async {
+    try {
+      await _secureStorage.write(key: dbCipherKeyStorageKey, value: key);
+    } on Object catch (error, stack) {
+      Error.throwWithStackTrace(
+        DatabaseCipherStorageUnavailableException(error),
+        stack,
+      );
+    }
   }
 
   Future<String> _recoverUnusableEncryptedDatabase(
@@ -285,6 +315,30 @@ class DatabaseRecoveryEvent implements Exception {
 
   @override
   String toString() => 'DatabaseRecoveryEvent: $reason';
+}
+
+/// Thrown when the platform secure storage holding the DB cipher key cannot be
+/// read or written during startup.
+///
+/// The key material is intact and only unreachable right now. The common cause
+/// is a launch while the device is still locked — a push or background fetch
+/// before the first unlock after boot — where the Keychain refuses the read.
+///
+/// Distinct from a corrupt or key-mismatched database, and deliberately NOT
+/// repairable by clearing the local cache: that path deletes the cipher key
+/// this error merely failed to reach, turning a transient lock into permanent
+/// data loss. See [shouldRepairLocalDatabaseCacheAfterBootstrapError].
+class DatabaseCipherStorageUnavailableException implements Exception {
+  DatabaseCipherStorageUnavailableException(this.cause);
+
+  /// The underlying platform failure, typically a `PlatformException` raised by
+  /// `flutter_secure_storage`.
+  final Object cause;
+
+  @override
+  String toString() =>
+      'DatabaseCipherStorageUnavailableException: '
+      'secure storage is unavailable ($cause)';
 }
 
 class DatabaseCipherUnavailableError extends StateError {
@@ -335,6 +389,9 @@ const _sqliteNotADb = 26;
 /// unusable.
 bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
   if (error is DatabaseCipherUnavailableError) return false;
+  // The database is fine; only the keystore holding its key was unreachable.
+  // Repairing would delete that key and strand a recoverable database.
+  if (error is DatabaseCipherStorageUnavailableException) return false;
 
   final message = error.toString();
   return message.contains('SqliteException($_sqliteNotADb)') ||

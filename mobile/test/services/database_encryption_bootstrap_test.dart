@@ -1,4 +1,5 @@
 import 'package:db_client/db_client.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -96,6 +97,50 @@ void main() {
         throwsA(isA<DatabaseCipherUnavailableError>()),
       );
     });
+
+    test(
+      'surfaces an unreachable keystore as '
+      'DatabaseCipherStorageUnavailableException without rotating the key',
+      () async {
+        // What flutter_secure_storage raises when the Keychain refuses a read
+        // because the device is still locked: a status code, no prose.
+        final platformFailure = PlatformException(
+          code: 'Unexpected security result code',
+          message: 'Code: -25308, Message: User interaction is not allowed.',
+        );
+        when(
+          () => storage.read(key: any(named: 'key')),
+        ).thenThrow(platformFailure);
+        final bootstrap = buildBootstrap(
+          outcome: CipherMigrationOutcome.noDatabase,
+          onDelete: () {},
+        );
+
+        await expectLater(
+          bootstrap.resolveCipherKey(),
+          throwsA(
+            isA<DatabaseCipherStorageUnavailableException>().having(
+              (e) => e.cause,
+              'cause',
+              same(platformFailure),
+            ),
+          ),
+        );
+        verifyNever(
+          () => storage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        );
+        expect(
+          store,
+          isEmpty,
+          reason:
+              'a failed read must not be read as "no key stored" — that '
+              'would overwrite the only key that opens the existing database',
+        );
+      },
+    );
 
     test(
       'generates and persists a key on fresh install (noDatabase)',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
@@ -174,7 +175,9 @@ void main() {
         Widget? renderedApp;
         var attempts = 0;
         var repaired = false;
-        final error = StateError('secure storage unavailable before unlock');
+        final error = DatabaseCipherStorageUnavailableException(
+          _lockedKeychainFailure(),
+        );
 
         final result = await resolveDatabaseBootstrapForAppStart(
           resolveCipherKey: () async {
@@ -244,7 +247,9 @@ void main() {
 
       await tester.pumpWidget(
         DatabaseBootstrapFailureApp(
-          error: StateError('secure storage unavailable'),
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
           stack: StackTrace.current,
           onCloseApp: () => closed = true,
         ),
@@ -255,7 +260,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Restart Divine'), findsOneWidget);
-      expect(find.textContaining('Diagnostic:'), findsOneWidget);
+      // The rendered code is what a support report is triaged from, so pin the
+      // value rather than just the label.
+      expect(find.text('Diagnostic: db-secure-storage'), findsOneWidget);
 
       await tester.tap(find.text('close Divine'));
       expect(closed, isTrue);
@@ -267,6 +274,34 @@ void main() {
           DatabaseCipherUnavailableError(),
         ),
         equals('db-cipher-unavailable'),
+      );
+    });
+
+    test('classifies an unreachable keystore as a secure-storage failure', () {
+      expect(
+        databaseBootstrapDiagnosticCode(
+          DatabaseCipherStorageUnavailableException(_lockedKeychainFailure()),
+        ),
+        equals('db-secure-storage'),
+      );
+    });
+
+    test('classifies a key that no longer opens the database', () {
+      expect(
+        databaseBootstrapDiagnosticCode(
+          SqliteException(
+            extendedResultCode: 26,
+            message: 'file is not a database',
+          ),
+        ),
+        equals('db-cipher-mismatch'),
+      );
+    });
+
+    test('falls back to the catch-all for unrecognized failures', () {
+      expect(
+        databaseBootstrapDiagnosticCode(StateError('something else entirely')),
+        equals('db-bootstrap-failed'),
       );
     });
   });
@@ -300,12 +335,23 @@ void main() {
         ),
         isFalse,
       );
+      // Repairing deletes the cipher key. The database behind a locked keychain
+      // is intact, so clearing it would turn a restart-and-retry into
+      // permanent loss of every local-only draft and clip.
       expect(
         shouldRepairLocalDatabaseCacheAfterBootstrapError(
-          StateError('secure storage unavailable before unlock'),
+          DatabaseCipherStorageUnavailableException(_lockedKeychainFailure()),
         ),
         isFalse,
       );
     });
   });
 }
+
+/// What `flutter_secure_storage` raises when the Keychain refuses a read on a
+/// still-locked device: a platform status code and no prose, which is why
+/// classifying this case by message never matched.
+PlatformException _lockedKeychainFailure() => PlatformException(
+  code: 'Unexpected security result code',
+  message: 'Code: -25308, Message: User interaction is not allowed.',
+);

@@ -141,18 +141,26 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   }
 }
 
+/// Classifies a bootstrap failure into the short code shown on the screen, so
+/// a support report identifies the cause without a stack trace.
+///
+/// Match on error TYPE wherever the bootstrap owns the throw. The
+/// secure-storage case used to be detected by looking for `secure storage` in
+/// the message, which no error ever contains: `flutter_secure_storage` raises
+/// a `PlatformException` carrying a platform status code. Every locked-keychain
+/// failure was therefore reported as the `db-bootstrap-failed` catch-all —
+/// the one code that tells a reader nothing.
 String databaseBootstrapDiagnosticCode(Object error) {
   if (error is DatabaseCipherUnavailableError) {
     return 'db-cipher-unavailable';
   }
+  if (error is DatabaseCipherStorageUnavailableException) {
+    return 'db-secure-storage';
+  }
 
   final message = error.toString();
-  if (message.contains('SQLCipher is not linked') ||
-      message.contains('SQLite3MultipleCiphers is not active')) {
+  if (message.contains('SQLite3MultipleCiphers is not active')) {
     return 'db-cipher-unavailable';
-  }
-  if (message.contains('secure storage')) {
-    return 'db-secure-storage';
   }
   if (message.contains('SQLITE_NOTADB') || message.contains('not a database')) {
     return 'db-cipher-mismatch';
