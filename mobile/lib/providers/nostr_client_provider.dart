@@ -755,13 +755,31 @@ class NostrService extends _$NostrService {
   /// so we self-publish a minimal relay list on the user's behalf. Used at
   /// both initial-build and account-switch sites so the publish path stays
   /// in one place. See divine-mobile#3174 / keycast#94.
+  /// Awaits a real relay acceptance rather than a socket write.
+  ///
+  /// The caller records a one-shot "already bootstrapped" flag when this
+  /// returns true and otherwise retries on the next login, so reporting a
+  /// frame-accept as published permanently strands a user whose relay list
+  /// every indexer silently dropped: discovery keeps missing, and the device
+  /// stays pinned to the fallback relay set forever.
+  ///
+  /// One indexer is enough — discovery queries them all and merges the
+  /// results, so the list only has to be findable somewhere.
   static BootstrapRelayListCallback _bootstrapCallbackFor(NostrClient client) {
     return (event, targetRelays) async {
-      final published = await client.publishEvent(
+      final outcome = await client.publishEventAwaitOk(
         event,
         targetRelays: targetRelays,
       );
-      return published is PublishSuccess;
+      if (!outcome.acceptedByAny) {
+        Log.warning(
+          '[NostrService] Bootstrap kind:10002 not accepted: '
+          '${outcome.summary}',
+          name: 'NostrService',
+          category: LogCategory.system,
+        );
+      }
+      return outcome.acceptedByAny;
     };
   }
 }
