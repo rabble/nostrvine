@@ -79,14 +79,19 @@ preflight_ports() {
     # port -> container name / owning compose project (empty if standalone)
     local -A port_container=() port_project=()
     local name proj portspec host_port
-    while IFS=$'\t' read -r name proj portspec; do
+    # `|` rather than tab: tab is IFS whitespace, so bash collapses a run of
+    # them and an empty middle field disappears. A standalone container has no
+    # compose-project label, which is exactly the stale-container case this
+    # check exists to catch — with tabs its ports column shifts into `proj`
+    # and the container is misreported as an anonymous host process.
+    while IFS='|' read -r name proj portspec; do
         [[ -n "$name" ]] || continue
         while read -r host_port; do
             [[ -n "$host_port" ]] || continue
             port_container["$host_port"]="$name"
             port_project["$host_port"]="$proj"
         done < <(grep -oE ':[0-9]+->' <<<"$portspec" | tr -d ':>-')
-    done < <(docker ps --format '{{.Names}}	{{.Label "com.docker.compose.project"}}	{{.Ports}}' 2>/dev/null)
+    done < <(docker ps --format '{{.Names}}|{{.Label "com.docker.compose.project"}}|{{.Ports}}' 2>/dev/null)
 
     local service conflicts=0 holder holder_project
     while read -r service port; do
@@ -185,7 +190,8 @@ stack_failure_report() {
         echo ""
 
         local service state exit_code
-        while IFS=$'\t' read -r service state exit_code; do
+        # `|` for the same reason as above: an empty middle field survives.
+        while IFS='|' read -r service state exit_code; do
             [[ -n "$service" ]] || continue
             [[ "$state" == "running" ]] && continue
             # One-shot services (migrations, seeding) legitimately exit 0.
@@ -200,7 +206,7 @@ stack_failure_report() {
                 echo "    (no output — the container never started)"
             fi
             echo ""
-        done < <(docker compose -f "$compose_file" ps -a --format '{{.Service}}	{{.State}}	{{.ExitCode}}' "$@" 2>/dev/null)
+        done < <(docker compose -f "$compose_file" ps -a --format '{{.Service}}|{{.State}}|{{.ExitCode}}' "$@" 2>/dev/null)
 
         echo "A service being down does NOT block tests that never call it."
         echo "profile.sh skips the local_up gate and runs patrol directly:"
