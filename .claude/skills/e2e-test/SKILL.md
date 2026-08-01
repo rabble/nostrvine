@@ -5,7 +5,7 @@ description: |
   app against a local Docker backend (no mocks). Use when running
   E2E tests, debugging failures, or working on the local harness.
 author: Claude Code
-version: 1.1.0
+version: 1.2.0
 ---
 
 # E2E Integration Testing
@@ -43,6 +43,22 @@ lose the timeline and the diagnostics.
 | FunnelCake API | 43001 | REST API |
 | Blossom | 43003 | Media server |
 | Postgres | 15432 | Keycast DB |
+| Invite | 43004 | divine-invite-darshan (Viceroy) |
+
+The app reaches these at `10.0.2.2` from the emulator. Cleartext to
+loopback hosts is permitted in every build type on both platforms.
+
+### Only start what your flow needs
+
+Most services are irrelevant to any given test, and `local_up`
+failing on one does not mean you are blocked. An invite-only flow
+needs `invite` alone: a locally-generated nsec signs on-device, so
+no Keycast, and `onboarding_mode=open` means no invite gate. Check
+what is actually healthy before debugging a service you never call:
+
+```bash
+docker compose -f local_stack/docker-compose.yml ps
+```
 
 ```bash
 mise run local_up         # Start (auto-runs local_setup on fresh worktrees)
@@ -58,6 +74,73 @@ bypass the seed:
 
 ```bash
 bash ../local_stack/profile.sh integration_test/<your_test>.dart
+```
+
+Any `local_up` failure prints the per-service status, the logs of
+whatever is down, and that same bypass command. Set `E2E_TEST_PATH`
+before the run and it prints the command for *your* test:
+
+```bash
+E2E_TEST_PATH=integration_test/auth/auth_journey_test.dart mise run local_up
+```
+
+### Port conflicts
+
+`up.sh` pre-flights every host port in `docker-compose.yml` before
+starting anything. This machine runs several compose projects, and
+stale test containers days old are the normal case, so collisions
+are routine. The check names the service, the port, and the holder:
+
+```
+  port 43000  wanted by service "keycast"
+            held by container "funnelcake-test-clickhouse-sim" — compose project "funnelcake-test"
+            remedy: docker rm -f funnelcake-test-clickhouse-sim
+
+  port 45173  wanted by service "keycast"
+            held by a host process (not a container), listening on: 127.0.0.1:45173
+            find it: ss -ltnp "sport = :45173"   (or: sudo lsof -iTCP:45173 -sTCP:LISTEN)
+```
+
+Ports already published by our own containers are not conflicts —
+`up.sh` is idempotent. The raw daemon error it replaces (`Bind for
+0.0.0.0:16380 failed: port is already allocated`) named neither the
+service nor the holder.
+
+### Startup races
+
+Containers sometimes start before Docker's embedded DNS knows a
+dependency's alias: `funnelcake-migrate` dies with `dial tcp: lookup
+funnelcake-clickhouse on 127.0.0.11:53: no such host`, or `keycast`
+burns its DB connection attempts on `Temporary failure in name
+resolution`. Both succeed on an unchanged retry. `up.sh` re-runs the
+whole `up` (idempotent — it restarts whatever died) up to 3 attempts,
+5s apart, **only** when it sees a name-resolution signature in the
+compose output or in the failed containers' logs. A port clash or a
+bad image fails straight through rather than retrying pointlessly.
+
+### Running a locally built backend
+
+Compose pulls `ghcr.io/divinevideo/divine-invite-darshan:e2e`. To
+test an unmerged backend branch, build it and tag it as that name so
+compose uses the local image without pulling:
+
+```bash
+docker build -f Dockerfile.local -t divine-invite-darshan:local .
+docker tag divine-invite-darshan:local ghcr.io/divinevideo/divine-invite-darshan:e2e
+```
+
+`invite` is one of the few services without `pull_policy: always`, so
+a plain `mise run local_up` keeps your tag. Use `local_up_cached` if
+you have overridden a service that *does* pull on every start.
+
+### Cross-repo gotcha: `kv-store-data.json`
+
+The invite service (`divine-invite-darshan`) reads a gitignored
+`kv-store-data.json`. A **fresh worktree of that repo does not have
+it**, and without it the entire invite-service suite fails. Seed it:
+
+```bash
+printf '{}' > kv-store-data.json
 ```
 
 ## Emulator
@@ -77,6 +160,19 @@ Stale-state debugging cost is yours.
 
 Buffer auth-flow logs: `adb logcat -G 16M` (default 256 KB rotates
 mid-flow).
+
+### Storage exhaustion
+
+Not just a Patrol problem — `flutter run` hits it too, and the error
+is on the install, not the build:
+
+```
+java.io.IOException: Requested internal only, but not enough space
+```
+
+A debug APK is ~289 MB and needs real headroom on top of that.
+`adb shell pm trim-caches 1G` often does not free enough; `mise run
+emulator_wipe` (`emulator.sh --wipe`) is usually the faster fix.
 
 ## Patterns
 
@@ -134,6 +230,16 @@ Patrol bundles every file in a target dir into one APK. When file B
 runs, file A shows up as "not requested" `[E]` markers in logcat.
 Trust only the final `✅`/`❌` lines.
 
+### NIP-98 URL binding
+
+The invite service rejects a signed request whose `u` tag does not
+match the URL the server saw: `auth_invalid_binding`, HTTP 401. The
+client must sign the **same base URL it calls**. Signing
+`http://10.0.2.2:43004` while calling `http://localhost:43004` fails;
+signing and calling the same host works. If you switch the emulator
+between `10.0.2.2` and a forwarded `localhost`, switch the signing
+base URL with it.
+
 ### Provider error caching
 
 Providers using `requireIdentity` (or similar non-nullable getters)
@@ -161,6 +267,18 @@ Material(color: Colors.transparent, child: TextField(...))
 
 ## Debugging
 
+### Never pipe a long-running command through `tail`/`head`
+
+```bash
+flutter run ... | tail -40      # WRONG
+flutter run ... > /tmp/run.log 2>&1   # then read/grep the file
+```
+
+Two separate failures. The pipe buffers until the command exits, so
+you watch a blank screen and lose everything if you kill it. And the
+pipeline's exit status is `tail`'s, so a failed run reports success.
+Redirect to a file and read that instead.
+
 ```bash
 # Service logs
 docker compose -f local_stack/docker-compose.yml logs keycast --tail=50
@@ -171,6 +289,16 @@ adb logcat -d | grep 'flutter.*\[AUTH\]' | grep -v 'Router redirect'
 
 # Last merged timeline
 ls mobile/test_reports/*.jsonl
+```
+
+The timeline is where cross-service failures actually show up. A test
+can fail in **teardown** from an unhandled async error against a service
+that is down — Patrol's summary only says the test failed, while the
+timeline names the URL that was refused. Read it before writing a
+failure off as flaky.
+
+```bash
+rg -o '.{0,60}logout.{0,50}' mobile/test_reports/<run>.jsonl
 ```
 
 If patrol reports `Total: 0` with Gradle exit 1, the runner
