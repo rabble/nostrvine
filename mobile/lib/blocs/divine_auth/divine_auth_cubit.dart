@@ -359,6 +359,11 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         category: LogCategory.auth,
       );
 
+      // Same close-mid-flight race as skipWithAnonymousAccount: the sign-in
+      // above flips AuthService to `authenticated` before returning, which
+      // can reroute off the auth screen and close this cubit.
+      if (isClosed) return;
+
       emit(const DivineAuthSuccess());
     } on InviteApiException catch (e, stackTrace) {
       await _authService.clearPendingDivineOAuthSession();
@@ -372,7 +377,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final current = state;
-      if (current is DivineAuthFormState) {
+      if (!isClosed && current is DivineAuthFormState) {
         emit(
           current.copyWith(
             isSubmitting: false,
@@ -393,7 +398,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final current = state;
-      if (current is DivineAuthFormState) {
+      if (!isClosed && current is DivineAuthFormState) {
         emit(current.copyWith(isSubmitting: false, generalError: e.message));
       }
     } catch (e, stackTrace) {
@@ -407,7 +412,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final current = state;
-      if (current is DivineAuthFormState) {
+      if (!isClosed && current is DivineAuthFormState) {
         emit(
           current.copyWith(
             isSubmitting: false,
