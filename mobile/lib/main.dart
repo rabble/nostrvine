@@ -1382,6 +1382,20 @@ Future<void> _startOpenVineApp() async {
     ),
   );
 
+  // Both the automatic repair and the manual escape hatch below mean the same
+  // operation, so they share one definition and cannot drift apart. They differ
+  // only in whether the cipher key goes with the database.
+  Future<void> resetLocalDatabaseCache({required bool deleteCipherKey}) =>
+      resetEncryptedDatabaseCache(
+        secureStorage: dbCipherSecureStorage,
+        deleteCipherKey: deleteCipherKey,
+        // On the recreate the Drift DB is wiped but SharedPreferences survives;
+        // clear the DM sync state so the next inbox open runs a full re-drain
+        // instead of skipping it as "already complete" (which had left
+        // recovered chats stranded under "Message requests"). See #5304.
+        onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
+      );
+
   final dbCipherKeyResult = await resolveDatabaseBootstrapForAppStart(
     resolveCipherKey: () => resolveStartupDatabaseCipherKey(
       // resetOnError MUST stay false here: the cipher key is the one secret
@@ -1413,21 +1427,34 @@ Future<void> _startOpenVineApp() async {
       // would open an existing encrypted DB as plaintext and spam SQLITE_NOTADB.
       recordError: recordDatabaseBootstrapFailure,
     ),
-    repairLocalDatabaseCache: (error, stack) => resetEncryptedDatabaseCache(
-      secureStorage: dbCipherSecureStorage,
-      onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
-    ),
+    repairLocalDatabaseCache: (error, stack) =>
+        resetLocalDatabaseCache(deleteCipherKey: true),
     shouldRepairLocalDatabaseCache:
         shouldRepairLocalDatabaseCacheAfterBootstrapError,
     // Manual escape hatch behind a confirmation, offered only for diagnoses
-    // where the database is already unusable. It clears the DB and its cipher
-    // key but not the signing key, so it costs local-only drafts and clips
-    // while an uninstall — the alternative a stuck user is left with — takes
-    // the whole Android keystore and the account with it.
-    resetLocalDatabase: () => resetEncryptedDatabaseCache(
-      secureStorage: dbCipherSecureStorage,
-      onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
-    ),
+    // where the database is unusable. It clears the DB but not the signing key,
+    // so it costs local-only drafts and clips while an uninstall — the
+    // alternative a stuck user is left with — takes the whole Android keystore
+    // and the account with it.
+    //
+    // The cipher key stays: the diagnoses that reach this button cannot prove
+    // it is stale, and it is the only thing that can still read the backup this
+    // reset leaves behind. Keeping it also means the reset never touches the
+    // keystore, which may itself be why the user is on that screen.
+    resetLocalDatabase: () async {
+      try {
+        await resetLocalDatabaseCache(deleteCipherKey: false);
+      } catch (error, stack) {
+        // The screen keeps the user on it and says the reset failed; without
+        // this the only report of a failed recovery would be that sentence.
+        await CrashReportingService.instance.recordError(
+          error,
+          stack,
+          reason: 'Manual local database reset from the bootstrap failure app',
+        );
+        rethrow;
+      }
+    },
     runApp: runApp,
     removeNativeSplash: FlutterNativeSplash.remove,
   );

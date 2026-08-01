@@ -122,7 +122,8 @@ class DatabaseEncryptionBootstrap {
   ///   rather than silently ship an unencrypted database.
   /// * [DatabaseCipherStorageUnavailableException] when the keystore holding
   ///   the cipher key cannot be read or written, most often a launch before
-  ///   the device's first unlock.
+  ///   the device's first unlock. Raised by the Keychain backends only — see
+  ///   the platform note on that class.
   ///
   /// Must run before the first `AppDatabase` open.
   Future<String?> resolveCipherKey() async {
@@ -247,7 +248,9 @@ class DatabaseEncryptionBootstrap {
   ///
   /// Rethrows rather than degrading a failed read into "no key stored": the
   /// caller would generate a replacement and overwrite the only key that can
-  /// open the existing database.
+  /// open the existing database. Covers failures that surface as a thrown
+  /// platform error — see the platform note on
+  /// [DatabaseCipherStorageUnavailableException].
   Future<String?> _readCipherKey() async {
     try {
       return await _secureStorage.read(key: dbCipherKeyStorageKey);
@@ -328,6 +331,12 @@ class DatabaseRecoveryEvent implements Exception {
 /// repairable by clearing the local cache: that path deletes the cipher key
 /// this error merely failed to reach, turning a transient lock into permanent
 /// data loss. See [shouldRepairLocalDatabaseCacheAfterBootstrapError].
+///
+/// Platform note: only the Keychain backends (iOS, macOS) surface the failure
+/// as a throw and therefore reach this type. Android's
+/// `encryptedSharedPreferences` backend falls back to plaintext preferences
+/// when the keystore cannot be initialised and reads back `null`, which this
+/// bootstrap cannot tell apart from a fresh install.
 class DatabaseCipherStorageUnavailableException implements Exception {
   DatabaseCipherStorageUnavailableException(this.cause);
 
@@ -402,15 +411,24 @@ bool shouldRepairLocalDatabaseCacheAfterBootstrapError(Object error) {
       message.contains('file is not a database');
 }
 
-/// Backs up the encrypted local database cache and removes only its DB cipher
-/// key so the next bootstrap creates a fresh encrypted cache.
+/// Backs up the encrypted local database cache so the next bootstrap creates a
+/// fresh one.
+///
+/// [deleteCipherKey] additionally removes the DB cipher key (and nothing else
+/// from the keystore). Pass `false` when the caller cannot prove the stored key
+/// is stale: the backup this call leaves behind is encrypted under that key, so
+/// deleting it makes the backup permanently unreadable — while a retained key
+/// opens a fresh database just as well as a rotated one.
 Future<void> resetEncryptedDatabaseCache({
   required FlutterSecureStorage secureStorage,
+  bool deleteCipherKey = true,
   Future<void> Function()? deleteDatabase,
   Future<void> Function()? onDatabaseReset,
 }) async {
   await (deleteDatabase ?? backUpAndRemoveSharedDatabase)();
-  await secureStorage.delete(key: dbCipherKeyStorageKey);
+  if (deleteCipherKey) {
+    await secureStorage.delete(key: dbCipherKeyStorageKey);
+  }
   await _runPostDatabaseReset(onDatabaseReset);
 }
 

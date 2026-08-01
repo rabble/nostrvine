@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -354,6 +356,29 @@ void main() {
       expect(find.text('reset local database'), findsNothing);
     });
 
+    testWidgets('drops the unlock-and-restart advice when a reset is offered', (
+      tester,
+    ) async {
+      // Telling the user to restart after unlocking is the fix for the
+      // keystore case only, and misleading next to a reset button.
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async {},
+        ),
+      );
+
+      expect(
+        find.textContaining('Restart Divine after unlocking'),
+        findsNothing,
+      );
+      expect(
+        find.textContaining("A restart won't fix this one"),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('resets and closes once the user confirms', (tester) async {
       var resets = 0;
       var closed = false;
@@ -426,6 +451,95 @@ void main() {
         closed,
         isFalse,
         reason: 'closing would claim a reset that never happened',
+      );
+    });
+
+    testWidgets('lands on a terminal step when the app cannot close itself', (
+      tester,
+    ) async {
+      // SystemNavigator.pop cannot end the process on iOS, so without this
+      // step a successful reset leaves a spinner behind two disabled buttons.
+      var closes = 0;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onCloseApp: () => closes++,
+          onResetLocalDatabase: () async {},
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(find.text('local database reset'), findsOneWidget);
+      expect(find.text('reset and close'), findsNothing);
+      expect(closes, equals(1));
+
+      await tester.tap(find.text('close Divine'));
+      expect(
+        closes,
+        equals(2),
+        reason: 'the terminal step still needs a live way out',
+      );
+    });
+
+    testWidgets('reports a reset that hangs instead of spinning forever', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () => Completer<void>().future,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump(const Duration(seconds: 16));
+
+      expect(find.textContaining("That didn't work"), findsOneWidget);
+
+      await tester.tap(find.text('cancel'));
+      await tester.pump();
+      expect(
+        find.text("couldn't unlock your local database"),
+        findsOneWidget,
+        reason: 'a wedged platform call must not disable the way back',
+      );
+    });
+
+    testWidgets('drops a stale failure banner when the step is re-entered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async => throw StateError('nope'),
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+      expect(find.textContaining("That didn't work"), findsOneWidget);
+
+      await tester.tap(find.text('cancel'));
+      await tester.pump();
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+
+      expect(
+        find.textContaining("That didn't work"),
+        findsNothing,
+        reason: 'the banner belongs to an attempt, not to the step',
       );
     });
   });

@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter/services.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 
@@ -82,6 +83,22 @@ const _diagnosticStyle = TextStyle(
   decoration: TextDecoration.none,
 );
 
+/// Titles are reused as screen-reader announcements when a step replaces the
+/// one before it, so they live next to each other rather than inline.
+const _failureTitle = "couldn't unlock your local database";
+const _confirmTitle = 'reset your local database?';
+const _resetDoneTitle = 'local database reset';
+const _resetFailedMessage = "That didn't work. Close Divine and try again.";
+
+/// Ceiling on the manual reset. It renames a few files and clears
+/// SharedPreferences, so anything approaching this means a platform channel is
+/// wedged — better to report a failure the user can act on than to leave the
+/// screen spinning behind two disabled buttons.
+const _resetTimeout = Duration(seconds: 15);
+
+/// Which step of the failure screen is currently on screen.
+enum _Step { failure, confirm, done }
+
 class DatabaseBootstrapFailureApp extends StatelessWidget {
   const DatabaseBootstrapFailureApp({
     required this.error,
@@ -134,7 +151,7 @@ class _FailureScreen extends StatefulWidget {
 }
 
 class _FailureScreenState extends State<_FailureScreen> {
-  bool _confirmingReset = false;
+  _Step _step = _Step.failure;
   bool _resetting = false;
   bool _resetFailed = false;
 
@@ -144,28 +161,54 @@ class _FailureScreenState extends State<_FailureScreen> {
         widget.error,
       ).allowsLocalDatabaseReset;
 
+  /// Swaps the step in place and announces it: nothing is pushed, so assistive
+  /// tech gets no route change and the focused node just disappears.
+  void _goTo(_Step step, String announcement) {
+    setState(() {
+      _step = step;
+      // A previous attempt's failure banner must not greet the user on a step
+      // they re-entered before trying again.
+      _resetFailed = false;
+    });
+    _announce(announcement);
+  }
+
   Future<void> _resetLocalDatabase() async {
     setState(() {
       _resetting = true;
       _resetFailed = false;
     });
     try {
-      await widget.onResetLocalDatabase!();
+      await widget.onResetLocalDatabase!().timeout(_resetTimeout);
     } on Object {
-      // The reset itself can fail — clearing the keystore entry needs the same
-      // keystore that may be the reason we are on this screen. Stay put and
-      // say so rather than closing on a reset that did not happen.
+      // The reset can fail outright, and a wedged platform channel can hang it
+      // past the timeout. Stay put and say so rather than closing on a reset
+      // that did not happen — or spinning behind two disabled buttons forever.
       if (!mounted) return;
       setState(() {
         _resetting = false;
         _resetFailed = true;
       });
+      _announce(_resetFailedMessage);
       return;
     }
-    // Startup already bailed out, so there is nothing to resume into. The next
-    // launch rebuilds the database from scratch.
+    if (mounted) {
+      setState(() {
+        _step = _Step.done;
+        _resetting = false;
+      });
+      _announce(_resetDoneTitle);
+    }
+    // Finishes the activity on Android. On iOS the process stays alive, which
+    // is what the done step renders for.
     widget.onCloseApp();
   }
+
+  void _announce(String message) => SemanticsService.sendAnnouncement(
+    View.of(context),
+    message,
+    Directionality.of(context),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -177,21 +220,23 @@ class _FailureScreenState extends State<_FailureScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: _confirmingReset
-                  ? _ResetConfirmView(
-                      isResetting: _resetting,
-                      didFail: _resetFailed,
-                      onConfirm: _resetLocalDatabase,
-                      onCancel: () => setState(() => _confirmingReset = false),
-                    )
-                  : _FailureView(
-                      error: widget.error,
-                      stack: widget.stack,
-                      onCloseApp: widget.onCloseApp,
-                      onResetRequested: _canReset
-                          ? () => setState(() => _confirmingReset = true)
-                          : null,
-                    ),
+              child: switch (_step) {
+                _Step.failure => _FailureView(
+                  error: widget.error,
+                  stack: widget.stack,
+                  onCloseApp: widget.onCloseApp,
+                  onResetRequested: _canReset
+                      ? () => _goTo(_Step.confirm, _confirmTitle)
+                      : null,
+                ),
+                _Step.confirm => _ResetConfirmView(
+                  isResetting: _resetting,
+                  didFail: _resetFailed,
+                  onConfirm: _resetLocalDatabase,
+                  onCancel: () => _goTo(_Step.failure, _failureTitle),
+                ),
+                _Step.done => _ResetDoneView(onCloseApp: widget.onCloseApp),
+              },
             ),
           ),
         ),
@@ -213,6 +258,15 @@ class _FailureView extends StatelessWidget {
   final VoidCallback onCloseApp;
   final VoidCallback? onResetRequested;
 
+  /// The advice and the reset offer answer the same question, so one condition
+  /// decides both: unlocking and restarting is the fix for the transient
+  /// keystore case, and misleading for the diagnoses a reset is offered for.
+  String get _advice => onResetRequested != null
+      ? "A restart won't fix this one. Resetting the local database below "
+            'gives Divine a clean start — your account stays.'
+      : 'Restart Divine after unlocking your device. If this '
+            'keeps happening, update the app or contact support.';
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -225,17 +279,12 @@ class _FailureView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const Text(
-          "couldn't unlock your local database",
+          _failureTitle,
           textAlign: TextAlign.center,
           style: _titleStyle,
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Restart Divine after unlocking your device. If this '
-          'keeps happening, update the app or contact support.',
-          textAlign: TextAlign.center,
-          style: _bodyStyle,
-        ),
+        Text(_advice, textAlign: TextAlign.center, style: _bodyStyle),
         const SizedBox(height: 12),
         Text(
           'Diagnostic: ${databaseBootstrapDiagnosticCode(error)}',
@@ -290,7 +339,7 @@ class _ResetConfirmView extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         const Text(
-          'reset your local database?',
+          _confirmTitle,
           textAlign: TextAlign.center,
           style: _titleStyle,
         ),
@@ -304,7 +353,7 @@ class _ResetConfirmView extends StatelessWidget {
         if (didFail) ...[
           const SizedBox(height: 12),
           Text(
-            "That didn't work. Close Divine and try again.",
+            _resetFailedMessage,
             textAlign: TextAlign.center,
             style: _diagnosticStyle.copyWith(color: VineTheme.error),
           ),
@@ -320,6 +369,51 @@ class _ResetConfirmView extends StatelessWidget {
         DivineButton(
           label: 'cancel',
           onPressed: isResetting ? null : onCancel,
+          type: DivineButtonType.secondary,
+        ),
+      ],
+    );
+  }
+}
+
+/// Terminal step after a successful reset.
+///
+/// Only ever seen where [DatabaseBootstrapFailureApp.onCloseApp] did not end
+/// the process — on iOS `SystemNavigator.pop` cannot close the app, so without
+/// this step the confirmation would sit there spinning behind two disabled
+/// buttons with nothing left to happen.
+class _ResetDoneView extends StatelessWidget {
+  const _ResetDoneView({required this.onCloseApp});
+
+  final VoidCallback onCloseApp;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const DivineIcon(
+          icon: DivineIconName.checkCircle,
+          color: VineTheme.success,
+          size: 48,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          _resetDoneTitle,
+          textAlign: TextAlign.center,
+          style: _titleStyle,
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Close Divine and open it again — the next launch builds a fresh '
+          'local database.',
+          textAlign: TextAlign.center,
+          style: _bodyStyle,
+        ),
+        const SizedBox(height: 24),
+        DivineButton(
+          label: 'close Divine',
+          onPressed: onCloseApp,
           type: DivineButtonType.secondary,
         ),
       ],
@@ -350,13 +444,17 @@ enum DatabaseBootstrapDiagnosis {
 
   /// Whether the screen may offer the destructive local-database reset.
   ///
-  /// Only where the database is already unusable, so the reset costs nothing
-  /// that is not lost anyway. [secureStorage] must never reach it: the
-  /// database is intact and only its keystore was unreachable, so clearing it
-  /// would trade a restart-and-retry for permanent loss of every local-only
-  /// draft and clip. [cipherUnavailable] cannot be helped either — without a
-  /// cipher, a fresh database could not be created any more than the old one
-  /// could be opened.
+  /// [cipherMismatch] is provably unusable — the key no longer opens the file.
+  /// [bootstrapFailed] is only presumed unusable: the cause is unknown, though
+  /// startup did fail on it. The reset keeps the cipher key for exactly that
+  /// reason, so the backup it leaves behind stays readable if the presumption
+  /// was wrong.
+  ///
+  /// [secureStorage] must never reach it: the database is intact and only its
+  /// keystore was unreachable, so clearing it would trade a restart-and-retry
+  /// for permanent loss of every local-only draft and clip.
+  /// [cipherUnavailable] cannot be helped either — without a cipher, a fresh
+  /// database could not be created any more than the old one could be opened.
   ///
   /// Switched exhaustively on purpose: a future diagnosis has to make this
   /// choice deliberately instead of defaulting into a destructive offer.
