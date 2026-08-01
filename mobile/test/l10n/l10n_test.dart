@@ -90,15 +90,99 @@ void main() {
       expect(l10n.settingsAppLanguageTitle, equals('የመተግበሪያ ቋንቋ'));
     });
 
+    testWidgets('supports Vietnamese locale', (tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('vi'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = context.l10n;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(l10n.settingsTitle, equals('Cài đặt'));
+      expect(l10n.settingsAppLanguageTitle, equals('Ngôn ngữ ứng dụng'));
+    });
+
+    testWidgets('supports Urdu locale', (tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ur'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = context.l10n;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(l10n.settingsTitle, equals('ترتیبات'));
+      expect(l10n.settingsAppLanguageTitle, equals('ایپ کی زبان'));
+    });
+
+    testWidgets('supports Chinese locale', (tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('zh'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = context.l10n;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(l10n.settingsTitle, equals('设置'));
+      expect(l10n.settingsAppLanguageTitle, equals('应用语言'));
+    });
+
+    testWidgets('supports Malay locale', (tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('ms'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = context.l10n;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(l10n.settingsTitle, equals('Tetapan'));
+      expect(l10n.settingsAppLanguageTitle, equals('Bahasa aplikasi'));
+    });
+
     testWidgets('falls back to English for unsupported locale', (tester) async {
       late AppLocalizations l10n;
 
-      // Chinese is not a supported locale. We force the resolution
+      // Russian is not a supported locale. We force the resolution
       // callback to return English, verifying the app gracefully
       // falls back to the English ARB strings.
       await tester.pumpWidget(
         MaterialApp(
-          locale: const Locale('zh'),
+          locale: const Locale('ru'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           localeListResolutionCallback: resolveAppUiLocale,

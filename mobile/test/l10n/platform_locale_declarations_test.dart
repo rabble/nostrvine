@@ -20,6 +20,22 @@ void main() {
       expect(appLocaleCodes, contains('am'));
     });
 
+    test('includes Vietnamese in app-supported locales', () {
+      expect(appLocaleCodes, contains('vi'));
+    });
+
+    test('includes Urdu in app-supported locales', () {
+      expect(appLocaleCodes, contains('ur'));
+    });
+
+    test('includes Chinese in app-supported locales', () {
+      expect(appLocaleCodes, contains('zh'));
+    });
+
+    test('includes Malay in app-supported locales', () {
+      expect(appLocaleCodes, contains('ms'));
+    });
+
     test('Android per-app language config includes all app locales', () {
       final androidConfig = File(
         'android/app/src/main/res/xml/locales_config.xml',

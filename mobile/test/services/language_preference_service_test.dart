@@ -234,6 +234,22 @@ void main() {
           LanguagePreferenceService.displayNameFor('am'),
           equals('Amharic'),
         );
+        expect(
+          LanguagePreferenceService.displayNameFor('vi'),
+          equals('Vietnamese'),
+        );
+        expect(
+          LanguagePreferenceService.displayNameFor('zh'),
+          equals('Chinese'),
+        );
+        expect(
+          LanguagePreferenceService.displayNameFor('ur'),
+          equals('Urdu'),
+        );
+        expect(
+          LanguagePreferenceService.displayNameFor('ms'),
+          equals('Malay'),
+        );
       });
 
       test('returns uppercased code for unknown language codes', () {

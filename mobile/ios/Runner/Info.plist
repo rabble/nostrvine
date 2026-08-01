@@ -28,12 +28,16 @@
 		<string>it</string>
 		<string>ja</string>
 		<string>ko</string>
+		<string>ms</string>
 		<string>nl</string>
 		<string>pl</string>
 		<string>pt</string>
 		<string>ro</string>
 		<string>sv</string>
 		<string>tr</string>
+		<string>ur</string>
+		<string>vi</string>
+		<string>zh</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>Divine</string>

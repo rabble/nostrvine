@@ -174,6 +174,57 @@ void main() {
         );
       }
     });
+
+    test('every locale keeps the placeholders app_en.arb interpolates', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+
+      // Only placeholders whose value the English source actually substitutes.
+      // A selector-only argument, such as the `count` in `{count, plural, ...}`,
+      // interpolates nothing, so a language without that distinction may
+      // legitimately render a bare noun instead.
+      final interpolated = <String, Set<String>>{};
+      for (final key in _messageKeys(template)) {
+        final source = template[key];
+        if (source is! String) continue;
+        final used = _declaredPlaceholders(
+          template,
+          key,
+        ).where((name) => _placeholderPattern(name).hasMatch(source)).toSet();
+        if (used.isNotEmpty) interpolated[key] = used;
+      }
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        for (final entry in interpolated.entries) {
+          final value = arb[entry.key];
+          if (value is! String) continue;
+
+          for (final name in entry.value) {
+            // gen-l10n takes the signature from the template, so a dropped
+            // placeholder still compiles: the generated getter accepts the
+            // argument and silently never renders it.
+            expect(
+              _placeholderPattern(name).hasMatch(value),
+              isTrue,
+              reason:
+                  '${file.path} drops {$name} from ${entry.key}, so its value '
+                  'would never reach the user',
+            );
+          }
+        }
+      }
+    });
   });
 }
 
@@ -303,4 +354,16 @@ Map<String, Object?> _readArb(File file) {
 
 Set<String> _messageKeys(Map<String, Object?> arb) {
   return arb.keys.where((key) => !key.startsWith('@')).toSet();
+}
+
+Set<String> _declaredPlaceholders(Map<String, Object?> arb, String key) {
+  final metadata = arb['@$key'];
+  if (metadata is! Map) return const {};
+  final placeholders = metadata['placeholders'];
+  if (placeholders is! Map) return const {};
+  return placeholders.keys.map((name) => name.toString()).toSet();
+}
+
+RegExp _placeholderPattern(String name) {
+  return RegExp(r'\{\s*' + RegExp.escape(name) + r'\s*\}');
 }

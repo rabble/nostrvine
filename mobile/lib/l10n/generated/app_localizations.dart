@@ -17,12 +17,16 @@ import 'app_localizations_id.dart';
 import 'app_localizations_it.dart';
 import 'app_localizations_ja.dart';
 import 'app_localizations_ko.dart';
+import 'app_localizations_ms.dart';
 import 'app_localizations_nl.dart';
 import 'app_localizations_pl.dart';
 import 'app_localizations_pt.dart';
 import 'app_localizations_ro.dart';
 import 'app_localizations_sv.dart';
 import 'app_localizations_tr.dart';
+import 'app_localizations_ur.dart';
+import 'app_localizations_vi.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -122,12 +126,16 @@ abstract class AppLocalizations {
     Locale('it'),
     Locale('ja'),
     Locale('ko'),
+    Locale('ms'),
     Locale('nl'),
     Locale('pl'),
     Locale('pt'),
     Locale('ro'),
     Locale('sv'),
     Locale('tr'),
+    Locale('ur'),
+    Locale('vi'),
+    Locale('zh'),
   ];
 
   /// Indicator and snackbar text when the user swipes right to get more videos like the current one.
@@ -18532,12 +18540,16 @@ class _AppLocalizationsDelegate
     'it',
     'ja',
     'ko',
+    'ms',
     'nl',
     'pl',
     'pt',
     'ro',
     'sv',
     'tr',
+    'ur',
+    'vi',
+    'zh',
   ].contains(locale.languageCode);
 
   @override
@@ -18571,6 +18583,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsJa();
     case 'ko':
       return AppLocalizationsKo();
+    case 'ms':
+      return AppLocalizationsMs();
     case 'nl':
       return AppLocalizationsNl();
     case 'pl':
@@ -18583,6 +18597,12 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsSv();
     case 'tr':
       return AppLocalizationsTr();
+    case 'ur':
+      return AppLocalizationsUr();
+    case 'vi':
+      return AppLocalizationsVi();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(

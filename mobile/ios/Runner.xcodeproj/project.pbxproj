@@ -464,12 +464,16 @@
 				it,
 				ja,
 				ko,
+				ms,
 				nl,
 				pl,
 				pt,
 				ro,
 				sv,
 				tr,
+				ur,
+				vi,
+				zh,
 				Base,
 			);
 			mainGroup = 97C146E51CF9000F007C117D;
