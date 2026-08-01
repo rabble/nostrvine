@@ -231,6 +231,23 @@ preflight_ports() {
 # embedded DNS had the dependency's alias, so the name did not resolve.
 _STACK_TRANSIENT_RE='no such host|Temporary failure in name resolution|Name or service not known|i/o timeout'
 
+# _stack_down_services <compose_file> <service>...
+# stdout: "<service>|<state>" per service that is not up. One-shot jobs
+# (migrations, seeding) that exited 0 did their work and are not failures.
+_stack_down_services() {
+    local compose_file="$1"
+    shift
+
+    local service state exit_code
+    # `|` for the same reason as above: an empty middle field survives.
+    while IFS='|' read -r service state exit_code; do
+        [[ -n "$service" ]] || continue
+        [[ "$state" == "running" ]] && continue
+        [[ "$state" == "exited" && "$exit_code" == "0" ]] && continue
+        echo "${service}|${state}"
+    done < <(docker compose -f "$compose_file" ps -a --format '{{.Service}}|{{.State}}|{{.ExitCode}}' "$@" 2>/dev/null)
+}
+
 # stack_failure_is_transient <compose_file> <up_log> <service>...
 # True when the failure looks like a DNS/startup race rather than a real break.
 stack_failure_is_transient() {
@@ -242,9 +259,20 @@ stack_failure_is_transient() {
     fi
 
     # The daemon error is usually generic ("dependency failed to start"); the
-    # real signature is in the failed container's own log.
+    # real signature is in the failed containers' own logs. Only theirs — an
+    # `i/o timeout` in the recent output of a service that came up fine would
+    # otherwise buy two more pointless `up --wait` cycles before the real
+    # report prints.
+    local down_services=() service
+    while IFS='|' read -r service _; do
+        [[ -n "$service" ]] || continue
+        down_services+=("$service")
+    done < <(_stack_down_services "$compose_file" "$@")
+
+    ((${#down_services[@]} > 0)) || return 1
+
     local logs
-    logs="$(docker compose -f "$compose_file" logs --tail=50 "$@" 2>/dev/null || true)"
+    logs="$(docker compose -f "$compose_file" logs --tail=50 "${down_services[@]}" 2>/dev/null || true)"
     grep -qE "$_STACK_TRANSIENT_RE" <<<"$logs"
 }
 
@@ -263,14 +291,9 @@ stack_failure_report() {
             "$@" 2>/dev/null | sed 's/^/  /' || true
         echo ""
 
-        local service state exit_code
-        # `|` for the same reason as above: an empty middle field survives.
-        while IFS='|' read -r service state exit_code; do
+        local service state service_logs
+        while IFS='|' read -r service state; do
             [[ -n "$service" ]] || continue
-            [[ "$state" == "running" ]] && continue
-            # One-shot services (migrations, seeding) legitimately exit 0.
-            [[ "$state" == "exited" && "$exit_code" == "0" ]] && continue
-            local service_logs
             service_logs="$(docker compose -f "$compose_file" logs --tail=20 --no-log-prefix "$service" 2>&1 || true)"
             echo "--- last 20 log lines: ${service} (${state}) ---"
             if [[ -n "$service_logs" ]]; then
@@ -280,7 +303,7 @@ stack_failure_report() {
                 echo "    (no output — the container never started)"
             fi
             echo ""
-        done < <(docker compose -f "$compose_file" ps -a --format '{{.Service}}|{{.State}}|{{.ExitCode}}' "$@" 2>/dev/null)
+        done < <(_stack_down_services "$compose_file" "$@")
 
         echo "A service being down does NOT block tests that never call it."
         echo "profile.sh skips the local_up gate and runs patrol directly:"
