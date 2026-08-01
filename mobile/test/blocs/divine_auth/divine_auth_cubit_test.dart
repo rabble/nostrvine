@@ -1725,29 +1725,12 @@ void main() {
         expect: () => <DivineAuthState>[],
       );
 
-      test('does not throw when the cubit closes mid-creation', () async {
-        // Account creation flips AuthService to `authenticated` before it
-        // returns. The router then leaves the create-account screen, which
-        // closes this cubit while the await is still in flight.
-        final accountCreated = Completer<void>();
-        when(
-          () => mockAuthService.createAnonymousAccount(),
-        ).thenAnswer((_) => accountCreated.future);
-
-        final cubit = buildCubit();
-        cubit.initialize();
-
-        final skip = cubit.skipWithAnonymousAccount();
-        await cubit.close();
-        accountCreated.complete();
-
-        await expectLater(skip, completes);
-        expect(cubit.state, isA<DivineAuthFormState>());
-      });
-
       test(
         'closing mid-creation reports no error to the bloc observer',
         () async {
+          // Account creation flips AuthService to `authenticated` before it
+          // returns. The router then leaves the create-account screen, which
+          // closes this cubit while the await is still in flight.
           final accountCreated = Completer<void>();
           when(
             () => mockAuthService.createAnonymousAccount(),
