@@ -5113,7 +5113,50 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Dit account ondertekent met Keycast. Er is geen privésleutel opgeslagen op dit apparaat, dus er is hier geen nsec om te kopiëren.';
+      'Je sleutel staat bij de inlogservice van Divine, niet op dit apparaat. Bevestig je wachtwoord en we halen hem op.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Je sleutel wordt bewaard door de inlogservice van Divine. Voer het wachtwoord van je account in en we halen hem op.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Sleutel kopiëren';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Je apparaat blokkeerde het kopiëren, dus je sleutel is niet op het klembord beland.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Dat wachtwoord klopt niet. Probeer het opnieuw.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Te veel pogingen. Sluit dit en begin opnieuw.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Te veel sleutelverzoeken. Wacht een paar minuten en probeer het opnieuw.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Je sessie is verlopen. Meld je opnieuw aan om je sleutel te kopiëren.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Bevestig je e-mailadres voordat je je sleutel kopieert.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine beheert de sleutels van dit account, dus ze kunnen hier niet worden gekopieerd.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Voor dit account staat geen sleutel geregistreerd.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'de inlogservice was niet bereikbaar';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

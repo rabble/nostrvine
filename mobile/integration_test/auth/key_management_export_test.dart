@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -92,14 +93,21 @@ void main() {
         // and reveals the export section. Wait out that resolution window.
         await waitForTextGone(tester, 'Your keys are managed by Divine');
 
+        // Resolved from the ARB rather than hardcoded so this survives copy
+        // changes and breaks loudly if the screen stops reading from l10n.
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
         expect(find.text('Key Management'), findsOneWidget);
+        // The key is reachable, just not on this device: the copy action is
+        // offered for this account too, and the explanation above it says the
+        // key comes from Divine's login service rather than local storage.
         expect(
-          find.text('Copy My Private Key (nsec)', skipOffstage: false),
-          findsNothing,
+          find.text(l10n.keyManagementCopyNsec, skipOffstage: false),
+          findsOneWidget,
         );
         expect(
           find.text(
-            'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.',
+            l10n.keyManagementKeycastRemoteSigning,
             skipOffstage: false,
           ),
           findsOneWidget,

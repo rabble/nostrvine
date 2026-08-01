@@ -5090,7 +5090,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+      'Your key lives on Divine\'s login service, not on this device. Confirm your password and we\'ll fetch it for you.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Your key is kept by Divine\'s login service. Enter your account password and we\'ll fetch it.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copy key';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Your device blocked the copy, so your key didn\'t reach the clipboard.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'That password doesn\'t match. Try again.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Too many tries. Close this and start over.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Too many key requests. Wait a few minutes and try again.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Your session has expired. Sign in again to copy your key.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Verify your email address before copying your key.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine looks after this account\'s keys, so they can\'t be copied here.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'There\'s no key on record for this account.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'the login service could not be reached';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

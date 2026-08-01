@@ -5062,7 +5062,50 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Bu hesap Keycast ile imzalar. Bu cihazda özel anahtar saklanmıyor, bu yüzden burada kopyalanacak bir nsec yok.';
+      'Anahtarın bu cihazda değil, Divine\'ın giriş servisinde tutuluyor. Şifreni onayla, biz de anahtarı getirelim.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Anahtarın Divine\'ın giriş servisinde tutuluyor. Hesap şifreni gir, biz de getirelim.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Anahtarı kopyala';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Cihazın kopyalamayı engelledi, bu yüzden anahtarın panoya ulaşmadı.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Şifre eşleşmiyor. Tekrar dene.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Çok fazla deneme oldu. Bunu kapat ve baştan başla.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Çok fazla anahtar isteği oldu. Birkaç dakika bekleyip tekrar dene.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Oturumun sona erdi. Anahtarını kopyalamak için tekrar giriş yap.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Anahtarını kopyalamadan önce e-posta adresini doğrula.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Bu hesabın anahtarlarını Divine yönetiyor, bu yüzden burada kopyalanamaz.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Bu hesap için kayıtlı bir anahtar yok.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'giriş servisine ulaşılamadı';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

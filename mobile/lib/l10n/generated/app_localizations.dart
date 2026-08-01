@@ -8852,11 +8852,77 @@ abstract class AppLocalizations {
   /// **'Never share your nsec with anyone!'**
   String get keyManagementNeverShare;
 
-  /// No description provided for @keyManagementKeycastRemoteSigning.
+  /// Explanation shown above the copy-private-key button for an account whose signing key is held by Divine's login service, so the key is fetched from the service rather than read off the device.
   ///
   /// In en, this message translates to:
-  /// **'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.'**
+  /// **'Your key lives on Divine\'s login service, not on this device. Confirm your password and we\'ll fetch it for you.'**
   String get keyManagementKeycastRemoteSigning;
+
+  /// Body text of the dialog that asks for the account password before fetching the private key from Divine's login service. Confirming copies the key straight to the clipboard; it is never shown on screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your key is kept by Divine\'s login service. Enter your account password and we\'ll fetch it.'**
+  String get keyManagementKeycastPasswordPrompt;
+
+  /// Confirm button in the password sheet. Confirming fetches the private key from Divine's login service and copies it straight to the clipboard; the key is never shown on screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy key'**
+  String get keyManagementKeycastCopyKey;
+
+  /// Error shown when the private key was fetched but the device refused the clipboard write, so nothing was copied. Neither platform reports a failed clipboard write, so this is only reachable because the value is read back and compared.
+  ///
+  /// In en, this message translates to:
+  /// **'Your device blocked the copy, so your key didn\'t reach the clipboard.'**
+  String get keyManagementKeycastCopyBlocked;
+
+  /// Inline error under the password field when the account password was rejected. The dialog stays open so the user can retry.
+  ///
+  /// In en, this message translates to:
+  /// **'That password doesn\'t match. Try again.'**
+  String get keyManagementKeycastWrongPassword;
+
+  /// Inline error under the password field once the sheet has taken as many wrong passwords as it will accept. The user has to dismiss the sheet and reopen it to try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many tries. Close this and start over.'**
+  String get keyManagementKeycastTooManyAttempts;
+
+  /// Error shown when the login service is refusing further key export requests for now, so waiting is the remedy rather than retrying straight away.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many key requests. Wait a few minutes and try again.'**
+  String get keyManagementKeycastRateLimited;
+
+  /// Error shown when the saved session could not be refreshed, so fetching the key needs a fresh sign-in rather than a retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Your session has expired. Sign in again to copy your key.'**
+  String get keyManagementKeycastSignInAgain;
+
+  /// Error shown when the login service refuses to release the key because the account's email address is not verified yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your email address before copying your key.'**
+  String get keyManagementKeycastEmailUnverified;
+
+  /// Error shown when the login service refuses to release the key by policy, such as an account whose keys Divine manages custodially.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine looks after this account\'s keys, so they can\'t be copied here.'**
+  String get keyManagementKeycastDenied;
+
+  /// Error shown when the login service answers definitively that it holds no exportable key for this account, so retrying will not help.
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s no key on record for this account.'**
+  String get keyManagementKeycastNoKey;
+
+  /// Fallback reason inserted into keyManagementExportFailed when the login service gave no usable explanation. Lowercase because it is embedded mid-sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'the login service could not be reached'**
+  String get keyManagementKeycastGenericFailure;
 
   /// Heading shown in place of the key backup/export and key import sections for a protected-minor account whose signing key is managed by Divine (Keycast custody).
   ///

@@ -5123,7 +5123,50 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Esta conta assina com o Keycast. Nenhuma chave privada está armazenada neste dispositivo, portanto não há nsec para copiar aqui.';
+      'Sua chave fica no serviço de login da Divine, não neste dispositivo. Confirme sua senha e nós a buscamos para você.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Sua chave é guardada pelo serviço de login da Divine. Digite a senha da sua conta e nós a buscamos.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copiar chave';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Seu dispositivo bloqueou a cópia, então sua chave não chegou à área de transferência.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Essa senha não confere. Tente novamente.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Tentativas demais. Fecha isto e começa de novo.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Pedidos de chave demais. Espera uns minutos e tenta de novo.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Sua sessão expirou. Entre novamente para copiar sua chave.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Verifique seu endereço de e-mail antes de copiar sua chave.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'A Divine cuida das chaves desta conta, então elas não podem ser copiadas aqui.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Não há nenhuma chave registrada para esta conta.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'não foi possível acessar o serviço de login';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

@@ -1,8 +1,6 @@
 // ABOUTME: Tests protectedMinorStatusProvider guard branches (#174):
 // ABOUTME: unauthenticated -> not protected, debug override forces protected.
 
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -59,22 +57,13 @@ void main() {
       SharedPreferences.setMockInitialValues({}); // no override -> real fetch
       final prefs = await SharedPreferences.getInstance();
 
-      // Seed a valid Keycast session so getSessionOrRefresh() yields its token.
-      final storage = MemoryKeycastStorage();
-      final session = KeycastSession(
-        bunkerUrl: 'bunker://t',
-        accessToken: 'tok123',
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      );
-      await storage.write('keycast_session', jsonEncode(session.toJson()));
-
       final oauth = KeycastOAuth(
         config: const OAuthConfig(
           serverUrl: 'https://login.divine.video',
           clientId: 'c',
           redirectUri: 'divine://cb',
         ),
-        storage: storage,
+        storage: MemoryKeycastStorage(),
         httpClient: MockClient((req) async {
           // Proves the provider threads the session token into the request.
           expect(req.headers['Authorization'], 'Bearer tok123');
@@ -86,11 +75,20 @@ void main() {
         }),
       );
 
+      // The token comes from the owner-bound gate rather than straight off the
+      // stored session, so a session another account left behind cannot answer
+      // the minor question for this one.
+      final authService = _MockAuthService();
+      when(
+        authService.activeAccountKeycastToken,
+      ).thenAnswer((_) async => 'tok123');
+
       final container = ProviderContainer(
         overrides: [
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           sharedPreferencesProvider.overrideWithValue(prefs),
           oauthClientProvider.overrideWithValue(oauth),
+          authServiceProvider.overrideWithValue(authService),
         ],
       );
       addTearDown(container.dispose);
@@ -99,6 +97,52 @@ void main() {
 
       expect(status.isProtectedMinor, isTrue);
       expect(status.verifiedMinorAt, DateTime.utc(2026, 6, 30, 12));
+    },
+  );
+
+  // A session the gate refuses (unbound, or bound to another account) yields
+  // no token at all. That must read as unknown — not as a positive
+  // not-a-minor, which would lift the #175/#176 protections and overwrite the
+  // sticky verdict on an absent signal.
+  test(
+    'authenticated: a refused session resolves to unknown, no fetch',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      var requests = 0;
+      final oauth = KeycastOAuth(
+        config: const OAuthConfig(
+          serverUrl: 'https://login.divine.video',
+          clientId: 'c',
+          redirectUri: 'divine://cb',
+        ),
+        storage: MemoryKeycastStorage(),
+        httpClient: MockClient((req) async {
+          requests++;
+          return http.Response('{}', 200);
+        }),
+      );
+
+      final authService = _MockAuthService();
+      when(
+        authService.activeAccountKeycastToken,
+      ).thenAnswer((_) async => null);
+
+      final container = ProviderContainer(
+        overrides: [
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          oauthClientProvider.overrideWithValue(oauth),
+          authServiceProvider.overrideWithValue(authService),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final status = await container.read(protectedMinorStatusProvider.future);
+
+      expect(status.kind, ProtectedMinorStatusKind.unknown);
+      expect(requests, isZero);
     },
   );
 

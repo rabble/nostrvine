@@ -4853,7 +4853,47 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'このアカウントはKeycastで署名します。このデバイスには秘密鍵が保存されていないため、ここでコピーできるnsecはありません。';
+      '鍵はこの端末ではなく、Divine のログインサービスに保管されています。パスワードを確認すれば取得できます。';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      '鍵は Divine のログインサービスが保管しています。アカウントのパスワードを入力すれば取得します。';
+
+  @override
+  String get keyManagementKeycastCopyKey => '鍵をコピー';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      '端末がコピーをブロックしたため、鍵はクリップボードに届きませんでした。';
+
+  @override
+  String get keyManagementKeycastWrongPassword => 'パスワードが一致しません。もう一度お試しください。';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      '試行が多すぎるよ。これを閉じて最初からやり直してね。';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      '鍵の取得リクエストが多すぎるよ。数分待ってからもう一度試してね。';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'セッションの有効期限が切れました。鍵をコピーするには再度サインインしてください。';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      '鍵をコピーする前にメールアドレスを確認してください。';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'このアカウントの鍵は Divine が管理しているため、ここではコピーできません。';
+
+  @override
+  String get keyManagementKeycastNoKey => 'このアカウントに登録されている鍵はありません。';
+
+  @override
+  String get keyManagementKeycastGenericFailure => 'ログインサービスに接続できませんでした';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

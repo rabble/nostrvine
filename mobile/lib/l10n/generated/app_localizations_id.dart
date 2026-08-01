@@ -5054,7 +5054,50 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Akun ini menandatangani dengan Keycast. Tidak ada kunci privat yang disimpan di perangkat ini, jadi tidak ada nsec untuk disalin di sini.';
+      'Kuncimu tersimpan di layanan login Divine, bukan di perangkat ini. Konfirmasi kata sandimu dan kami akan mengambilnya.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Kuncimu disimpan oleh layanan login Divine. Masukkan kata sandi akunmu dan kami akan mengambilnya.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Salin kunci';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Perangkatmu memblokir penyalinan, jadi kuncimu tidak sampai ke papan klip.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Kata sandi tidak cocok. Coba lagi.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Terlalu banyak percobaan. Tutup ini dan mulai lagi.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Terlalu banyak permintaan kunci. Tunggu beberapa menit lalu coba lagi.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Sesimu telah berakhir. Masuk lagi untuk menyalin kuncimu.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Verifikasi alamat emailmu sebelum menyalin kunci.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine mengelola kunci akun ini, jadi kunci tidak bisa disalin di sini.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Tidak ada kunci yang tercatat untuk akun ini.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'layanan login tidak dapat dihubungi';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

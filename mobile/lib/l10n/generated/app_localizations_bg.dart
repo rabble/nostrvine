@@ -5140,7 +5140,49 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Този акаунт подписва с Keycast. На това устройство не е съхранен частен ключ, затова тук няма nsec за копиране.';
+      'Ключът ти се съхранява в услугата за вход на Divine, а не на това устройство. Потвърди паролата си и ще го изтеглим.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Ключът ти се съхранява от услугата за вход на Divine. Въведи паролата на профила си и ще го изтеглим.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Копирай ключа';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Устройството ти блокира копирането, така че ключът ти не стигна до клипборда.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Паролата не съвпада. Опитай отново.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Твърде много опити. Затвори това и започни отначало.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Твърде много заявки за ключа. Изчакай няколко минути и опитай пак.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Сесията ти изтече. Влез отново, за да копираш ключа си.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Потвърди имейл адреса си, преди да копираш ключа.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine управлява ключовете на този профил, така че те не могат да се копират тук.';
+
+  @override
+  String get keyManagementKeycastNoKey => 'За този профил няма записан ключ.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'услугата за вход е недостъпна';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

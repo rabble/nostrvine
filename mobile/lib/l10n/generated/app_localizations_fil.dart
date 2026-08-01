@@ -5154,7 +5154,50 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Lumalagda ang account na ito gamit ang Keycast. Walang pribadong key na naka-store sa device na ito, kaya walang nsec na makokopya rito.';
+      'Nasa login service ng Divine ang key mo, hindi sa device na ito. Kumpirmahin ang password mo at kukunin namin ito.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Nasa login service ng Divine nakatago ang key mo. Ilagay ang password ng account mo at kukunin namin ito.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Kopyahin ang key';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Hinarangan ng device mo ang pagkopya, kaya hindi nakarating sa clipboard ang key mo.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Hindi tugma ang password. Subukan muli.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Sobrang dami nang subok. Isara ito at magsimula ulit.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Sobrang dami nang hiling para sa key. Maghintay ng ilang minuto at subukan muli.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Nag-expire na ang session mo. Mag-sign in muli para makopya ang key mo.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'I-verify ang email address mo bago kopyahin ang key.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Ang Divine ang nangangalaga sa mga key ng account na ito, kaya hindi ito makokopya dito.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Walang key na nakatala para sa account na ito.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'hindi maabot ang login service';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

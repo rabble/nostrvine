@@ -5,12 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show Nip19, generatePrivateKey;
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../test_setup.dart';
-
-class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
+import 'support/auth_service_test_harness.dart';
 
 class _MockUserDataCleanupService extends Mock
     implements UserDataCleanupService {}
@@ -18,132 +19,175 @@ class _MockUserDataCleanupService extends Mock
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 void main() {
-  setupTestEnvironment();
+  TestWidgetsFlutterBinding.ensureInitialized();
 
   group('AuthService deleteKeycastAccount', () {
-    late _MockSecureKeyStorage mockKeyStorage;
+    const testAccessToken = 'test_access_token_123';
+    const otherAccountPubkey =
+        'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd';
+
     late _MockUserDataCleanupService mockCleanupService;
     late _MockKeycastOAuth mockOAuthClient;
-    late AuthService authService;
 
-    setUp(() async {
-      mockKeyStorage = _MockSecureKeyStorage();
+    setUp(() {
       mockCleanupService = _MockUserDataCleanupService();
       mockOAuthClient = _MockKeycastOAuth();
-
-      // Setup default mock behaviors
-      when(
-        () => mockCleanupService.shouldClearDataForUser(any()),
-      ).thenReturn(false);
-      when(
-        () => mockCleanupService.clearUserSpecificData(
-          reason: any(named: 'reason'),
-          userPubkey: any(named: 'userPubkey'),
-          deleteUserData: any(named: 'deleteUserData'),
-        ),
-      ).thenAnswer((_) async => 0);
-      when(
-        () => mockCleanupService.claimLegacyRows(any()),
-      ).thenAnswer((_) async {});
-      when(
-        () => mockCleanupService.markOwnerScopedLegacyDataForUser(any()),
-      ).thenAnswer((_) async {});
+      stubUserDataCleanupSuccess(mockCleanupService);
+      AuthServiceChannelMocks.install();
+      SharedPreferences.setMockInitialValues({kKnownAccountsKey: '[]'});
     });
 
+    tearDown(AuthServiceChannelMocks.remove);
+
+    /// An [AuthService] with an account signed in, plus that account's pubkey.
+    ///
+    /// Deletion refuses to spend a token it cannot attribute to a signed-in
+    /// account, so every test past the no-client case needs one. It arrives by
+    /// key import rather than a Divine Login round trip because
+    /// `deleteKeycastAccount` does not branch on [AuthenticationSource] — only
+    /// on which pubkey is signed in. The real flow calls this while the signer
+    /// is still live (`delete_account_dialog.dart`), before sign-out.
+    Future<(AuthService, String)> signedInAuthService({
+      bool withOAuthClient = true,
+    }) async {
+      final privateKeyHex = generatePrivateKey();
+      final pubkeyHex = SecureKeyContainer.fromPrivateKeyHex(
+        privateKeyHex,
+      ).publicKeyHex;
+      final authService = buildTestAuthService(
+        cleanupService: mockCleanupService,
+        oauthClient: withOAuthClient ? mockOAuthClient : null,
+      );
+      addTearDown(authService.dispose);
+
+      await ignoringDiscoveryErrors(
+        () => authService.importFromNsec(Nip19.encodePrivateKey(privateKeyHex)),
+      );
+      expect(authService.currentPublicKeyHex, pubkeyHex);
+
+      return (authService, pubkeyHex);
+    }
+
+    KeycastSession session({String? owner, String? token}) {
+      return KeycastSession(
+        bunkerUrl: 'https://bunker.example.com',
+        accessToken: token,
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        userPubkey: owner,
+      );
+    }
+
+    /// Arranges a valid, owner-bound session carrying [testAccessToken].
+    Future<AuthService> withUsableSession() async {
+      final (authService, pubkeyHex) = await signedInAuthService();
+      when(() => mockOAuthClient.getSession()).thenAnswer(
+        (_) async => session(owner: pubkeyHex, token: testAccessToken),
+      );
+      return authService;
+    }
+
     test('returns success when no OAuth client is configured', () async {
-      // Create AuthService WITHOUT OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
+      final (authService, _) = await signedInAuthService(
+        withOAuthClient: false,
       );
 
-      // Act
       final result = await authService.deleteKeycastAccount();
-      final success = result.success;
-      final error = result.error;
 
-      // Assert
-      expect(success, isTrue);
-      expect(error, isNull);
+      expect(result.success, isTrue);
+      expect(result.error, isNull);
     });
 
     test('returns failure when session is unavailable after refresh', () async {
-      // Create AuthService with OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
-        oauthClient: mockOAuthClient,
-      );
-
-      // Mock: no session even after refresh attempt
+      final (authService, pubkeyHex) = await signedInAuthService();
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
       when(
-        () => mockOAuthClient.getSessionOrRefresh(),
+        () => mockOAuthClient.refreshSession(userPubkey: pubkeyHex),
       ).thenAnswer((_) async => null);
 
-      // Act
       final result = await authService.deleteKeycastAccount();
-      final success = result.success;
-      final error = result.error;
 
-      // Assert — now correctly reports failure
-      expect(success, isFalse);
-      expect(error, contains('Session expired'));
-      verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+      expect(result.success, isFalse);
+      expect(result.error, contains('No usable session'));
+      expect(result.requiresReauthentication, isTrue);
       verifyNever(() => mockOAuthClient.deleteAccount(any()));
     });
 
     test(
       'returns failure when session has no access token after refresh',
       () async {
-        // Create AuthService with OAuth client
-        authService = AuthService(
-          userDataCleanupService: mockCleanupService,
-          keyStorage: mockKeyStorage,
-          oauthClient: mockOAuthClient,
-        );
-
-        // Mock: session exists but has no access token
-        final sessionWithoutToken = KeycastSession(
-          bunkerUrl: 'https://bunker.example.com',
-          expiresAt: DateTime.now().add(const Duration(hours: 1)),
-        );
+        final (authService, pubkeyHex) = await signedInAuthService();
         when(
-          () => mockOAuthClient.getSessionOrRefresh(),
-        ).thenAnswer((_) async => sessionWithoutToken);
+          () => mockOAuthClient.getSession(),
+        ).thenAnswer((_) async => session(owner: pubkeyHex));
 
-        // Act
         final result = await authService.deleteKeycastAccount();
-        final success = result.success;
-        final error = result.error;
 
-        // Assert — now correctly reports failure
-        expect(success, isFalse);
-        expect(error, contains('Session expired'));
-        verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+        expect(result.success, isFalse);
+        expect(result.error, contains('No usable session'));
         verifyNever(() => mockOAuthClient.deleteAccount(any()));
       },
     );
 
-    test('returns success when account deletion succeeds', () async {
-      // Create AuthService with OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
-        oauthClient: mockOAuthClient,
-      );
-
-      // Mock: session with valid access token
-      const testAccessToken = 'test_access_token_123';
-      final validSession = KeycastSession(
-        bunkerUrl: 'https://bunker.example.com',
-        accessToken: testAccessToken,
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      );
+    // Deletion is irreversible and the session slot is global, so a session
+    // this account cannot claim must never reach the delete call — it would
+    // destroy whichever account actually minted the token.
+    test('refuses a session that carries no owner', () async {
+      final (authService, _) = await signedInAuthService();
       when(
-        () => mockOAuthClient.getSessionOrRefresh(),
-      ).thenAnswer((_) async => validSession);
+        () => mockOAuthClient.getSession(),
+      ).thenAnswer((_) async => session(token: testAccessToken));
 
-      // Mock: successful deletion
+      final result = await authService.deleteKeycastAccount();
+
+      expect(result.success, isFalse);
+      expect(result.requiresReauthentication, isTrue);
+      verifyNever(() => mockOAuthClient.deleteAccount(any()));
+    });
+
+    test('refuses a session bound to a different account', () async {
+      final (authService, _) = await signedInAuthService();
+      when(() => mockOAuthClient.getSession()).thenAnswer(
+        (_) async => session(owner: otherAccountPubkey, token: testAccessToken),
+      );
+
+      final result = await authService.deleteKeycastAccount();
+
+      expect(result.success, isFalse);
+      expect(result.requiresReauthentication, isTrue);
+      verifyNever(() => mockOAuthClient.deleteAccount(any()));
+    });
+
+    // A refresh that does not name its owner persists a session no account can
+    // claim, which SignerSecureStore then declines to archive and deletes as
+    // corrupt on the next restore.
+    test(
+      "refreshes an expired session in the signed-in account's name",
+      () async {
+        final (authService, pubkeyHex) = await signedInAuthService();
+        when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+        when(
+          () => mockOAuthClient.refreshSession(userPubkey: pubkeyHex),
+        ).thenAnswer(
+          (_) async => session(owner: pubkeyHex, token: testAccessToken),
+        );
+        when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
+          (_) async => DeleteAccountResult(
+            success: true,
+            message: 'Account permanently deleted',
+          ),
+        );
+
+        final result = await authService.deleteKeycastAccount();
+
+        expect(result.success, isTrue);
+        verify(
+          () => mockOAuthClient.refreshSession(userPubkey: pubkeyHex),
+        ).called(1);
+      },
+    );
+
+    test('returns success when account deletion succeeds', () async {
+      final authService = await withUsableSession();
       when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
         (_) async => DeleteAccountResult(
           success: true,
@@ -151,52 +195,24 @@ void main() {
         ),
       );
 
-      // Act
       final result = await authService.deleteKeycastAccount();
-      final success = result.success;
-      final error = result.error;
 
-      // Assert
-      expect(success, isTrue);
-      expect(error, isNull);
-      verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+      expect(result.success, isTrue);
+      expect(result.error, isNull);
       verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
 
     test('returns failure with error message when deletion fails', () async {
-      // Create AuthService with OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
-        oauthClient: mockOAuthClient,
-      );
-
-      // Mock: session with valid access token
-      const testAccessToken = 'test_access_token_123';
-      final validSession = KeycastSession(
-        bunkerUrl: 'https://bunker.example.com',
-        accessToken: testAccessToken,
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      );
-      when(
-        () => mockOAuthClient.getSessionOrRefresh(),
-      ).thenAnswer((_) async => validSession);
-
-      // Mock: failed deletion
+      final authService = await withUsableSession();
       const errorMessage = 'Unauthorized: invalid or expired token';
       when(
         () => mockOAuthClient.deleteAccount(testAccessToken),
       ).thenAnswer((_) async => DeleteAccountResult.error(errorMessage));
 
-      // Act
       final result = await authService.deleteKeycastAccount();
-      final success = result.success;
-      final error = result.error;
 
-      // Assert
-      expect(success, isFalse);
-      expect(error, equals(errorMessage));
-      verify(() => mockOAuthClient.getSessionOrRefresh()).called(1);
+      expect(result.success, isFalse);
+      expect(result.error, equals(errorMessage));
       verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
 
@@ -207,21 +223,7 @@ void main() {
     test(
       'propagates requiresReauthentication from a refused deletion',
       () async {
-        authService = AuthService(
-          userDataCleanupService: mockCleanupService,
-          keyStorage: mockKeyStorage,
-          oauthClient: mockOAuthClient,
-        );
-
-        const testAccessToken = 'refreshed_access_token';
-        final validSession = KeycastSession(
-          bunkerUrl: 'https://bunker.example.com',
-          accessToken: testAccessToken,
-          expiresAt: DateTime.now().add(const Duration(hours: 1)),
-        );
-        when(
-          () => mockOAuthClient.getSessionOrRefresh(),
-        ).thenAnswer((_) async => validSession);
+        final authService = await withUsableSession();
         when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
           (_) async => DeleteAccountResult.error(
             'Account deletion requires the Divine app or web login with your '
@@ -237,59 +239,17 @@ void main() {
       },
     );
 
-    test(
-      'flags an unrefreshable session as needing reauthentication',
-      () async {
-        authService = AuthService(
-          userDataCleanupService: mockCleanupService,
-          keyStorage: mockKeyStorage,
-          oauthClient: mockOAuthClient,
-        );
-
-        when(
-          () => mockOAuthClient.getSessionOrRefresh(),
-        ).thenAnswer((_) async => null);
-
-        final result = await authService.deleteKeycastAccount();
-
-        expect(result.success, isFalse);
-        expect(result.requiresReauthentication, isTrue);
-      },
-    );
-
     test('returns failure when exception is thrown', () async {
-      // Create AuthService with OAuth client
-      authService = AuthService(
-        userDataCleanupService: mockCleanupService,
-        keyStorage: mockKeyStorage,
-        oauthClient: mockOAuthClient,
-      );
-
-      // Mock: session with valid access token
-      const testAccessToken = 'test_access_token_123';
-      final validSession = KeycastSession(
-        bunkerUrl: 'https://bunker.example.com',
-        accessToken: testAccessToken,
-        expiresAt: DateTime.now().add(const Duration(hours: 1)),
-      );
-      when(
-        () => mockOAuthClient.getSessionOrRefresh(),
-      ).thenAnswer((_) async => validSession);
-
-      // Mock: exception during deletion
+      final authService = await withUsableSession();
       when(
         () => mockOAuthClient.deleteAccount(testAccessToken),
       ).thenThrow(Exception('Network error'));
 
-      // Act
       final result = await authService.deleteKeycastAccount();
-      final success = result.success;
-      final error = result.error;
 
-      // Assert
-      expect(success, isFalse);
-      expect(error, contains('Failed to delete Keycast account'));
-      expect(error, contains('Network error'));
+      expect(result.success, isFalse);
+      expect(result.error, contains('Failed to delete Keycast account'));
+      expect(result.error, contains('Network error'));
     });
   });
 }

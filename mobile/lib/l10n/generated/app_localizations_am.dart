@@ -4988,7 +4988,47 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'ይህ መለያ በKeycast ይፈርማል። በዚህ መሣሪያ ላይ የግል ቁልፍ አልተቀመጠም፣ ስለዚህ እዚህ ለመቅዳት nsec የለም።';
+      'ቁልፍዎ በዚህ መሣሪያ ላይ አይደለም፤ በDivine የመግቢያ አገልግሎት ውስጥ ተቀምጧል። የይለፍ ቃልዎን ያረጋግጡ፤ እኛም እናመጣዋለን።';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'ቁልፍዎ በDivine የመግቢያ አገልግሎት ተቀምጧል። የመለያዎን የይለፍ ቃል ያስገቡ፤ እኛም እናመጣዋለን።';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'ቁልፍ ቅዳ';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'መሣሪያዎ ቅጂውን አግዷል፣ ስለዚህ ቁልፍዎ ወደ ቅንጥብ ሰሌዳ አልደረሰም።';
+
+  @override
+  String get keyManagementKeycastWrongPassword => 'የይለፍ ቃሉ አይዛመድም። እንደገና ይሞክሩ።';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'በጣም ብዙ ሙከራዎች። ይህን ዝጋና ከመጀመሪያው ጀምር።';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'በጣም ብዙ የቁልፍ ጥያቄዎች። ጥቂት ደቂቃዎች ጠብቀው እንደገና ይሞክሩ።';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'ክፍለ ጊዜዎ አልቋል። ቁልፍዎን ለመቅዳት እንደገና ይግቡ።';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'ቁልፍዎን ከመቅዳት በፊት የኢሜይል አድራሻዎን ያረጋግጡ።';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'የዚህ መለያ ቁልፎች በDivine ይተዳደራሉ፤ ስለዚህ በዚህ ቦታ መቅዳት አይቻልም።';
+
+  @override
+  String get keyManagementKeycastNoKey => 'ለዚህ መለያ የተመዘገበ ቁልፍ የለም።';
+
+  @override
+  String get keyManagementKeycastGenericFailure => 'የመግቢያ አገልግሎቱን ማግኘት አልተቻለም';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

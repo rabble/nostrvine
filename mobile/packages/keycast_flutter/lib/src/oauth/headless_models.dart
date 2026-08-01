@@ -407,3 +407,69 @@ class VerifyEmailResult {
       failure == KeycastAuthFailure.network ||
       failure == KeycastAuthFailure.temporary;
 }
+
+/// Why a `POST /api/user/export-key` call did not return key material.
+///
+/// The server writes its refusals as human prose that varies by deployment and
+/// is not stable enough to branch on, and each of its two refusal codes covers
+/// two unrelated causes: 401 is a wrong account password or a stale bearer
+/// token, 403 is an unverified email or a custody policy denial. Callers must
+/// switch on this enum rather than on [ExportKeyResult.error] or the status
+/// code.
+enum ExportKeyFailure {
+  /// The bearer token is valid but the submitted account password is not.
+  /// Recoverable in place: re-prompt without sending the user elsewhere.
+  wrongPassword,
+
+  /// The bearer token is missing, expired, or rejected. Only a fresh sign-in
+  /// clears it.
+  needsSignIn,
+
+  /// The account's email address is not verified yet, which Keycast requires
+  /// before any raw-key egress.
+  emailUnverified,
+
+  /// Keycast refused the export by policy. Today this is the `verified_minor`
+  /// custody refusal, which is deliberately indistinguishable from any other
+  /// policy denial so it leaks no account state.
+  denied,
+
+  /// No exportable key is on record for this account.
+  noKey,
+
+  /// Too many export attempts have been made for now. Unlike every other
+  /// refusal here, waiting is the remedy — an immediate retry will not clear
+  /// it.
+  rateLimited,
+
+  /// Transport failure, timeout, or a malformed response.
+  network,
+
+  /// Keycast reported an internal fault (5xx).
+  server,
+
+  /// Anything not covered above.
+  unknown,
+}
+
+/// Result from POST /api/user/export-key.
+///
+/// [key] is present only on success and holds raw key material — never log it,
+/// never persist it, and drop the reference as soon as it reaches the
+/// clipboard.
+class ExportKeyResult {
+  ExportKeyResult({required this.success, this.key, this.error, this.failure});
+
+  factory ExportKeyResult.success(String key) =>
+      ExportKeyResult(success: true, key: key);
+
+  factory ExportKeyResult.failure(
+    ExportKeyFailure failure, {
+    String? message,
+  }) => ExportKeyResult(success: false, error: message, failure: failure);
+
+  final bool success;
+  final String? key;
+  final String? error;
+  final ExportKeyFailure? failure;
+}

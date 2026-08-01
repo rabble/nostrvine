@@ -5134,7 +5134,50 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Esta cuenta firma con Keycast. No hay ninguna clave privada guardada en este dispositivo, así que no hay ningún nsec que copiar aquí.';
+      'Tu clave está en el servicio de inicio de sesión de Divine, no en este dispositivo. Confirma tu contraseña y la traemos por ti.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Tu clave la guarda el servicio de inicio de sesión de Divine. Introduce la contraseña de tu cuenta y la traemos.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copiar clave';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Tu dispositivo bloqueó la copia, así que tu clave no llegó al portapapeles.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Esa contraseña no coincide. Vuelve a intentarlo.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Demasiados intentos. Cierra esto y empieza de nuevo.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Demasiadas solicitudes de la clave. Espera unos minutos y vuelve a intentarlo.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Tu sesión ha caducado. Inicia sesión de nuevo para copiar tu clave.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Verifica tu dirección de correo electrónico antes de copiar tu clave.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine gestiona las claves de esta cuenta, así que no se pueden copiar aquí.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'No hay ninguna clave registrada para esta cuenta.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'no se pudo conectar con el servicio de inicio de sesión';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

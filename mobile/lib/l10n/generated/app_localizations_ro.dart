@@ -5233,7 +5233,50 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'Acest cont semnează cu Keycast. Nu este stocată nicio cheie privată pe acest dispozitiv, deci nu există niciun nsec de copiat aici.';
+      'Cheia ta se află pe serviciul de autentificare Divine, nu pe acest dispozitiv. Confirmă parola și o aducem pentru tine.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'Cheia ta este păstrată de serviciul de autentificare Divine. Introdu parola contului și o aducem.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'Copiază cheia';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'Dispozitivul tău a blocat copierea, așa că cheia ta nu a ajuns în clipboard.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'Parola nu se potrivește. Încearcă din nou.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'Prea multe încercări. Închide și ia-o de la capăt.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'Prea multe cereri pentru cheie. Așteaptă câteva minute și încearcă din nou.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'Sesiunea ta a expirat. Autentifică-te din nou pentru a copia cheia.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'Confirmă adresa de e-mail înainte de a copia cheia.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine administrează cheile acestui cont, așa că nu pot fi copiate aici.';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'Nu există nicio cheie înregistrată pentru acest cont.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'serviciul de autentificare nu a putut fi contactat';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

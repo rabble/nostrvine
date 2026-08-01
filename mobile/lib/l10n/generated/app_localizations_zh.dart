@@ -4823,7 +4823,41 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      '此账号使用 Keycast 签名。私钥不会存储在此设备上，因此这里没有可复制的 nsec。';
+      '你的私钥保存在 Divine 的登录服务上，不在这台设备里。确认一下密码，我们就帮你取回来。';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      '你的私钥由 Divine 的登录服务保管。输入你的账号密码，我们这就帮你取来。';
+
+  @override
+  String get keyManagementKeycastCopyKey => '复制私钥';
+
+  @override
+  String get keyManagementKeycastCopyBlocked => '你的设备阻止了这次复制，私钥没能进入剪贴板。';
+
+  @override
+  String get keyManagementKeycastWrongPassword => '密码不对，再试一次。';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts => '尝试次数过多。关掉这个窗口，重新来过。';
+
+  @override
+  String get keyManagementKeycastRateLimited => '请求私钥太频繁了。等几分钟再试。';
+
+  @override
+  String get keyManagementKeycastSignInAgain => '你的登录已过期。重新登录后再复制私钥。';
+
+  @override
+  String get keyManagementKeycastEmailUnverified => '复制私钥前请先验证你的邮箱地址。';
+
+  @override
+  String get keyManagementKeycastDenied => '这个账号的密钥由 Divine 托管，所以这里无法复制。';
+
+  @override
+  String get keyManagementKeycastNoKey => '这个账号没有任何密钥记录。';
+
+  @override
+  String get keyManagementKeycastGenericFailure => '连不上登录服务';
 
   @override
   String get keyManagementRestrictedTitle => '你的密钥由 Divine 托管';

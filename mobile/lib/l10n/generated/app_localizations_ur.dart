@@ -5096,7 +5096,50 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'یہ اکاؤنٹ Keycast سے دستخط کرتا ہے۔ اس ڈیوائس پر کوئی نجی کلید محفوظ نہیں ہے، اس لیے یہاں کاپی کرنے کے لیے کوئی nsec نہیں ہے۔';
+      'آپ کی کلید اس ڈیوائس پر نہیں بلکہ Divine کی لاگ اِن سروس پر رہتی ہے۔ اپنے پاس ورڈ کی تصدیق کریں اور ہم اسے آپ کے لیے لے آئیں گے۔';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'آپ کی کلید Divine کی لاگ اِن سروس کے پاس محفوظ ہے۔ اپنے اکاؤنٹ کا پاس ورڈ درج کریں اور ہم اسے لے آئیں گے۔';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'کلید کاپی کریں';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'آپ کی ڈیوائس نے کاپی روک دی، اس لیے آپ کی کلید کلپ بورڈ تک نہیں پہنچی۔';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'یہ پاس ورڈ میل نہیں کھاتا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'بہت زیادہ کوششیں۔ اسے بند کر کے دوبارہ شروع کریں۔';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'کلید کی بہت زیادہ درخواستیں۔ چند منٹ انتظار کر کے دوبارہ کوشش کریں۔';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'آپ کا سیشن ختم ہو گیا ہے۔ اپنی کلید کاپی کرنے کے لیے دوبارہ سائن ان کریں۔';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'اپنی کلید کاپی کرنے سے پہلے اپنے ای میل ایڈریس کی تصدیق کریں۔';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'Divine اس اکاؤنٹ کی کلیدیں سنبھالتا ہے، اس لیے انہیں یہاں کاپی نہیں کیا جا سکتا۔';
+
+  @override
+  String get keyManagementKeycastNoKey =>
+      'اس اکاؤنٹ کے لیے ریکارڈ میں کوئی کلید نہیں ہے۔';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'لاگ اِن سروس سے رابطہ نہیں ہو سکا';
 
   @override
   String get keyManagementRestrictedTitle => 'آپ کی کلیدیں Divine سنبھالتی ہے';

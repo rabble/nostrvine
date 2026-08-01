@@ -5054,7 +5054,49 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementKeycastRemoteSigning =>
-      'يوقّع هذا الحساب باستخدام Keycast. لا يوجد مفتاح خاص مخزّن على هذا الجهاز، لذلك لا يوجد nsec لنسخه هنا.';
+      'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine، وليس على هذا الجهاز. أكِّد كلمة المرور وسنجلبه لك.';
+
+  @override
+  String get keyManagementKeycastPasswordPrompt =>
+      'مفتاحك محفوظ في خدمة تسجيل الدخول الخاصة بـ Divine. أدخل كلمة مرور حسابك وسنجلبه لك.';
+
+  @override
+  String get keyManagementKeycastCopyKey => 'نسخ المفتاح';
+
+  @override
+  String get keyManagementKeycastCopyBlocked =>
+      'جهازك منع النسخ، لذلك لم يصل مفتاحك إلى الحافظة.';
+
+  @override
+  String get keyManagementKeycastWrongPassword =>
+      'كلمة المرور غير مطابقة. حاول مرة أخرى.';
+
+  @override
+  String get keyManagementKeycastTooManyAttempts =>
+      'محاولات كثيرة جدًا. أغلق هذا وابدأ من جديد.';
+
+  @override
+  String get keyManagementKeycastRateLimited =>
+      'طلبات كثيرة جدًا للمفتاح. انتظر بضع دقائق ثم حاول مرة أخرى.';
+
+  @override
+  String get keyManagementKeycastSignInAgain =>
+      'انتهت صلاحية جلستك. سجّل الدخول مرة أخرى لنسخ مفتاحك.';
+
+  @override
+  String get keyManagementKeycastEmailUnverified =>
+      'أكِّد عنوان بريدك الإلكتروني قبل نسخ المفتاح.';
+
+  @override
+  String get keyManagementKeycastDenied =>
+      'تدير Divine مفاتيح هذا الحساب، لذا لا يمكن نسخها هنا.';
+
+  @override
+  String get keyManagementKeycastNoKey => 'لا يوجد مفتاح مسجّل لهذا الحساب.';
+
+  @override
+  String get keyManagementKeycastGenericFailure =>
+      'تعذّر الوصول إلى خدمة تسجيل الدخول';
 
   @override
   String get keyManagementRestrictedTitle => 'Your keys are managed by Divine';

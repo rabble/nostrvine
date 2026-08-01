@@ -12,6 +12,7 @@ import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/protected_minor_providers.dart';
+import 'package:openvine/screens/key_management/keycast_key_export_card.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -373,44 +374,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                   ),
                 ),
               ] else if (showKeycastRemoteSigningInfo)
-                _buildKeycastRemoteSigningInfo(context),
+                const KeycastKeyExportCard(),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildKeycastRemoteSigningInfo(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: VineTheme.vineGreen.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.cloud_done_outlined,
-            color: VineTheme.vineGreen,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              context.l10n.keyManagementKeycastRemoteSigning,
-              style: TextStyle(
-                color: context.vineColors.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
