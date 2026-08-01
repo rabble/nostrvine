@@ -221,7 +221,9 @@ class DraftsTab extends ConsumerWidget {
     );
     await ref.read(videoPublishProvider.notifier).publishVideo(context, draft);
 
-    // Reload drafts to reflect deletion (handled by publishVideo)
+    // Reload so a published draft leaves the list. BackgroundPublishBloc owns
+    // that deletion and runs it after its success state, so a reload racing it
+    // can still show the draft until the next one.
     if (context.mounted) {
       context.read<DraftsLibraryBloc>().add(const DraftsLibraryLoadRequested());
     }

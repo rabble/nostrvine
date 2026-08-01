@@ -198,10 +198,11 @@ class VideoPublishService {
   /// Share of the publish bar owned by the upload.
   ///
   /// Everything after it — resolving mentions, signing and broadcasting the
-  /// Nostr event, sending collaborator invites — measured ~2s on device, and
-  /// the bar used to reach 100% before any of it ran. The remainder is handed
-  /// out at the boundaries below so the bar never claims to be done while it
-  /// isn't.
+  /// Nostr event, sending collaborator invites — measured ~2s on device back
+  /// when draft reclamation was still part of that tail (#6548 moved it to
+  /// the bloc), and the bar used to reach 100% before any of it ran. The
+  /// remainder is handed out at the boundaries below so the bar never claims
+  /// to be done while it isn't.
   static const double _uploadProgressShare = 0.85;
 
   /// Reached once mentions and subtitle assets are resolved.

@@ -82,9 +82,9 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// provided, returns only clips owned by that account **plus** legacy
   /// clips with no owner.
   ///
-  /// [includeTrashed] is for file-reference scans that must keep a
-  /// trashed (restorable) clip's files alive — active-clip listings should
-  /// leave it at its default.
+  /// [includeTrashed] keeps trashed (restorable) clips in the result — useful
+  /// when the caller must account for a clip that can come back. Active-clip
+  /// listings should leave it at its default.
   Future<List<ClipRow>> getAllClips({
     int? limit,
     String? ownerPubkey,
@@ -106,7 +106,9 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   }
 
   /// Every clip row that carries a non-null `ghostFramePath`, projected to the
-  /// two fields a ghost-frame reference scan needs.
+  /// fields a ghost-frame reference scan needs: `draftId` to skip the draft
+  /// being deleted, `data` to read the frame out of, and `id` to name the row
+  /// if its blob turns out to be corrupt.
   ///
   /// Ghost frames have no indexed column — they exist only inside the `data`
   /// blob — so the alternative is loading and JSON-decoding *every* clip row in

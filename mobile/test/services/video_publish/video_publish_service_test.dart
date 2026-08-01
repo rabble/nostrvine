@@ -1281,9 +1281,6 @@ void main() {
           () => mockAuthService.currentPublicKeyHex,
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-        when(
-          () => mockDraftService.deleteDraft(any()),
-        ).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(false);
         when(() => mockUploadManager.initialize()).thenAnswer((_) async {});
         when(
@@ -1414,9 +1411,6 @@ void main() {
           () => mockAuthService.currentPublicKeyHex,
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-        when(
-          () => mockDraftService.deleteDraft(any()),
-        ).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
 
         final readyUpload = _createPendingUpload(
@@ -1489,9 +1483,6 @@ void main() {
           () => mockAuthService.currentPublicKeyHex,
         ).thenReturn('test_pubkey');
         when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-        when(
-          () => mockDraftService.deleteDraft(any()),
-        ).thenAnswer((_) async {});
         when(() => mockUploadManager.isInitialized).thenReturn(true);
 
         final uploadingUpload = _createPendingUpload(
@@ -2143,7 +2134,6 @@ void _setupSuccessfulPublish({
   when(() => mockAuthService.isAuthenticated).thenReturn(true);
   when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
   when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-  when(() => mockDraftService.deleteDraft(any())).thenAnswer((_) async {});
   when(() => mockUploadManager.isInitialized).thenReturn(true);
   when(
     () => mockUploadManager.startUploadFromDraft(
