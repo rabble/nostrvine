@@ -115,23 +115,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => '未保存的草稿';
 
   @override
-  String get settingsUploadInProgressTitle => 'Upload in progress';
+  String get settingsUploadInProgressTitle => '正在上传';
 
   @override
   String settingsUploadInProgressMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos',
-      one: 'video',
+      other: '视频',
+      one: '视频',
     );
     String _temp1 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos stay as drafts',
-      one: 'video stays as a draft',
+      other: '视频会作为草稿留在这个账号里',
+      one: '视频会作为草稿留在这个账号里',
     );
-    return 'You still have $count $_temp0 uploading. Switching accounts stops the upload — your $_temp1 in this account.';
+    return '你还有 $count 个$_temp0正在上传。切换账号会中断上传——$_temp1。';
   }
 
   @override
@@ -6859,8 +6859,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get publishErrorInterrupted => '上传被中断。要重试吗？';
 
   @override
-  String get publishErrorAccountChanged =>
-      'This video belongs to a different account. Switch back to that account to post it.';
+  String get publishErrorAccountChanged => '这个视频属于另一个账号。切回那个账号才能发布。';
 
   @override
   String get publishErrorGeneric => '出了点问题，请重试。';
@@ -6879,7 +6878,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get publishErrorOverlaysUnavailable =>
-      'The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.';
+      '这份草稿上的文字和贴纸没能准备好。到编辑器里打开，然后重新发布。';
 
   @override
   String get publishErrorUnknownServer => '未知服务器';
@@ -8326,106 +8325,95 @@ class AppLocalizationsZh extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => '滑动调节';
 
   @override
-  String get videoEditorChromaKeyLabel => 'Green screen';
+  String get videoEditorChromaKeyLabel => '绿幕';
 
   @override
-  String get videoEditorChromaKeyTitle => 'Green screen';
+  String get videoEditorChromaKeyTitle => '绿幕';
 
   @override
-  String get videoEditorChromaKeySemanticLabel =>
-      'Set up the green screen for this clip';
+  String get videoEditorChromaKeySemanticLabel => '为这个片段设置绿幕';
 
   @override
-  String get videoEditorChromaKeyCloseSemanticLabel =>
-      'Discard green screen changes';
+  String get videoEditorChromaKeyCloseSemanticLabel => '放弃绿幕改动';
 
   @override
-  String get videoEditorChromaKeyDoneSemanticLabel => 'Apply the green screen';
+  String get videoEditorChromaKeyDoneSemanticLabel => '应用绿幕';
 
   @override
-  String get videoEditorChromaKeyAutoDetect => 'Auto-detect';
+  String get videoEditorChromaKeyAutoDetect => '自动识别';
 
   @override
-  String get videoEditorChromaKeyPresetGreen => 'Green';
+  String get videoEditorChromaKeyPresetGreen => '绿色';
 
   @override
-  String get videoEditorChromaKeyPresetBlue => 'Blue';
+  String get videoEditorChromaKeyPresetBlue => '蓝色';
 
   @override
-  String get videoEditorChromaKeyScreenColorLabel => 'Screen color';
+  String get videoEditorChromaKeyScreenColorLabel => '幕布颜色';
 
   @override
-  String get videoEditorChromaKeyAmountLabel => 'Amount';
+  String get videoEditorChromaKeyAmountLabel => '强度';
 
   @override
-  String get videoEditorChromaKeyAmountHint =>
-      'How much of the screen color disappears';
+  String get videoEditorChromaKeyAmountHint => '幕布颜色被抠掉多少';
 
   @override
-  String get videoEditorChromaKeyEdgeLabel => 'Edge';
+  String get videoEditorChromaKeyEdgeLabel => '边缘';
 
   @override
-  String get videoEditorChromaKeyEdgeHint =>
-      'Softens the cutout so hair doesn\'t turn jagged';
+  String get videoEditorChromaKeyEdgeHint => '让抠像边缘更柔和，头发不会毛刺';
 
   @override
-  String get videoEditorChromaKeySpillLabel => 'Spill';
+  String get videoEditorChromaKeySpillLabel => '溢色';
 
   @override
-  String get videoEditorChromaKeySpillHint =>
-      'Pulls the screen\'s color back off your subject';
+  String get videoEditorChromaKeySpillHint => '把幕布的颜色从主体上去掉';
 
   @override
-  String get videoEditorChromaKeyBackgroundLabel => 'Replace with';
+  String get videoEditorChromaKeyBackgroundLabel => '替换为';
 
   @override
-  String get videoEditorChromaKeyBackgroundNone => 'Nothing';
+  String get videoEditorChromaKeyBackgroundNone => '无';
 
   @override
-  String get videoEditorChromaKeyBackgroundColor => 'Color';
+  String get videoEditorChromaKeyBackgroundColor => '颜色';
 
   @override
-  String get videoEditorChromaKeyBackgroundImage => 'Image';
+  String get videoEditorChromaKeyBackgroundImage => '图片';
 
   @override
-  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+  String get videoEditorChromaKeyBackgroundVideo => '片段';
 
   @override
-  String get videoEditorChromaKeyTransparentHint =>
-      'Video can\'t hold transparency, so this exports as black.';
+  String get videoEditorChromaKeyTransparentHint => '视频存不了透明，所以导出会是黑色。';
 
   @override
-  String get videoEditorChromaKeyDetectFailed =>
-      'Couldn\'t find a screen. It has to reach the edges of the frame — pick the color by hand instead.';
+  String get videoEditorChromaKeyDetectFailed => '没找到幕布。幕布得铺到画面边缘——不然就手动选颜色吧。';
 
   @override
-  String get videoEditorChromaKeyPickClipTitle => 'Pick a clip';
+  String get videoEditorChromaKeyPickClipTitle => '选个片段';
 
   @override
-  String get videoEditorChromaKeyNoLibraryClips =>
-      'Your library is empty. Save a clip first, then use it as a background.';
+  String get videoEditorChromaKeyNoLibraryClips => '作品库是空的。先存一个片段，就能拿它当背景了。';
 
   @override
-  String get videoEditorChromaKeyImagePickFailed =>
-      'Couldn\'t load that image.';
+  String get videoEditorChromaKeyImagePickFailed => '这张图片加载不了。';
 
   @override
-  String get videoEditorChromaKeyRemove => 'Remove green screen';
+  String get videoEditorChromaKeyRemove => '移除绿幕';
 
   @override
-  String get videoEditorChromaKeyFailed =>
-      'Couldn\'t apply the green screen. Your clip is unchanged.';
+  String get videoEditorChromaKeyFailed => '绿幕没能应用。你的片段没有改动。';
 
   @override
-  String get videoEditorChromaKeyRemoveFailed =>
-      'Couldn\'t remove the green screen. Your clip is unchanged.';
+  String get videoEditorChromaKeyRemoveFailed => '绿幕没能移除。你的片段没有改动。';
 
   @override
-  String get videoEditorChromaKeyApplying => 'Applying the green screen…';
+  String get videoEditorChromaKeyApplying => '正在应用绿幕…';
 
   @override
   String get videoEditorChromaKeyPreviewUnavailable =>
-      'This device can\'t show the live preview. Your settings still apply when you export.';
+      '这台设备无法显示实时预览。导出时你的设置仍然生效。';
 
   @override
   String get videoEditorOriginalAudioLabel => '原始音频';

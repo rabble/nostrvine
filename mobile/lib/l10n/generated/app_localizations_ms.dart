@@ -122,23 +122,23 @@ class AppLocalizationsMs extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Draf Belum Disimpan';
 
   @override
-  String get settingsUploadInProgressTitle => 'Upload in progress';
+  String get settingsUploadInProgressTitle => 'Muat naik sedang berjalan';
 
   @override
   String settingsUploadInProgressMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos',
+      other: 'video',
       one: 'video',
     );
     String _temp1 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos stay as drafts',
-      one: 'video stays as a draft',
+      other: 'video anda kekal sebagai draf',
+      one: 'video anda kekal sebagai draf',
     );
-    return 'You still have $count $_temp0 uploading. Switching accounts stops the upload — your $_temp1 in this account.';
+    return 'Anda masih mempunyai $count $_temp0 sedang dimuat naik. Menukar akaun akan menghentikan muat naik — $_temp1 dalam akaun ini.';
   }
 
   @override
@@ -7270,7 +7270,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get publishErrorAccountChanged =>
-      'This video belongs to a different account. Switch back to that account to post it.';
+      'Video ini milik akaun lain. Tukar kembali ke akaun itu untuk menyiarkannya.';
 
   @override
   String get publishErrorGeneric => 'Sesuatu telah berlaku. Sila cuba lagi.';
@@ -7293,7 +7293,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get publishErrorOverlaysUnavailable =>
-      'The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.';
+      'Teks dan pelekat pada draf ini tidak dapat disediakan. Buka ia dalam penyunting, kemudian siarkan semula.';
 
   @override
   String get publishErrorUnknownServer => 'Pelayan tidak diketahui';
@@ -8802,106 +8802,106 @@ class AppLocalizationsMs extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Luncur untuk melaras';
 
   @override
-  String get videoEditorChromaKeyLabel => 'Green screen';
+  String get videoEditorChromaKeyLabel => 'Skrin hijau';
 
   @override
-  String get videoEditorChromaKeyTitle => 'Green screen';
+  String get videoEditorChromaKeyTitle => 'Skrin hijau';
 
   @override
   String get videoEditorChromaKeySemanticLabel =>
-      'Set up the green screen for this clip';
+      'Sediakan skrin hijau untuk klip ini';
 
   @override
   String get videoEditorChromaKeyCloseSemanticLabel =>
-      'Discard green screen changes';
+      'Buang perubahan skrin hijau';
 
   @override
-  String get videoEditorChromaKeyDoneSemanticLabel => 'Apply the green screen';
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Gunakan skrin hijau';
 
   @override
-  String get videoEditorChromaKeyAutoDetect => 'Auto-detect';
+  String get videoEditorChromaKeyAutoDetect => 'Kesan automatik';
 
   @override
-  String get videoEditorChromaKeyPresetGreen => 'Green';
+  String get videoEditorChromaKeyPresetGreen => 'Hijau';
 
   @override
-  String get videoEditorChromaKeyPresetBlue => 'Blue';
+  String get videoEditorChromaKeyPresetBlue => 'Biru';
 
   @override
-  String get videoEditorChromaKeyScreenColorLabel => 'Screen color';
+  String get videoEditorChromaKeyScreenColorLabel => 'Warna skrin';
 
   @override
-  String get videoEditorChromaKeyAmountLabel => 'Amount';
+  String get videoEditorChromaKeyAmountLabel => 'Kekuatan';
 
   @override
   String get videoEditorChromaKeyAmountHint =>
-      'How much of the screen color disappears';
+      'Berapa banyak warna skrin yang hilang';
 
   @override
-  String get videoEditorChromaKeyEdgeLabel => 'Edge';
+  String get videoEditorChromaKeyEdgeLabel => 'Tepi';
 
   @override
   String get videoEditorChromaKeyEdgeHint =>
-      'Softens the cutout so hair doesn\'t turn jagged';
+      'Melembutkan potongan supaya rambut tidak bergerigi';
 
   @override
-  String get videoEditorChromaKeySpillLabel => 'Spill';
+  String get videoEditorChromaKeySpillLabel => 'Limpahan';
 
   @override
   String get videoEditorChromaKeySpillHint =>
-      'Pulls the screen\'s color back off your subject';
+      'Menarik warna skrin keluar daripada subjek anda';
 
   @override
-  String get videoEditorChromaKeyBackgroundLabel => 'Replace with';
+  String get videoEditorChromaKeyBackgroundLabel => 'Ganti dengan';
 
   @override
-  String get videoEditorChromaKeyBackgroundNone => 'Nothing';
+  String get videoEditorChromaKeyBackgroundNone => 'Tiada';
 
   @override
-  String get videoEditorChromaKeyBackgroundColor => 'Color';
+  String get videoEditorChromaKeyBackgroundColor => 'Warna';
 
   @override
-  String get videoEditorChromaKeyBackgroundImage => 'Image';
+  String get videoEditorChromaKeyBackgroundImage => 'Imej';
 
   @override
-  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+  String get videoEditorChromaKeyBackgroundVideo => 'Klip';
 
   @override
   String get videoEditorChromaKeyTransparentHint =>
-      'Video can\'t hold transparency, so this exports as black.';
+      'Video tidak boleh menyimpan ketelusan, jadi ini dieksport sebagai hitam.';
 
   @override
   String get videoEditorChromaKeyDetectFailed =>
-      'Couldn\'t find a screen. It has to reach the edges of the frame — pick the color by hand instead.';
+      'Skrin tidak ditemui. Ia perlu mencapai tepi bingkai — pilih warnanya secara manual.';
 
   @override
-  String get videoEditorChromaKeyPickClipTitle => 'Pick a clip';
+  String get videoEditorChromaKeyPickClipTitle => 'Pilih klip';
 
   @override
   String get videoEditorChromaKeyNoLibraryClips =>
-      'Your library is empty. Save a clip first, then use it as a background.';
+      'Pustaka anda kosong. Simpan klip dahulu, kemudian gunakannya sebagai latar.';
 
   @override
   String get videoEditorChromaKeyImagePickFailed =>
-      'Couldn\'t load that image.';
+      'Imej itu tidak dapat dimuatkan.';
 
   @override
-  String get videoEditorChromaKeyRemove => 'Remove green screen';
+  String get videoEditorChromaKeyRemove => 'Alih keluar skrin hijau';
 
   @override
   String get videoEditorChromaKeyFailed =>
-      'Couldn\'t apply the green screen. Your clip is unchanged.';
+      'Skrin hijau tidak dapat digunakan. Klip anda tidak berubah.';
 
   @override
   String get videoEditorChromaKeyRemoveFailed =>
-      'Couldn\'t remove the green screen. Your clip is unchanged.';
+      'Skrin hijau tidak dapat dialih keluar. Klip anda tidak berubah.';
 
   @override
-  String get videoEditorChromaKeyApplying => 'Applying the green screen…';
+  String get videoEditorChromaKeyApplying => 'Menggunakan skrin hijau…';
 
   @override
   String get videoEditorChromaKeyPreviewUnavailable =>
-      'This device can\'t show the live preview. Your settings still apply when you export.';
+      'Peranti ini tidak dapat menunjukkan pratonton langsung. Tetapan anda tetap digunakan semasa eksport.';
 
   @override
   String get videoEditorOriginalAudioLabel => 'Audio asal';

@@ -122,23 +122,23 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Bản nháp chưa lưu';
 
   @override
-  String get settingsUploadInProgressTitle => 'Upload in progress';
+  String get settingsUploadInProgressTitle => 'Đang tải lên';
 
   @override
   String settingsUploadInProgressMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos',
+      other: 'video',
       one: 'video',
     );
     String _temp1 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos stay as drafts',
-      one: 'video stays as a draft',
+      other: 'các video của bạn sẽ ở lại dưới dạng bản nháp',
+      one: 'video của bạn sẽ ở lại dưới dạng bản nháp',
     );
-    return 'You still have $count $_temp0 uploading. Switching accounts stops the upload — your $_temp1 in this account.';
+    return 'Bạn vẫn còn $count $_temp0 đang tải lên. Chuyển tài khoản sẽ dừng việc tải lên — $_temp1 trong tài khoản này.';
   }
 
   @override
@@ -7228,7 +7228,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get publishErrorAccountChanged =>
-      'This video belongs to a different account. Switch back to that account to post it.';
+      'Video này thuộc về một tài khoản khác. Chuyển lại tài khoản đó để đăng nhé.';
 
   @override
   String get publishErrorGeneric => 'Có gì đó không ổn. Vui lòng thử lại.';
@@ -7251,7 +7251,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get publishErrorOverlaysUnavailable =>
-      'The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.';
+      'Không chuẩn bị được chữ và nhãn dán trên bản nháp này. Mở nó trong trình chỉnh sửa rồi đăng lại.';
 
   @override
   String get publishErrorUnknownServer => 'Máy chủ không xác định';
@@ -8754,106 +8754,104 @@ class AppLocalizationsVi extends AppLocalizations {
   String get videoEditorTimelineSlideToAdjust => 'Trượt để điều chỉnh';
 
   @override
-  String get videoEditorChromaKeyLabel => 'Green screen';
+  String get videoEditorChromaKeyLabel => 'Phông xanh';
 
   @override
-  String get videoEditorChromaKeyTitle => 'Green screen';
+  String get videoEditorChromaKeyTitle => 'Phông xanh';
 
   @override
   String get videoEditorChromaKeySemanticLabel =>
-      'Set up the green screen for this clip';
+      'Thiết lập phông xanh cho clip này';
 
   @override
   String get videoEditorChromaKeyCloseSemanticLabel =>
-      'Discard green screen changes';
+      'Bỏ các thay đổi phông xanh';
 
   @override
-  String get videoEditorChromaKeyDoneSemanticLabel => 'Apply the green screen';
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Áp dụng phông xanh';
 
   @override
-  String get videoEditorChromaKeyAutoDetect => 'Auto-detect';
+  String get videoEditorChromaKeyAutoDetect => 'Tự động nhận diện';
 
   @override
-  String get videoEditorChromaKeyPresetGreen => 'Green';
+  String get videoEditorChromaKeyPresetGreen => 'Xanh lá';
 
   @override
-  String get videoEditorChromaKeyPresetBlue => 'Blue';
+  String get videoEditorChromaKeyPresetBlue => 'Xanh dương';
 
   @override
-  String get videoEditorChromaKeyScreenColorLabel => 'Screen color';
+  String get videoEditorChromaKeyScreenColorLabel => 'Màu phông';
 
   @override
-  String get videoEditorChromaKeyAmountLabel => 'Amount';
+  String get videoEditorChromaKeyAmountLabel => 'Mức độ';
 
   @override
-  String get videoEditorChromaKeyAmountHint =>
-      'How much of the screen color disappears';
+  String get videoEditorChromaKeyAmountHint => 'Xóa bao nhiêu phần màu phông';
 
   @override
-  String get videoEditorChromaKeyEdgeLabel => 'Edge';
+  String get videoEditorChromaKeyEdgeLabel => 'Viền';
 
   @override
   String get videoEditorChromaKeyEdgeHint =>
-      'Softens the cutout so hair doesn\'t turn jagged';
+      'Làm mềm phần cắt để tóc không bị răng cưa';
 
   @override
-  String get videoEditorChromaKeySpillLabel => 'Spill';
+  String get videoEditorChromaKeySpillLabel => 'Ám màu';
 
   @override
   String get videoEditorChromaKeySpillHint =>
-      'Pulls the screen\'s color back off your subject';
+      'Kéo màu phông ra khỏi chủ thể của bạn';
 
   @override
-  String get videoEditorChromaKeyBackgroundLabel => 'Replace with';
+  String get videoEditorChromaKeyBackgroundLabel => 'Thay bằng';
 
   @override
-  String get videoEditorChromaKeyBackgroundNone => 'Nothing';
+  String get videoEditorChromaKeyBackgroundNone => 'Không gì cả';
 
   @override
-  String get videoEditorChromaKeyBackgroundColor => 'Color';
+  String get videoEditorChromaKeyBackgroundColor => 'Màu';
 
   @override
-  String get videoEditorChromaKeyBackgroundImage => 'Image';
+  String get videoEditorChromaKeyBackgroundImage => 'Ảnh';
 
   @override
   String get videoEditorChromaKeyBackgroundVideo => 'Clip';
 
   @override
   String get videoEditorChromaKeyTransparentHint =>
-      'Video can\'t hold transparency, so this exports as black.';
+      'Video không giữ được độ trong suốt, nên phần này sẽ xuất ra màu đen.';
 
   @override
   String get videoEditorChromaKeyDetectFailed =>
-      'Couldn\'t find a screen. It has to reach the edges of the frame — pick the color by hand instead.';
+      'Không tìm thấy phông. Phông phải chạm tới các cạnh khung hình — nếu không, hãy tự chọn màu.';
 
   @override
-  String get videoEditorChromaKeyPickClipTitle => 'Pick a clip';
+  String get videoEditorChromaKeyPickClipTitle => 'Chọn một clip';
 
   @override
   String get videoEditorChromaKeyNoLibraryClips =>
-      'Your library is empty. Save a clip first, then use it as a background.';
+      'Thư viện của bạn đang trống. Lưu một clip trước đã, rồi dùng nó làm nền.';
 
   @override
-  String get videoEditorChromaKeyImagePickFailed =>
-      'Couldn\'t load that image.';
+  String get videoEditorChromaKeyImagePickFailed => 'Không tải được ảnh đó.';
 
   @override
-  String get videoEditorChromaKeyRemove => 'Remove green screen';
+  String get videoEditorChromaKeyRemove => 'Gỡ phông xanh';
 
   @override
   String get videoEditorChromaKeyFailed =>
-      'Couldn\'t apply the green screen. Your clip is unchanged.';
+      'Không áp dụng được phông xanh. Clip của bạn vẫn nguyên.';
 
   @override
   String get videoEditorChromaKeyRemoveFailed =>
-      'Couldn\'t remove the green screen. Your clip is unchanged.';
+      'Không gỡ được phông xanh. Clip của bạn vẫn nguyên.';
 
   @override
-  String get videoEditorChromaKeyApplying => 'Applying the green screen…';
+  String get videoEditorChromaKeyApplying => 'Đang áp dụng phông xanh…';
 
   @override
   String get videoEditorChromaKeyPreviewUnavailable =>
-      'This device can\'t show the live preview. Your settings still apply when you export.';
+      'Thiết bị này không hiển thị được bản xem trước trực tiếp. Cài đặt của bạn vẫn được áp dụng khi xuất.';
 
   @override
   String get videoEditorOriginalAudioLabel => 'Âm thanh gốc';

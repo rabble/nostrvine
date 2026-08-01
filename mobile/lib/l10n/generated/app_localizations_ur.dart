@@ -122,23 +122,23 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'غیر محفوظ مسودے';
 
   @override
-  String get settingsUploadInProgressTitle => 'Upload in progress';
+  String get settingsUploadInProgressTitle => 'اپلوڈ جاری ہے';
 
   @override
   String settingsUploadInProgressMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos',
-      one: 'video',
+      other: 'ویڈیوز',
+      one: 'ویڈیو',
     );
     String _temp1 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'videos stay as drafts',
-      one: 'video stays as a draft',
+      other: 'آپ کی ویڈیوز اس اکاؤنٹ میں مسودوں کے طور پر رہ جائیں گی',
+      one: 'آپ کی ویڈیو اس اکاؤنٹ میں مسودے کے طور پر رہ جائے گی',
     );
-    return 'You still have $count $_temp0 uploading. Switching accounts stops the upload — your $_temp1 in this account.';
+    return 'آپ کی $count $_temp0 ابھی اپلوڈ ہو رہی ہیں۔ اکاؤنٹ تبدیل کرنے سے اپلوڈ رک جائے گا — $_temp1۔';
   }
 
   @override
@@ -7222,7 +7222,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get publishErrorAccountChanged =>
-      'This video belongs to a different account. Switch back to that account to post it.';
+      'یہ ویڈیو کسی اور اکاؤنٹ کی ہے۔ اسے پوسٹ کرنے کے لیے اُسی اکاؤنٹ پر واپس جائیں۔';
 
   @override
   String get publishErrorGeneric =>
@@ -7246,7 +7246,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get publishErrorOverlaysUnavailable =>
-      'The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.';
+      'اس مسودے کا ٹیکسٹ اور اسٹیکرز تیار نہیں ہو سکے۔ اسے ایڈیٹر میں کھولیں، پھر دوبارہ پوسٹ کریں۔';
 
   @override
   String get publishErrorUnknownServer => 'نامعلوم سرور';
@@ -8746,106 +8746,104 @@ class AppLocalizationsUr extends AppLocalizations {
       'ایڈجسٹ کرنے کے لیے سلائیڈ کریں';
 
   @override
-  String get videoEditorChromaKeyLabel => 'Green screen';
+  String get videoEditorChromaKeyLabel => 'گرین اسکرین';
 
   @override
-  String get videoEditorChromaKeyTitle => 'Green screen';
+  String get videoEditorChromaKeyTitle => 'گرین اسکرین';
 
   @override
   String get videoEditorChromaKeySemanticLabel =>
-      'Set up the green screen for this clip';
+      'اس کلپ کے لیے گرین اسکرین سیٹ کریں';
 
   @override
   String get videoEditorChromaKeyCloseSemanticLabel =>
-      'Discard green screen changes';
+      'گرین اسکرین کی تبدیلیاں رد کریں';
 
   @override
-  String get videoEditorChromaKeyDoneSemanticLabel => 'Apply the green screen';
+  String get videoEditorChromaKeyDoneSemanticLabel => 'گرین اسکرین لاگو کریں';
 
   @override
-  String get videoEditorChromaKeyAutoDetect => 'Auto-detect';
+  String get videoEditorChromaKeyAutoDetect => 'خودکار شناخت';
 
   @override
-  String get videoEditorChromaKeyPresetGreen => 'Green';
+  String get videoEditorChromaKeyPresetGreen => 'سبز';
 
   @override
-  String get videoEditorChromaKeyPresetBlue => 'Blue';
+  String get videoEditorChromaKeyPresetBlue => 'نیلا';
 
   @override
-  String get videoEditorChromaKeyScreenColorLabel => 'Screen color';
+  String get videoEditorChromaKeyScreenColorLabel => 'اسکرین کا رنگ';
 
   @override
-  String get videoEditorChromaKeyAmountLabel => 'Amount';
+  String get videoEditorChromaKeyAmountLabel => 'مقدار';
 
   @override
-  String get videoEditorChromaKeyAmountHint =>
-      'How much of the screen color disappears';
+  String get videoEditorChromaKeyAmountHint => 'اسکرین کا رنگ کتنا غائب ہوگا';
 
   @override
-  String get videoEditorChromaKeyEdgeLabel => 'Edge';
+  String get videoEditorChromaKeyEdgeLabel => 'کنارہ';
 
   @override
   String get videoEditorChromaKeyEdgeHint =>
-      'Softens the cutout so hair doesn\'t turn jagged';
+      'کٹاؤ کو نرم کرتا ہے تاکہ بال کھردرے نہ لگیں';
 
   @override
-  String get videoEditorChromaKeySpillLabel => 'Spill';
+  String get videoEditorChromaKeySpillLabel => 'رنگ کی جھلک';
 
   @override
   String get videoEditorChromaKeySpillHint =>
-      'Pulls the screen\'s color back off your subject';
+      'اسکرین کا رنگ آپ کے سبجیکٹ سے ہٹاتا ہے';
 
   @override
-  String get videoEditorChromaKeyBackgroundLabel => 'Replace with';
+  String get videoEditorChromaKeyBackgroundLabel => 'اس سے بدلیں';
 
   @override
-  String get videoEditorChromaKeyBackgroundNone => 'Nothing';
+  String get videoEditorChromaKeyBackgroundNone => 'کچھ نہیں';
 
   @override
-  String get videoEditorChromaKeyBackgroundColor => 'Color';
+  String get videoEditorChromaKeyBackgroundColor => 'رنگ';
 
   @override
-  String get videoEditorChromaKeyBackgroundImage => 'Image';
+  String get videoEditorChromaKeyBackgroundImage => 'تصویر';
 
   @override
-  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+  String get videoEditorChromaKeyBackgroundVideo => 'کلپ';
 
   @override
   String get videoEditorChromaKeyTransparentHint =>
-      'Video can\'t hold transparency, so this exports as black.';
+      'ویڈیو شفافیت محفوظ نہیں رکھ سکتی، اس لیے یہ سیاہ ایکسپورٹ ہوگی۔';
 
   @override
   String get videoEditorChromaKeyDetectFailed =>
-      'Couldn\'t find a screen. It has to reach the edges of the frame — pick the color by hand instead.';
+      'کوئی اسکرین نہیں ملی۔ اسے فریم کے کناروں تک پہنچنا چاہیے — ورنہ رنگ خود منتخب کریں۔';
 
   @override
-  String get videoEditorChromaKeyPickClipTitle => 'Pick a clip';
+  String get videoEditorChromaKeyPickClipTitle => 'کلپ چنیں';
 
   @override
   String get videoEditorChromaKeyNoLibraryClips =>
-      'Your library is empty. Save a clip first, then use it as a background.';
+      'آپ کی لائبریری خالی ہے۔ پہلے کوئی کلپ محفوظ کریں، پھر اسے پس منظر کے طور پر استعمال کریں۔';
 
   @override
-  String get videoEditorChromaKeyImagePickFailed =>
-      'Couldn\'t load that image.';
+  String get videoEditorChromaKeyImagePickFailed => 'وہ تصویر لوڈ نہیں ہو سکی۔';
 
   @override
-  String get videoEditorChromaKeyRemove => 'Remove green screen';
+  String get videoEditorChromaKeyRemove => 'گرین اسکرین ہٹائیں';
 
   @override
   String get videoEditorChromaKeyFailed =>
-      'Couldn\'t apply the green screen. Your clip is unchanged.';
+      'گرین اسکرین لاگو نہیں ہو سکی۔ آپ کا کلپ ویسا ہی ہے۔';
 
   @override
   String get videoEditorChromaKeyRemoveFailed =>
-      'Couldn\'t remove the green screen. Your clip is unchanged.';
+      'گرین اسکرین ہٹائی نہیں جا سکی۔ آپ کا کلپ ویسا ہی ہے۔';
 
   @override
-  String get videoEditorChromaKeyApplying => 'Applying the green screen…';
+  String get videoEditorChromaKeyApplying => 'گرین اسکرین لاگو ہو رہی ہے…';
 
   @override
   String get videoEditorChromaKeyPreviewUnavailable =>
-      'This device can\'t show the live preview. Your settings still apply when you export.';
+      'یہ ڈیوائس لائیو پیش منظر نہیں دکھا سکتی۔ ایکسپورٹ کے وقت آپ کی ترتیبات پھر بھی لاگو ہوں گی۔';
 
   @override
   String get videoEditorOriginalAudioLabel => 'اصل آڈیو';
