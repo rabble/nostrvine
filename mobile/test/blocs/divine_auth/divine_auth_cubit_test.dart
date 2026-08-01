@@ -355,48 +355,60 @@ void main() {
           },
         );
 
-        test('does not throw when the cubit closes mid-sign-in', () async {
-          // Same close-mid-flight race as skipWithAnonymousAccount: the
-          // sign-in flips AuthService to `authenticated` before returning,
-          // which reroutes off the auth screen and closes this cubit while
-          // the await is still in flight.
-          final signedIn = Completer<void>();
-          when(
-            () => mockOAuth.headlessLogin(
-              email: any(named: 'email'),
-              password: any(named: 'password'),
-              scope: any(named: 'scope'),
-            ),
-          ).thenAnswer(
-            (_) async => (
-              HeadlessLoginResult(success: true, code: testCode),
-              testVerifier,
-            ),
-          );
-          when(
-            () => mockOAuth.exchangeCode(
-              code: any(named: 'code'),
-              verifier: any(named: 'verifier'),
-            ),
-          ).thenAnswer(
-            (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
-          );
-          when(
-            () => mockAuthService.signInWithDivineOAuth(any()),
-          ).thenAnswer((_) => signedIn.future);
+        test(
+          'closing mid-sign-in reports no error to the bloc observer',
+          () async {
+            // Same close-mid-flight race as skipWithAnonymousAccount: the
+            // sign-in flips AuthService to `authenticated` before returning,
+            // which reroutes off the auth screen and closes this cubit while
+            // the await is still in flight.
+            //
+            // Assert via the observer, not on completion: emit-after-close is
+            // swallowed by the generic catch, so `completes` alone stays green
+            // even with the guard removed.
+            final signedIn = Completer<void>();
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(success: true, code: testCode),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).thenAnswer(
+              (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
+            );
+            when(
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ).thenAnswer((_) => signedIn.future);
 
-          final cubit = buildCubit()
-            ..initialize(isSignIn: true)
-            ..updateEmail(testEmail)
-            ..updatePassword(testPassword);
+            final observed = <Object>[];
+            final previousObserver = Bloc.observer;
+            Bloc.observer = _RecordingBlocObserver(observed);
+            addTearDown(() => Bloc.observer = previousObserver);
 
-          final submit = cubit.submit();
-          await cubit.close();
-          signedIn.complete();
+            final cubit = buildCubit()
+              ..initialize(isSignIn: true)
+              ..updateEmail(testEmail)
+              ..updatePassword(testPassword);
 
-          await expectLater(submit, completes);
-          expect(cubit.state, isA<DivineAuthFormState>());
-        });
+            final submit = cubit.submit();
+            await cubit.close();
+            signedIn.complete();
+
+            await expectLater(submit, completes);
+            expect(observed, isEmpty);
+          },
+        );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
           'consumes invite with exchanged session before completing sign in',
