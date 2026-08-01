@@ -9864,6 +9864,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileBadgeFallbackSemanticLabel => 'بیج';
 
   @override
+  String get profileBadgeFooterBody =>
+      'بیجز چھوٹے انعامات ہیں جو کوئی بھی Nostr پر بنا سکتا ہے۔ کسی دوست، تخلیق کار، یا اس شخص کو دیں جس نے آپ کا دن بنا دیا۔';
+
+  @override
+  String get profileBadgeFooterLink => 'badges.divine.video پر اپنا بیج بنائیں';
+
+  @override
   String get minorAccountReviewWelcomePageTitle => 'خاندانی رہنما';
 
   @override

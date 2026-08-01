@@ -6767,5 +6767,7 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Xoá relay"
+  "relaySettingsRemoveRelayTooltip": "Xoá relay",
+  "profileBadgeFooterBody": "Huy hiệu là những phần thưởng nhỏ mà bất kỳ ai cũng có thể tạo trên Nostr. Tặng một huy hiệu cho bạn bè, nhà sáng tạo, hoặc người đã làm bừng sáng ngày của bạn.",
+  "profileBadgeFooterLink": "Tạo huy hiệu của riêng bạn tại badges.divine.video"
 }
