@@ -130,6 +130,8 @@ void main() {
         expect(grantedStatus.canInvite, isTrue);
         expect(grantedStatus.remaining, _initialInviteAllocation);
         expect(grantedStatus.total, _initialInviteAllocation);
+        // Nothing minted yet, so the whole allocation is still generatable.
+        expect(grantedStatus.mintableCount, _initialInviteAllocation);
 
         logPhase(
           'Phase 1b: invite status loaded — '
@@ -178,11 +180,12 @@ void main() {
 
         expect(find.byType(InvitesView), findsOneWidget);
         expect(
-          find.text(_en.invitesGenerateCardTitle(grantedStatus.remaining)),
+          find.text(_en.invitesGenerateCardTitle(grantedStatus.mintableCount)),
           findsOneWidget,
           reason:
               'The invites screen should offer the server-granted '
-              '${grantedStatus.remaining} invites even with an empty code list',
+              '${grantedStatus.mintableCount} invites even with an empty '
+              'code list',
         );
         expect(
           find.text(_en.invitesNoneAvailable),
@@ -229,11 +232,17 @@ void main() {
         // spending the allocation — nothing is consumed until someone joins.
         expect(generatedStatus.remaining, _initialInviteAllocation);
         expect(generatedStatus.total, _initialInviteAllocation);
+        // The mintable count DOES fall: one of the ten has been created. The
+        // card must follow this number, not `remaining`, or it keeps offering a
+        // button the server rejects once all ten exist.
+        expect(generatedStatus.mintableCount, _initialInviteAllocation - 1);
 
         expect(find.text(_en.invitesShareWithPeople), findsOneWidget);
         expect(find.text(generatedCode), findsOneWidget);
         expect(
-          find.text(_en.invitesGenerateCardTitle(generatedStatus.remaining)),
+          find.text(
+            _en.invitesGenerateCardTitle(generatedStatus.mintableCount),
+          ),
           findsOneWidget,
         );
 

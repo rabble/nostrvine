@@ -84,6 +84,10 @@ class _LoadedView extends StatelessWidget {
     final unclaimed = inviteStatus.unclaimedCodes;
     final claimed = inviteStatus.claimedCodes;
     final hasRemainingCapacity = inviteStatus.remaining > 0;
+    // Gate the generate action on what can still be MINTED, not on what is left
+    // to share. Those diverge once codes are generated but not yet redeemed, and
+    // offering the button past the mint limit just returns 429.
+    final mintable = inviteStatus.mintableCount;
 
     if (unclaimed.isEmpty && claimed.isEmpty && !hasRemainingCapacity) {
       return Center(
@@ -101,38 +105,58 @@ class _LoadedView extends StatelessWidget {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        if (unclaimed.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              context.l10n.invitesShareWithPeople,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.secondaryText,
+    // Slivers rather than ListView(children:) so the code lists build lazily.
+    // The generate card leads: it used to sit below the unclaimed codes, and a
+    // full allocation of cards pushed it off-screen.
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverList.list(
+            children: [
+              if (mintable > 0) ...[
+                _GenerateInviteCard(remaining: mintable),
+                const SizedBox(height: 24),
+              ],
+              if (unclaimed.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    context.l10n.invitesShareWithPeople,
+                    style: VineTheme.bodyMediumFont(
+                      color: context.vineColors.secondaryText,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList.builder(
+            itemCount: unclaimed.length,
+            itemBuilder: (context, i) => _InviteCodeCard(code: unclaimed[i]),
+          ),
+        ),
+        if (claimed.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                context.l10n.invitesUsedInvites,
+                style: VineTheme.titleSmallFont(
+                  color: context.vineColors.secondaryText,
+                ),
               ),
             ),
           ),
-          ...unclaimed.map((code) => _InviteCodeCard(code: code)),
-          const SizedBox(height: 24),
-        ],
-        if (hasRemainingCapacity) ...[
-          _GenerateInviteCard(remaining: inviteStatus.remaining),
-          const SizedBox(height: 24),
-        ],
-        if (claimed.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              context.l10n.invitesUsedInvites,
-              style: VineTheme.titleSmallFont(
-                color: context.vineColors.secondaryText,
-              ),
-            ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          sliver: SliverList.builder(
+            itemCount: claimed.length,
+            itemBuilder: (context, i) => _ClaimedCodeRow(code: claimed[i]),
           ),
-          ...claimed.map((code) => _ClaimedCodeRow(code: code)),
-        ],
+        ),
       ],
     );
   }

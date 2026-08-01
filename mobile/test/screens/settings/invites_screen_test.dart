@@ -99,8 +99,10 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        final listViewWidth = tester.getSize(find.byType(ListView).first).width;
-        expect(listViewWidth, moreOrLessEquals(600));
+        final scrollViewWidth = tester
+            .getSize(find.byType(CustomScrollView).first)
+            .width;
+        expect(scrollViewWidth, moreOrLessEquals(600));
       });
 
       testWidgets('generate invite action when capacity is available', (
@@ -154,6 +156,103 @@ void main() {
         await tester.pumpWidget(buildSubject());
         expect(find.text('Retry'), findsOneWidget);
         expect(find.text('Could not load invites'), findsOneWidget);
+      });
+
+      testWidgets('no generate card once every code has been minted', (
+        tester,
+      ) async {
+        // remaining stays at 2 because nothing was redeemed, but both codes are
+        // already minted. Offering the button here just earns a 429.
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 2,
+              remainingToGenerate: 0,
+              total: 2,
+              codes: [
+                InviteCode(code: 'AB23-EF7K', claimed: false),
+                InviteCode(code: 'HN4P-QR56', claimed: false),
+              ],
+            ),
+          ),
+        );
+        await tester.pumpWidget(buildSubject());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        expect(find.text(l10n.invitesGenerateButtonLabel), findsNothing);
+        // The codes themselves are still listed and shareable.
+        expect(find.text('AB23-EF7K'), findsOneWidget);
+      });
+
+      testWidgets('generate card counts mintable codes, not shareable ones', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 10,
+              remainingToGenerate: 3,
+              total: 10,
+              codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
+            ),
+          ),
+        );
+        await tester.pumpWidget(buildSubject());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        expect(find.text(l10n.invitesGenerateCardTitle(3)), findsOneWidget);
+        expect(find.text(l10n.invitesGenerateCardTitle(10)), findsNothing);
+      });
+
+      testWidgets('generate card sits above the code list', (tester) async {
+        // A full allocation of code cards used to push the button off-screen.
+        when(() => mockCubit.state).thenReturn(
+          InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 10,
+              remainingToGenerate: 4,
+              total: 10,
+              codes: List.generate(
+                6,
+                (i) => InviteCode(code: 'CODE-000$i', claimed: false),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpWidget(buildSubject());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        final buttonY = tester
+            .getTopLeft(find.text(l10n.invitesGenerateButtonLabel))
+            .dy;
+        final firstCodeY = tester.getTopLeft(find.text('CODE-0000')).dy;
+        expect(buttonY, lessThan(firstCodeY));
+      });
+
+      testWidgets('falls back to remaining when the server omits the field', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 5,
+              total: 5,
+              codes: [],
+            ),
+          ),
+        );
+        await tester.pumpWidget(buildSubject());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        expect(find.text(l10n.invitesGenerateCardTitle(5)), findsOneWidget);
       });
     });
 

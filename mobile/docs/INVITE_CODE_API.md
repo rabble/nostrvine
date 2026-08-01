@@ -135,6 +135,7 @@ service failures must not be treated as zero.
 {
   "canInvite": true,
   "remaining": 3,
+  "remainingToGenerate": 3,
   "total": 5,
   "codes": [
     {
@@ -159,12 +160,28 @@ service failures must not be treated as zero.
 {
   "canInvite": false,
   "remaining": 0,
+  "remainingToGenerate": 0,
   "total": 0,
   "codes": []
 }
 ```
 
 If the user has no invite allocation, return `canInvite: false`.
+
+##### `remaining` vs `remainingToGenerate`
+
+These answer different questions and drift apart:
+
+- `remaining` is `codes_allocated - codes_used` — invites still the user's to share.
+  It only moves when an invitee **redeems** a code.
+- `remainingToGenerate` is `codes_allocated - total_codes_generated` — invites the user
+  can still mint via `POST /v1/generate-invite`. It empties as codes are created.
+
+A user who has minted all ten codes but had none redeemed sees `remaining: 10,
+remainingToGenerate: 0`. **Label a generate action with `remainingToGenerate`**, or the
+app advertises a button that returns `429 invite_generation_limit_reached`. Use
+`InviteStatus.mintableCount`, which reads the field and falls back to `remaining` on a
+server that predates it.
 
 ---
 
