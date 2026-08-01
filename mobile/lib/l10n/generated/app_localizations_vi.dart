@@ -122,6 +122,26 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Bản nháp chưa lưu';
 
   @override
+  String get settingsUploadInProgressTitle => 'Đang tải lên';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'video',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'các video của bạn sẽ ở lại dưới dạng bản nháp',
+      one: 'video của bạn sẽ ở lại dưới dạng bản nháp',
+    );
+    return 'Bạn vẫn còn $count $_temp0 đang tải lên. Chuyển tài khoản sẽ dừng việc tải lên — $_temp1 trong tài khoản này.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7207,6 +7227,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Lần tải lên này đã bị gián đoạn. Bạn có muốn thử lại không?';
 
   @override
+  String get publishErrorAccountChanged =>
+      'Video này thuộc về một tài khoản khác. Chuyển lại tài khoản đó để đăng nhé.';
+
+  @override
   String get publishErrorGeneric => 'Có gì đó không ổn. Vui lòng thử lại.';
 
   @override
@@ -7224,6 +7248,10 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get publishErrorOutOfMemory =>
       'Thiết bị của bạn sắp hết bộ nhớ. Đóng bớt ứng dụng rồi thử lại nhé.';
+
+  @override
+  String get publishErrorOverlaysUnavailable =>
+      'Không chuẩn bị được chữ và nhãn dán trên bản nháp này. Mở nó trong trình chỉnh sửa rồi đăng lại.';
 
   @override
   String get publishErrorUnknownServer => 'Máy chủ không xác định';
@@ -8724,6 +8752,106 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get videoEditorTimelineSlideToAdjust => 'Trượt để điều chỉnh';
+
+  @override
+  String get videoEditorChromaKeyLabel => 'Phông xanh';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Phông xanh';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Thiết lập phông xanh cho clip này';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Bỏ các thay đổi phông xanh';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Áp dụng phông xanh';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Tự động nhận diện';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Xanh lá';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Xanh dương';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Màu phông';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Mức độ';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => 'Xóa bao nhiêu phần màu phông';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Viền';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Làm mềm phần cắt để tóc không bị răng cưa';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Ám màu';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Kéo màu phông ra khỏi chủ thể của bạn';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Thay bằng';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Không gì cả';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Màu';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Ảnh';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Clip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video không giữ được độ trong suốt, nên phần này sẽ xuất ra màu đen.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Không tìm thấy phông. Phông phải chạm tới các cạnh khung hình — nếu không, hãy tự chọn màu.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Chọn một clip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Thư viện của bạn đang trống. Lưu một clip trước đã, rồi dùng nó làm nền.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => 'Không tải được ảnh đó.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Gỡ phông xanh';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Không áp dụng được phông xanh. Clip của bạn vẫn nguyên.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Không gỡ được phông xanh. Clip của bạn vẫn nguyên.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Đang áp dụng phông xanh…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Thiết bị này không hiển thị được bản xem trước trực tiếp. Cài đặt của bạn vẫn được áp dụng khi xuất.';
 
   @override
   String get videoEditorOriginalAudioLabel => 'Âm thanh gốc';
@@ -10472,6 +10600,88 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
       'Tin tưởng relay Divine, xác minh phần còn lại.';
+
+  @override
+  String get settingsCrosspostingTitle => 'Crossposting';
+
+  @override
+  String get settingsCrosspostingSubtitle =>
+      'Share your videos to other platforms';
+
+  @override
+  String get crosspostingSignInRequired =>
+      'Sign in with Divine to manage crossposting';
+
+  @override
+  String get crosspostingLoadFailed =>
+      'Couldn\'t load your crossposting settings';
+
+  @override
+  String get crosspostingNoPlatforms =>
+      'No crossposting platforms are available right now';
+
+  @override
+  String get crosspostingRetry => 'Retry';
+
+  @override
+  String get crosspostingNotConnected => 'Not connected';
+
+  @override
+  String get crosspostingConnected => 'Connected';
+
+  @override
+  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+
+  @override
+  String get crosspostingConnect => 'Connect';
+
+  @override
+  String get crosspostingReconnect => 'Reconnect';
+
+  @override
+  String get crosspostingDisconnect => 'Disconnect';
+
+  @override
+  String get crosspostingModeOff => 'Off';
+
+  @override
+  String get crosspostingModeManual => 'Manual';
+
+  @override
+  String get crosspostingModeManualSubtitle => 'You choose per video';
+
+  @override
+  String get crosspostingModeAutomatic => 'Automatic';
+
+  @override
+  String get crosspostingModeAutomaticSubtitle =>
+      'Future videos post automatically — only videos published after you turn this on';
+
+  @override
+  String get crosspostingNotConnectedError =>
+      'Connect this platform first to change how it posts.';
+
+  @override
+  String get crosspostingGenericError => 'Something went wrong. Try again.';
+
+  @override
+  String get crosspostingCallbackTimeoutError =>
+      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+
+  @override
+  String crosspostingConnectionSuccess(String platform) {
+    return '$platform connected';
+  }
+
+  @override
+  String crosspostingConnectionFailed(String platform) {
+    return 'Couldn\'t connect $platform';
+  }
+
+  @override
+  String crosspostingConnectionDenied(String platform) {
+    return 'Connection was canceled on $platform';
+  }
 
   @override
   String get supporterTitle => 'Người ủng hộ Divine';

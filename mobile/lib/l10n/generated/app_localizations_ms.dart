@@ -122,6 +122,26 @@ class AppLocalizationsMs extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'Draf Belum Disimpan';
 
   @override
+  String get settingsUploadInProgressTitle => 'Muat naik sedang berjalan';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'video',
+      one: 'video',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'video anda kekal sebagai draf',
+      one: 'video anda kekal sebagai draf',
+    );
+    return 'Anda masih mempunyai $count $_temp0 sedang dimuat naik. Menukar akaun akan menghentikan muat naik — $_temp1 dalam akaun ini.';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7249,6 +7269,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Muat naik ini terganggu. Adakah anda mahu cuba lagi?';
 
   @override
+  String get publishErrorAccountChanged =>
+      'Video ini milik akaun lain. Tukar kembali ke akaun itu untuk menyiarkannya.';
+
+  @override
   String get publishErrorGeneric => 'Sesuatu telah berlaku. Sila cuba lagi.';
 
   @override
@@ -7266,6 +7290,10 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get publishErrorOutOfMemory =>
       'Peranti anda kekurangan memori. Tutup beberapa apl dan cuba lagi.';
+
+  @override
+  String get publishErrorOverlaysUnavailable =>
+      'Teks dan pelekat pada draf ini tidak dapat disediakan. Buka ia dalam penyunting, kemudian siarkan semula.';
 
   @override
   String get publishErrorUnknownServer => 'Pelayan tidak diketahui';
@@ -8772,6 +8800,108 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get videoEditorTimelineSlideToAdjust => 'Luncur untuk melaras';
+
+  @override
+  String get videoEditorChromaKeyLabel => 'Skrin hijau';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'Skrin hijau';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'Sediakan skrin hijau untuk klip ini';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'Buang perubahan skrin hijau';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'Gunakan skrin hijau';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'Kesan automatik';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'Hijau';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'Biru';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'Warna skrin';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'Kekuatan';
+
+  @override
+  String get videoEditorChromaKeyAmountHint =>
+      'Berapa banyak warna skrin yang hilang';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'Tepi';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'Melembutkan potongan supaya rambut tidak bergerigi';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'Limpahan';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'Menarik warna skrin keluar daripada subjek anda';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'Ganti dengan';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'Tiada';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'Warna';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'Imej';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'Klip';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'Video tidak boleh menyimpan ketelusan, jadi ini dieksport sebagai hitam.';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'Skrin tidak ditemui. Ia perlu mencapai tepi bingkai — pilih warnanya secara manual.';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'Pilih klip';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'Pustaka anda kosong. Simpan klip dahulu, kemudian gunakannya sebagai latar.';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed =>
+      'Imej itu tidak dapat dimuatkan.';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'Alih keluar skrin hijau';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'Skrin hijau tidak dapat digunakan. Klip anda tidak berubah.';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'Skrin hijau tidak dapat dialih keluar. Klip anda tidak berubah.';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'Menggunakan skrin hijau…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'Peranti ini tidak dapat menunjukkan pratonton langsung. Tetapan anda tetap digunakan semasa eksport.';
 
   @override
   String get videoEditorOriginalAudioLabel => 'Audio asal';
@@ -10523,6 +10653,88 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
       'Percayai relay Divine, sahkan yang lain.';
+
+  @override
+  String get settingsCrosspostingTitle => 'Crossposting';
+
+  @override
+  String get settingsCrosspostingSubtitle =>
+      'Share your videos to other platforms';
+
+  @override
+  String get crosspostingSignInRequired =>
+      'Sign in with Divine to manage crossposting';
+
+  @override
+  String get crosspostingLoadFailed =>
+      'Couldn\'t load your crossposting settings';
+
+  @override
+  String get crosspostingNoPlatforms =>
+      'No crossposting platforms are available right now';
+
+  @override
+  String get crosspostingRetry => 'Retry';
+
+  @override
+  String get crosspostingNotConnected => 'Not connected';
+
+  @override
+  String get crosspostingConnected => 'Connected';
+
+  @override
+  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+
+  @override
+  String get crosspostingConnect => 'Connect';
+
+  @override
+  String get crosspostingReconnect => 'Reconnect';
+
+  @override
+  String get crosspostingDisconnect => 'Disconnect';
+
+  @override
+  String get crosspostingModeOff => 'Off';
+
+  @override
+  String get crosspostingModeManual => 'Manual';
+
+  @override
+  String get crosspostingModeManualSubtitle => 'You choose per video';
+
+  @override
+  String get crosspostingModeAutomatic => 'Automatic';
+
+  @override
+  String get crosspostingModeAutomaticSubtitle =>
+      'Future videos post automatically — only videos published after you turn this on';
+
+  @override
+  String get crosspostingNotConnectedError =>
+      'Connect this platform first to change how it posts.';
+
+  @override
+  String get crosspostingGenericError => 'Something went wrong. Try again.';
+
+  @override
+  String get crosspostingCallbackTimeoutError =>
+      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+
+  @override
+  String crosspostingConnectionSuccess(String platform) {
+    return '$platform connected';
+  }
+
+  @override
+  String crosspostingConnectionFailed(String platform) {
+    return 'Couldn\'t connect $platform';
+  }
+
+  @override
+  String crosspostingConnectionDenied(String platform) {
+    return 'Connection was canceled on $platform';
+  }
 
   @override
   String get supporterTitle => 'Penyokong Divine';

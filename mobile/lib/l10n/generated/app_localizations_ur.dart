@@ -122,6 +122,26 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => 'غیر محفوظ مسودے';
 
   @override
+  String get settingsUploadInProgressTitle => 'اپلوڈ جاری ہے';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ویڈیوز',
+      one: 'ویڈیو',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'آپ کی ویڈیوز اس اکاؤنٹ میں مسودوں کے طور پر رہ جائیں گی',
+      one: 'آپ کی ویڈیو اس اکاؤنٹ میں مسودے کے طور پر رہ جائے گی',
+    );
+    return 'آپ کی $count $_temp0 ابھی اپلوڈ ہو رہی ہیں۔ اکاؤنٹ تبدیل کرنے سے اپلوڈ رک جائے گا — $_temp1۔';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -7201,6 +7221,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ اپلوڈ رک گیا۔ کیا آپ دوبارہ کوشش کرنا چاہیں گے؟';
 
   @override
+  String get publishErrorAccountChanged =>
+      'یہ ویڈیو کسی اور اکاؤنٹ کی ہے۔ اسے پوسٹ کرنے کے لیے اُسی اکاؤنٹ پر واپس جائیں۔';
+
+  @override
   String get publishErrorGeneric =>
       'کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔';
 
@@ -7219,6 +7243,10 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get publishErrorOutOfMemory =>
       'آپ کی ڈیوائس کی میموری کم ہے۔ کچھ ایپس بند کر کے دوبارہ کوشش کریں۔';
+
+  @override
+  String get publishErrorOverlaysUnavailable =>
+      'اس مسودے کا ٹیکسٹ اور اسٹیکرز تیار نہیں ہو سکے۔ اسے ایڈیٹر میں کھولیں، پھر دوبارہ پوسٹ کریں۔';
 
   @override
   String get publishErrorUnknownServer => 'نامعلوم سرور';
@@ -8716,6 +8744,106 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get videoEditorTimelineSlideToAdjust =>
       'ایڈجسٹ کرنے کے لیے سلائیڈ کریں';
+
+  @override
+  String get videoEditorChromaKeyLabel => 'گرین اسکرین';
+
+  @override
+  String get videoEditorChromaKeyTitle => 'گرین اسکرین';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel =>
+      'اس کلپ کے لیے گرین اسکرین سیٹ کریں';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel =>
+      'گرین اسکرین کی تبدیلیاں رد کریں';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => 'گرین اسکرین لاگو کریں';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => 'خودکار شناخت';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => 'سبز';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => 'نیلا';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => 'اسکرین کا رنگ';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => 'مقدار';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => 'اسکرین کا رنگ کتنا غائب ہوگا';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => 'کنارہ';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint =>
+      'کٹاؤ کو نرم کرتا ہے تاکہ بال کھردرے نہ لگیں';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => 'رنگ کی جھلک';
+
+  @override
+  String get videoEditorChromaKeySpillHint =>
+      'اسکرین کا رنگ آپ کے سبجیکٹ سے ہٹاتا ہے';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => 'اس سے بدلیں';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => 'کچھ نہیں';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => 'رنگ';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => 'تصویر';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => 'کلپ';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint =>
+      'ویڈیو شفافیت محفوظ نہیں رکھ سکتی، اس لیے یہ سیاہ ایکسپورٹ ہوگی۔';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed =>
+      'کوئی اسکرین نہیں ملی۔ اسے فریم کے کناروں تک پہنچنا چاہیے — ورنہ رنگ خود منتخب کریں۔';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => 'کلپ چنیں';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips =>
+      'آپ کی لائبریری خالی ہے۔ پہلے کوئی کلپ محفوظ کریں، پھر اسے پس منظر کے طور پر استعمال کریں۔';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => 'وہ تصویر لوڈ نہیں ہو سکی۔';
+
+  @override
+  String get videoEditorChromaKeyRemove => 'گرین اسکرین ہٹائیں';
+
+  @override
+  String get videoEditorChromaKeyFailed =>
+      'گرین اسکرین لاگو نہیں ہو سکی۔ آپ کا کلپ ویسا ہی ہے۔';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed =>
+      'گرین اسکرین ہٹائی نہیں جا سکی۔ آپ کا کلپ ویسا ہی ہے۔';
+
+  @override
+  String get videoEditorChromaKeyApplying => 'گرین اسکرین لاگو ہو رہی ہے…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      'یہ ڈیوائس لائیو پیش منظر نہیں دکھا سکتی۔ ایکسپورٹ کے وقت آپ کی ترتیبات پھر بھی لاگو ہوں گی۔';
 
   @override
   String get videoEditorOriginalAudioLabel => 'اصل آڈیو';
@@ -10461,6 +10589,88 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
       'Divine ریلے پر بھروسہ کریں، باقی کی تصدیق کریں۔';
+
+  @override
+  String get settingsCrosspostingTitle => 'Crossposting';
+
+  @override
+  String get settingsCrosspostingSubtitle =>
+      'Share your videos to other platforms';
+
+  @override
+  String get crosspostingSignInRequired =>
+      'Sign in with Divine to manage crossposting';
+
+  @override
+  String get crosspostingLoadFailed =>
+      'Couldn\'t load your crossposting settings';
+
+  @override
+  String get crosspostingNoPlatforms =>
+      'No crossposting platforms are available right now';
+
+  @override
+  String get crosspostingRetry => 'Retry';
+
+  @override
+  String get crosspostingNotConnected => 'Not connected';
+
+  @override
+  String get crosspostingConnected => 'Connected';
+
+  @override
+  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+
+  @override
+  String get crosspostingConnect => 'Connect';
+
+  @override
+  String get crosspostingReconnect => 'Reconnect';
+
+  @override
+  String get crosspostingDisconnect => 'Disconnect';
+
+  @override
+  String get crosspostingModeOff => 'Off';
+
+  @override
+  String get crosspostingModeManual => 'Manual';
+
+  @override
+  String get crosspostingModeManualSubtitle => 'You choose per video';
+
+  @override
+  String get crosspostingModeAutomatic => 'Automatic';
+
+  @override
+  String get crosspostingModeAutomaticSubtitle =>
+      'Future videos post automatically — only videos published after you turn this on';
+
+  @override
+  String get crosspostingNotConnectedError =>
+      'Connect this platform first to change how it posts.';
+
+  @override
+  String get crosspostingGenericError => 'Something went wrong. Try again.';
+
+  @override
+  String get crosspostingCallbackTimeoutError =>
+      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+
+  @override
+  String crosspostingConnectionSuccess(String platform) {
+    return '$platform connected';
+  }
+
+  @override
+  String crosspostingConnectionFailed(String platform) {
+    return 'Couldn\'t connect $platform';
+  }
+
+  @override
+  String crosspostingConnectionDenied(String platform) {
+    return 'Connection was canceled on $platform';
+  }
 
   @override
   String get supporterTitle => 'Divine سپورٹرز';

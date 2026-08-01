@@ -115,6 +115,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsUnsavedDraftsTitle => '未保存的草稿';
 
   @override
+  String get settingsUploadInProgressTitle => '正在上传';
+
+  @override
+  String settingsUploadInProgressMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '视频',
+      one: '视频',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '视频会作为草稿留在这个账号里',
+      one: '视频会作为草稿留在这个账号里',
+    );
+    return '你还有 $count 个$_temp0正在上传。切换账号会中断上传——$_temp1。';
+  }
+
+  @override
   String settingsUnsavedDraftsMessage(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -6839,6 +6859,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get publishErrorInterrupted => '上传被中断。要重试吗？';
 
   @override
+  String get publishErrorAccountChanged => '这个视频属于另一个账号。切回那个账号才能发布。';
+
+  @override
   String get publishErrorGeneric => '出了点问题，请重试。';
 
   @override
@@ -6852,6 +6875,10 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get publishErrorOutOfMemory => '设备内存不足。关掉一些应用后再试。';
+
+  @override
+  String get publishErrorOverlaysUnavailable =>
+      '这份草稿上的文字和贴纸没能准备好。到编辑器里打开，然后重新发布。';
 
   @override
   String get publishErrorUnknownServer => '未知服务器';
@@ -8296,6 +8323,97 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get videoEditorTimelineSlideToAdjust => '滑动调节';
+
+  @override
+  String get videoEditorChromaKeyLabel => '绿幕';
+
+  @override
+  String get videoEditorChromaKeyTitle => '绿幕';
+
+  @override
+  String get videoEditorChromaKeySemanticLabel => '为这个片段设置绿幕';
+
+  @override
+  String get videoEditorChromaKeyCloseSemanticLabel => '放弃绿幕改动';
+
+  @override
+  String get videoEditorChromaKeyDoneSemanticLabel => '应用绿幕';
+
+  @override
+  String get videoEditorChromaKeyAutoDetect => '自动识别';
+
+  @override
+  String get videoEditorChromaKeyPresetGreen => '绿色';
+
+  @override
+  String get videoEditorChromaKeyPresetBlue => '蓝色';
+
+  @override
+  String get videoEditorChromaKeyScreenColorLabel => '幕布颜色';
+
+  @override
+  String get videoEditorChromaKeyAmountLabel => '强度';
+
+  @override
+  String get videoEditorChromaKeyAmountHint => '幕布颜色被抠掉多少';
+
+  @override
+  String get videoEditorChromaKeyEdgeLabel => '边缘';
+
+  @override
+  String get videoEditorChromaKeyEdgeHint => '让抠像边缘更柔和，头发不会毛刺';
+
+  @override
+  String get videoEditorChromaKeySpillLabel => '溢色';
+
+  @override
+  String get videoEditorChromaKeySpillHint => '把幕布的颜色从主体上去掉';
+
+  @override
+  String get videoEditorChromaKeyBackgroundLabel => '替换为';
+
+  @override
+  String get videoEditorChromaKeyBackgroundNone => '无';
+
+  @override
+  String get videoEditorChromaKeyBackgroundColor => '颜色';
+
+  @override
+  String get videoEditorChromaKeyBackgroundImage => '图片';
+
+  @override
+  String get videoEditorChromaKeyBackgroundVideo => '片段';
+
+  @override
+  String get videoEditorChromaKeyTransparentHint => '视频存不了透明，所以导出会是黑色。';
+
+  @override
+  String get videoEditorChromaKeyDetectFailed => '没找到幕布。幕布得铺到画面边缘——不然就手动选颜色吧。';
+
+  @override
+  String get videoEditorChromaKeyPickClipTitle => '选个片段';
+
+  @override
+  String get videoEditorChromaKeyNoLibraryClips => '作品库是空的。先存一个片段，就能拿它当背景了。';
+
+  @override
+  String get videoEditorChromaKeyImagePickFailed => '这张图片加载不了。';
+
+  @override
+  String get videoEditorChromaKeyRemove => '移除绿幕';
+
+  @override
+  String get videoEditorChromaKeyFailed => '绿幕没能应用。你的片段没有改动。';
+
+  @override
+  String get videoEditorChromaKeyRemoveFailed => '绿幕没能移除。你的片段没有改动。';
+
+  @override
+  String get videoEditorChromaKeyApplying => '正在应用绿幕…';
+
+  @override
+  String get videoEditorChromaKeyPreviewUnavailable =>
+      '这台设备无法显示实时预览。导出时你的设置仍然生效。';
 
   @override
   String get videoEditorOriginalAudioLabel => '原始音频';
@@ -9914,6 +10032,88 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get nostrSettingsSignatureVerificationNonDivineSubtitle =>
       '信任 Divine 中继，验证其余中继。';
+
+  @override
+  String get settingsCrosspostingTitle => 'Crossposting';
+
+  @override
+  String get settingsCrosspostingSubtitle =>
+      'Share your videos to other platforms';
+
+  @override
+  String get crosspostingSignInRequired =>
+      'Sign in with Divine to manage crossposting';
+
+  @override
+  String get crosspostingLoadFailed =>
+      'Couldn\'t load your crossposting settings';
+
+  @override
+  String get crosspostingNoPlatforms =>
+      'No crossposting platforms are available right now';
+
+  @override
+  String get crosspostingRetry => 'Retry';
+
+  @override
+  String get crosspostingNotConnected => 'Not connected';
+
+  @override
+  String get crosspostingConnected => 'Connected';
+
+  @override
+  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+
+  @override
+  String get crosspostingConnect => 'Connect';
+
+  @override
+  String get crosspostingReconnect => 'Reconnect';
+
+  @override
+  String get crosspostingDisconnect => 'Disconnect';
+
+  @override
+  String get crosspostingModeOff => 'Off';
+
+  @override
+  String get crosspostingModeManual => 'Manual';
+
+  @override
+  String get crosspostingModeManualSubtitle => 'You choose per video';
+
+  @override
+  String get crosspostingModeAutomatic => 'Automatic';
+
+  @override
+  String get crosspostingModeAutomaticSubtitle =>
+      'Future videos post automatically — only videos published after you turn this on';
+
+  @override
+  String get crosspostingNotConnectedError =>
+      'Connect this platform first to change how it posts.';
+
+  @override
+  String get crosspostingGenericError => 'Something went wrong. Try again.';
+
+  @override
+  String get crosspostingCallbackTimeoutError =>
+      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+
+  @override
+  String crosspostingConnectionSuccess(String platform) {
+    return '$platform connected';
+  }
+
+  @override
+  String crosspostingConnectionFailed(String platform) {
+    return 'Couldn\'t connect $platform';
+  }
+
+  @override
+  String crosspostingConnectionDenied(String platform) {
+    return 'Connection was canceled on $platform';
+  }
 
   @override
   String get supporterTitle => 'Divine 支持者';
