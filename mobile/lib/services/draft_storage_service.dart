@@ -662,9 +662,8 @@ class DraftStorageService {
   /// directly (audio paths live there, not in an indexed column) and never
   /// throws: a corrupt blob is logged and skipped.
   ///
-  /// [excludeDraftId] is required: unlike the ghost-frame scan there is no
-  /// scan-everything caller, so leaving it nullable would only invite the
-  /// `null == null` skip that #6581 fixed there.
+  /// [excludeDraftId] is required: the sole caller always excludes a draft,
+  /// and a nullable parameter would silently mean "scan everything".
   Future<Set<String>> _referencedLocalAudioFilenames({
     required String excludeDraftId,
   }) async {
@@ -715,6 +714,9 @@ class DraftStorageService {
   /// Uses [ClipsDao.getClipsWithGhostFrames] rather than reading the whole clip
   /// table: this scan runs on every draft deletion, and decoding every blob in
   /// the database made it grow with the size of the clip library (#6548).
+  ///
+  /// A null [excludeDraftId] excludes nothing: every clip is scanned, including
+  /// library clips, whose `draftId` is NULL. `clearAllDrafts` relies on that.
   Future<Set<String>> _referencedGhostFrameFilenames({
     String? excludeDraftId,
   }) async {
@@ -722,8 +724,6 @@ class DraftStorageService {
     final filenames = <String>{};
 
     for (final row in clipRows) {
-      // Guard the null: library clips carry a NULL draftId, so an unguarded
-      // comparison would drop exactly them when no draft is excluded.
       if (excludeDraftId != null && row.draftId == excludeDraftId) continue;
       try {
         final data = json.decode(row.data) as Map<String, dynamic>;
