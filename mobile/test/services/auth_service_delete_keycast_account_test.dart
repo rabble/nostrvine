@@ -109,7 +109,12 @@ void main() {
       expect(result.success, isFalse);
       expect(result.error, contains('No usable session'));
       expect(result.requiresReauthentication, isTrue);
-      verifyNever(() => mockOAuthClient.deleteAccount(any()));
+      verifyNever(
+        () => mockOAuthClient.deleteAccount(
+          any(),
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      );
     });
 
     test(
@@ -124,7 +129,12 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.error, contains('No usable session'));
-        verifyNever(() => mockOAuthClient.deleteAccount(any()));
+        verifyNever(
+          () => mockOAuthClient.deleteAccount(
+            any(),
+            nip98Signer: any(named: 'nip98Signer'),
+          ),
+        );
       },
     );
 
@@ -141,7 +151,12 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.requiresReauthentication, isTrue);
-      verifyNever(() => mockOAuthClient.deleteAccount(any()));
+      verifyNever(
+        () => mockOAuthClient.deleteAccount(
+          any(),
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      );
     });
 
     test('refuses a session bound to a different account', () async {
@@ -154,7 +169,12 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.requiresReauthentication, isTrue);
-      verifyNever(() => mockOAuthClient.deleteAccount(any()));
+      verifyNever(
+        () => mockOAuthClient.deleteAccount(
+          any(),
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      );
     });
 
     // A refresh that does not name its owner persists a session no account can
@@ -170,7 +190,12 @@ void main() {
         ).thenAnswer(
           (_) async => session(owner: pubkeyHex, token: testAccessToken),
         );
-        when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
+        when(
+          () => mockOAuthClient.deleteAccount(
+            testAccessToken,
+            nip98Signer: any(named: 'nip98Signer'),
+          ),
+        ).thenAnswer(
           (_) async => DeleteAccountResult(
             success: true,
             message: 'Account permanently deleted',
@@ -188,7 +213,12 @@ void main() {
 
     test('returns success when account deletion succeeds', () async {
       final authService = await withUsableSession();
-      when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
+      when(
+        () => mockOAuthClient.deleteAccount(
+          testAccessToken,
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      ).thenAnswer(
         (_) async => DeleteAccountResult(
           success: true,
           message: 'Account permanently deleted',
@@ -199,21 +229,34 @@ void main() {
 
       expect(result.success, isTrue);
       expect(result.error, isNull);
-      verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
+      verify(
+        () => mockOAuthClient.deleteAccount(
+          testAccessToken,
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      ).called(1);
     });
 
     test('returns failure with error message when deletion fails', () async {
       final authService = await withUsableSession();
       const errorMessage = 'Unauthorized: invalid or expired token';
       when(
-        () => mockOAuthClient.deleteAccount(testAccessToken),
+        () => mockOAuthClient.deleteAccount(
+          testAccessToken,
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
       ).thenAnswer((_) async => DeleteAccountResult.error(errorMessage));
 
       final result = await authService.deleteKeycastAccount();
 
       expect(result.success, isFalse);
       expect(result.error, equals(errorMessage));
-      verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
+      verify(
+        () => mockOAuthClient.deleteAccount(
+          testAccessToken,
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
+      ).called(1);
     });
 
     // The caller decides between "retry" and "sign in again" copy from this
@@ -224,7 +267,12 @@ void main() {
       'propagates requiresReauthentication from a refused deletion',
       () async {
         final authService = await withUsableSession();
-        when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
+        when(
+          () => mockOAuthClient.deleteAccount(
+            testAccessToken,
+            nip98Signer: any(named: 'nip98Signer'),
+          ),
+        ).thenAnswer(
           (_) async => DeleteAccountResult.error(
             'Account deletion requires the Divine app or web login with your '
             'private key',
@@ -239,10 +287,52 @@ void main() {
       },
     );
 
+    // Without a proof-of-key the request falls back to the bearer token, and a
+    // refreshed bearer token is exactly what keycast refuses (#4881) — after
+    // the irreversible NIP-62 vanish has already been published. If this
+    // regresses, deletion silently goes back to failing for every returning
+    // user.
+    test(
+      'supplies a NIP-98 signer so a refreshed session can still delete',
+      () async {
+        final (authService, pubkeyHex) = await signedInAuthService();
+        when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
+        when(
+          () => mockOAuthClient.refreshSession(userPubkey: pubkeyHex),
+        ).thenAnswer(
+          (_) async => session(owner: pubkeyHex, token: testAccessToken),
+        );
+
+        Future<String?> Function(String)? capturedSigner;
+        when(
+          () => mockOAuthClient.deleteAccount(
+            testAccessToken,
+            nip98Signer: any(named: 'nip98Signer'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedSigner =
+              invocation.namedArguments[#nip98Signer]
+                  as Future<String?> Function(String)?;
+          return DeleteAccountResult(success: true, message: 'deleted');
+        });
+
+        await authService.deleteKeycastAccount();
+
+        expect(
+          capturedSigner,
+          isNotNull,
+          reason: 'deleteKeycastAccount must offer a proof-of-key signer',
+        );
+      },
+    );
+
     test('returns failure when exception is thrown', () async {
       final authService = await withUsableSession();
       when(
-        () => mockOAuthClient.deleteAccount(testAccessToken),
+        () => mockOAuthClient.deleteAccount(
+          testAccessToken,
+          nip98Signer: any(named: 'nip98Signer'),
+        ),
       ).thenThrow(Exception('Network error'));
 
       final result = await authService.deleteKeycastAccount();

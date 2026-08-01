@@ -971,17 +971,35 @@ class KeycastOAuth {
 
   /// Delete the user's account permanently from Keycast
   ///
-  /// Requires an active bearer token from headless login/register flow.
   /// This is a destructive action that cannot be undone.
   ///
+  /// Authorization prefers a **NIP-98 proof-of-key** when [nip98Signer] is
+  /// supplied and succeeds, falling back to the bearer [token] otherwise.
+  /// The proof matters because a bearer token minted by a *refresh* no longer
+  /// carries the server's first-party fact, so it is refused — while a
+  /// signature proves key control regardless of how old the session is.
+  ///
+  /// [nip98Signer] receives the exact request URL and returns the base64 event
+  /// body (without the `Nostr ` scheme), or null if it cannot sign. The URL is
+  /// passed in rather than rebuilt by the caller because NIP-98 binds the
+  /// signature to it: any divergence makes the server reject the proof.
+  ///
   /// Returns [DeleteAccountResult] with success status.
-  Future<DeleteAccountResult> deleteAccount(String token) async {
+  Future<DeleteAccountResult> deleteAccount(
+    String token, {
+    Future<String?> Function(String url)? nip98Signer,
+  }) async {
     try {
+      final url = '${config.serverUrl}/api/user/account';
+      final nip98Token = nip98Signer == null ? null : await nip98Signer(url);
+
       final response = await _client
           .delete(
-            Uri.parse('${config.serverUrl}/api/user/account'),
+            Uri.parse(url),
             headers: {
-              'Authorization': 'Bearer $token',
+              'Authorization': nip98Token != null
+                  ? 'Nostr $nip98Token'
+                  : 'Bearer $token',
               'Content-Type': 'application/json',
             },
           )
