@@ -69,8 +69,26 @@ preflight_ports() {
         return 1
     fi
 
-    project="$(printf '%s' "$config_json" | _stack_project_name)"
-    ports="$(printf '%s' "$config_json" | _stack_published_ports)"
+    # Fail closed. An unreadable port list is indistinguishable from "the stack
+    # publishes no ports", and passing on it hands the operator back the
+    # anonymous daemon error this whole check exists to replace.
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "ERROR: the port pre-flight needs python3 on PATH, and it is missing." >&2
+        return 1
+    fi
+
+    if ! project="$(printf '%s' "$config_json" | _stack_project_name)" ||
+        ! ports="$(printf '%s' "$config_json" | _stack_published_ports)"; then
+        echo "ERROR: could not read the published ports out of ${compose_file}." >&2
+        return 1
+    fi
+
+    if [[ -z "$project" ]]; then
+        echo "ERROR: ${compose_file} resolved to an empty compose project name," >&2
+        echo "       so this stack's own containers cannot be told apart from others." >&2
+        return 1
+    fi
+
     if [[ -z "$ports" ]]; then
         return 0
     fi
