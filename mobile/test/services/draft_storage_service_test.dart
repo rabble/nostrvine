@@ -2313,10 +2313,18 @@ void main() {
 /// `FileCleanupService` treats that check as a defensive backstop behind the
 /// caller-supplied ghost-frame set; removing it leaves that set as the only
 /// thing keeping a shared ghost file alive.
+///
+/// Both query entry points are overridden. `ClipsDao.isFileReferenced` happens
+/// to delegate to [referencedFilenames] today, but nothing pins that: if it
+/// ever queried directly, a single override would quietly restore the backstop
+/// and the test would pass for the wrong reason.
 class _BackstopBlindClipsDao extends ClipsDao {
   _BackstopBlindClipsDao(super.attachedDatabase);
 
   @override
   Future<Set<String>> referencedFilenames(Set<String> filenames) async =>
       const {};
+
+  @override
+  Future<bool> isFileReferenced(String filename) async => false;
 }
