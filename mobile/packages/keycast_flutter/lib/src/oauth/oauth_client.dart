@@ -118,13 +118,9 @@ class KeycastOAuth {
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
     await _storage.delete(_storageKeyRefreshToken);
-    // Fire-and-forget server logout with short timeout
-    // Local logout is complete, server notification is best-effort
-    //
-    // The error handler must be attached to the future itself. A surrounding
-    // try/catch cannot see the failure, because the rejection would surface
-    // after logout() has already returned, as an unhandled async error.
-    // `ignore()` discards both the result and any error.
+    // Best-effort server logout; the local one is already complete. The
+    // handler has to be on the future itself — a surrounding try/catch
+    // cannot see a rejection that surfaces after logout() has returned.
     _client
         .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
         .timeout(const Duration(seconds: 2))
