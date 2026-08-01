@@ -1,7 +1,10 @@
 // ABOUTME: Tests for DivineAuthCubit
 // ABOUTME: Verifies form state, validation, sign-in, sign-up, and error handling
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -25,6 +28,20 @@ class _MockInviteApiClient extends Mock implements InviteApiClient {}
 class _FakeKeycastSession extends Fake implements KeycastSession {}
 
 class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
+
+/// Captures errors routed through [Bloc.observer] so a test can assert that a
+/// flow reported none.
+class _RecordingBlocObserver extends BlocObserver {
+  _RecordingBlocObserver(this.errors);
+
+  final List<Object> errors;
+
+  @override
+  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+    errors.add(error);
+    super.onError(bloc, error, stackTrace);
+  }
+}
 
 void main() {
   setUpAll(() {
@@ -1599,6 +1616,51 @@ void main() {
         seed: () => const DivineAuthFormState(isSubmitting: true),
         act: (cubit) => cubit.skipWithAnonymousAccount(),
         expect: () => <DivineAuthState>[],
+      );
+
+      test('does not throw when the cubit closes mid-creation', () async {
+        // Account creation flips AuthService to `authenticated` before it
+        // returns. The router then leaves the create-account screen, which
+        // closes this cubit while the await is still in flight.
+        final accountCreated = Completer<void>();
+        when(
+          () => mockAuthService.createAnonymousAccount(),
+        ).thenAnswer((_) => accountCreated.future);
+
+        final cubit = buildCubit();
+        cubit.initialize();
+
+        final skip = cubit.skipWithAnonymousAccount();
+        await cubit.close();
+        accountCreated.complete();
+
+        await expectLater(skip, completes);
+        expect(cubit.state, isA<DivineAuthFormState>());
+      });
+
+      test(
+        'closing mid-creation reports no error to the bloc observer',
+        () async {
+          final accountCreated = Completer<void>();
+          when(
+            () => mockAuthService.createAnonymousAccount(),
+          ).thenAnswer((_) => accountCreated.future);
+
+          final observed = <Object>[];
+          final previousObserver = Bloc.observer;
+          Bloc.observer = _RecordingBlocObserver(observed);
+          addTearDown(() => Bloc.observer = previousObserver);
+
+          final cubit = buildCubit();
+          cubit.initialize();
+
+          final skip = cubit.skipWithAnonymousAccount();
+          await cubit.close();
+          accountCreated.complete();
+          await skip;
+
+          expect(observed, isEmpty);
+        },
       );
     });
 

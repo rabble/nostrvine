@@ -487,6 +487,13 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         category: LogCategory.auth,
       );
 
+      // The account creation above flips AuthService to `authenticated`
+      // before it returns, which reroutes off the create-account screen and
+      // closes this cubit. Emitting the success state is then both
+      // impossible and unnecessary — the navigation it would trigger has
+      // already happened.
+      if (isClosed) return;
+
       emit(const DivineAuthSuccess());
     } on InviteApiException catch (e, stackTrace) {
       Log.error(
@@ -499,7 +506,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final currentState = state;
-      if (currentState is DivineAuthFormState) {
+      if (!isClosed && currentState is DivineAuthFormState) {
         emit(
           currentState.copyWith(
             isSkipping: false,
@@ -521,7 +528,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final currentState = state;
-      if (currentState is DivineAuthFormState) {
+      if (!isClosed && currentState is DivineAuthFormState) {
         emit(
           currentState.copyWith(
             isSkipping: false,
