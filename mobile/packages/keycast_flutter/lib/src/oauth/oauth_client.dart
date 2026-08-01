@@ -120,15 +120,21 @@ class KeycastOAuth {
     await _storage.delete(_storageKeyRefreshToken);
     // Fire-and-forget server logout with short timeout
     // Local logout is complete, server notification is best-effort
-    try {
-      unawaited(
-        _client
-            .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
-            .timeout(const Duration(seconds: 2)),
-      );
-    } catch (_) {
-      // Ignore timeout or network errors - local logout is complete
-    }
+    //
+    // The error handler must be attached to the future itself. A surrounding
+    // try/catch cannot see the failure, because `unawaited` returns before
+    // the request completes and the rejection would surface later as an
+    // unhandled async error.
+    unawaited(
+      _client
+          .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
+          .timeout(const Duration(seconds: 2))
+          .then<void>(
+            (_) {},
+            // Ignore timeout or network errors - local logout is complete
+            onError: (Object _) {},
+          ),
+    );
   }
 
   Future<void> _saveSession(KeycastSession session) async {
