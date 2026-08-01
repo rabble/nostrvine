@@ -55,7 +55,11 @@ preflight_ports() {
     local config_json project ports
 
     if ! docker ps --format '{{.Names}}' >/dev/null 2>&1; then
-        echo "ERROR: cannot talk to the Docker daemon. Is it running? (systemctl status docker)" >&2
+        local daemon_hint="systemctl status docker"
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            daemon_hint="open -a Docker"
+        fi
+        echo "ERROR: cannot talk to the Docker daemon. Is it running? (${daemon_hint})" >&2
         return 1
     fi
 
