@@ -1419,6 +1419,15 @@ Future<void> _startOpenVineApp() async {
     ),
     shouldRepairLocalDatabaseCache:
         shouldRepairLocalDatabaseCacheAfterBootstrapError,
+    // Manual escape hatch behind a confirmation, offered only for diagnoses
+    // where the database is already unusable. It clears the DB and its cipher
+    // key but not the signing key, so it costs local-only drafts and clips
+    // while an uninstall — the alternative a stuck user is left with — takes
+    // the whole Android keystore and the account with it.
+    resetLocalDatabase: () => resetEncryptedDatabaseCache(
+      secureStorage: dbCipherSecureStorage,
+      onDatabaseReset: () => DmSyncState(sharedPreferences).clearAll(),
+    ),
     runApp: runApp,
     removeNativeSplash: FlutterNativeSplash.remove,
   );

@@ -30,6 +30,7 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
   Future<void> Function(Object error, StackTrace stack)?
   repairLocalDatabaseCache,
   bool Function(Object error)? shouldRepairLocalDatabaseCache,
+  Future<void> Function()? resetLocalDatabase,
 }) async {
   try {
     return DatabaseBootstrapStartupResult.ready(await resolveCipherKey());
@@ -45,16 +46,48 @@ Future<DatabaseBootstrapStartupResult> resolveDatabaseBootstrapForAppStart({
       }
     }
     removeNativeSplash();
-    runApp(DatabaseBootstrapFailureApp(error: error, stack: stack));
+    runApp(
+      DatabaseBootstrapFailureApp(
+        error: error,
+        stack: stack,
+        onResetLocalDatabase: resetLocalDatabase,
+      ),
+    );
     return const DatabaseBootstrapStartupResult.failure();
   }
 }
+
+// Fixed dark colors in both appearance modes. This screen replaces the whole
+// app when the database cannot be unlocked, so it runs before the appearance
+// setting is readable. Shared by both steps so the reset confirmation cannot
+// drift away from the screen it interrupts.
+const _titleStyle = TextStyle(
+  color: VineTheme.primaryText,
+  fontSize: 22,
+  fontWeight: FontWeight.w700,
+  decoration: TextDecoration.none,
+);
+
+const _bodyStyle = TextStyle(
+  color: VineTheme.onSurfaceVariant,
+  fontSize: 14,
+  height: 1.45,
+  decoration: TextDecoration.none,
+);
+
+const _diagnosticStyle = TextStyle(
+  color: VineTheme.onSurfaceVariant,
+  fontSize: 12,
+  height: 1.35,
+  decoration: TextDecoration.none,
+);
 
 class DatabaseBootstrapFailureApp extends StatelessWidget {
   const DatabaseBootstrapFailureApp({
     required this.error,
     required this.stack,
     this.onCloseApp = SystemNavigator.pop,
+    this.onResetLocalDatabase,
     super.key,
   });
 
@@ -62,77 +95,103 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   final StackTrace stack;
   final VoidCallback onCloseApp;
 
+  /// Backs up and clears the local database so the next launch rebuilds it.
+  ///
+  /// `null` hides the affordance. Even when provided it is only offered for
+  /// diagnoses where the database is already unusable — see
+  /// [DatabaseBootstrapDiagnosis.allowsLocalDatabaseReset].
+  final Future<void> Function()? onResetLocalDatabase;
+
   @override
   Widget build(BuildContext context) {
-    // Fixed dark colors in both appearance modes. This screen replaces the
-    // whole app when the database cannot be unlocked, so it runs before the
-    // appearance setting is readable — and `context` here sits above its own
-    // `MaterialApp`, where no palette exists to resolve.
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.warningCircle,
-                      color: VineTheme.accentOrange,
-                      size: 48,
+      home: _FailureScreen(
+        error: error,
+        stack: stack,
+        onCloseApp: onCloseApp,
+        onResetLocalDatabase: onResetLocalDatabase,
+      ),
+    );
+  }
+}
+
+class _FailureScreen extends StatefulWidget {
+  const _FailureScreen({
+    required this.error,
+    required this.stack,
+    required this.onCloseApp,
+    required this.onResetLocalDatabase,
+  });
+
+  final Object error;
+  final StackTrace stack;
+  final VoidCallback onCloseApp;
+  final Future<void> Function()? onResetLocalDatabase;
+
+  @override
+  State<_FailureScreen> createState() => _FailureScreenState();
+}
+
+class _FailureScreenState extends State<_FailureScreen> {
+  bool _confirmingReset = false;
+  bool _resetting = false;
+  bool _resetFailed = false;
+
+  bool get _canReset =>
+      widget.onResetLocalDatabase != null &&
+      databaseBootstrapDiagnosis(
+        widget.error,
+      ).allowsLocalDatabaseReset;
+
+  Future<void> _resetLocalDatabase() async {
+    setState(() {
+      _resetting = true;
+      _resetFailed = false;
+    });
+    try {
+      await widget.onResetLocalDatabase!();
+    } on Object {
+      // The reset itself can fail — clearing the keystore entry needs the same
+      // keystore that may be the reason we are on this screen. Stay put and
+      // say so rather than closing on a reset that did not happen.
+      if (!mounted) return;
+      setState(() {
+        _resetting = false;
+        _resetFailed = true;
+      });
+      return;
+    }
+    // Startup already bailed out, so there is nothing to resume into. The next
+    // launch rebuilds the database from scratch.
+    widget.onCloseApp();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: _confirmingReset
+                  ? _ResetConfirmView(
+                      isResetting: _resetting,
+                      didFail: _resetFailed,
+                      onConfirm: _resetLocalDatabase,
+                      onCancel: () => setState(() => _confirmingReset = false),
+                    )
+                  : _FailureView(
+                      error: widget.error,
+                      stack: widget.stack,
+                      onCloseApp: widget.onCloseApp,
+                      onResetRequested: _canReset
+                          ? () => setState(() => _confirmingReset = true)
+                          : null,
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      "couldn't unlock your local database",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: VineTheme.primaryText,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Restart Divine after unlocking your device. If this '
-                      'keeps happening, update the app or contact support.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: VineTheme.onSurfaceVariant,
-                        fontSize: 14,
-                        height: 1.45,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Diagnostic: ${databaseBootstrapDiagnosticCode(error)}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: VineTheme.onSurfaceVariant,
-                        fontSize: 12,
-                        height: 1.35,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    DivineButton(
-                      label: 'close Divine',
-                      onPressed: onCloseApp,
-                      type: DivineButtonType.secondary,
-                    ),
-                    if (kDebugMode) ...[
-                      const SizedBox(height: 24),
-                      _DebugErrorDetails(error: error, stack: stack),
-                    ],
-                  ],
-                ),
-              ),
             ),
           ),
         ),
@@ -141,8 +200,174 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
   }
 }
 
-/// Classifies a bootstrap failure into the short code shown on the screen, so
-/// a support report identifies the cause without a stack trace.
+class _FailureView extends StatelessWidget {
+  const _FailureView({
+    required this.error,
+    required this.stack,
+    required this.onCloseApp,
+    required this.onResetRequested,
+  });
+
+  final Object error;
+  final StackTrace stack;
+  final VoidCallback onCloseApp;
+  final VoidCallback? onResetRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const DivineIcon(
+          icon: DivineIconName.warningCircle,
+          color: VineTheme.accentOrange,
+          size: 48,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          "couldn't unlock your local database",
+          textAlign: TextAlign.center,
+          style: _titleStyle,
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Restart Divine after unlocking your device. If this '
+          'keeps happening, update the app or contact support.',
+          textAlign: TextAlign.center,
+          style: _bodyStyle,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Diagnostic: ${databaseBootstrapDiagnosticCode(error)}',
+          textAlign: TextAlign.center,
+          style: _diagnosticStyle,
+        ),
+        const SizedBox(height: 24),
+        DivineButton(
+          label: 'close Divine',
+          onPressed: onCloseApp,
+          type: DivineButtonType.secondary,
+        ),
+        if (onResetRequested != null) ...[
+          const SizedBox(height: 12),
+          DivineButton(
+            label: 'reset local database',
+            onPressed: onResetRequested,
+            type: DivineButtonType.link,
+          ),
+        ],
+        if (kDebugMode) ...[
+          const SizedBox(height: 24),
+          _DebugErrorDetails(error: error, stack: stack),
+        ],
+      ],
+    );
+  }
+}
+
+class _ResetConfirmView extends StatelessWidget {
+  const _ResetConfirmView({
+    required this.isResetting,
+    required this.didFail,
+    required this.onConfirm,
+    required this.onCancel,
+  });
+
+  final bool isResetting;
+  final bool didFail;
+  final VoidCallback onConfirm;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const DivineIcon(
+          icon: DivineIconName.warningCircle,
+          color: VineTheme.accentOrange,
+          size: 48,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'reset your local database?',
+          textAlign: TextAlign.center,
+          style: _titleStyle,
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Your account stays. Drafts and clips saved on this device are '
+          'deleted — messages and feeds come back from the network.',
+          textAlign: TextAlign.center,
+          style: _bodyStyle,
+        ),
+        if (didFail) ...[
+          const SizedBox(height: 12),
+          Text(
+            "That didn't work. Close Divine and try again.",
+            textAlign: TextAlign.center,
+            style: _diagnosticStyle.copyWith(color: VineTheme.error),
+          ),
+        ],
+        const SizedBox(height: 24),
+        DivineButton(
+          label: 'reset and close',
+          onPressed: isResetting ? null : onConfirm,
+          isLoading: isResetting,
+          type: DivineButtonType.error,
+        ),
+        const SizedBox(height: 12),
+        DivineButton(
+          label: 'cancel',
+          onPressed: isResetting ? null : onCancel,
+          type: DivineButtonType.secondary,
+        ),
+      ],
+    );
+  }
+}
+
+/// Why the startup database bootstrap failed, as shown on the failure screen.
+enum DatabaseBootstrapDiagnosis {
+  /// The active SQLite build has no cipher — a build misconfiguration.
+  cipherUnavailable('db-cipher-unavailable'),
+
+  /// The keystore holding the cipher key was unreachable, most often a launch
+  /// before the device's first unlock.
+  secureStorage('db-secure-storage'),
+
+  /// The key no longer opens the database file.
+  cipherMismatch('db-cipher-mismatch'),
+
+  /// Anything else. Read the exception from Crashlytics for this one.
+  bootstrapFailed('db-bootstrap-failed');
+
+  const DatabaseBootstrapDiagnosis(this.code);
+
+  /// Short identifier rendered on the screen, so a support report names the
+  /// cause without a stack trace.
+  final String code;
+
+  /// Whether the screen may offer the destructive local-database reset.
+  ///
+  /// Only where the database is already unusable, so the reset costs nothing
+  /// that is not lost anyway. [secureStorage] must never reach it: the
+  /// database is intact and only its keystore was unreachable, so clearing it
+  /// would trade a restart-and-retry for permanent loss of every local-only
+  /// draft and clip. [cipherUnavailable] cannot be helped either — without a
+  /// cipher, a fresh database could not be created any more than the old one
+  /// could be opened.
+  ///
+  /// Switched exhaustively on purpose: a future diagnosis has to make this
+  /// choice deliberately instead of defaulting into a destructive offer.
+  bool get allowsLocalDatabaseReset => switch (this) {
+    cipherMismatch || bootstrapFailed => true,
+    cipherUnavailable || secureStorage => false,
+  };
+}
+
+/// Classifies a bootstrap failure so the screen can name the cause and decide
+/// whether a reset is safe to offer.
 ///
 /// Match on error TYPE wherever the bootstrap owns the throw. The
 /// secure-storage case used to be detected by looking for `secure storage` in
@@ -150,23 +375,27 @@ class DatabaseBootstrapFailureApp extends StatelessWidget {
 /// a `PlatformException` carrying a platform status code. Every locked-keychain
 /// failure was therefore reported as the `db-bootstrap-failed` catch-all —
 /// the one code that tells a reader nothing.
-String databaseBootstrapDiagnosticCode(Object error) {
+DatabaseBootstrapDiagnosis databaseBootstrapDiagnosis(Object error) {
   if (error is DatabaseCipherUnavailableError) {
-    return 'db-cipher-unavailable';
+    return DatabaseBootstrapDiagnosis.cipherUnavailable;
   }
   if (error is DatabaseCipherStorageUnavailableException) {
-    return 'db-secure-storage';
+    return DatabaseBootstrapDiagnosis.secureStorage;
   }
 
   final message = error.toString();
   if (message.contains('SQLite3MultipleCiphers is not active')) {
-    return 'db-cipher-unavailable';
+    return DatabaseBootstrapDiagnosis.cipherUnavailable;
   }
   if (message.contains('SQLITE_NOTADB') || message.contains('not a database')) {
-    return 'db-cipher-mismatch';
+    return DatabaseBootstrapDiagnosis.cipherMismatch;
   }
-  return 'db-bootstrap-failed';
+  return DatabaseBootstrapDiagnosis.bootstrapFailed;
 }
+
+/// The short diagnostic code for [error], as rendered on the failure screen.
+String databaseBootstrapDiagnosticCode(Object error) =>
+    databaseBootstrapDiagnosis(error).code;
 
 class _DebugErrorDetails extends StatelessWidget {
   const _DebugErrorDetails({required this.error, required this.stack});

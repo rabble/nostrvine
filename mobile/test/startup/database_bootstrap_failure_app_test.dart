@@ -239,6 +239,25 @@ void main() {
     );
   });
 
+  group('resolveDatabaseBootstrapForAppStart reset wiring', () {
+    test('hands the reset hook to the failure app', () async {
+      Widget? renderedApp;
+      Future<void> reset() async {}
+
+      await resolveDatabaseBootstrapForAppStart(
+        resolveCipherKey: () async => throw StateError('bootstrap failed'),
+        resetLocalDatabase: reset,
+        removeNativeSplash: () {},
+        runApp: (app) => renderedApp = app,
+      );
+
+      expect(
+        (renderedApp! as DatabaseBootstrapFailureApp).onResetLocalDatabase,
+        same(reset),
+      );
+    });
+  });
+
   group(DatabaseBootstrapFailureApp, () {
     testWidgets('shows a visible database startup failure screen', (
       tester,
@@ -302,6 +321,125 @@ void main() {
       expect(
         databaseBootstrapDiagnosticCode(StateError('something else entirely')),
         equals('db-bootstrap-failed'),
+      );
+    });
+
+    testWidgets('offers no reset when the caller supplies no hook', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+        ),
+      );
+
+      expect(find.text('reset local database'), findsNothing);
+    });
+
+    testWidgets('offers no reset for a locked keystore', (tester) async {
+      // The database is intact here and the reset would delete the key that
+      // opens it. Offering the button would be worse than offering nothing.
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async {},
+        ),
+      );
+
+      expect(find.text('Diagnostic: db-secure-storage'), findsOneWidget);
+      expect(find.text('reset local database'), findsNothing);
+    });
+
+    testWidgets('resets and closes once the user confirms', (tester) async {
+      var resets = 0;
+      var closed = false;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onCloseApp: () => closed = true,
+          onResetLocalDatabase: () async => resets++,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+
+      expect(find.text('reset your local database?'), findsOneWidget);
+      expect(find.textContaining('Your account stays'), findsOneWidget);
+      expect(resets, isZero, reason: 'confirmation must gate the wipe');
+
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(resets, equals(1));
+      expect(closed, isTrue);
+    });
+
+    testWidgets('returns to the failure screen on cancel', (tester) async {
+      var resets = 0;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async => resets++,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('cancel'));
+      await tester.pump();
+
+      expect(find.text("couldn't unlock your local database"), findsOneWidget);
+      expect(resets, isZero);
+    });
+
+    testWidgets('stays put and reports when the reset itself fails', (
+      tester,
+    ) async {
+      var closed = false;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onCloseApp: () => closed = true,
+          onResetLocalDatabase: () async =>
+              throw StateError('keystore delete failed'),
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(find.textContaining("That didn't work"), findsOneWidget);
+      expect(
+        closed,
+        isFalse,
+        reason: 'closing would claim a reset that never happened',
+      );
+    });
+  });
+
+  group(DatabaseBootstrapDiagnosis, () {
+    test('allows a reset only where the database is already unusable', () {
+      expect(
+        DatabaseBootstrapDiagnosis.values
+            .where((d) => d.allowsLocalDatabaseReset)
+            .toSet(),
+        equals({
+          DatabaseBootstrapDiagnosis.cipherMismatch,
+          DatabaseBootstrapDiagnosis.bootstrapFailed,
+        }),
       );
     });
   });
