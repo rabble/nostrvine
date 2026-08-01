@@ -7329,6 +7329,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Dein Gerät hat wenig Arbeitsspeicher. Schließe ein paar Apps und versuch es erneut.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Text und Sticker dieses Entwurfs konnten nicht vorbereitet werden. Öffne ihn im Editor und poste dann erneut.';
+
+  @override
   String get publishErrorUnknownServer => 'Unbekannter Server';
 
   @override

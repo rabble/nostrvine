@@ -26,6 +26,7 @@
     "publishErrorUploadSessionExpired": "Tu sesión de subida expiró. Intentá de nuevo.",
     "publishErrorPermissionDenied": "Divine no tiene permiso para subir. Revisá los permisos de la app en tus ajustes e intentá de nuevo.",
     "publishErrorOutOfMemory": "Tu dispositivo se está quedando sin memoria. Cerrá algunas apps e intentá de nuevo.",
+    "publishErrorOverlaysUnavailable": "No se pudieron preparar el texto y los stickers de este borrador. Abrilo en el editor y publicá de nuevo.",
     "publishErrorUnknownServer": "Servidor desconocido",
     "dmReactionsSheetTitle": "Reacciones",
     "dmReactionsViewA11yLabel": "Ver quién reaccionó",

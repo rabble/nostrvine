@@ -7237,6 +7237,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Enheten har ont om minne. Stäng några appar och försök igen.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Texten och dekalerna i det här utkastet kunde inte förberedas. Öppna det i redigeraren och posta igen.';
+
+  @override
   String get publishErrorUnknownServer => 'Okänd server';
 
   @override

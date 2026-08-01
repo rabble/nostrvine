@@ -7323,6 +7323,10 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kulang ang memory sa device mo. Magsara ng ilang app at subukan ulit.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Hindi na-prepare ang text at stickers sa draft na ito. Buksan mo sa editor, tapos i-post ulit.';
+
+  @override
   String get publishErrorUnknownServer => 'Hindi kilalang server';
 
   @override

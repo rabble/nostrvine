@@ -6933,6 +6933,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get publishErrorOutOfMemory => '端末のメモリが足りないよ。アプリをいくつか閉じて、もう一回試してみて。';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'この下書きのテキストとステッカーを準備できなかったよ。エディタで開いてから、もう一回投稿してみて。';
+
+  @override
   String get publishErrorUnknownServer => '不明なサーバー';
 
   @override

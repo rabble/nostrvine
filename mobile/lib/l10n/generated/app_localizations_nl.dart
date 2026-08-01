@@ -7273,6 +7273,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je apparaat heeft weinig werkgeheugen. Sluit een paar apps en probeer het opnieuw.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'De tekst en stickers van dit concept konden niet worden voorbereid. Open het in de editor en post opnieuw.';
+
+  @override
   String get publishErrorUnknownServer => 'Onbekende server';
 
   @override

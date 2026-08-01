@@ -7409,6 +7409,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Za mało pamięci operacyjnej urządzenia. Zamknij kilka aplikacji i spróbuj ponownie.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Nie udało się przygotować tekstu i naklejek z tej wersji roboczej. Otwórz ją w edytorze i opublikuj ponownie.';
+
+  @override
   String get publishErrorUnknownServer => 'Nieznany serwer';
 
   @override

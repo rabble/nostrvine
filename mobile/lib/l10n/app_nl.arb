@@ -26,6 +26,7 @@
     "publishErrorUploadSessionExpired": "Je uploadsessie is verlopen. Probeer het opnieuw.",
     "publishErrorPermissionDenied": "Divine heeft geen toestemming om te uploaden. Controleer de app-rechten in je instellingen en probeer het opnieuw.",
     "publishErrorOutOfMemory": "Je apparaat heeft weinig werkgeheugen. Sluit een paar apps en probeer het opnieuw.",
+    "publishErrorOverlaysUnavailable": "De tekst en stickers van dit concept konden niet worden voorbereid. Open het in de editor en post opnieuw.",
     "publishErrorUnknownServer": "Onbekende server",
     "dmReactionsSheetTitle": "Reacties",
     "dmReactionsViewA11yLabel": "Bekijk wie heeft gereageerd",

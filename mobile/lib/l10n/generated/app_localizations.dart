@@ -12573,6 +12573,12 @@ abstract class AppLocalizations {
   /// **'Your device is low on memory. Close some apps and try again.'**
   String get publishErrorOutOfMemory;
 
+  /// No description provided for @publishErrorOverlaysUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The text and stickers on this draft couldn’t be prepared. Open it in the editor, then post again.'**
+  String get publishErrorOverlaysUnavailable;
+
   /// No description provided for @publishErrorUnknownServer.
   ///
   /// In en, this message translates to:

@@ -7194,6 +7194,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'ذاكرة جهازك منخفضة. أغلق بعض التطبيقات وحاول مرّة أخرى.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'تعذّر تجهيز النص والملصقات في هذه المسودة. افتحها في المحرّر ثم انشر مرّة أخرى.';
+
+  @override
   String get publishErrorUnknownServer => 'خادم غير معروف';
 
   @override

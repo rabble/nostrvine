@@ -26,6 +26,7 @@
     "publishErrorUploadSessionExpired": "Yükleme oturumun sona erdi. Lütfen tekrar dene.",
     "publishErrorPermissionDenied": "Divine'in yükleme izni yok. Ayarlarından uygulama izinlerini kontrol edip tekrar dene.",
     "publishErrorOutOfMemory": "Cihazının belleği azaldı. Bazı uygulamaları kapatıp tekrar dene.",
+    "publishErrorOverlaysUnavailable": "Bu taslaktaki yazı ve çıkartmalar hazırlanamadı. Düzenleyicide aç ve tekrar paylaş.",
     "publishErrorUnknownServer": "Bilinmeyen sunucu",
     "dmReactionsSheetTitle": "Tepkiler",
     "dmReactionsViewA11yLabel": "Kimlerin tepki verdiğini gör",

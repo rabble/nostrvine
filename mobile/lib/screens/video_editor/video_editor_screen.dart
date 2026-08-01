@@ -8,7 +8,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
@@ -42,6 +41,7 @@ import 'package:openvine/screens/video_editor/voice_over_take_commit.dart';
 import 'package:openvine/screens/video_editor/voice_over_take_placement.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/await_push_transition.dart';
+import 'package:openvine/utils/editor_text_fonts.dart';
 import 'package:openvine/utils/mounted_post_frame.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -229,7 +229,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
       // default font (see #5181).
       if (mounted &&
           ref.read(videoEditorProvider).editorStateHistory.isNotEmpty) {
-        await _preloadEditorTextFonts();
+        await preloadEditorTextFonts();
       }
 
       if (mounted) {
@@ -267,24 +267,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen>
     _zoomMatrixNotifier.dispose();
     _playTimeNotifier.dispose();
     super.dispose();
-  }
-
-  /// Registers every text-overlay Google Font so a restored draft resolves
-  /// the font family stored on its text layers.
-  ///
-  /// Calling a `GoogleFonts.*` getter registers its [FontLoader] as a side
-  /// effect; the serialized [TextLayer] only keeps the family string, so the
-  /// loader must be re-registered each session before the overlays render.
-  /// Already-loaded fonts resolve instantly, so the timeout only guards the
-  /// first, uncached load.
-  Future<void> _preloadEditorTextFonts() async {
-    for (final font in VideoEditorConstants.textFonts) {
-      font();
-    }
-    await GoogleFonts.pendingFonts().timeout(
-      VideoEditorConstants.textFontLoadTimeout,
-      onTimeout: () => const [],
-    );
   }
 
   /// Precaches stickers for faster display.

@@ -429,7 +429,9 @@ void main() {
         final drafts = await service.getAllDrafts();
         expect(drafts, hasLength(1));
         expect(drafts.single.finalRenderedClip, isNull);
-        expect(drafts.single.canPost, isFalse);
+        // Dropping the dangling render does not take the draft out of play:
+        // publish re-renders it from its clips and editor state.
+        expect(drafts.single.canPost, isTrue);
       });
     });
 

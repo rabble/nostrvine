@@ -26,6 +26,7 @@
   "publishErrorUploadSessionExpired": "La sessione di caricamento è scaduta. Riprova.",
   "publishErrorPermissionDenied": "Divine non ha il permesso di caricare. Controlla i permessi dell'app nelle impostazioni e riprova.",
   "publishErrorOutOfMemory": "Memoria insufficiente sul dispositivo. Chiudi alcune app e riprova.",
+  "publishErrorOverlaysUnavailable": "Non è stato possibile preparare testo e sticker di questa bozza. Aprila nell’editor e ripubblica.",
   "publishErrorUnknownServer": "Server sconosciuto",
     "dmReactionsSheetTitle": "Reazioni",
     "dmReactionsViewA11yLabel": "Vedi chi ha reagito",

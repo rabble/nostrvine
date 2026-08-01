@@ -26,6 +26,7 @@
     "publishErrorUploadSessionExpired": "Sua sessão de envio expirou. Tente novamente.",
     "publishErrorPermissionDenied": "O Divine não tem permissão para enviar. Verifique as permissões do app nas suas configurações e tente novamente.",
     "publishErrorOutOfMemory": "Seu dispositivo está com pouca memória. Feche alguns apps e tente novamente.",
+    "publishErrorOverlaysUnavailable": "Não foi possível preparar o texto e os stickers deste rascunho. Abra no editor e poste de novo.",
     "publishErrorUnknownServer": "Servidor desconhecido",
     "dmReactionsSheetTitle": "Reações",
     "dmReactionsViewA11yLabel": "Ver quem reagiu",

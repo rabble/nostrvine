@@ -7101,6 +7101,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'የመሣሪያዎ ማህደረ ትውስታ እያለቀ ነው። አንዳንድ መተግበሪያዎችን ይዝጉ እና እንደገና ይሞክሩ።';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'የዚህ ረቂቅ ጽሑፍና ተለጣፊዎች ሊዘጋጁ አልቻሉም። በአራሚው ውስጥ ይክፈቱት፣ ከዚያ እንደገና ይለጥፉ።';
+
+  @override
   String get publishErrorUnknownServer => 'ያልታወቀ አገልጋይ';
 
   @override

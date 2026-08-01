@@ -7332,6 +7332,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ton appareil manque de mémoire. Ferme quelques applications et réessaie.';
 
   @override
+  String get publishErrorOverlaysUnavailable =>
+      'Le texte et les stickers de ce brouillon n’ont pas pu être préparés. Ouvre-le dans l’éditeur, puis publie à nouveau.';
+
+  @override
   String get publishErrorUnknownServer => 'Serveur inconnu';
 
   @override

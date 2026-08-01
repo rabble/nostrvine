@@ -35,11 +35,15 @@ DivineVideoDraft _draft({
 void main() {
   group(DivineVideoDraft, () {
     group('canPost', () {
-      test('returns false for single-clip draft without final render', () {
-        expect(_draft().canPost, isFalse);
+      // #5203 hid Post for these drafts because the publish path shipped the
+      // raw recording, dropping every editor layer. Publish now renders them
+      // with their layers restored, so gating on a cached render would only
+      // hide a working action.
+      test('allows posting a single-clip draft with no final render', () {
+        expect(_draft().canPost, isTrue);
       });
 
-      test('returns true for multi-clip draft without final render', () {
+      test('allows posting a multi-clip draft with no final render', () {
         expect(
           _draft(
             clips: [_createTestClip(), _createTestClip('clip_2')],
@@ -48,8 +52,8 @@ void main() {
         );
       });
 
-      test('returns true when finalRenderedClip is present', () {
-        expect(_draft(finalRenderedClip: _createTestClip()).canPost, isTrue);
+      test('refuses a draft with nothing to publish', () {
+        expect(_draft(clips: const []).canPost, isFalse);
       });
     });
   });
