@@ -45,6 +45,37 @@ _stack_project_name() {
     python3 -c 'import json, sys; print(json.load(sys.stdin).get("name", ""))'
 }
 
+# --- Host listeners ---------------------------------------------------------
+
+# stdout: one "<address>:<port>" per listening TCP socket.
+# `ss` is iproute2, so it does not exist on macOS; `lsof` is there instead.
+# Returns 1 when neither is installed, so the caller can say so rather than
+# read "no listeners found" as "every port is free".
+_stack_listen_addrs() {
+    if command -v ss >/dev/null 2>&1; then
+        ss -Hltn 2>/dev/null | awk '{ print $4 }'
+    elif command -v lsof >/dev/null 2>&1; then
+        # -Fn emits one "n<address>:<port>" record per socket, which spares us
+        # the header line and the space-separated NAME column. Without sudo it
+        # only sees our own processes — enough for Docker Desktop's proxy.
+        lsof -nP -iTCP -sTCP:LISTEN -Fn 2>/dev/null | sed -n 's/^n//p'
+    else
+        return 1
+    fi
+    return 0
+}
+
+# stdout: the command that names what holds <port>, for whichever of ss/lsof
+# this machine actually has.
+_stack_port_finder_cmd() {
+    local port="$1"
+    if command -v ss >/dev/null 2>&1; then
+        printf 'ss -ltnp "sport = :%s"' "$port"
+    else
+        printf 'sudo lsof -nP -iTCP:%s -sTCP:LISTEN' "$port"
+    fi
+}
+
 # --- Pre-flight -------------------------------------------------------------
 
 # preflight_ports <compose_file>
@@ -95,12 +126,17 @@ preflight_ports() {
 
     # port -> space-separated local addresses currently listening on it
     local listen_addrs=()
-    local local_addr port
-    while read -r _ _ _ local_addr _; do
-        port="${local_addr##*:}"
-        [[ "$port" =~ ^[0-9]+$ ]] || continue
-        listen_addrs["$port"]+="${local_addr} "
-    done < <(ss -Hltn 2>/dev/null || true)
+    local listeners_known=1
+    local listener_lines local_addr port
+    if listener_lines="$(_stack_listen_addrs)"; then
+        while read -r local_addr; do
+            port="${local_addr##*:}"
+            [[ "$port" =~ ^[0-9]+$ ]] || continue
+            listen_addrs["$port"]+="${local_addr} "
+        done <<<"$listener_lines"
+    else
+        listeners_known=0
+    fi
 
     # port -> container name / owning compose project (empty if standalone)
     local port_container=() port_project=()
@@ -119,12 +155,25 @@ preflight_ports() {
         done < <(grep -oE ':[0-9]+->' <<<"$portspec" | tr -d ':>-')
     done < <(docker ps --format '{{.Names}}|{{.Label "com.docker.compose.project"}}|{{.Ports}}' 2>/dev/null)
 
-    local service conflicts=0 holder holder_project
-    while read -r service port; do
-        [[ -n "${listen_addrs[$port]:-}" ]] || continue
+    if ((listeners_known == 0)); then
+        {
+            echo ""
+            echo "WARNING: neither 'ss' nor 'lsof' is installed, so a port held by a"
+            echo "         plain host process cannot be detected. Ports held by"
+            echo "         containers are still checked below."
+        } >&2
+    fi
 
+    local service conflicts=0 holder holder_project addrs
+    while read -r service port; do
         holder="${port_container[$port]:-}"
         holder_project="${port_project[$port]:-}"
+        addrs="${listen_addrs[$port]:-}"
+
+        # A container that published the port clashes even when the listener
+        # enumeration cannot see the socket — no ss/lsof, or a listener owned
+        # by another user.
+        [[ -n "$addrs" || -n "$holder" ]] || continue
 
         # Already published by our own stack — `up` is idempotent, not a clash.
         if [[ -n "$holder" && "$holder_project" == "$project" ]]; then
@@ -156,9 +205,8 @@ preflight_ports() {
             {
                 printf '  port %-6s wanted by service "%s"\n' "$port" "$service"
                 printf '            held by a host process (not a container), listening on: %s\n' \
-                    "${listen_addrs[$port]% }"
-                printf '            find it: ss -ltnp "sport = :%s"   (or: sudo lsof -iTCP:%s -sTCP:LISTEN)\n' \
-                    "$port" "$port"
+                    "${addrs% }"
+                printf '            find it: %s\n' "$(_stack_port_finder_cmd "$port")"
             } >&2
         fi
         echo "" >&2
