@@ -1488,6 +1488,100 @@ void main() {
         expect(result.requiresReauthentication, isTrue);
       });
 
+      test(
+        'sends a NIP-98 proof instead of the bearer token when signed',
+        () async {
+          // The bearer token is exactly the credential that gets refused once it
+          // has been refreshed, so a proof must take precedence over it.
+          String? sentAuthorization;
+          final mockClient = MockClient((request) async {
+            sentAuthorization = request.headers['Authorization'];
+            return http.Response(
+              jsonEncode({'success': true, 'message': 'Account deleted'}),
+              200,
+            );
+          });
+
+          final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+          final result = await oauth.deleteAccount(
+            'refreshed_token',
+            nip98Signer: (_) async => 'BASE64EVENT',
+          );
+
+          expect(result.success, isTrue);
+          expect(sentAuthorization, 'Nostr BASE64EVENT');
+          expect(sentAuthorization, isNot(contains('Bearer')));
+        },
+      );
+
+      test('signs the proof over the exact URL the request is sent to', () async {
+        // NIP-98 binds the signature to the `u` tag; if the signer is handed a
+        // different URL than the request uses, the server rejects every proof.
+        String? signedUrl;
+        Uri? requestedUri;
+        final mockClient = MockClient((request) async {
+          requestedUri = request.url;
+          return http.Response(
+            jsonEncode({'success': true, 'message': 'Account deleted'}),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        await oauth.deleteAccount(
+          'token',
+          nip98Signer: (url) async {
+            signedUrl = url;
+            return 'PROOF';
+          },
+        );
+
+        expect(signedUrl, isNotNull);
+        expect(signedUrl, requestedUri.toString());
+      });
+
+      test(
+        'falls back to the bearer token when the signer returns null',
+        () async {
+          // Lets the client ship before the server accepts proofs, and keeps
+          // deletion working for anyone whose signer is unavailable.
+          String? sentAuthorization;
+          final mockClient = MockClient((request) async {
+            sentAuthorization = request.headers['Authorization'];
+            return http.Response(
+              jsonEncode({'success': true, 'message': 'Account deleted'}),
+              200,
+            );
+          });
+
+          final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+          final result = await oauth.deleteAccount(
+            'test_token',
+            nip98Signer: (_) async => null,
+          );
+
+          expect(result.success, isTrue);
+          expect(sentAuthorization, 'Bearer test_token');
+        },
+      );
+
+      test('uses the bearer token when no signer is supplied', () async {
+        // Pins the default: existing callers keep their current behavior.
+        String? sentAuthorization;
+        final mockClient = MockClient((request) async {
+          sentAuthorization = request.headers['Authorization'];
+          return http.Response(
+            jsonEncode({'success': true, 'message': 'Account deleted'}),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+        await oauth.deleteAccount('test_token');
+
+        expect(sentAuthorization, 'Bearer test_token');
+      });
+
       test('returns error on 404 not found', () async {
         final mockClient = MockClient((request) async {
           return http.Response('Not Found', 404);
