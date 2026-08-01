@@ -276,36 +276,27 @@ stack_failure_is_transient() {
     grep -qE "$_STACK_TRANSIENT_RE" <<<"$logs"
 }
 
-# stack_failure_report <compose_file> <script_dir> <service>...
-# Says which services are healthy vs down, and how to run tests anyway.
-stack_failure_report() {
-    local compose_file="$1" script_dir="$2"
-    shift 2
+# stack_service_status <compose_file> <service>...
+# The per-service state table, on stderr.
+stack_service_status() {
+    local compose_file="$1"
+    shift
 
     {
-        echo ""
-        echo "=== Local stack failed to come up ==="
-        echo ""
         echo "Service status:"
         docker compose -f "$compose_file" ps -a --format '{{.Service}}	{{.State}}	{{.Status}}' \
             "$@" 2>/dev/null | sed 's/^/  /' || true
         echo ""
+    } >&2
+}
 
-        local service state service_logs
-        while IFS='|' read -r service state; do
-            [[ -n "$service" ]] || continue
-            service_logs="$(docker compose -f "$compose_file" logs --tail=20 --no-log-prefix "$service" 2>&1 || true)"
-            echo "--- last 20 log lines: ${service} (${state}) ---"
-            if [[ -n "$service_logs" ]]; then
-                # shellcheck disable=SC2001  # indenting every line, not a substring swap
-                sed 's/^/    /' <<<"$service_logs"
-            else
-                echo "    (no output — the container never started)"
-            fi
-            echo ""
-        done < <(_stack_down_services "$compose_file" "$@")
+# stack_bypass_hint <script_dir> <lead_in>
+# How to run tests anyway, on stderr.
+stack_bypass_hint() {
+    local script_dir="$1" lead_in="$2"
 
-        echo "A service being down does NOT block tests that never call it."
+    {
+        echo "$lead_in"
         echo "profile.sh skips the local_up gate and runs patrol directly:"
         echo ""
         if [[ -n "${E2E_TEST_PATH:-}" ]]; then
@@ -317,4 +308,38 @@ stack_failure_report() {
         fi
         echo ""
     } >&2
+}
+
+# stack_failure_report <compose_file> <script_dir> <service>...
+# Says which services are healthy vs down, and how to run tests anyway.
+stack_failure_report() {
+    local compose_file="$1" script_dir="$2"
+    shift 2
+
+    {
+        echo ""
+        echo "=== Local stack failed to come up ==="
+        echo ""
+    } >&2
+
+    stack_service_status "$compose_file" "$@"
+
+    local service state service_logs
+    while IFS='|' read -r service state; do
+        [[ -n "$service" ]] || continue
+        service_logs="$(docker compose -f "$compose_file" logs --tail=20 --no-log-prefix "$service" 2>&1 || true)"
+        {
+            echo "--- last 20 log lines: ${service} (${state}) ---"
+            if [[ -n "$service_logs" ]]; then
+                # shellcheck disable=SC2001  # indenting every line, not a substring swap
+                sed 's/^/    /' <<<"$service_logs"
+            else
+                echo "    (no output — the container never started)"
+            fi
+            echo ""
+        } >&2
+    done < <(_stack_down_services "$compose_file" "$@")
+
+    stack_bypass_hint "$script_dir" \
+        "A service being down does NOT block tests that never call it."
 }

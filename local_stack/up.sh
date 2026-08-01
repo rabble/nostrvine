@@ -44,7 +44,8 @@ fi
 UP_CMD+=("${SERVICES[@]}")
 
 UP_LOG="$(mktemp)"
-trap 'rm -f "$UP_LOG"' EXIT
+SEED_LOG="$(mktemp)"
+trap 'rm -f "$UP_LOG" "$SEED_LOG"' EXIT
 
 # Containers occasionally start before Docker's embedded DNS knows their
 # dependency's alias ("no such host" / "Temporary failure in name resolution").
@@ -77,10 +78,27 @@ while true; do
   exit "$UP_RC"
 done
 
-if ! docker compose -f "$COMPOSE_FILE" run --rm e2e-seed; then
-  echo "" >&2
-  echo "ERROR: e2e-seed failed. The services themselves may still be healthy —" >&2
-  echo "only tests that read seeded relay/blossom data need it." >&2
-  stack_failure_report "$COMPOSE_FILE" "$SCRIPT_DIR" "${REPORT_SERVICES[@]}"
-  exit 1
+# `--rm` takes the seed container away with it, so its logs are gone by the
+# time a post-mortem could ask for them. Keep a copy.
+set +e
+docker compose -f "$COMPOSE_FILE" run --rm e2e-seed 2>&1 | tee "$SEED_LOG"
+SEED_RC="${PIPESTATUS[0]}"
+set -e
+
+if [[ "$SEED_RC" -ne 0 ]]; then
+  {
+    echo ""
+    echo "=== e2e-seed failed ==="
+    echo ""
+    echo "The services themselves may still be healthy — the seed only loads"
+    echo "relay/blossom fixtures."
+    echo ""
+    echo "--- last 20 log lines: e2e-seed ---"
+    tail -n 20 "$SEED_LOG" | sed 's/^/    /'
+    echo ""
+  } >&2
+  stack_service_status "$COMPOSE_FILE" "${REPORT_SERVICES[@]}"
+  stack_bypass_hint "$SCRIPT_DIR" \
+    "Only tests that read seeded relay/blossom data need it."
+  exit "$SEED_RC"
 fi
