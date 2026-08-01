@@ -59,12 +59,15 @@ const _rejected = PublishOutcome(
   noResponseFrom: <String>[],
 );
 
-/// No relay answered before the timeout.
+/// The relay received the event and never answered before the timeout.
+///
+/// A targeted relay always lands in one of the outcome's buckets, so leaving
+/// all of them empty would describe a publish with no targets at all.
 const _noRelayResponse = PublishOutcome(
   eventId: 'unreachable',
   acceptedBy: <String>[],
   rejectedBy: <String, String>{},
-  noResponseFrom: <String>[],
+  noResponseFrom: <String>['wss://relay.example.com'],
 );
 
 void main() {

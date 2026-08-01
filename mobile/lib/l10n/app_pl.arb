@@ -3226,6 +3226,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{pętla} few{pętle} many{pętli} other{pętli}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+    "shareMenuDeleteFailedRelayPartial": "Ten film wciąż jest na części przekaźników. Spróbuj usunąć go ponownie.",
     "videoEditorAudioSegmentInstruction": "Wybierz fragment audio dla swojego filmu",
     "videoEditorClipGalleryInstruction": "Dotknij, aby edytować. Przytrzymaj i przeciągnij, aby zmienić kolejność.",
     "navSearch": "Szukaj",

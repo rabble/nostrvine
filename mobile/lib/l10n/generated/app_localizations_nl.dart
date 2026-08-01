@@ -3986,6 +3986,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override
+  String get shareMenuDeleteFailedRelayPartial =>
+      'Deze video staat nog op sommige relays. Probeer \'m opnieuw te verwijderen.';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'Kon deze video niet verwijderen. Probeer opnieuw.';
 

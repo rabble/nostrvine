@@ -3972,6 +3972,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'ریلے تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔';
 
   @override
+  String get shareMenuDeleteFailedRelayPartial =>
+      'یہ ویڈیو اب بھی کچھ ریلے پر موجود ہے۔ دوبارہ حذف کرنے کی کوشش کریں۔';
+
+  @override
   String get shareMenuDeleteFailedGeneric =>
       'یہ ویڈیو حذف نہیں ہو سکی۔ دوبارہ کوشش کریں۔';
 

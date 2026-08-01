@@ -2228,6 +2228,7 @@
   "shareMenuDeleteFailedCouldNotSign": "Couldn't sign the delete request. Try again.",
   "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
   "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+  "shareMenuDeleteFailedRelayPartial": "This video is still live on some relays. Try deleting it again.",
   "shareMenuDeleteFailedGeneric": "Couldn't delete this video. Try again.",
   "shareMenuFollowSetName": "Follow Set Name",
   "shareMenuFollowSetNameHint": "e.g., Content Creators, Musicians, etc.",

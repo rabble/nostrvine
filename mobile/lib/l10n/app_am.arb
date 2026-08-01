@@ -1842,6 +1842,7 @@
     "shareMenuDeleteFailedCouldNotSign": "የመሰረዝ ጥያቄውን መፈረም አልተቻለም። እንደገና ይሞክሩ።",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "ቅብብሎሹን መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
+    "shareMenuDeleteFailedRelayPartial": "ይህ ቪዲዮ አሁንም በአንዳንድ ሪሌዎች ላይ አለ። እንደገና ለመሰረዝ ይሞክሩ።",
     "shareMenuDeleteFailedGeneric": "ይህን ቪዲዮ መሰረዝ አልተቻለም። እንደገና ይሞክሩ።",
     "shareMenuFollowSetName": "የቅንብር ስም ተከተል",
     "shareMenuFollowSetNameHint": "ለምሳሌ፣ የይዘት ፈጣሪዎች፣ ሙዚቀኞች፣ ወዘተ",

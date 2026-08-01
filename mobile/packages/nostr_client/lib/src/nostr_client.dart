@@ -541,25 +541,45 @@ class NostrClient {
     return PublishSuccess(event: sentEvent);
   }
 
-  /// Publishes an event and waits for an `OK` confirmation from at least one
-  /// relay.
+  /// Publishes an event and waits for the targeted relays to answer with
+  /// NIP-01 `OK` frames.
   ///
-  /// Unlike [publishEvent], this method does NOT consider the publish
-  /// successful just because the WebSocket accepted the frame. It waits for
-  /// the relay to respond with an `OK true` message (NIP-20), and treats the
-  /// publish as failed if:
-  ///  * no relay is connected, or
-  ///  * every relay rejects the event, or
-  ///  * no relay responds before [timeout].
+  /// Unlike [publishEvent], this does NOT treat the publish as successful
+  /// just because the WebSocket accepted the frame.
+  ///
+  /// ## When the future completes
+  ///
+  /// Whichever of these happens first:
+  ///  * every relay the fan-out reached has answered, or
+  ///  * a short settle window elapses after the first answer, or
+  ///  * [timeout] elapses.
+  ///
+  /// It does **not** complete on the first acceptance. A publish that one
+  /// relay accepts and another rejects reports both, and relays that were
+  /// targeted but never reached are reported in
+  /// [PublishOutcome.unreachableTargets].
+  ///
+  /// ## What acceptance means
+  ///
+  /// `OK true` means a relay accepted the event for writing — NIP-01 defines
+  /// the flag as "accepted by the relay", and Divine's relay acknowledges
+  /// from an in-memory queue and commits to storage afterwards. Even
+  /// [PublishOutcome.acceptedByAll] is therefore a statement about breadth of
+  /// acceptance, never a durability guarantee. Do not surface it to a user as
+  /// "saved".
+  ///
+  /// Callers should pick the predicate that matches what they need:
+  /// [PublishOutcome.acceptedByAll] when the event must land everywhere it
+  /// was sent (deletions, moderation), or [PublishOutcome.acceptedByAny] when
+  /// one relay is enough. Nothing in this client republishes to relays that
+  /// did not accept, so a partial publish stays partial.
   ///
   /// Cache writes follow the same rules as [publishEvent], except that the
-  /// optimistic cache is rolled back on rejection/timeout, and deletion-event
-  /// cache cleanup only runs after confirmation.
+  /// optimistic cache is rolled back when no relay accepted, and
+  /// deletion-event cache cleanup only runs once something accepted.
   ///
-  /// Use this for operations where the caller needs to know the event is
-  /// actually persisted on at least one relay — deletions, critical profile
-  /// updates, etc. Ephemeral events (20000–29999) should use [publishEvent]
-  /// because relays are not required to respond with `OK` to them.
+  /// Ephemeral events (20000–29999) should use [publishEvent] because relays
+  /// are not required to answer them with `OK`.
   Future<PublishOutcome> publishEventAwaitOk(
     Event event, {
     List<String>? targetRelays,

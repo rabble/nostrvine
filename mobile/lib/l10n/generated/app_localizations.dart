@@ -6890,6 +6890,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t reach the relay. Check your connection and try again.'**
   String get shareMenuDeleteFailedRelayNoResponse;
 
+  /// No description provided for @shareMenuDeleteFailedRelayPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'This video is still live on some relays. Try deleting it again.'**
+  String get shareMenuDeleteFailedRelayPartial;
+
   /// No description provided for @shareMenuDeleteFailedGeneric.
   ///
   /// In en, this message translates to:

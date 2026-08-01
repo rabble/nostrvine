@@ -210,12 +210,18 @@ class Nostr {
     return null;
   }
 
-  /// Sends an event and awaits `OK` confirmation from at least one relay.
+  /// Sends an event and awaits `OK` confirmations from the targeted relays.
   ///
   /// Signs the event if needed, dispatches to relays, and returns a
-  /// [PublishOutcome] describing per-relay acceptance and rejection. The
-  /// future completes early once one relay confirms, but no later than
-  /// [timeout].
+  /// [PublishOutcome] describing per-relay acceptance, rejection and silence.
+  ///
+  /// The future completes once every relay the fan-out reached has answered,
+  /// or a short settle window after the first answer, or at [timeout] —
+  /// whichever comes first. It does **not** complete on the first acceptance,
+  /// so an accepted publish that another relay refused reports both.
+  ///
+  /// Note that [timeout] bounds only the publish: signing happens first and
+  /// its latency is additive.
   ///
   /// Returns `null` if signing failed.
   Future<PublishOutcome?> sendEventAwaitOk(

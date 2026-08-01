@@ -84,6 +84,25 @@ void main() {
       noResponseFrom: const ['wss://backup-relay.test'],
     );
 
+    /// One relay took the deletion and another refused it, so the video is
+    /// gone from part of the network and still live on the rest.
+    PublishOutcome partiallyAccepted(String eventId) => PublishOutcome(
+      eventId: eventId,
+      acceptedBy: const ['wss://relay.test'],
+      rejectedBy: const {'wss://backup-relay.test': 'blocked: policy'},
+      noResponseFrom: const [],
+    );
+
+    /// One relay took the deletion and a second target was never reached.
+    PublishOutcome acceptedWithUnreachableTarget(String eventId) =>
+        PublishOutcome(
+          eventId: eventId,
+          acceptedBy: const ['wss://relay.test'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+          unreachableTargets: const ['wss://offline-relay.test'],
+        );
+
     test('parseDeletionHistory reads persisted deletion records', () {
       final deletedAt = DateTime.utc(2026);
       final historyJson = jsonEncode([
@@ -417,6 +436,95 @@ void main() {
           expect(result.error, contains('blocked: policy'));
           expect(service.hasBeenDeleted(video.id), isFalse);
           expect(service.deletionHistory, isEmpty);
+        },
+      );
+
+      test(
+        'fails with relayPartial and does NOT save locally when one relay '
+        'accepts and another rejects',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', video.addressableId!],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => partiallyAccepted(deleteEvent.id));
+
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'Personal choice',
+          );
+
+          expect(result.success, isFalse);
+          expect(result.failureKind, equals(DeleteFailureKind.relayPartial));
+          // Keeping the video locally is what leaves the retry available;
+          // nothing else republishes to the relay that refused.
+          expect(service.hasBeenDeleted(video.id), isFalse);
+          expect(service.deletionHistory, isEmpty);
+          verifyNever(() => mockProfileStatsDao.deleteStats(any()));
+        },
+      );
+
+      test(
+        'fails with relayPartial when a targeted relay was never reached',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', video.addressableId!],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => acceptedWithUnreachableTarget(deleteEvent.id),
+          );
+
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'Personal choice',
+          );
+
+          expect(result.success, isFalse);
+          expect(result.failureKind, equals(DeleteFailureKind.relayPartial));
+          expect(service.hasBeenDeleted(video.id), isFalse);
         },
       );
 

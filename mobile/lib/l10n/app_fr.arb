@@ -3226,6 +3226,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{boucle} other{boucles}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+    "shareMenuDeleteFailedRelayPartial": "Cette vidéo est encore sur certains relais. Réessaie de la supprimer.",
     "videoEditorAudioSegmentInstruction": "Sélectionne le segment audio de ta vidéo",
     "videoEditorClipGalleryInstruction": "Appuie pour modifier. Maintiens appuyé et fais glisser pour réorganiser.",
     "navSearch": "Recherche",

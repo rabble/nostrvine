@@ -1716,6 +1716,7 @@
     "shareMenuDeleteFailedCouldNotSign": "Не успяхме да подпишем заявката за изтриване. Опитай пак.",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Не можем да достигнем релето. Провери връзката си и опитай пак.",
+    "shareMenuDeleteFailedRelayPartial": "Това видео още го има на някои релета. Опитай да го изтриеш пак.",
     "shareMenuDeleteFailedGeneric": "Не успяхме да изтрием това видео. Опитай пак.",
     "shareMenuFollowSetName": "Име на списъка за следване",
     "shareMenuFollowSetNameHint": "Например създатели на съдържание, музиканти и др.",

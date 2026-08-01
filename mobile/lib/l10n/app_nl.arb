@@ -3226,6 +3226,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+    "shareMenuDeleteFailedRelayPartial": "Deze video staat nog op sommige relays. Probeer 'm opnieuw te verwijderen.",
     "videoEditorAudioSegmentInstruction": "Selecteer het audiofragment voor je video",
     "videoEditorClipGalleryInstruction": "Tik om te bewerken. Houd vast en sleep om te herordenen.",
     "navSearch": "Zoeken",

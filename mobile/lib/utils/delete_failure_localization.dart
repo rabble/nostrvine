@@ -25,6 +25,8 @@ String localizedDeleteFailureMessage(
       return l10n.shareMenuDeleteFailedRelayRejected;
     case DeleteFailureKind.relayNoResponse:
       return l10n.shareMenuDeleteFailedRelayNoResponse;
+    case DeleteFailureKind.relayPartial:
+      return l10n.shareMenuDeleteFailedRelayPartial;
     case DeleteFailureKind.unknown:
       return l10n.shareMenuDeleteFailedGeneric;
   }

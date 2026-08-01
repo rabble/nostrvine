@@ -34,6 +34,15 @@ enum DeleteFailureKind {
   /// timeout. The delete is NOT persisted locally so the user can retry.
   relayNoResponse,
 
+  /// Some relays accepted the delete event and some did not, so the video is
+  /// gone from part of the network and still live on the rest.
+  ///
+  /// Nothing republishes to the relays that did not accept, so this does not
+  /// resolve itself. The delete is NOT persisted locally, which keeps the
+  /// video visible and the retry available; republishing the same kind 5 is
+  /// safe because a relay that already has it answers `OK true` again.
+  relayPartial,
+
   /// Unexpected error (including outer [deleteContent] catch).
   unknown,
 }
@@ -222,16 +231,39 @@ class ContentDeletionService {
         deleteEvent,
       );
 
-      if (publishOutcome.failed) {
-        Log.error(
-          'Delete publish not confirmed by any relay: '
-          '${publishOutcome.summary}',
-          name: 'ContentDeletionService',
-          category: LogCategory.system,
-        );
-        final failureKind = publishOutcome.rejectedBy.isNotEmpty
-            ? DeleteFailureKind.relayRejected
-            : DeleteFailureKind.relayNoResponse;
+      // Counts only — never relay URLs — so this is safe to keep on in every
+      // build and still answers "how often is a delete only partly accepted?".
+      final breadth =
+          'accepted=${publishOutcome.acceptedBy.length}/'
+          '${publishOutcome.targetCount} '
+          'rejected=${publishOutcome.rejectedBy.length} '
+          'silent=${publishOutcome.noResponseFrom.length} '
+          'unreachable=${publishOutcome.unreachableTargets.length}';
+
+      // A delete is only done when every relay we reached took it. Anything
+      // less leaves the video live somewhere, and nothing in this client
+      // republishes to the relays that refused.
+      if (!publishOutcome.acceptedByAll) {
+        final failureKind = switch (publishOutcome) {
+          final o when o.acceptedByPartial => DeleteFailureKind.relayPartial,
+          final o when o.rejectedBy.isNotEmpty =>
+            DeleteFailureKind.relayRejected,
+          _ => DeleteFailureKind.relayNoResponse,
+        };
+        if (publishOutcome.acceptedByPartial) {
+          Log.warning(
+            'Delete only partly accepted: $breadth',
+            name: 'ContentDeletionService',
+            category: LogCategory.system,
+          );
+        } else {
+          Log.error(
+            'Delete publish not confirmed by any relay: '
+            '${publishOutcome.summary}',
+            name: 'ContentDeletionService',
+            category: LogCategory.system,
+          );
+        }
         return DeleteResult.failure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
           failureKind,
@@ -239,7 +271,7 @@ class ContentDeletionService {
       }
 
       Log.info(
-        'Delete request confirmed by relay(s): ${publishOutcome.acceptedBy}',
+        'Delete request confirmed by every relay: $breadth',
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
@@ -314,6 +346,8 @@ class ContentDeletionService {
         return 'Relay rejected deletion';
       case DeleteFailureKind.relayNoResponse:
         return 'Relay did not confirm deletion';
+      case DeleteFailureKind.relayPartial:
+        return 'Only some relays accepted the deletion';
       case DeleteFailureKind.unknown:
         return 'Failed to delete content';
     }
