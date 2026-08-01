@@ -1763,6 +1763,26 @@ class DivineApp extends ConsumerStatefulWidget {
   ConsumerState<DivineApp> createState() => _DivineAppState();
 }
 
+/// Whether a launch that observes [state] as its first lifecycle reading must
+/// start with media downloads suspended.
+///
+/// #6222 tears in-flight downloads down on the `paused` transition, because on
+/// Apple platforms a live NSURLSession callback trampolining into a suspended
+/// isolate aborts the process in the `cupertino_http` FFI layer. A process
+/// launched straight into the background — silent push, background upload
+/// completion — never gets that transition, because it was never resumed. Its
+/// downloads therefore ran until iOS suspended it mid-request, which is the
+/// remaining crash. Reading the state we start in covers what a transition
+/// cannot.
+///
+/// `null` means the engine has not reported a state yet, which is the normal
+/// case on a foreground launch. Suspending there would risk latching downloads
+/// off with no `resumed` transition arriving to lift them again, so it is
+/// treated as "not background".
+@visibleForTesting
+bool shouldSuspendDownloadsAtLaunch(AppLifecycleState? state) =>
+    state != null && state != AppLifecycleState.resumed;
+
 class _DivineAppState extends ConsumerState<DivineApp>
     with WidgetsBindingObserver {
   bool _backgroundInitDone = false;
@@ -1777,6 +1797,14 @@ class _DivineAppState extends ConsumerState<DivineApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Transitions alone do not cover a process launched straight into the
+    // background, so latch the suspension from the state we start in.
+    if (shouldSuspendDownloadsAtLaunch(
+      WidgetsBinding.instance.lifecycleState,
+    )) {
+      openVineMediaCache.cancelInFlightDownloads();
+      openVineImageCache.cancelInFlightDownloads();
+    }
     _memoryPressureHandler = MemoryPressureHandler(
       clearImageCache: () {
         PaintingBinding.instance.imageCache
