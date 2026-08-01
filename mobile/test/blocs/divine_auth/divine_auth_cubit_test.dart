@@ -1460,6 +1460,58 @@ void main() {
           ],
           errors: () => [isA<Exception>()],
         );
+
+        test(
+          'closing mid-sign-up reports no error to the bloc observer',
+          () async {
+            // The sign-up path emits DivineAuthEmailVerification after two
+            // awaits. Leaving the screen while headlessRegister is in flight
+            // closes the cubit, so that emit throws — and submit()'s own
+            // recovery emit then throws again with nothing left to catch it.
+            final registered = Completer<(HeadlessRegisterResult, String)>();
+            when(
+              () => mockOAuth.headlessRegister(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer((_) => registered.future);
+            when(
+              () => mockPendingVerification.save(
+                deviceCode: any(named: 'deviceCode'),
+                verifier: any(named: 'verifier'),
+                email: any(named: 'email'),
+                inviteCode: any(named: 'inviteCode'),
+              ),
+            ).thenAnswer((_) async {});
+
+            final observed = <Object>[];
+            final previousObserver = Bloc.observer;
+            Bloc.observer = _RecordingBlocObserver(observed);
+            addTearDown(() => Bloc.observer = previousObserver);
+
+            final cubit = buildCubit()
+              ..initialize()
+              ..updateEmail(testEmail)
+              ..updatePassword(testPassword);
+
+            final submit = cubit.submit();
+            await cubit.close();
+            registered.complete((
+              HeadlessRegisterResult(
+                success: true,
+                pubkey: 'test-pubkey',
+                verificationRequired: true,
+                deviceCode: testDeviceCode,
+                email: testEmail,
+              ),
+              testVerifier,
+            ));
+
+            await expectLater(submit, completes);
+            expect(observed, isEmpty);
+          },
+        );
       });
     });
 

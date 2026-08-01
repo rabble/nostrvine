@@ -194,7 +194,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final currentState = state;
-      if (currentState is DivineAuthFormState) {
+      if (!isClosed && currentState is DivineAuthFormState) {
         emit(
           currentState.copyWith(
             isSubmitting: false,
@@ -228,7 +228,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       final current = state;
-      if (current is DivineAuthFormState) {
+      if (!isClosed && current is DivineAuthFormState) {
         emit(
           current.copyWith(isSubmitting: false, signInFailureReason: reason),
         );
@@ -286,7 +286,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       final current = state;
-      if (current is DivineAuthFormState) {
+      if (!isClosed && current is DivineAuthFormState) {
         emit(
           current.copyWith(
             isSubmitting: false,
@@ -313,6 +313,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         inviteCode: _inviteCode,
       );
 
+      if (isClosed) return;
+
       // Emit email verification state
       emit(
         DivineAuthEmailVerification(
@@ -323,7 +325,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
     } else {
       final current = state;
-      if (current is DivineAuthFormState) {
+      if (!isClosed && current is DivineAuthFormState) {
         emit(
           current.copyWith(
             isSubmitting: false,
