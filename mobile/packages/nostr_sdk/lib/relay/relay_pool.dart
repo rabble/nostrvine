@@ -1731,15 +1731,21 @@ class RelayPool {
   /// written to would be absent from the outcome entirely, and a publish could
   /// settle while later relays had not been attempted yet.
   ///
-  /// An `EVENT` target must be *connected* as well as write-enabled, matching
-  /// [writable]. `writeAccess` is a config flag that defaults to true, so
-  /// counting on it alone made every configured-but-offline relay a target
-  /// that could only ever land in [PublishOutcome.unreachableTargets] — which
-  /// on mobile, where some relay is nearly always down, left
-  /// [PublishOutcome.acceptedByAll] permanently false and reported every
-  /// successful publish as partial. A relay the fan-out *does* reach despite
-  /// being disconnected is still counted: [PublishTracker.setReachable] adds
-  /// whatever was actually written to.
+  /// For an *unfiltered* `EVENT` fan-out a target must be connected as well as
+  /// write-enabled, matching [writable]. `writeAccess` is a config flag that
+  /// defaults to true, so counting on it alone made every configured-but-
+  /// offline relay a target that could only ever land in
+  /// [PublishOutcome.unreachableTargets] — which on mobile, where some relay
+  /// is nearly always down, left [PublishOutcome.acceptedByAll] permanently
+  /// false and reported every successful publish as partial. A relay the
+  /// fan-out *does* reach despite being disconnected is still counted:
+  /// [PublishTracker.setReachable] adds whatever was actually written to.
+  ///
+  /// [targetRelays] and [tempRelays] are exempt. Naming a relay is the caller
+  /// asserting intent for that specific relay, and "we never reached the one
+  /// you asked for" is the answer it wants — the kind:10002 bootstrap publish
+  /// names its indexers precisely so it can tell an unreached indexer from a
+  /// refusing one.
   Set<String> _intendedPublishTargets(
     List<dynamic> message, {
     List<String>? tempRelays,
@@ -1750,7 +1756,9 @@ class RelayPool {
     final hasFilter = targetRelays != null && targetRelays.isNotEmpty;
     for (final relay in _relaysSnapshot()) {
       if (isEvent && !relay.relayStatus.writeAccess) continue;
-      if (isEvent && relay.relayStatus.connected != ClientConnected.connected) {
+      if (isEvent &&
+          !hasFilter &&
+          relay.relayStatus.connected != ClientConnected.connected) {
         continue;
       }
       if (hasFilter && !targetRelays.contains(relay.url)) continue;

@@ -177,6 +177,33 @@ void main() {
       },
     );
 
+    test(
+      'an explicitly targeted relay is reported unreachable, not dropped',
+      () async {
+        acceptFromLiveRelay();
+
+        // Naming relays is the caller asserting intent — the kind:10002
+        // bootstrap does this so it can tell an unreached indexer from a
+        // refusing one. Silently shrinking the denominator would destroy
+        // exactly the signal it publishes for.
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 10002},
+          ],
+          eventId: eventId,
+          eventKind: 10002,
+          targetRelays: const [liveUrl, downUrl],
+          timeout: const Duration(milliseconds: 400),
+        );
+
+        expect(outcome.acceptedBy, equals([liveUrl]));
+        expect(outcome.unreachableTargets, equals([downUrl]));
+        expect(outcome.targetCount, equals(2));
+        expect(outcome.acceptedByAll, isFalse);
+      },
+    );
+
     test('the disconnected relay still cannot speak for the publish', () async {
       acceptFromLiveRelay();
 
