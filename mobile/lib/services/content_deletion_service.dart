@@ -184,10 +184,11 @@ class ContentDeletionService {
 
   /// Delete user's own content using NIP-09.
   ///
-  /// The deletion is only considered successful when at least one relay
-  /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
-  /// the event, or none respond before the publish timeout, the operation
-  /// fails and is NOT added to local deletion history — the caller can retry.
+  /// The deletion is only considered successful when every relay the publish
+  /// reached returns an `OK true` acknowledgement (NIP-20). A rejection,
+  /// silence, or a target the publish could not write to all fail the
+  /// operation, and a failed deletion is NOT added to local deletion history
+  /// — the video stays visible and the caller can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
