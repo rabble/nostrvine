@@ -603,13 +603,10 @@ class DraftStorageService {
 
     // Ghost frames live only in the clip `data` blob, so — like draft-local
     // audio — the indexed-column check can't tell that a surviving draft (e.g.
-    // a duplicate sharing this draft's clips) still references them. Scan the
-    // other drafts' clips for shared ghost frames and keep those alive.
-    // Exclude this draft's own clips so its ghost frames aren't kept alive by
-    // rows that haven't cascade-deleted yet.
-    final referencedGhostFrames = await _referencedGhostFrameFilenames(
-      excludeDraftId: id,
-    );
+    // a duplicate sharing this draft's clips) still references them. This
+    // draft's own rows are already gone, so every clip the scan sees is a
+    // legitimate survivor whose ghost frame must stay alive.
+    final referencedGhostFrames = await _referencedGhostFrameFilenames();
 
     // Delete clip files only if not referenced by clip library
     await FileCleanupService.deleteRecordingClipsFiles(
@@ -645,15 +642,13 @@ class DraftStorageService {
         audioPaths,
         draftsDao: _draftsDao,
         clipsDao: _clipsDao,
-        referencedAudioFilenames: await _referencedLocalAudioFilenames(
-          excludeDraftId: id,
-        ),
+        referencedAudioFilenames: await _referencedLocalAudioFilenames(),
       );
     }
   }
 
-  /// Basenames of draft-local audio files referenced by any draft other than
-  /// [excludeDraftId], across all accounts.
+  /// Basenames of draft-local audio files referenced by any surviving draft,
+  /// across all accounts.
   ///
   /// The same local audio file can be shared by a draft and its publish copy —
   /// `copyWith` carries [DivineVideoDraft.editorStateHistory] and
@@ -662,17 +657,14 @@ class DraftStorageService {
   /// directly (audio paths live there, not in an indexed column) and never
   /// throws: a corrupt blob is logged and skipped.
   ///
-  /// [excludeDraftId] is required: the sole caller always excludes a draft,
-  /// and a nullable parameter would silently mean "scan everything".
-  Future<Set<String>> _referencedLocalAudioFilenames({
-    required String excludeDraftId,
-  }) async {
+  /// Callers run this *after* deleting the draft they are cleaning up, so
+  /// every row it sees is a survivor and there is nothing to exclude.
+  Future<Set<String>> _referencedLocalAudioFilenames() async {
     final rows = await _draftsDao.getAllDrafts();
     final documentsPath = await getDocumentsPath();
     final filenames = <String>{};
 
     for (final row in rows) {
-      if (row.id == excludeDraftId) continue;
       final DivineVideoDraft draft;
       try {
         draft = DivineVideoDraft.fromJson(
@@ -695,8 +687,8 @@ class DraftStorageService {
     return filenames;
   }
 
-  /// Basenames of clip ghost-frame files referenced by any clip other than
-  /// those belonging to [excludeDraftId], across all accounts.
+  /// Basenames of clip ghost-frame files referenced by any surviving clip,
+  /// across all accounts — library clips, whose `draftId` is NULL, included.
   ///
   /// A clip's ghost frame is persisted only inside the clip `data` blob (no
   /// indexed column), so a draft that shares clips with another draft — a
@@ -715,16 +707,13 @@ class DraftStorageService {
   /// table: this scan runs on every draft deletion, and decoding every blob in
   /// the database made it grow with the size of the clip library (#6548).
   ///
-  /// A null [excludeDraftId] excludes nothing: every clip is scanned, including
-  /// library clips, whose `draftId` is NULL. `clearAllDrafts` relies on that.
-  Future<Set<String>> _referencedGhostFrameFilenames({
-    String? excludeDraftId,
-  }) async {
+  /// Callers run this *after* deleting the draft they are cleaning up, so
+  /// every clip it sees is a survivor and there is nothing to exclude.
+  Future<Set<String>> _referencedGhostFrameFilenames() async {
     final clipRows = await _clipsDao.getClipsWithGhostFrames();
     final filenames = <String>{};
 
     for (final row in clipRows) {
-      if (excludeDraftId != null && row.draftId == excludeDraftId) continue;
       try {
         final data = json.decode(row.data) as Map<String, dynamic>;
         final ghostFramePath = data['ghostFramePath'] as String?;
@@ -770,8 +759,7 @@ class DraftStorageService {
 
     // Every draft and its clips are gone; the clips that survive are library
     // clips (active or trashed). Ghost frames live only in the clip `data`
-    // blob, so protect any a surviving library clip still references. No
-    // excludeDraftId — all remaining clips are legitimate survivors.
+    // blob, so protect any a surviving library clip still references.
     final referencedGhostFrames = await _referencedGhostFrameFilenames();
 
     // Delete clip files only if not referenced by clip library
