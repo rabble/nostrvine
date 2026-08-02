@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Lägg till egen etiketterare",
     "safetySettingsAddCustomLabelerHint": "Ange npub...",
     "safetySettingsAddCustomLabelerListTitle": "Lägg till egen etiketterare",
+    "safetySettingsRemoveLabeler": "Ta bort etiketterare",
     "safetySettingsAddCustomLabelerListSubtitle": "Ange npub-adress",
     "safetySettingsNoBlockedUsers": "Inga blockerade användare",
     "safetySettingsUnblock": "Avblockera",

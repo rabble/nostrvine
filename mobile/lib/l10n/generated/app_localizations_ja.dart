@@ -2447,6 +2447,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => 'カスタムラベラーを追加';
 
   @override
+  String get safetySettingsRemoveLabeler => 'ラベラーを削除';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'npub アドレスを入力してね';
 
   @override

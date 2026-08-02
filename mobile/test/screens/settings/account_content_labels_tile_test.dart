@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for AccountContentLabelsTile — renders the selected
 // ABOUTME: labels and persists a new selection through AccountLabelService.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -77,12 +78,18 @@ void main() {
       // Open the multiselect sheet.
       await tester.tap(find.byType(ListTile).first);
       await tester.pumpAndSettle();
-      expect(find.byType(CheckboxListTile), findsWidgets);
+      expect(find.byType(DivineRowCheckbox), findsWidgets);
 
       // Select the first label and confirm.
-      await tester.tap(find.byType(CheckboxListTile).first);
+      await tester.tap(find.byType(DivineRowCheckbox).first);
       await tester.pump();
-      await tester.tap(find.byType(ElevatedButton));
+      // Two DivineButtons live in the sheet (header "Clear all" + the pinned
+      // confirm action); the confirm one is the expanded, full-width button.
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) => widget is DivineButton && widget.expanded,
+        ),
+      );
       await tester.pumpAndSettle();
 
       verify(() => service.setAccountLabels(any())).called(1);

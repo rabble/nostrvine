@@ -1029,6 +1029,7 @@
     "safetySettingsAddCustomLabeler": "إضافة واسم مخصّص",
     "safetySettingsAddCustomLabelerHint": "أدخل npub...",
     "safetySettingsAddCustomLabelerListTitle": "إضافة واسم مخصّص",
+    "safetySettingsRemoveLabeler": "إزالة الواسم",
     "safetySettingsAddCustomLabelerListSubtitle": "أدخل عنوان npub",
     "safetySettingsNoBlockedUsers": "لا يوجد مستخدمون محظورون",
     "safetySettingsUnblock": "إلغاء الحظر",

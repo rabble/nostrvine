@@ -2571,6 +2571,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => 'إضافة واسم مخصّص';
 
   @override
+  String get safetySettingsRemoveLabeler => 'إزالة الواسم';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'أدخل عنوان npub';
 
   @override

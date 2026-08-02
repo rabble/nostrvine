@@ -1029,6 +1029,7 @@
     "safetySettingsAddCustomLabeler": "カスタムラベラーを追加",
     "safetySettingsAddCustomLabelerHint": "npub を入力...",
     "safetySettingsAddCustomLabelerListTitle": "カスタムラベラーを追加",
+    "safetySettingsRemoveLabeler": "ラベラーを削除",
     "safetySettingsAddCustomLabelerListSubtitle": "npub アドレスを入力してね",
     "safetySettingsNoBlockedUsers": "ブロック済みユーザーはいないよ",
     "safetySettingsUnblock": "ブロック解除",

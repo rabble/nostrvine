@@ -2674,6 +2674,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => 'Dodaj własną etykietę';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Usuń etykietę';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Wprowadź adres npub';
 

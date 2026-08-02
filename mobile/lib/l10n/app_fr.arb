@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Ajouter un étiqueteur personnalisé",
     "safetySettingsAddCustomLabelerHint": "Entre le npub...",
     "safetySettingsAddCustomLabelerListTitle": "Ajouter un étiqueteur personnalisé",
+    "safetySettingsRemoveLabeler": "Supprimer l'étiqueteur",
     "safetySettingsAddCustomLabelerListSubtitle": "Entre l'adresse npub",
     "safetySettingsNoBlockedUsers": "Aucun utilisateur bloqué",
     "safetySettingsUnblock": "Débloquer",

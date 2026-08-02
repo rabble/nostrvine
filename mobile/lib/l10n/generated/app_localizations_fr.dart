@@ -2626,6 +2626,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ajouter un étiqueteur personnalisé';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Supprimer l\'étiqueteur';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Entre l\'adresse npub';
 

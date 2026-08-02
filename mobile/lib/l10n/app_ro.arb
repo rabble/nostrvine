@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Adaugă etichetator personalizat",
     "safetySettingsAddCustomLabelerHint": "Introdu npub...",
     "safetySettingsAddCustomLabelerListTitle": "Adaugă etichetator personalizat",
+    "safetySettingsRemoveLabeler": "Elimină etichetatorul",
     "safetySettingsAddCustomLabelerListSubtitle": "Introdu adresa npub",
     "safetySettingsNoBlockedUsers": "Niciun utilizator blocat",
     "safetySettingsUnblock": "Deblochează",

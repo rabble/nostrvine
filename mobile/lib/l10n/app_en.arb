@@ -1490,6 +1490,7 @@
   "safetySettingsAddCustomLabeler": "Add Custom Labeler",
   "safetySettingsAddCustomLabelerHint": "Enter npub...",
   "safetySettingsAddCustomLabelerListTitle": "Add custom labeler",
+  "safetySettingsRemoveLabeler": "Remove labeler",
   "safetySettingsAddCustomLabelerListSubtitle": "Enter npub address",
   "safetySettingsNoBlockedUsers": "No blocked users",
   "safetySettingsUnblock": "Unblock",

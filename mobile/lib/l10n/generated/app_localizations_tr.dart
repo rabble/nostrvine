@@ -2561,6 +2561,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Özel etiketleyici ekle';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Etiketleyiciyi kaldır';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'npub adresi gir';
 
   @override

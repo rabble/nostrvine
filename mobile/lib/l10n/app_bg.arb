@@ -1108,6 +1108,7 @@
     "safetySettingsAddCustomLabeler": "Добави персонализиран етикет",
     "safetySettingsAddCustomLabelerHint": "Въведи npub...",
     "safetySettingsAddCustomLabelerListTitle": "Добави персонализиран етикет",
+    "safetySettingsRemoveLabeler": "Премахни етикета",
     "safetySettingsAddCustomLabelerListSubtitle": "Въведи npub адрес",
     "safetySettingsNoBlockedUsers": "Няма блокирани потребители",
     "safetySettingsUnblock": "Разблокирай",

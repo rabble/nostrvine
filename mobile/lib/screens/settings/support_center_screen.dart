@@ -119,9 +119,9 @@ class SupportCenterScreen extends ConsumerWidget {
   ) {
     if (userPubkey == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.supportLoginRequired),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportLoginRequired,
+          error: true,
         ),
       );
       return;
@@ -153,8 +153,8 @@ class SupportCenterScreen extends ConsumerWidget {
     // iOS builds on Apple Silicon Macs) rejects the share sheet without it.
     final sharePositionOrigin = sharePositionOriginForContext(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.supportExportingLogs),
+      DivineSnackbarContainer.snackBar(
+        context.l10n.supportExportingLogs,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -174,9 +174,9 @@ class SupportCenterScreen extends ConsumerWidget {
 
     if (!result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.supportExportLogsFailed),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportExportLogsFailed,
+          error: true,
         ),
       );
       return;
@@ -186,13 +186,11 @@ class SupportCenterScreen extends ConsumerWidget {
     if (filePath != null) {
       final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.supportLogsSavedTo(filePath)),
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportLogsSavedTo(filePath),
           duration: const Duration(seconds: 8),
-          action: SnackBarAction(
-            label: context.l10n.supportRevealLogsAction,
-            onPressed: () => bugReportService.revealExportedFile(filePath),
-          ),
+          actionLabel: context.l10n.supportRevealLogsAction,
+          onActionPressed: () => bugReportService.revealExportedFile(filePath),
         ),
       );
     }
@@ -202,9 +200,9 @@ class SupportCenterScreen extends ConsumerWidget {
     if (!ZendeskSupportService.isAvailable) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.supportChatNotAvailable),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.supportChatNotAvailable,
+            error: true,
           ),
         );
       }
@@ -215,9 +213,9 @@ class SupportCenterScreen extends ConsumerWidget {
     final shown = await ZendeskSupportService.showTicketListScreen();
     if (!shown && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.supportCouldNotOpenMessages),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportCouldNotOpenMessages,
+          error: true,
         ),
       );
     }
@@ -235,9 +233,9 @@ class SupportCenterScreen extends ConsumerWidget {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.supportCouldNotOpenPage(pageName)),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              context.l10n.supportCouldNotOpenPage(pageName),
+              error: true,
             ),
           );
         }
@@ -245,9 +243,9 @@ class SupportCenterScreen extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.supportErrorOpeningPage(pageName, e)),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.supportErrorOpeningPage(pageName, e),
+            error: true,
           ),
         );
       }
@@ -280,15 +278,13 @@ class _SupportTile extends StatelessWidget {
       leading: DivineIcon(icon: icon, color: iconColor ?? VineTheme.vineGreen),
       title: Text(
         title,
-        style: TextStyle(
+        style: VineTheme.titleMediumFont(
           color: titleColor ?? context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
       trailing: DivineIcon(
         icon: DivineIconName.caretRight,

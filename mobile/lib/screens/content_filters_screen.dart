@@ -137,9 +137,8 @@ class _AgeGateBanner extends StatelessWidget {
           Expanded(
             child: Text(
               context.l10n.contentFiltersAgeGateMessage,
-              style: TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 13,
               ),
             ),
           ),
@@ -171,7 +170,7 @@ class _CategoryGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(title: title),
+        DivineSectionHeader(title),
         ...labels.map(
           (label) => _ContentFilterRow(
             label: label,
@@ -183,28 +182,6 @@ class _CategoryGroup extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 }
@@ -232,11 +209,10 @@ class _ContentFilterRow extends StatelessWidget {
           Expanded(
             child: Text(
               localizedContentLabelName(context.l10n, label),
-              style: TextStyle(
+              style: VineTheme.bodyLargeFont(
                 color: locked
                     ? context.vineColors.disabled
                     : context.vineColors.primaryText,
-                fontSize: 15,
               ),
             ),
           ),
@@ -331,14 +307,12 @@ class _FilterSegment extends StatelessWidget {
         ),
         child: Text(
           _label,
-          style: TextStyle(
+          style: VineTheme.labelMediumFont(
             color: _locked
                 ? context.vineColors.disabled
                 : _selected
                 ? context.vineColors.background
                 : context.vineColors.secondaryText,
-            fontSize: 12,
-            fontWeight: _selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),

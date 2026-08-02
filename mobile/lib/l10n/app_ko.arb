@@ -619,6 +619,7 @@
     "safetySettingsAddCustomLabeler": "커스텀 라벨러 추가",
     "safetySettingsAddCustomLabelerHint": "npub 입력...",
     "safetySettingsAddCustomLabelerListTitle": "커스텀 라벨러 추가",
+    "safetySettingsRemoveLabeler": "라벨러 제거",
     "safetySettingsAddCustomLabelerListSubtitle": "npub 주소를 입력해주세요",
     "safetySettingsNoBlockedUsers": "차단한 사용자가 없어요",
     "safetySettingsUnblock": "차단 해제",

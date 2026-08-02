@@ -2613,6 +2613,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Adicionar rótulo personalizado';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Remover rótulo';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Digite o endereço npub';
 

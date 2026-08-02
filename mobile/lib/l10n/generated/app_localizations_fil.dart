@@ -2632,6 +2632,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Magdagdag ng custom labeler';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Alisin ang labeler';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Ilagay ang npub address';
 

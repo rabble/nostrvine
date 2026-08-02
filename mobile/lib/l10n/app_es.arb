@@ -1036,6 +1036,7 @@
     "safetySettingsAddCustomLabeler": "Agregar etiquetador personalizado",
     "safetySettingsAddCustomLabelerHint": "Ingresá un npub...",
     "safetySettingsAddCustomLabelerListTitle": "Agregar etiquetador personalizado",
+    "safetySettingsRemoveLabeler": "Quitar etiquetador",
     "safetySettingsAddCustomLabelerListSubtitle": "Ingresá una dirección npub",
     "safetySettingsNoBlockedUsers": "No hay usuarios bloqueados",
     "safetySettingsUnblock": "Desbloquear",

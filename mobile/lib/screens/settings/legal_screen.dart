@@ -28,52 +28,66 @@ class LegalScreen extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              _LegalTile(
-                icon: Icons.description,
+              DivineListTile(
+                leading: const Icon(
+                  Icons.description,
+                  color: VineTheme.vineGreen,
+                ),
                 title: l10n.legalTermsOfService,
                 subtitle: l10n.legalTermsOfServiceSubtitle,
-                isExternal: true,
+                trailingIcon: DivineIconName.arrowUpRight,
+                trailingIconSize: 20,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/terms',
                   l10n.legalTermsOfService,
                 ),
               ),
-              _LegalTile(
-                icon: Icons.privacy_tip,
+              DivineListTile(
+                leading: const Icon(
+                  Icons.privacy_tip,
+                  color: VineTheme.vineGreen,
+                ),
                 title: l10n.legalPrivacyPolicy,
                 subtitle: l10n.legalPrivacyPolicySubtitle,
-                isExternal: true,
+                trailingIcon: DivineIconName.arrowUpRight,
+                trailingIconSize: 20,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/privacy',
                   l10n.legalPrivacyPolicy,
                 ),
               ),
-              _LegalTile(
-                icon: Icons.shield,
+              DivineListTile(
+                icon: DivineIconName.shieldCheck,
+                iconColor: VineTheme.vineGreen,
                 title: l10n.legalSafetyStandards,
                 subtitle: l10n.legalSafetyStandardsSubtitle,
-                isExternal: true,
+                trailingIcon: DivineIconName.arrowUpRight,
+                trailingIconSize: 20,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/safety',
                   l10n.legalSafetyStandards,
                 ),
               ),
-              _LegalTile(
-                icon: Icons.copyright,
+              DivineListTile(
+                leading: const Icon(
+                  Icons.copyright,
+                  color: VineTheme.vineGreen,
+                ),
                 title: l10n.legalDmca,
                 subtitle: l10n.legalDmcaSubtitle,
-                isExternal: true,
+                trailingIcon: DivineIconName.arrowUpRight,
+                trailingIconSize: 20,
                 onTap: () => _launchUrl(
                   context,
                   'https://divine.video/dmca',
                   l10n.legalDmca,
                 ),
               ),
-              _LegalTile(
-                icon: Icons.source,
+              DivineListTile(
+                leading: const Icon(Icons.source, color: VineTheme.vineGreen),
                 title: l10n.legalOpenSourceLicenses,
                 subtitle: l10n.legalOpenSourceLicensesSubtitle,
                 onTap: () => showLicensePage(
@@ -100,9 +114,9 @@ class LegalScreen extends StatelessWidget {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.legalCouldNotOpenPage(pageName)),
-              backgroundColor: VineTheme.error,
+            DivineSnackbarContainer.snackBar(
+              context.l10n.legalCouldNotOpenPage(pageName),
+              error: true,
             ),
           );
         }
@@ -110,53 +124,12 @@ class LegalScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.legalErrorOpeningPage(pageName, e)),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.legalErrorOpeningPage(pageName, e),
+            error: true,
           ),
         );
       }
     }
-  }
-}
-
-class _LegalTile extends StatelessWidget {
-  const _LegalTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.isExternal = false,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final bool isExternal;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: VineTheme.vineGreen),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
-      ),
-      trailing: Icon(
-        isExternal ? Icons.open_in_new : Icons.chevron_right,
-        color: context.vineColors.mutedText,
-        size: isExternal ? 20 : 24,
-      ),
-      onTap: onTap,
-    );
   }
 }

@@ -2587,6 +2587,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg till egen etiketterare';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Ta bort etiketterare';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'Ange npub-adress';
 
   @override

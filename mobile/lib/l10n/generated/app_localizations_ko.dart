@@ -2460,6 +2460,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => '커스텀 라벨러 추가';
 
   @override
+  String get safetySettingsRemoveLabeler => '라벨러 제거';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'npub 주소를 입력해주세요';
 
   @override

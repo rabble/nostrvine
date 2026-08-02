@@ -4514,6 +4514,12 @@ abstract class AppLocalizations {
   /// **'Add custom labeler'**
   String get safetySettingsAddCustomLabelerListTitle;
 
+  /// No description provided for @safetySettingsRemoveLabeler.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove labeler'**
+  String get safetySettingsRemoveLabeler;
+
   /// No description provided for @safetySettingsAddCustomLabelerListSubtitle.
   ///
   /// In en, this message translates to:

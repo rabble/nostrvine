@@ -2459,6 +2459,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => '添加自定义标记服务';
 
   @override
+  String get safetySettingsRemoveLabeler => '移除标记服务';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => '输入 npub 地址';
 
   @override

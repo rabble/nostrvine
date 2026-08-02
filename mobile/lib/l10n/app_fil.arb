@@ -682,6 +682,7 @@
     "safetySettingsAddCustomLabeler": "Magdagdag ng Custom Labeler",
     "safetySettingsAddCustomLabelerHint": "Ilagay ang npub...",
     "safetySettingsAddCustomLabelerListTitle": "Magdagdag ng custom labeler",
+    "safetySettingsRemoveLabeler": "Alisin ang labeler",
     "safetySettingsAddCustomLabelerListSubtitle": "Ilagay ang npub address",
     "safetySettingsNoBlockedUsers": "Walang na-block na user",
     "safetySettingsUnblock": "I-unblock",

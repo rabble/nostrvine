@@ -98,10 +98,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data ==
-                l10n.contentPreferencesAudioSharing &&
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing &&
             !widget.value,
       );
       expect(switchFinder, findsOneWidget);
@@ -120,10 +118,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data ==
-                l10n.contentPreferencesAudioSharing &&
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing &&
             widget.value,
       );
       expect(switchFinder, findsOneWidget);
@@ -145,9 +141,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data == l10n.contentPreferencesAudioSharing,
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing,
       );
 
       await tester.tap(switchFinder);
@@ -167,11 +162,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data ==
-                l10n.contentPreferencesAudioSharing &&
-            widget.activeThumbColor == VineTheme.vineGreen,
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing,
       );
       expect(switchFinder, findsOneWidget);
 

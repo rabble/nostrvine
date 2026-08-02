@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Adicionar rótulo personalizado",
     "safetySettingsAddCustomLabelerHint": "Digite a npub...",
     "safetySettingsAddCustomLabelerListTitle": "Adicionar rótulo personalizado",
+    "safetySettingsRemoveLabeler": "Remover rótulo",
     "safetySettingsAddCustomLabelerListSubtitle": "Digite o endereço npub",
     "safetySettingsNoBlockedUsers": "Nenhum usuário bloqueado",
     "safetySettingsUnblock": "Desbloquear",

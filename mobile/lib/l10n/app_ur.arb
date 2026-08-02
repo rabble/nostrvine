@@ -1482,6 +1482,7 @@
   "safetySettingsAddCustomLabeler": "کسٹم لیبلر شامل کریں",
   "safetySettingsAddCustomLabelerHint": "npub درج کریں...",
   "safetySettingsAddCustomLabelerListTitle": "کسٹم لیبلر شامل کریں",
+  "safetySettingsRemoveLabeler": "لیبلر ہٹائیں",
   "safetySettingsAddCustomLabelerListSubtitle": "npub ایڈریس درج کریں",
   "safetySettingsNoBlockedUsers": "کوئی بلاک شدہ صارف نہیں",
   "safetySettingsUnblock": "ان بلاک کریں",

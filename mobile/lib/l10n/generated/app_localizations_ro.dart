@@ -2684,6 +2684,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Adaugă etichetator personalizat';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Elimină etichetatorul';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Introdu adresa npub';
 

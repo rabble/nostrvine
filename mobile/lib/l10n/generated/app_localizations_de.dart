@@ -2620,6 +2620,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eigenen Labeler hinzufügen';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Labeler entfernen';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'npub-Adresse eingeben';
 

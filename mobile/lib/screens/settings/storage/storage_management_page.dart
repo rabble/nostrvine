@@ -113,13 +113,7 @@ class _SectionHeader extends StatelessWidget {
       _Section.cache => context.l10n.settingsStorageCacheSectionTitle,
       _Section.library => context.l10n.settingsStorageLibrarySectionTitle,
     };
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
-      ),
-    );
+    return DivineSectionHeader(title);
   }
 }
 

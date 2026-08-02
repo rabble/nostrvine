@@ -95,8 +95,10 @@ void main() {
           find.text(l10n.notificationSettingsAllMarkedAsRead),
           findsOneWidget,
         );
-        final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
-        expect(snackBar.backgroundColor, equals(VineTheme.vineGreen));
+        final banner = tester.widget<DivineSnackbarContainer>(
+          find.byType(DivineSnackbarContainer),
+        );
+        expect(banner.error, isFalse);
       },
     );
 
@@ -131,8 +133,10 @@ void main() {
           find.text(l10n.notificationSettingsMarkAllAsReadFailed),
           findsOneWidget,
         );
-        final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
-        expect(snackBar.backgroundColor, equals(VineTheme.error));
+        final banner = tester.widget<DivineSnackbarContainer>(
+          find.byType(DivineSnackbarContainer),
+        );
+        expect(banner.error, isTrue);
       },
     );
 

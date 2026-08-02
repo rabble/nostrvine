@@ -2554,6 +2554,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => 'Tambah labeler kustom';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Hapus labeler';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Masukkan alamat npub';
 

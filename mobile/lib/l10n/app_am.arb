@@ -1305,6 +1305,7 @@
     "safetySettingsAddCustomLabeler": "ብጁ መሰየሚያ ያክሉ",
     "safetySettingsAddCustomLabelerHint": "npub አስገባ...",
     "safetySettingsAddCustomLabelerListTitle": "ብጁ መለያ አክል",
+    "safetySettingsRemoveLabeler": "መለያ አስወግድ",
     "safetySettingsAddCustomLabelerListSubtitle": "npub አድራሻ አስገባ",
     "safetySettingsNoBlockedUsers": "ምንም የታገዱ ተጠቃሚዎች የሉም",
     "safetySettingsUnblock": "እገዳ አንሳ",

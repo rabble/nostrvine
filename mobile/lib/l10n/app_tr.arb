@@ -1029,6 +1029,7 @@
     "safetySettingsAddCustomLabeler": "Özel Etiketleyici Ekle",
     "safetySettingsAddCustomLabelerHint": "npub gir...",
     "safetySettingsAddCustomLabelerListTitle": "Özel etiketleyici ekle",
+    "safetySettingsRemoveLabeler": "Etiketleyiciyi kaldır",
     "safetySettingsAddCustomLabelerListSubtitle": "npub adresi gir",
     "safetySettingsNoBlockedUsers": "Engellenmiş kullanıcı yok",
     "safetySettingsUnblock": "Engeli kaldır",

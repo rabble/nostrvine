@@ -2600,6 +2600,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Thêm bên gắn nhãn tùy chỉnh';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Xóa bên gắn nhãn';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'Nhập địa chỉ npub';
 
   @override

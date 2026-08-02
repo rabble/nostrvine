@@ -215,6 +215,9 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             ),
           ),
           const SizedBox(height: 4),
+          // Stays a bare TextFormField: the '@' prefix and '.divine.video'
+          // suffix render inside the input so the full handle takes shape as
+          // the user types, and DivineAuthTextField has no affix slots.
           TextFormField(
             controller: _usernameController,
             focusNode: _usernameFocusNode,
@@ -229,11 +232,12 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
               isCollapsed: true,
               hintText: context.l10n.profileSetupUsernameHint,
               helperText: context.l10n.profileSetupUsernameHelper,
-              helperStyle: TextStyle(
+              helperStyle: VineTheme.bodySmallFont(
                 color: context.vineColors.onSurfaceMuted,
-                fontSize: 12,
               ),
-              hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
+              hintStyle: VineTheme.bodyLargeFont(
+                color: context.vineColors.onSurfaceMuted,
+              ),
               border: UnderlineInputBorder(
                 borderRadius: BorderRadius.zero,
                 borderSide: BorderSide(color: context.vineColors.outlineMuted),
@@ -292,29 +296,25 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
 
   Widget _buildToggleRow(BuildContext context, ProfileEditorState state) {
     final isExternal = state.nip05Mode == Nip05Mode.external_;
-    return GestureDetector(
-      onTap: () => _onTogglePressed(context, state),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Icon(
-              isExternal ? Icons.check_box : Icons.check_box_outline_blank,
-              color: isExternal
-                  ? VineTheme.vineGreen
-                  : context.vineColors.onSurfaceMuted,
-              size: 22,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
+    return MergeSemantics(
+      child: Semantics(
+        checked: isExternal,
+        child: GestureDetector(
+          onTap: () => _onTogglePressed(context, state),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: DivineCheckbox(
+              state: isExternal
+                  ? DivineCheckboxState.selected
+                  : DivineCheckboxState.unselected,
+              label: Text(
                 context.l10n.profileSetupUseOwnNip05,
                 style: VineTheme.bodyLargeFont(
                   color: context.vineColors.onSurface,
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -330,55 +330,19 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 8),
-          Text(
-            context.l10n.profileSetupNip05AddressLabel,
-            style: VineTheme.labelMediumFont(
-              color: _externalFocusNode.hasFocus
-                  ? VineTheme.primary
-                  : context.vineColors.onSurfaceMuted,
-            ),
-          ),
-          const SizedBox(height: 4),
-          TextFormField(
+          DivineAuthTextField(
+            label: context.l10n.profileSetupNip05AddressLabel,
             controller: _externalController,
             focusNode: _externalFocusNode,
-            style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
-            decoration: InputDecoration(
-              isCollapsed: true,
-              hintText: context.l10n.nostrSettingsNip05AddressHint,
-              hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
-              border: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              enabledBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              errorBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              focusedErrorBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-              errorMaxLines: 2,
-              errorText: switch (state.externalNip05Error) {
-                ExternalNip05ValidationError.invalidFormat =>
-                  context.l10n.profileSetupExternalNip05InvalidFormat,
-                ExternalNip05ValidationError.divineDomain =>
-                  context.l10n.profileSetupExternalNip05DivineDomain,
-                null => null,
-              },
-            ),
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
+            errorText: switch (state.externalNip05Error) {
+              ExternalNip05ValidationError.invalidFormat =>
+                context.l10n.profileSetupExternalNip05InvalidFormat,
+              ExternalNip05ValidationError.divineDomain =>
+                context.l10n.profileSetupExternalNip05DivineDomain,
+              null => null,
+            },
             onChanged: (value) {
               context.read<ProfileEditorBloc>().add(
                 ExternalNip05Changed(value),
@@ -445,10 +409,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
   ) {
     if (state.status == ProfileEditorStatus.success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.nostrSettingsNip05Saved),
-          backgroundColor: VineTheme.vineGreen,
-        ),
+        DivineSnackbarContainer.snackBar(context.l10n.nostrSettingsNip05Saved),
       );
       context.pop();
       return;
@@ -456,9 +417,9 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
 
     if (state.status == ProfileEditorStatus.failure) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.nostrSettingsNip05SaveFailed),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.nostrSettingsNip05SaveFailed,
+          error: true,
         ),
       );
     }
@@ -485,39 +446,44 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
 
   Future<bool> _showConfirmDialog(BuildContext context) async {
     final l10n = context.l10n;
-    final result = await showDialog<bool>(
+    final result = await VineBottomSheet.show<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: context.vineColors.surface,
-        title: Text(
-          l10n.profileSetupNip05ConfirmTitle,
-          style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
-        ),
-        content: Text(
-          l10n.profileSetupNip05ConfirmBody,
-          style: VineTheme.bodyMediumFont(
-            color: context.vineColors.onSurfaceVariant,
+      scrollable: false,
+      contentTitle: l10n.profileSetupNip05ConfirmTitle,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            l10n.profileSetupNip05ConfirmBody,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(
-              l10n.profileSetupNip05ConfirmCancel,
-              style: VineTheme.labelLargeFont(
-                color: context.vineColors.onSurfaceMuted,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: l10n.profileSetupNip05ConfirmCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
               ),
-            ),
+              Expanded(
+                child: DivineButton(
+                  label: l10n.profileSetupNip05ConfirmContinue,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              l10n.profileSetupNip05ConfirmContinue,
-              style: VineTheme.labelLargeFont(color: VineTheme.primary),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
     return result ?? false;
   }

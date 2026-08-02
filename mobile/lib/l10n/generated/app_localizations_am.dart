@@ -2548,6 +2548,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => 'ብጁ መለያ አክል';
 
   @override
+  String get safetySettingsRemoveLabeler => 'መለያ አስወግድ';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'npub አድራሻ አስገባ';
 
   @override

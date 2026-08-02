@@ -84,21 +84,10 @@ class _DeviceDefaultTile extends StatelessWidget {
       deviceLanguageCode,
     );
 
-    return ListTile(
-      leading: Icon(
-        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-        color: VineTheme.vineGreen,
-      ),
-      title: Text(
-        context.l10n.settingsAppLanguageUseDeviceLanguage,
-        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
-      ),
-      subtitle: Text(
-        deviceLanguageName,
-        style: VineTheme.bodySmallFont(
-          color: context.vineColors.onSurfaceVariant,
-        ),
-      ),
+    return DivineSelectableRow(
+      title: context.l10n.settingsAppLanguageUseDeviceLanguage,
+      subtitle: deviceLanguageName,
+      isSelected: isSelected,
       onTap: () => context.read<LocaleCubit>().clearLocale(),
     );
   }
@@ -117,21 +106,10 @@ class _LocaleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-        color: VineTheme.vineGreen,
-      ),
-      title: Text(
-        nativeName,
-        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
-      ),
-      subtitle: Text(
-        code.toUpperCase(),
-        style: VineTheme.bodySmallFont(
-          color: context.vineColors.onSurfaceVariant,
-        ),
-      ),
+    return DivineSelectableRow(
+      title: nativeName,
+      subtitle: code.toUpperCase(),
+      isSelected: isSelected,
       onTap: () => context.read<LocaleCubit>().setLocale(code),
     );
   }

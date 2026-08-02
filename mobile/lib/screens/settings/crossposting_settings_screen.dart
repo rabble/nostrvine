@@ -131,7 +131,7 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
       };
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: VineTheme.error),
+        DivineSnackbarContainer.snackBar(message, error: true),
       );
       cubit.acknowledgeError();
       return;
@@ -150,11 +150,9 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
     };
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: outcome == CrosspostingOAuthOutcome.connected
-            ? VineTheme.vineGreen
-            : VineTheme.error,
+      DivineSnackbarContainer.snackBar(
+        message,
+        error: outcome != CrosspostingOAuthOutcome.connected,
       ),
     );
     cubit.acknowledgeOutcome();

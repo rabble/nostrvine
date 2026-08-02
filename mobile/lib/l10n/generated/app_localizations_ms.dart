@@ -2615,6 +2615,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tambah pelabel tersuai';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Buang pelabel';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Masukkan alamat npub';
 

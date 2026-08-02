@@ -35,7 +35,7 @@ class BlueskySettingsScreen extends ConsumerWidget {
         body: Center(
           child: Text(
             context.l10n.blueskySignInRequired,
-            style: TextStyle(color: context.vineColors.mutedText),
+            style: VineTheme.bodyLargeFont(color: context.vineColors.mutedText),
           ),
         ),
       );
@@ -127,42 +127,42 @@ class _BlueskySettingsView extends StatelessWidget {
     switch (state.error) {
       case CrosspostSettingsError.usernameNotClaimed:
         messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.blueskyUsernameRequired),
-            backgroundColor: VineTheme.error,
-            action: SnackBarAction(
-              label: context.l10n.blueskySetUpHandle,
-              textColor: context.vineColors.primaryText,
-              onPressed: () {
-                // BlocProvider closes the cubit when the route pops, so this
-                // tracks whether the screen the action refers to still exists.
-                if (cubit.isClosed) return;
-                cubit.acknowledgeError();
-                unawaited(_openClaimFlowAndRefresh(router, cubit));
-              },
-            ),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.blueskyUsernameRequired,
+            error: true,
+            actionLabel: context.l10n.blueskySetUpHandle,
+            onActionPressed: () {
+              // DivineSnackbarContainer's action is a plain button, so unlike
+              // SnackBarAction it does not dismiss the banner for us.
+              messenger.hideCurrentSnackBar();
+              // BlocProvider closes the cubit when the route pops, so this
+              // tracks whether the screen the action refers to still exists.
+              if (cubit.isClosed) return;
+              cubit.acknowledgeError();
+              unawaited(_openClaimFlowAndRefresh(router, cubit));
+            },
           ),
         );
       case CrosspostSettingsError.unavailable:
         messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.blueskyTemporarilyUnavailable),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.blueskyTemporarilyUnavailable,
+            error: true,
           ),
         );
       case CrosspostSettingsError.usernameNotSynced:
         messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.blueskyUsernameSyncPending),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.blueskyUsernameSyncPending,
+            error: true,
           ),
         );
       case CrosspostSettingsError.generic:
       case null:
         messenger.showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.blueskyFailedToUpdateCrosspost),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.blueskyFailedToUpdateCrosspost,
+            error: true,
           ),
         );
     }
@@ -205,26 +205,21 @@ class _UsernameRequiredNotice extends StatelessWidget {
       ),
       title: Text(
         context.l10n.blueskyUsernameRequired,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.blueskyUsernameRequiredSubtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
-      trailing: TextButton(
+      trailing: DivineButton(
+        label: context.l10n.blueskySetUpHandle,
+        type: DivineButtonType.link,
+        size: DivineButtonSize.small,
         onPressed: () => unawaited(
           _openClaimFlowAndRefresh(
             GoRouter.of(context),
             context.read<CrosspostSettingsCubit>(),
           ),
-        ),
-        child: Text(
-          context.l10n.blueskySetUpHandle,
-          style: const TextStyle(color: VineTheme.vineGreen),
         ),
       ),
     );
@@ -249,30 +244,18 @@ class _CrosspostToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isToggling = state.status == CrosspostSettingsStatus.toggling;
 
-    return SwitchListTile(
-      secondary: const Icon(Icons.cloud_upload, color: VineTheme.vineGreen),
-      title: Text(
-        context.l10n.blueskyPublishVideos,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        state.enabled
-            ? context.l10n.blueskyEnabledSubtitle
-            : context.l10n.blueskyDisabledSubtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
-      ),
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.arrowUpRight,
+      title: context.l10n.blueskyPublishVideos,
+      subtitle: state.enabled
+          ? context.l10n.blueskyEnabledSubtitle
+          : context.l10n.blueskyDisabledSubtitle,
       value: state.enabled,
       onChanged: isToggling
           ? null
           : (value) => context.read<CrosspostSettingsCubit>().toggleCrosspost(
               enabled: value,
             ),
-      activeTrackColor: VineTheme.vineGreen,
-      inactiveThumbColor: context.vineColors.mutedText,
     );
   }
 }
@@ -288,15 +271,11 @@ class _HandleInfo extends StatelessWidget {
       leading: const Icon(Icons.alternate_email, color: VineTheme.vineGreen),
       title: Text(
         context.l10n.blueskyHandle,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         handle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
     );
   }
@@ -328,15 +307,11 @@ class _ProvisioningStatus extends StatelessWidget {
       leading: DivineIcon(icon: DivineIconName.info, color: statusColor),
       title: Text(
         context.l10n.blueskyStatus,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         statusText,
-        style: TextStyle(color: statusColor, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: statusColor),
       ),
     );
   }

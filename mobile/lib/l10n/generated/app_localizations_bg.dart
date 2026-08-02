@@ -2634,6 +2634,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Добави персонализиран етикет';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Премахни етикета';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'Въведи npub адрес';
 
   @override

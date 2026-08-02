@@ -310,9 +310,7 @@ void main() {
 
     final captionsToggle = find.byWidgetPredicate(
       (widget) =>
-          widget is SwitchListTile &&
-          widget.title is Text &&
-          (widget.title! as Text).data == 'Closed Captions',
+          widget is DivineSwitchTile && widget.title == 'Closed Captions',
     );
     expect(captionsToggle, findsOneWidget);
     expect(

@@ -2620,6 +2620,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Aggiungi labeler personalizzato';
 
   @override
+  String get safetySettingsRemoveLabeler => 'Rimuovi labeler';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'Inserisci indirizzo npub';
 

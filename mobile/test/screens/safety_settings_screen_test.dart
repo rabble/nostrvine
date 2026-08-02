@@ -261,12 +261,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final tile = find.widgetWithText(
-        SwitchListTile,
+        DivineSwitchTile,
         l10n.safetySettingsDivine,
       );
       expect(tile, findsOneWidget);
 
-      final switchTile = tester.widget<SwitchListTile>(tile);
+      final switchTile = tester.widget<DivineSwitchTile>(tile);
       expect(switchTile.value, isTrue);
       expect(switchTile.onChanged, isNull);
 
@@ -289,7 +289,7 @@ void main() {
 
         await tester.tap(
           find.widgetWithText(
-            SwitchListTile,
+            DivineSwitchTile,
             l10n.safetySettingsShowDivineHostedOnly,
           ),
         );
@@ -314,7 +314,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Act - tap the age-verification checkbox
-        final checkbox = find.byType(CheckboxListTile);
+        final checkbox = find.byType(DivineCheckboxTile);
         expect(checkbox, findsOneWidget);
         await tester.tap(checkbox);
         await tester.pumpAndSettle();
@@ -334,8 +334,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(isProtectedMinor: true));
         await tester.pumpAndSettle();
 
-        final tile = tester.widget<CheckboxListTile>(
-          find.byType(CheckboxListTile),
+        final tile = tester.widget<DivineCheckboxTile>(
+          find.byType(DivineCheckboxTile),
         );
         expect(tile.onChanged, isNull); // disabled: cannot be toggled
         expect(tile.value, isFalse);
@@ -353,14 +353,14 @@ void main() {
         await tester.pumpAndSettle();
 
         final tile = find.widgetWithText(
-          SwitchListTile,
+          DivineSwitchTile,
           l10n.safetySettingsPeopleIFollow,
         );
         expect(tile, findsOneWidget);
-        expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+        expect(tester.widget<DivineSwitchTile>(tile).value, isFalse);
 
         await tester.scrollUntilVisible(tile, 120);
-        final switchTile = tester.widget<SwitchListTile>(tile);
+        final switchTile = tester.widget<DivineSwitchTile>(tile);
         switchTile.onChanged!(true);
         await tester.pumpAndSettle();
 
@@ -370,7 +370,7 @@ void main() {
             followedPubkeys: ['followed_pubkey_1', 'followed_pubkey_2'],
           ),
         ).called(1);
-        expect(tester.widget<SwitchListTile>(tile).value, isTrue);
+        expect(tester.widget<DivineSwitchTile>(tile).value, isTrue);
       },
     );
   });

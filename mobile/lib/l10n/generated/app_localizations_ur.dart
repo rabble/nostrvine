@@ -2591,6 +2591,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get safetySettingsAddCustomLabelerListTitle => 'کسٹم لیبلر شامل کریں';
 
   @override
+  String get safetySettingsRemoveLabeler => 'لیبلر ہٹائیں';
+
+  @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
       'npub ایڈریس درج کریں';
 

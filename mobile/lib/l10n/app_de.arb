@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Eigenen Labeler hinzufügen",
     "safetySettingsAddCustomLabelerHint": "npub eingeben...",
     "safetySettingsAddCustomLabelerListTitle": "Eigenen Labeler hinzufügen",
+    "safetySettingsRemoveLabeler": "Labeler entfernen",
     "safetySettingsAddCustomLabelerListSubtitle": "npub-Adresse eingeben",
     "safetySettingsNoBlockedUsers": "Keine blockierten Nutzer",
     "safetySettingsUnblock": "Entsperren",

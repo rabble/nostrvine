@@ -244,17 +244,18 @@ class _MonetizationLinksSettingsViewState
     switch (state.status) {
       case MonetizationLinksSettingsSaveStatus.success:
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.appStoreTipPolicy
-                  ? context.l10n.monetizationTipsSettingsSaved
-                  : context.l10n.monetizationSettingsSaved,
-            ),
+          DivineSnackbarContainer.snackBar(
+            widget.appStoreTipPolicy
+                ? context.l10n.monetizationTipsSettingsSaved
+                : context.l10n.monetizationSettingsSaved,
           ),
         );
       case MonetizationLinksSettingsSaveStatus.failure:
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_failureTextFor(context, state.failure))),
+          DivineSnackbarContainer.snackBar(
+            _failureTextFor(context, state.failure),
+            error: true,
+          ),
         );
       case MonetizationLinksSettingsSaveStatus.idle:
       case MonetizationLinksSettingsSaveStatus.saving:
@@ -408,10 +409,10 @@ class _ProviderEditor extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Switch.adaptive(
+                  DivineSwitch(
                     value: enabled,
                     onChanged: onEnabledChanged,
-                    activeThumbColor: VineTheme.primary,
+                    semanticLabel: provider.displayName,
                   ),
                 ],
               ),

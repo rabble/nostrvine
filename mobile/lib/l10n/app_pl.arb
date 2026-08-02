@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Dodaj własny etykietę",
     "safetySettingsAddCustomLabelerHint": "Wprowadź npub...",
     "safetySettingsAddCustomLabelerListTitle": "Dodaj własną etykietę",
+    "safetySettingsRemoveLabeler": "Usuń etykietę",
     "safetySettingsAddCustomLabelerListSubtitle": "Wprowadź adres npub",
     "safetySettingsNoBlockedUsers": "Brak zablokowanych użytkowników",
     "safetySettingsUnblock": "Odblokuj",

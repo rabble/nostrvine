@@ -210,10 +210,9 @@ class NotificationSettingsView extends StatelessWidget {
     await context.read<NotificationSettingsCubit>().resetToDefaults();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.notificationSettingsResetToDefaults),
+      DivineSnackbarContainer.snackBar(
+        context.l10n.notificationSettingsResetToDefaults,
         duration: const Duration(seconds: 2),
-        backgroundColor: VineTheme.vineGreen,
       ),
     );
   }
@@ -222,14 +221,12 @@ class NotificationSettingsView extends StatelessWidget {
     final success = await onMarkAllAsRead!();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success
-              ? context.l10n.notificationSettingsAllMarkedAsRead
-              : context.l10n.notificationSettingsMarkAllAsReadFailed,
-        ),
+      DivineSnackbarContainer.snackBar(
+        success
+            ? context.l10n.notificationSettingsAllMarkedAsRead
+            : context.l10n.notificationSettingsMarkAllAsReadFailed,
+        error: !success,
         duration: const Duration(seconds: 2),
-        backgroundColor: success ? VineTheme.vineGreen : VineTheme.error,
       ),
     );
   }
@@ -243,11 +240,7 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
     title,
-    style: TextStyle(
-      fontSize: 18,
-      fontWeight: FontWeight.bold,
-      color: context.vineColors.primaryText,
-    ),
+    style: VineTheme.titleLargeFont(color: context.vineColors.primaryText),
   );
 }
 
@@ -283,20 +276,13 @@ class _NotificationCard extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontWeight: FontWeight.w600,
-        ),
+        style: VineTheme.labelLargeFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
       ),
-      trailing: Switch(
-        value: value,
-        onChanged: onChanged,
-        activeTrackColor: VineTheme.vineGreen,
-      ),
+      trailing: DivineSwitch(value: value, onChanged: onChanged),
     ),
   );
 }
@@ -331,14 +317,11 @@ class _ActionCard extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontWeight: FontWeight.w600,
-        ),
+        style: VineTheme.labelLargeFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
       ),
       trailing: DivineIcon(
         icon: DivineIconName.caretRight,
@@ -371,9 +354,7 @@ class _InfoCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 context.l10n.notificationSettingsAbout,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                style: VineTheme.titleMediumFont(
                   color: context.vineColors.primaryText,
                 ),
               ),
@@ -382,11 +363,9 @@ class _InfoCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             context.l10n.notificationSettingsAboutDescription,
-            style: TextStyle(
-              fontSize: 13,
+            style: VineTheme.bodySmallFont(
               color: context.vineColors.secondaryText,
-              height: 1.4,
-            ),
+            ).copyWith(height: 1.4),
           ),
         ],
       ),

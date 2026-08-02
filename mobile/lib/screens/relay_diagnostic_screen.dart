@@ -261,15 +261,11 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       final funnelCakeOk = _funnelCakeResults?.allSuccess ?? false;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            blossomOk && funnelCakeOk
-                ? context.l10n.relayDiagnosticAllEndpointsHealthy
-                : context.l10n.relayDiagnosticSomeEndpointsFailed,
-          ),
-          backgroundColor: blossomOk && funnelCakeOk
-              ? VineTheme.success
-              : VineTheme.warning,
+        DivineSnackbarContainer.snackBar(
+          blossomOk && funnelCakeOk
+              ? context.l10n.relayDiagnosticAllEndpointsHealthy
+              : context.l10n.relayDiagnosticSomeEndpointsFailed,
+          error: !(blossomOk && funnelCakeOk),
         ),
       );
     }
@@ -462,13 +458,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.relayDiagnosticFoundVideoEvents(videoEvents.length),
-            ),
-            backgroundColor: videoEvents.isNotEmpty
-                ? VineTheme.success
-                : VineTheme.warning,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.relayDiagnosticFoundVideoEvents(videoEvents.length),
+            error: videoEvents.isEmpty,
           ),
         );
       }
@@ -476,9 +468,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       Log.error('❌ Direct query failed: $e', name: 'RelayDiagnostic');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.relayDiagnosticQueryFailed('$e')),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.relayDiagnosticQueryFailed('$e'),
+            error: true,
           ),
         );
       }
@@ -508,17 +500,11 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              connectedCount > 0
-                  ? context.l10n.relayDiagnosticConnectedToRelays(
-                      connectedCount,
-                    )
-                  : context.l10n.relayDiagnosticFailedToConnect,
-            ),
-            backgroundColor: connectedCount > 0
-                ? VineTheme.success
-                : VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            connectedCount > 0
+                ? context.l10n.relayDiagnosticConnectedToRelays(connectedCount)
+                : context.l10n.relayDiagnosticFailedToConnect,
+            error: connectedCount == 0,
           ),
         );
       }
@@ -534,11 +520,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       Log.error('Failed to retry connection: $e', name: 'RelayDiagnostic');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.l10n.relayDiagnosticConnectionRetryFailed('$e'),
-            ),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.relayDiagnosticConnectionRetryFailed('$e'),
+            error: true,
           ),
         );
       }
@@ -598,9 +582,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     context.l10n.relayDiagnosticLastRefresh(
                       _formatTime(_lastRefresh!),
                     ),
-                    style: TextStyle(
+                    style: VineTheme.bodySmallFont(
                       color: context.vineColors.mutedText,
-                      fontSize: 12,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -694,19 +677,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     _buildErrorRow('Error', videoService.error!),
                   Divider(color: context.vineColors.mutedText),
                   Center(
-                    child: ElevatedButton.icon(
+                    child: DivineButton(
+                      label: context.l10n.relayDiagnosticTestDirectQuery,
+                      leadingIcon: DivineIconName.search,
                       onPressed: _testDirectEventQuery,
-                      icon: DivineIcon(
-                        icon: DivineIconName.search,
-                        color: context.vineColors.primaryText,
-                      ),
-                      label: Text(
-                        context.l10n.relayDiagnosticTestDirectQuery,
-                        style: TextStyle(color: context.vineColors.primaryText),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: VineTheme.vineGreen,
-                      ),
                     ),
                   ),
                 ],
@@ -721,21 +695,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 children: [
                   if (_networkTests.isEmpty && !_isTestingNetwork)
                     Center(
-                      child: ElevatedButton.icon(
+                      child: DivineButton(
+                        label: context.l10n.relayDiagnosticRunNetworkTest,
+                        leadingIcon: DivineIconName.play,
                         onPressed: _testNetworkConnectivity,
-                        icon: DivineIcon(
-                          icon: DivineIconName.play,
-                          color: context.vineColors.primaryText,
-                        ),
-                        label: Text(
-                          context.l10n.relayDiagnosticRunNetworkTest,
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: VineTheme.vineGreen,
-                        ),
                       ),
                     ),
                   if (_isTestingNetwork)
@@ -770,21 +733,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 children: [
                   if (_blossomResult == null && !_isTestingRestEndpoints)
                     Center(
-                      child: ElevatedButton.icon(
+                      child: DivineButton(
+                        label: context.l10n.relayDiagnosticTestAllEndpoints,
+                        leadingIcon: DivineIconName.play,
                         onPressed: _testRestEndpoints,
-                        icon: DivineIcon(
-                          icon: DivineIconName.play,
-                          color: context.vineColors.primaryText,
-                        ),
-                        label: Text(
-                          context.l10n.relayDiagnosticTestAllEndpoints,
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: VineTheme.vineGreen,
-                        ),
                       ),
                     ),
                   if (_isTestingRestEndpoints && _blossomResult == null)
@@ -831,21 +783,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 children: [
                   if (_funnelCakeResults == null && !_isTestingRestEndpoints)
                     Center(
-                      child: ElevatedButton.icon(
+                      child: DivineButton(
+                        label: context.l10n.relayDiagnosticTestAllEndpoints,
+                        leadingIcon: DivineIconName.play,
                         onPressed: _testRestEndpoints,
-                        icon: DivineIcon(
-                          icon: DivineIconName.play,
-                          color: context.vineColors.primaryText,
-                        ),
-                        label: Text(
-                          context.l10n.relayDiagnosticTestAllEndpoints,
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: VineTheme.vineGreen,
-                        ),
                       ),
                     ),
                   if (_isTestingRestEndpoints && _funnelCakeResults == null)
@@ -883,12 +824,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     ),
                     const SizedBox(height: 12),
                     Center(
-                      child: TextButton(
+                      child: DivineButton(
+                        label: context.l10n.relayDiagnosticRetestAll,
+                        type: DivineButtonType.link,
                         onPressed: _testRestEndpoints,
-                        child: Text(
-                          context.l10n.relayDiagnosticRetestAll,
-                          style: const TextStyle(color: VineTheme.vineGreen),
-                        ),
                       ),
                     ),
                   ],
@@ -898,40 +837,14 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               const SizedBox(height: 24),
 
               // Retry connection button
-              ElevatedButton.icon(
+              DivineButton(
+                label: _isRetrying
+                    ? context.l10n.relayDiagnosticRetrying
+                    : context.l10n.relayDiagnosticRetryConnection,
+                leadingIcon: DivineIconName.arrowClockwise,
+                expanded: true,
+                isLoading: _isRetrying,
                 onPressed: _isRetrying ? null : _retryConnection,
-                icon: _isRetrying
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            context.vineColors.primaryText,
-                          ),
-                        ),
-                      )
-                    : DivineIcon(
-                        icon: DivineIconName.arrowClockwise,
-                        color: context.vineColors.primaryText,
-                      ),
-                label: Text(
-                  _isRetrying
-                      ? context.l10n.relayDiagnosticRetrying
-                      : context.l10n.relayDiagnosticRetryConnection,
-                  style: TextStyle(
-                    color: context.vineColors.primaryText,
-                    fontSize: 16,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: VineTheme.vineGreen,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  minimumSize: const Size(double.infinity, 50),
-                ),
               ),
 
               const SizedBox(height: 16),
@@ -956,10 +869,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         const SizedBox(width: 8),
                         Text(
                           context.l10n.relayDiagnosticTroubleshooting,
-                          style: TextStyle(
+                          style: VineTheme.titleSmallFont(
                             color: context.vineColors.secondaryText,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -967,9 +878,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     const SizedBox(height: 8),
                     Text(
                       context.l10n.relayDiagnosticTroubleshootingGuide,
-                      style: TextStyle(
+                      style: VineTheme.bodySmallFont(
                         color: context.vineColors.mutedText,
-                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -1003,10 +913,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 const SizedBox(width: 8),
                 Text(
                   title,
-                  style: TextStyle(
+                  style: VineTheme.titleMediumFont(
                     color: context.vineColors.primaryText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -1030,8 +938,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Icon(
-            isOk ? Icons.check_circle : Icons.error,
+          DivineIcon(
+            icon: isOk
+                ? DivineIconName.checkCircle
+                : DivineIconName.warningCircle,
             color: isOk ? VineTheme.success : VineTheme.error,
             size: 20,
           ),
@@ -1039,14 +949,15 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(color: context.vineColors.onSurfaceVariant),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ),
           Text(
             value,
-            style: TextStyle(
+            style: VineTheme.titleSmallFont(
               color: isOk ? VineTheme.success : VineTheme.error,
-              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -1062,15 +973,16 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(color: context.vineColors.onSurfaceVariant),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
             ),
           ),
           Flexible(
             child: Text(
               value,
-              style: TextStyle(
+              style: VineTheme.labelLargeFont(
                 color: textColor ?? context.vineColors.primaryText,
-                fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.right,
             ),
@@ -1088,7 +1000,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         children: [
           Text(
             label,
-            style: TextStyle(color: context.vineColors.onSurfaceVariant),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 4),
           Container(
@@ -1099,7 +1013,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
             ),
             child: Text(
               error,
-              style: const TextStyle(color: VineTheme.error, fontSize: 12),
+              style: VineTheme.bodySmallFont(color: VineTheme.error),
             ),
           ),
         ],
@@ -1113,8 +1027,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            result.isSuccess ? Icons.check_circle : Icons.error,
+          DivineIcon(
+            icon: result.isSuccess
+                ? DivineIconName.checkCircle
+                : DivineIconName.warningCircle,
             color: result.isSuccess ? VineTheme.success : VineTheme.error,
             size: 16,
           ),
@@ -1125,28 +1041,22 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               children: [
                 Text(
                   result.endpoint,
-                  style: TextStyle(
+                  style: VineTheme.codeFont(
                     color: context.vineColors.primaryText,
-                    fontSize: 13,
-                    fontFamily: 'monospace',
                   ),
                 ),
                 const SizedBox(height: 2),
                 if (result.isSuccess)
                   Text(
                     '${result.latencyMs}ms${result.details != null ? ' • ${result.details}' : ''}',
-                    style: TextStyle(
+                    style: VineTheme.bodySmallFont(
                       color: context.vineColors.secondaryText,
-                      fontSize: 11,
                     ),
                   )
                 else
                   Text(
                     result.errorMessage ?? 'Failed',
-                    style: const TextStyle(
-                      color: VineTheme.error,
-                      fontSize: 11,
-                    ),
+                    style: VineTheme.bodySmallFont(color: VineTheme.error),
                   ),
               ],
             ),
@@ -1160,11 +1070,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               ),
               child: Text(
                 '${result.count}',
-                style: const TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
               ),
             ),
         ],
@@ -1184,8 +1090,12 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                isConnected ? Icons.cloud_done : Icons.cloud_off,
+              DivineIcon(
+                // No cloud pair in the icon set; check / warning carries the
+                // same connected vs. not-connected read.
+                icon: isConnected
+                    ? DivineIconName.checkCircle
+                    : DivineIconName.warningCircle,
                 color: isConnected ? VineTheme.success : VineTheme.error,
                 size: 20,
               ),
@@ -1193,7 +1103,9 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               Expanded(
                 child: Text(
                   relayUrl,
-                  style: TextStyle(color: context.vineColors.primaryText),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.primaryText,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1208,9 +1120,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         ? context.l10n.relayDiagnosticConnectedAuthenticated
                         : context.l10n.relayDiagnosticConnectedOnly)
                   : context.l10n.relayDiagnosticNotConnected,
-              style: TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: isConnected ? VineTheme.success : VineTheme.error,
-                fontSize: 12,
               ),
             ),
           ),

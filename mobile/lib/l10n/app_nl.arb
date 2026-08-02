@@ -1032,6 +1032,7 @@
     "safetySettingsAddCustomLabeler": "Eigen labeler toevoegen",
     "safetySettingsAddCustomLabelerHint": "Voer npub in...",
     "safetySettingsAddCustomLabelerListTitle": "Eigen labeler toevoegen",
+    "safetySettingsRemoveLabeler": "Labeler verwijderen",
     "safetySettingsAddCustomLabelerListSubtitle": "Voer npub-adres in",
     "safetySettingsNoBlockedUsers": "Geen geblokkeerde gebruikers",
     "safetySettingsUnblock": "Deblokkeren",

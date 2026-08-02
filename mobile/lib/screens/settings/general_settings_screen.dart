@@ -53,7 +53,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
           child: ListView(
             children: [
               if (showBluesky || showCrossposting)
-                _SectionHeader(context.l10n.generalSettingsSectionIntegrations),
+                DivineSectionHeader(
+                  context.l10n.generalSettingsSectionIntegrations,
+                ),
               if (showBluesky)
                 ListTile(
                   leading: const Icon(
@@ -94,13 +96,13 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   ),
                   onTap: () => context.push(CrosspostingSettingsScreen.path),
                 ),
-              _SectionHeader(context.l10n.generalSettingsSectionViewing),
+              DivineSectionHeader(context.l10n.generalSettingsSectionViewing),
               const _ClosedCaptionsToggle(),
               const _FeedAspectRatioPreferenceTile(),
-              _SectionHeader(context.l10n.generalSettingsSectionCreating),
+              DivineSectionHeader(context.l10n.generalSettingsSectionCreating),
               const _AudioSharingToggle(),
               const _LongPressRecordingToggle(),
-              _SectionHeader(context.l10n.generalSettingsSectionApp),
+              DivineSectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
               if (showAppearance)
                 ListTile(
@@ -145,36 +147,11 @@ class GeneralSettingsScreen extends ConsumerWidget {
   }
 }
 
-TextStyle _titleStyleOf(BuildContext context) => TextStyle(
-  color: context.vineColors.primaryText,
-  fontSize: 16,
-  fontWeight: FontWeight.w500,
-);
+TextStyle _titleStyleOf(BuildContext context) =>
+    VineTheme.titleMediumFont(color: context.vineColors.primaryText);
 
 TextStyle _subtitleStyleOf(BuildContext context) =>
-    TextStyle(color: context.vineColors.mutedText, fontSize: 14);
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
-  }
-}
+    VineTheme.bodyMediumFont(color: context.vineColors.mutedText);
 
 class _ClosedCaptionsToggle extends ConsumerWidget {
   const _ClosedCaptionsToggle();
@@ -182,19 +159,12 @@ class _ClosedCaptionsToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(subtitleVisibilityProvider);
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.closedCaptioning,
+      title: context.l10n.generalSettingsClosedCaptions,
+      subtitle: context.l10n.generalSettingsClosedCaptionsSubtitle,
       value: enabled,
       onChanged: (_) => ref.read(subtitleVisibilityProvider.notifier).toggle(),
-      title: Text(
-        context.l10n.generalSettingsClosedCaptions,
-        style: _titleStyleOf(context),
-      ),
-      subtitle: Text(context.l10n.generalSettingsClosedCaptionsSubtitle),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: const DivineIcon(
-        icon: DivineIconName.closedCaptioning,
-        color: VineTheme.vineGreen,
-      ),
     );
   }
 }
@@ -235,82 +205,32 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
     BuildContext context,
     FeedAspectRatioPreferenceService service,
   ) async {
-    await showModalBottomSheet<void>(
+    Future<void> select(FeedAspectRatioPreference value) async {
+      await service.setPreference(value);
+      if (context.mounted) Navigator.pop(context);
+    }
+
+    await VineBottomSheet.show<void>(
       context: context,
-      backgroundColor: context.vineColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                context.l10n.generalSettingsVideoShape,
-                style: TextStyle(
-                  color: context.vineColors.primaryText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Divider(color: context.vineColors.mutedText, height: 1),
-            RadioGroup<FeedAspectRatioPreference>(
-              groupValue: service.preference,
-              onChanged: (value) async {
-                if (value == null) return;
-                await service.setPreference(value);
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _FeedAspectRatioOption(
-                    title:
-                        context.l10n.generalSettingsVideoShapeSquareAndPortrait,
-                    subtitle: context
-                        .l10n
-                        .generalSettingsVideoShapeSquareAndPortraitSubtitle,
-                    value: FeedAspectRatioPreference.squareAndPortrait,
-                  ),
-                  _FeedAspectRatioOption(
-                    title: context.l10n.generalSettingsVideoShapeSquareOnly,
-                    subtitle: context
-                        .l10n
-                        .generalSettingsVideoShapeSquareOnlySubtitle,
-                    value: FeedAspectRatioPreference.squareOnly,
-                  ),
-                ],
-              ),
-            ),
-          ],
+      scrollable: false,
+      contentTitle: context.l10n.generalSettingsVideoShape,
+      children: [
+        DivineSelectableRow(
+          title: context.l10n.generalSettingsVideoShapeSquareAndPortrait,
+          subtitle:
+              context.l10n.generalSettingsVideoShapeSquareAndPortraitSubtitle,
+          isSelected:
+              service.preference == FeedAspectRatioPreference.squareAndPortrait,
+          onTap: () => select(FeedAspectRatioPreference.squareAndPortrait),
         ),
-      ),
-    );
-  }
-}
-
-class _FeedAspectRatioOption extends StatelessWidget {
-  const _FeedAspectRatioOption({
-    required this.title,
-    required this.subtitle,
-    required this.value,
-  });
-
-  final String title;
-  final String subtitle;
-  final FeedAspectRatioPreference value;
-
-  @override
-  Widget build(BuildContext context) {
-    return RadioListTile<FeedAspectRatioPreference>(
-      value: value,
-      title: Text(title, style: _titleStyleOf(context)),
-      subtitle: Text(subtitle, style: _subtitleStyleOf(context)),
-      activeColor: VineTheme.vineGreen,
+        DivineSelectableRow(
+          title: context.l10n.generalSettingsVideoShapeSquareOnly,
+          subtitle: context.l10n.generalSettingsVideoShapeSquareOnlySubtitle,
+          isSelected:
+              service.preference == FeedAspectRatioPreference.squareOnly,
+          onTap: () => select(FeedAspectRatioPreference.squareOnly),
+        ),
+      ],
     );
   }
 }
@@ -331,25 +251,15 @@ class _AudioSharingToggleState extends ConsumerState<_AudioSharingToggle> {
     );
     final isEnabled = audioSharingService.isAudioSharingEnabled;
 
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.musicNote,
+      title: context.l10n.contentPreferencesAudioSharing,
+      subtitle: context.l10n.contentPreferencesAudioSharingSubtitle,
       value: isEnabled,
       onChanged: (value) async {
         await audioSharingService.setAudioSharingEnabled(value);
         setState(() {});
       },
-      title: Text(
-        context.l10n.contentPreferencesAudioSharing,
-        style: _titleStyleOf(context),
-      ),
-      subtitle: Text(
-        context.l10n.contentPreferencesAudioSharingSubtitle,
-        style: _subtitleStyleOf(context),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: const DivineIcon(
-        icon: DivineIconName.musicNote,
-        color: VineTheme.vineGreen,
-      ),
     );
   }
 }
@@ -362,25 +272,15 @@ class _LongPressRecordingToggle extends ConsumerWidget {
     final service = ref.watch(holdToRecordPreferenceServiceProvider);
     final isEnabled = service.isHoldToRecordEnabled;
 
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.cameraRetro,
+      title: context.l10n.generalSettingsHoldToRecord,
+      subtitle: context.l10n.generalSettingsHoldToRecordSubtitle,
       value: isEnabled,
       onChanged: (value) async {
         await service.setHoldToRecordEnabled(value);
         ref.invalidate(holdToRecordPreferenceServiceProvider);
       },
-      title: Text(
-        context.l10n.generalSettingsHoldToRecord,
-        style: _titleStyleOf(context),
-      ),
-      subtitle: Text(
-        context.l10n.generalSettingsHoldToRecordSubtitle,
-        style: _subtitleStyleOf(context),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: const DivineIcon(
-        icon: DivineIconName.cameraRetro,
-        color: VineTheme.vineGreen,
-      ),
     );
   }
 }

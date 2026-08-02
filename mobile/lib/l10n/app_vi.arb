@@ -1482,6 +1482,7 @@
   "safetySettingsAddCustomLabeler": "Thêm bên gắn nhãn tùy chỉnh",
   "safetySettingsAddCustomLabelerHint": "Nhập npub...",
   "safetySettingsAddCustomLabelerListTitle": "Thêm bên gắn nhãn tùy chỉnh",
+  "safetySettingsRemoveLabeler": "Xóa bên gắn nhãn",
   "safetySettingsAddCustomLabelerListSubtitle": "Nhập địa chỉ npub",
   "safetySettingsNoBlockedUsers": "Không có người dùng bị chặn",
   "safetySettingsUnblock": "Bỏ chặn",

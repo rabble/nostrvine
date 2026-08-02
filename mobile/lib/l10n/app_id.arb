@@ -1029,6 +1029,7 @@
     "safetySettingsAddCustomLabeler": "Tambah Labeler Kustom",
     "safetySettingsAddCustomLabelerHint": "Masukkan npub...",
     "safetySettingsAddCustomLabelerListTitle": "Tambah labeler kustom",
+    "safetySettingsRemoveLabeler": "Hapus labeler",
     "safetySettingsAddCustomLabelerListSubtitle": "Masukkan alamat npub",
     "safetySettingsNoBlockedUsers": "Tidak ada pengguna yang diblokir",
     "safetySettingsUnblock": "Buka Blokir",

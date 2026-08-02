@@ -1482,6 +1482,7 @@
   "safetySettingsAddCustomLabeler": "Tambah Pelabel Tersuai",
   "safetySettingsAddCustomLabelerHint": "Masukkan npub...",
   "safetySettingsAddCustomLabelerListTitle": "Tambah pelabel tersuai",
+  "safetySettingsRemoveLabeler": "Buang pelabel",
   "safetySettingsAddCustomLabelerListSubtitle": "Masukkan alamat npub",
   "safetySettingsNoBlockedUsers": "Tiada pengguna disekat",
   "safetySettingsUnblock": "Nyahsekat",

@@ -1482,6 +1482,7 @@
   "safetySettingsAddCustomLabeler": "添加自定义标记服务",
   "safetySettingsAddCustomLabelerHint": "输入 npub...",
   "safetySettingsAddCustomLabelerListTitle": "添加自定义标记服务",
+  "safetySettingsRemoveLabeler": "移除标记服务",
   "safetySettingsAddCustomLabelerListSubtitle": "输入 npub 地址",
   "safetySettingsNoBlockedUsers": "没有已屏蔽的用户",
   "safetySettingsUnblock": "取消屏蔽",
