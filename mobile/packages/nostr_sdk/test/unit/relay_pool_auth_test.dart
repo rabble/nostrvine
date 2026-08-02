@@ -43,7 +43,7 @@ class _AuthFakeRelay extends Relay {
   final List<List<dynamic>> sentMessages = [];
 
   /// When true, [send] records the frame but reports transport failure, so the
-  /// post-auth resend path (`onRelayUnavailable`) can be exercised.
+  /// failing post-auth resend path can be exercised.
   bool failSends = false;
 
   @override
@@ -497,7 +497,7 @@ void main() {
     });
 
     test(
-      'marks the relay unavailable when the post-auth resend fails',
+      'reports what the relay said when the post-auth resend fails',
       () async {
         const eventId =
             '6666666666666666666666666666666666666666666666666666666666666666';
@@ -527,7 +527,16 @@ void main() {
 
         expect(outcome.failed, isTrue);
         expect(outcome.acceptedBy, isEmpty);
-        expect(outcome.rejectedBy, isEmpty);
+        // The relay answered — `auth-required` is why the retry existed — so
+        // it must not be reported as a target we never reached, and its
+        // reason is the only thing that tells the caller to fix the auth
+        // rather than the network.
+        expect(
+          outcome.rejectedBy,
+          equals({relay.url: 'auth-required: you must auth'}),
+        );
+        expect(outcome.unreachableTargets, isEmpty);
+        expect(outcome.noResponseFrom, isEmpty);
         expect(
           sentMessagesOfType(relay, 'EVENT'),
           hasLength(2),

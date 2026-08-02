@@ -307,7 +307,12 @@ class RelayPool {
           )
           .timeout(timeout, onTimeout: () => false);
       if (!sent) {
-        retry.tracker.onRelayUnavailable(relay.url);
+        // The relay answered — `auth-required` is why we are here — so it is
+        // not an unreachable target, whatever happened to the resend. Report
+        // what it said, the same as the expired-deadline branch above; a
+        // caller told "could not reach this relay" would retry the network
+        // instead of the authentication.
+        retry.tracker.onRejected(relay.url, retry.reason);
         _removeAuthRequiredPublish(eventId, relay.url);
       }
     }
@@ -1791,18 +1796,25 @@ class RelayPool {
     );
     _pendingPublishes[eventId] = tracker;
 
-    final sentTo = await _sendCollect(
-      message,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
-      deadline: deadline,
-      diagnosticTag: diagnosticTag,
-    );
-
     // Narrow the awaited set to the relays the fan-out actually wrote to. The
     // rest become unreachable targets rather than blocking the publish until
     // the timeout. When nothing was written this settles the tracker at once.
-    tracker.setReachable(sentTo);
+    //
+    // Reported in a `finally` because the tracker defers its hard timeout
+    // until this call arrives: a fan-out that threw would otherwise leave the
+    // publish hanging.
+    var sentTo = const <String>[];
+    try {
+      sentTo = await _sendCollect(
+        message,
+        tempRelays: tempRelays,
+        targetRelays: targetRelays,
+        deadline: deadline,
+        diagnosticTag: diagnosticTag,
+      );
+    } finally {
+      tracker.setReachable(sentTo);
+    }
 
     unawaited(
       tracker.future
