@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/database_encryption_bootstrap.dart';
 import 'package:openvine/startup/database_bootstrap_failure_app.dart';
@@ -174,7 +177,9 @@ void main() {
         Widget? renderedApp;
         var attempts = 0;
         var repaired = false;
-        final error = StateError('secure storage unavailable before unlock');
+        final error = DatabaseCipherStorageUnavailableException(
+          _lockedKeychainFailure(),
+        );
 
         final result = await resolveDatabaseBootstrapForAppStart(
           resolveCipherKey: () async {
@@ -236,6 +241,25 @@ void main() {
     );
   });
 
+  group('resolveDatabaseBootstrapForAppStart reset wiring', () {
+    test('hands the reset hook to the failure app', () async {
+      Widget? renderedApp;
+      Future<void> reset() async {}
+
+      await resolveDatabaseBootstrapForAppStart(
+        resolveCipherKey: () async => throw StateError('bootstrap failed'),
+        resetLocalDatabase: reset,
+        removeNativeSplash: () {},
+        runApp: (app) => renderedApp = app,
+      );
+
+      expect(
+        (renderedApp! as DatabaseBootstrapFailureApp).onResetLocalDatabase,
+        same(reset),
+      );
+    });
+  });
+
   group(DatabaseBootstrapFailureApp, () {
     testWidgets('shows a visible database startup failure screen', (
       tester,
@@ -244,7 +268,9 @@ void main() {
 
       await tester.pumpWidget(
         DatabaseBootstrapFailureApp(
-          error: StateError('secure storage unavailable'),
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
           stack: StackTrace.current,
           onCloseApp: () => closed = true,
         ),
@@ -255,7 +281,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Restart Divine'), findsOneWidget);
-      expect(find.textContaining('Diagnostic:'), findsOneWidget);
+      // The rendered code is what a support report is triaged from, so pin the
+      // value rather than just the label.
+      expect(find.text('Diagnostic: db-secure-storage'), findsOneWidget);
 
       await tester.tap(find.text('close Divine'));
       expect(closed, isTrue);
@@ -267,6 +295,265 @@ void main() {
           DatabaseCipherUnavailableError(),
         ),
         equals('db-cipher-unavailable'),
+      );
+    });
+
+    test('classifies an unreachable keystore as a secure-storage failure', () {
+      expect(
+        databaseBootstrapDiagnosticCode(
+          DatabaseCipherStorageUnavailableException(_lockedKeychainFailure()),
+        ),
+        equals('db-secure-storage'),
+      );
+    });
+
+    test('classifies a key that no longer opens the database', () {
+      expect(
+        databaseBootstrapDiagnosticCode(
+          SqliteException(
+            extendedResultCode: 26,
+            message: 'file is not a database',
+          ),
+        ),
+        equals('db-cipher-mismatch'),
+      );
+    });
+
+    test('falls back to the catch-all for unrecognized failures', () {
+      expect(
+        databaseBootstrapDiagnosticCode(StateError('something else entirely')),
+        equals('db-bootstrap-failed'),
+      );
+    });
+
+    testWidgets('offers no reset when the caller supplies no hook', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+        ),
+      );
+
+      expect(find.text('reset local database'), findsNothing);
+    });
+
+    testWidgets('offers no reset for a locked keystore', (tester) async {
+      // The database is intact here and the reset would delete the key that
+      // opens it. Offering the button would be worse than offering nothing.
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: DatabaseCipherStorageUnavailableException(
+            _lockedKeychainFailure(),
+          ),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async {},
+        ),
+      );
+
+      expect(find.text('Diagnostic: db-secure-storage'), findsOneWidget);
+      expect(find.text('reset local database'), findsNothing);
+    });
+
+    testWidgets('drops the unlock-and-restart advice when a reset is offered', (
+      tester,
+    ) async {
+      // Telling the user to restart after unlocking is the fix for the
+      // keystore case only, and misleading next to a reset button.
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async {},
+        ),
+      );
+
+      expect(
+        find.textContaining('Restart Divine after unlocking'),
+        findsNothing,
+      );
+      expect(
+        find.textContaining("A restart won't fix this one"),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('resets and closes once the user confirms', (tester) async {
+      var resets = 0;
+      var closed = false;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onCloseApp: () => closed = true,
+          onResetLocalDatabase: () async => resets++,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+
+      expect(find.text('reset your local database?'), findsOneWidget);
+      expect(find.textContaining('Your account stays'), findsOneWidget);
+      expect(resets, isZero, reason: 'confirmation must gate the wipe');
+
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(resets, equals(1));
+      expect(closed, isTrue);
+    });
+
+    testWidgets('returns to the failure screen on cancel', (tester) async {
+      var resets = 0;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async => resets++,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('cancel'));
+      await tester.pump();
+
+      expect(find.text("couldn't unlock your local database"), findsOneWidget);
+      expect(resets, isZero);
+    });
+
+    testWidgets('stays put and reports when the reset itself fails', (
+      tester,
+    ) async {
+      var closed = false;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onCloseApp: () => closed = true,
+          onResetLocalDatabase: () async =>
+              throw StateError('keystore delete failed'),
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(find.textContaining("That didn't work"), findsOneWidget);
+      expect(
+        closed,
+        isFalse,
+        reason: 'closing would claim a reset that never happened',
+      );
+    });
+
+    testWidgets('lands on a terminal step when the app cannot close itself', (
+      tester,
+    ) async {
+      // SystemNavigator.pop cannot end the process on iOS, so without this
+      // step a successful reset leaves a spinner behind two disabled buttons.
+      var closes = 0;
+
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onCloseApp: () => closes++,
+          onResetLocalDatabase: () async {},
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+
+      expect(find.text('local database reset'), findsOneWidget);
+      expect(find.text('reset and close'), findsNothing);
+      expect(closes, equals(1));
+
+      await tester.tap(find.text('close Divine'));
+      expect(
+        closes,
+        equals(2),
+        reason: 'the terminal step still needs a live way out',
+      );
+    });
+
+    testWidgets('reports a reset that hangs instead of spinning forever', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () => Completer<void>().future,
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump(const Duration(seconds: 16));
+
+      expect(find.textContaining("That didn't work"), findsOneWidget);
+
+      await tester.tap(find.text('cancel'));
+      await tester.pump();
+      expect(
+        find.text("couldn't unlock your local database"),
+        findsOneWidget,
+        reason: 'a wedged platform call must not disable the way back',
+      );
+    });
+
+    testWidgets('drops a stale failure banner when the step is re-entered', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        DatabaseBootstrapFailureApp(
+          error: StateError('something else entirely'),
+          stack: StackTrace.current,
+          onResetLocalDatabase: () async => throw StateError('nope'),
+        ),
+      );
+
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+      await tester.tap(find.text('reset and close'));
+      await tester.pump();
+      expect(find.textContaining("That didn't work"), findsOneWidget);
+
+      await tester.tap(find.text('cancel'));
+      await tester.pump();
+      await tester.tap(find.text('reset local database'));
+      await tester.pump();
+
+      expect(
+        find.textContaining("That didn't work"),
+        findsNothing,
+        reason: 'the banner belongs to an attempt, not to the step',
+      );
+    });
+  });
+
+  group(DatabaseBootstrapDiagnosis, () {
+    test('allows a reset only where the database is already unusable', () {
+      expect(
+        DatabaseBootstrapDiagnosis.values
+            .where((d) => d.allowsLocalDatabaseReset)
+            .toSet(),
+        equals({
+          DatabaseBootstrapDiagnosis.cipherMismatch,
+          DatabaseBootstrapDiagnosis.bootstrapFailed,
+        }),
       );
     });
   });
@@ -300,12 +587,23 @@ void main() {
         ),
         isFalse,
       );
+      // Repairing deletes the cipher key. The database behind a locked keychain
+      // is intact, so clearing it would turn a restart-and-retry into
+      // permanent loss of every local-only draft and clip.
       expect(
         shouldRepairLocalDatabaseCacheAfterBootstrapError(
-          StateError('secure storage unavailable before unlock'),
+          DatabaseCipherStorageUnavailableException(_lockedKeychainFailure()),
         ),
         isFalse,
       );
     });
   });
 }
+
+/// What `flutter_secure_storage` raises when the Keychain refuses a read on a
+/// still-locked device: a platform status code and no prose, which is why
+/// classifying this case by message never matched.
+PlatformException _lockedKeychainFailure() => PlatformException(
+  code: 'Unexpected security result code',
+  message: 'Code: -25308, Message: User interaction is not allowed.',
+);
