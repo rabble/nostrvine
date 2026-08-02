@@ -75,12 +75,15 @@ platform :ios do
       end
     end
 
-    # A crashed test runner leaves a half-written .xcresult staging dir; the
-    # next run then fails result-bundle saving with
-    # "mkstemp: No such file or directory" and reports TEST FAILED even when
-    # every test passed — which used to trigger a full pointless re-run.
+    # A stale/half-written result bundle + activity logs from the previous run
+    # in a PINNED DerivedData make the next run fail result-bundle saving with
+    # "mkstemp: No such file or directory" / "failed to import activity log",
+    # reporting TEST FAILED even when every test passed. Deleting the whole
+    # `Logs` dir (result bundle + build activity logs) each run clears the
+    # collision while keeping the compiled products in `Build/` warm — so
+    # reruns are incremental (minutes) instead of a full cold compile (~45 min).
     # These are local logs only; the screenshots live elsewhere.
-    FileUtils.rm_rf(File.join(derived_data, "Logs", "Test"))
+    FileUtils.rm_rf(File.join(derived_data, "Logs"))
   end
 
   desc "Give xcodebuild -showBuildSettings room for slow SPM resolution"

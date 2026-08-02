@@ -1,7 +1,7 @@
 # Snapfile — configuration for `fastlane snapshot`.
 # Docs: https://docs.fastlane.tools/actions/snapshot/
 
-# Both sizes App Store Connect requires (6.9" and 6.5").
+# App Store Connect required iPhone display sizes: 6.9" + 6.5".
 devices([
   "iPhone 16 Pro Max",
   "iPhone 11 Pro Max",
@@ -24,11 +24,18 @@ scheme("DivineUITests")
 xcargs("IPHONEOS_DEPLOYMENT_TARGET=16.0")
 
 output_directory("./fastlane/screenshots")
-clear_previous_screenshots(true)
+# Do NOT clear up-front: the capture overwrites the same fixed set of
+# `<device>-<screen>.png` files each run, and clearing first means a failed
+# or in-flight rebuild leaves zero usable screenshots. New captures replace
+# the old ones in place; framing re-derives every `_framed.png`.
+clear_previous_screenshots(false)
 
-# Reuse a stable derived-data dir so repeat runs build incrementally.
-# Without this, snapshot uses a fresh temp dir each run and does a full
-# clean compile + SPM re-resolve every time (~45 min); incremental is minutes.
+# Pin a stable derived-data dir so reruns build INCREMENTALLY (seconds/
+# minutes) instead of a full cold compile of all pods + Flutter code (~45 min)
+# every time. The `screenshots` lane deletes ONLY `DerivedData/Logs` before
+# each run (see Fastfile): that stale test result bundle is what collided and
+# produced the `mkstemp: No such file or directory` failure on the second run,
+# not the compiled products — which stay warm.
 derived_data_path("./fastlane/DerivedData")
 
 # Never `clean` — that would defeat the incremental reuse above.
@@ -47,7 +54,6 @@ erase_simulator(false)
 
 dark_mode(true)
 stop_after_first_error(true)
-# No retries: the content waits are robust, and a retry re-runs xcodebuild
-# against the pinned derived_data_path, which collides with the first build
-# ("database is locked / two concurrent builds").
+# No retries: the content waits are robust, and a retry would trigger a
+# second full cold build for no benefit.
 number_of_retries(0)

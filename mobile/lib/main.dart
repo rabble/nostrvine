@@ -62,6 +62,7 @@ import 'package:openvine/notifications/routing/notification_tap_target.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
@@ -70,6 +71,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/foreground_idle_warmup_provider.dart';
 import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
+import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -1490,6 +1492,17 @@ Future<void> _startOpenVineApp() async {
     dbCipherKey: dbCipherKey,
     databaseCorruptionService: databaseCorruptionService,
     installSource: installSource,
+    accountOverrides: [
+      // Screenshot mode: lead the 01_classics OG-Viner row with returning
+      // Vine OGs who all have avatars, so the marketing shot has no
+      // placeholder circles (the live row mixes in avatar-less creators).
+      if (ScreenshotMode.enabled)
+        topClassicVinersProvider.overrideWith(
+          (ref) async => screenshotOgVinersFixtures(),
+        ),
+      if (ScreenshotMode.enabled)
+        discoveredListsProvider.overrideWith(ScreenshotDiscoveredLists.new),
+    ],
   );
 
   // Create the initial account container to initialize services BEFORE runApp.

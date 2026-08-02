@@ -5,11 +5,14 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' as model show AspectRatio;
+import 'package:models/models.dart' as model show AspectRatio, CuratedList;
 import 'package:nostr_sdk/nostr_sdk.dart' show generatePrivateKey;
 import 'package:openvine/config/screenshot_mode.dart';
 import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart'
+    show ClassicViner;
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/repository_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:path_provider/path_provider.dart';
@@ -134,6 +137,110 @@ ScreenshotModeService buildScreenshotModeService(ProviderContainer container) {
       await profileRepository.fetchBatchProfiles(pubkeys: pubkeys);
     },
   );
+}
+
+/// Curated OG-Viner row for the `01_classics` capture.
+///
+/// The live top-viners row mixes in creators whose profile has no picture
+/// (e.g. Lele), which render as placeholder circles. Screenshot mode instead
+/// leads with returning Vine OGs who all have avatars — Reggie Couz first —
+/// so the marketing shot has zero placeholder avatars in the row.
+List<ClassicViner> screenshotOgVinersFixtures() => const [
+  ClassicViner(
+    pubkey: '29738587f765b2a3fce2f31a52dece47705598cff6f3b0683503a03829c4029d',
+    totalLoops: 2600000,
+    videoCount: 118,
+    authorName: 'Reggie Couz',
+    authorAvatar:
+        'https://media.divine.video/'
+        '41b7c440d9df2fd4e684fe6a0748e6e25b9c4f8cf97751c1e3530b07de952ec9',
+  ),
+  ClassicViner(
+    pubkey: '86c5313d94c26f149734606922df4b14eadf863904cc6d054ee48757a5731500',
+    totalLoops: 2100000,
+    videoCount: 240,
+    authorName: 'Thomas Sanders',
+    authorAvatar:
+        'https://storage.googleapis.com/divine-vine-archive/avatars/'
+        '93/50/935043086076256256.jpg',
+  ),
+  ClassicViner(
+    pubkey: '3d8a667b6defd4906700a55f64fb26b004f8681fde6d8f2f7501903bac0d4a58',
+    totalLoops: 1400000,
+    videoCount: 96,
+    authorName: 'Cptn. Backfire',
+    authorAvatar:
+        'https://media.divine.video/'
+        '9c6c5e0a1d9cbaabf049887f3b62147c2a879857ed03302f3a9c7dba8d3be708',
+  ),
+  ClassicViner(
+    pubkey: '352198449c5ff6e7e74a66a55d17ba4fc4a0a018a2d756ee589b655d823f6c27',
+    totalLoops: 900000,
+    videoCount: 72,
+    authorName: 'imrtravis',
+    authorAvatar:
+        'https://media.divine.video/'
+        '365e3398cda8ffefbb5fd3cabb8077a1f000b4267228d3899f0750b02d473a8f',
+  ),
+];
+
+/// Clean, on-brand discovered-list fixtures for the `06_lists` capture.
+///
+/// The live `/discover-lists` feed surfaces real public kind-30005 lists,
+/// some with off-brand or misspelled names; screenshot mode seeds these
+/// deterministic lists instead so the marketing shot is always clean.
+/// `pubkey` is left null so no author by-line can surface an off-brand name.
+List<model.CuratedList> screenshotDiscoverListsFixtures() {
+  final now = DateTime.utc(2026);
+  model.CuratedList list(String id, String name, String desc, int count) =>
+      model.CuratedList(
+        id: id,
+        name: name,
+        description: desc,
+        videoEventIds: List<String>.generate(count, (i) => '$id-$i'),
+        createdAt: now,
+        updatedAt: now,
+      );
+  return [
+    list(
+      'favorite-classic-vines',
+      'Favorite Classic Vines',
+      'The loops that started it all',
+      152,
+    ),
+    list('cat-chaos', 'Cat Chaos', 'Certified feline nonsense', 223),
+    list('art-lives-here', 'Art Lives Here', 'Animators, painters, makers', 96),
+    list('comedy-gold', 'Comedy Gold', 'Loops that never miss', 287),
+    list('nature-loops', 'Nature Loops', 'Six seconds of calm', 61),
+    list('music-vault', 'Music Vault', 'Beats, covers, originals', 81),
+  ];
+}
+
+/// Screenshot-mode discovered-list provider override.
+///
+/// Keeps the `06_lists` capture isolated from live relay refresh/pagination:
+/// the screen can read the same provider as production, but stream mutations
+/// are no-ops while screenshot mode is active.
+class ScreenshotDiscoveredLists extends DiscoveredLists {
+  @override
+  DiscoveredListsState build() {
+    return DiscoveredListsState(lists: screenshotDiscoverListsFixtures());
+  }
+
+  @override
+  void setLists(List<model.CuratedList> lists) {}
+
+  @override
+  void addLists(List<model.CuratedList> newLists) {}
+
+  @override
+  void setLoading(bool loading) {}
+
+  @override
+  void updateOldestTimestamp(DateTime timestamp) {}
+
+  @override
+  void clear() {}
 }
 
 /// Bundled classic-Vine fixtures used as editor timeline clips. The mp4s

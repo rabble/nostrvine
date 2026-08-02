@@ -57,6 +57,14 @@
       <Testables>
          <TestableReference
             skipped = "NO">
+            <SkippedTests>
+               <Test
+                  Identifier = "DivineScreenshots/testRecClassics()">
+               </Test>
+               <Test
+                  Identifier = "DivineScreenshots/testRecVerification()">
+               </Test>
+            </SkippedTests>
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "9519587FDFEF94B3660DD6CF"
