@@ -387,9 +387,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // report deliver less often than before this fix.
           //
           // Not awaited: the user already knows the submit failed, and must
-          // not sit through a doomed relay round-trip to be told. Queued at
-          // most once per dialog, since Submit stays live and each tap would
-          // otherwise stack another identical row for the sweep to send.
+          // not sit through a doomed relay round-trip to be told. The guard
+          // keeps repeat taps on this path from stacking identical rows for
+          // the sweep — this path only: a retry that does reach a relay
+          // sends its own DM below, which can land alongside the row parked
+          // here (#6610).
           if (!_moderationDmQueued) {
             _moderationDmQueued = true;
             unawaited(_sendModerationDm());
