@@ -442,6 +442,157 @@ void main() {
       },
     );
 
+    test('retries invite status after a transient enrollment_busy', () async {
+      // GET /v1/invite-status enrolls lazily on read, so two status calls
+      // racing at launch make one lose the enrollment claim. The server answers
+      // 503 + Retry-After precisely so the client can retry instead of
+      // stranding the user on an error screen.
+      var requestCount = 0;
+      final statusClient = InviteApiClient(
+        baseUrl: 'https://invites.divine.video',
+        client: MockClient((request) async {
+          requestCount++;
+          if (requestCount == 1) {
+            return http.Response(
+              jsonEncode({
+                'error': 'Invite enrollment is already in progress',
+                'code': InviteApiErrorCode.enrollmentBusy,
+                'retryAfterSeconds': 0,
+              }),
+              503,
+            );
+          }
+          return http.Response(
+            jsonEncode({
+              'canInvite': true,
+              'remaining': 10,
+              'remainingToGenerate': 10,
+              'total': 10,
+              'codes': <Object>[],
+            }),
+            200,
+          );
+        }),
+        authHeaderProvider:
+            ({
+              required url,
+              required method,
+              payload,
+              forceRefresh = false,
+            }) async => 'Nostr token',
+      );
+
+      final result = await statusClient.getInviteStatus();
+
+      expect(result.mintableCount, equals(10));
+      expect(requestCount, equals(2));
+    });
+
+    test(
+      'gives up on a persistent enrollment_busy after bounded retries',
+      () async {
+        var requestCount = 0;
+        final statusClient = InviteApiClient(
+          baseUrl: 'https://invites.divine.video',
+          client: MockClient((request) async {
+            requestCount++;
+            return http.Response(
+              jsonEncode({
+                'error': 'Invite enrollment is already in progress',
+                'code': InviteApiErrorCode.enrollmentBusy,
+                'retryAfterSeconds': 0,
+              }),
+              503,
+            );
+          }),
+          authHeaderProvider:
+              ({
+                required url,
+                required method,
+                payload,
+                forceRefresh = false,
+              }) async => 'Nostr token',
+        );
+
+        await expectLater(
+          statusClient.getInviteStatus(),
+          throwsA(
+            isA<InviteApiException>().having(
+              (error) => error.code,
+              'code',
+              InviteApiErrorCode.enrollmentBusy,
+            ),
+          ),
+        );
+
+        expect(requestCount, equals(3));
+      },
+    );
+
+    test(
+      'refreshes auth and still retries a following enrollment_busy',
+      () async {
+        // The two retry reasons are independent; hitting one must not spend the
+        // other.
+        var requestCount = 0;
+        final forceRefreshValues = <bool>[];
+        final statusClient = InviteApiClient(
+          baseUrl: 'https://invites.divine.video',
+          client: MockClient((request) async {
+            requestCount++;
+            if (requestCount == 1) {
+              return http.Response(
+                jsonEncode({
+                  'error': 'Refresh invite authentication',
+                  'code': InviteApiErrorCode.authExpired,
+                }),
+                401,
+              );
+            }
+            if (requestCount == 2) {
+              return http.Response(
+                jsonEncode({
+                  'error': 'Invite enrollment is already in progress',
+                  'code': InviteApiErrorCode.enrollmentBusy,
+                  'retryAfterSeconds': 0,
+                }),
+                503,
+              );
+            }
+            return http.Response(
+              jsonEncode({
+                'canInvite': true,
+                'remaining': 7,
+                'remainingToGenerate': 0,
+                'total': 10,
+                'codes': <Object>[],
+              }),
+              200,
+            );
+          }),
+          authHeaderProvider:
+              ({
+                required url,
+                required method,
+                payload,
+                forceRefresh = false,
+              }) async {
+                forceRefreshValues.add(forceRefresh);
+                return forceRefresh ? 'Nostr fresh' : 'Nostr cached';
+              },
+        );
+
+        final result = await statusClient.getInviteStatus();
+
+        expect(result.remaining, equals(7));
+        expect(result.mintableCount, equals(0));
+        expect(requestCount, equals(3));
+        // The token is re-minted once, for the attempt that follows the 401 —
+        // not again for the transient 503, which is not an auth failure.
+        expect(forceRefreshValues, equals([false, true, false]));
+      },
+    );
+
     test('does not retry invite status after auth_invalid_binding', () async {
       var requestCount = 0;
       final statusClient = InviteApiClient(
@@ -765,11 +916,7 @@ void main() {
                   'code',
                   InviteApiErrorCode.clientAuthFailed,
                 )
-                .having(
-                  (error) => error.cause,
-                  'cause',
-                  isNotNull,
-                ),
+                .having((error) => error.cause, 'cause', isNotNull),
           ),
         );
       },

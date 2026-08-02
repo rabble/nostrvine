@@ -41,6 +41,10 @@ class InviteApiClient {
   static const Duration _defaultTimeout = Duration(seconds: 20);
   static const int _maxConsumeAttempts = 3;
 
+  /// One attempt, plus one retry for a rejected token and one for a transient
+  /// server failure.
+  static const int _maxInviteStatusAttempts = 3;
+
   final String _baseUrl;
   final http.Client _client;
   final InviteAuthHeaderProvider? _authHeaderProvider;
@@ -302,21 +306,32 @@ class InviteApiClient {
     );
   }
 
+  /// Fetches the caller's invite status.
+  ///
+  /// Retries for two independent reasons, each at most once: a rejected NIP-98
+  /// token, re-minted for the next attempt, and a transient server failure,
+  /// after the delay the server asks for. `GET /v1/invite-status` enrolls
+  /// lazily on read, so two status calls racing at launch make one lose the
+  /// enrollment claim and come back `503 enrollment_busy` with `Retry-After` —
+  /// a retry the user should never have to make by hand.
   Future<InviteStatus> getInviteStatus() async {
     final uri = Uri.parse('$_baseUrl/v1/invite-status');
 
     try {
-      for (var attempt = 0; attempt < 2; attempt++) {
+      var authRefreshed = false;
+      var forceAuthRefresh = false;
+      for (var attempt = 1; attempt <= _maxInviteStatusAttempts; attempt++) {
         final response = await _client
             .get(
               uri,
               headers: await _headers(
                 url: uri.toString(),
                 requiresAuth: true,
-                forceAuthRefresh: attempt > 0,
+                forceAuthRefresh: forceAuthRefresh,
               ),
             )
             .timeout(_defaultTimeout);
+        forceAuthRefresh = false;
 
         if (response.statusCode == 200) {
           final json = jsonDecode(response.body) as Map<String, dynamic>;
@@ -327,7 +342,16 @@ class InviteApiClient {
           message: 'Failed to fetch invite status',
           response: response,
         );
-        if (attempt == 0 && _canRefreshInviteStatusAuth(failure)) {
+        if (attempt == _maxInviteStatusAttempts) {
+          throw failure;
+        }
+        if (!authRefreshed && _canRefreshInviteStatusAuth(failure)) {
+          authRefreshed = true;
+          forceAuthRefresh = true;
+          continue;
+        }
+        if (_isRetryable(response)) {
+          await Future<void>.delayed(_retryDelay(response));
           continue;
         }
         throw failure;
@@ -596,6 +620,7 @@ class InviteApiClient {
     return errorCode == InviteApiErrorCode.tooManyRequests ||
         errorCode == InviteApiErrorCode.storageError ||
         errorCode == InviteApiErrorCode.internalError ||
+        errorCode == InviteApiErrorCode.enrollmentBusy ||
         response.statusCode >= 500;
   }
 

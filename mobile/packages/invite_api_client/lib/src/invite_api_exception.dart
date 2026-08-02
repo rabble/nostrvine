@@ -15,6 +15,7 @@ abstract final class InviteApiErrorCode {
   static const inviteAlreadyUsed = 'invite_already_used';
   static const userAlreadyJoined = 'user_already_joined';
   static const tooManyRequests = 'too_many_requests';
+  static const enrollmentBusy = 'enrollment_busy';
   static const storageError = 'storage_error';
   static const internalError = 'internal_error';
 

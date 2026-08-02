@@ -43,7 +43,11 @@ class InviteStatusState extends Equatable {
   bool get hasInviteActivity =>
       hasAvailableInvites || (inviteStatus?.codes.isNotEmpty ?? false);
 
-  /// Number of invites the user can still generate.
+  /// Number of invites the user still has to share.
+  ///
+  /// Not what they can still *generate* — see [InviteStatus.mintableCount] for
+  /// that. The settings badge and notifications banner want this one: someone
+  /// who has minted every code still has all of them to hand out.
   int get availableInviteCount => inviteStatus?.remaining ?? 0;
 
   /// Returns a copy with the given fields replaced.
