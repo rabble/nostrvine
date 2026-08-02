@@ -739,7 +739,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Tüm bayrakları varsayılanlara sıfırla",
-    "featureFlagResetToDefault": "Varsayılana sıfırla",
     "featureFlagAppRecovery": "Uygulama Kurtarma",
     "featureFlagAppRecoveryDescription": "Uygulama çöküyor veya tuhaf davranıyorsa, önbelleği temizlemeyi dene.",
     "featureFlagClearAllCache": "Tüm Önbelleği Temizle",
@@ -748,12 +747,9 @@
     "featureFlagClearCacheMessage": "Bu işlem önbelleğe alınmış tüm verileri temizleyecektir:\n• Bildirimler\n• Kullanıcı profilleri\n• Yer imleri\n• Geçici dosyalar\n\nTekrar giriş yapman gerekecek. Devam edilsin mi?",
     "featureFlagClearCache": "Önbelleği Temizle",
     "featureFlagClearingCache": "Önbellek temizleniyor...",
-    "featureFlagSuccess": "Başarılı",
     "featureFlagError": "Hata",
     "featureFlagClearCacheSuccess": "Önbellek başarıyla temizlendi. Lütfen uygulamayı yeniden başlat.",
     "featureFlagClearCacheFailure": "Bazı önbellek öğeleri temizlenemedi. Ayrıntılar için günlükleri kontrol et.",
-    "featureFlagOk": "Tamam",
-    "featureFlagCacheInformation": "Önbellek Bilgisi",
     "featureFlagTotalCacheSize": "Toplam önbellek boyutu: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

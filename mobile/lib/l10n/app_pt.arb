@@ -742,7 +742,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Redefinir todas as flags para o padrão",
-    "featureFlagResetToDefault": "Redefinir para o padrão",
     "featureFlagAppRecovery": "Recuperação do app",
     "featureFlagAppRecoveryDescription": "Se o app estiver travando ou se comportando de forma estranha, tente limpar o cache.",
     "featureFlagClearAllCache": "Limpar todo o cache",
@@ -751,12 +750,9 @@
     "featureFlagClearCacheMessage": "Isso vai limpar todos os dados em cache, incluindo:\n• Notificações\n• Perfis de usuários\n• Favoritos\n• Arquivos temporários\n\nVocê vai precisar entrar de novo. Continuar?",
     "featureFlagClearCache": "Limpar cache",
     "featureFlagClearingCache": "Limpando cache...",
-    "featureFlagSuccess": "Sucesso",
     "featureFlagError": "Erro",
     "featureFlagClearCacheSuccess": "Cache limpo com sucesso. Reinicie o app.",
     "featureFlagClearCacheFailure": "Falha ao limpar alguns itens do cache. Verifique os logs para mais detalhes.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Informações do cache",
     "featureFlagTotalCacheSize": "Tamanho total do cache: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

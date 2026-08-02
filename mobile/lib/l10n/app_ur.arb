@@ -1103,7 +1103,6 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "تمام فلیگز ڈیفالٹ پر ری سیٹ کریں",
-  "featureFlagResetToDefault": "ڈیفالٹ پر ری سیٹ کریں",
   "featureFlagAppRecovery": "ایپ ریکوری",
   "featureFlagAppRecoveryDescription": "اگر ایپ کریش ہو رہی ہے یا عجیب برتاؤ کر رہی ہے تو کیش صاف کر کے دیکھیں۔",
   "featureFlagClearAllCache": "ساری کیش صاف کریں",
@@ -1112,12 +1111,9 @@
   "featureFlagClearCacheMessage": "اس سے تمام کیش شدہ ڈیٹا صاف ہو جائے گا بشمول:\n• اطلاعات\n• صارف پروفائلز\n• بک مارکس\n• عارضی فائلیں\n\nآپ کو دوبارہ لاگ ان کرنا ہوگا۔ جاری رکھیں؟",
   "featureFlagClearCache": "کیش صاف کریں",
   "featureFlagClearingCache": "کیش صاف ہو رہی ہے...",
-  "featureFlagSuccess": "کامیاب",
   "featureFlagError": "خرابی",
   "featureFlagClearCacheSuccess": "کیش کامیابی سے صاف ہو گئی۔ براہ کرم ایپ دوبارہ شروع کریں۔",
   "featureFlagClearCacheFailure": "کچھ کیش آئٹمز صاف نہیں ہو سکے۔ تفصیلات کے لیے لاگز دیکھیں۔",
-  "featureFlagOk": "ٹھیک ہے",
-  "featureFlagCacheInformation": "کیش کی معلومات",
   "featureFlagTotalCacheSize": "کل کیش سائز: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {

@@ -1930,9 +1930,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Resetează toate indicatoarele la valorile implicite';
 
   @override
-  String get featureFlagResetToDefault => 'Resetează la valoarea implicită';
-
-  @override
   String get featureFlagAppRecovery => 'Recuperare aplicație';
 
   @override
@@ -1959,9 +1956,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get featureFlagClearingCache => 'Se golește cache-ul...';
 
   @override
-  String get featureFlagSuccess => 'Succes';
-
-  @override
   String get featureFlagError => 'Eroare';
 
   @override
@@ -1971,12 +1965,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Unele elemente din cache n-au putut fi șterse. Verifică jurnalele pentru detalii.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Informații despre cache';
 
   @override
   String featureFlagTotalCacheSize(String size) {

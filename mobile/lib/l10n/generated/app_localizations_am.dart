@@ -1855,9 +1855,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'ሁሉንም ባንዲራዎች ወደ ነባሪዎች ዳግም ያስጀምሩ';
 
   @override
-  String get featureFlagResetToDefault => 'ወደ ነባሪ ዳግም አስጀምር';
-
-  @override
   String get featureFlagAppRecovery => 'የመተግበሪያ መልሶ ማግኛ';
 
   @override
@@ -1884,9 +1881,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get featureFlagClearingCache => 'መሸጎጫ በማጽዳት ላይ...';
 
   @override
-  String get featureFlagSuccess => 'ስኬት';
-
-  @override
   String get featureFlagError => 'ስህተት';
 
   @override
@@ -1896,12 +1890,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'አንዳንድ መሸጎጫ ንጥሎችን ማጽዳት አልተሳካም። ለዝርዝሮች የምዝግብ ማስታወሻዎችን ይመልከቱ።';
-
-  @override
-  String get featureFlagOk => 'እሺ';
-
-  @override
-  String get featureFlagCacheInformation => 'መሸጎጫ መረጃ';
 
   @override
   String featureFlagTotalCacheSize(String size) {

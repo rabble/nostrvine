@@ -1103,7 +1103,6 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "Tetapkan semula semua bendera kepada lalai",
-  "featureFlagResetToDefault": "Tetapkan semula kepada lalai",
   "featureFlagAppRecovery": "Pemulihan Apl",
   "featureFlagAppRecoveryDescription": "Jika apl ranap atau berkelakuan pelik, cuba kosongkan cache.",
   "featureFlagClearAllCache": "Kosongkan Semua Cache",
@@ -1112,12 +1111,9 @@
   "featureFlagClearCacheMessage": "Ini akan mengosongkan semua data cache termasuk:\n• Pemberitahuan\n• Profil pengguna\n• Penanda buku\n• Fail sementara\n\nAnda perlu log masuk semula. Teruskan?",
   "featureFlagClearCache": "Kosongkan Cache",
   "featureFlagClearingCache": "Mengosongkan cache...",
-  "featureFlagSuccess": "Berjaya",
   "featureFlagError": "Ralat",
   "featureFlagClearCacheSuccess": "Cache berjaya dikosongkan. Sila mulakan semula apl.",
   "featureFlagClearCacheFailure": "Gagal mengosongkan sesetengah item cache. Semak log untuk butiran.",
-  "featureFlagOk": "OK",
-  "featureFlagCacheInformation": "Maklumat Cache",
   "featureFlagTotalCacheSize": "Jumlah saiz cache: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {

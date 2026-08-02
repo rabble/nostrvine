@@ -1103,7 +1103,6 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "Đặt lại tất cả cờ về mặc định",
-  "featureFlagResetToDefault": "Đặt lại về mặc định",
   "featureFlagAppRecovery": "Khôi phục ứng dụng",
   "featureFlagAppRecoveryDescription": "Nếu ứng dụng bị văng hoặc hoạt động kỳ lạ, hãy thử xóa bộ nhớ đệm.",
   "featureFlagClearAllCache": "Xóa toàn bộ bộ nhớ đệm",
@@ -1112,12 +1111,9 @@
   "featureFlagClearCacheMessage": "Thao tác này sẽ xóa tất cả dữ liệu đã lưu bao gồm:\n• Thông báo\n• Hồ sơ người dùng\n• Dấu trang\n• Tệp tạm\n\nBạn sẽ cần đăng nhập lại. Tiếp tục chứ?",
   "featureFlagClearCache": "Xóa bộ nhớ đệm",
   "featureFlagClearingCache": "Đang xóa bộ nhớ đệm...",
-  "featureFlagSuccess": "Thành công",
   "featureFlagError": "Lỗi",
   "featureFlagClearCacheSuccess": "Đã xóa bộ nhớ đệm thành công. Vui lòng khởi động lại ứng dụng.",
   "featureFlagClearCacheFailure": "Không xóa được một số mục trong bộ nhớ đệm. Xem nhật ký để biết chi tiết.",
-  "featureFlagOk": "OK",
-  "featureFlagCacheInformation": "Thông tin bộ nhớ đệm",
   "featureFlagTotalCacheSize": "Tổng dung lượng bộ nhớ đệm: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {

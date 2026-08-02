@@ -1796,9 +1796,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get featureFlagResetAllTooltip => '将所有开关重置为默认值';
 
   @override
-  String get featureFlagResetToDefault => '重置为默认';
-
-  @override
   String get featureFlagAppRecovery => '应用恢复';
 
   @override
@@ -1824,9 +1821,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get featureFlagClearingCache => '正在清除缓存...';
 
   @override
-  String get featureFlagSuccess => '成功';
-
-  @override
   String get featureFlagError => '错误';
 
   @override
@@ -1834,12 +1828,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get featureFlagClearCacheFailure => '部分缓存项清除失败，详情请查看日志。';
-
-  @override
-  String get featureFlagOk => '好';
-
-  @override
-  String get featureFlagCacheInformation => '缓存信息';
 
   @override
   String featureFlagTotalCacheSize(String size) {

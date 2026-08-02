@@ -873,7 +873,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "ሁሉንም ባንዲራዎች ወደ ነባሪዎች ዳግም ያስጀምሩ",
-    "featureFlagResetToDefault": "ወደ ነባሪ ዳግም አስጀምር",
     "featureFlagAppRecovery": "የመተግበሪያ መልሶ ማግኛ",
     "featureFlagAppRecoveryDescription": "መተግበሪያው እየተበላሸ ከሆነ ወይም እንግዳ ከሆነ፣ መሸጎጫውን ለማጽዳት ይሞክሩ።",
     "featureFlagClearAllCache": "ሁሉንም መሸጎጫ ያጽዱ",
@@ -882,12 +881,9 @@
     "featureFlagClearCacheMessage": "ይህ የሚከተሉትን ጨምሮ ሁሉንም የተሸጎጠ ውሂብ ያጸዳል-\n• ማሳወቂያዎች\n• የተጠቃሚ መገለጫዎች\n• ዕልባቶች\n• ጊዜያዊ ፋይሎች\n\nእንደገና መግባት ያስፈልግዎታል። ይቀጥል?",
     "featureFlagClearCache": "መሸጎጫ አጽዳ",
     "featureFlagClearingCache": "መሸጎጫ በማጽዳት ላይ...",
-    "featureFlagSuccess": "ስኬት",
     "featureFlagError": "ስህተት",
     "featureFlagClearCacheSuccess": "መሸጎጫ በተሳካ ሁኔታ ጸድቷል። እባክዎ መተግበሪያውን እንደገና ያስጀምሩት።",
     "featureFlagClearCacheFailure": "አንዳንድ መሸጎጫ ንጥሎችን ማጽዳት አልተሳካም። ለዝርዝሮች የምዝግብ ማስታወሻዎችን ይመልከቱ።",
-    "featureFlagOk": "እሺ",
-    "featureFlagCacheInformation": "መሸጎጫ መረጃ",
     "featureFlagTotalCacheSize": "ጠቅላላ የመሸጎጫ መጠን፡ {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

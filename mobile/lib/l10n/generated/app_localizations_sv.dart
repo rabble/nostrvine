@@ -1881,9 +1881,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Återställ alla flaggor till standard';
 
   @override
-  String get featureFlagResetToDefault => 'Återställ till standard';
-
-  @override
   String get featureFlagAppRecovery => 'Appåterställning';
 
   @override
@@ -1910,9 +1907,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get featureFlagClearingCache => 'Rensar cache...';
 
   @override
-  String get featureFlagSuccess => 'Klart';
-
-  @override
   String get featureFlagError => 'Fel';
 
   @override
@@ -1922,12 +1916,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Kunde inte rensa vissa cacheobjekt. Kolla loggarna för detaljer.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Cacheinformation';
 
   @override
   String featureFlagTotalCacheSize(String size) {

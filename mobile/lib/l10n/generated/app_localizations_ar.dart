@@ -1874,9 +1874,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'إعادة جميع الأعلام إلى الافتراضي';
 
   @override
-  String get featureFlagResetToDefault => 'إعادة إلى الافتراضي';
-
-  @override
   String get featureFlagAppRecovery => 'استرداد التطبيق';
 
   @override
@@ -1903,9 +1900,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get featureFlagClearingCache => 'جاري مسح الذاكرة المؤقتة...';
 
   @override
-  String get featureFlagSuccess => 'نجح';
-
-  @override
   String get featureFlagError => 'خطأ';
 
   @override
@@ -1915,12 +1909,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'فشل مسح بعض عناصر الذاكرة المؤقتة. راجع السجلات للتفاصيل.';
-
-  @override
-  String get featureFlagOk => 'حسنًا';
-
-  @override
-  String get featureFlagCacheInformation => 'معلومات الذاكرة المؤقتة';
 
   @override
   String featureFlagTotalCacheSize(String size) {

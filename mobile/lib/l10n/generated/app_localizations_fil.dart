@@ -1920,9 +1920,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'I-reset lahat ng flag sa default';
 
   @override
-  String get featureFlagResetToDefault => 'I-reset sa default';
-
-  @override
   String get featureFlagAppRecovery => 'App Recovery';
 
   @override
@@ -1949,9 +1946,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get featureFlagClearingCache => 'Kine-clear ang cache...';
 
   @override
-  String get featureFlagSuccess => 'Tagumpay';
-
-  @override
   String get featureFlagError => 'Error';
 
   @override
@@ -1961,12 +1955,6 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Nabigong i-clear ang ilang cache item. Tingnan ang logs para sa detalye.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Impormasyon ng Cache';
 
   @override
   String featureFlagTotalCacheSize(String size) {

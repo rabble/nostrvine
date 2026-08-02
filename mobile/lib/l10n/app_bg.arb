@@ -818,7 +818,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Нулирай всички флагове до стойностите по подразбиране",
-    "featureFlagResetToDefault": "Нулирай до стойността по подразбиране",
     "featureFlagAppRecovery": "Възстановяване на приложението",
     "featureFlagAppRecoveryDescription": "Ако приложението се срива или се държи странно, опитай да изчистиш кеша.",
     "featureFlagClearAllCache": "Изчистване на целия кеш",
@@ -827,12 +826,9 @@
     "featureFlagClearCacheMessage": "Това ще изчисти всички кеширани данни, включително:\n• Известия\n• Потребителски профили\n• Отметки\n• Временни файлове\n\nЩе трябва да влезеш отново. Да продължим?",
     "featureFlagClearCache": "Изчистване на кеша",
     "featureFlagClearingCache": "Изчистване на кеша...",
-    "featureFlagSuccess": "Успех",
     "featureFlagError": "Грешка",
     "featureFlagClearCacheSuccess": "Кешът е изчистен. Рестартирай приложението.",
     "featureFlagClearCacheFailure": "Не успяхме да изчистим някои елементи от кеша. Виж логовете за подробности.",
-    "featureFlagOk": "Добре",
-    "featureFlagCacheInformation": "Кеш информация",
     "featureFlagTotalCacheSize": "Общ размер на кеша: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

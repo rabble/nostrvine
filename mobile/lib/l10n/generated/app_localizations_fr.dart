@@ -1915,9 +1915,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Réinitialiser tous les indicateurs';
 
   @override
-  String get featureFlagResetToDefault => 'Réinitialiser par défaut';
-
-  @override
   String get featureFlagAppRecovery => 'Récupération de l\'app';
 
   @override
@@ -1944,9 +1941,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get featureFlagClearingCache => 'Vidage du cache...';
 
   @override
-  String get featureFlagSuccess => 'Succès';
-
-  @override
   String get featureFlagError => 'Erreur';
 
   @override
@@ -1956,12 +1950,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Échec du vidage de certains éléments. Vérifie les logs pour les détails.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Informations sur le cache';
 
   @override
   String featureFlagTotalCacheSize(String size) {

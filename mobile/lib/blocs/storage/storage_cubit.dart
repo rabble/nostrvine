@@ -2,19 +2,34 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/storage_cache_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/cache_recovery_service.dart';
 import 'package:openvine/services/storage_management_service.dart';
 
 part 'storage_state.dart';
 
 /// Drives the settings "Storage" screen: reports the clearable cache size,
-/// clears it on demand, and audits the clip library for broken entries.
+/// clears it on demand, audits the clip library for broken entries, and runs
+/// the last-resort recovery wipe for a corrupted install.
 class StorageCubit extends Cubit<StorageState> {
   /// Creates a cubit backed by [service] and loads the current cache size.
-  StorageCubit({required StorageManagementService service})
-    : _service = service,
-      super(const StorageState());
+  ///
+  /// [recoverAllCaches] and [measureRecoveryFootprint] default to
+  /// [CacheRecoveryService]'s static entry points and exist so tests can drive
+  /// the recovery section without touching the real filesystem.
+  StorageCubit({
+    required StorageManagementService service,
+    Future<bool> Function() recoverAllCaches =
+        CacheRecoveryService.clearAllCaches,
+    Future<String> Function() measureRecoveryFootprint =
+        CacheRecoveryService.getCacheSizeInfo,
+  }) : _service = service,
+       _recoverAllCaches = recoverAllCaches,
+       _measureRecoveryFootprint = measureRecoveryFootprint,
+       super(const StorageState());
 
   final StorageManagementService _service;
+  final Future<bool> Function() _recoverAllCaches;
+  final Future<String> Function() _measureRecoveryFootprint;
 
   /// Loads the current clearable cache size and configured limit.
   Future<void> loadCacheSize() async {
@@ -104,6 +119,46 @@ class StorageCubit extends Cubit<StorageState> {
     } catch (error, stackTrace) {
       addError(error, stackTrace);
       emit(state.copyWith(libraryStatus: StorageLibraryStatus.failure));
+    }
+  }
+
+  /// Measures everything a recovery wipe would clear — Hive boxes, Application
+  /// Support, temp and cache directories — which is a superset of the media
+  /// cache [loadCacheSize] reports.
+  Future<void> loadRecoveryFootprint() async {
+    emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.measuring));
+    try {
+      final footprint = await _measureRecoveryFootprint();
+      emit(
+        state.copyWith(
+          recoveryStatus: StorageRecoveryStatus.measured,
+          recoveryFootprint: footprint,
+        ),
+      );
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.failure));
+    }
+  }
+
+  /// Wipes the app's caches and databases to recover from corruption. The
+  /// durable database directory is preserved by [CacheRecoveryService]; the
+  /// user still has to restart the app afterwards.
+  Future<void> recoverFromCorruptedCache() async {
+    emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.recovering));
+    try {
+      final succeeded = await _recoverAllCaches();
+      emit(
+        state.copyWith(
+          recoveryStatus: succeeded
+              ? StorageRecoveryStatus.recovered
+              : StorageRecoveryStatus.failure,
+          recoveryFootprint: '',
+        ),
+      );
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
+      emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.failure));
     }
   }
 

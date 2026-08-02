@@ -1848,9 +1848,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Reset semua flag ke bawaan';
 
   @override
-  String get featureFlagResetToDefault => 'Reset ke bawaan';
-
-  @override
   String get featureFlagAppRecovery => 'Pemulihan Aplikasi';
 
   @override
@@ -1877,9 +1874,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get featureFlagClearingCache => 'Membersihkan cache...';
 
   @override
-  String get featureFlagSuccess => 'Berhasil';
-
-  @override
   String get featureFlagError => 'Kesalahan';
 
   @override
@@ -1889,12 +1883,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Gagal membersihkan beberapa item cache. Cek log untuk detail.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Informasi Cache';
 
   @override
   String featureFlagTotalCacheSize(String size) {

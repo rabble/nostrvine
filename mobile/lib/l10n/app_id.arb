@@ -739,7 +739,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Reset semua flag ke bawaan",
-    "featureFlagResetToDefault": "Reset ke bawaan",
     "featureFlagAppRecovery": "Pemulihan Aplikasi",
     "featureFlagAppRecoveryDescription": "Kalau aplikasi crash atau berperilaku aneh, coba bersihkan cache.",
     "featureFlagClearAllCache": "Bersihkan Semua Cache",
@@ -748,12 +747,9 @@
     "featureFlagClearCacheMessage": "Ini akan menghapus semua data yang tersimpan di cache termasuk:\n• Notifikasi\n• Profil pengguna\n• Bookmark\n• File sementara\n\nKamu perlu masuk lagi. Lanjutkan?",
     "featureFlagClearCache": "Bersihkan Cache",
     "featureFlagClearingCache": "Membersihkan cache...",
-    "featureFlagSuccess": "Berhasil",
     "featureFlagError": "Kesalahan",
     "featureFlagClearCacheSuccess": "Cache berhasil dibersihkan. Silakan restart aplikasi.",
     "featureFlagClearCacheFailure": "Gagal membersihkan beberapa item cache. Cek log untuk detail.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Informasi Cache",
     "featureFlagTotalCacheSize": "Total ukuran cache: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

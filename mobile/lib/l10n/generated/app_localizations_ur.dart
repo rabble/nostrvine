@@ -1892,9 +1892,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'تمام فلیگز ڈیفالٹ پر ری سیٹ کریں';
 
   @override
-  String get featureFlagResetToDefault => 'ڈیفالٹ پر ری سیٹ کریں';
-
-  @override
   String get featureFlagAppRecovery => 'ایپ ریکوری';
 
   @override
@@ -1921,9 +1918,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get featureFlagClearingCache => 'کیش صاف ہو رہی ہے...';
 
   @override
-  String get featureFlagSuccess => 'کامیاب';
-
-  @override
   String get featureFlagError => 'خرابی';
 
   @override
@@ -1933,12 +1927,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'کچھ کیش آئٹمز صاف نہیں ہو سکے۔ تفصیلات کے لیے لاگز دیکھیں۔';
-
-  @override
-  String get featureFlagOk => 'ٹھیک ہے';
-
-  @override
-  String get featureFlagCacheInformation => 'کیش کی معلومات';
 
   @override
   String featureFlagTotalCacheSize(String size) {

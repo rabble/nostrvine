@@ -44,6 +44,27 @@ enum StorageLibraryStatus {
   failure,
 }
 
+/// Lifecycle of the app-recovery section.
+enum StorageRecoveryStatus {
+  /// Not measured yet.
+  idle,
+
+  /// Measuring the total on-disk footprint.
+  measuring,
+
+  /// Footprint known and idle; see [StorageState.recoveryFootprint].
+  measured,
+
+  /// A full recovery wipe is running.
+  recovering,
+
+  /// The wipe finished; the app needs a restart.
+  recovered,
+
+  /// The last recovery operation failed.
+  failure,
+}
+
 /// State for the settings "Storage" screen.
 class StorageState extends Equatable {
   /// Creates a state.
@@ -53,6 +74,8 @@ class StorageState extends Equatable {
     this.cacheLimitBytes = kCacheLimitDefaultBytes,
     this.libraryStatus = StorageLibraryStatus.idle,
     this.brokenClips = const [],
+    this.recoveryStatus = StorageRecoveryStatus.idle,
+    this.recoveryFootprint = '',
   });
 
   /// Lifecycle of the cache section.
@@ -70,6 +93,13 @@ class StorageState extends Equatable {
   /// Library clips whose backing file is missing (populated after a scan).
   final List<DivineVideoClip> brokenClips;
 
+  /// Lifecycle of the app-recovery section.
+  final StorageRecoveryStatus recoveryStatus;
+
+  /// Human-readable total footprint of everything a recovery wipe would clear,
+  /// or empty while it has not been measured.
+  final String recoveryFootprint;
+
   /// Returns a copy with the given fields replaced.
   StorageState copyWith({
     StorageCacheStatus? cacheStatus,
@@ -77,6 +107,8 @@ class StorageState extends Equatable {
     int? cacheLimitBytes,
     StorageLibraryStatus? libraryStatus,
     List<DivineVideoClip>? brokenClips,
+    StorageRecoveryStatus? recoveryStatus,
+    String? recoveryFootprint,
   }) {
     return StorageState(
       cacheStatus: cacheStatus ?? this.cacheStatus,
@@ -84,6 +116,8 @@ class StorageState extends Equatable {
       cacheLimitBytes: cacheLimitBytes ?? this.cacheLimitBytes,
       libraryStatus: libraryStatus ?? this.libraryStatus,
       brokenClips: brokenClips ?? this.brokenClips,
+      recoveryStatus: recoveryStatus ?? this.recoveryStatus,
+      recoveryFootprint: recoveryFootprint ?? this.recoveryFootprint,
     );
   }
 
@@ -94,5 +128,7 @@ class StorageState extends Equatable {
     cacheLimitBytes,
     libraryStatus,
     brokenClips,
+    recoveryStatus,
+    recoveryFootprint,
   ];
 }

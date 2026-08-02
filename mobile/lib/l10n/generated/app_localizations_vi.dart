@@ -1898,9 +1898,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Đặt lại tất cả cờ về mặc định';
 
   @override
-  String get featureFlagResetToDefault => 'Đặt lại về mặc định';
-
-  @override
   String get featureFlagAppRecovery => 'Khôi phục ứng dụng';
 
   @override
@@ -1927,9 +1924,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get featureFlagClearingCache => 'Đang xóa bộ nhớ đệm...';
 
   @override
-  String get featureFlagSuccess => 'Thành công';
-
-  @override
   String get featureFlagError => 'Lỗi';
 
   @override
@@ -1939,12 +1933,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Không xóa được một số mục trong bộ nhớ đệm. Xem nhật ký để biết chi tiết.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Thông tin bộ nhớ đệm';
 
   @override
   String featureFlagTotalCacheSize(String size) {

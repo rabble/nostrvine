@@ -3298,12 +3298,6 @@ abstract class AppLocalizations {
   /// **'Reset all flags to defaults'**
   String get featureFlagResetAllTooltip;
 
-  /// No description provided for @featureFlagResetToDefault.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset to default'**
-  String get featureFlagResetToDefault;
-
   /// No description provided for @featureFlagAppRecovery.
   ///
   /// In en, this message translates to:
@@ -3352,12 +3346,6 @@ abstract class AppLocalizations {
   /// **'Clearing cache...'**
   String get featureFlagClearingCache;
 
-  /// No description provided for @featureFlagSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Success'**
-  String get featureFlagSuccess;
-
   /// No description provided for @featureFlagError.
   ///
   /// In en, this message translates to:
@@ -3375,18 +3363,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to clear some cache items. Check logs for details.'**
   String get featureFlagClearCacheFailure;
-
-  /// No description provided for @featureFlagOk.
-  ///
-  /// In en, this message translates to:
-  /// **'OK'**
-  String get featureFlagOk;
-
-  /// No description provided for @featureFlagCacheInformation.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache Information'**
-  String get featureFlagCacheInformation;
 
   /// No description provided for @featureFlagTotalCacheSize.
   ///

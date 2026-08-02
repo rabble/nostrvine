@@ -742,7 +742,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Ripristina tutti i flag ai valori predefiniti",
-    "featureFlagResetToDefault": "Ripristina predefinito",
     "featureFlagAppRecovery": "Ripristino app",
     "featureFlagAppRecoveryDescription": "Se l'app si blocca o si comporta in modo strano, prova a svuotare la cache.",
     "featureFlagClearAllCache": "Svuota tutta la cache",
@@ -751,12 +750,9 @@
     "featureFlagClearCacheMessage": "Questo cancellerà tutti i dati in cache inclusi:\n• Notifiche\n• Profili utente\n• Segnalibri\n• File temporanei\n\nDovrai accedere di nuovo. Continuare?",
     "featureFlagClearCache": "Svuota cache",
     "featureFlagClearingCache": "Svuotamento cache...",
-    "featureFlagSuccess": "Fatto",
     "featureFlagError": "Errore",
     "featureFlagClearCacheSuccess": "Cache svuotata con successo. Riavvia l'app.",
     "featureFlagClearCacheFailure": "Impossibile svuotare alcuni elementi della cache. Controlla i log per i dettagli.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Informazioni cache",
     "featureFlagTotalCacheSize": "Dimensione totale cache: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

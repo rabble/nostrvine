@@ -739,7 +739,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "إعادة جميع الأعلام إلى الافتراضي",
-    "featureFlagResetToDefault": "إعادة إلى الافتراضي",
     "featureFlagAppRecovery": "استرداد التطبيق",
     "featureFlagAppRecoveryDescription": "إذا كان التطبيق يتعطّل أو يتصرف بغرابة، جرّب مسح الذاكرة المؤقتة.",
     "featureFlagClearAllCache": "مسح كل الذاكرة المؤقتة",
@@ -748,12 +747,9 @@
     "featureFlagClearCacheMessage": "سيؤدي هذا إلى مسح جميع البيانات المخزّنة بما في ذلك:\n• الإشعارات\n• ملفات المستخدمين\n• الإشارات المرجعية\n• الملفات المؤقتة\n\nستحتاج إلى تسجيل الدخول مجددًا. هل تريد المتابعة؟",
     "featureFlagClearCache": "مسح الذاكرة المؤقتة",
     "featureFlagClearingCache": "جاري مسح الذاكرة المؤقتة...",
-    "featureFlagSuccess": "نجح",
     "featureFlagError": "خطأ",
     "featureFlagClearCacheSuccess": "تم مسح الذاكرة المؤقتة بنجاح. يرجى إعادة تشغيل التطبيق.",
     "featureFlagClearCacheFailure": "فشل مسح بعض عناصر الذاكرة المؤقتة. راجع السجلات للتفاصيل.",
-    "featureFlagOk": "حسنًا",
-    "featureFlagCacheInformation": "معلومات الذاكرة المؤقتة",
     "featureFlagTotalCacheSize": "إجمالي حجم الذاكرة المؤقتة: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

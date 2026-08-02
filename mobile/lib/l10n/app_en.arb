@@ -1111,7 +1111,6 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "Reset all flags to defaults",
-  "featureFlagResetToDefault": "Reset to default",
   "featureFlagAppRecovery": "App Recovery",
   "featureFlagAppRecoveryDescription": "If the app is crashing or behaving strangely, try clearing the cache.",
   "featureFlagClearAllCache": "Clear All Cache",
@@ -1120,12 +1119,9 @@
   "featureFlagClearCacheMessage": "This will clear all cached data including:\n• Notifications\n• User profiles\n• Bookmarks\n• Temporary files\n\nYou will need to log in again. Continue?",
   "featureFlagClearCache": "Clear Cache",
   "featureFlagClearingCache": "Clearing cache...",
-  "featureFlagSuccess": "Success",
   "featureFlagError": "Error",
   "featureFlagClearCacheSuccess": "Cache cleared successfully. Please restart the app.",
   "featureFlagClearCacheFailure": "Failed to clear some cache items. Check logs for details.",
-  "featureFlagOk": "OK",
-  "featureFlagCacheInformation": "Cache Information",
   "featureFlagTotalCacheSize": "Total cache size: {size}",
   "@featureFlagTotalCacheSize": {
     "placeholders": {

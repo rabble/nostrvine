@@ -76,6 +76,8 @@ class StorageManagementView extends StatelessWidget {
                   context.l10n.settingsStorageLibrarySectionTitle,
                 ),
                 const _LibrarySection(),
+                DivineSectionHeader(context.l10n.featureFlagAppRecovery),
+                const _RecoverySection(),
               ],
             ),
           ),
@@ -91,6 +93,10 @@ class StorageManagementView extends StatelessWidget {
       message = l10n.settingsStorageCleared;
     } else if (state.libraryStatus == StorageLibraryStatus.cleaned) {
       message = l10n.settingsStorageBrokenClipsRemoved;
+    } else if (state.recoveryStatus == StorageRecoveryStatus.recovered) {
+      message = l10n.featureFlagClearCacheSuccess;
+    } else if (state.recoveryStatus == StorageRecoveryStatus.failure) {
+      message = l10n.featureFlagClearCacheFailure;
     } else if (state.cacheStatus == StorageCacheStatus.failure ||
         state.libraryStatus == StorageLibraryStatus.failure) {
       message = l10n.settingsStorageError;
@@ -342,6 +348,134 @@ class _LibrarySection extends StatelessWidget {
       ],
     );
     if (confirmed ?? false) await cubit.removeBrokenClips();
+  }
+}
+
+/// Last-resort recovery for a corrupted install. Unlike [_CacheSection] — which
+/// only trims downloaded media — this wipes the Hive boxes, Application Support
+/// and temp directories too, so it lives behind its own confirmation.
+class _RecoverySection extends StatelessWidget {
+  const _RecoverySection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final status = context.select((StorageCubit c) => c.state.recoveryStatus);
+    final footprint = context.select(
+      (StorageCubit c) => c.state.recoveryFootprint,
+    );
+    final busy =
+        status == StorageRecoveryStatus.measuring ||
+        status == StorageRecoveryStatus.recovering;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 12,
+        children: [
+          Text(
+            l10n.featureFlagAppRecoveryDescription,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
+          ),
+          if (status == StorageRecoveryStatus.measuring)
+            Text(
+              l10n.settingsStorageMeasuring,
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
+            )
+          else if (status == StorageRecoveryStatus.measured)
+            Text(
+              l10n.featureFlagTotalCacheSize(footprint),
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
+            )
+          else if (status == StorageRecoveryStatus.recovering)
+            Text(
+              l10n.featureFlagClearingCache,
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.primaryText,
+              ),
+            )
+          else if (status == StorageRecoveryStatus.recovered)
+            Text(
+              l10n.featureFlagClearCacheSuccess,
+              style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+            ),
+          if (status == StorageRecoveryStatus.measured)
+            Text(
+              l10n.featureFlagCacheIncludes,
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.mutedText,
+              ),
+            ),
+          DivineButton(
+            label: l10n.featureFlagCacheInfo,
+            type: DivineButtonType.secondary,
+            expanded: true,
+            onPressed: busy
+                ? null
+                : () => context.read<StorageCubit>().loadRecoveryFootprint(),
+          ),
+          DivineButton(
+            label: l10n.featureFlagClearAllCache,
+            type: DivineButtonType.error,
+            expanded: true,
+            onPressed: busy ? null : () => _confirmRecover(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRecover(BuildContext context) async {
+    final l10n = context.l10n;
+    final cubit = context.read<StorageCubit>();
+    final confirmed = await VineBottomSheet.show<bool>(
+      context: context,
+      scrollable: false,
+      contentTitle: l10n.featureFlagClearCacheTitle,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            l10n.featureFlagClearCacheMessage,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: l10n.settingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: l10n.featureFlagClearCache,
+                  type: DivineButtonType.error,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+    if (confirmed ?? false) await cubit.recoverFromCorruptedCache();
   }
 }
 

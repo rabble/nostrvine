@@ -1904,9 +1904,6 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tetapkan semula semua bendera kepada lalai';
 
   @override
-  String get featureFlagResetToDefault => 'Tetapkan semula kepada lalai';
-
-  @override
   String get featureFlagAppRecovery => 'Pemulihan Apl';
 
   @override
@@ -1933,9 +1930,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get featureFlagClearingCache => 'Mengosongkan cache...';
 
   @override
-  String get featureFlagSuccess => 'Berjaya';
-
-  @override
   String get featureFlagError => 'Ralat';
 
   @override
@@ -1945,12 +1939,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Gagal mengosongkan sesetengah item cache. Semak log untuk butiran.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Maklumat Cache';
 
   @override
   String featureFlagTotalCacheSize(String size) {

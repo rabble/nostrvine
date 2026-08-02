@@ -742,7 +742,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Alle Flags auf Standard zurücksetzen",
-    "featureFlagResetToDefault": "Auf Standard zurücksetzen",
     "featureFlagAppRecovery": "App-Wiederherstellung",
     "featureFlagAppRecoveryDescription": "Wenn die App abstürzt oder sich seltsam verhält, versuch den Cache zu leeren.",
     "featureFlagClearAllCache": "Gesamten Cache leeren",
@@ -751,12 +750,9 @@
     "featureFlagClearCacheMessage": "Damit werden alle zwischengespeicherten Daten gelöscht, einschließlich:\n• Benachrichtigungen\n• Nutzerprofile\n• Lesezeichen\n• Temporäre Dateien\n\nDu musst dich erneut anmelden. Weitermachen?",
     "featureFlagClearCache": "Cache leeren",
     "featureFlagClearingCache": "Cache wird geleert...",
-    "featureFlagSuccess": "Erfolg",
     "featureFlagError": "Fehler",
     "featureFlagClearCacheSuccess": "Cache erfolgreich geleert. Bitte starte die App neu.",
     "featureFlagClearCacheFailure": "Einige Cache-Einträge konnten nicht geleert werden. Siehe Logs für Details.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Cache-Informationen",
     "featureFlagTotalCacheSize": "Gesamte Cache-Größe: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

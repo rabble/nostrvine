@@ -1772,9 +1772,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'すべてのフラグを既定値にリセット';
 
   @override
-  String get featureFlagResetToDefault => '既定にリセット';
-
-  @override
   String get featureFlagAppRecovery => 'アプリ復旧';
 
   @override
@@ -1801,9 +1798,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get featureFlagClearingCache => 'キャッシュをクリア中...';
 
   @override
-  String get featureFlagSuccess => '成功！';
-
-  @override
   String get featureFlagError => 'エラー';
 
   @override
@@ -1812,12 +1806,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       '一部のキャッシュ項目のクリアがうまくいかなかった。ログを確認してみて。';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'キャッシュ情報';
 
   @override
   String featureFlagTotalCacheSize(String size) {

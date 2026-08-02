@@ -179,5 +179,85 @@ void main() {
         verify: (_) => verify(() => service.setCacheLimit(oneGb)).called(1),
       );
     });
+
+    group('recovery', () {
+      blocTest<StorageCubit, StorageState>(
+        'loadRecoveryFootprint emits measuring then the measured footprint',
+        build: () => StorageCubit(
+          service: service,
+          measureRecoveryFootprint: () async => '42.0 MB',
+        ),
+        act: (cubit) => cubit.loadRecoveryFootprint(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.measuring),
+          StorageState(
+            recoveryStatus: StorageRecoveryStatus.measured,
+            recoveryFootprint: '42.0 MB',
+          ),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'loadRecoveryFootprint emits failure when measuring throws',
+        build: () => StorageCubit(
+          service: service,
+          measureRecoveryFootprint: () async => throw Exception('boom'),
+        ),
+        act: (cubit) => cubit.loadRecoveryFootprint(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.measuring),
+          StorageState(recoveryStatus: StorageRecoveryStatus.failure),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'recoverFromCorruptedCache clears the stale footprint on success',
+        build: () => StorageCubit(
+          service: service,
+          recoverAllCaches: () async => true,
+          measureRecoveryFootprint: () async => '42.0 MB',
+        ),
+        act: (cubit) async {
+          await cubit.loadRecoveryFootprint();
+          await cubit.recoverFromCorruptedCache();
+        },
+        skip: 2,
+        expect: () => const [
+          StorageState(
+            recoveryStatus: StorageRecoveryStatus.recovering,
+            recoveryFootprint: '42.0 MB',
+          ),
+          StorageState(recoveryStatus: StorageRecoveryStatus.recovered),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'recoverFromCorruptedCache emits failure when the wipe reports false',
+        build: () => StorageCubit(
+          service: service,
+          recoverAllCaches: () async => false,
+        ),
+        act: (cubit) => cubit.recoverFromCorruptedCache(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.recovering),
+          StorageState(recoveryStatus: StorageRecoveryStatus.failure),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'recoverFromCorruptedCache emits failure when the wipe throws',
+        build: () => StorageCubit(
+          service: service,
+          recoverAllCaches: () async => throw Exception('boom'),
+        ),
+        act: (cubit) => cubit.recoverFromCorruptedCache(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.recovering),
+          StorageState(recoveryStatus: StorageRecoveryStatus.failure),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+    });
   });
 }

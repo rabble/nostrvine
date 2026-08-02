@@ -1782,9 +1782,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get featureFlagResetAllTooltip => '모든 플래그를 기본값으로 재설정';
 
   @override
-  String get featureFlagResetToDefault => '기본값으로 재설정';
-
-  @override
   String get featureFlagAppRecovery => '앱 복구';
 
   @override
@@ -1811,9 +1808,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get featureFlagClearingCache => '캐시 삭제 중...';
 
   @override
-  String get featureFlagSuccess => '성공';
-
-  @override
   String get featureFlagError => '오류';
 
   @override
@@ -1822,12 +1816,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       '일부 캐시 항목을 지우지 못했어요. 자세한 내용은 로그를 확인해주세요.';
-
-  @override
-  String get featureFlagOk => '확인';
-
-  @override
-  String get featureFlagCacheInformation => '캐시 정보';
 
   @override
   String featureFlagTotalCacheSize(String size) {

@@ -1855,9 +1855,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tüm bayrakları varsayılanlara sıfırla';
 
   @override
-  String get featureFlagResetToDefault => 'Varsayılana sıfırla';
-
-  @override
   String get featureFlagAppRecovery => 'Uygulama Kurtarma';
 
   @override
@@ -1884,9 +1881,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get featureFlagClearingCache => 'Önbellek temizleniyor...';
 
   @override
-  String get featureFlagSuccess => 'Başarılı';
-
-  @override
   String get featureFlagError => 'Hata';
 
   @override
@@ -1896,12 +1890,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Bazı önbellek öğeleri temizlenemedi. Ayrıntılar için günlükleri kontrol et.';
-
-  @override
-  String get featureFlagOk => 'Tamam';
-
-  @override
-  String get featureFlagCacheInformation => 'Önbellek Bilgisi';
 
   @override
   String featureFlagTotalCacheSize(String size) {

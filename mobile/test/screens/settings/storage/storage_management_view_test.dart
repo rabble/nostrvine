@@ -144,4 +144,65 @@ void main() {
 
     verify(() => service.setCacheLimit(any())).called(1);
   });
+
+  testWidgets('the recovery wipe is gated behind a confirmation', (
+    tester,
+  ) async {
+    var recovered = false;
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async {
+        recovered = true;
+        return true;
+      },
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    final clearAll = find.text(l10n.featureFlagClearAllCache);
+    await tester.scrollUntilVisible(clearAll, 200);
+    await tester.ensureVisible(clearAll);
+    await tester.pumpAndSettle();
+    await tester.tap(clearAll);
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.featureFlagClearCacheTitle), findsOneWidget);
+    expect(recovered, isFalse);
+
+    await tester.tap(find.text(l10n.featureFlagClearCache));
+    await tester.pumpAndSettle();
+
+    expect(recovered, isTrue);
+    expect(find.text(l10n.featureFlagClearCacheSuccess), findsOneWidget);
+  });
+
+  testWidgets('the recovery footprint is measured on demand', (tester) async {
+    final cubit = StorageCubit(
+      service: service,
+      measureRecoveryFootprint: () async => '42.0 MB',
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    final cacheInfo = find.text(l10n.featureFlagCacheInfo);
+    await tester.scrollUntilVisible(cacheInfo, 200);
+    await tester.ensureVisible(cacheInfo);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(l10n.featureFlagTotalCacheSize('42.0 MB')),
+      findsNothing,
+    );
+
+    await tester.tap(cacheInfo);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(l10n.featureFlagTotalCacheSize('42.0 MB')),
+      findsOneWidget,
+    );
+  });
 }

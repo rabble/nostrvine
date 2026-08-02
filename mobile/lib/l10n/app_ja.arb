@@ -739,7 +739,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "すべてのフラグを既定値にリセット",
-    "featureFlagResetToDefault": "既定にリセット",
     "featureFlagAppRecovery": "アプリ復旧",
     "featureFlagAppRecoveryDescription": "アプリがクラッシュしたりおかしい時は、キャッシュのクリアを試してみて。",
     "featureFlagClearAllCache": "すべてのキャッシュをクリア",
@@ -748,12 +747,9 @@
     "featureFlagClearCacheMessage": "次のキャッシュデータを全部クリアするよ:\n• 通知\n• ユーザープロフィール\n• ブックマーク\n• 一時ファイル\n\n再度ログインが必要になるけど、続ける?",
     "featureFlagClearCache": "キャッシュをクリア",
     "featureFlagClearingCache": "キャッシュをクリア中...",
-    "featureFlagSuccess": "成功！",
     "featureFlagError": "エラー",
     "featureFlagClearCacheSuccess": "キャッシュをクリアしたよ。アプリを再起動してね。",
     "featureFlagClearCacheFailure": "一部のキャッシュ項目のクリアがうまくいかなかった。ログを確認してみて。",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "キャッシュ情報",
     "featureFlagTotalCacheSize": "キャッシュ合計: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

@@ -1898,9 +1898,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Alle flags terugzetten naar standaard';
 
   @override
-  String get featureFlagResetToDefault => 'Terug naar standaard';
-
-  @override
   String get featureFlagAppRecovery => 'App-herstel';
 
   @override
@@ -1927,9 +1924,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get featureFlagClearingCache => 'Cache wissen...';
 
   @override
-  String get featureFlagSuccess => 'Gelukt';
-
-  @override
   String get featureFlagError => 'Fout';
 
   @override
@@ -1939,12 +1933,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Sommige cache-items zijn niet gewist. Check de logs voor details.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Cache-informatie';
 
   @override
   String featureFlagTotalCacheSize(String size) {

@@ -1920,10 +1920,6 @@ class AppLocalizationsBg extends AppLocalizations {
       'Нулирай всички флагове до стойностите по подразбиране';
 
   @override
-  String get featureFlagResetToDefault =>
-      'Нулирай до стойността по подразбиране';
-
-  @override
   String get featureFlagAppRecovery => 'Възстановяване на приложението';
 
   @override
@@ -1950,9 +1946,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get featureFlagClearingCache => 'Изчистване на кеша...';
 
   @override
-  String get featureFlagSuccess => 'Успех';
-
-  @override
   String get featureFlagError => 'Грешка';
 
   @override
@@ -1962,12 +1955,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Не успяхме да изчистим някои елементи от кеша. Виж логовете за подробности.';
-
-  @override
-  String get featureFlagOk => 'Добре';
-
-  @override
-  String get featureFlagCacheInformation => 'Кеш информация';
 
   @override
   String featureFlagTotalCacheSize(String size) {

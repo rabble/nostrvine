@@ -742,7 +742,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Resetează toate indicatoarele la valorile implicite",
-    "featureFlagResetToDefault": "Resetează la valoarea implicită",
     "featureFlagAppRecovery": "Recuperare aplicație",
     "featureFlagAppRecoveryDescription": "Dacă aplicația se blochează sau se comportă ciudat, încearcă să goli cache-ul.",
     "featureFlagClearAllCache": "Golește tot cache-ul",
@@ -751,12 +750,9 @@
     "featureFlagClearCacheMessage": "Asta va șterge toate datele din cache, inclusiv:\n• Notificări\n• Profiluri de utilizator\n• Semne de carte\n• Fișiere temporare\n\nVa trebui să te autentifici din nou. Continuăm?",
     "featureFlagClearCache": "Golește cache-ul",
     "featureFlagClearingCache": "Se golește cache-ul...",
-    "featureFlagSuccess": "Succes",
     "featureFlagError": "Eroare",
     "featureFlagClearCacheSuccess": "Cache-ul a fost golit cu succes. Repornește aplicația.",
     "featureFlagClearCacheFailure": "Unele elemente din cache n-au putut fi șterse. Verifică jurnalele pentru detalii.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Informații despre cache",
     "featureFlagTotalCacheSize": "Dimensiunea totală a cache-ului: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

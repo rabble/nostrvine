@@ -1911,9 +1911,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ripristina tutti i flag ai valori predefiniti';
 
   @override
-  String get featureFlagResetToDefault => 'Ripristina predefinito';
-
-  @override
   String get featureFlagAppRecovery => 'Ripristino app';
 
   @override
@@ -1940,9 +1937,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get featureFlagClearingCache => 'Svuotamento cache...';
 
   @override
-  String get featureFlagSuccess => 'Fatto';
-
-  @override
   String get featureFlagError => 'Errore';
 
   @override
@@ -1952,12 +1946,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get featureFlagClearCacheFailure =>
       'Impossibile svuotare alcuni elementi della cache. Controlla i log per i dettagli.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Informazioni cache';
 
   @override
   String featureFlagTotalCacheSize(String size) {

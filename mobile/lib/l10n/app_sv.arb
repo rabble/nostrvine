@@ -742,7 +742,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Återställ alla flaggor till standard",
-    "featureFlagResetToDefault": "Återställ till standard",
     "featureFlagAppRecovery": "Appåterställning",
     "featureFlagAppRecoveryDescription": "Om appen kraschar eller beter sig konstigt, testa att rensa cachen.",
     "featureFlagClearAllCache": "Rensa all cache",
@@ -751,12 +750,9 @@
     "featureFlagClearCacheMessage": "Detta rensar all cachad data inklusive:\n• Aviseringar\n• Användarprofiler\n• Bokmärken\n• Temporära filer\n\nDu behöver logga in igen. Fortsätta?",
     "featureFlagClearCache": "Rensa cache",
     "featureFlagClearingCache": "Rensar cache...",
-    "featureFlagSuccess": "Klart",
     "featureFlagError": "Fel",
     "featureFlagClearCacheSuccess": "Cachen rensades. Starta om appen.",
     "featureFlagClearCacheFailure": "Kunde inte rensa vissa cacheobjekt. Kolla loggarna för detaljer.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Cacheinformation",
     "featureFlagTotalCacheSize": "Total cachestorlek: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {

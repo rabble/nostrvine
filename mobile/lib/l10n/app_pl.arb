@@ -742,7 +742,6 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Zresetuj wszystkie flagi do domyślnych",
-    "featureFlagResetToDefault": "Zresetuj do domyślnych",
     "featureFlagAppRecovery": "Odzyskiwanie aplikacji",
     "featureFlagAppRecoveryDescription": "Jeśli aplikacja się crashuje lub dziwnie zachowuje, spróbuj wyczyścić cache.",
     "featureFlagClearAllCache": "Wyczyść cały cache",
@@ -751,12 +750,9 @@
     "featureFlagClearCacheMessage": "To wyczyści wszystkie dane z cache, w tym:\n• Powiadomienia\n• Profile użytkowników\n• Zakładki\n• Pliki tymczasowe\n\nBędziesz musiał zalogować się ponownie. Kontynuować?",
     "featureFlagClearCache": "Wyczyść cache",
     "featureFlagClearingCache": "Czyszczenie cache...",
-    "featureFlagSuccess": "Sukces",
     "featureFlagError": "Błąd",
     "featureFlagClearCacheSuccess": "Cache wyczyszczony pomyślnie. Zrestartuj aplikację.",
     "featureFlagClearCacheFailure": "Nie udało się wyczyścić niektórych elementów cache. Sprawdź logi.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Informacje o cache",
     "featureFlagTotalCacheSize": "Całkowity rozmiar cache: {size}",
     "@featureFlagTotalCacheSize": {
         "placeholders": {
