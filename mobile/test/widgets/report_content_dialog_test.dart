@@ -1002,16 +1002,66 @@ void main() {
         find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
         findsOneWidget,
       );
-      // Retrying must re-send everything, so the moderation DM is not
-      // attempted — a queued DM plus a resubmit would double-deliver.
-      verifyNever(
+      // The DM still goes out: sendMessage writes a durable outgoing_dms
+      // row before any I/O, and OutgoingDmRetryService replays it on
+      // reconnect. It is the only report channel with a retry, so skipping
+      // it would make an offline report deliver less often than before.
+      verify(
         () => mockDmRepository.sendMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
           replyToId: any(named: 'replyToId'),
           skipNip04Fallback: any(named: 'skipNip04Fallback'),
         ),
+      ).called(1);
+    });
+
+    testWidgets('does not queue a second moderation DM on a repeat submit', (
+      tester,
+    ) async {
+      // Submit stays live on the undelivered path so retrying is one tap.
+      // Each tap must not stack another identical row for the sweep to
+      // deliver — the user is being invited to retry, not to spam.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
       );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(2);
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
     });
 
     testWidgets('leaves the report resubmittable after it reached no channel', (

@@ -1,6 +1,8 @@
 // ABOUTME: Report content bottom sheet for Apple-compliant content reporting.
 // ABOUTME: Replaces the legacy AlertDialog with a VineBottomSheet-based flow.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -185,6 +187,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   bool _isSubmitting = false;
   bool _submitted = false;
   bool _moderationDmFailed = false;
+
+  /// Whether an undelivered submit already handed the report to the DM
+  /// queue. Not UI state: it exists so repeated offline taps on the
+  /// still-live Submit button don't stack duplicate rows for the sweep.
+  bool _moderationDmQueued = false;
+
   String? _errorMessage;
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
@@ -367,10 +375,25 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // means no connectivity. The confirmation screen would be false in
           // four places at once (its title, the review promise, the green
           // check, and any DM caveat), so don't show it: surface the failure
-          // and leave Submit live so retrying is one tap. The moderation DM
-          // is deliberately not attempted either — a retry re-sends
-          // everything, and a queued DM plus a resubmit would deliver the
-          // same report twice.
+          // and leave Submit live so retrying is one tap.
+          //
+          // Still hand the report to the moderation DM. `sendMessage` writes
+          // a durable `outgoing_dms` row before any I/O and marks it failed
+          // when the publish can't go out, which is precisely what
+          // `OutgoingDmRetryService`'s second sweep arm replays once
+          // connectivity returns. It is the only report channel with a
+          // retry — the kind-1984 publish and the Zendesk ticket are both
+          // fire-and-forget — so skipping it here would make an offline
+          // report deliver less often than before this fix.
+          //
+          // Not awaited: the user already knows the submit failed, and must
+          // not sit through a doomed relay round-trip to be told. Queued at
+          // most once per dialog, since Submit stays live and each tap would
+          // otherwise stack another identical row for the sweep to send.
+          if (!_moderationDmQueued) {
+            _moderationDmQueued = true;
+            unawaited(_sendModerationDm());
+          }
           setState(() {
             _errorMessage = context.l10n.reportFailed(
               context.l10n.commonSomethingWentWrong,
@@ -378,60 +401,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           });
         } else if (result.success) {
           // Send DM to moderation team with report details (TC-025/026)
-          final dmRepo = ref.read(dmRepositoryProvider);
-          final labelService = ref.read(moderationLabelServiceProvider);
-          final moderationPubkey = labelService.divineModerationPubkeyHex;
-          var moderationDmFailed = false;
-          try {
-            final dmResult = await dmRepo.sendMessage(
-              recipientPubkey: moderationPubkey,
-              content: _formatReportDm(
-                reason: _selectedReason!,
-                eventId: _eventId,
-                details: _detailsController.text.trim(),
-              ),
-              // Moderation reports carry user identity + reported content;
-              // never let them degrade to a metadata-leaking NIP-04
-              // plaintext duplicate. NIP-17 gift wrap only.
-              skipNip04Fallback: true,
-            );
-            // sendMessage signals non-delivery by RETURNING a failure, not
-            // by throwing, so the catch below cannot see it. Switch over the
-            // sealed type rather than reading `.success` so a new variant
-            // becomes a compile error here instead of a silent success.
-            moderationDmFailed = switch (dmResult) {
-              // Includes selfWrapPublished: false — the team received the
-              // report; only the sender's own cross-device copy is missing.
-              NIP17SendSuccess() => false,
-              // blocked, retryablePending, and hard failures alike.
-              NIP17SendFailure() => true,
-            };
-            if (dmResult case final NIP17SendFailure failure) {
-              Log.warning(
-                'Moderation DM not delivered '
-                '(recipient=$moderationPubkey, '
-                'blocked=${failure.blocked}, '
-                'retryablePending=${failure.retryablePending}): '
-                '${failure.error}',
-                name: 'ReportContentDialog',
-                category: LogCategory.system,
-              );
-            }
-          } catch (e) {
-            // The report reached the team through another channel; the
-            // moderation DM is a secondary notification. Don't fail the
-            // flow, but surface the outcome instead of swallowing it so
-            // the user isn't told the team was reached when it wasn't.
-            // Reachable for pre-flight throws only (uninitialized
-            // repository, invalid recipient) — never for a delivery
-            // outcome, which arrives as a returned value above.
-            moderationDmFailed = true;
-            Log.warning(
-              'Failed to send moderation DM: $e',
-              name: 'ReportContentDialog',
-              category: LogCategory.system,
-            );
-          }
+          final moderationDmFailed = await _sendModerationDm();
 
           if (mounted) {
             setState(() {
@@ -467,6 +437,73 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
+    }
+  }
+
+  /// Sends the report to the moderation team's DM inbox.
+  ///
+  /// Returns whether it failed to reach them, which drives the
+  /// `reportModerationDmDelayed` caveat on the confirmation screen.
+  ///
+  /// Every `ref` and controller read happens before the first `await`, so
+  /// the undelivered path can fire this unawaited: that call outlives the
+  /// dialog, and a `ref.read` after dispose would throw into nothing.
+  Future<bool> _sendModerationDm() async {
+    final dmRepo = ref.read(dmRepositoryProvider);
+    final labelService = ref.read(moderationLabelServiceProvider);
+    final moderationPubkey = labelService.divineModerationPubkeyHex;
+    final content = _formatReportDm(
+      reason: _selectedReason!,
+      eventId: _eventId,
+      details: _detailsController.text.trim(),
+    );
+
+    try {
+      final dmResult = await dmRepo.sendMessage(
+        recipientPubkey: moderationPubkey,
+        content: content,
+        // Moderation reports carry user identity + reported content;
+        // never let them degrade to a metadata-leaking NIP-04
+        // plaintext duplicate. NIP-17 gift wrap only.
+        skipNip04Fallback: true,
+      );
+      // sendMessage signals non-delivery by RETURNING a failure, not
+      // by throwing, so the catch below cannot see it. Switch over the
+      // sealed type rather than reading `.success` so a new variant
+      // becomes a compile error here instead of a silent success.
+      final failed = switch (dmResult) {
+        // Includes selfWrapPublished: false — the team received the
+        // report; only the sender's own cross-device copy is missing.
+        NIP17SendSuccess() => false,
+        // blocked, retryablePending, and hard failures alike.
+        NIP17SendFailure() => true,
+      };
+      if (dmResult case final NIP17SendFailure failure) {
+        Log.warning(
+          'Moderation DM not delivered '
+          '(recipient=$moderationPubkey, '
+          'blocked=${failure.blocked}, '
+          'retryablePending=${failure.retryablePending}): '
+          '${failure.error}',
+          name: 'ReportContentDialog',
+          category: LogCategory.system,
+        );
+      }
+      return failed;
+    } catch (e) {
+      // On the delivered path the report already reached the team through
+      // another channel; the moderation DM is a secondary notification.
+      // Don't fail the flow, but surface the outcome instead of swallowing
+      // it so the user isn't told the team was reached when it wasn't.
+      // Reachable for pre-flight throws only (uninitialized repository,
+      // invalid recipient) — never for a delivery outcome, which arrives
+      // as a returned value above.
+      Log.warning(
+        'Failed to send moderation DM: $e',
+        name: 'ReportContentDialog',
+        category: LogCategory.system,
+      );
+      return true;
     }
   }
 
