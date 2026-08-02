@@ -398,7 +398,6 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             _errorMessage = context.l10n.reportNotSent;
           });
         } else if (result.success) {
-          // Send DM to moderation team with report details (TC-025/026)
           final moderationDmFailed = await _sendModerationDm();
 
           if (mounted) {
@@ -438,7 +437,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     }
   }
 
-  /// Sends the report to the moderation team's DM inbox.
+  /// Sends the report to the moderation team's DM inbox (TC-025/026).
   ///
   /// Returns whether it failed to reach them, which drives the
   /// `reportModerationDmDelayed` caveat on the confirmation screen.
