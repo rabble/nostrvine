@@ -4161,8 +4161,8 @@
   "profileNotifyBellOff": "새 영상 알림 받기",
   "profileNotifyBellOn": "새 영상 알림 끄기",
   "profileNotifyUpdateFailed": "저장하지 못했습니다. 다시 시도할까요?",
-  "relaySettingsRemoveDefaultRelayTitle": "Remove Divine Relay?",
-  "relaySettingsRemoveDefaultRelayMessage": "Removing Divine's relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}",
+  "relaySettingsRemoveDefaultRelayTitle": "Divine 릴레이를 제거할까요?",
+  "relaySettingsRemoveDefaultRelayMessage": "Divine 릴레이를 제거하면 앱 사용 경험이 나빠져요. 영상, 게시, 동기화가 불안정해질 수 있어요. Nostr에 익숙한 사용자만 하는 게 좋아요.\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {
     "placeholders": {
       "relayUrl": {
@@ -4170,5 +4170,5 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Remove relay"
+  "relaySettingsRemoveRelayTooltip": "릴레이 제거"
 }

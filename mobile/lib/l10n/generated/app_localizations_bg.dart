@@ -2032,15 +2032,16 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get relaySettingsRemoveDefaultRelayTitle => 'Remove Divine Relay?';
+  String get relaySettingsRemoveDefaultRelayTitle =>
+      'Премахване на релето на Divine?';
 
   @override
   String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
-    return 'Removing Divine\'s relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n$relayUrl';
+    return 'Премахването на релето на Divine ще влоши работата на приложението. Видеата, публикуването и синхронизацията може да станат по-малко надеждни. Прави го само ако си опитен потребител на Nostr.\n\n$relayUrl';
   }
 
   @override
-  String get relaySettingsRemoveRelayTooltip => 'Remove relay';
+  String get relaySettingsRemoveRelayTooltip => 'Премахване на релето';
 
   @override
   String get relaySettingsCancel => 'Отказ';

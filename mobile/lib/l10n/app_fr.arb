@@ -4830,8 +4830,8 @@
   "profileNotifyBellOff": "M'avertir des nouvelles vines",
   "profileNotifyBellOn": "Ne plus m'avertir des nouvelles vines",
   "profileNotifyUpdateFailed": "Échec de l'enregistrement. Réessayer ?",
-  "relaySettingsRemoveDefaultRelayTitle": "Remove Divine Relay?",
-  "relaySettingsRemoveDefaultRelayMessage": "Removing Divine's relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}",
+  "relaySettingsRemoveDefaultRelayTitle": "Retirer le relay Divine ?",
+  "relaySettingsRemoveDefaultRelayMessage": "Retirer le relay de Divine dégradera l'expérience dans l'app. Les vidéos, la publication et la synchronisation risquent d'être moins fiables. À réserver aux utilisateurs Nostr expérimentés.\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {
     "placeholders": {
       "relayUrl": {
@@ -4839,5 +4839,5 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Remove relay"
+  "relaySettingsRemoveRelayTooltip": "Retirer le relay"
 }

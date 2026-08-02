@@ -3413,8 +3413,8 @@
   "profileNotifyBellOff": "Ipaalam ang mga bagong vine",
   "profileNotifyBellOn": "Itigil ang pagpaalam sa mga bagong vine",
   "profileNotifyUpdateFailed": "Hindi nai-save. Subukan muli?",
-  "relaySettingsRemoveDefaultRelayTitle": "Remove Divine Relay?",
-  "relaySettingsRemoveDefaultRelayMessage": "Removing Divine's relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}",
+  "relaySettingsRemoveDefaultRelayTitle": "Alisin ang relay ng Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Kapag inalis mo ang relay ng Divine, hihina ang karanasan mo sa app. Baka maging hindi maaasahan ang video, pag-post, at pag-sync. Para lang ito sa mga sanay nang gumamit ng Nostr.\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {
     "placeholders": {
       "relayUrl": {
@@ -3422,5 +3422,5 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Remove relay"
+  "relaySettingsRemoveRelayTooltip": "Alisin ang relay"
 }

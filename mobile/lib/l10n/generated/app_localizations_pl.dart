@@ -2032,15 +2032,16 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get relaySettingsRemoveDefaultRelayTitle => 'Remove Divine Relay?';
+  String get relaySettingsRemoveDefaultRelayTitle =>
+      'Usunąć przekaźnik Divine?';
 
   @override
   String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
-    return 'Removing Divine\'s relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n$relayUrl';
+    return 'Usunięcie przekaźnika Divine pogorszy działanie aplikacji. Filmy, publikowanie i synchronizacja mogą być mniej niezawodne. Rób to tylko, jeśli znasz się na Nostr.\n\n$relayUrl';
   }
 
   @override
-  String get relaySettingsRemoveRelayTooltip => 'Remove relay';
+  String get relaySettingsRemoveRelayTooltip => 'Usuń przekaźnik';
 
   @override
   String get relaySettingsCancel => 'Anuluj';

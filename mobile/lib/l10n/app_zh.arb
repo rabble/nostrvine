@@ -6682,5 +6682,15 @@
   },
   "profileNotifyBellOff": "接收新视频通知",
   "profileNotifyBellOn": "停止新视频通知",
-  "profileNotifyUpdateFailed": "没能保存，再试一次？"
+  "profileNotifyUpdateFailed": "没能保存，再试一次？",
+  "relaySettingsRemoveDefaultRelayTitle": "移除 Divine 中继？",
+  "relaySettingsRemoveDefaultRelayMessage": "移除 Divine 的中继会让应用体验变差。视频、发布和同步可能变得不太可靠。建议只有熟悉 Nostr 的用户才这么做。\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "移除中继"
 }

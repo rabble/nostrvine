@@ -6682,5 +6682,15 @@
   },
   "profileNotifyBellOff": "نئی ویڈیوز کی اطلاع دیں",
   "profileNotifyBellOn": "نئی ویڈیوز کی اطلاعات بند کریں",
-  "profileNotifyUpdateFailed": "محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟"
+  "profileNotifyUpdateFailed": "محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟",
+  "relaySettingsRemoveDefaultRelayTitle": "Divine کا ریلے ہٹائیں؟",
+  "relaySettingsRemoveDefaultRelayMessage": "Divine کا ریلے ہٹانے سے ایپ کا تجربہ خراب ہو جائے گا۔ ویڈیوز، پوسٹنگ اور سنک کم قابلِ بھروسہ ہو سکتے ہیں۔ یہ صرف تجربہ کار Nostr صارفین کو کرنا چاہیے۔\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "ریلے ہٹائیں"
 }

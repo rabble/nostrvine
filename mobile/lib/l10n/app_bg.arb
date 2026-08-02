@@ -4961,8 +4961,8 @@
   "profileNotifyBellOff": "Получавай известия за нови видеа",
   "profileNotifyBellOn": "Спри известията за нови видеа",
   "profileNotifyUpdateFailed": "Не се запази. Опитай пак?",
-  "relaySettingsRemoveDefaultRelayTitle": "Remove Divine Relay?",
-  "relaySettingsRemoveDefaultRelayMessage": "Removing Divine's relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}",
+  "relaySettingsRemoveDefaultRelayTitle": "Премахване на релето на Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Премахването на релето на Divine ще влоши работата на приложението. Видеата, публикуването и синхронизацията може да станат по-малко надеждни. Прави го само ако си опитен потребител на Nostr.\n\n{relayUrl}",
   "@relaySettingsRemoveDefaultRelayMessage": {
     "placeholders": {
       "relayUrl": {
@@ -4970,5 +4970,5 @@
       }
     }
   },
-  "relaySettingsRemoveRelayTooltip": "Remove relay"
+  "relaySettingsRemoveRelayTooltip": "Премахване на релето"
 }
