@@ -19,7 +19,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
@@ -64,7 +63,12 @@ class LoginOptionsScreen extends ConsumerWidget {
             initialGeneralError: initialError,
           ),
       child: _CommitAutofillOnAuthenticated(
-        authStates: authService.authStateStream,
+        // Re-sample the flag on each auth event rather than passing the
+        // service's own state enum through, so this screen stays clear of
+        // service-layer types (scripts/check_ui_service_boundary.sh).
+        authenticated: authService.authStateStream.map(
+          (_) => authService.isAuthenticated,
+        ),
         child: const _LoginOptionsView(),
       ),
     );
@@ -82,11 +86,12 @@ class LoginOptionsScreen extends ConsumerWidget {
 /// the frame that disposes this subtree.
 class _CommitAutofillOnAuthenticated extends StatefulWidget {
   const _CommitAutofillOnAuthenticated({
-    required this.authStates,
+    required this.authenticated,
     required this.child,
   });
 
-  final Stream<AuthState> authStates;
+  /// Emits the session's authenticated flag on every auth-state change.
+  final Stream<bool> authenticated;
   final Widget child;
 
   @override
@@ -96,16 +101,16 @@ class _CommitAutofillOnAuthenticated extends StatefulWidget {
 
 class _CommitAutofillOnAuthenticatedState
     extends State<_CommitAutofillOnAuthenticated> {
-  StreamSubscription<AuthState>? _subscription;
+  StreamSubscription<bool>? _subscription;
 
   @override
   void initState() {
     super.initState();
-    _subscription = widget.authStates.listen(_onAuthState);
+    _subscription = widget.authenticated.listen(_onAuthenticatedChanged);
   }
 
-  void _onAuthState(AuthState state) {
-    if (state != AuthState.authenticated) return;
+  void _onAuthenticatedChanged(bool isAuthenticated) {
+    if (!isAuthenticated) return;
     // Only the email/password form has credentials worth saving; the other
     // sign-in methods on this screen leave the autofill context empty.
     if (!_hasSubmittedCredentials) return;

@@ -545,9 +545,17 @@ void main() {
       late StreamController<AuthState> authStates;
       late List<MethodCall> textInputCalls;
 
+      late bool isAuthenticated;
+
       setUp(() {
         authStates = StreamController<AuthState>.broadcast();
         textInputCalls = <MethodCall>[];
+        // The screen re-samples the flag on each auth event rather than
+        // reading the enum off the stream, so the stub is what decides.
+        isAuthenticated = false;
+        when(
+          () => mockAuthService.isAuthenticated,
+        ).thenAnswer((_) => isAuthenticated);
         addTearDown(authStates.close);
       });
 
@@ -619,6 +627,7 @@ void main() {
         (tester) async {
           await submitSignIn(tester);
 
+          isAuthenticated = true;
           authStates.add(AuthState.authenticated);
           await tester.pump();
 
@@ -657,6 +666,7 @@ void main() {
         recordTextInputCalls();
 
         // e.g. Amber or a browser extension authenticating from this screen.
+        isAuthenticated = true;
         authStates.add(AuthState.authenticated);
         await tester.pump();
 
