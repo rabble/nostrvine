@@ -108,11 +108,14 @@ class KeycastOAuth {
     return _storage.read(_storageKeyHandle);
   }
 
-  /// Clear local session and POST to server logout (keeps authorization_handle)
+  /// Clear the local session, keeping the authorization handle.
   ///
-  /// Server-side logout has a 2-second timeout - if it fails or times out,
-  /// we still complete the local logout. The server will eventually expire
-  /// the token anyway.
+  /// Also pings the server's logout endpoint, which revokes nothing: keycast's
+  /// handler takes no extractors and only returns a cookie-clearing header this
+  /// client has no use for, and by this point the tokens it would need to
+  /// identify the session are already deleted. The call is kept because the
+  /// endpoint may grow a real revocation later; tokens expire on their own
+  /// until then. Local logout is complete either way.
   Future<void> logout() async {
     _storageEpoch++;
     await _storage.delete(_storageKeySession);
