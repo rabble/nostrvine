@@ -1032,6 +1032,17 @@ class VineTheme {
       brightness: brightness,
       primarySwatch: _createMaterialColor(vineGreen),
       primaryColor: vineGreen,
+      // Material 3 ignores `primarySwatch`, so without this the scheme falls
+      // back to the M3 baseline — a purple primary that surfaces on every
+      // widget defaulting to `colorScheme.primary` (RefreshIndicator, bare
+      // progress indicators, Chip, Slider).
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: vineGreen,
+        brightness: brightness,
+      ).copyWith(primary: vineGreen, onPrimary: onPrimary),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: vineGreen,
+      ),
       scaffoldBackgroundColor: colors.background,
       extensions: <ThemeExtension<dynamic>>[colors],
       appBarTheme: AppBarTheme(

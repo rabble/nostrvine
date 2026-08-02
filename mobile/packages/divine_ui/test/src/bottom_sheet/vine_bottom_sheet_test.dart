@@ -348,6 +348,145 @@ void main() {
       expect(find.text('Scrollable Content'), findsOneWidget);
     });
 
+    // `contentTitle` used to be rendered only inside the fallback `children`
+    // ListView/Column, so passing `body` or `buildScrollBody` silently
+    // dropped it.
+    testWidgets('renders contentTitle alongside body in fixed mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              scrollable: false,
+              contentTitle: 'Body Title',
+              body: Text('Body Content'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Body Title'), findsOneWidget);
+      expect(find.text('Body Content'), findsOneWidget);
+    });
+
+    testWidgets('renders contentTitle alongside body in scrollable mode', (
+      tester,
+    ) async {
+      final scrollController = ScrollController();
+      addTearDown(scrollController.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              contentTitle: 'Scrollable Body Title',
+              scrollController: scrollController,
+              body: const Text('Scrollable Body Content'),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Scrollable Body Title'), findsOneWidget);
+      expect(find.text('Scrollable Body Content'), findsOneWidget);
+    });
+
+    testWidgets('renders contentTitle alongside buildScrollBody', (
+      tester,
+    ) async {
+      final scrollController = ScrollController();
+      addTearDown(scrollController.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              contentTitle: 'Custom Scroll Title',
+              scrollController: scrollController,
+              buildScrollBody: (controller) => ListView(
+                controller: controller,
+                children: const [Text('Custom Scroll Content')],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Custom Scroll Title'), findsOneWidget);
+      expect(find.text('Custom Scroll Content'), findsOneWidget);
+    });
+
+    testWidgets('renders contentTitleTrailing on the title row', (
+      tester,
+    ) async {
+      final scrollController = ScrollController();
+      addTearDown(scrollController.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              contentTitle: 'Pick some',
+              contentTitleTrailing: const Text('Clear all'),
+              scrollController: scrollController,
+              buildScrollBody: (controller) => ListView(
+                controller: controller,
+                children: const [Text('Option')],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Clear all'), findsOneWidget);
+      // Same row as the title, not stranded in the header above the divider.
+      expect(
+        tester.getCenter(find.text('Clear all')).dy,
+        tester.getCenter(find.text('Pick some')).dy,
+      );
+      expect(
+        tester.getCenter(find.text('Clear all')).dx,
+        greaterThan(tester.getCenter(find.text('Pick some')).dx),
+      );
+    });
+
+    testWidgets('omits the title row action when none is given', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              scrollable: false,
+              contentTitle: 'Bare title',
+              children: [Text('Child')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Bare title'), findsOneWidget);
+      expect(find.text('Child'), findsOneWidget);
+    });
+
+    testWidgets('does not duplicate contentTitle in the children path', (
+      tester,
+    ) async {
+      final scrollController = ScrollController();
+      addTearDown(scrollController.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              contentTitle: 'Only Once',
+              scrollController: scrollController,
+              children: const [Text('Child')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Only Once'), findsOneWidget);
+    });
+
     testWidgets('renders bottomInput in fixed mode', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(

@@ -28,6 +28,7 @@ class VineBottomSheet extends StatelessWidget {
     this.showHeader = true,
     this.title,
     this.contentTitle,
+    this.contentTitleTrailing,
     this.scrollController,
     this.children,
     this.body,
@@ -71,6 +72,13 @@ class VineBottomSheet extends StatelessWidget {
   ///
   /// Styled with titleMedium font in onSurface color.
   final String? contentTitle;
+
+  /// Optional action rendered at the end of the [contentTitle] row.
+  ///
+  /// [trailing] sits in the header, above the divider, so it reads as detached
+  /// from [contentTitle]. Use this slot instead when the action belongs to the
+  /// titled content — "Clear all" next to a selection title, for example.
+  final Widget? contentTitleTrailing;
 
   /// Scroll controller from DraggableScrollableSheet (used when scrollable)
   final ScrollController? scrollController;
@@ -172,6 +180,7 @@ class VineBottomSheet extends StatelessWidget {
     bool showHeader = true,
     Widget? title,
     String? contentTitle,
+    Widget? contentTitleTrailing,
     Widget? body,
     Widget Function(ScrollController scrollController)? buildScrollBody,
     Widget? trailing,
@@ -239,6 +248,7 @@ class VineBottomSheet extends StatelessWidget {
               showHeader: showHeader,
               title: title,
               contentTitle: contentTitle,
+              contentTitleTrailing: contentTitleTrailing,
               scrollController: scrollController,
               buildScrollBody: buildScrollBody,
               trailing: trailing,
@@ -331,6 +341,7 @@ class VineBottomSheet extends StatelessWidget {
             showHeader: showHeader,
             title: title,
             contentTitle: contentTitle,
+            contentTitleTrailing: contentTitleTrailing,
             trailing: trailing,
             onComplete: onComplete,
             bottomInput: bottomInput,
@@ -367,6 +378,7 @@ class VineBottomSheet extends StatelessWidget {
                 buildScrollBody: buildScrollBody,
                 scrollController: scrollController,
                 contentTitle: contentTitle,
+                contentTitleTrailing: contentTitleTrailing,
                 bottomInput: bottomInput,
                 showHeaderDivider: showHeaderDivider,
                 showDragHandle: showDragHandle,
@@ -382,6 +394,7 @@ class VineBottomSheet extends StatelessWidget {
                 onComplete: onComplete,
                 body: body,
                 contentTitle: contentTitle,
+                contentTitleTrailing: contentTitleTrailing,
                 bottomInput: bottomInput,
                 showHeaderDivider: showHeaderDivider,
                 showDragHandle: showDragHandle,
@@ -437,6 +450,7 @@ class _ScrollableContent extends StatelessWidget {
     required this.buildScrollBody,
     required this.scrollController,
     required this.contentTitle,
+    required this.contentTitleTrailing,
     required this.children,
     required this.bottomInput,
     required this.showHeaderDivider,
@@ -454,6 +468,7 @@ class _ScrollableContent extends StatelessWidget {
   final Widget Function(ScrollController scrollController)? buildScrollBody;
   final ScrollController? scrollController;
   final String? contentTitle;
+  final Widget? contentTitleTrailing;
   final List<Widget>? children;
   final Widget? bottomInput;
   final bool showHeaderDivider;
@@ -491,7 +506,12 @@ class _ScrollableContent extends StatelessWidget {
           // by showHeaderDivider) so it stays pinned to the chrome.
           _HeaderlessDragHandle(showDivider: showHeaderDivider),
 
-        // Scrollable content area (contentTitle is first element inside)
+        // `body` and `buildScrollBody` hand the content area to the caller, so
+        // the title cannot live inside their scroll view — it is pinned above
+        // instead. Only the `children` path can scroll it away.
+        if (contentTitle != null && children == null)
+          _SheetContentTitle(contentTitle!, trailing: contentTitleTrailing),
+
         Expanded(
           child:
               body ??
@@ -502,20 +522,9 @@ class _ScrollableContent extends StatelessWidget {
                 children: [
                   // Optional content title (56px total height)
                   if (contentTitle != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      child: Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: Text(
-                          contentTitle!,
-                          style: VineTheme.titleMediumFont(
-                            color: context.vineColors.onSurface,
-                          ),
-                        ),
-                      ),
+                    _SheetContentTitle(
+                      contentTitle!,
+                      trailing: contentTitleTrailing,
                     ),
                   ...children!,
                 ],
@@ -532,6 +541,36 @@ class _ScrollableContent extends StatelessWidget {
   }
 }
 
+/// The `contentTitle` row: title at the start, optional action at the end.
+///
+/// 56px tall with a bare title; a taller [trailing] grows the row.
+class _SheetContentTitle extends StatelessWidget {
+  const _SheetContentTitle(this.title, {this.trailing});
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: VineTheme.titleMediumFont(
+                color: context.vineColors.onSurface,
+              ),
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
 class _FixedContent extends StatelessWidget {
   const _FixedContent({
     required this.showHeader,
@@ -540,6 +579,7 @@ class _FixedContent extends StatelessWidget {
     required this.onComplete,
     required this.body,
     required this.contentTitle,
+    required this.contentTitleTrailing,
     required this.children,
     required this.bottomInput,
     required this.showHeaderDivider,
@@ -555,6 +595,7 @@ class _FixedContent extends StatelessWidget {
   final AsyncCallback? onComplete;
   final Widget? body;
   final String? contentTitle;
+  final Widget? contentTitleTrailing;
   final List<Widget>? children;
   final Widget? bottomInput;
   final bool showHeaderDivider;
@@ -595,6 +636,11 @@ class _FixedContent extends StatelessWidget {
             // Drag handle only — divider gated by showHeaderDivider.
             _HeaderlessDragHandle(showDivider: showHeaderDivider),
 
+          // See the note in _ScrollableContent: a caller-supplied `body` owns
+          // the content area, so the title is pinned above it.
+          if (contentTitle != null && children == null)
+            _SheetContentTitle(contentTitle!, trailing: contentTitleTrailing),
+
           // Fixed content area with minimum height for menu entries (2 × 56px)
           Flexible(
             child: ConstrainedBox(
@@ -606,20 +652,9 @@ class _FixedContent extends StatelessWidget {
                     children: [
                       // Optional content title (56px total height)
                       if (contentTitle != null)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
-                          child: Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Text(
-                              contentTitle!,
-                              style: VineTheme.titleMediumFont(
-                                color: context.vineColors.onSurface,
-                              ),
-                            ),
-                          ),
+                        _SheetContentTitle(
+                          contentTitle!,
+                          trailing: contentTitleTrailing,
                         ),
                       ...children!,
                     ],

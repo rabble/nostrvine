@@ -92,6 +92,7 @@ void main() {
       ValueChanged<bool>? onChanged,
       String? subtitle,
       DivineIconName? leadingIcon,
+      Widget? leading,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -100,6 +101,7 @@ void main() {
             title: 'Autoplay',
             subtitle: subtitle,
             leadingIcon: leadingIcon,
+            leading: leading,
             value: value,
             onChanged: onChanged,
           ),
@@ -153,6 +155,39 @@ void main() {
       );
 
       expect(find.byType(DivineIcon), findsNothing);
+    });
+
+    testWidgets('renders a custom leading widget when given one', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          value: false,
+          onChanged: (_) {},
+          leading: const CircleAvatar(child: Text('AF')),
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(ListTile),
+          matching: find.byType(CircleAvatar),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    test('rejects a leading icon and a leading widget together', () {
+      expect(
+        () => DivineSwitchTile(
+          title: 'Autoplay',
+          leadingIcon: DivineIconName.gear,
+          leading: const SizedBox.shrink(),
+          value: false,
+          onChanged: (_) {},
+        ),
+        throwsAssertionError,
+      );
     });
 
     testWidgets('toggles when the row is tapped', (tester) async {

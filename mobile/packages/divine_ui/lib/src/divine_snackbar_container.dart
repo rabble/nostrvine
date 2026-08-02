@@ -57,8 +57,8 @@ class DivineSnackbarContainer extends StatelessWidget {
   ///
   /// For the rare banner whose colour carries the message itself — the
   /// environment indicator in developer options, for instance. Takes
-  /// precedence over [error]'s surface, which still drives the label colour so
-  /// an error banner stays legible on a custom surface.
+  /// precedence over [error]'s surface, and a light one also flips the label
+  /// to dark ink so the banner stays readable.
   final Color? backgroundColor;
 
   /// The label of the primary action button.
@@ -76,21 +76,27 @@ class DivineSnackbarContainer extends StatelessWidget {
   /// Callback when the secondary action button is pressed.
   final VoidCallback? onSecondaryActionPressed;
 
+  /// Label colour that stays legible on the resolved surface.
+  ///
+  /// A [backgroundColor] comes from the caller, not from the theme, so a light
+  /// one (the yellow staging indicator, say) would leave the theme's
+  /// white-on-dark label unreadable — those flip to dark ink instead.
+  Color _labelColor(VineThemeColors colors) {
+    final surface = backgroundColor;
+    if (surface != null &&
+        ThemeData.estimateBrightnessForColor(surface) == Brightness.light) {
+      return VineTheme.primaryDarkGreen;
+    }
+    return error ? colors.onErrorContainer : colors.primaryText;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    final textStyle = VineTheme.labelLargeFont(color: colors.primaryText);
+    final textStyle = VineTheme.labelLargeFont(color: _labelColor(colors));
     final hasSecondary =
         secondaryActionLabel != null && onSecondaryActionPressed != null;
-    late final Widget bannerText;
-    if (error) {
-      bannerText = Text(
-        label,
-        style: textStyle.copyWith(color: colors.onErrorContainer),
-      );
-    } else {
-      bannerText = Text(label, style: textStyle);
-    }
+    final bannerText = Text(label, style: textStyle);
 
     return DecoratedBox(
       decoration: BoxDecoration(

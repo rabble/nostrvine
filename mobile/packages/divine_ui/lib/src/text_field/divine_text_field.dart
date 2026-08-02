@@ -29,12 +29,34 @@ class DivineTextField extends StatelessWidget {
     this.onSubmitted,
     this.onChanged,
     this.primaryWhenFilled = false,
+    this.autofocus = false,
     this.spellCheckConfiguration,
+    this.filled = false,
+    this.fillColor,
+    this.suffixIcon,
   });
 
   /// Default content padding around the input. Exposed so overlays
   /// (e.g. character counters) can stay aligned with the field's edges.
   static const EdgeInsets defaultContentPadding = EdgeInsets.all(16);
+
+  /// Corner radius of the surface painted when [filled] is set.
+  static const double fillBorderRadius = 16;
+
+  /// Shapes the [filled] surface without painting a stroke.
+  ///
+  /// Underline rather than outline: Material notches a floating label onto an
+  /// outline's top edge, which strands the label above a fill that has no
+  /// stroke to sit on. The underline variant floats it inside the surface, and
+  /// an explicit radius still rounds all four corners.
+  ///
+  /// Typed as [InputBorder] rather than inferred: hot reload keeps the value a
+  /// `static final` was first initialised with, so a narrower inferred type
+  /// would throw on the stale instance after this line is edited.
+  static final InputBorder _fillBorder = UnderlineInputBorder(
+    borderRadius: BorderRadius.circular(fillBorderRadius),
+    borderSide: BorderSide.none,
+  );
 
   /// Label text shown inside the field when empty, floats above when focused.
   final String? labelText;
@@ -127,6 +149,30 @@ class DivineTextField extends StatelessWidget {
         spellCheckService: RegionAwareSpellCheckService(),
       );
 
+  /// {@macro flutter.widgets.editableText.autofocus}
+  final bool autofocus;
+
+  /// Whether the field paints a surface behind the input.
+  ///
+  /// Off by default, so the field is transparent and takes the colour of
+  /// whatever it sits on. Set this when the field sits directly on a sheet or
+  /// page background and would otherwise have no visible edge.
+  final bool filled;
+
+  /// Surface colour used when [filled] is set.
+  ///
+  /// Defaults to `containerLow`, which lifts off both the page background and
+  /// the bottom-sheet surface.
+  final Color? fillColor;
+
+  /// Widget rendered inside the field, after the input.
+  ///
+  /// For an action that belongs to the value being entered — paste, clear,
+  /// scan. Material centres it vertically, so it stays put as a multi-line
+  /// field grows. Prefer a [DivineIconButton] over a raw icon so the slot
+  /// keeps a 48px tap target.
+  final Widget? suffixIcon;
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -147,19 +193,27 @@ class DivineTextField extends StatelessWidget {
       obscureText: obscureText,
       canRequestFocus: canRequestFocus,
       expands: expands,
+      autofocus: autofocus,
       spellCheckConfiguration:
           spellCheckConfiguration ?? defaultSpellCheckConfiguration,
       onTap: onTap,
       onEditingComplete: onEditingComplete,
       decoration: InputDecoration(
         labelText: labelText,
+        suffixIcon: suffixIcon,
         labelStyle: VineTheme.bodyLargeFont(
           color: context.vineColors.onSurfaceVariant,
         ),
-        border: .none,
-        enabledBorder: .none,
-        focusedBorder: .none,
-        filled: false,
+        // The fill takes its shape from the border's outer path, and every
+        // state needs it — InputBorder.none paints a plain rectangle, so a
+        // missing state would square the corners off on focus.
+        border: filled ? _fillBorder : InputBorder.none,
+        enabledBorder: filled ? _fillBorder : InputBorder.none,
+        focusedBorder: filled ? _fillBorder : InputBorder.none,
+        filled: filled,
+        fillColor: filled
+            ? (fillColor ?? context.vineColors.containerLow)
+            : null,
         contentPadding: contentPadding,
         floatingLabelStyle: WidgetStateTextStyle.resolveWith((states) {
           // Why: the resolver reads `controller?.text` synchronously on each

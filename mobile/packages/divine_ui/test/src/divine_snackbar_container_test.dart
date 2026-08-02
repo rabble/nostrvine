@@ -337,6 +337,43 @@ void main() {
       );
     });
 
+    testWidgets('a light custom surface flips the label to dark ink', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(
+            body: DivineSnackbarContainer(
+              label: 'Switched to Staging',
+              // The staging indicator yellow — white text is unreadable on it.
+              backgroundColor: Color(0xFFFFF140),
+            ),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text('Switched to Staging'));
+      expect(text.style?.color, VineTheme.primaryDarkGreen);
+    });
+
+    testWidgets('a dark custom surface keeps the light label', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(
+            body: DivineSnackbarContainer(
+              label: 'Switched to Production',
+              backgroundColor: Color(0xFF123456),
+            ),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.text('Switched to Production'));
+      expect(text.style?.color, VineTheme.primaryText);
+    });
+
     testWidgets('snackBar forwards the custom surface colour', (tester) async {
       final snackBar = DivineSnackbarContainer.snackBar(
         'Switched to staging',

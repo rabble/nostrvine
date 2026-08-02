@@ -60,14 +60,22 @@ class DivineSwitch extends StatelessWidget {
 /// [VineTheme] rather than the ambient Material text theme.
 class DivineSwitchTile extends StatelessWidget {
   /// Creates a Divine design system switch row.
+  ///
+  /// Supply at most one of [leadingIcon] (the design-system icon set) or
+  /// [leading] (an escape hatch for rows whose leading slot is more than a
+  /// plain glyph).
   const DivineSwitchTile({
     required this.title,
     required this.value,
     required this.onChanged,
     this.subtitle,
     this.leadingIcon,
+    this.leading,
     super.key,
-  });
+  }) : assert(
+         leadingIcon == null || leading == null,
+         'Pass either leadingIcon or leading, not both',
+       );
 
   /// Primary label describing what the switch controls.
   final String title;
@@ -77,6 +85,10 @@ class DivineSwitchTile extends StatelessWidget {
 
   /// Optional icon shown at the start of the row.
   final DivineIconName? leadingIcon;
+
+  /// Arbitrary leading widget, for rows whose leading slot the [leadingIcon]
+  /// shorthand cannot express — a tinted icon badge, an avatar, a thumbnail.
+  final Widget? leading;
 
   /// Whether the switch is on.
   final bool value;
@@ -104,9 +116,11 @@ class DivineSwitchTile extends StatelessWidget {
       child: MergeSemantics(
         child: ListTile(
           enabled: isEnabled,
-          leading: leadingIcon == null
-              ? null
-              : DivineIcon(icon: leadingIcon!, color: VineTheme.primary),
+          leading:
+              leading ??
+              (leadingIcon == null
+                  ? null
+                  : DivineIcon(icon: leadingIcon!, color: VineTheme.primary)),
           title: Text(
             title,
             style: VineTheme.titleMediumFont(color: colors.primaryText),

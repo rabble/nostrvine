@@ -34,6 +34,7 @@ class DivineListTile extends StatelessWidget {
     this.titleColor,
     this.trailingIcon = DivineIconName.caretRight,
     this.trailingIconSize = 24,
+    this.trailingColor = VineTheme.primary,
     super.key,
   }) : assert(
          icon == null || leading == null,
@@ -68,6 +69,9 @@ class DivineListTile extends StatelessWidget {
   /// Size of the trailing affordance.
   final double trailingIconSize;
 
+  /// Overrides the trailing icon color.
+  final Color trailingColor;
+
   /// Called when the row is tapped. A null callback disables the row.
   final VoidCallback? onTap;
 
@@ -98,7 +102,7 @@ class DivineListTile extends StatelessWidget {
             ),
       trailing: DivineIcon(
         icon: trailingIcon,
-        color: VineTheme.primary,
+        color: trailingColor,
         size: trailingIconSize,
       ),
       onTap: onTap,
