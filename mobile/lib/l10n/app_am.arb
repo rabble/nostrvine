@@ -1683,7 +1683,7 @@
     "crosspostViewPost": "ልጥፉን ይመልከቱ",
     "crosspostReconnectPrompt": "መለጠፍን ለመቀጠል {platform}ን በተሻግሮ ማተም ቅንብሮች እንደገና ይገናኙ።",
     "@crosspostReconnectPrompt": {"placeholders": {"platform": {"type": "String"}}},
-    "crosspostReconnect": "እንደገና ገና",
+    "crosspostReconnect": "እንደገና ይገናኙ",
     "crosspostErrorNotOwner": "የራስዎ ቪዲዮዎች ብቻ ናቸው ተሻግሮ መታተም የሚችሉት።",
     "crosspostErrorNotEligible": "ይህ ቪዲዮ ለተሻግሮ ማተም አይበቃም።",
     "crosspostErrorNotConnected": "ያ መድረክ አልተገናኘም።",

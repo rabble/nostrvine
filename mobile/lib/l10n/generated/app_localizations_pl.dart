@@ -1145,7 +1145,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
+      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
 
   @override
   String get videoGridDeleteCancel => 'Anuluj';
@@ -3457,7 +3457,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Wpiswanie kodu jest teraz niedostępne. Dotknij linku w e-mailu albo wyślij ponownie, aby otrzymać nowy.';
+      'Wpisywanie kodu jest teraz niedostępne. Dotknij linku w e-mailu albo wyślij ponownie, aby otrzymać nowy.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -4017,7 +4017,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteWarning =>
-      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
+      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
@@ -4175,7 +4175,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteRelayWarning =>
-      'To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
+      'To wyśle żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';

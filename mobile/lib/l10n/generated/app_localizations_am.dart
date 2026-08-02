@@ -3432,7 +3432,7 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get crosspostReconnect => 'እንደገና ገና';
+  String get crosspostReconnect => 'እንደገና ይገናኙ';
 
   @override
   String get crosspostErrorNotOwner => 'የራስዎ ቪዲዮዎች ብቻ ናቸው ተሻግሮ መታተም የሚችሉት።';
