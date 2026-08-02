@@ -865,7 +865,7 @@ void main() {
           ['role', 'Collaborator'],
         ];
 
-        await repository.sendMessage(
+        final _ = await repository.sendMessage(
           recipientPubkey: _validPubkeyB,
           content: 'Invited you to collaborate',
           additionalTags: inviteTags,
@@ -902,7 +902,7 @@ void main() {
             'cccccccccccccccccccccccccccccccc'
             'cccccccccccccccccccccccccccccccc';
 
-        await repository.sendSharedVideo(
+        final _ = await repository.sendSharedVideo(
           recipientPubkey: _validPubkeyB,
           baseContent: 'watch this https://divine.video/video/abc',
           videoKind: 34236,
@@ -952,7 +952,7 @@ void main() {
             'dddddddddddddddddddddddddddddddd'
             'dddddddddddddddddddddddddddddddd';
 
-        await repository.sendSharedVideo(
+        final _ = await repository.sendSharedVideo(
           recipientPubkey: _validPubkeyB,
           baseContent: 'watch this',
           videoKind: 22,
@@ -1305,7 +1305,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           final repository = createRepository();
-          await repository.sendMessage(
+          final _ = await repository.sendMessage(
             recipientPubkey: _validPubkeyB,
             content: 'Hello!',
           );
@@ -1362,7 +1362,7 @@ void main() {
             ),
           );
 
-          await repository.sendMessage(
+          final _ = await repository.sendMessage(
             recipientPubkey: _validPubkeyB,
             content: 'Follow-up',
           );
@@ -9260,7 +9260,7 @@ void main() {
 
           final repository = createRepository();
 
-          await repository.sendMessage(
+          final _ = await repository.sendMessage(
             recipientPubkey: _validPubkeyB,
             content: 'Hello!',
           );
@@ -9322,7 +9322,7 @@ void main() {
 
           final repository = createRepository();
 
-          await repository.sendMessage(
+          final _ = await repository.sendMessage(
             recipientPubkey: _validPubkeyB,
             content: 'Hello!',
           );
@@ -12480,7 +12480,7 @@ void main() {
         const replyId =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
-        await repo.sendMessage(
+        final _ = await repo.sendMessage(
           recipientPubkey: _validPubkeyB,
           content: 'Reply!',
           replyToId: replyId,
@@ -12735,7 +12735,7 @@ void main() {
           ];
 
           final repo = createRepository();
-          await repo.sendGroupMessage(
+          final _ = await repo.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'Group share!',
             additionalTags: const [qTag],
@@ -12811,7 +12811,7 @@ void main() {
           ];
 
           final repo = createRepository();
-          await repo.sendGroupMessage(
+          final _ = await repo.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'Group reply!',
             additionalTags: const [qTag],
@@ -12909,7 +12909,7 @@ void main() {
               'cccccccccccccccccccccccccccccccc'
               'cccccccccccccccccccccccccccccccc';
 
-          await repository.sendSharedVideoGroup(
+          final _ = await repository.sendSharedVideoGroup(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             baseContent: 'watch this https://divine.video/video/abc',
             videoKind: 34236,
@@ -12967,7 +12967,7 @@ void main() {
 
           final repository = createRepository();
 
-          await repository.sendSharedVideoGroup(
+          final _ = await repository.sendSharedVideoGroup(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             baseContent: 'watch this',
             videoKind: 34236,
@@ -14599,7 +14599,7 @@ void main() {
           );
 
           final events = await collectedEvents(repository, () async {
-            await repository.sendMessage(
+            final _ = await repository.sendMessage(
               recipientPubkey: _validPubkeyB,
               content: 'soft unconfirmed',
             );
@@ -14623,7 +14623,7 @@ void main() {
           );
 
           final events = await collectedEvents(repository, () async {
-            await repository.sendMessage(
+            final _ = await repository.sendMessage(
               recipientPubkey: _validPubkeyB,
               content: 'hard fail',
             );
@@ -14648,7 +14648,7 @@ void main() {
             );
 
             final events = await collectedEvents(repository, () async {
-              await repository.sendMessage(
+              final _ = await repository.sendMessage(
                 recipientPubkey: _validPubkeyB,
                 content: 'partial delivery',
               );
@@ -14701,7 +14701,7 @@ void main() {
           );
 
           final events = await collectedEvents(repository, () async {
-            await repository.sendMessage(
+            final _ = await repository.sendMessage(
               recipientPubkey: _validPubkeyB,
               content: 'full delivery',
             );
@@ -15030,7 +15030,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'group routed to inboxes',
           );
@@ -15191,7 +15191,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'one soft recipient',
           );
@@ -15238,7 +15238,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'one blocked recipient',
           );
@@ -15343,7 +15343,7 @@ void main() {
 
           final repository = createRepository();
 
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'no queue group send',
           );
@@ -15534,12 +15534,12 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'ok',
           );
           batchSecond += 2; // 2s later — inside the old ±5s collision window.
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'ok',
           );
@@ -15705,11 +15705,11 @@ void main() {
             sendBatchIdGenerator: () => tokens[tokenIndex++],
           );
 
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'ok',
           );
-          await repository.sendGroupMessage(
+          final _ = await repository.sendGroupMessage(
             recipientPubkeys: [_validPubkeyB, _validPubkeyC],
             content: 'ok',
           );
@@ -16513,7 +16513,7 @@ void main() {
             events.add,
           );
 
-          await repository.recoverSelfWrap(rumorId: _rumorEventId);
+          final _ = await repository.recoverSelfWrap(rumorId: _rumorEventId);
           await pumpEventQueue();
           await subscription.cancel();
 
@@ -17003,7 +17003,7 @@ void main() {
           stubSendRumor(
             (_, _) async => const NIP17SendResult.failure('still down'),
           );
-          await repository.recoverFullSend(rumorId: _rumorEventId);
+          final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
           verify(
             () => mockMessageService.sendRumor(
               rumorEvent: any(named: 'rumorEvent'),
@@ -17040,7 +17040,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.recoverFullSend(
+          final _ = await repository.recoverFullSend(
             rumorId: _rumorEventId,
             resetRetryBudget: true,
           );
@@ -17048,7 +17048,7 @@ void main() {
             () => mockOutgoingDmsDao.resetRetryCount(_rumorEventId),
           ).called(1);
 
-          await repository.recoverFullSend(rumorId: _rumorEventId);
+          final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
           verifyNever(() => mockOutgoingDmsDao.resetRetryCount(any()));
         },
       );
@@ -17663,7 +17663,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.recoverFullSend(rumorId: _rumorEventId);
+          final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
 
           verify(
             () => mockMessageService.sendRumor(
@@ -17699,7 +17699,7 @@ void main() {
             outgoingDmsDao: mockOutgoingDmsDao,
           );
 
-          await repository.recoverFullSend(rumorId: _rumorEventId);
+          final _ = await repository.recoverFullSend(rumorId: _rumorEventId);
 
           verify(
             () => mockMessageService.sendRumor(

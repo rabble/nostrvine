@@ -334,7 +334,7 @@ void main() {
             recipientPubkey: _recipientPubkey,
             content: 'routed message',
           );
-          await service.sendRumor(
+          final _ = await service.sendRumor(
             rumorEvent: rumor,
             recipientPubkey: _recipientPubkey,
             targetRelays: const ['wss://inbox.example.com'],
@@ -784,7 +784,7 @@ void main() {
           return PublishSuccess(event: capturedEvent!);
         });
 
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Test message',
         );
@@ -803,7 +803,7 @@ void main() {
           return PublishSuccess(event: capturedEvent!);
         });
 
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Test message',
         );
@@ -827,11 +827,11 @@ void main() {
           return PublishSuccess(event: event);
         });
 
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Message 1',
         );
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Message 2',
         );
@@ -859,7 +859,7 @@ void main() {
         });
 
         final beforeSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Test message',
         );
@@ -898,7 +898,7 @@ void main() {
           return PublishSuccess(event: capturedEvent!);
         });
 
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Test message',
           additionalTags: [
@@ -985,7 +985,7 @@ void main() {
           throw Exception('keycast rpc timeout');
         });
 
-        await service.sendPrivateMessage(
+        final _ = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
           content: 'Test message',
         );
@@ -1181,7 +1181,7 @@ void main() {
             ),
           );
 
-          await realKeyService.sendPrivateMessage(
+          final _ = await realKeyService.sendPrivateMessage(
             recipientPubkey: _recipientPubkey,
             content: 'Test message',
           );

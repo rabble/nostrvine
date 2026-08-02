@@ -76,7 +76,7 @@ void main() {
         return PublishSuccess(event: capturedEvent!);
       });
 
-      await service.sendPrivateMessage(
+      final _ = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
@@ -95,7 +95,7 @@ void main() {
         return PublishSuccess(event: capturedEvent!);
       });
 
-      await service.sendPrivateMessage(
+      final _ = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
@@ -119,11 +119,11 @@ void main() {
         return PublishSuccess(event: event);
       });
 
-      await service.sendPrivateMessage(
+      final _ = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
         content: 'Message 1',
       );
-      await service.sendPrivateMessage(
+      final _ = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
         content: 'Message 2',
       );
@@ -148,7 +148,7 @@ void main() {
       });
 
       final beforeSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      await service.sendPrivateMessage(
+      final _ = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
@@ -184,7 +184,7 @@ void main() {
         return PublishSuccess(event: capturedEvent!);
       });
 
-      await service.sendPrivateMessage(
+      final _ = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
         content: 'Test message',
         additionalTags: [
