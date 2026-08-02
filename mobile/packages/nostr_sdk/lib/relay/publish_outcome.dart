@@ -133,7 +133,9 @@ class PublishOutcome {
 ///  * every reached relay has answered, or
 ///  * [settleWindow] elapses after the first answer, counted no earlier than
 ///    the [setReachable] call that reports the fan-out's target set, or
-///  * [timeout] elapses.
+///  * [timeout] elapses — deferred until [setReachable] arrives, and by at
+///    most [fanOutReportGrace], so a publish that times out mid-fan-out can
+///    still tell an unreached target from a silent one.
 ///
 /// The settle window bounds the cost of one wedged relay: healthy relays
 /// answer in single-digit milliseconds, so waiting the full [timeout] for a
@@ -159,6 +161,14 @@ class PublishTracker {
   /// while still capping a wedged relay far below the publish timeout. Revisit
   /// once publish telemetry gives a real latency distribution.
   static const defaultSettleWindow = Duration(seconds: 1);
+
+  /// How long [timeout] may overrun while waiting for the fan-out's report.
+  ///
+  /// The report is the statement of which relays were written to, and without
+  /// it a timed-out publish cannot tell "we asked and got silence" from "we
+  /// never asked". `RelayPool` makes the call in a `finally` immediately after
+  /// the fan-out, so this only bounds the pathological case.
+  static const fanOutReportGrace = Duration(milliseconds: 250);
 
   /// The event id we are waiting on.
   final String eventId;
@@ -189,22 +199,26 @@ class PublishTracker {
   ///
   /// `null` until [setReachable] is called, which means "assume every target
   /// can answer". The fan-out narrows it, which is what lets an unreachable
-  /// target stop blocking completion.
+  /// target stop blocking completion. [setReachable] is its only writer, so
+  /// the set always means exactly "what the fan-out wrote".
   Set<String>? _reachable;
 
   /// Whether the fan-out has reported which relays it wrote to.
   ///
-  /// Gates the settle window. The tracker is registered *before* the
-  /// sequential fan-out starts, so a connected relay can answer while a later
-  /// target has not been written to yet. Arming on that answer would let the
-  /// window expire mid-fan-out: [setReachable] would find the tracker closed,
-  /// and targets the publish never reached would be reported as silent
-  /// instead of unreachable.
-  ///
-  /// Tracked separately from [_reachable] because [onRelayUnavailable] also
-  /// narrows that set, and a relay dropping mid-fan-out is not the fan-out
-  /// reporting.
+  /// Gates the settle window and the hard timeout. The tracker is registered
+  /// *before* the sequential fan-out starts, so a connected relay can answer
+  /// while a later target has not been written to yet. Settling on that
+  /// answer would let the window expire mid-fan-out: [setReachable] would
+  /// find the tracker closed, and targets the publish never reached would be
+  /// reported as silent instead of unreachable.
   bool _fanOutReported = false;
+
+  /// Whether the hard timeout fired before the fan-out reported.
+  ///
+  /// The fan-out is bounded by the same deadline as this tracker, so the two
+  /// finish together and either can win. [setReachable] settles the publish
+  /// when this is set — see [_onTimeout].
+  bool _timedOutBeforeFanOut = false;
 
   final Map<String, String> _rejected = {};
   final Map<String, String> _deferredRejections = {};
@@ -212,6 +226,7 @@ class PublishTracker {
   final Completer<PublishOutcome> _completer = Completer<PublishOutcome>();
   late final Timer _timer;
   Timer? _settleTimer;
+  Timer? _fanOutGraceTimer;
   bool _closed = false;
 
   Future<PublishOutcome> get future => _completer.future;
@@ -235,6 +250,10 @@ class PublishTracker {
     if (_closed) return;
     _reachable = reachable.toSet();
     _fanOutReported = true;
+    if (_timedOutBeforeFanOut) {
+      _complete();
+      return;
+    }
     // Answers that landed during the fan-out could not start the settle
     // window; now that the target set is final, they can.
     _armSettleWindow();
@@ -275,14 +294,6 @@ class PublishTracker {
     _deferredRejections.remove(relayUrl);
   }
 
-  /// Call when a relay disconnected or otherwise cannot be awaited further.
-  void onRelayUnavailable(String relayUrl) {
-    if (_closed) return;
-    _deferredRejections.remove(relayUrl);
-    _reachable = _awaitable.where((r) => r != relayUrl).toSet();
-    _maybeComplete();
-  }
-
   /// Start the settle window on the first answer, then re-test completion.
   void _onAnswered() {
     _armSettleWindow();
@@ -320,6 +331,18 @@ class PublishTracker {
 
   void _onTimeout() {
     if (_closed) return;
+    if (!_fanOutReported) {
+      // The fan-out shares this tracker's deadline, so when it consumes the
+      // whole budget both fire together and the timer wins the tie. Settling
+      // here would close the tracker before [setReachable] lands, and every
+      // target the fan-out never got to would be reported as silent — which
+      // is what makes the pool force-reconnect relays the publish never
+      // wrote to. Hand over to [setReachable], but keep the resolution
+      // bounded: a driver that never reports must not hang the publish.
+      _timedOutBeforeFanOut = true;
+      _fanOutGraceTimer ??= Timer(fanOutReportGrace, _complete);
+      return;
+    }
     _complete();
   }
 
@@ -328,6 +351,7 @@ class PublishTracker {
     _closed = true;
     _timer.cancel();
     _settleTimer?.cancel();
+    _fanOutGraceTimer?.cancel();
     final effectiveRejected = Map<String, String>.from(_rejected);
     if (_accepted.isEmpty) {
       effectiveRejected.addAll(_deferredRejections);

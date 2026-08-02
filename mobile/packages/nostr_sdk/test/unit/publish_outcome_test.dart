@@ -260,6 +260,47 @@ void main() {
         expectPartitions(outcome, {'wss://a.example', 'wss://b.example'});
       });
 
+      // `RelayPool` bounds the fan-out by the same deadline as this tracker,
+      // so a fan-out that spends the whole budget racing the hard timeout is
+      // the normal case rather than an exotic one. Completing first would
+      // report every target the fan-out never got to as silent, and the pool
+      // force-reconnects silent relays — cycling connections the publish
+      // never wrote to.
+      test(
+        'waits for the fan-out report when the timeout wins the race',
+        () async {
+          final tracker = trackerFor({
+            'wss://written.example',
+            'wss://untouched.example',
+          }, timeout: const Duration(milliseconds: 20));
+
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+
+          var resolved = false;
+          unawaited(tracker.future.then((_) => resolved = true));
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            resolved,
+            isFalse,
+            reason: 'the fan-out had not said what it wrote to yet',
+          );
+
+          tracker.setReachable(['wss://written.example']);
+          final outcome = await tracker.future;
+
+          expect(outcome.noResponseFrom, equals(['wss://written.example']));
+          expect(
+            outcome.unreachableTargets,
+            equals(['wss://untouched.example']),
+            reason: 'the fan-out never wrote to it, so it was not silent',
+          );
+          expectPartitions(outcome, {
+            'wss://written.example',
+            'wss://untouched.example',
+          });
+        },
+      );
+
       // A relay outside `sentTo` can still answer: `_sendCollect` reports the
       // write as failed when its per-relay timeout fires, which can happen
       // after the frame already went out. That answer must not settle the
