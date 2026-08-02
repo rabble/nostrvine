@@ -131,7 +131,8 @@ class PublishOutcome {
 /// describes what the relays actually said rather than whichever answered
 /// first. It resolves when:
 ///  * every reached relay has answered, or
-///  * [settleWindow] elapses after the first answer, or
+///  * [settleWindow] elapses after the first answer, counted no earlier than
+///    the [setReachable] call that reports the fan-out's target set, or
 ///  * [timeout] elapses.
 ///
 /// The settle window bounds the cost of one wedged relay: healthy relays
@@ -191,6 +192,20 @@ class PublishTracker {
   /// target stop blocking completion.
   Set<String>? _reachable;
 
+  /// Whether the fan-out has reported which relays it wrote to.
+  ///
+  /// Gates the settle window. The tracker is registered *before* the
+  /// sequential fan-out starts, so a connected relay can answer while a later
+  /// target has not been written to yet. Arming on that answer would let the
+  /// window expire mid-fan-out: [setReachable] would find the tracker closed,
+  /// and targets the publish never reached would be reported as silent
+  /// instead of unreachable.
+  ///
+  /// Tracked separately from [_reachable] because [onRelayUnavailable] also
+  /// narrows that set, and a relay dropping mid-fan-out is not the fan-out
+  /// reporting.
+  bool _fanOutReported = false;
+
   final Map<String, String> _rejected = {};
   final Map<String, String> _deferredRejections = {};
   final Set<String> _accepted = {};
@@ -219,6 +234,10 @@ class PublishTracker {
   void setReachable(Iterable<String> reachable) {
     if (_closed) return;
     _reachable = reachable.toSet();
+    _fanOutReported = true;
+    // Answers that landed during the fan-out could not start the settle
+    // window; now that the target set is final, they can.
+    _armSettleWindow();
     _maybeComplete();
   }
 
@@ -266,8 +285,18 @@ class PublishTracker {
 
   /// Start the settle window on the first answer, then re-test completion.
   void _onAnswered() {
-    _settleTimer ??= Timer(settleWindow, _onSettleWindowElapsed);
+    _armSettleWindow();
     _maybeComplete();
+  }
+
+  /// Start the grace period for the relays that have not answered yet.
+  ///
+  /// No-op until the fan-out has reported its target set — see
+  /// [_fanOutReported].
+  void _armSettleWindow() {
+    if (!_fanOutReported) return;
+    if (_accepted.isEmpty && _rejected.isEmpty) return;
+    _settleTimer ??= Timer(settleWindow, _onSettleWindowElapsed);
   }
 
   void _maybeComplete() {

@@ -148,6 +148,7 @@ void main() {
             'wss://mute.example',
           });
 
+          tracker.setReachable(['wss://fast.example', 'wss://mute.example']);
           tracker.onAccepted('wss://fast.example');
           final outcome = await tracker.future;
 
@@ -173,11 +174,54 @@ void main() {
           );
 
           final stopwatch = Stopwatch()..start();
+          tracker.setReachable(['wss://fast.example', 'wss://mute.example']);
           tracker.onAccepted('wss://fast.example');
           await tracker.future;
           stopwatch.stop();
 
           expect(stopwatch.elapsed, lessThan(const Duration(seconds: 5)));
+        },
+      );
+
+      // `RelayPool.sendEventAwaitOk` registers the tracker before it awaits
+      // the sequential fan-out, and only calls `setReachable` once that
+      // fan-out returns. A connected relay therefore answers while a later
+      // target may not have been written to yet — and the fan-out can outlast
+      // the settle window, since it waits out a relay's `connecting` state and
+      // caps each one at `perRelaySendTimeout`.
+      test(
+        'does not start before the fan-out has reported its targets',
+        () async {
+          final tracker = trackerFor({
+            'wss://fast.example',
+            'wss://slow.example',
+          }, settleWindow: const Duration(milliseconds: 20));
+
+          tracker.onAccepted('wss://fast.example');
+          await Future<void>.delayed(const Duration(milliseconds: 60));
+
+          var resolved = false;
+          unawaited(tracker.future.then((_) => resolved = true));
+          await Future<void>.delayed(Duration.zero);
+          expect(
+            resolved,
+            isFalse,
+            reason: 'the fan-out was still writing to wss://slow.example',
+          );
+
+          tracker.setReachable(['wss://fast.example', 'wss://slow.example']);
+          tracker.onAccepted('wss://slow.example');
+          final outcome = await tracker.future;
+
+          expect(
+            outcome.acceptedByAll,
+            isTrue,
+            reason: 'both relays accepted, so this is not a partial publish',
+          );
+          expectPartitions(outcome, {
+            'wss://fast.example',
+            'wss://slow.example',
+          });
         },
       );
     });
