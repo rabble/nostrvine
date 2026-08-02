@@ -191,7 +191,12 @@ class SupportCenterScreen extends ConsumerWidget {
           context.l10n.supportLogsSavedTo(filePath),
           duration: const Duration(seconds: 8),
           actionLabel: context.l10n.supportRevealLogsAction,
-          onActionPressed: () => bugReportService.revealExportedFile(filePath),
+          onActionPressed: () {
+            // DivineSnackbarContainer's action is a plain button, so unlike
+            // SnackBarAction it does not dismiss the banner for us.
+            messenger.hideCurrentSnackBar();
+            bugReportService.revealExportedFile(filePath);
+          },
         ),
       );
     }

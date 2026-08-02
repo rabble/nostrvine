@@ -600,7 +600,15 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      // The sheet is fixed-mode, so nothing else lifts it clear of the
+      // keyboard — without the view inset the URL field and both buttons sit
+      // underneath it the moment the field takes focus.
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        4 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -634,6 +642,14 @@ class _AddRelaySheetState extends State<_AddRelaySheet> {
             labelText: 'wss://relay.example.com',
             keyboardType: TextInputType.url,
             textCapitalization: TextCapitalization.none,
+            autofocus: true,
+            filled: true,
+            textInputAction: .done,
+            onSubmitted: (_) {
+              final url = _controller.text.trim();
+              if (url.isNotEmpty) Navigator.pop(context, url);
+            },
+            spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
           ),
           const SizedBox(height: 8),
           Row(

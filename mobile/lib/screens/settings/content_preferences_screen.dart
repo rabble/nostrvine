@@ -135,17 +135,12 @@ class _LanguageSettingTile extends StatelessWidget {
     await VineBottomSheet.show<void>(
       context: context,
       contentTitle: context.l10n.contentPreferencesContentLanguage,
-      buildScrollBody: (_) => _LanguagePickerContent(
+      buildScrollBody: (scrollController) => _LanguagePickerContent(
+        scrollController: scrollController,
         currentCode: state.currentCode,
         isCustomLanguageSet: state.isCustomLanguageSet,
-        onUseDeviceLanguage: () async {
-          await cubit.clearLanguage();
-          if (context.mounted) Navigator.pop(context);
-        },
-        onSelectLanguage: (code) async {
-          await cubit.setLanguage(code);
-          if (context.mounted) Navigator.pop(context);
-        },
+        onUseDeviceLanguage: cubit.clearLanguage,
+        onSelectLanguage: cubit.setLanguage,
       ),
     );
   }
@@ -153,22 +148,39 @@ class _LanguageSettingTile extends StatelessWidget {
 
 class _LanguagePickerContent extends StatelessWidget {
   const _LanguagePickerContent({
+    required this.scrollController,
     required this.currentCode,
     required this.isCustomLanguageSet,
     required this.onUseDeviceLanguage,
     required this.onSelectLanguage,
   });
 
+  /// The sheet's own controller — without it the drag never reaches the
+  /// [DraggableScrollableSheet], so the sheet cannot be resized or flung shut
+  /// from the list.
+  final ScrollController scrollController;
   final String currentCode;
   final bool isCustomLanguageSet;
-  final VoidCallback onUseDeviceLanguage;
-  final ValueChanged<String> onSelectLanguage;
+  final Future<void> Function() onUseDeviceLanguage;
+  final Future<void> Function(String code) onSelectLanguage;
+
+  /// Runs [mutate], then closes the sheet from inside it. The guard is the
+  /// sheet's own element, so a pop that lands after the user already dismissed
+  /// it is dropped instead of closing the screen underneath.
+  Future<void> _applyAndClose(
+    BuildContext context,
+    Future<void> Function() mutate,
+  ) async {
+    await mutate();
+    if (context.mounted) Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     final languages = LanguagePreferenceService.supportedLanguages.entries
         .toList(growable: false);
     return ListView.builder(
+      controller: scrollController,
       padding: EdgeInsets.zero,
       itemCount: languages.length + 1,
       itemBuilder: (context, index) {
@@ -191,7 +203,7 @@ class _LanguagePickerContent extends StatelessWidget {
                   PlatformDispatcher.instance.locale.languageCode,
                 ),
                 isSelected: !isCustomLanguageSet,
-                onTap: onUseDeviceLanguage,
+                onTap: () => _applyAndClose(context, onUseDeviceLanguage),
               ),
             ],
           );
@@ -201,7 +213,10 @@ class _LanguagePickerContent extends StatelessWidget {
           title: entry.value,
           subtitle: entry.key.toUpperCase(),
           isSelected: isCustomLanguageSet && currentCode == entry.key,
-          onTap: () => onSelectLanguage(entry.key),
+          onTap: () => _applyAndClose(
+            context,
+            () => onSelectLanguage(entry.key),
+          ),
         );
       },
     );
@@ -332,27 +347,54 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
       scrollable: false,
       contentTitle: context.l10n.contentPreferencesSelectAudioInput,
       children: [
+        _AudioDevicePickerContent(
+          devices: devices,
+          currentDeviceId: currentDeviceId,
+          onSelectDevice: cubit.setDeviceId,
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+/// The audio-input rows, as a widget so each tap closes the sheet through the
+/// sheet's own element rather than the settings screen's.
+class _AudioDevicePickerContent extends StatelessWidget {
+  const _AudioDevicePickerContent({
+    required this.devices,
+    required this.currentDeviceId,
+    required this.onSelectDevice,
+  });
+
+  final List<AudioDevice> devices;
+  final String? currentDeviceId;
+  final Future<void> Function(String? deviceId) onSelectDevice;
+
+  Future<void> _applyAndClose(BuildContext context, String? deviceId) async {
+    await onSelectDevice(deviceId);
+    if (context.mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
         DivineSelectableRow(
           title: context.l10n.contentPreferencesAutoRecommended,
           subtitle: context.l10n.contentPreferencesAutoSelectsBest,
           isSelected: currentDeviceId == null,
-          onTap: () async {
-            await cubit.setDeviceId(null);
-            if (context.mounted) Navigator.pop(context);
-          },
+          onTap: () => _applyAndClose(context, null),
         ),
         ...devices.map(
           (device) => DivineSelectableRow(
             title: _formatAudioDeviceName(context, device.name),
             subtitle: device.id,
             isSelected: currentDeviceId == device.id,
-            onTap: () async {
-              await cubit.setDeviceId(device.id);
-              if (context.mounted) Navigator.pop(context);
-            },
+            onTap: () => _applyAndClose(context, device.id),
           ),
         ),
-        const SizedBox(height: 16),
       ],
     );
   }

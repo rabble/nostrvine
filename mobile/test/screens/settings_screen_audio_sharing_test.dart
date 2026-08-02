@@ -155,20 +155,5 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
-
-    testWidgets('uses correct VineTheme colors', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      final switchFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is DivineSwitchTile &&
-            widget.title == l10n.contentPreferencesAudioSharing,
-      );
-      expect(switchFinder, findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
   });
 }

@@ -339,6 +339,7 @@ class _AddLabelerSheetState extends State<_AddLabelerSheet> {
             filled: true,
             textInputAction: .done,
             onSubmitted: (_) => Navigator.pop(context, _controller.text.trim()),
+            spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
           ),
           Row(
             spacing: 16,

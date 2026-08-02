@@ -311,6 +311,10 @@ class _ActionCard extends StatelessWidget {
         subtitle,
         style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
       ),
+      trailing: const DivineIcon(
+        icon: DivineIconName.caretRight,
+        color: VineTheme.primary,
+      ),
       onTap: onTap,
     ),
   );

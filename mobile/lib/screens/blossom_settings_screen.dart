@@ -248,6 +248,7 @@ class _ServerUrlSection extends StatelessWidget {
             keyboardType: TextInputType.url,
             autocorrect: false,
             textCapitalization: TextCapitalization.none,
+            spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
           ),
           const SizedBox(height: 8),
           Text(

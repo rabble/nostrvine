@@ -283,6 +283,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             focusNode: _externalFocusNode,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
+            hintText: context.l10n.nostrSettingsNip05AddressHint,
             errorText: switch (state.externalNip05Error) {
               ExternalNip05ValidationError.invalidFormat =>
                 context.l10n.profileSetupExternalNip05InvalidFormat,

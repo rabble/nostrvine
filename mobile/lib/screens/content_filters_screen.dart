@@ -216,8 +216,6 @@ class _ContentFilterRow extends StatelessWidget {
                     ? context.vineColors.disabled
                     : context.vineColors.primaryText,
               ),
-              maxLines: 1,
-              overflow: .ellipsis,
             ),
           ),
           _FilterSegmentedControl(
@@ -319,21 +317,21 @@ class _FilterSegment extends StatelessWidget {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: _locked && _selected
-                  ? VineTheme.outlineDisabled
-                  : _selected
-                  ? VineTheme.vineGreen
-                  : VineTheme.transparent,
+              // The active segment stays green even when locked — dimming the
+              // fill to `outlineDisabled` made it indistinguishable from the
+              // card behind it, so a locked row showed no active mode at all.
+              // Locked-ness is carried by the label colour instead.
+              color: _selected ? VineTheme.vineGreen : VineTheme.transparent,
               borderRadius: BorderRadius.circular(7),
             ),
             child: Center(
               child: Text(
                 _label,
                 style: VineTheme.labelMediumFont(
-                  color: _locked
-                      ? context.vineColors.disabled
-                      : _selected
+                  color: _selected
                       ? context.vineColors.background
+                      : _locked
+                      ? context.vineColors.disabled
                       : context.vineColors.secondaryText,
                 ),
               ),
