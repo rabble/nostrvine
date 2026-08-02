@@ -39,10 +39,14 @@ class InviteApiClient {
        _forceOpenOnboarding = forceOpenOnboarding;
 
   static const Duration _defaultTimeout = Duration(seconds: 20);
+  static const Duration _defaultTransientRetryDelay = Duration(
+    milliseconds: 250,
+  );
   static const int _maxConsumeAttempts = 3;
 
-  /// One attempt, plus one retry for a rejected token and one for a transient
-  /// server failure.
+  /// One attempt plus up to two retries. A rejected token can force one auth
+  /// refresh, while transient server failures may use the remaining retry
+  /// budget.
   static const int _maxInviteStatusAttempts = 3;
 
   final String _baseUrl;
@@ -308,12 +312,12 @@ class InviteApiClient {
 
   /// Fetches the caller's invite status.
   ///
-  /// Retries for two independent reasons, each at most once: a rejected NIP-98
-  /// token, re-minted for the next attempt, and a transient server failure,
-  /// after the delay the server asks for. `GET /v1/invite-status` enrolls
-  /// lazily on read, so two status calls racing at launch make one lose the
-  /// enrollment claim and come back `503 enrollment_busy` with `Retry-After` —
-  /// a retry the user should never have to make by hand.
+  /// Retries for a rejected NIP-98 token, re-minted for the next attempt, and
+  /// for transient server failures within the bounded attempt budget.
+  /// Transient retries use the server's requested delay when provided and a
+  /// short default backoff otherwise. `GET /v1/invite-status` enrolls lazily
+  /// on read, so two status calls racing at launch can make one lose the
+  /// enrollment claim and come back `503 enrollment_busy` with `Retry-After`.
   Future<InviteStatus> getInviteStatus() async {
     final uri = Uri.parse('$_baseUrl/v1/invite-status');
 
@@ -632,7 +636,10 @@ class InviteApiClient {
           'retryAfterSeconds',
           'retry_after_seconds',
         ]);
-    if (retryAfterSeconds == null || retryAfterSeconds <= 0) {
+    if (retryAfterSeconds == null) {
+      return _defaultTransientRetryDelay;
+    }
+    if (retryAfterSeconds <= 0) {
       return Duration.zero;
     }
     return Duration(seconds: retryAfterSeconds);

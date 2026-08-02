@@ -489,6 +489,56 @@ void main() {
     });
 
     test(
+      'backs off transient invite status retry when delay is omitted',
+      () async {
+        var requestCount = 0;
+        final elapsed = Stopwatch()..start();
+        final statusClient = InviteApiClient(
+          baseUrl: 'https://invites.divine.video',
+          client: MockClient((request) async {
+            requestCount++;
+            if (requestCount == 1) {
+              return http.Response(
+                jsonEncode({
+                  'error': 'Server is warming up',
+                  'code': InviteApiErrorCode.internalError,
+                }),
+                500,
+              );
+            }
+            return http.Response(
+              jsonEncode({
+                'canInvite': true,
+                'remaining': 1,
+                'remainingToGenerate': 1,
+                'total': 1,
+                'codes': <Object>[],
+              }),
+              200,
+            );
+          }),
+          authHeaderProvider:
+              ({
+                required url,
+                required method,
+                payload,
+                forceRefresh = false,
+              }) async => 'Nostr token',
+        );
+
+        final result = await statusClient.getInviteStatus();
+        elapsed.stop();
+
+        expect(result.mintableCount, equals(1));
+        expect(requestCount, equals(2));
+        expect(
+          elapsed.elapsed,
+          greaterThanOrEqualTo(const Duration(milliseconds: 200)),
+        );
+      },
+    );
+
+    test(
       'gives up on a persistent enrollment_busy after bounded retries',
       () async {
         var requestCount = 0;

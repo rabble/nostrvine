@@ -34,7 +34,6 @@ import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/codec_heavy_surface/codec_heavy_surface_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
-import 'package:openvine/blocs/invite_status/invite_status_auth_session_source.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
@@ -2811,14 +2810,19 @@ class _DivineAppState extends ConsumerState<DivineApp>
             BlocProvider(
               lazy: false,
               create: (context) {
-                final authSessions = InviteStatusAuthSessionSource(
-                  ref.read(authServiceProvider),
-                );
+                final authService = ref.read(authServiceProvider);
+                InviteStatusAuthSession currentAuthSession() =>
+                    InviteStatusAuthSession(
+                      accountId: authService.currentPublicKeyHex,
+                      isSignerReady: authService.canPublishNostrWritesNow,
+                    );
 
                 return InviteStatusCubit(
                   inviteApiClient: context.read<InviteApiClient>(),
-                  initialAuthSession: authSessions.current,
-                  authSessionStream: authSessions.changes,
+                  initialAuthSession: currentAuthSession(),
+                  authSessionStream: authService.authStateStream.map(
+                    (_) => currentAuthSession(),
+                  ),
                 )..start();
               },
             ),

@@ -12,15 +12,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// These errors come from subsystems that don't affect E2E test flow:
 /// - External relay WebSocket/certificate failures (expected in local env)
 /// - setState-after-dispose from text field teardown during navigation
-/// - emit-after-close, the bloc-level counterpart of setState-after-dispose:
-///   an auth cubit awaits an account-creation call, the resulting auth state
-///   change reroutes away from the screen and closes the cubit, and the
-///   continuation then emits its success state. The account exists either
-///   way, so the throw is teardown noise rather than a flow failure.
 /// - Firebase Messaging permission races during multi-account flows
 bool _isNonCriticalAsyncError(String message) {
   return message.contains('setState() called after dispose()') ||
-      message.contains('Cannot emit new states after calling close') ||
       message.contains('CERTIFICATE_VERIFY_FAILED') ||
       message.contains('WebSocketException') ||
       message.contains('WebSocketChannelException') ||

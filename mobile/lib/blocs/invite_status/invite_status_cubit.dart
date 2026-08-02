@@ -31,8 +31,10 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     required InviteApiClient inviteApiClient,
     required InviteStatusAuthSession initialAuthSession,
     required Stream<InviteStatusAuthSession> authSessionStream,
+    Duration authWaitTimeout = const Duration(seconds: 12),
   }) : _inviteApiClient = inviteApiClient,
        _initialAuthSession = initialAuthSession,
+       _authWaitTimeout = authWaitTimeout,
        super(
          InviteStatusState(
            status: _statusBeforeFirstLoad(initialAuthSession),
@@ -41,12 +43,17 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
          ),
        ) {
     _authSessionSubscription = authSessionStream.listen(_onAuthSessionChanged);
+    if (state.status == InviteStatusLoadingStatus.waitingForAuth) {
+      _scheduleAuthWaitTimeout();
+    }
   }
 
   final InviteApiClient _inviteApiClient;
   final InviteStatusAuthSession _initialAuthSession;
+  final Duration _authWaitTimeout;
   late final StreamSubscription<InviteStatusAuthSession>
   _authSessionSubscription;
+  Timer? _authWaitTimer;
   var _sessionGeneration = 0;
 
   static InviteStatusLoadingStatus _statusBeforeFirstLoad(
@@ -66,9 +73,14 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   Future<void> load() async {
     if (state.status == InviteStatusLoadingStatus.loading) return;
     final requestAccountId = state.accountId;
-    if (requestAccountId == null || !state.isSignerReady) return;
+    if (requestAccountId == null) return;
+    if (!state.isSignerReady) {
+      _enterWaitingForAuth();
+      return;
+    }
     final requestGeneration = _sessionGeneration;
 
+    _cancelAuthWaitTimeout();
     emit(state.copyWith(status: InviteStatusLoadingStatus.loading));
     try {
       final inviteStatus = await _inviteApiClient.getInviteStatus();
@@ -99,9 +111,14 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   Future<void> generateInvite() async {
     if (state.status == InviteStatusLoadingStatus.loading) return;
     final requestAccountId = state.accountId;
-    if (requestAccountId == null || !state.isSignerReady) return;
+    if (requestAccountId == null) return;
+    if (!state.isSignerReady) {
+      _enterWaitingForAuth();
+      return;
+    }
     final requestGeneration = _sessionGeneration;
 
+    _cancelAuthWaitTimeout();
     emit(state.copyWith(status: InviteStatusLoadingStatus.loading));
     try {
       await _inviteApiClient.generateInvite();
@@ -140,6 +157,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     }
 
     if (accountChanged) {
+      _cancelAuthWaitTimeout();
       emit(
         InviteStatusState(
           status: _statusBeforeFirstLoad(session),
@@ -147,7 +165,13 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
           isSignerReady: session.isSignerReady,
         ),
       );
+      if (!session.isSignerReady && session.accountId != null) {
+        _scheduleAuthWaitTimeout();
+      }
     } else if (readinessChanged) {
+      if (session.isSignerReady) {
+        _cancelAuthWaitTimeout();
+      }
       emit(
         state.copyWith(
           status: !session.isSignerReady
@@ -156,6 +180,9 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
           isSignerReady: session.isSignerReady,
         ),
       );
+      if (!session.isSignerReady) {
+        _scheduleAuthWaitTimeout();
+      }
     }
 
     if (session.accountId != null && session.isSignerReady) {
@@ -163,10 +190,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
     }
   }
 
-  bool _requestStillBelongsTo(
-    String requestAccountId,
-    int requestGeneration,
-  ) =>
+  bool _requestStillBelongsTo(String requestAccountId, int requestGeneration) =>
       !isClosed &&
       state.accountId == requestAccountId &&
       _sessionGeneration == requestGeneration;
@@ -174,6 +198,33 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
   void _emitIfOpen(InviteStatusState nextState) {
     if (isClosed) return;
     emit(nextState);
+  }
+
+  void _enterWaitingForAuth() {
+    if (isClosed || state.accountId == null || state.isSignerReady) return;
+    if (state.status != InviteStatusLoadingStatus.waitingForAuth) {
+      emit(state.copyWith(status: InviteStatusLoadingStatus.waitingForAuth));
+    }
+    _scheduleAuthWaitTimeout();
+  }
+
+  void _scheduleAuthWaitTimeout() {
+    _cancelAuthWaitTimeout();
+    final waitGeneration = _sessionGeneration;
+    _authWaitTimer = Timer(_authWaitTimeout, () {
+      if (isClosed ||
+          waitGeneration != _sessionGeneration ||
+          state.isSignerReady ||
+          state.status != InviteStatusLoadingStatus.waitingForAuth) {
+        return;
+      }
+      _emitIfOpen(state.copyWith(status: InviteStatusLoadingStatus.error));
+    });
+  }
+
+  void _cancelAuthWaitTimeout() {
+    _authWaitTimer?.cancel();
+    _authWaitTimer = null;
   }
 
   void _handleInviteApiException({
@@ -210,6 +261,7 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
 
   @override
   Future<void> close() async {
+    _cancelAuthWaitTimeout();
     await _authSessionSubscription.cancel();
     return super.close();
   }
