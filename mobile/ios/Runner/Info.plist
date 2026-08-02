@@ -91,6 +91,13 @@
 	<string>Photo library access is needed to save exported videos to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo library access is needed to pick and share your videos.</string>
+	<!-- Required by ITMS-90683: a linked third-party SDK references
+	     Apple's speech recognition APIs. Divine itself never starts a
+	     speech recognition request, so this prompt is not expected to
+	     appear, but the purpose string is mandatory for App Store
+	     submission whenever the binary references those APIs. -->
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Divine does not use speech recognition. This permission is only requested if a feature you start needs to turn speech in your recording into text.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
