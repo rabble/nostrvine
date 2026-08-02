@@ -126,6 +126,11 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     emit(current.copyWith(obscurePassword: !current.obscurePassword));
   }
 
+  void _emitIfOpen(DivineAuthState nextState) {
+    if (isClosed) return;
+    emit(nextState);
+  }
+
   /// Validate and submit the form
   Future<void> submit() async {
     final current = state;
@@ -194,8 +199,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final currentState = state;
-      if (!isClosed && currentState is DivineAuthFormState) {
-        emit(
+      if (currentState is DivineAuthFormState) {
+        _emitIfOpen(
           currentState.copyWith(
             isSubmitting: false,
             generalError: 'An unexpected error occurred. Please try again.',
@@ -228,8 +233,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       final current = state;
-      if (!isClosed && current is DivineAuthFormState) {
-        emit(
+      if (current is DivineAuthFormState) {
+        _emitIfOpen(
           current.copyWith(isSubmitting: false, signInFailureReason: reason),
         );
       }
@@ -286,8 +291,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       final current = state;
-      if (!isClosed && current is DivineAuthFormState) {
-        emit(
+      if (current is DivineAuthFormState) {
+        _emitIfOpen(
           current.copyWith(
             isSubmitting: false,
             generalError: errorMsg,
@@ -313,10 +318,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         inviteCode: _inviteCode,
       );
 
-      if (isClosed) return;
-
       // Emit email verification state
-      emit(
+      _emitIfOpen(
         DivineAuthEmailVerification(
           email: email,
           deviceCode: result.deviceCode!,
@@ -325,8 +328,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
     } else {
       final current = state;
-      if (!isClosed && current is DivineAuthFormState) {
-        emit(
+      if (current is DivineAuthFormState) {
+        _emitIfOpen(
           current.copyWith(
             isSubmitting: false,
             generalError: 'Registration complete. Please check your email.',
@@ -364,9 +367,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       // Same close-mid-flight race as skipWithAnonymousAccount: the sign-in
       // above flips AuthService to `authenticated` before returning, which
       // can reroute off the auth screen and close this cubit.
-      if (isClosed) return;
-
-      emit(const DivineAuthSuccess());
+      _emitIfOpen(const DivineAuthSuccess());
     } on InviteApiException catch (e, stackTrace) {
       await _authService.clearPendingDivineOAuthSession();
       Log.error(
@@ -379,8 +380,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final current = state;
-      if (!isClosed && current is DivineAuthFormState) {
-        emit(
+      if (current is DivineAuthFormState) {
+        _emitIfOpen(
           current.copyWith(
             isSubmitting: false,
             generalError: InviteErrorUtils.activationFailureMessage(e),
@@ -400,8 +401,10 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final current = state;
-      if (!isClosed && current is DivineAuthFormState) {
-        emit(current.copyWith(isSubmitting: false, generalError: e.message));
+      if (current is DivineAuthFormState) {
+        _emitIfOpen(
+          current.copyWith(isSubmitting: false, generalError: e.message),
+        );
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -414,8 +417,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final current = state;
-      if (!isClosed && current is DivineAuthFormState) {
-        emit(
+      if (current is DivineAuthFormState) {
+        _emitIfOpen(
           current.copyWith(
             isSubmitting: false,
             generalError: 'Failed to complete authentication',
@@ -498,9 +501,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       // returns, which reroutes off the create-account screen and closes
       // this cubit. Nothing is lost: the redirect runs off auth state, and
       // no listener acts on DivineAuthSuccess here.
-      if (isClosed) return;
-
-      emit(const DivineAuthSuccess());
+      _emitIfOpen(const DivineAuthSuccess());
     } on InviteApiException catch (e, stackTrace) {
       Log.error(
         'Anonymous account invite activation failed: '
@@ -512,8 +513,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final currentState = state;
-      if (!isClosed && currentState is DivineAuthFormState) {
-        emit(
+      if (currentState is DivineAuthFormState) {
+        _emitIfOpen(
           currentState.copyWith(
             isSkipping: false,
             generalError: InviteErrorUtils.activationFailureMessage(e),
@@ -534,8 +535,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       addError(e, stackTrace);
 
       final currentState = state;
-      if (!isClosed && currentState is DivineAuthFormState) {
-        emit(
+      if (currentState is DivineAuthFormState) {
+        _emitIfOpen(
           currentState.copyWith(
             isSkipping: false,
             generalError: 'Failed to create account. Please try again.',
