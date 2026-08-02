@@ -220,17 +220,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'اعرض الترجمة عندما تتضمّنها الفيديوهات';
 
   @override
-  String get generalSettingsVideoShape => 'شكل الفيديو';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'فيديوهات مربّعة فقط';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'مربّع وعمودي';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'اعرض المزيج الكامل لفيديوهات Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

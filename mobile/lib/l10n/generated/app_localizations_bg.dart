@@ -235,18 +235,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Показвай субтитри, когато видеата ги имат';
 
   @override
-  String get generalSettingsVideoShape => 'Формат на видеата';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Само квадратни видеа';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Квадратни и портретни';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Покажи целия микс от Divine видеа';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

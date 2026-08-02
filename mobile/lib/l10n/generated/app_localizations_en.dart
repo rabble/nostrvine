@@ -233,18 +233,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show captions when videos include them';
 
   @override
-  String get generalSettingsVideoShape => 'Video Shape';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Square videos only';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Square and portrait';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Show the full mix of Divine videos';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

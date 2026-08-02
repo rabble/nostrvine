@@ -249,17 +249,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează subtitrările când videoclipurile le includ';
 
   @override
-  String get generalSettingsVideoShape => 'Forma videoclipurilor';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Doar videoclipuri pătrate';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Pătrate și portret';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Arată tot amestecul de videoclipuri Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

@@ -99,6 +99,7 @@ class SupportCenterScreen extends ConsumerWidget {
                   subtitle: l10n.nostrSettingsDeleteAccountSubtitle,
                   iconColor: VineTheme.error,
                   titleColor: VineTheme.error,
+                  trailingColor: VineTheme.error,
                   onTap: () => startAccountDeletionFlow(
                     context: context,
                     ref: ref,
@@ -261,6 +262,7 @@ class _SupportTile extends StatelessWidget {
     required this.onTap,
     this.iconColor,
     this.titleColor,
+    this.trailingColor,
   });
 
   final DivineIconName icon;
@@ -268,6 +270,7 @@ class _SupportTile extends StatelessWidget {
 
   /// Overrides the title colour, for destructive entries.
   final Color? titleColor;
+  final Color? trailingColor;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -288,7 +291,7 @@ class _SupportTile extends StatelessWidget {
       ),
       trailing: DivineIcon(
         icon: DivineIconName.caretRight,
-        color: context.vineColors.mutedText,
+        color: trailingColor ?? context.vineColors.mutedText,
       ),
       onTap: onTap,
     );

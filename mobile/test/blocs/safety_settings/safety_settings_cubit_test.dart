@@ -293,6 +293,42 @@ void main() {
       },
     );
 
+    test('setPeopleIFollowEnabled flips the toggle before the sync '
+        'completes', () async {
+      final sync = Completer<void>();
+      when(
+        () => moderationLabelService.setFollowingModerationEnabled(
+          any(),
+          followedPubkeys: any(named: 'followedPubkeys'),
+        ),
+      ).thenAnswer((_) => sync.future);
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      final pending = cubit.setPeopleIFollowEnabled(true);
+      expect(cubit.state.isPeopleIFollowEnabled, isTrue);
+
+      sync.complete();
+      await pending;
+      expect(cubit.state.isPeopleIFollowEnabled, isTrue);
+    });
+
+    test('setPeopleIFollowEnabled reverts the toggle when the sync '
+        'fails', () async {
+      when(
+        () => moderationLabelService.setFollowingModerationEnabled(
+          any(),
+          followedPubkeys: any(named: 'followedPubkeys'),
+        ),
+      ).thenThrow(Exception('relay unreachable'));
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await cubit.setPeopleIFollowEnabled(true);
+
+      expect(cubit.state.isPeopleIFollowEnabled, isFalse);
+    });
+
     blocTest<SafetySettingsCubit, SafetySettingsState>(
       'addLabeler trims input, converts npub to hex, and re-reads labelers',
       seed: () => const SafetySettingsState(status: SafetySettingsStatus.ready),

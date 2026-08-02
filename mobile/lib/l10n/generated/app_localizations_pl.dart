@@ -237,18 +237,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Pokazuj napisy, gdy filmy je zawierają';
 
   @override
-  String get generalSettingsVideoShape => 'Kształt filmu';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Tylko kwadratowe filmy';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Kwadratowe i pionowe';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Pokazuj pełny miks filmów Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

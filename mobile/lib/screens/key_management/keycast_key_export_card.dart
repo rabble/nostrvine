@@ -83,9 +83,8 @@ class KeycastKeyExportCard extends ConsumerWidget {
       // Fixed mode otherwise derives isScrollControlled from `expanded`, which
       // caps the sheet's height and leaves it wholly behind the keyboard.
       isScrollControlled: true,
-      // A `body` sheet never renders `contentTitle` — that is read only on the
-      // `children` path — so the title goes through the header instead, which
-      // also supplies the spacing below the divider.
+      // The title goes through the header rather than `contentTitle` because
+      // the header also supplies the spacing below the divider.
       title: Text(context.l10n.keyManagementCopyNsec),
       body: const _KeycastKeyExportFlow(),
     );

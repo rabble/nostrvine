@@ -232,18 +232,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Papar sarikata apabila video menyertainya';
 
   @override
-  String get generalSettingsVideoShape => 'Bentuk Video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Video segi empat sahaja';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Segi empat dan potret';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Tunjukkan gabungan penuh video Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

@@ -126,7 +126,12 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: .fromLTRB(
+                        0,
+                        16,
+                        0,
+                        16 + MediaQuery.viewPaddingOf(context).bottom,
+                      ),
                       children: [
                         const _AboutCard(),
                         const SizedBox(height: 20),
@@ -152,6 +157,7 @@ class _AboutCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: const .symmetric(horizontal: 16),
       color: context.vineColors.background.withValues(alpha: 0.7),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -224,45 +230,48 @@ class _ServerUrlSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.l10n.blossomCustomServerUrl,
-          style: VineTheme.titleMediumFont(
-            color: context.vineColors.primaryText,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.blossomCustomServerUrl,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        DivineTextField(
-          controller: controller,
-          labelText: 'https://blossom.band',
-          keyboardType: TextInputType.url,
-          autocorrect: false,
-          textCapitalization: TextCapitalization.none,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          context.l10n.blossomCustomServerHelper,
-          style: VineTheme.bodySmallFont(
-            color: context.vineColors.onSurfaceMuted,
+          const SizedBox(height: 8),
+          DivineTextField(
+            controller: controller,
+            labelText: 'https://blossom.band',
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            textCapitalization: TextCapitalization.none,
           ),
-        ),
-        const SizedBox(height: 30),
-        Text(
-          context.l10n.blossomPopularServers,
-          style: VineTheme.titleMediumFont(
-            color: context.vineColors.primaryText,
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.blossomCustomServerHelper,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        for (final entry in _popularServers)
-          _ServerOption(
-            url: entry.$1,
-            name: entry.$2,
-            onSelect: () => controller.text = entry.$1,
+          const SizedBox(height: 30),
+          Text(
+            context.l10n.blossomPopularServers,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
-      ],
+          const SizedBox(height: 12),
+          for (final entry in _popularServers)
+            _ServerOption(
+              url: entry.$1,
+              name: entry.$2,
+              onSelect: () => controller.text = entry.$1,
+            ),
+        ],
+      ),
     );
   }
 }

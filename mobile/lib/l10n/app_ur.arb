@@ -115,10 +115,7 @@
   "appearanceSettingsDark": "ڈارک",
   "generalSettingsClosedCaptions": "کلوزڈ کیپشنز",
   "generalSettingsClosedCaptionsSubtitle": "جب ویڈیوز میں کیپشن شامل ہوں تو دکھائیں",
-  "generalSettingsVideoShape": "ویڈیو کی شکل",
   "generalSettingsVideoShapeSquareOnly": "صرف چوکور ویڈیوز",
-  "generalSettingsVideoShapeSquareAndPortrait": "چوکور اور عمودی",
-  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Divine ویڈیوز کا پورا امتزاج دکھائیں",
   "generalSettingsVideoShapeSquareOnlySubtitle": "فیڈز کو کلاسک چوکور فارمیٹ میں رکھیں",
   "contentPreferencesTitle": "مواد کی ترجیحات",
   "@contentPreferencesTitle": {

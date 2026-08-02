@@ -98,7 +98,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
                 ),
               DivineSectionHeader(context.l10n.generalSettingsSectionViewing),
               const _ClosedCaptionsToggle(),
-              const _FeedAspectRatioPreferenceTile(),
+              const _SquareVideosOnlyToggle(),
               DivineSectionHeader(context.l10n.generalSettingsSectionCreating),
               const _AudioSharingToggle(),
               const _LongPressRecordingToggle(),
@@ -169,68 +169,30 @@ class _ClosedCaptionsToggle extends ConsumerWidget {
   }
 }
 
-class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
-  const _FeedAspectRatioPreferenceTile();
+class _SquareVideosOnlyToggle extends ConsumerWidget {
+  const _SquareVideosOnlyToggle();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final service = ref.watch(feedAspectRatioPreferenceServiceProvider);
-    final preference = service.preference;
-    final subtitle = switch (preference) {
-      FeedAspectRatioPreference.squareOnly =>
-        context.l10n.generalSettingsVideoShapeSquareOnly,
-      FeedAspectRatioPreference.squareAndPortrait =>
-        context.l10n.generalSettingsVideoShapeSquareAndPortrait,
-    };
 
-    return ListTile(
-      leading: const DivineIcon(
-        icon: DivineIconName.cropSquare,
-        color: VineTheme.vineGreen,
+    // The service is a long-lived ChangeNotifier behind a plain Provider, so
+    // the notifier — not the provider — is what reports a preference flip.
+    return ListenableBuilder(
+      listenable: service,
+      builder: (context, _) => DivineSwitchTile(
+        leadingIcon: DivineIconName.cropSquare,
+        title: context.l10n.generalSettingsVideoShapeSquareOnly,
+        subtitle: context.l10n.generalSettingsVideoShapeSquareOnlySubtitle,
+        value: service.preference == FeedAspectRatioPreference.squareOnly,
+        onChanged: (value) async {
+          await service.setPreference(
+            value
+                ? FeedAspectRatioPreference.squareOnly
+                : FeedAspectRatioPreference.squareAndPortrait,
+          );
+        },
       ),
-      title: Text(
-        context.l10n.generalSettingsVideoShape,
-        style: _titleStyleOf(context),
-      ),
-      subtitle: Text(subtitle, style: _subtitleStyleOf(context)),
-      trailing: DivineIcon(
-        icon: DivineIconName.caretRight,
-        color: context.vineColors.mutedText,
-      ),
-      onTap: () => _showPicker(context, service),
-    );
-  }
-
-  Future<void> _showPicker(
-    BuildContext context,
-    FeedAspectRatioPreferenceService service,
-  ) async {
-    Future<void> select(FeedAspectRatioPreference value) async {
-      await service.setPreference(value);
-      if (context.mounted) Navigator.pop(context);
-    }
-
-    await VineBottomSheet.show<void>(
-      context: context,
-      scrollable: false,
-      contentTitle: context.l10n.generalSettingsVideoShape,
-      children: [
-        DivineSelectableRow(
-          title: context.l10n.generalSettingsVideoShapeSquareAndPortrait,
-          subtitle:
-              context.l10n.generalSettingsVideoShapeSquareAndPortraitSubtitle,
-          isSelected:
-              service.preference == FeedAspectRatioPreference.squareAndPortrait,
-          onTap: () => select(FeedAspectRatioPreference.squareAndPortrait),
-        ),
-        DivineSelectableRow(
-          title: context.l10n.generalSettingsVideoShapeSquareOnly,
-          subtitle: context.l10n.generalSettingsVideoShapeSquareOnlySubtitle,
-          isSelected:
-              service.preference == FeedAspectRatioPreference.squareOnly,
-          onTap: () => select(FeedAspectRatioPreference.squareOnly),
-        ),
-      ],
     );
   }
 }

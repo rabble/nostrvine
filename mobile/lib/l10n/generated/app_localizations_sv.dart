@@ -221,18 +221,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa undertexter när videor har dem';
 
   @override
-  String get generalSettingsVideoShape => 'Videoform';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Endast kvadratiska videor';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Kvadrat och stående';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Visa hela mixen av Divine-videor';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

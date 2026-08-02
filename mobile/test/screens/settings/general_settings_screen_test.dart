@@ -34,10 +34,12 @@ void main() {
     late _MockAuthService authService;
     late _MockLocaleCubit localeCubit;
     late _MockAudioSharingPreferenceService audioSharingService;
+    late FeedAspectRatioPreferenceService aspectRatioService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
+      aspectRatioService = FeedAspectRatioPreferenceService(sharedPreferences);
       authService = _MockAuthService();
       localeCubit = _MockLocaleCubit();
       audioSharingService = _MockAudioSharingPreferenceService();
@@ -63,7 +65,7 @@ void main() {
         audioSharingService,
       ),
       feedAspectRatioPreferenceServiceProvider.overrideWithValue(
-        FeedAspectRatioPreferenceService(sharedPreferences),
+        aspectRatioService,
       ),
     ];
 
@@ -165,5 +167,32 @@ void main() {
         );
       },
     );
+
+    testWidgets('square-only switch flips the feed aspect ratio preference', (
+      tester,
+    ) async {
+      final labels = await l10n();
+
+      await tester.pumpWidget(wrap(const GeneralSettingsScreen()));
+      await tester.pumpAndSettle();
+
+      DivineSwitchTile squareOnlyTile() => tester.widget<DivineSwitchTile>(
+        find.ancestor(
+          of: find.text(labels.generalSettingsVideoShapeSquareOnly),
+          matching: find.byType(DivineSwitchTile),
+        ),
+      );
+
+      expect(squareOnlyTile().value, isFalse);
+
+      await tester.tap(find.text(labels.generalSettingsVideoShapeSquareOnly));
+      await tester.pumpAndSettle();
+
+      expect(
+        aspectRatioService.preference,
+        FeedAspectRatioPreference.squareOnly,
+      );
+      expect(squareOnlyTile().value, isTrue);
+    });
   });
 }

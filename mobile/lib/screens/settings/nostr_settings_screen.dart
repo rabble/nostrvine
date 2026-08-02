@@ -124,6 +124,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                   subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
                   iconColor: VineTheme.error,
                   titleColor: VineTheme.error,
+                  trailingColor: VineTheme.error,
                   onTap: () => startAccountDeletionFlow(
                     context: context,
                     ref: ref,
@@ -151,6 +152,7 @@ class _RemoveKeysTile extends StatelessWidget {
       title: context.l10n.nostrSettingsRemoveKeys,
       subtitle: context.l10n.nostrSettingsRemoveKeysSubtitle,
       onTap: () => _handleRemoveLocalAccount(context, ref),
+      trailingColor: VineTheme.warning,
       titleColor: VineTheme.warning,
     );
   }

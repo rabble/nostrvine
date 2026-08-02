@@ -234,17 +234,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostrar legendas quando os vídeos tiverem';
 
   @override
-  String get generalSettingsVideoShape => 'Formato do vídeo';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Só vídeos quadrados';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Quadrado e retrato';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Mostrar a mistura completa de vídeos do Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

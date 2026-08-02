@@ -234,17 +234,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hiện phụ đề khi video có sẵn';
 
   @override
-  String get generalSettingsVideoShape => 'Định dạng video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Chỉ video vuông';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Vuông và dọc';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Hiển thị đầy đủ các loại video Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

@@ -234,17 +234,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => 'ቪዲዮዎች መግለጫዎችን ሲያካትቱ አሳይ';
 
   @override
-  String get generalSettingsVideoShape => 'የቪዲዮ ቅርጽ';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'ካሬ ቪዲዮዎች ብቻ';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'ካሬ እና ቁመታዊ';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'የDivine ቪዲዮዎችን ሙሉ ድብልቅ አሳይ';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

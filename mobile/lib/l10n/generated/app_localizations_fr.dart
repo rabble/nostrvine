@@ -240,17 +240,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Affiche les sous-titres quand les vidéos en proposent';
 
   @override
-  String get generalSettingsVideoShape => 'Format des vidéos';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Vidéos carrées uniquement';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Carré et portrait';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Affiche tout le mix des vidéos Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

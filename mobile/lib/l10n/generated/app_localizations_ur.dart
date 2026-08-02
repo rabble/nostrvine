@@ -233,17 +233,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'جب ویڈیوز میں کیپشن شامل ہوں تو دکھائیں';
 
   @override
-  String get generalSettingsVideoShape => 'ویڈیو کی شکل';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'صرف چوکور ویڈیوز';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'چوکور اور عمودی';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Divine ویڈیوز کا پورا امتزاج دکھائیں';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

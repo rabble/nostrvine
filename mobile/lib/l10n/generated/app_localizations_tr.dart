@@ -203,17 +203,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Videolarda altyazı varsa göster';
 
   @override
-  String get generalSettingsVideoShape => 'Video Şekli';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Sadece kare videolar';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Kare ve dikey';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Divine videolarının tam karışımını göster';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

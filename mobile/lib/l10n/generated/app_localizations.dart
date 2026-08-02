@@ -486,29 +486,11 @@ abstract class AppLocalizations {
   /// **'Show captions when videos include them'**
   String get generalSettingsClosedCaptionsSubtitle;
 
-  /// No description provided for @generalSettingsVideoShape.
-  ///
-  /// In en, this message translates to:
-  /// **'Video Shape'**
-  String get generalSettingsVideoShape;
-
   /// No description provided for @generalSettingsVideoShapeSquareOnly.
   ///
   /// In en, this message translates to:
   /// **'Square videos only'**
   String get generalSettingsVideoShapeSquareOnly;
-
-  /// No description provided for @generalSettingsVideoShapeSquareAndPortrait.
-  ///
-  /// In en, this message translates to:
-  /// **'Square and portrait'**
-  String get generalSettingsVideoShapeSquareAndPortrait;
-
-  /// No description provided for @generalSettingsVideoShapeSquareAndPortraitSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the full mix of Divine videos'**
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle;
 
   /// No description provided for @generalSettingsVideoShapeSquareOnlySubtitle.
   ///

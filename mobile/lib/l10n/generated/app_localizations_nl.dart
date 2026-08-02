@@ -233,18 +233,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Toon ondertiteling als video\'s die hebben';
 
   @override
-  String get generalSettingsVideoShape => 'Videovorm';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Alleen vierkante video\'s';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Vierkant en portret';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Toon de volledige mix van Divine-video\'s';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

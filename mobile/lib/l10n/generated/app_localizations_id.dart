@@ -203,17 +203,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Tampilkan teks saat video menyertakannya';
 
   @override
-  String get generalSettingsVideoShape => 'Bentuk Video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Video persegi saja';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Persegi dan potret';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Tampilkan semua jenis video Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

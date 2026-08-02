@@ -193,17 +193,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => '動画に字幕がある場合に表示するよ';
 
   @override
-  String get generalSettingsVideoShape => '動画の形';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => '正方形の動画のみ';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => '正方形と縦型';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Divine の動画をフルミックスで表示';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

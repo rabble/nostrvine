@@ -223,17 +223,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => '视频带字幕时自动显示';
 
   @override
-  String get generalSettingsVideoShape => '视频画幅';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => '仅方形视频';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => '方形和竖屏';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      '展示 Divine 全部形态的视频';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle => '让信息流保持经典方形格式';

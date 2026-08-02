@@ -115,10 +115,7 @@
   "appearanceSettingsDark": "Tối",
   "generalSettingsClosedCaptions": "Phụ đề",
   "generalSettingsClosedCaptionsSubtitle": "Hiện phụ đề khi video có sẵn",
-  "generalSettingsVideoShape": "Định dạng video",
   "generalSettingsVideoShapeSquareOnly": "Chỉ video vuông",
-  "generalSettingsVideoShapeSquareAndPortrait": "Vuông và dọc",
-  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Hiển thị đầy đủ các loại video Divine",
   "generalSettingsVideoShapeSquareOnlySubtitle": "Giữ bảng tin ở định dạng vuông cổ điển",
   "contentPreferencesTitle": "Tùy chọn nội dung",
   "@contentPreferencesTitle": {

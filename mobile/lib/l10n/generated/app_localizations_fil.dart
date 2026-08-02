@@ -234,17 +234,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ipakita ang captions kapag may captions ang video';
 
   @override
-  String get generalSettingsVideoShape => 'Hugis ng Video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Square videos lang';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Square at portrait';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Ipakita ang full mix ng Divine videos';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

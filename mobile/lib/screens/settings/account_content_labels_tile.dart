@@ -79,11 +79,17 @@ class _AccountContentLabelsTileView extends StatelessWidget {
     final result = await VineBottomSheet.show<Set<ContentLabel>>(
       context: context,
       contentTitle: context.l10n.contentPreferencesAccountContentLabels,
+      maxChildSize: 1,
       initialChildSize: 0.7,
       minChildSize: 0.4,
-      trailing: _ClearAllAction(selection: selection),
+      // On the title row rather than the header: the header sits above the
+      // divider, which reads as chrome detached from the list it clears.
+      contentTitleTrailing: _ClearAllAction(selection: selection),
       bottomInput: _AccountLabelDoneButton(selection: selection),
-      buildScrollBody: (_) => _AccountLabelMultiSelect(selection: selection),
+      buildScrollBody: (scrollController) => _AccountLabelMultiSelect(
+        scrollController: scrollController,
+        selection: selection,
+      ),
     );
     selection.dispose();
 
@@ -93,7 +99,7 @@ class _AccountContentLabelsTileView extends StatelessWidget {
   }
 }
 
-/// Header action that clears the in-progress selection.
+/// Title-row action that clears the in-progress selection.
 class _ClearAllAction extends StatelessWidget {
   const _ClearAllAction({required this.selection});
 
@@ -143,9 +149,13 @@ class _AccountLabelDoneButton extends StatelessWidget {
 }
 
 class _AccountLabelMultiSelect extends StatelessWidget {
-  const _AccountLabelMultiSelect({required this.selection});
+  const _AccountLabelMultiSelect({
+    required this.scrollController,
+    required this.selection,
+  });
 
   final ValueNotifier<Set<ContentLabel>> selection;
+  final ScrollController scrollController;
 
   void _toggle(ContentLabel label) {
     final next = Set.of(selection.value);
@@ -158,6 +168,7 @@ class _AccountLabelMultiSelect extends StatelessWidget {
     return ValueListenableBuilder<Set<ContentLabel>>(
       valueListenable: selection,
       builder: (context, selected, _) => ListView.builder(
+        controller: scrollController,
         padding: EdgeInsets.zero,
         itemCount: ContentLabel.values.length + 1,
         itemBuilder: (context, index) {

@@ -123,10 +123,7 @@
   "appearanceSettingsDark": "Dark",
   "generalSettingsClosedCaptions": "Closed Captions",
   "generalSettingsClosedCaptionsSubtitle": "Show captions when videos include them",
-  "generalSettingsVideoShape": "Video Shape",
   "generalSettingsVideoShapeSquareOnly": "Square videos only",
-  "generalSettingsVideoShapeSquareAndPortrait": "Square and portrait",
-  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Show the full mix of Divine videos",
   "generalSettingsVideoShapeSquareOnlySubtitle": "Keep feeds in the classic square format",
   "contentPreferencesTitle": "Content Preferences",
   "@contentPreferencesTitle": {

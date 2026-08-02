@@ -294,7 +294,7 @@ class _CustomLabelersSection extends StatelessWidget {
       context: context,
       scrollable: false,
       contentTitle: context.l10n.safetySettingsAddCustomLabeler,
-      children: const [_AddLabelerSheet()],
+      body: const _AddLabelerSheet(),
     );
     if (result != null && result.isNotEmpty) {
       await cubit.addLabeler(result);
@@ -321,7 +321,12 @@ class _AddLabelerSheetState extends State<_AddLabelerSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        4 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: 16,
@@ -330,6 +335,10 @@ class _AddLabelerSheetState extends State<_AddLabelerSheet> {
             controller: _controller,
             labelText: context.l10n.safetySettingsAddCustomLabelerHint,
             textCapitalization: TextCapitalization.none,
+            autofocus: true,
+            filled: true,
+            textInputAction: .done,
+            onSubmitted: (_) => Navigator.pop(context, _controller.text.trim()),
           ),
           Row(
             spacing: 16,

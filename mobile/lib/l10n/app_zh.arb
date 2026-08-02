@@ -115,10 +115,7 @@
   "appearanceSettingsDark": "深色",
   "generalSettingsClosedCaptions": "隐藏字幕",
   "generalSettingsClosedCaptionsSubtitle": "视频带字幕时自动显示",
-  "generalSettingsVideoShape": "视频画幅",
   "generalSettingsVideoShapeSquareOnly": "仅方形视频",
-  "generalSettingsVideoShapeSquareAndPortrait": "方形和竖屏",
-  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "展示 Divine 全部形态的视频",
   "generalSettingsVideoShapeSquareOnlySubtitle": "让信息流保持经典方形格式",
   "contentPreferencesTitle": "内容偏好",
   "@contentPreferencesTitle": {

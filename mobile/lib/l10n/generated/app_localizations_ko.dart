@@ -194,17 +194,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => '영상에 자막이 있을 때 보여줘요';
 
   @override
-  String get generalSettingsVideoShape => '영상 모양';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => '정사각형 영상만';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => '정사각형 및 세로형';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Divine 영상의 모든 종류를 보여줘요';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>

@@ -256,7 +256,8 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(
     color: context.vineColors.card,
     margin: const EdgeInsets.only(bottom: 8),
-    child: ListTile(
+    clipBehavior: .hardEdge,
+    child: DivineSwitchTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -265,15 +266,10 @@ class _NotificationCard extends StatelessWidget {
         ),
         child: DivineIcon(icon: icon, color: iconColor),
       ),
-      title: Text(
-        title,
-        style: VineTheme.labelLargeFont(color: context.vineColors.primaryText),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
-      ),
-      trailing: DivineSwitch(value: value, onChanged: onChanged),
+      title: title,
+      subtitle: subtitle,
+      value: value,
+      onChanged: onChanged,
     ),
   );
 }
@@ -297,6 +293,7 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) => Card(
     color: context.vineColors.card,
     margin: const EdgeInsets.only(bottom: 8),
+    clipBehavior: .hardEdge,
     child: ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
@@ -313,11 +310,6 @@ class _ActionCard extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
-      ),
-      trailing: DivineIcon(
-        icon: DivineIconName.caretRight,
-        color: context.vineColors.mutedText,
-        size: 16,
       ),
       onTap: onTap,
     ),
@@ -336,13 +328,13 @@ class _InfoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            spacing: 8,
             children: [
               const DivineIcon(
                 icon: DivineIconName.info,
                 color: VineTheme.commentBlue,
                 size: 20,
               ),
-              const SizedBox(width: 8),
               Text(
                 context.l10n.notificationSettingsAbout,
                 style: VineTheme.titleMediumFont(
@@ -356,7 +348,7 @@ class _InfoCard extends StatelessWidget {
             context.l10n.notificationSettingsAboutDescription,
             style: VineTheme.bodySmallFont(
               color: context.vineColors.secondaryText,
-            ).copyWith(height: 1.4),
+            ),
           ),
         ],
       ),

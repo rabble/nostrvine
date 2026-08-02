@@ -110,7 +110,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               const SizedBox(width: 12),
               Text(
                 l10n.keyManagementWhatAreKeys,
-                style: VineTheme.titleLargeFont(color: VineTheme.vineGreen),
+                style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
               ),
             ],
           ),
@@ -119,7 +119,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
             l10n.keyManagementExplanation,
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.onSurfaceVariant,
-            ).copyWith(height: 1.5),
+            ),
           ),
         ],
       ),
@@ -132,7 +132,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       children: [
         Text(
           context.l10n.keyManagementImportTitle,
-          style: VineTheme.titleLargeFont(
+          style: VineTheme.titleMediumFont(
             color: context.vineColors.primaryText,
           ),
         ),
@@ -141,7 +141,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           context.l10n.keyManagementImportSubtitle,
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.onSurfaceMuted,
-          ).copyWith(height: 1.4),
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -157,32 +157,25 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               DivineTextField(
                 controller: _importController,
                 labelText: 'nsec1...',
+                minLines: 1,
                 maxLines: 3,
                 enabled: !_isProcessing,
                 autocorrect: false,
                 textCapitalization: TextCapitalization.none,
-              ),
-              const SizedBox(height: 8),
-              // DivineTextField has no suffix slot, so the paste affordance
-              // sits alongside the field instead of inside it.
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: DivineButton(
-                  label: context.l10n.keyManagementPasteKey,
-                  leadingIcon: DivineIconName.clipboard,
-                  type: DivineButtonType.link,
-                  size: DivineButtonSize.small,
-                  onPressed: _isProcessing
-                      ? null
-                      : () async {
-                          final data = await Clipboard.getData('text/plain');
-                          if (data?.text != null) {
-                            _importController.text = data!.text!.trim();
-                          }
-                        },
+                spellCheckConfiguration:
+                    const SpellCheckConfiguration.disabled(),
+                filled: true,
+                suffixIcon: DivineIconButton(
+                  icon: DivineIconName.clipboard,
+                  size: DivineIconButtonSize.small,
+                  backgroundColor: VineTheme.transparent,
+                  foregroundColor: context.vineColors.onSurfaceVariant,
+                  showShadow: false,
+                  tooltip: context.l10n.keyManagementPasteKey,
+                  onPressed: _isProcessing ? null : _pasteKeyFromClipboard,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               DivineButton(
                 label: context.l10n.keyManagementImportButton,
                 expanded: true,
@@ -239,7 +232,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       children: [
         Text(
           context.l10n.keyManagementBackupTitle,
-          style: VineTheme.titleLargeFont(
+          style: VineTheme.titleMediumFont(
             color: context.vineColors.primaryText,
           ),
         ),
@@ -248,7 +241,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           context.l10n.keyManagementBackupSubtitle,
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.onSurfaceMuted,
-          ).copyWith(height: 1.4),
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -288,7 +281,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                       Expanded(
                         child: Text(
                           context.l10n.keyManagementNeverShare,
-                          style: VineTheme.labelMediumFont(
+                          style: VineTheme.bodySmallFont(
                             color: context.vineColors.onSurfaceVariant,
                           ),
                         ),
@@ -303,6 +296,13 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _pasteKeyFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text == null || text.isEmpty) return;
+    _importController.text = text;
   }
 
   Future<void> _importKey(BuildContext context, nostrService) async {

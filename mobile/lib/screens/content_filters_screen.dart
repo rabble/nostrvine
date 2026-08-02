@@ -82,7 +82,9 @@ class ContentFiltersView extends StatelessWidget {
               }
               final cubit = context.read<ContentFiltersCubit>();
               return ListView(
-                padding: const EdgeInsets.only(bottom: 32),
+                padding: .only(
+                  bottom: 32 + MediaQuery.viewPaddingOf(context).bottom,
+                ),
                 children: [
                   if (!state.isAgeVerified) const _AgeGateBanner(),
                   _CategoryGroup(
@@ -204,6 +206,7 @@ class _ContentFilterRow extends StatelessWidget {
       key: ValueKey('content-filter-${label.value}'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
+        spacing: 8,
         children: [
           Expanded(
             child: Text(
@@ -213,6 +216,8 @@ class _ContentFilterRow extends StatelessWidget {
                     ? context.vineColors.disabled
                     : context.vineColors.primaryText,
               ),
+              maxLines: 1,
+              overflow: .ellipsis,
             ),
           ),
           _FilterSegmentedControl(
@@ -296,22 +301,43 @@ class _FilterSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: _selected ? VineTheme.vineGreen : VineTheme.transparent,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          _label,
-          style: VineTheme.labelMediumFont(
-            color: _locked
-                ? context.vineColors.disabled
-                : _selected
-                ? context.vineColors.background
-                : context.vineColors.secondaryText,
+    // MergeSemantics lifts the child Text's label onto this node instead of
+    // repeating it in `label:`, so the announced string cannot drift from the
+    // rendered one.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        enabled: _onTap != null,
+        selected: _selected,
+        inMutuallyExclusiveGroup: true,
+        child: GestureDetector(
+          onTap: _onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            constraints: const BoxConstraints(
+              minHeight: kMinInteractiveDimension,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: _locked && _selected
+                  ? VineTheme.outlineDisabled
+                  : _selected
+                  ? VineTheme.vineGreen
+                  : VineTheme.transparent,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Center(
+              child: Text(
+                _label,
+                style: VineTheme.labelMediumFont(
+                  color: _locked
+                      ? context.vineColors.disabled
+                      : _selected
+                      ? context.vineColors.background
+                      : context.vineColors.secondaryText,
+                ),
+              ),
+            ),
           ),
         ),
       ),

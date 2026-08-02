@@ -199,7 +199,7 @@ class _DeveloperOptionsScreenState
                 ),
                 child: Text(
                   context.l10n.devOptionsPageLoadTimes,
-                  style: VineTheme.titleLargeFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
                 ),
               ),
 
@@ -250,7 +250,9 @@ class _DeveloperOptionsScreenState
                   ),
                   child: Text(
                     context.l10n.devOptionsSlowestScreens,
-                    style: VineTheme.titleLargeFont(color: VineTheme.vineGreen),
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
                   ),
                 ),
                 ...slowestRecords.map((record) {
@@ -292,7 +294,7 @@ class _DeveloperOptionsScreenState
                 ),
                 child: Text(
                   context.l10n.devOptionsVideoPlaybackFormat,
-                  style: VineTheme.titleLargeFont(color: VineTheme.vineGreen),
+                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
                 ),
               ),
 
@@ -331,7 +333,9 @@ class _DeveloperOptionsScreenState
                   ),
                   child: Text(
                     context.l10n.devOptionsMinorReviewSimulationTitle,
-                    style: VineTheme.titleLargeFont(color: VineTheme.vineGreen),
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
                   ),
                 ),
                 ListTile(
@@ -415,7 +419,9 @@ class _DeveloperOptionsScreenState
                   ),
                   child: Text(
                     context.l10n.devOptionsProtectedMinorSimulationTitle,
-                    style: VineTheme.titleLargeFont(color: VineTheme.vineGreen),
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
                   ),
                 ),
                 ListTile(

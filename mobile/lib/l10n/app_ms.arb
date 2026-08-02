@@ -115,10 +115,7 @@
   "appearanceSettingsDark": "Gelap",
   "generalSettingsClosedCaptions": "Sarikata Tertutup",
   "generalSettingsClosedCaptionsSubtitle": "Papar sarikata apabila video menyertainya",
-  "generalSettingsVideoShape": "Bentuk Video",
   "generalSettingsVideoShapeSquareOnly": "Video segi empat sahaja",
-  "generalSettingsVideoShapeSquareAndPortrait": "Segi empat dan potret",
-  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Tunjukkan gabungan penuh video Divine",
   "generalSettingsVideoShapeSquareOnlySubtitle": "Kekalkan suapan dalam format segi empat klasik",
   "contentPreferencesTitle": "Keutamaan Kandungan",
   "@contentPreferencesTitle": {

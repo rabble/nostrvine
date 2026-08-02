@@ -234,18 +234,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar los subtítulos cuando los videos los incluyan';
 
   @override
-  String get generalSettingsVideoShape => 'Formato de video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Solo videos cuadrados';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Cuadrado y vertical';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Mostrá toda la mezcla de videos de Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
