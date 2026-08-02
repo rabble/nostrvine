@@ -10,6 +10,7 @@ import 'package:openvine/blocs/blossom_settings/blossom_settings_cubit.dart';
 import 'package:openvine/blocs/blossom_settings/blossom_settings_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Page: bridges `BlossomUploadService` into [BlossomSettingsCubit].
 class BlossomSettingsScreen extends ConsumerWidget {
@@ -119,9 +120,7 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
           ),
           backgroundColor: context.vineColors.background,
           body: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                )
+              ? const Center(child: BrandedLoadingIndicator(size: 60))
               : Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(

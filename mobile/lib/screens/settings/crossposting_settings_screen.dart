@@ -13,6 +13,7 @@ import 'package:openvine/features/crossposting/crossposting_oauth_launcher.dart'
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/crossposting_providers.dart';
 import 'package:openvine/repositories/crossposting_repository.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Wires authenticated dependencies for the crossposting settings view.
 class CrosspostingSettingsScreen extends ConsumerWidget {
@@ -96,7 +97,7 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
         builder: (context, state) => switch (state.status) {
           CrosspostingSettingsStatus.initial ||
           CrosspostingSettingsStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            child: BrandedLoadingIndicator(size: 60),
           ),
           CrosspostingSettingsStatus.failure => const _LoadFailed(),
           CrosspostingSettingsStatus.loaded when state.entries.isEmpty =>

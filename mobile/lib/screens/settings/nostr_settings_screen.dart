@@ -284,35 +284,16 @@ class _SignatureVerificationPolicyScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              RadioGroup<NostrSignatureVerificationPolicy>(
-                groupValue: current,
-                onChanged: (value) {
-                  if (value == null || value == current) return;
-                  unawaited(_setPolicy(ref, value));
-                },
-                child: Column(
-                  children: [
-                    for (final policy
-                        in NostrSignatureVerificationPolicy.values)
-                      RadioListTile<NostrSignatureVerificationPolicy>(
-                        value: policy,
-                        activeColor: VineTheme.vineGreen,
-                        title: Text(
-                          _policyTitle(context, policy),
-                          style: VineTheme.titleMediumFont(
-                            color: context.vineColors.primaryText,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _policySubtitle(context, policy),
-                          style: VineTheme.bodyMediumFont(
-                            color: context.vineColors.mutedText,
-                          ),
-                        ),
-                      ),
-                  ],
+              for (final policy in NostrSignatureVerificationPolicy.values)
+                DivineSelectableRow(
+                  title: _policyTitle(context, policy),
+                  subtitle: _policySubtitle(context, policy),
+                  isSelected: policy == current,
+                  onTap: () {
+                    if (policy == current) return;
+                    unawaited(_setPolicy(ref, policy));
+                  },
                 ),
-              ),
             ],
           ),
         ),

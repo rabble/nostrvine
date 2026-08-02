@@ -9,6 +9,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:share_plus/share_plus.dart';
 
 class InvitesScreen extends StatefulWidget {
@@ -58,7 +59,7 @@ class InvitesView extends StatelessWidget {
               InviteStatusLoadingStatus.initial ||
               InviteStatusLoadingStatus.waitingForAuth ||
               InviteStatusLoadingStatus.loading => const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                child: BrandedLoadingIndicator(size: 60),
               ),
               InviteStatusLoadingStatus.error => _ErrorView(
                 onRetry: () => context.read<InviteStatusCubit>().load(),

@@ -21,6 +21,7 @@ import 'package:openvine/screens/settings/crossposting_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/crossposting_api_client.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -153,7 +154,7 @@ void main() {
       await tester.pumpWidget(buildApp());
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       load.complete(const []);

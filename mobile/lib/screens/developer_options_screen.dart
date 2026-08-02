@@ -619,14 +619,10 @@ class _DeveloperOptionsScreenState
 
     // Show confirmation and go back
     if (context.mounted) {
-      // Stays a raw SnackBar: the environment's own indicator colour is the
-      // point of this toast, and DivineSnackbarContainer only exposes the
-      // neutral/error pair.
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            context.l10n.devOptionsSwitchedTo(newConfig.displayName),
-          ),
+        DivineSnackbarContainer.snackBar(
+          context.l10n.devOptionsSwitchedTo(newConfig.displayName),
+          // The environment's own indicator colour is the point of this toast.
           backgroundColor: Color(newConfig.indicatorColorValue),
         ),
       );

@@ -13,6 +13,7 @@ import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_filter_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Page: bridges the filter + age services into [ContentFiltersCubit].
 class ContentFiltersScreen extends ConsumerWidget {
@@ -77,9 +78,7 @@ class ContentFiltersView extends StatelessWidget {
           child: BlocBuilder<ContentFiltersCubit, ContentFiltersState>(
             builder: (context, state) {
               if (state.status != ContentFiltersStatus.ready) {
-                return const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                );
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
               final cubit = context.read<ContentFiltersCubit>();
               return ListView(

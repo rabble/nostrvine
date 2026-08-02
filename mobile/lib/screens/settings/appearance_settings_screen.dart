@@ -21,36 +21,33 @@ class AppearanceSettingsScreen extends StatelessWidget {
         onBackPressed: context.pop,
       ),
       body: BlocBuilder<AppearanceCubit, AppearanceMode>(
-        builder: (context, mode) => RadioGroup<AppearanceMode>(
-          groupValue: mode,
-          onChanged: (value) {
-            if (value != null) context.read<AppearanceCubit>().setMode(value);
-          },
-          child: ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Text(
-                  context.l10n.appearanceSettingsSubtitle,
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.secondaryText,
-                  ),
+        builder: (context, mode) => ListView(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+              child: Text(
+                context.l10n.appearanceSettingsSubtitle,
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.secondaryText,
                 ),
               ),
-              _ModeTile(
-                title: context.l10n.appearanceSettingsSystem,
-                value: AppearanceMode.system,
-              ),
-              _ModeTile(
-                title: context.l10n.appearanceSettingsLight,
-                value: AppearanceMode.light,
-              ),
-              _ModeTile(
-                title: context.l10n.appearanceSettingsDark,
-                value: AppearanceMode.dark,
-              ),
-            ],
-          ),
+            ),
+            _ModeTile(
+              title: context.l10n.appearanceSettingsSystem,
+              value: AppearanceMode.system,
+              selected: mode,
+            ),
+            _ModeTile(
+              title: context.l10n.appearanceSettingsLight,
+              value: AppearanceMode.light,
+              selected: mode,
+            ),
+            _ModeTile(
+              title: context.l10n.appearanceSettingsDark,
+              value: AppearanceMode.dark,
+              selected: mode,
+            ),
+          ],
         ),
       ),
     );
@@ -61,21 +58,19 @@ class _ModeTile extends StatelessWidget {
   const _ModeTile({
     required this.title,
     required this.value,
+    required this.selected,
   });
 
   final String title;
   final AppearanceMode value;
+  final AppearanceMode selected;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.vineColors;
-    return RadioListTile<AppearanceMode>(
-      value: value,
-      title: Text(
-        title,
-        style: VineTheme.bodyLargeFont(color: colors.primaryText),
-      ),
-      activeColor: VineTheme.vineGreen,
+    return DivineSelectableRow(
+      title: title,
+      isSelected: value == selected,
+      onTap: () => context.read<AppearanceCubit>().setMode(value),
     );
   }
 }

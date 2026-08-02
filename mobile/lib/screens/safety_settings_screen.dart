@@ -15,6 +15,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Page: bridges the seven moderation services + repositories into
@@ -89,9 +90,7 @@ class SafetySettingsView extends StatelessWidget {
           child: BlocBuilder<SafetySettingsCubit, SafetySettingsState>(
             builder: (context, state) {
               if (state.status == SafetySettingsStatus.loading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                );
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
               return ListView(
                 children: [

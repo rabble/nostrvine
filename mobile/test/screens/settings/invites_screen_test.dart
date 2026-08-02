@@ -8,6 +8,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
@@ -37,7 +38,7 @@ void main() {
           const InviteStatusState(status: InviteStatusLoadingStatus.loading),
         );
         await tester.pumpWidget(buildSubject());
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
       });
 
       testWidgets('empty state when no invites', (tester) async {

@@ -206,82 +206,29 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            context.l10n.profileSetupUsernameLabel,
-            style: VineTheme.labelMediumFont(
-              color: _usernameFocusNode.hasFocus && !isExternal
-                  ? VineTheme.primary
-                  : context.vineColors.onSurfaceMuted,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // Stays a bare TextFormField: the '@' prefix and '.divine.video'
-          // suffix render inside the input so the full handle takes shape as
-          // the user types, and DivineAuthTextField has no affix slots.
-          TextFormField(
+          DivineAuthTextField(
+            label: context.l10n.profileSetupUsernameLabel,
             controller: _usernameController,
             focusNode: _usernameFocusNode,
             enabled: !isExternal,
-            style: VineTheme.bodyLargeFont(
-              color: isExternal
-                  ? context.vineColors.onSurfaceMuted
-                  : context.vineColors.onSurface,
-            ),
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            decoration: InputDecoration(
-              isCollapsed: true,
-              hintText: context.l10n.profileSetupUsernameHint,
-              helperText: context.l10n.profileSetupUsernameHelper,
-              helperStyle: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceMuted,
-              ),
-              hintStyle: VineTheme.bodyLargeFont(
-                color: context.vineColors.onSurfaceMuted,
-              ),
-              border: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              enabledBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              disabledBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              errorBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              focusedErrorBorder: UnderlineInputBorder(
-                borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: context.vineColors.outlineMuted),
-              ),
-              contentPadding: const EdgeInsets.all(16),
-              prefixText: '@',
-              prefixStyle: VineTheme.bodyLargeFont(
-                color: context.vineColors.onSurfaceMuted,
-              ),
-              suffixText: _divineVideoDomainSuffix,
-              suffixStyle: VineTheme.bodyLargeFont(
-                color: context.vineColors.onSurfaceMuted,
-              ),
-              errorMaxLines: 2,
-            ),
+            prefixText: '@',
+            suffixText: _divineVideoDomainSuffix,
+            textInputAction: TextInputAction.next,
             inputFormatters: [
               const LowercaseTextInputFormatter(),
               FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
             ],
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+            onSubmitted: (_) => FocusScope.of(context).nextFocus(),
             onChanged: (value) {
               context.read<ProfileEditorBloc>().add(UsernameChanged(value));
             },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.profileSetupUsernameHelper,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
           if (!isExternal)
             UsernameStatusIndicator(

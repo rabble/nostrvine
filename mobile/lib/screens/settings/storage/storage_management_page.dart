@@ -67,11 +67,15 @@ class StorageManagementView extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 600),
             child: ListView(
               padding: const EdgeInsets.only(bottom: 32),
-              children: const [
-                _SectionHeader(_Section.cache),
-                _CacheSection(),
-                _SectionHeader(_Section.library),
-                _LibrarySection(),
+              children: [
+                DivineSectionHeader(
+                  context.l10n.settingsStorageCacheSectionTitle,
+                ),
+                const _CacheSection(),
+                DivineSectionHeader(
+                  context.l10n.settingsStorageLibrarySectionTitle,
+                ),
+                const _LibrarySection(),
               ],
             ),
           ),
@@ -97,23 +101,6 @@ class StorageManagementView extends StatelessWidget {
       message,
       Directionality.of(context),
     );
-  }
-}
-
-enum _Section { cache, library }
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.section);
-
-  final _Section section;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = switch (section) {
-      _Section.cache => context.l10n.settingsStorageCacheSectionTitle,
-      _Section.library => context.l10n.settingsStorageLibrarySectionTitle,
-    };
-    return DivineSectionHeader(title);
   }
 }
 

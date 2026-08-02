@@ -114,8 +114,10 @@ class NotificationSettingsView extends StatelessWidget {
                     16 + MediaQuery.viewPaddingOf(context).bottom,
                   ),
                   children: [
-                    _SectionHeader(context.l10n.notificationSettingsTypes),
-                    const SizedBox(height: 8),
+                    DivineSectionHeader(
+                      context.l10n.notificationSettingsTypes,
+                      padding: const EdgeInsets.only(bottom: 8),
+                    ),
                     _NotificationCard(
                       icon: DivineIconName.heart,
                       iconColor: VineTheme.likeRed,
@@ -182,9 +184,10 @@ class NotificationSettingsView extends StatelessWidget {
                           prefs.copyWith(newPostsEnabled: value),
                         ),
                       ),
-                    const SizedBox(height: 24),
-                    _SectionHeader(context.l10n.notificationSettingsActions),
-                    const SizedBox(height: 8),
+                    DivineSectionHeader(
+                      context.l10n.notificationSettingsActions,
+                      padding: const EdgeInsets.only(top: 24, bottom: 8),
+                    ),
                     _ActionCard(
                       icon: DivineIconName.checkCircle,
                       iconColor: VineTheme.vineGreenLight,
@@ -230,18 +233,6 @@ class NotificationSettingsView extends StatelessWidget {
       ),
     );
   }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    title,
-    style: VineTheme.titleLargeFont(color: context.vineColors.primaryText),
-  );
 }
 
 class _NotificationCard extends StatelessWidget {

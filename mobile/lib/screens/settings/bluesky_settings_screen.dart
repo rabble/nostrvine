@@ -12,6 +12,7 @@ import 'package:openvine/blocs/crosspost_settings/crosspost_settings_cubit.dart'
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 class BlueskySettingsScreen extends ConsumerWidget {
   static const routeName = 'bluesky-settings';
@@ -51,9 +52,7 @@ class BlueskySettingsScreen extends ConsumerWidget {
           onBackPressed: context.pop,
         ),
         backgroundColor: context.vineColors.background,
-        body: const Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
+        body: const Center(child: BrandedLoadingIndicator(size: 60)),
       );
     }
 
@@ -88,9 +87,7 @@ class _BlueskySettingsView extends StatelessWidget {
             listener: _onStateChanged,
             builder: (context, state) {
               if (state.status == CrosspostSettingsStatus.loading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                );
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
 
               return ListView(

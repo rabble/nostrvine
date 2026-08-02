@@ -150,7 +150,10 @@ class _MonetizationLinksSettingsViewState
                 appStoreTipPolicy: appStoreTipPolicy,
               ),
               const SizedBox(height: 20),
-              _SectionHeader(context.l10n.monetizationSettingsTipSection),
+              DivineSectionHeader(
+                context.l10n.monetizationSettingsTipSection,
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+              ),
               for (final provider in tipProviders)
                 _ProviderEditor(
                   provider: provider,
@@ -166,8 +169,9 @@ class _MonetizationLinksSettingsViewState
                 ),
               if (subscriptionProviders.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                _SectionHeader(
+                DivineSectionHeader(
                   context.l10n.monetizationSettingsSubscriptionSection,
+                  padding: const EdgeInsets.only(top: 8, bottom: 8),
                 ),
                 for (final provider in subscriptionProviders)
                   _ProviderEditor(
@@ -341,25 +345,6 @@ class _SectionIntro extends StatelessWidget {
               style: VineTheme.bodySmallFont(color: VineTheme.primary),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: VineTheme.labelSmallFont(
-          color: context.vineColors.onSurfaceVariant,
         ),
       ),
     );
