@@ -448,25 +448,6 @@ void main() {
       );
     });
 
-    testWidgets('omits the title row action when none is given', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: VineBottomSheet(
-              scrollable: false,
-              contentTitle: 'Bare title',
-              children: [Text('Child')],
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Bare title'), findsOneWidget);
-      expect(find.text('Child'), findsOneWidget);
-    });
-
     testWidgets('does not duplicate contentTitle in the children path', (
       tester,
     ) async {

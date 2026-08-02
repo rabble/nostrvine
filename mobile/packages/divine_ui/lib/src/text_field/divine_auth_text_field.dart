@@ -52,6 +52,7 @@ class DivineAuthTextField extends StatefulWidget {
     this.contentPadding,
     this.prefixText,
     this.suffixText,
+    this.hintText,
     this.errorText,
     this.autofillHints,
     this.showPasswordSemanticLabel = 'Show password',
@@ -125,6 +126,12 @@ class DivineAuthTextField extends StatefulWidget {
   ///
   /// The counterpart of [prefixText] — a domain suffix, a unit.
   final String? suffixText;
+
+  /// Example of the value the field wants, e.g. `you@example.com`.
+  ///
+  /// The label floats out of the way on focus, so this shows once the user is
+  /// in the field and it is still empty — a format hint, not a second label.
+  final String? hintText;
 
   /// Error message to display below the field.
   ///
@@ -293,6 +300,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
                         contentPadding: widget.contentPadding,
                         prefixText: widget.prefixText,
                         suffixText: widget.suffixText,
+                        hintText: widget.hintText,
                         hasError: _hasError,
                         autofillHints: widget.autofillHints,
                       ),
@@ -398,6 +406,7 @@ class _AuthTextFieldInput extends StatelessWidget {
     this.contentPadding,
     this.prefixText,
     this.suffixText,
+    this.hintText,
     this.autofillHints,
   });
 
@@ -422,6 +431,7 @@ class _AuthTextFieldInput extends StatelessWidget {
   final EdgeInsetsGeometry? contentPadding;
   final String? prefixText;
   final String? suffixText;
+  final String? hintText;
   final Iterable<String>? autofillHints;
 
   /// Input top offset when the label is floating (36px).
@@ -468,6 +478,8 @@ class _AuthTextFieldInput extends StatelessWidget {
             contentPadding: contentPadding ?? EdgeInsets.only(top: inputTop),
             prefixText: prefixText,
             suffixText: suffixText,
+            hintText: hintText,
+            hintStyle: affixStyle,
             prefixStyle: affixStyle,
             suffixStyle: affixStyle,
             border: InputBorder.none,

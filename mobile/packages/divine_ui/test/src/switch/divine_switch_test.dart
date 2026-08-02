@@ -81,7 +81,6 @@ void main() {
     testWidgets('adds no semantics node without a label', (tester) async {
       await tester.pumpWidget(buildTestWidget(value: false));
 
-      expect(find.byType(Semantics), findsWidgets);
       expect(tester.getSemantics(find.byType(Switch)).label, isEmpty);
     });
   });

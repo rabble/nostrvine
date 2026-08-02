@@ -137,14 +137,26 @@ void main() {
   });
 
   group(DivineSectionHeader, () {
-    testWidgets('renders the label', (tester) async {
+    testWidgets('shouts a sentence-case label', (tester) async {
       // Built from a runtime value on purpose: a const-evaluated widget never
       // executes its constructor, which leaves it uncovered.
-      final label = 'network'.toUpperCase();
+      final label = 'Danger Zone'.substring(0);
       await tester.pumpWidget(
         MaterialApp(
           theme: VineTheme.theme,
           home: Scaffold(body: DivineSectionHeader(label)),
+        ),
+      );
+
+      expect(find.text('DANGER ZONE'), findsOneWidget);
+      expect(find.text('Danger Zone'), findsNothing);
+    });
+
+    testWidgets('leaves an already-uppercased label alone', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(body: DivineSectionHeader('NETWORK')),
         ),
       );
 
@@ -164,6 +176,21 @@ void main() {
       final style = tester.widget<Text>(find.text('NETWORK')).style!;
       expect(style.color, VineTheme.vineGreen);
       expect(style.letterSpacing, 1.2);
+    });
+
+    testWidgets('drops the brand accent in light mode', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.lightTheme,
+          home: const Scaffold(body: DivineSectionHeader('NETWORK')),
+        ),
+      );
+
+      // vineGreen is ~2.1:1 on the light background — far too low for a 12sp
+      // label, so light mode uses the neutral instead.
+      final style = tester.widget<Text>(find.text('NETWORK')).style!;
+      expect(style.color, isNot(VineTheme.vineGreen));
+      expect(style.color, VineTheme.lightColors.onSurface);
     });
 
     testWidgets('defaults to the canonical spacing', (tester) async {

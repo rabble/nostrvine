@@ -2,6 +2,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+/// WCAG 2.1 contrast ratio between two opaque colours.
+double _contrast(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  final (lighter, darker) = la > lb ? (la, lb) : (lb, la);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 void main() {
   group(VineTheme, () {
     // Material 3 ignores `primarySwatch`. Without an explicit `colorScheme`
@@ -14,9 +22,15 @@ void main() {
         expect(VineTheme.theme.colorScheme.onPrimary, VineTheme.onPrimary);
       });
 
-      test('light primary is the brand green too', () {
-        expect(VineTheme.lightTheme.colorScheme.primary, VineTheme.vineGreen);
-        expect(VineTheme.lightTheme.colorScheme.onPrimary, VineTheme.onPrimary);
+      test('light primary is a green dark enough to read on white', () {
+        final primary = VineTheme.lightTheme.colorScheme.primary;
+        // Not the dark-mode accent: vineGreen only reaches ~2.2:1 on the light
+        // background, so anything defaulting to `primary` there is unreadable.
+        expect(primary, isNot(VineTheme.vineGreen));
+        expect(
+          _contrast(primary, VineTheme.lightColors.background),
+          greaterThanOrEqualTo(4.5),
+        );
       });
 
       test('brightness still follows the requested mode', () {
@@ -26,14 +40,14 @@ void main() {
     });
 
     group('progressIndicatorTheme', () {
-      test('bare progress indicators paint green in both modes', () {
+      test('bare progress indicators follow the scheme primary', () {
         expect(
           VineTheme.theme.progressIndicatorTheme.color,
           VineTheme.vineGreen,
         );
         expect(
           VineTheme.lightTheme.progressIndicatorTheme.color,
-          VineTheme.vineGreen,
+          VineTheme.lightTheme.colorScheme.primary,
         );
       });
     });

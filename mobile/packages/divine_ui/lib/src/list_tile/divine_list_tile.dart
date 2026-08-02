@@ -118,8 +118,8 @@ class DivineSectionHeader extends StatelessWidget {
   /// Default spacing, sized for an unpadded list.
   static const defaultPadding = EdgeInsets.fromLTRB(16, 24, 16, 8);
 
-  /// The group label. Rendered as given — callers that want shouting caps
-  /// pass an already-uppercased string.
+  /// The group label. Uppercased on render, so a caller can pass ordinary
+  /// sentence-case copy (and an already-uppercased ARB value is unchanged).
   final String title;
 
   /// Overrides [defaultPadding].
@@ -130,12 +130,16 @@ class DivineSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.vineColors;
     return Padding(
       padding: padding ?? defaultPadding,
       child: Text(
-        title,
+        title.toUpperCase(),
         style: VineTheme.labelMediumFont(
-          color: VineTheme.vineGreen,
+          // vineGreen is a dark-mode accent — it measures ~2.1:1 on the light
+          // background, well under the 4.5:1 this 12sp label needs, so light
+          // mode falls back to the neutral the buttons already use there.
+          color: colors.isLight ? colors.onSurface : VineTheme.vineGreen,
         ).copyWith(letterSpacing: 1.2),
       ),
     );
