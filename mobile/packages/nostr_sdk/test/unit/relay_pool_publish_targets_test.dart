@@ -1,0 +1,198 @@
+// ABOUTME: Regression tests for which relays count as publish targets.
+// ABOUTME: A configured-but-disconnected relay must not inflate the denominator.
+
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+class _BufferingSink implements WebSocketSink {
+  final List<dynamic> messages = [];
+  bool closed = false;
+  final Completer<void> _doneCompleter = Completer<void>();
+
+  @override
+  void add(dynamic data) {
+    if (closed) throw StateError('Sink is closed');
+    messages.add(data);
+  }
+
+  @override
+  void addError(Object error, [StackTrace? stackTrace]) {}
+
+  @override
+  Future<dynamic> addStream(Stream<dynamic> stream) async {
+    await for (final data in stream) {
+      add(data);
+    }
+  }
+
+  @override
+  Future<dynamic> close([int? closeCode, String? closeReason]) async {
+    closed = true;
+    if (!_doneCompleter.isCompleted) _doneCompleter.complete();
+  }
+
+  @override
+  Future<dynamic> get done => _doneCompleter.future;
+}
+
+class _FakeWebSocketChannel implements WebSocketChannel {
+  _FakeWebSocketChannel({this.failReady = false});
+
+  /// When true, `ready` rejects — the shape of a relay that is configured but
+  /// currently unreachable, which is what `RelayBase.connect()` reports as a
+  /// failed connect.
+  final bool failReady;
+
+  final _BufferingSink _sink = _BufferingSink();
+  final StreamController<dynamic> _streamController =
+      StreamController<dynamic>.broadcast();
+
+  @override
+  WebSocketSink get sink => _sink;
+
+  @override
+  Stream<dynamic> get stream => _streamController.stream;
+
+  @override
+  int? get closeCode => null;
+
+  @override
+  String? get closeReason => null;
+
+  @override
+  String? get protocol => null;
+
+  @override
+  Future<void> get ready => failReady
+      ? Future<void>.error(StateError('unreachable'))
+      : Future.value();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    throw UnimplementedError('${invocation.memberName} not used in this test');
+  }
+
+  void simulateMessage(String message) => _streamController.add(message);
+
+  List<dynamic> get sentMessages => _sink.messages;
+}
+
+class _FakeChannelFactory implements WebSocketChannelFactory {
+  _FakeChannelFactory({this.failReady = false});
+
+  final bool failReady;
+  final List<_FakeWebSocketChannel> createdChannels = [];
+
+  @override
+  WebSocketChannel create(Uri uri) {
+    final channel = _FakeWebSocketChannel(failReady: failReady);
+    createdChannels.add(channel);
+    return channel;
+  }
+}
+
+void main() {
+  group('RelayPool publish targets', () {
+    const liveUrl = 'wss://relay.divine.video';
+    const downUrl = 'wss://relay.offline.example';
+    const eventId = 'target-denominator-event-id';
+
+    late LocalNostrSigner signer;
+    late Nostr nostr;
+    late _FakeChannelFactory liveFactory;
+
+    setUp(() async {
+      signer = LocalNostrSigner(
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+      );
+      nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
+      await nostr.refreshPublicKey();
+
+      liveFactory = _FakeChannelFactory();
+      await nostr.relayPool.add(
+        RelayBase(liveUrl, RelayStatus(liveUrl), channelFactory: liveFactory),
+      );
+
+      // Configured, write-enabled, but the socket never comes up. `add()`
+      // keeps it in the pool even when connect() fails, which is exactly the
+      // steady state on mobile when one of the user's relays is down.
+      await nostr.relayPool.add(
+        RelayBase(
+          downUrl,
+          RelayStatus(downUrl),
+          channelFactory: _FakeChannelFactory(failReady: true),
+        ),
+      );
+    });
+
+    /// Answers `OK true` from the live relay as soon as its EVENT lands.
+    void acceptFromLiveRelay() {
+      final channel = liveFactory.createdChannels.single;
+      Timer.run(() {
+        final sawEvent = channel.sentMessages.any((m) {
+          final frame = jsonDecode(m as String) as List<dynamic>;
+          return frame.first == 'EVENT';
+        });
+        if (sawEvent) {
+          channel.simulateMessage(jsonEncode(['OK', eventId, true, '']));
+        }
+      });
+    }
+
+    test(
+      'a configured relay that never connected is not a publish target',
+      () async {
+        acceptFromLiveRelay();
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          eventKind: 5,
+          timeout: const Duration(milliseconds: 400),
+        );
+
+        expect(outcome.acceptedBy, equals([liveUrl]));
+        expect(
+          outcome.unreachableTargets,
+          isEmpty,
+          reason:
+              'a relay that was never connected was never a target, so it '
+              'cannot be an unreachable one',
+        );
+        expect(outcome.targetCount, equals(1));
+        expect(
+          outcome.acceptedByAll,
+          isTrue,
+          reason:
+              'every relay this publish could reach accepted it, so the '
+              'outcome must not read as partial',
+        );
+      },
+    );
+
+    test('the disconnected relay still cannot speak for the publish', () async {
+      acceptFromLiveRelay();
+
+      final outcome = await nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': eventId, 'kind': 5},
+        ],
+        eventId: eventId,
+        eventKind: 5,
+        timeout: const Duration(milliseconds: 400),
+      );
+
+      expect(outcome.acceptedBy, isNot(contains(downUrl)));
+      expect(outcome.rejectedBy.keys, isNot(contains(downUrl)));
+      expect(outcome.noResponseFrom, isNot(contains(downUrl)));
+    });
+  });
+}

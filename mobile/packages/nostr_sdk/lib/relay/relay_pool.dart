@@ -1730,6 +1730,16 @@ class RelayPool {
   /// instead would silently shrink the denominator: a relay that could not be
   /// written to would be absent from the outcome entirely, and a publish could
   /// settle while later relays had not been attempted yet.
+  ///
+  /// An `EVENT` target must be *connected* as well as write-enabled, matching
+  /// [writable]. `writeAccess` is a config flag that defaults to true, so
+  /// counting on it alone made every configured-but-offline relay a target
+  /// that could only ever land in [PublishOutcome.unreachableTargets] — which
+  /// on mobile, where some relay is nearly always down, left
+  /// [PublishOutcome.acceptedByAll] permanently false and reported every
+  /// successful publish as partial. A relay the fan-out *does* reach despite
+  /// being disconnected is still counted: [PublishTracker.setReachable] adds
+  /// whatever was actually written to.
   Set<String> _intendedPublishTargets(
     List<dynamic> message, {
     List<String>? tempRelays,
@@ -1740,6 +1750,9 @@ class RelayPool {
     final hasFilter = targetRelays != null && targetRelays.isNotEmpty;
     for (final relay in _relaysSnapshot()) {
       if (isEvent && !relay.relayStatus.writeAccess) continue;
+      if (isEvent && relay.relayStatus.connected != ClientConnected.connected) {
+        continue;
+      }
       if (hasFilter && !targetRelays.contains(relay.url)) continue;
       targets.add(relay.url);
     }
