@@ -86,6 +86,7 @@ cat >"${BIN}/docker" <<'STUB'
 set -u
 
 emit() { [[ -f "$1" ]] && cat "$1"; return 0; }
+emit_err() { [[ -f "$1" ]] && cat "$1" >&2; return 0; }
 
 # Exit code for a stubbed subcommand, 0 unless the case asked otherwise.
 stub_rc() {
@@ -110,12 +111,27 @@ case "${1:-}" in
     while (($# > 0)); do
       case "$1" in
         config)
+          emit_err "${STUB_FIXTURES}/compose_config.stderr"
           emit "${STUB_FIXTURES}/compose_config.json"
-          exit 0
+          exit "$(stub_rc config)"
           ;;
         up)
+          up_count_file="${STUB_FIXTURES}/up_count"
+          if [[ -f "$up_count_file" ]]; then
+            up_count="$(cat "$up_count_file")"
+          else
+            up_count=0
+          fi
+          up_count=$((up_count + 1))
+          echo "$up_count" >"$up_count_file"
+          emit "${STUB_FIXTURES}/up_output_${up_count}.txt"
           emit "${STUB_FIXTURES}/up_output.txt"
-          exit "$(stub_rc up)"
+          if [[ -f "${STUB_FIXTURES}/rc_up_${up_count}" ]]; then
+            up_rc="$(cat "${STUB_FIXTURES}/rc_up_${up_count}")"
+          else
+            up_rc="$(stub_rc up)"
+          fi
+          exit "$up_rc"
           ;;
         run)
           emit "${STUB_FIXTURES}/seed_output.txt"
@@ -150,18 +166,32 @@ chmod +x "${BIN}/docker"
 cat >"${BIN}/ss.stub" <<'STUB'
 #!/usr/bin/env bash
 # `ss -Hltn`: State Recv-Q Send-Q Local Peer
-cat "${STUB_FIXTURES}/ss.txt" 2>/dev/null
+[[ -f "${STUB_FIXTURES}/ss.stderr" ]] && cat "${STUB_FIXTURES}/ss.stderr" >&2
+[[ -f "${STUB_FIXTURES}/ss.txt" ]] && cat "${STUB_FIXTURES}/ss.txt"
+if [[ -f "${STUB_FIXTURES}/rc_ss" ]]; then
+  exit "$(cat "${STUB_FIXTURES}/rc_ss")"
+fi
 exit 0
 STUB
 
 cat >"${BIN}/lsof.stub" <<'STUB'
 #!/usr/bin/env bash
 # `lsof -nP -iTCP -sTCP:LISTEN -Fn`: one n<address>:<port> record per socket.
-cat "${STUB_FIXTURES}/lsof.txt" 2>/dev/null
+[[ -f "${STUB_FIXTURES}/lsof.stderr" ]] && cat "${STUB_FIXTURES}/lsof.stderr" >&2
+[[ -f "${STUB_FIXTURES}/lsof.txt" ]] && cat "${STUB_FIXTURES}/lsof.txt"
+if [[ -f "${STUB_FIXTURES}/rc_lsof" ]]; then
+  exit "$(cat "${STUB_FIXTURES}/rc_lsof")"
+fi
 exit 0
 STUB
 
 link_core_tools
+
+cat >"${BIN}/sleep" <<'STUB'
+#!/usr/bin/env bash
+exit 0
+STUB
+chmod +x "${BIN}/sleep"
 
 # with_tools <tool>... — exactly these of ss/lsof exist for the next run.
 with_tools() {
@@ -262,7 +292,7 @@ run_preflight
 
 assert_status 1 "$last_status" "a container conflict should be caught with neither ss nor lsof"
 assert_stderr_contains 'held by container "stale-redis"' "the holding container should still be named"
-assert_stderr_contains "neither 'ss' nor 'lsof' is installed" "the blind spot should be stated out loud"
+assert_stderr_contains 'host listener enumeration is unavailable' "the blind spot should be stated out loud"
 
 # --- A host process holding a stack port ------------------------------------
 
@@ -307,6 +337,44 @@ with_tools lsof
 run_preflight
 
 assert_status 0 "$last_status" "a clean machine should pass pre-flight"
+
+# --- lsof's no-listeners status is not a tool failure -----------------------
+# lsof exits 1 with no stderr when no sockets match. That should stay a clean
+# empty listener list, not a blind-spot warning.
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+echo 1 >"${FIXTURES}/rc_lsof"
+run_preflight
+
+assert_status 0 "$last_status" "lsof exit 1 with empty stderr means no listeners"
+assert_stderr_lacks 'host listener enumeration is unavailable' "an empty lsof result should not warn"
+
+# --- A real listener-tool error is not an empty listener list ----------------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+echo 1 >"${FIXTURES}/rc_lsof"
+echo 'lsof: unacceptable port specification' >"${FIXTURES}/lsof.stderr"
+run_preflight
+
+assert_status 1 "$last_status" "a real listener-tool error should fail pre-flight"
+assert_stderr_contains 'lsof failed while enumerating listeners' "the listener tool failure should be shown"
+assert_stderr_contains 'port safety is unknown' "the unknown host-port state should fail closed"
+
+# --- Compose config warnings are not JSON -----------------------------------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+: >"${FIXTURES}/lsof.txt"
+echo 'WARN[0000] the attribute `version` is obsolete' >"${FIXTURES}/compose_config.stderr"
+run_preflight
+
+assert_status 0 "$last_status" "compose warnings on stderr should not corrupt the JSON config"
+assert_stderr_lacks 'could not read the published ports' "a compose warning should not become a JSON parse failure"
 
 # --- An unreadable port list fails closed -----------------------------------
 # Empty output from a broken extractor reads exactly like "publishes no ports".
@@ -366,6 +434,29 @@ echo 'dial tcp: i/o timeout' >"${FIXTURES}/logs_keycast.txt"
 
 run_transient "${tmp_dir}/up.log" keycast minio-init
 assert_status 1 "$last_status" "with every service up there is no failed log to call transient"
+
+# --- up.sh retries transient startup failures --------------------------------
+
+reset_fixtures
+with_tools lsof
+: >"${FIXTURES}/docker_ps.txt"
+: >"${FIXTURES}/lsof.txt"
+echo 1 >"${FIXTURES}/rc_up_1"
+echo 0 >"${FIXTURES}/rc_up_2"
+echo 'dependency failed to start' >"${FIXTURES}/up_output_1.txt"
+cat >"${FIXTURES}/compose_ps_pipe.txt" <<'PS'
+funnelcake-migrate|exited|1
+PS
+echo 'lookup funnelcake-clickhouse on 127.0.0.11:53: no such host' >"${FIXTURES}/logs_funnelcake-migrate.txt"
+echo 'seed ok' >"${FIXTURES}/seed_output.txt"
+run_up_sh
+
+assert_status 0 "$last_status" "up.sh should retry a transient startup failure and continue after success"
+if [[ "$(cat "${FIXTURES}/up_count")" != "2" ]]; then
+    fail "up.sh should stop retrying after a successful second attempt" \
+        "up attempts: $(cat "${FIXTURES}/up_count")"
+fi
+assert_stderr_contains 'Retrying in 5s (attempt 2 of 3).' "the retry should be announced"
 
 # --- A failed seed reports the seed, not the healthy services ---------------
 # The services came up; saying "Local stack failed to come up" over a list of
