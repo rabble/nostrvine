@@ -280,6 +280,46 @@ void main() {
     });
 
     testWidgets(
+      'reveals invite shortcut immediately when lazy allocation arrives',
+      (tester) async {
+        final mockInviteCubit = _MockInviteStatusCubit();
+        when(mockInviteCubit.load).thenAnswer((_) async {});
+        final states = StreamController<InviteStatusState>();
+        addTearDown(states.close);
+        whenListen(
+          mockInviteCubit,
+          states.stream,
+          initialState: const InviteStatusState(
+            status: InviteStatusLoadingStatus.loading,
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+        await tester.pumpAndSettle();
+        expect(find.text('Invites'), findsNothing);
+
+        states.add(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 5,
+              total: 5,
+              codes: [],
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Invites'), findsOneWidget);
+        expect(find.text('5'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
       'hides account action when multiple accounts exist and switching is disabled',
       (tester) async {
         await tester.pumpWidget(buildSubject(knownAccounts: twoAccounts));

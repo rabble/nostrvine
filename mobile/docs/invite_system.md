@@ -1,6 +1,6 @@
 # Invite System
 
-Last updated: 2026-03-06
+Last updated: 2026-07-30
 
 ## What this document captures
 
@@ -43,7 +43,7 @@ The current repo spec in `INVITE_CODE_API.md` describes a newer model centered o
 
 - NIP-98 auth for invite consumption
 - invite gating for new Nostr identity creation only
-- bypass for existing Nostr users
+- invite-gate and consume bypass for existing Nostr users
 - `POST /v1/consume-invite`
 - `GET /v1/invite-status`
 - `POST /v1/generate-invite`
@@ -62,7 +62,11 @@ Key rules from that spec:
 
 - Invites gate new Nostr identity creation only, not general app access.
 - Existing Nostr users must bypass the invite gate.
-- Importing an `nsec`, using bunker, Amber, or other signer-based flows should not require invite checks.
+- Importing an `nsec`, using Keycast, bunker, Amber, or another signer-based
+  flow does not require invite validation or consumption. Once authenticated
+  signing is ready, every supported identity still calls `GET
+  /v1/invite-status` so server-side lazy enrollment can return its initial
+  allocation.
 - Invite consumption should happen during identity creation, with the key generated in memory and only persisted after successful consume.
 - Waitlist support is part of the documented API surface.
 
@@ -119,6 +123,8 @@ Server behavior that matters for the mobile client:
 - consuming the same claimed code as a different pubkey fails
 - a user who already joined through one code cannot join later with another
 - first-time successful consumers receive a default invite allocation of `5`
+- the first successful authenticated `GET /v1/invite-status` can lazily enroll
+  an existing identity and return its initial allocation immediately
 - `GET /v1/invite-status` returns allocation plus per-code claim metadata
 
 ## Server auth reality
@@ -323,7 +329,8 @@ Product decisions now reflected in the mobile implementation:
 
 - launch mode is server-switchable
 - no-code users can join the waitlist
-- existing Nostr identity paths still bypass the guard
+- existing Nostr identity paths still bypass the creation guard and invite
+  consumption, while their authenticated sessions load invite status
 - anonymous/no-backup account creation is also behind the guard
 - current account creation flow is preserved after invite approval
 

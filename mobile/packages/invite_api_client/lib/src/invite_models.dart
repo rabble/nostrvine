@@ -204,6 +204,7 @@ class InviteStatus extends Equatable {
     required this.remaining,
     required this.total,
     required this.codes,
+    this.remainingToGenerate,
   });
 
   factory InviteStatus.fromJson(Map<String, dynamic> json) {
@@ -211,6 +212,7 @@ class InviteStatus extends Equatable {
     return InviteStatus(
       canInvite: json['canInvite'] == true,
       remaining: (json['remaining'] ?? 0) as int,
+      remainingToGenerate: json['remainingToGenerate'] as int?,
       total: (json['total'] ?? 0) as int,
       codes: rawCodes
           .cast<Map<String, dynamic>>()
@@ -220,9 +222,30 @@ class InviteStatus extends Equatable {
   }
 
   final bool canInvite;
+
+  /// Invites still the user's to share: `codes_allocated - codes_used`.
+  ///
+  /// Only moves when an invitee redeems a code, so it stays put while the user
+  /// generates and hands out codes.
   final int remaining;
+
+  /// Invites the user can still mint, or null on a server that predates the
+  /// field. Prefer [mintableCount], which handles the fallback.
+  final int? remainingToGenerate;
+
   final int total;
   final List<InviteCode> codes;
+
+  /// Codes the user can still generate.
+  ///
+  /// Distinct from [remaining]: someone who has minted their whole allocation
+  /// but had none redeemed still has invites to share and nothing left to
+  /// generate. Gate a generate action on this, or the server answers
+  /// `429 invite_generation_limit_reached`.
+  ///
+  /// Falls back to [remaining] when the server does not report the field, which
+  /// preserves the previous behaviour against an older backend.
+  int get mintableCount => remainingToGenerate ?? remaining;
 
   List<InviteCode> get unclaimedCodes =>
       codes.where((c) => !c.claimed).toList();
@@ -232,7 +255,13 @@ class InviteStatus extends Equatable {
   bool get hasUnclaimedCodes => unclaimedCodes.isNotEmpty;
 
   @override
-  List<Object?> get props => [canInvite, remaining, total, codes];
+  List<Object?> get props => [
+    canInvite,
+    remaining,
+    remainingToGenerate,
+    total,
+    codes,
+  ];
 }
 
 class GenerateInviteResult extends Equatable {

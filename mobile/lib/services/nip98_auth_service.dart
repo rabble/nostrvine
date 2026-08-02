@@ -323,7 +323,12 @@ class Nip98AuthService {
 
   /// Create a cache key for request deduplication
   String _createCacheKey(String url, HttpMethod method, String? payload) {
-    final components = [url, method.value, payload ?? ''];
+    final components = [
+      _authService.currentPublicKeyHex ?? '',
+      url,
+      method.value,
+      payload ?? '',
+    ];
     final combined = components.join('|');
     final hash = sha256.convert(utf8.encode(combined));
     return hash.toString();

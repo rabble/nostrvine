@@ -2761,9 +2761,13 @@ class _DivineAppState extends ConsumerState<DivineApp>
                   required String url,
                   required InviteRequestMethod method,
                   String? payload,
+                  bool forceRefresh = false,
                 }) async {
                   final authService = ref.read(nip98AuthServiceProvider);
                   if (!authService.canCreateTokens) return null;
+                  if (forceRefresh) {
+                    authService.clearTokenCache();
+                  }
                   final token = await authService.createAuthToken(
                     url: url,
                     method: switch (method) {
@@ -2835,11 +2839,23 @@ class _DivineAppState extends ConsumerState<DivineApp>
               ),
             ),
             BlocProvider(
-              create: (context) => InviteStatusCubit(
-                inviteApiClient: context.read<InviteApiClient>(),
-                isInviteAuthReady: () =>
-                    ref.read(nip98AuthServiceProvider).canCreateTokens,
-              ),
+              lazy: false,
+              create: (context) {
+                final authService = ref.read(authServiceProvider);
+                InviteStatusAuthSession currentAuthSession() =>
+                    InviteStatusAuthSession(
+                      accountId: authService.currentPublicKeyHex,
+                      isSignerReady: authService.canPublishNostrWritesNow,
+                    );
+
+                return InviteStatusCubit(
+                  inviteApiClient: context.read<InviteApiClient>(),
+                  initialAuthSession: currentAuthSession(),
+                  authSessionStream: authService.authStateStream.map(
+                    (_) => currentAuthSession(),
+                  ),
+                )..start();
+              },
             ),
             BlocProvider(
               create: (_) => AppUpdateBloc(
