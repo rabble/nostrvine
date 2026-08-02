@@ -627,7 +627,7 @@ class _EngagementBreakdown extends StatelessWidget {
             label: context.l10n.analyticsReposts,
             value: summary.totalReposts,
             share: repostsShare,
-            color: VineTheme.vineGreenLight,
+            color: VineTheme.vineGreenDark,
           ),
         ],
       ),
@@ -1026,7 +1026,7 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                       label: context.l10n.analyticsReposts,
                       value: reposts,
                       share: repostShare,
-                      color: VineTheme.vineGreenLight,
+                      color: VineTheme.vineGreenDark,
                     ),
                     const SizedBox(height: 14),
                     DivineButton(

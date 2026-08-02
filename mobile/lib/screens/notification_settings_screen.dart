@@ -163,7 +163,7 @@ class NotificationSettingsView extends StatelessWidget {
                     ),
                     _NotificationCard(
                       icon: DivineIconName.repeat,
-                      iconColor: VineTheme.vineGreenLight,
+                      iconColor: VineTheme.vineGreenDark,
                       title: context.l10n.notificationSettingsReposts,
                       subtitle:
                           context.l10n.notificationSettingsRepostsSubtitle,
@@ -190,7 +190,7 @@ class NotificationSettingsView extends StatelessWidget {
                     ),
                     _ActionCard(
                       icon: DivineIconName.checkCircle,
-                      iconColor: VineTheme.vineGreenLight,
+                      iconColor: VineTheme.vineGreenDark,
                       title: context.l10n.notificationSettingsMarkAllAsRead,
                       subtitle: context
                           .l10n
