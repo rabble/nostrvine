@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:db_client/db_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/environment_config.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/providers/relay_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/nostr_signature_verification_preference_service.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -323,7 +325,7 @@ class NostrService extends _$NostrService {
       _userRelaysDiscoveredCallbackFor(client, pubkey, clientGeneration),
     );
     authService.registerBootstrapRelayListCallback(
-      _bootstrapCallbackFor(client),
+      bootstrapCallbackFor(client),
     );
   }
 
@@ -764,22 +766,29 @@ class NostrService extends _$NostrService {
   /// stays pinned to the fallback relay set forever.
   ///
   /// One indexer is enough — discovery queries them all and merges the
-  /// results, so the list only has to be findable somewhere.
-  static BootstrapRelayListCallback _bootstrapCallbackFor(NostrClient client) {
+  /// results, so the list only has to be findable somewhere. It does have to
+  /// be an *indexer*: the Divine relay is in the target set but
+  /// [RelayDiscoveryService] never queries it, so its acceptance says nothing
+  /// about whether the user became discoverable.
+  @visibleForTesting
+  static BootstrapRelayListCallback bootstrapCallbackFor(NostrClient client) {
     return (event, targetRelays) async {
       final outcome = await client.publishEventAwaitOk(
         event,
         targetRelays: targetRelays,
       );
-      if (!outcome.acceptedByAny) {
+      final acceptedByIndexer = outcome.acceptedBy.any(
+        IndexerRelayConfig.defaultIndexers.contains,
+      );
+      if (!acceptedByIndexer) {
         Log.warning(
-          '[NostrService] Bootstrap kind:10002 not accepted: '
+          '[NostrService] Bootstrap kind:10002 accepted by no indexer: '
           '${outcome.summary}',
           name: 'NostrService',
           category: LogCategory.system,
         );
       }
-      return outcome.acceptedByAny;
+      return acceptedByIndexer;
     };
   }
 }
