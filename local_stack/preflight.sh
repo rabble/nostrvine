@@ -49,16 +49,35 @@ _stack_project_name() {
 
 # stdout: one "<address>:<port>" per listening TCP socket.
 # `ss` is iproute2, so it does not exist on macOS; `lsof` is there instead.
-# Returns 1 when neither is installed, so the caller can say so rather than
-# read "no listeners found" as "every port is free".
+# Returns 1 when neither is installed. Returns 2 when an available tool errors,
+# so the caller can fail closed instead of treating the result as port-free.
 _stack_listen_addrs() {
+    local tool_err tool_rc
     if command -v ss >/dev/null 2>&1; then
-        ss -Hltn 2>/dev/null | awk '{ print $4 }'
+        tool_err="$(mktemp)"
+        ss -Hltn 2>"$tool_err" | awk '{ print $4 }'
+        tool_rc="${PIPESTATUS[0]}"
+        if [[ "$tool_rc" -ne 0 ]]; then
+            [[ ! -s "$tool_err" ]] || sed 's/^/WARNING: ss failed while enumerating listeners: /' "$tool_err" >&2
+            rm -f "$tool_err"
+            return 2
+        fi
+        rm -f "$tool_err"
     elif command -v lsof >/dev/null 2>&1; then
         # -Fn emits one "n<address>:<port>" record per socket, which spares us
         # the header line and the space-separated NAME column. Without sudo it
         # only sees our own processes — enough for Docker Desktop's proxy.
-        lsof -nP -iTCP -sTCP:LISTEN -Fn 2>/dev/null | sed -n 's/^n//p'
+        tool_err="$(mktemp)"
+        lsof -nP -iTCP -sTCP:LISTEN -Fn 2>"$tool_err" | sed -n 's/^n//p'
+        tool_rc="${PIPESTATUS[0]}"
+        # lsof exits 1 when no sockets match. That is a clean empty listener
+        # list as long as stderr is empty; stderr means the check is blind.
+        if [[ "$tool_rc" -ne 0 && -s "$tool_err" ]]; then
+            sed 's/^/WARNING: lsof failed while enumerating listeners: /' "$tool_err" >&2
+            rm -f "$tool_err"
+            return 2
+        fi
+        rm -f "$tool_err"
     else
         return 1
     fi
@@ -83,7 +102,7 @@ _stack_port_finder_cmd() {
 # containers; 1 (with an actionable report on stderr) otherwise.
 preflight_ports() {
     local compose_file="$1"
-    local config_json project ports
+    local config_json config_err project ports
 
     if ! docker ps --format '{{.Names}}' >/dev/null 2>&1; then
         local daemon_hint="systemctl status docker"
@@ -94,11 +113,14 @@ preflight_ports() {
         return 1
     fi
 
-    if ! config_json="$(docker compose -f "$compose_file" config --format json 2>&1)"; then
+    config_err="$(mktemp)"
+    if ! config_json="$(docker compose -f "$compose_file" config --format json 2>"$config_err")"; then
         echo "ERROR: could not parse ${compose_file}:" >&2
-        echo "$config_json" >&2
+        cat "$config_err" >&2
+        rm -f "$config_err"
         return 1
     fi
+    rm -f "$config_err"
 
     # Fail closed. An unreadable port list is indistinguishable from "the stack
     # publishes no ports", and passing on it hands the operator back the
@@ -127,7 +149,7 @@ preflight_ports() {
     # port -> space-separated local addresses currently listening on it
     local listen_addrs=()
     local listeners_known=1
-    local listener_lines local_addr port
+    local listener_lines listener_rc local_addr port
     if listener_lines="$(_stack_listen_addrs)"; then
         while read -r local_addr; do
             port="${local_addr##*:}"
@@ -135,6 +157,11 @@ preflight_ports() {
             listen_addrs["$port"]+="${local_addr} "
         done <<<"$listener_lines"
     else
+        listener_rc=$?
+        if [[ "$listener_rc" -eq 2 ]]; then
+            echo "ERROR: could not enumerate host TCP listeners; port safety is unknown." >&2
+            return 1
+        fi
         listeners_known=0
     fi
 
@@ -158,8 +185,8 @@ preflight_ports() {
     if ((listeners_known == 0)); then
         {
             echo ""
-            echo "WARNING: neither 'ss' nor 'lsof' is installed, so a port held by a"
-            echo "         plain host process cannot be detected. Ports held by"
+            echo "WARNING: host listener enumeration is unavailable, so a port held by"
+            echo "         a plain host process cannot be detected. Ports held by"
             echo "         containers are still checked below."
         } >&2
     fi
