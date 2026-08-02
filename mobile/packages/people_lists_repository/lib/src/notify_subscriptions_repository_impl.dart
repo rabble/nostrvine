@@ -36,6 +36,14 @@ const String _notifyListTitle = 'Notify';
 ///
 /// The chain is per owner rather than per creator on purpose — all bells live
 /// in a *single* event, so serializing per creator would still race.
+///
+/// ### Unreadable lists are never a base for a publish
+///
+/// The event is replaceable, so a publish deletes every member it omits.
+/// An unreachable relay pool therefore cannot be treated as an empty list:
+/// reads that did not reach a relay produce no snapshot at all, mutations
+/// against a missing snapshot fail without publishing, and
+/// [watchSubscriptions] stays silent so the UI keeps its control disabled.
 class NotifySubscriptionsRepositoryImpl
     implements NotifySubscriptionsRepository {
   /// Creates a repository bound to [nostrClient].
@@ -51,11 +59,18 @@ class NotifySubscriptionsRepositoryImpl
   /// read-modify-write behind every mutation already queued.
   final Map<String, Future<void>> _mutationTails = {};
 
+  /// In-flight relay reads, so concurrent mounts share one query instead of
+  /// stampeding the pool with identical filters.
+  final Map<String, Future<_NotifyListSnapshot?>> _inFlightReads = {};
+
   bool _disposed = false;
 
   @override
   Future<Set<String>> readSubscriptions({required String ownerPubkey}) async {
     final snapshot = await _ensureSnapshot(ownerPubkey);
+    if (snapshot == null) {
+      throw NotifySubscriptionsUnavailableException(ownerPubkey);
+    }
     return snapshot.creators;
   }
 
@@ -64,7 +79,7 @@ class NotifySubscriptionsRepositoryImpl
     final subject = _subjectFor(ownerPubkey);
     // Seed asynchronously so a listener that subscribes before the first
     // relay read still receives the loaded set rather than only future
-    // mutations.
+    // mutations. A failed read stores nothing, so the next mount retries.
     if (!_snapshots.containsKey(ownerPubkey)) {
       _ensureSnapshot(ownerPubkey).ignore();
     }
@@ -74,6 +89,10 @@ class NotifySubscriptionsRepositoryImpl
   @override
   Future<void> refresh({required String ownerPubkey}) async {
     final snapshot = await _readFromRelays(ownerPubkey);
+    // A failed read must not clear a good snapshot: the empty set it would
+    // cache is exactly the base a later publish would delete the list down
+    // to.
+    if (snapshot == null) return;
     _publishSnapshot(ownerPubkey, snapshot);
   }
 
@@ -110,6 +129,7 @@ class NotifySubscriptionsRepositoryImpl
     _subjects.clear();
     _snapshots.clear();
     _mutationTails.clear();
+    _inFlightReads.clear();
   }
 
   /// Queues a mutation behind every mutation already pending for [ownerPubkey].
@@ -145,21 +165,28 @@ class NotifySubscriptionsRepositoryImpl
     }
 
     final snapshot = await _ensureSnapshot(ownerPubkey);
-    final isSubscribed = snapshot.creators.contains(creatorPubkey);
-    if (add == isSubscribed) {
-      return const PeopleListPublishResult.noop();
+    if (snapshot == null) {
+      // Publishing against a base set we could not read would delete every
+      // subscription the read failed to load.
+      return PeopleListPublishResult.failed(
+        error: NotifySubscriptionsUnavailableException(ownerPubkey),
+      );
     }
 
-    final updated = <String>{...snapshot.creators};
+    final desired = <String>{...snapshot.creators};
     if (add) {
-      updated.add(creatorPubkey);
+      desired.add(creatorPubkey);
     } else {
-      updated.remove(creatorPubkey);
+      desired.remove(creatorPubkey);
+    }
+
+    if (_sameMembers(desired, snapshot.creators)) {
+      return const PeopleListPublishResult.noop();
     }
 
     return _publishReplacement(
       ownerPubkey: ownerPubkey,
-      creators: updated,
+      creators: desired,
       previousCreatedAt: snapshot.createdAt,
     );
   }
@@ -222,10 +249,29 @@ class NotifySubscriptionsRepositoryImpl
     }
   }
 
-  Future<_NotifyListSnapshot> _ensureSnapshot(String ownerPubkey) async {
+  /// Returns the cached snapshot, reading from relays once when absent.
+  ///
+  /// Returns `null` when the list has never been read successfully. The
+  /// failure is deliberately not cached, so the next call retries.
+  Future<_NotifyListSnapshot?> _ensureSnapshot(String ownerPubkey) async {
     final cached = _snapshots[ownerPubkey];
     if (cached != null) return cached;
-    final loaded = await _readFromRelays(ownerPubkey);
+
+    final inFlight = _inFlightReads[ownerPubkey];
+    if (inFlight != null) return inFlight;
+
+    final read = _readFromRelays(ownerPubkey);
+    _inFlightReads[ownerPubkey] = read;
+    final _NotifyListSnapshot? loaded;
+    try {
+      loaded = await read;
+    } finally {
+      // The removed handle is the future awaited just above; `_readFromRelays`
+      // never completes with an error, so there is nothing left to observe.
+      _inFlightReads.remove(ownerPubkey)?.ignore();
+    }
+    if (loaded == null) return null;
+
     // A mutation may have published while the relay read was in flight; that
     // snapshot is newer than what the relay returned, so keep it.
     final current = _snapshots[ownerPubkey];
@@ -236,12 +282,18 @@ class NotifySubscriptionsRepositoryImpl
     return loaded;
   }
 
-  /// Reads the newest `d=notify` event for [ownerPubkey].
+  /// Reads the newest `d=notify` event for [ownerPubkey], or `null` when the
+  /// list could not be read.
   ///
   /// Relays may return several replaceable generations; the highest
-  /// `created_at` wins. A read failure yields an empty snapshot so the bell
-  /// renders "off" rather than blocking, and a later [refresh] can correct it.
-  Future<_NotifyListSnapshot> _readFromRelays(String ownerPubkey) async {
+  /// `created_at` wins.
+  ///
+  /// A query that reached no relay or timed out cannot distinguish "this user
+  /// has no subscriptions" from "we could not ask", and the difference is
+  /// destructive: the caller would publish a replacement built on an empty
+  /// base and delete the real list. Both cases therefore return `null`, as
+  /// does a thrown read.
+  Future<_NotifyListSnapshot?> _readFromRelays(String ownerPubkey) async {
     final filter = Filter(
       kinds: const [Nip51PeopleListCodec.kind],
       authors: [ownerPubkey],
@@ -249,9 +301,19 @@ class NotifySubscriptionsRepositoryImpl
     );
 
     try {
-      final events = await _nostrClient.queryEvents([filter]);
+      final result = await _nostrClient.queryEventsDetailed([filter]);
+      if (result.noRelays || result.timedOut) {
+        Log.warning(
+          'Notify list unreadable for owner $ownerPubkey '
+          '(noRelays: ${result.noRelays}, timedOut: ${result.timedOut})',
+          name: _logName,
+          category: LogCategory.relay,
+        );
+        return null;
+      }
+
       var newest = const _NotifyListSnapshot(creators: {}, createdAt: 0);
-      for (final event in events) {
+      for (final event in result.events) {
         final members = Nip51PeopleListCodec.decodeReservedMembers(
           event,
           dTag: Nip51PeopleListCodec.notifyDTag,
@@ -270,7 +332,7 @@ class NotifySubscriptionsRepositoryImpl
         name: _logName,
         category: LogCategory.relay,
       );
-      return const _NotifyListSnapshot(creators: {}, createdAt: 0);
+      return null;
     }
   }
 
@@ -285,10 +347,18 @@ class NotifySubscriptionsRepositoryImpl
 
   BehaviorSubject<Set<String>> _subjectFor(String ownerPubkey) {
     return _subjects.putIfAbsent(ownerPubkey, () {
-      final seed = _snapshots[ownerPubkey]?.creators ?? const <String>{};
-      return BehaviorSubject<Set<String>>.seeded(seed);
+      final seed = _snapshots[ownerPubkey]?.creators;
+      // Unseeded until something has actually been read or published: an
+      // unverified empty set would let a listener enable a control whose
+      // first tap replaces the real list with just that one member.
+      return seed == null
+          ? BehaviorSubject<Set<String>>()
+          : BehaviorSubject<Set<String>>.seeded(seed);
     });
   }
+
+  static bool _sameMembers(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.containsAll(b);
 }
 
 /// Immutable view of the notify list plus the `created_at` it was read at.

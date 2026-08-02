@@ -1,5 +1,5 @@
 // ABOUTME: Covers d=notify list read/publish, mutation serialization, and
-// ABOUTME: that a failed publish leaves the snapshot revertible.
+// ABOUTME: that an unreadable list is never used as a base for a publish.
 
 import 'dart:async';
 
@@ -30,6 +30,13 @@ Event _notifyEvent(List<String> pubkeys, {int createdAt = 1710000000}) => Event(
   createdAt: createdAt,
 );
 
+/// Shapes a `queryEventsDetailed` answer.
+({List<Event> events, bool timedOut, bool noRelays}) _readResult(
+  List<Event> events, {
+  bool timedOut = false,
+  bool noRelays = false,
+}) => (events: events, timedOut: timedOut, noRelays: noRelays);
+
 /// Member pubkeys carried on the event handed to `publishEvent`.
 List<String> _publishedMembers(Event event) => event.tags
     .where((t) => t.length >= 2 && t[0] == 'p')
@@ -40,6 +47,15 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_notifyEvent(const []));
     registerFallbackValue(<Filter>[]);
+  });
+
+  group(NotifySubscriptionsUnavailableException, () {
+    test('names the owner in full, never truncated', () {
+      const exception = NotifySubscriptionsUnavailableException(ownerPubkey);
+
+      expect(exception.ownerPubkey, equals(ownerPubkey));
+      expect(exception.toString(), contains(ownerPubkey));
+    });
   });
 
   group(NotifySubscriptionsRepositoryImpl, () {
@@ -63,9 +79,20 @@ void main() {
       );
     }
 
+    void stubRead(
+      List<Event> events, {
+      bool timedOut = false,
+      bool noRelays = false,
+    }) {
+      when(() => client.queryEventsDetailed(any())).thenAnswer(
+        (_) async =>
+            _readResult(events, timedOut: timedOut, noRelays: noRelays),
+      );
+    }
+
     group('readSubscriptions', () {
       test('returns an empty set when the user has no notify list', () async {
-        when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+        stubRead(const []);
 
         expect(
           await repository.readSubscriptions(ownerPubkey: ownerPubkey),
@@ -74,13 +101,9 @@ void main() {
       });
 
       test('decodes members from the notify list event', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA, creatorB]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA, creatorB]),
+        ]);
 
         expect(
           await repository.readSubscriptions(ownerPubkey: ownerPubkey),
@@ -89,14 +112,10 @@ void main() {
       });
 
       test('keeps the newest generation when relays return several', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA, creatorB]),
-            _notifyEvent([creatorA], createdAt: 1710000500),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA, creatorB]),
+          _notifyEvent([creatorA], createdAt: 1710000500),
+        ]);
 
         expect(
           await repository.readSubscriptions(ownerPubkey: ownerPubkey),
@@ -104,27 +123,144 @@ void main() {
         );
       });
 
-      test('returns empty rather than throwing when the read fails', () async {
+      test('throws rather than reporting empty when the read throws', () async {
         when(
-          () => client.queryEvents(any()),
+          () => client.queryEventsDetailed(any()),
         ).thenThrow(StateError('relay down'));
 
-        expect(
-          await repository.readSubscriptions(ownerPubkey: ownerPubkey),
-          isEmpty,
+        await expectLater(
+          repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          throwsA(isA<NotifySubscriptionsUnavailableException>()),
         );
+      });
+
+      test('throws when the query reached no relay', () async {
+        stubRead(const [], noRelays: true);
+
+        await expectLater(
+          repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          throwsA(isA<NotifySubscriptionsUnavailableException>()),
+        );
+      });
+
+      test('throws when the query timed out', () async {
+        stubRead(const [], timedOut: true);
+
+        await expectLater(
+          repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          throwsA(isA<NotifySubscriptionsUnavailableException>()),
+        );
+      });
+    });
+
+    group('unreadable list', () {
+      test(
+        'subscribe publishes nothing when the list could not be read',
+        () async {
+          stubRead(const [], noRelays: true);
+          stubPublishSuccess();
+
+          final result = await repository.subscribe(
+            ownerPubkey: ownerPubkey,
+            creatorPubkey: creatorA,
+          );
+
+          expect(result.status, equals(PeopleListPublishStatus.failed));
+          verifyNever(() => client.publishEvent(any()));
+        },
+      );
+
+      test(
+        'unsubscribe publishes nothing when the list could not be read',
+        () async {
+          stubRead(const [], timedOut: true);
+          stubPublishSuccess();
+
+          final result = await repository.unsubscribe(
+            ownerPubkey: ownerPubkey,
+            creatorPubkey: creatorA,
+          );
+
+          expect(result.status, equals(PeopleListPublishStatus.failed));
+          verifyNever(() => client.publishEvent(any()));
+        },
+      );
+
+      test(
+        'watchSubscriptions stays silent so the UI cannot enable a bell',
+        () async {
+          stubRead(const [], noRelays: true);
+
+          final emitted = <Set<String>>[];
+          final subscription = repository
+              .watchSubscriptions(ownerPubkey: ownerPubkey)
+              .listen(emitted.add);
+          addTearDown(subscription.cancel);
+
+          await expectLater(
+            repository.readSubscriptions(ownerPubkey: ownerPubkey),
+            throwsA(isA<NotifySubscriptionsUnavailableException>()),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            emitted,
+            isEmpty,
+            reason:
+                'an unverified empty set would look like "no subscriptions"',
+          );
+        },
+      );
+
+      test(
+        're-reads on the next mount instead of caching the failure',
+        () async {
+          var attempts = 0;
+          when(() => client.queryEventsDetailed(any())).thenAnswer((_) async {
+            attempts++;
+            if (attempts == 1) return _readResult(const [], noRelays: true);
+            return _readResult([
+              _notifyEvent([creatorA]),
+            ]);
+          });
+
+          await expectLater(
+            repository.readSubscriptions(ownerPubkey: ownerPubkey),
+            throwsA(isA<NotifySubscriptionsUnavailableException>()),
+          );
+
+          expect(
+            await repository.readSubscriptions(ownerPubkey: ownerPubkey),
+            equals({creatorA}),
+          );
+          expect(attempts, equals(2));
+        },
+      );
+
+      test('shares one relay read across concurrent mounts', () async {
+        var attempts = 0;
+        when(() => client.queryEventsDetailed(any())).thenAnswer((_) async {
+          attempts++;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return _readResult([
+            _notifyEvent([creatorA]),
+          ]);
+        });
+
+        await Future.wait([
+          repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          repository.readSubscriptions(ownerPubkey: ownerPubkey),
+        ]);
+
+        expect(attempts, equals(1));
       });
     });
 
     group('subscribe', () {
       test('publishes the full list including the new creator', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA]),
+        ]);
         stubPublishSuccess();
 
         final result = await repository.subscribe(
@@ -140,7 +276,7 @@ void main() {
       });
 
       test('never truncates the creator pubkey', () async {
-        when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+        stubRead(const []);
         stubPublishSuccess();
 
         await repository.subscribe(
@@ -156,13 +292,9 @@ void main() {
       });
 
       test('is a no-op when already subscribed', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA]),
+        ]);
 
         final result = await repository.subscribe(
           ownerPubkey: ownerPubkey,
@@ -174,7 +306,7 @@ void main() {
       });
 
       test('refuses to subscribe the owner to themselves', () async {
-        when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+        stubRead(const []);
 
         final result = await repository.subscribe(
           ownerPubkey: ownerPubkey,
@@ -186,13 +318,9 @@ void main() {
       });
 
       test('leaves the snapshot unchanged when the publish fails', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA]),
+        ]);
         when(
           () => client.publishEvent(any()),
         ).thenAnswer((_) async => const PublishFailed());
@@ -213,13 +341,9 @@ void main() {
 
     group('unsubscribe', () {
       test('publishes the list without the creator', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA, creatorB]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA, creatorB]),
+        ]);
         stubPublishSuccess();
 
         final result = await repository.unsubscribe(
@@ -235,13 +359,9 @@ void main() {
       });
 
       test('publishes an empty list when the last bell is removed', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA]),
+        ]);
         stubPublishSuccess();
 
         await repository.unsubscribe(
@@ -262,7 +382,7 @@ void main() {
 
       test('is a no-op when not subscribed, so unfollow can call it '
           'unconditionally', () async {
-        when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+        stubRead(const []);
 
         final result = await repository.unsubscribe(
           ownerPubkey: ownerPubkey,
@@ -276,7 +396,7 @@ void main() {
 
     group('mutation serialization', () {
       test('concurrent subscribes both survive in the final list', () async {
-        when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+        stubRead(const []);
         // A slow publish widens the window a naive implementation would race
         // in: both mutations would read the same empty base set.
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
@@ -314,7 +434,7 @@ void main() {
       });
 
       test('a rapid on/off/on sequence converges to on', () async {
-        when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+        stubRead(const []);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           await Future<void>.delayed(const Duration(milliseconds: 10));
           return PublishSuccess(
@@ -353,7 +473,7 @@ void main() {
       test(
         'a failed mutation does not abort the ones queued behind it',
         () async {
-          when(() => client.queryEvents(any())).thenAnswer((_) async => []);
+          stubRead(const []);
           var call = 0;
           when(() => client.publishEvent(any())).thenAnswer((invocation) async {
             call++;
@@ -387,12 +507,10 @@ void main() {
           'a coin flip', () async {
         final nowSeconds =
             DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
-        when(() => client.queryEvents(any())).thenAnswer(
-          // A list published "in the future" relative to this device's clock.
-          (_) async => [
-            _notifyEvent([creatorA], createdAt: nowSeconds + 500),
-          ],
-        );
+        // A list published "in the future" relative to this device's clock.
+        stubRead([
+          _notifyEvent([creatorA], createdAt: nowSeconds + 500),
+        ]);
         stubPublishSuccess();
 
         await repository.subscribe(
@@ -412,7 +530,9 @@ void main() {
         var events = [
           _notifyEvent([creatorA]),
         ];
-        when(() => client.queryEvents(any())).thenAnswer((_) async => events);
+        when(
+          () => client.queryEventsDetailed(any()),
+        ).thenAnswer((_) async => _readResult(events));
 
         expect(
           await repository.readSubscriptions(ownerPubkey: ownerPubkey),
@@ -439,17 +559,39 @@ void main() {
         );
         expect(emitted.last, equals({creatorB}));
       });
+
+      test('keeps the last good snapshot when the re-read fails', () async {
+        var reads = 0;
+        when(() => client.queryEventsDetailed(any())).thenAnswer((_) async {
+          reads++;
+          if (reads == 1) {
+            return _readResult([
+              _notifyEvent([creatorA]),
+            ]);
+          }
+          return _readResult(const [], noRelays: true);
+        });
+
+        expect(
+          await repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          equals({creatorA}),
+        );
+
+        await repository.refresh(ownerPubkey: ownerPubkey);
+
+        expect(
+          await repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          equals({creatorA}),
+          reason: 'a failed re-read must not clear the known subscriptions',
+        );
+      });
     });
 
     group('watchSubscriptions', () {
       test('emits the loaded set then each mutation', () async {
-        when(
-          () => client.queryEvents(any()),
-        ).thenAnswer(
-          (_) async => [
-            _notifyEvent([creatorA]),
-          ],
-        );
+        stubRead([
+          _notifyEvent([creatorA]),
+        ]);
         stubPublishSuccess();
 
         final emitted = <Set<String>>[];
