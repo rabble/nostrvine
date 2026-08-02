@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/apps_permissions/apps_permissions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Displays persisted permission grants and allows
 /// revocation.
@@ -61,7 +62,7 @@ class _AppsPermissionsContent extends StatelessWidget {
           child: BlocBuilder<AppsPermissionsCubit, AppsPermissionsState>(
             builder: (context, state) {
               if (state.status != AppsPermissionsStatus.loaded) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
 
               if (state.grants.isEmpty) {
@@ -69,6 +70,8 @@ class _AppsPermissionsContent extends StatelessWidget {
               }
 
               return RefreshIndicator(
+                color: VineTheme.onPrimary,
+                backgroundColor: VineTheme.vineGreen,
                 onRefresh: () =>
                     context.read<AppsPermissionsCubit>().loadGrants(),
                 child: ListView.separated(
@@ -153,21 +156,21 @@ class _GrantCard extends StatelessWidget {
         children: [
           Text(
             grant.appId,
-            style: VineTheme.headlineSmallFont(
+            style: VineTheme.titleMediumFont(
               color: context.vineColors.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             grant.origin,
-            style: VineTheme.bodyLargeFont(
+            style: VineTheme.bodyMediumFont(
               color: context.vineColors.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             grant.capability,
-            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
           ),
           const SizedBox(height: 16),
           Align(

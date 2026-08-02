@@ -15,6 +15,7 @@ import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_bridge.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
@@ -211,7 +212,7 @@ void main() {
         );
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
         expect(find.text(l10n.appsSandboxLoadingTitle), findsOneWidget);
         expect(find.text(l10n.appsSandboxLoadingSubtitle), findsOneWidget);
       },

@@ -20,6 +20,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_bridge.dart';
 import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -577,7 +578,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   Future<bool> _showPermissionPrompt(BridgePermissionRequest request) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: VineTheme.transparent,
       isScrollControlled: true,
       builder: (bottomSheetContext) {
         return SafeArea(
@@ -727,11 +728,11 @@ class _SandboxStatusCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (showSpinner) ...[
-                  const CircularProgressIndicator(),
+                  const BrandedLoadingIndicator(size: 60),
                   const SizedBox(height: 20),
                 ] else ...[
-                  const Icon(
-                    Icons.shield_outlined,
+                  const DivineIcon(
+                    icon: DivineIconName.shieldCheck,
                     color: VineTheme.vineGreen,
                     size: 28,
                   ),

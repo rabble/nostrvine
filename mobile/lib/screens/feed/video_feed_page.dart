@@ -460,6 +460,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 // share sheet's keyboard is open, so the overlay does not slide
                 // when the keyboard closes (#5758 follow-up).
                 return RefreshIndicator(
+                  color: VineTheme.onPrimary,
+                  backgroundColor: VineTheme.vineGreen,
                   onRefresh: () => _refreshFeed(context),
                   child: _KeyboardStableBottomInset(
                     child: Stack(

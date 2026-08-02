@@ -19,7 +19,6 @@ lib/screens/category_gallery_screen.dart	1
 lib/screens/comments/widgets/comment_input.dart	3
 lib/screens/comments/widgets/comment_options_modal.dart	1
 lib/screens/comments/widgets/comments_header.dart	1
-lib/screens/creator_analytics_screen.dart	2
 lib/screens/curated_list_feed_screen.dart	4
 lib/screens/discover_lists_screen.dart	2
 lib/screens/feed/video_feed_page/feed_empty_widget.dart	1

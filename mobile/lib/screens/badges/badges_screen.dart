@@ -52,6 +52,8 @@ class _BadgesView extends StatelessWidget {
       body: BlocBuilder<BadgesCubit, BadgesState>(
         builder: (context, state) {
           return RefreshIndicator(
+            color: VineTheme.onPrimary,
+            backgroundColor: VineTheme.vineGreen,
             onRefresh: () => context.read<BadgesCubit>().refresh(),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),

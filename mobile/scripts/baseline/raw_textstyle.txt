@@ -12,9 +12,6 @@ lib/main.dart	2
 lib/mixins/async_value_ui_helpers_mixin.dart	1
 lib/router/app_shell.dart	1
 lib/router/widgets/sound_detail_loader.dart	2
-lib/screens/apps/app_detail_screen.dart	10
-lib/screens/apps/apps_directory_screen.dart	7
-lib/screens/apps/web_iframe_sandbox_screen_io.dart	1
 lib/screens/auth/create_account_screen.dart	7
 lib/screens/auth/email_verification_screen.dart	10
 lib/screens/auth/invite_gate_screen.dart	12

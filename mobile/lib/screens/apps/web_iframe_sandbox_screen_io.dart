@@ -23,7 +23,7 @@ class WebIframeSandboxScreen extends StatelessWidget {
       body: Center(
         child: Text(
           'WebIframeSandboxScreen is web-only',
-          style: TextStyle(color: context.vineColors.mutedText),
+          style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
         ),
       ),
     );

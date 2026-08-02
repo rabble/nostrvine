@@ -81,6 +81,8 @@ void main() {
           300,
         );
         expect(find.text(l10n.appsDetailOpenButton), findsOneWidget);
+        await tester.ensureVisible(find.byType(DivineButton));
+        await tester.pumpAndSettle();
         await tester.tap(find.byType(DivineButton));
         await tester.pumpAndSettle();
 
@@ -136,6 +138,8 @@ void main() {
           find.text(l10n.appsDetailOpenButton),
           300,
         );
+        await tester.ensureVisible(find.byType(DivineButton));
+        await tester.pumpAndSettle();
         await tester.tap(find.byType(DivineButton));
         await tester.pumpAndSettle();
 

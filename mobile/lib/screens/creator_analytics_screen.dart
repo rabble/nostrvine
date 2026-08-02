@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Profile-accessible analytics dashboard for creators.
 class CreatorAnalyticsScreen extends ConsumerStatefulWidget {
@@ -199,7 +200,7 @@ class _CreatorAnalyticsScreenState
             future: _analyticsFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
 
               if (snapshot.hasError) {
@@ -221,6 +222,8 @@ class _CreatorAnalyticsScreenState
               final useFixture = ref.watch(useFixtureCreatorAnalyticsProvider);
 
               return RefreshIndicator(
+                color: VineTheme.onPrimary,
+                backgroundColor: VineTheme.vineGreen,
                 onRefresh: _refresh,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -307,13 +310,9 @@ class _ErrorView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            DivineButton(
+              label: context.l10n.analyticsRetry,
               onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.onPrimary,
-              ),
-              child: Text(context.l10n.analyticsRetry),
             ),
           ],
         ),
@@ -481,7 +480,7 @@ class _KpiGrid extends StatelessWidget {
               width: cardWidth,
               label: context.l10n.analyticsVideos,
               value: StringUtils.formatCompactNumber(summary.videoCount),
-              icon: Icons.video_collection_outlined,
+              icon: DivineIconName.videoCamera,
             ),
             _KpiCard(
               width: cardWidth,
@@ -489,13 +488,18 @@ class _KpiGrid extends StatelessWidget {
               value: summary.hasViewData
                   ? StringUtils.formatCompactNumber(summary.totalViews)
                   : context.l10n.analyticsNa,
-              icon: Icons.visibility_outlined,
+              icon: DivineIconName.eye,
             ),
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsInteractions,
               value: StringUtils.formatCompactNumber(summary.totalInteractions),
-              icon: Icons.touch_app_outlined,
+              // No design-system glyph for these two yet (#4833).
+              iconWidget: const Icon(
+                Icons.touch_app_outlined,
+                color: VineTheme.vineGreen,
+                size: 20,
+              ),
             ),
             _KpiCard(
               width: cardWidth,
@@ -503,13 +507,13 @@ class _KpiGrid extends StatelessWidget {
               value: summary.engagementRate == null
                   ? context.l10n.analyticsNa
                   : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
-              icon: Icons.trending_up,
+              icon: DivineIconName.trendUp,
             ),
             _KpiCard(
               width: cardWidth,
               label: context.l10n.analyticsFollowers,
               value: StringUtils.formatCompactNumber(followerCount),
-              icon: Icons.group_outlined,
+              icon: DivineIconName.users,
             ),
             _KpiCard(
               width: cardWidth,
@@ -519,7 +523,11 @@ class _KpiGrid extends StatelessWidget {
                   : NumberFormat.decimalPattern().format(
                       summary.averageInteractionsPerVideo,
                     ),
-              icon: Icons.stacked_bar_chart,
+              iconWidget: const Icon(
+                Icons.stacked_bar_chart,
+                color: VineTheme.vineGreen,
+                size: 20,
+              ),
             ),
           ],
         );
@@ -533,13 +541,22 @@ class _KpiCard extends StatelessWidget {
     required this.width,
     required this.label,
     required this.value,
-    required this.icon,
-  });
+    this.icon,
+    this.iconWidget,
+  }) : assert(
+         icon == null || iconWidget == null,
+         'Pass either icon or iconWidget, not both',
+       );
 
   final double width;
   final String label;
   final String value;
-  final IconData icon;
+
+  /// Design-system glyph for this metric.
+  final DivineIconName? icon;
+
+  /// Escape hatch for metrics whose glyph the icon set does not cover (#4833).
+  final Widget? iconWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -554,7 +571,8 @@ class _KpiCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: VineTheme.vineGreen, size: 20),
+          iconWidget ??
+              DivineIcon(icon: icon!, color: VineTheme.vineGreen, size: 20),
           const SizedBox(height: 10),
           Text(
             value,
@@ -595,21 +613,21 @@ class _EngagementBreakdown extends StatelessWidget {
             label: context.l10n.analyticsLikes,
             value: summary.totalLikes,
             share: likesShare,
-            color: const Color(0xFF79C97D),
+            color: VineTheme.likeRed,
           ),
           const SizedBox(height: 8),
           _BreakdownRow(
             label: context.l10n.analyticsComments,
             value: summary.totalComments,
             share: commentsShare,
-            color: const Color(0xFF64B5F6),
+            color: VineTheme.commentBlue,
           ),
           const SizedBox(height: 8),
           _BreakdownRow(
             label: context.l10n.analyticsReposts,
             value: summary.totalReposts,
             share: repostsShare,
-            color: const Color(0xFFFFB74D),
+            color: VineTheme.vineGreenLight,
           ),
         ],
       ),
@@ -994,48 +1012,33 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
                       label: context.l10n.analyticsLikes,
                       value: likes,
                       share: likesShare,
-                      color: const Color(0xFF79C97D),
+                      color: VineTheme.likeRed,
                     ),
                     const SizedBox(height: 8),
                     _BreakdownRow(
                       label: context.l10n.analyticsComments,
                       value: comments,
                       share: commentsShare,
-                      color: const Color(0xFF64B5F6),
+                      color: VineTheme.commentBlue,
                     ),
                     const SizedBox(height: 8),
                     _BreakdownRow(
                       label: context.l10n.analyticsReposts,
                       value: reposts,
                       share: repostShare,
-                      color: const Color(0xFFFFB74D),
+                      color: VineTheme.vineGreenLight,
                     ),
                     const SizedBox(height: 14),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: performance.video.id.isEmpty
-                            ? null
-                            : () {
-                                context.push(
-                                  VideoDetailScreen.pathForId(
-                                    performance.video.id,
-                                  ),
-                                );
-                              },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: context.vineColors.primaryText,
-                          side: BorderSide(
-                            color: context.vineColors.outlineMuted,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        icon: DivineIcon(
-                          icon: DivineIconName.playCircle,
-                          color: context.vineColors.primaryText,
-                        ),
-                        label: Text(context.l10n.analyticsOpenPost),
-                      ),
+                    DivineButton(
+                      label: context.l10n.analyticsOpenPost,
+                      leadingIcon: DivineIconName.playCircle,
+                      type: DivineButtonType.secondary,
+                      expanded: true,
+                      onPressed: performance.video.id.isEmpty
+                          ? null
+                          : () => context.push(
+                              VideoDetailScreen.pathForId(performance.video.id),
+                            ),
                     ),
                   ],
                 ),
