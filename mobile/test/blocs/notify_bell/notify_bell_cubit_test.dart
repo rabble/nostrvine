@@ -29,6 +29,9 @@ void main() {
           ownerPubkey: any(named: 'ownerPubkey'),
         ),
       ).thenAnswer((_) => subscriptions.stream);
+      when(
+        () => repository.reconcile(ownerPubkey: any(named: 'ownerPubkey')),
+      ).thenAnswer((_) async => const PeopleListPublishResult.noop());
     });
 
     tearDown(() async {
@@ -60,6 +63,15 @@ void main() {
       expect: () => const [
         NotifyBellState(status: NotifyBellStatus.ready, isSubscribed: true),
       ],
+    );
+
+    blocTest<NotifyBellCubit, NotifyBellState>(
+      'drains an unfollow teardown that never reached the relays',
+      build: build,
+      act: (cubit) => cubit.load(),
+      verify: (_) {
+        verify(() => repository.reconcile(ownerPubkey: _viewer)).called(1);
+      },
     );
 
     blocTest<NotifyBellCubit, NotifyBellState>(
@@ -222,6 +234,23 @@ void main() {
             ),
           ).called(1);
         },
+      );
+
+      blocTest<NotifyBellCubit, NotifyBellState>(
+        'stays silent when the teardown publish fails, leaving the removal '
+        'for the repository to retry',
+        build: build,
+        setUp: () {
+          when(
+            () => repository.unsubscribe(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              creatorPubkey: any(named: 'creatorPubkey'),
+            ),
+          ).thenAnswer((_) async => const PeopleListPublishResult.failed());
+        },
+        act: (cubit) => cubit.clearForUnfollow(),
+        expect: () => const <NotifyBellState>[],
+        errors: () => const <Object>[],
       );
 
       blocTest<NotifyBellCubit, NotifyBellState>(

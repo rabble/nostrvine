@@ -63,6 +63,14 @@ class NotifySubscriptionsRepositoryImpl
   /// stampeding the pool with identical filters.
   final Map<String, Future<_NotifyListSnapshot?>> _inFlightReads = {};
 
+  /// Removals whose publish failed, per owner.
+  ///
+  /// The bell is follow-gated, so a failed unfollow teardown would otherwise
+  /// leave the creator in the public list with no UI left to remove them.
+  /// Pending removals are folded into the next publish for that owner and
+  /// drained by [reconcile].
+  final Map<String, Set<String>> _pendingRemovals = {};
+
   bool _disposed = false;
 
   @override
@@ -121,6 +129,14 @@ class NotifySubscriptionsRepositoryImpl
   }
 
   @override
+  Future<PeopleListPublishResult> reconcile({required String ownerPubkey}) {
+    if (_pendingRemovals[ownerPubkey]?.isNotEmpty != true) {
+      return Future.value(const PeopleListPublishResult.noop());
+    }
+    return _mutate(ownerPubkey: ownerPubkey, add: false);
+  }
+
+  @override
   Future<void> dispose() async {
     _disposed = true;
     for (final subject in _subjects.values) {
@@ -130,13 +146,17 @@ class NotifySubscriptionsRepositoryImpl
     _snapshots.clear();
     _mutationTails.clear();
     _inFlightReads.clear();
+    _pendingRemovals.clear();
   }
 
   /// Queues a mutation behind every mutation already pending for [ownerPubkey].
+  ///
+  /// A null [creatorPubkey] mutates nothing by itself and only republishes
+  /// outstanding removals — see [reconcile].
   Future<PeopleListPublishResult> _mutate({
     required String ownerPubkey,
-    required String creatorPubkey,
     required bool add,
+    String? creatorPubkey,
   }) {
     final previous = _mutationTails[ownerPubkey] ?? Future<void>.value();
     final result = previous.then(
@@ -154,11 +174,12 @@ class NotifySubscriptionsRepositoryImpl
 
   Future<PeopleListPublishResult> _applyMutation({
     required String ownerPubkey,
-    required String creatorPubkey,
+    required String? creatorPubkey,
     required bool add,
   }) async {
     if (_disposed) return const PeopleListPublishResult.failed();
-    if (creatorPubkey.isEmpty || creatorPubkey == ownerPubkey) {
+    if (creatorPubkey != null &&
+        (creatorPubkey.isEmpty || creatorPubkey == ownerPubkey)) {
       // Subscribing to your own posts is meaningless; the push service drops
       // self-references anyway, so never write one.
       return const PeopleListPublishResult.noop();
@@ -167,28 +188,47 @@ class NotifySubscriptionsRepositoryImpl
     final snapshot = await _ensureSnapshot(ownerPubkey);
     if (snapshot == null) {
       // Publishing against a base set we could not read would delete every
-      // subscription the read failed to load.
+      // subscription the read failed to load. Retain the removal so the next
+      // successful read reapplies it.
+      if (creatorPubkey != null && !add) {
+        _recordPendingRemoval(ownerPubkey, creatorPubkey);
+      }
       return PeopleListPublishResult.failed(
         error: NotifySubscriptionsUnavailableException(ownerPubkey),
       );
     }
 
-    final desired = <String>{...snapshot.creators};
-    if (add) {
-      desired.add(creatorPubkey);
-    } else {
-      desired.remove(creatorPubkey);
+    final desired = <String>{...snapshot.creators}
+      ..removeAll(_pendingRemovals[ownerPubkey] ?? const <String>{});
+    if (creatorPubkey != null) {
+      if (add) {
+        desired.add(creatorPubkey);
+      } else {
+        desired.remove(creatorPubkey);
+      }
     }
 
     if (_sameMembers(desired, snapshot.creators)) {
+      // The published list already matches what we want, so every pending
+      // removal is satisfied without a write.
+      _pendingRemovals.remove(ownerPubkey);
       return const PeopleListPublishResult.noop();
     }
 
-    return _publishReplacement(
+    final result = await _publishReplacement(
       ownerPubkey: ownerPubkey,
       creators: desired,
       previousCreatedAt: snapshot.createdAt,
     );
+
+    if (result.submitted) {
+      // `desired` excluded every pending removal, so a submitted publish
+      // clears all of them at once.
+      _pendingRemovals.remove(ownerPubkey);
+    } else if (creatorPubkey != null && !add) {
+      _recordPendingRemoval(ownerPubkey, creatorPubkey);
+    }
+    return result;
   }
 
   /// Publishes the full list. A partial list would be a destructive write:
@@ -334,6 +374,10 @@ class NotifySubscriptionsRepositoryImpl
       );
       return null;
     }
+  }
+
+  void _recordPendingRemoval(String ownerPubkey, String creatorPubkey) {
+    (_pendingRemovals[ownerPubkey] ??= <String>{}).add(creatorPubkey);
   }
 
   void _publishSnapshot(String ownerPubkey, _NotifyListSnapshot snapshot) {

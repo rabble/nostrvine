@@ -17,6 +17,8 @@ const creatorA =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const creatorB =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const creatorC =
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
 Event _notifyEvent(List<String> pubkeys, {int createdAt = 1710000000}) => Event(
   ownerPubkey,
@@ -392,6 +394,107 @@ void main() {
         expect(result.status, equals(PeopleListPublishStatus.noop));
         verifyNever(() => client.publishEvent(any()));
       });
+    });
+
+    group('outstanding removals', () {
+      test('a failed removal is reapplied by the next publish', () async {
+        stubRead([
+          _notifyEvent([creatorA, creatorB]),
+        ]);
+        when(
+          () => client.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final teardown = await repository.unsubscribe(
+          ownerPubkey: ownerPubkey,
+          creatorPubkey: creatorA,
+        );
+        expect(teardown.status, equals(PeopleListPublishStatus.failed));
+
+        stubPublishSuccess();
+        await repository.subscribe(
+          ownerPubkey: ownerPubkey,
+          creatorPubkey: creatorC,
+        );
+
+        final published =
+            verify(() => client.publishEvent(captureAny())).captured.last
+                as Event;
+        expect(
+          _publishedMembers(published),
+          equals([creatorB, creatorC]),
+          reason: 'the abandoned bell must not survive the next publish',
+        );
+      });
+
+      test('reconcile republishes an outstanding removal', () async {
+        stubRead([
+          _notifyEvent([creatorA, creatorB]),
+        ]);
+        when(
+          () => client.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        await repository.unsubscribe(
+          ownerPubkey: ownerPubkey,
+          creatorPubkey: creatorA,
+        );
+
+        stubPublishSuccess();
+        final result = await repository.reconcile(ownerPubkey: ownerPubkey);
+
+        expect(result.submitted, isTrue);
+        final published =
+            verify(() => client.publishEvent(captureAny())).captured.last
+                as Event;
+        expect(_publishedMembers(published), equals([creatorB]));
+        expect(
+          await repository.readSubscriptions(ownerPubkey: ownerPubkey),
+          equals({creatorB}),
+        );
+      });
+
+      test('reconcile is a no-op when nothing is outstanding', () async {
+        stubRead([
+          _notifyEvent([creatorA]),
+        ]);
+        stubPublishSuccess();
+
+        final result = await repository.reconcile(ownerPubkey: ownerPubkey);
+
+        expect(result.status, equals(PeopleListPublishStatus.noop));
+        verifyNever(() => client.publishEvent(any()));
+      });
+
+      test(
+        'a removal that failed on an unreadable list is retried later',
+        () async {
+          var attempts = 0;
+          when(() => client.queryEventsDetailed(any())).thenAnswer((_) async {
+            attempts++;
+            if (attempts == 1) return _readResult(const [], noRelays: true);
+            return _readResult([
+              _notifyEvent([creatorA, creatorB]),
+            ]);
+          });
+          stubPublishSuccess();
+
+          final teardown = await repository.unsubscribe(
+            ownerPubkey: ownerPubkey,
+            creatorPubkey: creatorA,
+          );
+          expect(teardown.status, equals(PeopleListPublishStatus.failed));
+          verifyNever(() => client.publishEvent(any()));
+
+          final result = await repository.reconcile(ownerPubkey: ownerPubkey);
+
+          expect(result.submitted, isTrue);
+          final published =
+              verify(() => client.publishEvent(captureAny())).captured.last
+                  as Event;
+          expect(_publishedMembers(published), equals([creatorB]));
+        },
+      );
     });
 
     group('mutation serialization', () {

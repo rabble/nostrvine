@@ -8,8 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/notify_bell/reportable_sites.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:people_lists_repository/people_lists_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 part 'notify_bell_state.dart';
+
+const String _logName = 'NotifyBellCubit';
 
 /// Drives the bell on a creator's profile.
 ///
@@ -42,10 +45,33 @@ class NotifyBellCubit extends Cubit<NotifyBellState> {
   /// creator in sync — e.g. the profile bell and a bell reached from a
   /// different route — and picks up an unfollow teardown published while
   /// this bell is mounted.
+  ///
+  /// The stream stays silent until the list has actually been read, so the
+  /// bell holds [NotifyBellStatus.initial] — and stays untappable — while the
+  /// relays are unreachable. Tapping an unverified "off" would publish a
+  /// replacement list containing only this creator.
   Future<void> load() async {
     _subscription ??= _repository
         .watchSubscriptions(ownerPubkey: _viewerPubkey)
         .listen(_onSubscriptionsChanged);
+    await _retryOutstandingTeardown();
+  }
+
+  /// Republishes an unfollow teardown whose earlier publish failed.
+  ///
+  /// The bell is follow-gated, so once the viewer unfollows there is no bell
+  /// left to retry from. Every bell mount therefore drains whatever removal
+  /// is still outstanding for this viewer, whichever creator it belonged to.
+  Future<void> _retryOutstandingTeardown() async {
+    try {
+      await _repository.reconcile(ownerPubkey: _viewerPubkey);
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
+      addError(
+        Reportable(error, context: NotifyBellReportableSites.reconcile),
+        stackTrace,
+      );
+    }
   }
 
   void _onSubscriptionsChanged(Set<String> creators) {
@@ -121,15 +147,24 @@ class NotifyBellCubit extends Cubit<NotifyBellState> {
   /// non-member as a no-op.
   Future<void> clearForUnfollow() async {
     try {
-      await _repository.unsubscribe(
+      final result = await _repository.unsubscribe(
         ownerPubkey: _viewerPubkey,
         creatorPubkey: _creatorPubkey,
       );
+      if (result.status == PeopleListPublishStatus.failed) {
+        // Deliberately not surfaced: the user asked to unfollow, and that
+        // succeeded. The repository retains the removal and reapplies it on
+        // its next publish for this viewer, or on the next bell mount via
+        // load(), so an abandoned subscription cannot keep pushing unseen.
+        Log.warning(
+          'Notify teardown publish failed; retained for retry: '
+          '${result.error}',
+          name: _logName,
+          category: LogCategory.relay,
+        );
+      }
     } on Object catch (error, stackTrace) {
       if (isClosed) return;
-      // Deliberately not surfaced: the user asked to unfollow, and that
-      // succeeded. A failed teardown is retried on the next profile visit
-      // because load() re-reads the list.
       addError(
         Reportable(error, context: NotifyBellReportableSites.clearForUnfollow),
         stackTrace,

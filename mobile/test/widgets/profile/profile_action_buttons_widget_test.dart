@@ -61,6 +61,9 @@ void main() {
     ).thenAnswer(
       (_) async => const PeopleListPublishResult.submitted(eventId: 'e1'),
     );
+    when(
+      () => notifyRepository.reconcile(ownerPubkey: any(named: 'ownerPubkey')),
+    ).thenAnswer((_) async => const PeopleListPublishResult.noop());
     followRepository = MockFollowRepository();
     blocklistRepository = _MockContentBlocklistRepository();
     nostrClient = createMockNostrService();
@@ -273,8 +276,9 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pumpAndSettle();
 
-      // The real repository hands out a seeded BehaviorSubject; the bell is
-      // deliberately inert until that first emission arrives.
+      // The real repository emits nothing until it has actually read the
+      // list, and the bell is deliberately inert until that first emission —
+      // tapping an unverified "off" would publish a replacement list.
       notifySubscriptions.add(const <String>{});
       await tester.pumpAndSettle();
 

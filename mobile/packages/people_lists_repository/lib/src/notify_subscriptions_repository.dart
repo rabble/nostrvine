@@ -84,10 +84,21 @@ abstract interface class NotifySubscriptionsRepository {
   ///
   /// Returns [PeopleListPublishStatus.noop] when not subscribed, which makes
   /// it safe to call unconditionally from unfollow teardown.
+  ///
+  /// A failed removal is retained and reapplied by the next mutation or
+  /// [reconcile] for the same owner, so an unfollow teardown cannot be
+  /// silently lost while the bell that would undo it is unmounted.
   Future<PeopleListPublishResult> unsubscribe({
     required String ownerPubkey,
     required String creatorPubkey,
   });
+
+  /// Republishes the list if any removal is still outstanding.
+  ///
+  /// Returns [PeopleListPublishStatus.noop] when nothing is pending. Call it
+  /// when a subscription surface mounts, so a teardown whose publish failed
+  /// is retried instead of waiting for an unrelated toggle.
+  Future<PeopleListPublishResult> reconcile({required String ownerPubkey});
 
   /// Releases stream resources.
   Future<void> dispose();
