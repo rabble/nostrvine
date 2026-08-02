@@ -9,6 +9,7 @@ import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_types.dart';
+import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/report_content_confirmation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -361,7 +362,21 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             );
 
       if (mounted) {
-        if (result.success) {
+        if (result.success && result.delivery == ReportDelivery.localOnly) {
+          // Nothing left the device — every channel refused, which usually
+          // means no connectivity. The confirmation screen would be false in
+          // four places at once (its title, the review promise, the green
+          // check, and any DM caveat), so don't show it: surface the failure
+          // and leave Submit live so retrying is one tap. The moderation DM
+          // is deliberately not attempted either — a retry re-sends
+          // everything, and a queued DM plus a resubmit would deliver the
+          // same report twice.
+          setState(() {
+            _errorMessage = context.l10n.reportFailed(
+              context.l10n.commonSomethingWentWrong,
+            );
+          });
+        } else if (result.success) {
           // Send DM to moderation team with report details (TC-025/026)
           final dmRepo = ref.read(dmRepositoryProvider);
           final labelService = ref.read(moderationLabelServiceProvider);

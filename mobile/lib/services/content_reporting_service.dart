@@ -13,6 +13,22 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Whether a submitted report reached anything outside this device.
+///
+/// A report is built and signed locally, then pushed to two independent
+/// channels. Neither is required to succeed for the report to be recorded,
+/// so [ReportResult.success] alone says nothing about delivery.
+enum ReportDelivery {
+  /// At least one off-device channel accepted the report: the relay took
+  /// the kind-1984 (NIP-56) event, or the Zendesk ticket was created.
+  reached,
+
+  /// Nothing left the device. The report exists only in local history,
+  /// which nothing in the app ever replays — so it is a dead letter
+  /// unless the user submits again.
+  localOnly,
+}
+
 /// Report submission result
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class ReportResult {
@@ -21,20 +37,33 @@ class ReportResult {
     required this.timestamp,
     this.error,
     this.reportId,
+    this.delivery = ReportDelivery.reached,
   });
   final bool success;
   final String? error;
   final String? reportId;
   final DateTime timestamp;
 
-  static ReportResult createSuccess(String reportId) => ReportResult(
+  /// Whether the report reached any channel off this device. Only
+  /// meaningful when [success] is true.
+  final ReportDelivery delivery;
+
+  static ReportResult createSuccess(
+    String reportId, {
+    ReportDelivery delivery = ReportDelivery.reached,
+  }) => ReportResult(
     success: true,
     reportId: reportId,
     timestamp: DateTime.now(),
+    delivery: delivery,
   );
 
-  static ReportResult failure(String error) =>
-      ReportResult(success: false, error: error, timestamp: DateTime.now());
+  static ReportResult failure(String error) => ReportResult(
+    success: false,
+    error: error,
+    timestamp: DateTime.now(),
+    delivery: ReportDelivery.localOnly,
+  );
 }
 
 /// Content report data
@@ -191,7 +220,8 @@ class ContentReportingService {
       );
       // Always continue to local save regardless of publish outcome.
       final failureReason = sentEvent.failureReason;
-      if (failureReason != null) {
+      final relayAccepted = failureReason == null;
+      if (!relayAccepted) {
         Log.error(
           'Failed to publish NIP-56 report: $failureReason',
           name: 'ContentReportingService',
@@ -206,7 +236,7 @@ class ContentReportingService {
       }
 
       // Create Zendesk ticket silently for moderation tracking
-      await _createZendeskTicket(
+      final zendeskFiled = await _createZendeskTicket(
         reportId: reportId,
         eventId: eventId,
         authorPubkey: authorPubkey,
@@ -230,12 +260,29 @@ class ContentReportingService {
       _reportHistory.add(report);
       await _saveReportHistory();
 
+      // The report is recorded either way, but only an off-device channel
+      // makes it visible to moderation. Treat the two as a disjunction: a
+      // filed Zendesk ticket means a human has the report even when every
+      // relay refused it, and vice versa.
+      final delivery = (relayAccepted || zendeskFiled)
+          ? ReportDelivery.reached
+          : ReportDelivery.localOnly;
+      if (delivery == ReportDelivery.localOnly) {
+        Log.error(
+          'Report $reportId reached no channel: relay and Zendesk both '
+          'failed. Local history is never replayed, so it is lost unless '
+          'the user submits again.',
+          name: 'ContentReportingService',
+          category: LogCategory.system,
+        );
+      }
+
       Log.debug(
         'Content report submitted: $reportId',
         name: 'ContentReportingService',
         category: LogCategory.system,
       );
-      return ReportResult.createSuccess(reportId);
+      return ReportResult.createSuccess(reportId, delivery: delivery);
     } catch (e) {
       Log.error(
         'Failed to submit content report: $e',
@@ -524,8 +571,11 @@ class ContentReportingService {
     return buffer.toString();
   }
 
-  /// Create Zendesk ticket for moderation tracking
-  Future<void> _createZendeskTicket({
+  /// Create Zendesk ticket for moderation tracking.
+  ///
+  /// Returns whether the ticket was actually created. A failure here never
+  /// fails the report, but it does count against [ReportDelivery].
+  Future<bool> _createZendeskTicket({
     required String reportId,
     required String eventId,
     required String authorPubkey,
@@ -578,6 +628,7 @@ class ContentReportingService {
           category: LogCategory.system,
         );
       }
+      return success;
     } catch (e) {
       Log.error(
         'Error creating Zendesk ticket: $e',
@@ -585,6 +636,7 @@ class ContentReportingService {
         category: LogCategory.system,
       );
       // Don't fail the report if Zendesk ticket creation fails
+      return false;
     }
   }
 

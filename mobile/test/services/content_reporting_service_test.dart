@@ -479,6 +479,10 @@ void main() {
       expect(result.success, true);
       expect(result.error, isNull);
       expect(result.reportId, isNotNull);
+      // #6387: but resilient is not the same as delivered. Zendesk is not
+      // initialized under test, so with the relay refusing too, nothing
+      // left the device and the UI must not claim otherwise.
+      expect(result.delivery, ReportDelivery.localOnly);
 
       // Verify report was saved to local history
       expect(service.reportHistory, isNotEmpty);
@@ -520,6 +524,46 @@ void main() {
       expect(result.success, isTrue);
       expect(result.error, isNull);
       expect(service.reportHistory, isNotEmpty);
+      // #6387: with no relay connected and Zendesk uninitialized, the
+      // report is a local dead letter — nothing replays reportHistory.
+      expect(result.delivery, ReportDelivery.localOnly);
+    });
+
+    test('reportContent() reports delivery when the relay accepts', () async {
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [],
+        content: 'Spam content',
+      );
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
+
+      final result = await service.reportContent(
+        eventId: _validEventId('3'),
+        authorPubkey: 'author_456',
+        reason: ContentFilterReason.spam,
+        details: 'Spam content',
+      );
+
+      // The relay leg alone is enough — Zendesk is uninitialized under
+      // test, so this also pins that delivery is a disjunction, not a
+      // conjunction, of the two channels.
+      expect(result.success, isTrue);
+      expect(result.delivery, ReportDelivery.reached);
     });
 
     test('reportContent() stores report in history on success', () async {

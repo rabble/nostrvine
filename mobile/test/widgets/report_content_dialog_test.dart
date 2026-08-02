@@ -958,6 +958,49 @@ void main() {
       expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
     });
 
+    testWidgets('does not confirm when the report reached no channel', (
+      tester,
+    ) async {
+      // #6387/R2: reportContent returns success even when the kind-1984
+      // publish failed on every relay AND the Zendesk ticket failed. The
+      // confirmation screen would then be false in four places at once, so
+      // the flow must surface the failure instead of confirming.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsNothing);
+      expect(
+        find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
+        findsOneWidget,
+      );
+      // Retrying must re-send everything, so the moderation DM is not
+      // attempted — a queued DM plus a resubmit would double-deliver.
+      verifyNever(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      );
+    });
+
     testWidgets('stays silent when only the sender self-wrap failed', (
       tester,
     ) async {
