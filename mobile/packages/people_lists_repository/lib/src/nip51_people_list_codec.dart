@@ -1,5 +1,5 @@
 // ABOUTME: Encodes and decodes NIP-51 kind 30000 people (follow set) events.
-// ABOUTME: Preserves full Nostr pubkeys and skips the app block-list d=block.
+// ABOUTME: Preserves full Nostr pubkeys and skips app-managed reserved d tags.
 
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
@@ -39,16 +39,25 @@ class PeopleListEventPayload extends Equatable {
 /// * Encodes a [UserList] into a [PeopleListEventPayload].
 /// * Decodes a kind 30000 [Event] into a [UserList], or `null` when the event
 ///   does not describe a user-editable people list (missing `d`, wrong kind,
-///   or the reserved app block list).
+///   or one of the reserved app-managed lists in [reservedDTags]).
 abstract final class Nip51PeopleListCodec {
   /// NIP-51 kind for people / follow sets.
   static const int kind = 30000;
 
   /// Reserved `d` tag value used by the app's block list.
-  ///
-  /// Events with this identifier are filtered out of the user-facing list
-  /// collection so that the block list cannot be edited as a regular list.
   static const String blockedDTag = 'block';
+
+  /// Reserved `d` tag value used by the app's new-post notification
+  /// subscription list ("bells").
+  static const String notifyDTag = 'notify';
+
+  /// Reserved `d` tag values for app-managed kind 30000 lists.
+  ///
+  /// Events with these identifiers are filtered out of the user-facing list
+  /// collection so app-managed lists cannot be renamed, edited, or deleted as
+  /// ordinary people lists. Deleting the notify list would silently clear
+  /// every bell the user has set.
+  static const Set<String> reservedDTags = {blockedDTag, notifyDTag};
 
   /// Encodes [list] into a [PeopleListEventPayload].
   ///
@@ -81,13 +90,58 @@ abstract final class Nip51PeopleListCodec {
     return PeopleListEventPayload(kind: kind, tags: tags);
   }
 
+  /// Encodes an app-managed reserved list into a [PeopleListEventPayload].
+  ///
+  /// Reserved lists (see [reservedDTags]) never become a [UserList], so they
+  /// cannot go through [encode]. Emits one `p` tag per non-empty pubkey,
+  /// never truncated.
+  ///
+  /// An empty [pubkeys] is legitimate — it is how the user clears the list —
+  /// and produces an event with `d` and `title` but no `p` tags.
+  static PeopleListEventPayload encodeReserved({
+    required String dTag,
+    required String title,
+    required Iterable<String> pubkeys,
+  }) {
+    assert(
+      reservedDTags.contains(dTag),
+      'encodeReserved is only for app-managed lists in reservedDTags',
+    );
+    return PeopleListEventPayload(
+      kind: kind,
+      tags: [
+        ['d', dTag],
+        ['title', title],
+        for (final pubkey in pubkeys)
+          if (pubkey.isNotEmpty) ['p', pubkey],
+      ],
+    );
+  }
+
+  /// Decodes the member pubkeys of the app-managed reserved list [dTag].
+  ///
+  /// Returns `null` when [event] is not a kind [kind] event carrying that
+  /// exact `d` tag, so callers can filter a mixed relay response. An empty
+  /// list means the event exists and has no members — distinct from `null`.
+  ///
+  /// Full pubkeys are preserved; duplicates are collapsed while keeping first
+  /// occurrence order.
+  static List<String>? decodeReservedMembers(
+    Event event, {
+    required String dTag,
+  }) {
+    if (event.kind != kind) return null;
+    if (_firstTagValue(event.tags, 'd') != dTag) return null;
+    return _memberPubkeys(event.tags).toSet().toList(growable: false);
+  }
+
   /// Decodes [event] into a [UserList], or returns `null` when the event is
   /// not a user-facing people list.
   ///
   /// Returns `null` when:
   /// * [Event.kind] is not [kind].
   /// * The event has no non-empty `d` tag.
-  /// * The `d` tag equals [blockedDTag] (the reserved block list).
+  /// * The `d` tag is one of [reservedDTags] (app-managed lists).
   ///
   /// The returned [UserList.name] prefers the `title` tag and falls back to
   /// the `d` tag when `title` is missing. Full 64-char pubkeys are preserved
@@ -98,16 +152,11 @@ abstract final class Nip51PeopleListCodec {
     }
 
     final dTag = _firstTagValue(event.tags, 'd');
-    if (dTag == null || dTag == blockedDTag) {
+    if (dTag == null || reservedDTags.contains(dTag)) {
       return null;
     }
 
-    final pubkeys = event.tags
-        .where(
-          (tag) => tag.length >= 2 && tag[0] == 'p' && tag[1].isNotEmpty,
-        )
-        .map((tag) => tag[1])
-        .toList(growable: false);
+    final pubkeys = _memberPubkeys(event.tags).toList(growable: false);
 
     final timestamp = DateTime.fromMillisecondsSinceEpoch(
       event.createdAt * 1000,
@@ -125,6 +174,11 @@ abstract final class Nip51PeopleListCodec {
       nostrEventId: event.id.isEmpty ? null : event.id,
     );
   }
+
+  /// Member pubkeys from every non-empty `p` tag, in tag order.
+  static Iterable<String> _memberPubkeys(List<List<String>> tags) => tags
+      .where((tag) => tag.length >= 2 && tag[0] == 'p' && tag[1].isNotEmpty)
+      .map((tag) => tag[1]);
 
   static String? _firstTagValue(List<List<String>> tags, String name) {
     for (final tag in tags) {

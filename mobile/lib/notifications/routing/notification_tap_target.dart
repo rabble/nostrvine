@@ -82,11 +82,13 @@ bool notificationKindOpensComments(
 
 /// Maps the push wire `type` to a [NotificationKind].
 ///
-/// `divine-push-service` sends a lowercase, five-value vocabulary
-/// (`like`/`comment`/`follow`/`mention`/`repost`). It never sends `reply`,
-/// `likeComment`, or `system`. Unknown / absent values return `null`, which
-/// [resolveNotificationTapTarget] treats as a best-effort video/profile/inbox
-/// tap.
+/// `divine-push-service` sends a lowercase vocabulary
+/// (`like`/`comment`/`follow`/`mention`/`repost`) plus the camelCase
+/// `newPost`, which matches that service's `NotificationType::display_name()`
+/// exactly — the string is a wire contract, not a display value. It never
+/// sends `reply`, `likeComment`, or `system`. Unknown / absent values return
+/// `null`, which [resolveNotificationTapTarget] treats as a best-effort
+/// video/profile/inbox tap.
 NotificationKind? notificationKindFromPushType(String? type) {
   switch (type) {
     case 'like':
@@ -99,6 +101,8 @@ NotificationKind? notificationKindFromPushType(String? type) {
       return NotificationKind.mention;
     case 'repost':
       return NotificationKind.repost;
+    case 'newPost':
+      return NotificationKind.newPost;
     default:
       // Keep unknown values non-fatal: a mistyped or legacy-cased payload
       // should still fall back to the best available target.

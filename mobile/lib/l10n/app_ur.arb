@@ -1438,6 +1438,8 @@
   "notificationSettingsMentionsSubtitle": "جب آپ کا ذکر ہو",
   "notificationSettingsReposts": "ریپوسٹس",
   "notificationSettingsRepostsSubtitle": "جب کوئی آپ کی ویڈیوز ریپوسٹ کرے",
+  "notificationSettingsNewPosts": "نئی ویڈیوز",
+  "notificationSettingsNewPostsSubtitle": "جب آپ کا فالو کردہ کوئی شخص پوسٹ کرے",
   "notificationSettingsSystem": "سسٹم",
   "notificationSettingsSystemSubtitle": "ایپ اپڈیٹس اور سسٹم پیغامات",
   "notificationSettingsPushNotificationsSection": "پش اطلاعات",
@@ -4789,6 +4791,7 @@
       }
     }
   },
+  "notificationPostedNewVine": "{actorName} نے نئی ویڈیو پوسٹ کی",
   "notificationRepliedToYourComment": "{actorName} نے آپ کے تبصرے کا جواب دیا",
   "@notificationRepliedToYourComment": {
     "description": "Full sentence shown for a reply notification.",
@@ -6665,5 +6668,8 @@
   "supporterDisclaimer": "اسٹور آپ کی خریداری کی تصدیق کرنے کے بعد Divine سپورٹر اسٹیٹس کی تصدیق کرتا ہے۔ پہچان اختیاری ہے، اور ہالہ تصدیق نہیں ہے۔",
   "@supporterDisclaimer": {
     "description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."
-  }
+  },
+  "profileNotifyBellOff": "نئی ویڈیوز کی اطلاع دیں",
+  "profileNotifyBellOn": "نئی ویڈیوز کی اطلاعات بند کریں",
+  "profileNotifyUpdateFailed": "محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟"
 }

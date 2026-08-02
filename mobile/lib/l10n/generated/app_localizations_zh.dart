@@ -2344,6 +2344,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '当有人转发你的视频时';
 
   @override
+  String get notificationSettingsNewPosts => '新视频';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => '当你关注的人发布内容时';
+
+  @override
   String get notificationSettingsSystem => '系统';
 
   @override
@@ -7584,6 +7590,11 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName 发布了新视频';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName 回复了你的评论';
   }
@@ -10211,4 +10222,13 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine 会在商店验证你的购买后确认支持者状态。展示与否完全自愿，光环标识不代表认证。';
+
+  @override
+  String get profileNotifyBellOff => '接收新视频通知';
+
+  @override
+  String get profileNotifyBellOn => '停止新视频通知';
+
+  @override
+  String get profileNotifyUpdateFailed => '没能保存，再试一次？';
 }

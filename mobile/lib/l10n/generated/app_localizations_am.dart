@@ -2422,6 +2422,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => 'አንድ ሰው ቪዲዮዎችህን በድጋሚ ሲለጥፍ';
 
   @override
+  String get notificationSettingsNewPosts => 'አዲስ ቫይኖች';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => 'የምትከታተለው ሰው ሲለጥፍ';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -7827,6 +7833,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName አዲስ ቫይን ለጠፈ';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName ለአስተያየትዎ ምላሽ ሰጥተዋል';
   }
@@ -10567,4 +10578,13 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'ስለ አዲስ ቫይኖች አሳውቀኝ';
+
+  @override
+  String get profileNotifyBellOn => 'ስለ አዲስ ቫይኖች አታሳውቀኝ';
+
+  @override
+  String get profileNotifyUpdateFailed => 'ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ?';
 }

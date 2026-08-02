@@ -2498,6 +2498,13 @@ class AppLocalizationsFil extends AppLocalizations {
       'Kapag may nag-repost ng iyong mga video';
 
   @override
+  String get notificationSettingsNewPosts => 'Mga Bagong Vine';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Kapag nag-post ang taong binabantayan mo';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -8074,6 +8081,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return 'Nag-post si $actorName ng bagong vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return 'nag-reply si $actorName sa comment mo';
   }
@@ -10901,4 +10913,13 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Ipaalam ang mga bagong vine';
+
+  @override
+  String get profileNotifyBellOn => 'Itigil ang pagpaalam sa mga bagong vine';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Hindi nai-save. Subukan muli?';
 }

@@ -1200,6 +1200,8 @@
     "notificationSettingsMentionsSubtitle": "እርስዎ ሲጠቀሱ",
     "notificationSettingsReposts": "ድጋሚ ልጥፎች",
     "notificationSettingsRepostsSubtitle": "አንድ ሰው ቪዲዮዎችህን በድጋሚ ሲለጥፍ",
+    "notificationSettingsNewPosts": "አዲስ ቫይኖች",
+    "notificationSettingsNewPostsSubtitle": "የምትከታተለው ሰው ሲለጥፍ",
     "notificationSettingsActions": "ድርጊቶች",
     "notificationSettingsMarkAllAsRead": "ሁሉንም እንደተነበቡ ምልክት ያድርጉበት",
     "notificationSettingsMarkAllAsReadSubtitle": "ሁሉንም ማሳወቂያዎች እንደተነበቡ ምልክት ያድርጉባቸው",
@@ -3291,6 +3293,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} ቪዲዮህን በድጋሚ ለጥፏል",
+    "notificationPostedNewVine": "{actorName} አዲስ ቫይን ለጠፈ",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4837,5 +4840,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "የስቶፕ-ሞሽን ፍሬም {position} ከ{total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} ፍሬሞች}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "ፍሬሞች",
-    "libraryStopMotionClipLabel": "የስቶፕ-ሞሽን ክሊፕ"
+    "libraryStopMotionClipLabel": "የስቶፕ-ሞሽን ክሊፕ",
+  "profileNotifyBellOff": "ስለ አዲስ ቫይኖች አሳውቀኝ",
+  "profileNotifyBellOn": "ስለ አዲስ ቫይኖች አታሳውቀኝ",
+  "profileNotifyUpdateFailed": "ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ?"
 }

@@ -1,6 +1,8 @@
 // ABOUTME: Tests for profile action button row composition and target gating
 // ABOUTME: Verifies target-directed affordances are absent without explanation
 
+import 'dart:async';
+
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -8,13 +10,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/profile_notify_bell_button.dart';
+import 'package:people_lists_repository/people_lists_repository.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
+
+class _MockNotifySubscriptionsRepository extends Mock
+    implements NotifySubscriptionsRepository {}
 
 void main() {
   const targetPubkey =
@@ -25,8 +34,36 @@ void main() {
   late MockFollowRepository followRepository;
   late _MockContentBlocklistRepository blocklistRepository;
   late MockNostrClient nostrClient;
+  late _MockNotifySubscriptionsRepository notifyRepository;
+  late StreamController<Set<String>> notifySubscriptions;
 
   setUp(() {
+    notifyRepository = _MockNotifySubscriptionsRepository();
+    notifySubscriptions = StreamController<Set<String>>.broadcast();
+    when(
+      () => notifyRepository.watchSubscriptions(
+        ownerPubkey: any(named: 'ownerPubkey'),
+      ),
+    ).thenAnswer((_) => notifySubscriptions.stream);
+    when(
+      () => notifyRepository.subscribe(
+        ownerPubkey: any(named: 'ownerPubkey'),
+        creatorPubkey: any(named: 'creatorPubkey'),
+      ),
+    ).thenAnswer(
+      (_) async => const PeopleListPublishResult.submitted(eventId: 'e1'),
+    );
+    when(
+      () => notifyRepository.unsubscribe(
+        ownerPubkey: any(named: 'ownerPubkey'),
+        creatorPubkey: any(named: 'creatorPubkey'),
+      ),
+    ).thenAnswer(
+      (_) async => const PeopleListPublishResult.submitted(eventId: 'e1'),
+    );
+    when(
+      () => notifyRepository.reconcile(ownerPubkey: any(named: 'ownerPubkey')),
+    ).thenAnswer((_) async => const PeopleListPublishResult.noop());
     followRepository = MockFollowRepository();
     blocklistRepository = _MockContentBlocklistRepository();
     nostrClient = createMockNostrService();
@@ -52,7 +89,14 @@ void main() {
     );
   });
 
-  Widget buildWidget({bool isMessageRestricted = false}) {
+  tearDown(() async {
+    await notifySubscriptions.close();
+  });
+
+  Widget buildWidget({
+    bool isMessageRestricted = false,
+    bool newPostNotifications = true,
+  }) {
     return testMaterialApp(
       home: Scaffold(
         body: ProfileActionButtons(
@@ -68,6 +112,13 @@ void main() {
         contentBlocklistRepositoryProvider.overrideWithValue(
           blocklistRepository,
         ),
+        notifySubscriptionsRepositoryProvider.overrideWithValue(
+          notifyRepository,
+        ),
+        // Ships default-off, so the bell tests have to ask for it.
+        isFeatureEnabledProvider(
+          FeatureFlag.newPostNotifications,
+        ).overrideWithValue(newPostNotifications),
       ],
       mockFollowRepository: followRepository,
       mockNostrService: nostrClient,
@@ -151,5 +202,117 @@ void main() {
     expect(find.text('Message'), findsNothing);
     expect(find.byType(DivineButton), findsOneWidget);
     expect(find.byType(DivineIconButton), findsOneWidget);
+  });
+
+  group('notification bell', () {
+    late StreamController<List<String>> followingStream;
+
+    setUp(() {
+      followingStream = StreamController<List<String>>.broadcast();
+      when(
+        () => followRepository.followingStream,
+      ).thenAnswer((_) => followingStream.stream);
+    });
+
+    tearDown(() async {
+      await followingStream.close();
+    });
+
+    void followingTarget() {
+      when(
+        () => followRepository.followingPubkeys,
+      ).thenReturn(const [targetPubkey]);
+      when(() => followRepository.watchMyFollowingCached()).thenAnswer(
+        (_) => Stream.value(
+          const CacheResult.live(
+            FollowingSnapshot(pubkeys: [targetPubkey], count: 1),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('is absent when the viewer does not follow the target', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfileNotifyBellButton), findsNothing);
+    });
+
+    testWidgets('appears once the viewer follows the target', (tester) async {
+      followingTarget();
+
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfileNotifyBellButton), findsOneWidget);
+    });
+
+    testWidgets(
+      'stays hidden behind the flag, and reads no subscriptions',
+      (tester) async {
+        followingTarget();
+
+        await tester.pumpWidget(buildWidget(newPostNotifications: false));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ProfileNotifyBellButton), findsNothing);
+        // The cubit must not be constructed either — otherwise a flagged-off
+        // build still hits the relay for a list it can never show.
+        verifyNever(
+          () => notifyRepository.watchSubscriptions(
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        );
+      },
+    );
+
+    testWidgets('tapping it subscribes the viewer to the target', (
+      tester,
+    ) async {
+      followingTarget();
+
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+
+      // The real repository emits nothing until it has actually read the
+      // list, and the bell is deliberately inert until that first emission —
+      // tapping an unverified "off" would publish a replacement list.
+      notifySubscriptions.add(const <String>{});
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(ProfileNotifyBellButton));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => notifyRepository.subscribe(
+          ownerPubkey: viewerPubkey,
+          creatorPubkey: targetPubkey,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('unfollowing clears the subscription', (tester) async {
+      followingTarget();
+
+      await tester.pumpWidget(buildWidget());
+      await tester.pumpAndSettle();
+      expect(find.byType(ProfileNotifyBellButton), findsOneWidget);
+
+      // The bell unmounts the moment the row flips to not-following, so the
+      // teardown has to be driven from a host above it.
+      when(() => followRepository.followingPubkeys).thenReturn(const []);
+      followingStream.add(const <String>[]);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ProfileNotifyBellButton), findsNothing);
+      verify(
+        () => notifyRepository.unsubscribe(
+          ownerPubkey: viewerPubkey,
+          creatorPubkey: targetPubkey,
+        ),
+      ).called(1);
+    });
   });
 }

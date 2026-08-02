@@ -583,6 +583,8 @@
     "notificationSettingsMentionsSubtitle": "멘션될 때",
     "notificationSettingsReposts": "리포스트",
     "notificationSettingsRepostsSubtitle": "누군가 내 영상을 리포스트할 때",
+    "notificationSettingsNewPosts": "새 영상",
+    "notificationSettingsNewPostsSubtitle": "지켜보는 사람이 게시할 때",
     "notificationSettingsActions": "작업",
     "notificationSettingsMarkAllAsRead": "모두 읽음으로 표시",
     "notificationSettingsMarkAllAsReadSubtitle": "모든 알림을 읽음으로 표시",
@@ -1942,6 +1944,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName}님이 회원님의 동영상을 리포스트했어요",
+    "notificationPostedNewVine": "{actorName}님이 새 영상을 게시했습니다",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4036,5 +4039,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "스톱모션 프레임 {total}개 중 {position}개",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count}프레임}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "프레임",
-    "libraryStopMotionClipLabel": "스톱모션 클립"
+    "libraryStopMotionClipLabel": "스톱모션 클립",
+  "profileNotifyBellOff": "새 영상 알림 받기",
+  "profileNotifyBellOn": "새 영상 알림 끄기",
+  "profileNotifyUpdateFailed": "저장하지 못했습니다. 다시 시도할까요?"
 }

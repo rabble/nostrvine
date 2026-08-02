@@ -2444,6 +2444,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'عندما يعيد أحدهم نشر فيديوهاتك';
 
   @override
+  String get notificationSettingsNewPosts => 'مقاطع جديدة';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => 'عندما ينشر شخص تتابعه';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -7933,6 +7939,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName نشر مقطعًا جديدًا';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName ردّ على تعليقك';
   }
@@ -10714,4 +10725,13 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'أبلغني عن المقاطع الجديدة';
+
+  @override
+  String get profileNotifyBellOn => 'أوقف إشعارات المقاطع الجديدة';
+
+  @override
+  String get profileNotifyUpdateFailed => 'لم نتمكن من الحفظ. أعد المحاولة؟';
 }

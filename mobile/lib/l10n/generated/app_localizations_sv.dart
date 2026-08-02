@@ -2456,6 +2456,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'När någon återpublicerar dina videor';
 
   @override
+  String get notificationSettingsNewPosts => 'Nya vines';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'När någon du bevakar publicerar';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -7980,6 +7987,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName publicerade en ny vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName svarade på din kommentar';
   }
@@ -10791,4 +10803,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Meddela om nya vines';
+
+  @override
+  String get profileNotifyBellOn => 'Sluta meddela om nya vines';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Kunde inte sparas. Försök igen?';
 }

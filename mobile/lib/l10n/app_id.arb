@@ -990,6 +990,8 @@
     "notificationSettingsMentionsSubtitle": "Saat kamu disebut",
     "notificationSettingsReposts": "Repost",
     "notificationSettingsRepostsSubtitle": "Saat ada yang me-repost videomu",
+    "notificationSettingsNewPosts": "Vine Baru",
+    "notificationSettingsNewPostsSubtitle": "Saat orang yang kamu pantau memposting",
     "notificationSettingsActions": "Aksi",
     "notificationSettingsMarkAllAsRead": "Tandai Semua Sudah Dibaca",
     "notificationSettingsMarkAllAsReadSubtitle": "Tandai semua notifikasi sudah dibaca",
@@ -2618,6 +2620,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} membagikan ulang videomu",
+    "notificationPostedNewVine": "{actorName} memposting vine baru",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Bingkai stop-motion {position} dari {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} bingkai}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Bingkai",
-    "libraryStopMotionClipLabel": "Klip stop-motion"
+    "libraryStopMotionClipLabel": "Klip stop-motion",
+  "profileNotifyBellOff": "Beri tahu tentang vine baru",
+  "profileNotifyBellOn": "Hentikan pemberitahuan vine baru",
+  "profileNotifyUpdateFailed": "Gagal menyimpan. Coba lagi?"
 }

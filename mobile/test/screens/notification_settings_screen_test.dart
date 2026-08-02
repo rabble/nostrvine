@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:notification_repository/notification_repository.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
@@ -43,13 +45,20 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    Widget buildSubject({NotificationRepository? repo}) {
+    Widget buildSubject({
+      NotificationRepository? repo,
+      bool newPostNotifications = true,
+    }) {
       return testMaterialApp(
         additionalOverrides: [
           notificationRepositoryProvider.overrideWithValue(repo),
           notificationPreferencesServiceProvider.overrideWithValue(
             mockPrefsService,
           ),
+          // Ships default-off, so the new-posts row has to be asked for.
+          isFeatureEnabledProvider(
+            FeatureFlag.newPostNotifications,
+          ).overrideWithValue(newPostNotifications),
         ],
         home: const NotificationSettingsScreen(),
       );
@@ -183,5 +192,50 @@ void main() {
         ).called(1);
       },
     );
+
+    testWidgets('toggling new vines off persists newPostsEnabled false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject(repo: mockRepo));
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(NotificationSettingsScreen)),
+      );
+
+      final newPostsSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text(l10n.notificationSettingsNewPosts),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.scrollUntilVisible(newPostsSwitch, 100);
+
+      await tester.tap(newPostsSwitch);
+      await tester.pump();
+
+      verify(
+        () => mockPrefsService.updatePreferences(
+          const NotificationPreferences(newPostsEnabled: false),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('hides the new vines row behind the flag', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(repo: mockRepo, newPostNotifications: false),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(NotificationSettingsScreen)),
+      );
+
+      expect(find.text(l10n.notificationSettingsNewPosts), findsNothing);
+      // The neighbouring rows still render, so this is the flag and not a
+      // failed build.
+      expect(find.text(l10n.notificationSettingsLikes), findsOneWidget);
+    });
   });
 }

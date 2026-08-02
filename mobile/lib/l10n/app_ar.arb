@@ -990,6 +990,8 @@
     "notificationSettingsMentionsSubtitle": "عندما تتم الإشارة إليك",
     "notificationSettingsReposts": "إعادات النشر",
     "notificationSettingsRepostsSubtitle": "عندما يعيد أحدهم نشر فيديوهاتك",
+    "notificationSettingsNewPosts": "مقاطع جديدة",
+    "notificationSettingsNewPostsSubtitle": "عندما ينشر شخص تتابعه",
     "notificationSettingsActions": "الإجراءات",
     "notificationSettingsMarkAllAsRead": "وسم الكل كمقروء",
     "notificationSettingsMarkAllAsReadSubtitle": "وسم جميع الإشعارات كمقروءة",
@@ -2611,6 +2613,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} أعاد نشر فيديوك",
+    "notificationPostedNewVine": "{actorName} نشر مقطعًا جديدًا",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "إطار الحركة الإيقافية {position} من {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, one{إطار واحد} two{إطاران} few{{count} إطارات} other{{count} إطار}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "إطارات",
-    "libraryStopMotionClipLabel": "مقطع الحركة الإيقافية"
+    "libraryStopMotionClipLabel": "مقطع الحركة الإيقافية",
+  "profileNotifyBellOff": "أبلغني عن المقاطع الجديدة",
+  "profileNotifyBellOn": "أوقف إشعارات المقاطع الجديدة",
+  "profileNotifyUpdateFailed": "لم نتمكن من الحفظ. أعد المحاولة؟"
 }

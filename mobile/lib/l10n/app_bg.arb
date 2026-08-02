@@ -1069,6 +1069,8 @@
     "notificationSettingsMentionsSubtitle": "Когато те споменат",
     "notificationSettingsReposts": "Репостове",
     "notificationSettingsRepostsSubtitle": "Когато някой препубликува видеата ти",
+    "notificationSettingsNewPosts": "Нови видеа",
+    "notificationSettingsNewPostsSubtitle": "Когато някой, когото следиш, публикува",
     "notificationSettingsActions": "Действия",
     "notificationSettingsMarkAllAsRead": "Маркирай всички като прочетени",
     "notificationSettingsMarkAllAsReadSubtitle": "Маркирай всички известия като прочетени",
@@ -2961,6 +2963,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} сподели видеото ти пак",
+    "notificationPostedNewVine": "{actorName} публикува ново видео",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4843,5 +4846,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Стоп-моушън кадър {position} от {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 кадър} other{{count} кадъра}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Кадри",
-    "libraryStopMotionClipLabel": "Стоп-моушън клип"
+    "libraryStopMotionClipLabel": "Стоп-моушън клип",
+  "profileNotifyBellOff": "Получавай известия за нови видеа",
+  "profileNotifyBellOn": "Спри известията за нови видеа",
+  "profileNotifyUpdateFailed": "Не се запази. Опитай пак?"
 }

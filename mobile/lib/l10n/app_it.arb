@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Quando vieni menzionato",
     "notificationSettingsReposts": "Repost",
     "notificationSettingsRepostsSubtitle": "Quando qualcuno ripubblica i tuoi video",
+    "notificationSettingsNewPosts": "Nuovi vine",
+    "notificationSettingsNewPostsSubtitle": "Quando qualcuno che segui pubblica",
     "notificationSettingsActions": "Azioni",
     "notificationSettingsMarkAllAsRead": "Segna tutto come letto",
     "notificationSettingsMarkAllAsReadSubtitle": "Segna tutte le notifiche come lette",
@@ -2619,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} ha ricondiviso il tuo video",
+    "notificationPostedNewVine": "{actorName} ha pubblicato un nuovo vine",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Fotogramma stop-motion {position} di {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 fotogramma} other{{count} fotogrammi}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Fotogrammi",
-    "libraryStopMotionClipLabel": "Clip stop-motion"
+    "libraryStopMotionClipLabel": "Clip stop-motion",
+  "profileNotifyBellOff": "Avvisami dei nuovi vine",
+  "profileNotifyBellOn": "Non avvisarmi più dei nuovi vine",
+  "profileNotifyUpdateFailed": "Salvataggio non riuscito. Riprovare?"
 }

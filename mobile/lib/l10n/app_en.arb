@@ -1446,6 +1446,8 @@
   "notificationSettingsMentionsSubtitle": "When you are mentioned",
   "notificationSettingsReposts": "Reposts",
   "notificationSettingsRepostsSubtitle": "When someone reposts your videos",
+  "notificationSettingsNewPosts": "New vines",
+  "notificationSettingsNewPostsSubtitle": "When someone you're watching posts",
   "notificationSettingsSystem": "System",
   "notificationSettingsSystemSubtitle": "App updates and system messages",
   "notificationSettingsPushNotificationsSection": "Push Notifications",
@@ -4599,6 +4601,15 @@
       }
     }
   },
+  "notificationPostedNewVine": "{actorName} posted a new vine",
+  "@notificationPostedNewVine": {
+    "description": "Shown when a creator the user subscribed to (belled) publishes a new video. Unlike the other notification verbs this is not a reaction to the user's own content.",
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
   "notificationRepliedToYourComment": "{actorName} replied to your comment",
   "@notificationRepliedToYourComment": {
     "description": "Full sentence shown for a reply notification.",
@@ -6327,5 +6338,17 @@
   "supporterErrorUnknown": "Something went wrong. Please try again.",
   "@supporterErrorUnknown": {"description": "Generic supporter flow error shown when no more specific message applies."},
   "supporterDisclaimer": "Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.",
-  "@supporterDisclaimer": {"description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."}
+  "@supporterDisclaimer": {"description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."},
+  "profileNotifyBellOff": "Get notified about new vines",
+  "@profileNotifyBellOff": {
+    "description": "Accessibility label on the profile bell when the viewer is not subscribed. Describes the action the tap performs, not the current state."
+  },
+  "profileNotifyBellOn": "Stop notifying me about new vines",
+  "@profileNotifyBellOn": {
+    "description": "Accessibility label on the profile bell when the viewer is subscribed. Describes the action the tap performs."
+  },
+  "profileNotifyUpdateFailed": "Couldn't save that. Try again?",
+  "@profileNotifyUpdateFailed": {
+    "description": "Transient message when publishing the notification-subscription list fails. The bell has already reverted to its previous state."
+  }
 }

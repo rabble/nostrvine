@@ -4286,6 +4286,18 @@ abstract class AppLocalizations {
   /// **'When someone reposts your videos'**
   String get notificationSettingsRepostsSubtitle;
 
+  /// No description provided for @notificationSettingsNewPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'New vines'**
+  String get notificationSettingsNewPosts;
+
+  /// No description provided for @notificationSettingsNewPostsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone you\'re watching posts'**
+  String get notificationSettingsNewPostsSubtitle;
+
   /// No description provided for @notificationSettingsSystem.
   ///
   /// In en, this message translates to:
@@ -13790,6 +13802,12 @@ abstract class AppLocalizations {
   /// **'{actorName} reposted your video'**
   String notificationRepostedYourVideo(String actorName);
 
+  /// Shown when a creator the user subscribed to (belled) publishes a new video. Unlike the other notification verbs this is not a reaction to the user's own content.
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} posted a new vine'**
+  String notificationPostedNewVine(String actorName);
+
   /// Full sentence shown for a reply notification.
   ///
   /// In en, this message translates to:
@@ -18587,6 +18605,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.'**
   String get supporterDisclaimer;
+
+  /// Accessibility label on the profile bell when the viewer is not subscribed. Describes the action the tap performs, not the current state.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified about new vines'**
+  String get profileNotifyBellOff;
+
+  /// Accessibility label on the profile bell when the viewer is subscribed. Describes the action the tap performs.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop notifying me about new vines'**
+  String get profileNotifyBellOn;
+
+  /// Transient message when publishing the notification-subscription list fails. The bell has already reverted to its previous state.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save that. Try again?'**
+  String get profileNotifyUpdateFailed;
 }
 
 class _AppLocalizationsDelegate

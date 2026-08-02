@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Wanneer je wordt genoemd",
     "notificationSettingsReposts": "Reposts",
     "notificationSettingsRepostsSubtitle": "Wanneer iemand je video's repost",
+    "notificationSettingsNewPosts": "Nieuwe vines",
+    "notificationSettingsNewPostsSubtitle": "Wanneer iemand die je volgt post",
     "notificationSettingsActions": "Acties",
     "notificationSettingsMarkAllAsRead": "Alles als gelezen markeren",
     "notificationSettingsMarkAllAsReadSubtitle": "Markeer alle meldingen als gelezen",
@@ -2619,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} heeft je video gedeeld",
+    "notificationPostedNewVine": "{actorName} heeft een nieuwe vine gepost",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-motion-beeld {position} van {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 frame} other{{count} frames}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
-    "libraryStopMotionClipLabel": "Stop-motion-clip"
+    "libraryStopMotionClipLabel": "Stop-motion-clip",
+  "profileNotifyBellOff": "Melden bij nieuwe vines",
+  "profileNotifyBellOn": "Niet meer melden bij nieuwe vines",
+  "profileNotifyUpdateFailed": "Kon niet opslaan. Opnieuw proberen?"
 }

@@ -2551,6 +2551,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Când cineva âți redistribuie videoclipurile';
 
   @override
+  String get notificationSettingsNewPosts => 'Videoclipuri noi';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Când cineva pe care îl urmărești postează';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -8158,6 +8165,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName a postat un videoclip nou';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName a răspuns la comentariul tău';
   }
@@ -10997,4 +11009,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Anunță-mă despre videoclipuri noi';
+
+  @override
+  String get profileNotifyBellOn => 'Nu mă mai anunța despre videoclipuri noi';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Nu s-a salvat. Reîncerci?';
 }

@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Quand tu es mentionné",
     "notificationSettingsReposts": "Reposts",
     "notificationSettingsRepostsSubtitle": "Quand quelqu'un reposte tes vidéos",
+    "notificationSettingsNewPosts": "Nouvelles vines",
+    "notificationSettingsNewPostsSubtitle": "Quand quelqu'un que tu suis publie",
     "notificationSettingsActions": "Actions",
     "notificationSettingsMarkAllAsRead": "Tout marquer comme lu",
     "notificationSettingsMarkAllAsReadSubtitle": "Marquer toutes les notifications comme lues",
@@ -2619,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} a repartagé ta vidéo",
+    "notificationPostedNewVine": "{actorName} a publié une nouvelle vine",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Image stop-motion {position} sur {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 image} other{{count} images}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Images",
-    "libraryStopMotionClipLabel": "Clip stop-motion"
+    "libraryStopMotionClipLabel": "Clip stop-motion",
+  "profileNotifyBellOff": "M'avertir des nouvelles vines",
+  "profileNotifyBellOn": "Ne plus m'avertir des nouvelles vines",
+  "profileNotifyUpdateFailed": "Échec de l'enregistrement. Réessayer ?"
 }

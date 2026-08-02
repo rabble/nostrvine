@@ -80,6 +80,13 @@ enum FeatureFlag {
     'Divine Supporters',
     'Optional monthly supporter subscription via in-app purchase. '
         'Nothing is gated — it keeps Divine running and recognizes supporters.',
+  ),
+  newPostNotifications(
+    'New Post Notifications',
+    'Turn on a bell for creators you follow to get notified when they post. '
+        'Off by default until the push service fans out kind 34236 to '
+        'subscribers — with it off, the bell would publish a subscription '
+        'that nothing ever delivers.',
   );
 
   const FeatureFlag(

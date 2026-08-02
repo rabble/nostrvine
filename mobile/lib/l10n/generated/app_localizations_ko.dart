@@ -2340,6 +2340,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationSettingsRepostsSubtitle => '누군가 내 영상을 리포스트할 때';
 
   @override
+  String get notificationSettingsNewPosts => '새 영상';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle => '지켜보는 사람이 게시할 때';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -7676,6 +7682,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName님이 새 영상을 게시했습니다';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName님이 회원님의 댓글에 답글을 남겼습니다';
   }
@@ -10391,4 +10402,13 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => '새 영상 알림 받기';
+
+  @override
+  String get profileNotifyBellOn => '새 영상 알림 끄기';
+
+  @override
+  String get profileNotifyUpdateFailed => '저장하지 못했습니다. 다시 시도할까요?';
 }

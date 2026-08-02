@@ -2429,6 +2429,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'Biri videolarını yeniden paylaştığında';
 
   @override
+  String get notificationSettingsNewPosts => 'Yeni vine\'lar';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'İzlediğin biri paylaştığında';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -7944,6 +7951,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName yeni bir vine paylaştı';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName yorumuna yanıt verdi';
   }
@@ -10747,4 +10759,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Yeni vine\'lardan haberdar et';
+
+  @override
+  String get profileNotifyBellOn => 'Yeni vine bildirimlerini kapat';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Kaydedilemedi. Tekrar denensin mi?';
 }

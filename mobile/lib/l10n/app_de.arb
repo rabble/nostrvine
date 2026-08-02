@@ -993,6 +993,8 @@
     "notificationSettingsMentionsSubtitle": "Wenn du erwähnt wirst",
     "notificationSettingsReposts": "Reposts",
     "notificationSettingsRepostsSubtitle": "Wenn jemand deine Videos repostet",
+    "notificationSettingsNewPosts": "Neue Vines",
+    "notificationSettingsNewPostsSubtitle": "Wenn jemand, den du beobachtest, postet",
     "notificationSettingsActions": "Aktionen",
     "notificationSettingsMarkAllAsRead": "Alle als gelesen markieren",
     "notificationSettingsMarkAllAsReadSubtitle": "Alle Benachrichtigungen als gelesen markieren",
@@ -2619,6 +2621,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} hat dein Video geteilt",
+    "notificationPostedNewVine": "{actorName} hat einen neuen Vine gepostet",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-Motion-Bild {position} von {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 Frame} other{{count} Frames}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Frames",
-    "libraryStopMotionClipLabel": "Stop-Motion-Clip"
+    "libraryStopMotionClipLabel": "Stop-Motion-Clip",
+  "profileNotifyBellOff": "Über neue Vines benachrichtigen",
+  "profileNotifyBellOn": "Keine Benachrichtigungen über neue Vines",
+  "profileNotifyUpdateFailed": "Konnte nicht gespeichert werden. Nochmal?"
 }

@@ -278,7 +278,8 @@ class _MessageText extends StatelessWidget {
 bool _typeShowsTitle(NotificationKind type) {
   return type == NotificationKind.like ||
       type == NotificationKind.comment ||
-      type == NotificationKind.repost;
+      type == NotificationKind.repost ||
+      type == NotificationKind.newPost;
 }
 
 /// Returns just the verb portion (no actor name) for inline composition.
@@ -297,8 +298,9 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
     NotificationKind.repost =>
       l10n.notificationRepostedYourVideo('').trimLeft(),
     NotificationKind.mention => l10n.notificationMentionedYou('').trimLeft(),
+    NotificationKind.newPost => l10n.notificationPostedNewVine('').trimLeft(),
     // VideoNotification asserts type ∈ {like, likeComment, comment, mention,
-    // repost}; the remaining cases satisfy switch exhaustivity only.
+    // repost, newPost}; the remaining cases satisfy switch exhaustivity only.
     NotificationKind.reply ||
     NotificationKind.follow ||
     NotificationKind.system => '',
@@ -320,6 +322,7 @@ String _messageFor(
     ),
     NotificationKind.repost => l10n.notificationRepostedYourVideo(actorName),
     NotificationKind.mention => l10n.notificationMentionedYou(actorName),
+    NotificationKind.newPost => l10n.notificationPostedNewVine(actorName),
     NotificationKind.reply ||
     NotificationKind.follow ||
     NotificationKind.system => '',

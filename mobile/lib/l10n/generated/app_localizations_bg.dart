@@ -2500,6 +2500,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Когато някой препубликува видеата ти';
 
   @override
+  String get notificationSettingsNewPosts => 'Нови видеа';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Когато някой, когото следиш, публикува';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -8056,6 +8063,11 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName публикува ново видео';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName Отговори на коментара ти';
   }
@@ -10891,4 +10903,13 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Получавай известия за нови видеа';
+
+  @override
+  String get profileNotifyBellOn => 'Спри известията за нови видеа';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Не се запази. Опитай пак?';
 }

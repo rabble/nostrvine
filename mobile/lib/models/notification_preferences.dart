@@ -12,6 +12,7 @@ class NotificationPreferences extends Equatable {
     this.followsEnabled = true,
     this.mentionsEnabled = true,
     this.repostsEnabled = true,
+    this.newPostsEnabled = true,
   });
 
   /// Create preferences from a list of enabled Nostr event kinds.
@@ -21,11 +22,17 @@ class NotificationPreferences extends Equatable {
   /// - 1: text notes (comments and mentions)
   /// - 3: contact list (follows)
   /// - 16: reposts
+  /// - 34236: videos from creators the user subscribed to ("bells")
   ///
   /// Comments and mentions both use kind 1. When kind 1 is present,
   /// both are enabled. When absent, both are disabled.
   /// Known limitation: the push service filters by kind number only,
   /// so comments and mentions cannot be toggled independently.
+  ///
+  /// Preferences published before bells shipped carry no 34236, so
+  /// [newPostsEnabled] reads back `false` for them. That is self-healing:
+  /// opening the settings screen or setting the first bell republishes with
+  /// 34236 included.
   factory NotificationPreferences.fromKindsList(List<int> kinds) {
     return NotificationPreferences(
       likesEnabled: kinds.contains(7),
@@ -33,6 +40,7 @@ class NotificationPreferences extends Equatable {
       followsEnabled: kinds.contains(3),
       mentionsEnabled: kinds.contains(1),
       repostsEnabled: kinds.contains(16),
+      newPostsEnabled: kinds.contains(newPostKind),
     );
   }
 
@@ -43,14 +51,24 @@ class NotificationPreferences extends Equatable {
       followsEnabled: json['followsEnabled'] as bool? ?? true,
       mentionsEnabled: json['mentionsEnabled'] as bool? ?? true,
       repostsEnabled: json['repostsEnabled'] as bool? ?? true,
+      newPostsEnabled: json['newPostsEnabled'] as bool? ?? true,
     );
   }
+
+  /// Nostr kind for Divine video events, used to gate new-post pushes.
+  ///
+  /// Distinct from kind 1, so muting mentions does not mute new-post pushes
+  /// even though video mentions also arrive on kind 34236 events.
+  static const int newPostKind = 34236;
 
   final bool likesEnabled;
   final bool commentsEnabled;
   final bool followsEnabled;
   final bool mentionsEnabled;
   final bool repostsEnabled;
+
+  /// Whether to receive a push when a subscribed creator posts a new video.
+  final bool newPostsEnabled;
 
   /// Convert to the kinds list format expected by the push service.
   ///
@@ -61,6 +79,7 @@ class NotificationPreferences extends Equatable {
     if (commentsEnabled || mentionsEnabled) kinds.add(1);
     if (followsEnabled) kinds.add(3);
     if (repostsEnabled) kinds.add(16);
+    if (newPostsEnabled) kinds.add(newPostKind);
     return kinds.toList()..sort();
   }
 
@@ -71,6 +90,7 @@ class NotificationPreferences extends Equatable {
       'followsEnabled': followsEnabled,
       'mentionsEnabled': mentionsEnabled,
       'repostsEnabled': repostsEnabled,
+      'newPostsEnabled': newPostsEnabled,
     };
   }
 
@@ -80,6 +100,7 @@ class NotificationPreferences extends Equatable {
     bool? followsEnabled,
     bool? mentionsEnabled,
     bool? repostsEnabled,
+    bool? newPostsEnabled,
   }) {
     return NotificationPreferences(
       likesEnabled: likesEnabled ?? this.likesEnabled,
@@ -87,6 +108,7 @@ class NotificationPreferences extends Equatable {
       followsEnabled: followsEnabled ?? this.followsEnabled,
       mentionsEnabled: mentionsEnabled ?? this.mentionsEnabled,
       repostsEnabled: repostsEnabled ?? this.repostsEnabled,
+      newPostsEnabled: newPostsEnabled ?? this.newPostsEnabled,
     );
   }
 
@@ -97,5 +119,6 @@ class NotificationPreferences extends Equatable {
     followsEnabled,
     mentionsEnabled,
     repostsEnabled,
+    newPostsEnabled,
   ];
 }

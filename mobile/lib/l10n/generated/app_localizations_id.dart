@@ -2423,6 +2423,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat ada yang me-repost videomu';
 
   @override
+  String get notificationSettingsNewPosts => 'Vine Baru';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Saat orang yang kamu pantau memposting';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -7945,6 +7952,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName memposting vine baru';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName membalas komentar Anda';
   }
@@ -10746,4 +10758,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Beri tahu tentang vine baru';
+
+  @override
+  String get profileNotifyBellOn => 'Hentikan pemberitahuan vine baru';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Gagal menyimpan. Coba lagi?';
 }

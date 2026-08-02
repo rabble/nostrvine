@@ -152,6 +152,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
             notificationRepositoryProvider.overrideWithValue(null),
           ],
@@ -178,6 +179,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
             notificationRepositoryProvider.overrideWithValue(null),
           ],

@@ -1438,6 +1438,8 @@
   "notificationSettingsMentionsSubtitle": "Khi bạn được nhắc đến",
   "notificationSettingsReposts": "Bài đăng lại",
   "notificationSettingsRepostsSubtitle": "Khi có người đăng lại video của bạn",
+  "notificationSettingsNewPosts": "Vine mới",
+  "notificationSettingsNewPostsSubtitle": "Khi người bạn theo dõi đăng bài",
   "notificationSettingsSystem": "Hệ thống",
   "notificationSettingsSystemSubtitle": "Cập nhật ứng dụng và thông điệp hệ thống",
   "notificationSettingsPushNotificationsSection": "Thông báo đẩy",
@@ -4789,6 +4791,7 @@
       }
     }
   },
+  "notificationPostedNewVine": "{actorName} đã đăng một vine mới",
   "notificationRepliedToYourComment": "{actorName} đã trả lời bình luận của bạn",
   "@notificationRepliedToYourComment": {
     "description": "Full sentence shown for a reply notification.",
@@ -6665,5 +6668,8 @@
   "supporterDisclaimer": "Divine xác nhận trạng thái người ủng hộ sau khi cửa hàng xác minh giao dịch mua của bạn. Việc ghi nhận là tùy chọn, và vòng hào quang không phải là xác minh danh tính.",
   "@supporterDisclaimer": {
     "description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."
-  }
+  },
+  "profileNotifyBellOff": "Nhận thông báo về vine mới",
+  "profileNotifyBellOn": "Ngừng thông báo về vine mới",
+  "profileNotifyUpdateFailed": "Không lưu được. Thử lại nhé?"
 }

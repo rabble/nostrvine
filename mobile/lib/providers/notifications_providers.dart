@@ -140,6 +140,11 @@ notificationPreferencesDirtySyncBridgeProvider =
             notificationPreferencesServiceProvider,
           );
           if (!isReadyForPubkey(pubkey)) return;
+          // Upgrades that changed the published kind list have nothing marked
+          // dirty, so without this the drain finds nothing and the push
+          // service keeps filtering on the pre-upgrade kinds.
+          await preferencesService.markDirtyIfSchemaOutdated(pubkey);
+          if (!isReadyForPubkey(pubkey)) return;
           final outcome = await preferencesService
               .syncDirtyPreferencesForPubkey(
                 pubkey,

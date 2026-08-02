@@ -997,6 +997,8 @@
     "notificationSettingsMentionsSubtitle": "Cuando te mencionan",
     "notificationSettingsReposts": "Reposts",
     "notificationSettingsRepostsSubtitle": "Cuando alguien repostea tus videos",
+    "notificationSettingsNewPosts": "Nuevos vines",
+    "notificationSettingsNewPostsSubtitle": "Cuando alguien que sigues publica",
     "notificationSettingsActions": "Acciones",
     "notificationSettingsMarkAllAsRead": "Marcar todas como leídas",
     "notificationSettingsMarkAllAsReadSubtitle": "Marcá todas las notificaciones como leídas",
@@ -2627,6 +2629,7 @@
         }
     },
     "notificationRepostedYourVideo": "{actorName} compartió tu video",
+    "notificationPostedNewVine": "{actorName} publicó un nuevo vine",
     "@notificationRepostedYourVideo": {
         "placeholders": {
             "actorName": {
@@ -4712,5 +4715,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Fotograma de stop motion {position} de {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, =1{1 fotograma} other{{count} fotogramas}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Fotogramas",
-    "libraryStopMotionClipLabel": "Clip de stop motion"
+    "libraryStopMotionClipLabel": "Clip de stop motion",
+  "profileNotifyBellOff": "Avisarme de nuevos vines",
+  "profileNotifyBellOn": "Dejar de avisarme de nuevos vines",
+  "profileNotifyUpdateFailed": "No se pudo guardar. ¿Reintentar?"
 }

@@ -646,6 +646,8 @@
     "notificationSettingsMentionsSubtitle": "Kapag na-mention ka",
     "notificationSettingsReposts": "Mga Repost",
     "notificationSettingsRepostsSubtitle": "Kapag may nag-repost ng iyong mga video",
+    "notificationSettingsNewPosts": "Mga Bagong Vine",
+    "notificationSettingsNewPostsSubtitle": "Kapag nag-post ang taong binabantayan mo",
     "notificationSettingsActions": "Mga Aksyon",
     "notificationSettingsMarkAllAsRead": "Markahang Lahat Bilang Nabasa",
     "notificationSettingsMarkAllAsReadSubtitle": "Markahan lahat ng notification bilang nabasa na",
@@ -1691,6 +1693,7 @@
     "notificationStartedFollowing": "Sinimulan kang i-follow ni {actorName}",
     "notificationMentionedYou": "Binanggit ka ni {actorName}",
     "notificationRepostedYourVideo": "Na-repost ni {actorName} ang video mo",
+    "notificationPostedNewVine": "Nag-post si {actorName} ng bagong vine",
     "notificationSystemUpdate": "May bago kang update",
     "notificationSomeoneLikedYourVideo": "May nag-like sa video mo",
     "commentReplyToPrefix": "Re:",
@@ -3288,5 +3291,8 @@
     "videoEditorStopMotionFrameSemanticLabel": "Stop-motion frame {position} ng {total}",
     "videoEditorStopMotionFramesCount": "{count, plural, other{{count} frame}}",
     "videoEditorStopMotionFramesPerImageButtonLabel": "Mga frame",
-    "libraryStopMotionClipLabel": "Stop-motion na clip"
+    "libraryStopMotionClipLabel": "Stop-motion na clip",
+  "profileNotifyBellOff": "Ipaalam ang mga bagong vine",
+  "profileNotifyBellOn": "Itigil ang pagpaalam sa mga bagong vine",
+  "profileNotifyUpdateFailed": "Hindi nai-save. Subukan muli?"
 }

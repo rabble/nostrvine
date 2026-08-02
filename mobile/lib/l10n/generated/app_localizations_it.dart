@@ -2487,6 +2487,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Quando qualcuno ripubblica i tuoi video';
 
   @override
+  String get notificationSettingsNewPosts => 'Nuovi vine';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Quando qualcuno che segui pubblica';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -8058,6 +8065,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName ha pubblicato un nuovo vine';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName ha risposto al tuo commento';
   }
@@ -10889,4 +10901,14 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Avvisami dei nuovi vine';
+
+  @override
+  String get profileNotifyBellOn => 'Non avvisarmi più dei nuovi vine';
+
+  @override
+  String get profileNotifyUpdateFailed =>
+      'Salvataggio non riuscito. Riprovare?';
 }

@@ -2472,6 +2472,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wanneer iemand je video\'s repost';
 
   @override
+  String get notificationSettingsNewPosts => 'Nieuwe vines';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Wanneer iemand die je volgt post';
+
+  @override
   String get notificationSettingsSystem => 'System';
 
   @override
@@ -8019,6 +8026,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName heeft een nieuwe vine gepost';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName heeft op je reactie gereageerd';
   }
@@ -10837,4 +10849,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+
+  @override
+  String get profileNotifyBellOff => 'Melden bij nieuwe vines';
+
+  @override
+  String get profileNotifyBellOn => 'Niet meer melden bij nieuwe vines';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Kon niet opslaan. Opnieuw proberen?';
 }

@@ -78,7 +78,7 @@ abstract interface class PeopleListsRepository {
   ///
   /// Results are filtered so that:
   /// * lists with no `p` tag members are excluded,
-  /// * the app block list (`d=block`) is excluded,
+  /// * app-managed lists (`d=block`, `d=notify`) are excluded,
   /// * duplicates sharing the addressable coordinate
   ///   (`kind:ownerPubkey:d-tag`) keep the newest by `updatedAt`.
   ///
