@@ -300,8 +300,15 @@ class PublishTracker {
   }
 
   void _maybeComplete() {
-    final answered = _accepted.length + _rejected.length;
-    if (answered >= _awaitable.length) {
+    // Tested over the awaitable set rather than as a total, because a relay
+    // the fan-out reported as unwritten can still answer — its frame may have
+    // gone out just before the per-relay send timeout fired. Comparing totals
+    // let that answer fill an awaited relay's quota and settle the publish
+    // while that relay was still silent.
+    final allAnswered = _awaitable.every(
+      (relay) => _accepted.contains(relay) || _rejected.containsKey(relay),
+    );
+    if (allAnswered) {
       _complete();
     }
   }

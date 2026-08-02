@@ -259,6 +259,44 @@ void main() {
         expect(outcome.summary, contains('unreachable'));
         expectPartitions(outcome, {'wss://a.example', 'wss://b.example'});
       });
+
+      // A relay outside `sentTo` can still answer: `_sendCollect` reports the
+      // write as failed when its per-relay timeout fires, which can happen
+      // after the frame already went out. That answer must not settle the
+      // publish on behalf of a relay that is still silent.
+      test(
+        'does not let an unreached relay answer for a reached one',
+        () async {
+          final tracker = trackerFor({
+            'wss://late.example',
+            'wss://b.example',
+            'wss://c.example',
+          }, settleWindow: const Duration(seconds: 10));
+
+          tracker.onAccepted('wss://late.example');
+          tracker.setReachable(['wss://b.example', 'wss://c.example']);
+          tracker.onAccepted('wss://b.example');
+
+          var resolved = false;
+          unawaited(tracker.future.then((_) => resolved = true));
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          expect(
+            resolved,
+            isFalse,
+            reason: 'wss://c.example had not answered yet',
+          );
+
+          tracker.onAccepted('wss://c.example');
+          final outcome = await tracker.future;
+
+          expect(outcome.acceptedByAll, isTrue);
+          expectPartitions(outcome, {
+            'wss://late.example',
+            'wss://b.example',
+            'wss://c.example',
+          });
+        },
+      );
     });
 
     group('isTarget', () {
