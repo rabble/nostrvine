@@ -51,12 +51,16 @@ final class SavedSoundDetailsChanged extends SavedSoundsEvent {
 }
 
 final class SavedSoundRemoveRequested extends SavedSoundsEvent {
-  const SavedSoundRemoveRequested(this.soundId);
+  const SavedSoundRemoveRequested(this.soundId, {this.completer});
 
   final String soundId;
 
+  /// Completed once the removal has been persisted, or completed with an error
+  /// when it could not be, so the caller can tell the user which happened.
+  final Completer<void>? completer;
+
   @override
-  List<Object?> get props => [soundId];
+  List<Object?> get props => [soundId, completer];
 }
 
 final class SavedSoundsQueryChanged extends SavedSoundsEvent {

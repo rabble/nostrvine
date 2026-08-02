@@ -4241,6 +4241,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Dihapus dari Suara';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'Gagal memuat suara';
 
   @override

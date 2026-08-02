@@ -46,6 +46,14 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     return completer.future;
   }
 
+  /// Removes [soundId], completing with an error when it could not be
+  /// persisted so the caller can report the failure.
+  Future<void> removeSound(String soundId) {
+    final completer = Completer<void>();
+    add(SavedSoundRemoveRequested(soundId, completer: completer));
+    return completer.future;
+  }
+
   Future<void> _onEvent(
     SavedSoundsEvent event,
     Emitter<SavedSoundsState> emit,
@@ -146,7 +154,21 @@ class SavedSoundsBloc extends Bloc<SavedSoundsEvent, SavedSoundsState> {
     SavedSoundRemoveRequested event,
     Emitter<SavedSoundsState> emit,
   ) async {
-    await _service.removeSound(event.soundId);
+    final completer = event.completer;
+    try {
+      await _service.removeSound(event.soundId);
+    } catch (error, stackTrace) {
+      // The row stays on screen because the delete did not happen; the caller
+      // completes with the error so the UI can say so instead of claiming
+      // success.
+      addError(error, stackTrace);
+      if (completer != null && !completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
+      return;
+    }
+
+    if (completer != null && !completer.isCompleted) completer.complete();
     if (emit.isDone) return;
     emit(
       state.copyWith(

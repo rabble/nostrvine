@@ -4341,6 +4341,12 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Naalis sa Sounds';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'Hindi na-load ang sounds';
 
   @override

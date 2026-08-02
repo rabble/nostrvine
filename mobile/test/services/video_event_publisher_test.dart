@@ -1132,17 +1132,66 @@ void main() {
       );
     });
 
-    test('blocks provider audio when durable credit is incomplete', () async {
+    test(
+      'blocks provider audio without durable credit only when reuse is asked '
+      'for',
+      () async {
+        stubSignAndPublish();
+
+        expect(
+          await publisher.publishVideoEvent(
+            upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+            allowAudioReuse: true,
+            selectedAudio: _uncreditedProviderSound,
+            selectedAudioEventId: _uncreditedProviderSound.id,
+          ),
+          isFalse,
+        );
+        verifyNever(
+          () => authService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'publishes without the provider reference when reuse was never asked for',
+      () async {
+        stubSignAndPublish();
+
+        expect(
+          await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: _uncreditedProviderSound,
+            selectedAudioEventId: _uncreditedProviderSound.id,
+          ),
+          isTrue,
+        );
+        verifyNever(
+          () => authService.createAndSignEvent(
+            kind: audioEventKind,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      },
+    );
+
+    test('credits the provider when the catalog row has no creator', () async {
       stubSignAndPublish();
-      const sound = AudioEvent(
-        id: 'freesound:uncredited',
+      const thinCatalogRow = AudioEvent(
+        id: 'freesound:thin',
         pubkey: AudioEvent.externalProviderMarker,
         createdAt: 0,
-        url: 'https://cdn.example.com/uncredited.mp3',
+        url: 'https://cdn.example.com/thin.mp3',
         externalSource: AudioExternalSource(
           provider: 'freesound',
-          providerSoundId: 'uncredited',
+          providerSoundId: 'thin',
           providerName: 'Freesound',
+          sourceUrl: 'https://freesound.org/s/thin/',
           license: AudioLicenseMetadata(
             type: 'cc0',
             name: 'CC0',
@@ -1156,19 +1205,23 @@ void main() {
 
       expect(
         await publisher.publishVideoEvent(
-          upload: createUpload(),
-          selectedAudio: sound,
-          selectedAudioEventId: sound.id,
+          upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+          allowAudioReuse: true,
+          selectedAudio: thinCatalogRow,
+          selectedAudioEventId: thinCatalogRow.id,
         ),
-        isFalse,
+        isTrue,
       );
-      verifyNever(
-        () => authService.createAndSignEvent(
-          kind: any(named: 'kind'),
-          content: any(named: 'content'),
-          tags: any(named: 'tags'),
-        ),
-      );
+      final audioContent =
+          verify(
+                () => authService.createAndSignEvent(
+                  kind: audioEventKind,
+                  content: captureAny(named: 'content'),
+                  tags: any(named: 'tags'),
+                ),
+              ).captured.single
+              as String;
+      expect(audioContent, contains('Freesound'));
     });
 
     group('local imported audio', () {
@@ -1631,3 +1684,25 @@ void main() {
     );
   });
 }
+
+/// A catalog row with neither a creator nor a source URL — no durable public
+/// credit can be built from it.
+const _uncreditedProviderSound = AudioEvent(
+  id: 'freesound:uncredited',
+  pubkey: AudioEvent.externalProviderMarker,
+  createdAt: 0,
+  url: 'https://cdn.example.com/uncredited.mp3',
+  externalSource: AudioExternalSource(
+    provider: 'freesound',
+    providerSoundId: 'uncredited',
+    providerName: 'Freesound',
+    license: AudioLicenseMetadata(
+      type: 'cc0',
+      name: 'CC0',
+      url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      allowsCommercialUse: true,
+      allowsDerivatives: true,
+      requiresAttribution: false,
+    ),
+  ),
+);

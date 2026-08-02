@@ -4249,6 +4249,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Seslerden kaldırıldı';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'Sesler yüklenemedi';
 
   @override

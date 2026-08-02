@@ -207,10 +207,45 @@ void main() {
   test('removes a saved sound', () async {
     await bloc.saveSound(_sound());
 
-    bloc.add(const SavedSoundRemoveRequested('sound-1'));
+    await bloc.removeSound('sound-1');
     await _settle();
 
     expect(bloc.state.sounds, isEmpty);
     expect(service.loadSavedSounds(), isEmpty);
   });
+
+  test('keeps the row and reports the error when removal fails', () async {
+    final failingBloc = SavedSoundsBloc(
+      service: _FailingRemoveService(await SharedPreferences.getInstance()),
+      mediaProbe: probe,
+      now: () => DateTime.utc(2026, 7, 31),
+    );
+    addTearDown(failingBloc.close);
+
+    await failingBloc.saveSound(_sound());
+    expect(failingBloc.state.sounds, hasLength(1));
+
+    await expectLater(
+      failingBloc.removeSound('sound-1'),
+      throwsA(isA<StateError>()),
+    );
+    await _settle();
+
+    expect(
+      failingBloc.state.sounds,
+      hasLength(1),
+      reason: 'a delete that did not persist must not clear the row',
+    );
+  });
+}
+
+/// Persists normally but fails every delete, standing in for a
+/// `SharedPreferences` write that returns false.
+class _FailingRemoveService extends SavedSoundsService {
+  _FailingRemoveService(super.preferences);
+
+  @override
+  Future<void> removeSound(String soundId) async {
+    throw StateError('Failed to persist saved sounds');
+  }
 }

@@ -153,11 +153,16 @@ class SavedSoundsService {
     return sounds;
   }
 
+  /// Reads a versioned payload, migrating any schema at or below the current
+  /// version into the current record shape.
+  ///
+  /// Payloads from a *newer* build are reported unreadable rather than
+  /// downgraded — [_isForeignPayload] then stops a write from flattening them.
+  /// Entries are parsed individually so one malformed record cannot cost the
+  /// user the rest of the library.
   List<SavedSound> _readVersionedSounds(Map<String, dynamic> decoded) {
-    if (decoded['schemaVersion'] !=
-        SavedSoundLibraryPayload.currentSchemaVersion) {
-      return [];
-    }
+    if (_isNewerSchema(decoded)) return [];
+
     final rawSounds = decoded['sounds'];
     if (rawSounds is! List) return [];
 
@@ -176,7 +181,31 @@ class SavedSoundsService {
     return sounds;
   }
 
+  static bool _isNewerSchema(Map<String, dynamic> decoded) {
+    final version = decoded['schemaVersion'];
+    return version is int &&
+        version > SavedSoundLibraryPayload.currentSchemaVersion;
+  }
+
+  /// Whether the stored payload was written by a build this one cannot read.
+  bool _isForeignPayload() {
+    final raw = _preferences.getString(storageKey);
+    if (raw == null || raw.isEmpty) return false;
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map &&
+          _isNewerSchema(Map<String, dynamic>.from(decoded));
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> _writeSavedSounds(List<SavedSound> sounds) async {
+    if (_isForeignPayload()) {
+      throw StateError(
+        'Refusing to overwrite a saved sound library written by a newer build',
+      );
+    }
     final payload = SavedSoundLibraryPayload(
       schemaVersion: SavedSoundLibraryPayload.currentSchemaVersion,
       sounds: sounds.map(_persistableRecord).toList(growable: false),

@@ -81,7 +81,7 @@ void main() {
     verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
   });
 
-  test('uses earliest matching source video for a legacy event', () async {
+  test('uses newest matching source video for a legacy event', () async {
     when(
       () => soundsRepository.fetchVideosUsingSound('audio-event'),
     ).thenAnswer((_) async => ['later', 'earliest', 'wrong']);
@@ -92,8 +92,8 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => [
-        _video(id: 'later', createdAt: 120, allowsReuse: false),
-        _video(id: 'earliest', createdAt: 110),
+        _video(id: 'later', createdAt: 120),
+        _video(id: 'earliest', createdAt: 110, allowsReuse: false),
         _video(id: 'wrong', vineId: 'other-video', createdAt: 105),
       ],
     );
@@ -101,7 +101,26 @@ void main() {
     expect(await resolver.verify(_sound()), isTrue);
   });
 
-  test('fails closed on ambiguous earliest source events', () async {
+  test('honours a revocation on the newest revision', () async {
+    when(
+      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+    ).thenAnswer((_) async => ['revoked', 'original']);
+    when(
+      () => videosRepository.getVideosByIds(
+        ['revoked', 'original'],
+        hydrateBulkStats: false,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        _video(id: 'revoked', createdAt: 120, allowsReuse: false),
+        _video(id: 'original', createdAt: 110),
+      ],
+    );
+
+    expect(await resolver.verify(_sound()), isFalse);
+  });
+
+  test('fails closed on ambiguous newest source events', () async {
     when(
       () => soundsRepository.fetchVideosUsingSound('audio-event'),
     ).thenAnswer((_) async => ['first', 'second']);

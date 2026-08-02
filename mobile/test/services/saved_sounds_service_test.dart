@@ -212,6 +212,39 @@ void main() {
         expect(service.loadSavedSounds(), [valid]);
       });
 
+      test('reads a payload written by an older schema version', () {
+        final service = SavedSoundsService(sharedPreferences);
+        final saved = SavedSound.fromLegacy(_sound(id: 'sound1'));
+        sharedPreferences.setString(
+          service.storageKey,
+          jsonEncode({
+            'schemaVersion': SavedSoundLibraryPayload.currentSchemaVersion - 1,
+            'sounds': [saved.toJson()],
+          }),
+        );
+
+        expect(service.loadSavedSounds(), [saved]);
+      });
+
+      test('refuses to overwrite a payload from a newer build', () async {
+        final service = SavedSoundsService(sharedPreferences);
+        final newerPayload = jsonEncode({
+          'schemaVersion': SavedSoundLibraryPayload.currentSchemaVersion + 1,
+          'sounds': [SavedSound.fromLegacy(_sound(id: 'future')).toJson()],
+        });
+        await sharedPreferences.setString(service.storageKey, newerPayload);
+
+        await expectLater(
+          service.saveSavedSound(SavedSound.fromLegacy(_sound(id: 'sound1'))),
+          throwsA(isA<StateError>()),
+        );
+        expect(
+          sharedPreferences.getString(service.storageKey),
+          newerPayload,
+          reason: 'the unreadable library must survive untouched',
+        );
+      });
+
       test('throws when SharedPreferences rejects a write', () async {
         final preferences = _MockSharedPreferences();
         final service = SavedSoundsService(preferences);

@@ -4286,6 +4286,12 @@ class AppLocalizationsVi extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Đã xóa khỏi Âm thanh';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'Không tải được âm thanh';
 
   @override

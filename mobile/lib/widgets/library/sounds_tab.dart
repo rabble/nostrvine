@@ -98,14 +98,25 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   Future<void> _onRemoveTap(SavedSound sound) async {
     await _stopPreview();
     if (!mounted) return;
-    context.read<SavedSoundsBloc>().add(SavedSoundRemoveRequested(sound.id));
     if (_editingSoundId == sound.id) {
       setState(() => _editingSoundId = null);
     }
 
+    var removed = true;
+    try {
+      await context.read<SavedSoundsBloc>().removeSound(sound.id);
+    } catch (_) {
+      removed = false;
+    }
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(context.l10n.soundsRemovedFromLibrary),
+        content: Text(
+          removed
+              ? context.l10n.soundsRemovedFromLibrary
+              : context.l10n.soundsRemoveFailed,
+        ),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -120,18 +131,26 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
             AudioSelectionBottomSheet.show(context));
     if (selectedSound == null || !mounted) return;
 
-    final result = await context.read<SavedSoundsBloc>().saveSound(
-      selectedSound,
-    );
+    SavedSoundSaveResult? result;
+    try {
+      result = await context.read<SavedSoundsBloc>().saveSound(selectedSound);
+    } catch (_) {
+      result = null;
+    }
     if (!mounted) return;
-    setState(() => _editingSoundId = selectedSound.id);
+    if (result != null) {
+      setState(() => _editingSoundId = selectedSound.id);
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          result == SavedSoundSaveResult.saved
-              ? context.l10n.soundsSavedToLibrary
-              : context.l10n.soundsAlreadySavedToLibrary,
+          switch (result) {
+            SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
+            SavedSoundSaveResult.alreadySaved =>
+              context.l10n.soundsAlreadySavedToLibrary,
+            null => context.l10n.soundsSaveFailed,
+          },
         ),
         duration: const Duration(seconds: 2),
       ),

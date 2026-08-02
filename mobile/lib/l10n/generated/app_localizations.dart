@@ -7436,6 +7436,18 @@ abstract class AppLocalizations {
   /// **'Removed from Sounds'**
   String get soundsRemovedFromLibrary;
 
+  /// Snackbar shown when saving a sound to the local library fails to persist.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save that sound. Try again.'**
+  String get soundsSaveFailed;
+
+  /// Snackbar shown when removing a sound from the local library fails to persist.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove that sound. Try again.'**
+  String get soundsRemoveFailed;
+
   /// No description provided for @soundsFailedToLoad.
   ///
   /// In en, this message translates to:

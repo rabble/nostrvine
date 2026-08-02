@@ -193,23 +193,31 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       });
     }
 
-    final result = await context.read<SavedSoundsBloc>().saveSound(
-      widget.sound,
-      sourceContext: widget.sourceVideo == null
-          ? null
-          : const SavedSoundContextBuilder().fromVideo(
-              widget.sourceVideo!,
-              creatorName: widget.sourceVideo!.authorName,
-            ),
-    );
+    SavedSoundSaveResult? result;
+    try {
+      result = await context.read<SavedSoundsBloc>().saveSound(
+        widget.sound,
+        sourceContext: widget.sourceVideo == null
+            ? null
+            : const SavedSoundContextBuilder().fromVideo(
+                widget.sourceVideo!,
+                creatorName: widget.sourceVideo!.authorName,
+              ),
+      );
+    } catch (_) {
+      result = null;
+    }
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          result == SavedSoundSaveResult.saved
-              ? context.l10n.soundsSavedToLibrary
-              : context.l10n.soundsAlreadySavedToLibrary,
+          switch (result) {
+            SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
+            SavedSoundSaveResult.alreadySaved =>
+              context.l10n.soundsAlreadySavedToLibrary,
+            null => context.l10n.soundsSaveFailed,
+          },
         ),
         duration: const Duration(seconds: 2),
       ),

@@ -267,6 +267,8 @@ const _knownUntranslatedDebt = <String>{
   'soundCreditCreatorLabel',
   'soundCreditSourceUrlLabel',
   'soundCreditPublicHashtagsLabel',
+  'soundsSaveFailed',
+  'soundsRemoveFailed',
 };
 
 const _signatureVerificationKeys = <String>{

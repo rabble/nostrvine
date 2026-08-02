@@ -4403,6 +4403,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Eliminat din Sunete';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'N-am putut încărca sunetele';
 
   @override

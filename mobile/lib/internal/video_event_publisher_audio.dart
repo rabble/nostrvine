@@ -160,7 +160,6 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
     if (external == null ||
         url == null ||
         url.isEmpty ||
-        external.creatorName?.trim().isEmpty != false ||
         external.sourceUrl?.trim().isEmpty != false) {
       Log.error(
         'Provider audio is missing durable public credit',
@@ -169,6 +168,12 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       );
       return null;
     }
+
+    // `creator` is nullable all the way down from the sound-proxy schema, so a
+    // thin catalog row credits the provider rather than losing the publish.
+    final creatorName = external.creatorName?.trim().isNotEmpty ?? false
+        ? external.creatorName!.trim()
+        : external.providerName;
 
     final title = audio.title?.trim().isNotEmpty ?? false
         ? audio.title!.trim()
@@ -185,7 +190,7 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       sourceVideoReference:
           '${NIP71VideoKinds.getPreferredAddressableKind()}:$pubkey:$videoDTag',
       sourceVideoRelay: relayHint,
-      creatorName: external.creatorName!.trim(),
+      creatorName: creatorName,
       creatorUrl: external.creatorUrl,
       licenseName: external.license.name,
       licenseUrl: external.license.url,
@@ -201,7 +206,7 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       kind: audioEventKind,
       content: _audioCreditContent(
         title: title,
-        creatorName: external.creatorName!,
+        creatorName: creatorName,
         sourceUrl: external.sourceUrl,
         licenseName: external.license.name,
       ),

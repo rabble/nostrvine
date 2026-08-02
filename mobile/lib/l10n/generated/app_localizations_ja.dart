@@ -4058,6 +4058,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'サウンドから削除しました';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'サウンドの読み込みがうまくいかなかった';
 
   @override

@@ -4078,6 +4078,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsRemovedFromLibrary => '사운드에서 제거됨';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => '사운드를 불러오지 못했어요';
 
   @override

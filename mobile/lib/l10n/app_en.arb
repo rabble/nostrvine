@@ -2389,6 +2389,14 @@
   "soundsAvailabilityCommunity": "Community",
   "soundsRemoveSavedSound": "Remove sound",
   "soundsRemovedFromLibrary": "Removed from Sounds",
+  "soundsSaveFailed": "Couldn't save that sound. Try again.",
+  "@soundsSaveFailed": {
+    "description": "Snackbar shown when saving a sound to the local library fails to persist."
+  },
+  "soundsRemoveFailed": "Couldn't remove that sound. Try again.",
+  "@soundsRemoveFailed": {
+    "description": "Snackbar shown when removing a sound from the local library fails to persist."
+  },
   "soundsFailedToLoad": "Failed to load sounds",
   "soundsRetry": "Retry",
   "soundsScreenLabel": "Sounds screen",

@@ -4047,6 +4047,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get soundsRemovedFromLibrary => '已从声音库移除';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => '声音加载失败';
 
   @override

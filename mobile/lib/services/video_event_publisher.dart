@@ -1483,12 +1483,25 @@ class VideoEventPublisher {
         );
         selectedAudioReferenceRelay = relayHint;
         if (selectedAudioReferenceId == null) {
-          Log.error(
-            'Provider credit publishing failed; blocking video publish',
+          // Only a creator who asked for reusable audio/credit loses the
+          // publish over a missing bridge; otherwise the video ships without
+          // the provider reference rather than stranding the user on a
+          // generic failure they cannot clear.
+          if (allowAudioReuse) {
+            Log.error(
+              'Provider credit publishing failed; blocking video publish',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+          Log.warning(
+            'Provider credit publishing failed; publishing without the '
+            'provider audio reference',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
-          return false;
+          selectedAudioReferenceRelay = null;
         }
       }
 

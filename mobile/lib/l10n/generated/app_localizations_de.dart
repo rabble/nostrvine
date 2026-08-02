@@ -4333,6 +4333,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Aus Sounds entfernt';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'Sounds konnten nicht geladen werden';
 
   @override
