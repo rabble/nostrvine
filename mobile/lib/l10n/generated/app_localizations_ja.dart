@@ -4677,6 +4677,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent => '報告を送信できなかった。接続を確認してもう一回試してみて。';
+
+  @override
   String get reportReceivedTitle => '報告を受け付けたよ';
 
   @override

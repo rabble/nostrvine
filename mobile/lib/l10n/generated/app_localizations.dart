@@ -8570,6 +8570,12 @@ abstract class AppLocalizations {
   /// **'Failed to report content: {error}'**
   String reportFailed(Object error);
 
+  /// Shown when a submitted report reached no channel off the device — every publish target refused it, which in practice almost always means no connectivity. Covers both content and user reports, so it must not name either subject.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send your report. Check your connection and try again.'**
+  String get reportNotSent;
+
   /// No description provided for @reportReceivedTitle.
   ///
   /// In en, this message translates to:

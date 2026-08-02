@@ -4983,6 +4983,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Deine Meldung konnte nicht gesendet werden. Überprüfe deine Verbindung und versuch es nochmal.';
+
+  @override
   String get reportReceivedTitle => 'Meldung erhalten';
 
   @override

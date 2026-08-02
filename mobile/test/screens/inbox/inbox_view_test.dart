@@ -2218,7 +2218,7 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
-          find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
+          find.text(l10n.reportNotSent),
           findsOneWidget,
         );
         // Silence is the regression, so the confirmation must not render.

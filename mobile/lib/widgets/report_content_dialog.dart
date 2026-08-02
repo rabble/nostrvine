@@ -395,9 +395,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             unawaited(_sendModerationDm());
           }
           setState(() {
-            _errorMessage = context.l10n.reportFailed(
-              context.l10n.commonSomethingWentWrong,
-            );
+            _errorMessage = context.l10n.reportNotSent;
           });
         } else if (result.success) {
           // Send DM to moderation team with report details (TC-025/026)

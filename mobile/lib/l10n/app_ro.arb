@@ -1985,6 +1985,7 @@
             }
         }
     },
+    "reportNotSent": "Nu s-a putut trimite raportarea. Verifică conexiunea și încearcă din nou.",
     "reportReceivedTitle": "Raport primit",
     "reportReceivedThankYou": "Mersi că ne ajuți să păstrăm Divine în siguranță.",
     "reportReceivedReviewNotice": "Echipa noastră âți va revizui raportul și va lua măsuri corespunzătoare. S-ar putea să primești actualizări prin mesaj direct.",

@@ -1985,6 +1985,7 @@
             }
         }
     },
+    "reportNotSent": "Não foi possível enviar sua denúncia. Verifique sua conexão e tente novamente.",
     "reportReceivedTitle": "Denúncia recebida",
     "reportReceivedThankYou": "Obrigado por ajudar a manter o Divine seguro.",
     "reportReceivedReviewNotice": "Nossa equipe vai revisar sua denúncia e tomar as medidas adequadas. Você pode receber atualizações por mensagem direta.",

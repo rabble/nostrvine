@@ -4662,6 +4662,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent => '举报发送失败。请检查连接后重试。';
+
+  @override
   String get reportReceivedTitle => '举报已收到';
 
   @override

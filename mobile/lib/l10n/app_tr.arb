@@ -1984,6 +1984,7 @@
             }
         }
     },
+    "reportNotSent": "Bildirimin gönderilemedi. Bağlantını kontrol et ve tekrar dene.",
     "reportReceivedTitle": "Bildirim Alındı",
     "reportReceivedThankYou": "Divine'ı güvenli tutmaya yardımcı olduğun için teşekkürler.",
     "reportReceivedReviewNotice": "Ekibimiz bildirimini inceleyecek ve uygun adımı atacak. Direkt mesaj yoluyla güncelleme alabilirsin.",

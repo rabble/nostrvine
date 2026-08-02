@@ -1977,6 +1977,7 @@
             }
         }
     },
+    "reportNotSent": "報告を送信できなかった。接続を確認してもう一回試してみて。",
     "reportReceivedTitle": "報告を受け付けたよ",
     "reportReceivedThankYou": "Divine を安全に保つために協力してくれてありがとう。",
     "reportReceivedReviewNotice": "チームが報告を確認して、適切に対応するね。ダイレクトメッセージでアップデートが届くかも。",

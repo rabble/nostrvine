@@ -1291,6 +1291,7 @@
     "reportReasonAiGenerated": "AI-Generated na Content",
     "reportReasonOther": "Iba pang Paglabag sa Patakaran",
     "reportFailed": "Hindi na-report ang content: {error}",
+    "reportNotSent": "Hindi naipadala ang report mo. Tingnan ang koneksyon mo at subukan ulit.",
     "reportReceivedTitle": "Natanggap ang Report",
     "reportReceivedThankYou": "Salamat sa pagtulong panatilihing ligtas ang Divine.",
     "reportReceivedReviewNotice": "Susuriin ng team namin ang report mo at gagawa ng naaangkop na aksyon. Maaari kang makatanggap ng updates via direct message.",

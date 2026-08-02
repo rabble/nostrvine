@@ -1977,6 +1977,7 @@
             }
         }
     },
+    "reportNotSent": "تعذّر إرسال بلاغك. تحقق من اتصالك وحاول مرة أخرى.",
     "reportReceivedTitle": "تم استلام البلاغ",
     "reportReceivedThankYou": "شكرًا لمساعدتك في الحفاظ على سلامة Divine.",
     "reportReceivedReviewNotice": "سيُراجع فريقنا بلاغك ويتخذ الإجراء المناسب. قد تتلقى تحديثات عبر رسالة مباشرة.",

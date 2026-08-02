@@ -999,7 +999,7 @@ void main() {
 
       expect(find.text(l10n.reportReceivedTitle), findsNothing);
       expect(
-        find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
+        find.text(l10n.reportNotSent),
         findsOneWidget,
       );
       // The DM still goes out: sendMessage writes a durable outgoing_dms
@@ -1092,7 +1092,7 @@ void main() {
       await openAndSubmitReport(tester);
 
       expect(
-        find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
+        find.text(l10n.reportNotSent),
         findsOneWidget,
       );
 

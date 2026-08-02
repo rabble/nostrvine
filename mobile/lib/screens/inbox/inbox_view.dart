@@ -997,9 +997,7 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
                 content: Text(
                   reported
                       ? context.l10n.inboxReportedUser(displayName)
-                      : context.l10n.reportFailed(
-                          context.l10n.commonSomethingWentWrong,
-                        ),
+                      : context.l10n.reportNotSent,
                 ),
               ),
             );

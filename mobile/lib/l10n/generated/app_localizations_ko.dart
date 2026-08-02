@@ -4697,6 +4697,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent => '신고를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해보세요.';
+
+  @override
   String get reportReceivedTitle => '신고 접수 완료';
 
   @override

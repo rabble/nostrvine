@@ -4990,6 +4990,10 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Hindi naipadala ang report mo. Tingnan ang koneksyon mo at subukan ulit.';
+
+  @override
   String get reportReceivedTitle => 'Natanggap ang Report';
 
   @override

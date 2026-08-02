@@ -4928,6 +4928,10 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'آپ کی رپورٹ نہیں بھیجی جا سکی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔';
+
+  @override
   String get reportReceivedTitle => 'رپورٹ موصول ہو گئی';
 
   @override

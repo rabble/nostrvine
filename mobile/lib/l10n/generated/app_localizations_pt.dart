@@ -4956,6 +4956,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Não foi possível enviar sua denúncia. Verifique sua conexão e tente novamente.';
+
+  @override
   String get reportReceivedTitle => 'Denúncia recebida';
 
   @override
