@@ -876,6 +876,110 @@ void main() {
       expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
     });
 
+    // #6387: sendMessage signals non-delivery by RETURNING a failure, never
+    // by throwing, so the sibling `thenThrow` test above exercises a shape
+    // production cannot produce. These pin the shapes it actually produces.
+    void stubDmResult(NIP17SendResult result) {
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).thenAnswer((_) async => result);
+    }
+
+    testWidgets('shows the DM-delayed notice when the send is blocked', (
+      tester,
+    ) async {
+      // The #176 protected-minor send gate returns before the outgoing
+      // queue row is written, so this is the one branch with no retry.
+      stubDmResult(
+        const NIP17SendResult.blocked(
+          'blocked: recipient not permitted by send policy',
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('shows the DM-delayed notice on a hard send failure', (
+      tester,
+    ) async {
+      stubDmResult(
+        const NIP17SendResult.failure('Message publish failed to relays'),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('shows the DM-delayed notice when the device is offline', (
+      tester,
+    ) async {
+      // Verbatim the value NIP17MessageService returns when its
+      // connectivity probe reports offline — the most common instance.
+      stubDmResult(
+        const NIP17SendResult.failure('Message not sent: device offline'),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('shows the DM-delayed notice when the send is unconfirmed', (
+      tester,
+    ) async {
+      // Recipient frame written but no relay OK inside the window. The
+      // durable queue re-drives it, so the notice is pessimistic rather
+      // than wrong — but silence would be a claim we cannot support.
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'Message publish timed out',
+          retryablePending: true,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('stays silent when only the sender self-wrap failed', (
+      tester,
+    ) async {
+      // The moderation team DID receive the report; only the sender's own
+      // cross-device copy is missing. Claiming we couldn't reach the team
+      // would be false, so this must NOT show the notice.
+      stubDmResult(
+        NIP17SendResult.success(
+          rumorEventId: 'dm_rumor_id',
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+          selfWrapPublished: false,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
+    });
+
     Widget buildSubjectWithAuth(MockAuthService auth) {
       final router = GoRouter(
         routes: [

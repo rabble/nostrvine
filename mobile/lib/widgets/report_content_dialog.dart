@@ -365,10 +365,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // Send DM to moderation team with report details (TC-025/026)
           final dmRepo = ref.read(dmRepositoryProvider);
           final labelService = ref.read(moderationLabelServiceProvider);
+          final moderationPubkey = labelService.divineModerationPubkeyHex;
           var moderationDmFailed = false;
           try {
-            await dmRepo.sendMessage(
-              recipientPubkey: labelService.divineModerationPubkeyHex,
+            final dmResult = await dmRepo.sendMessage(
+              recipientPubkey: moderationPubkey,
               content: _formatReportDm(
                 reason: _selectedReason!,
                 eventId: _eventId,
@@ -379,11 +380,36 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               // plaintext duplicate. NIP-17 gift wrap only.
               skipNip04Fallback: true,
             );
+            // sendMessage signals non-delivery by RETURNING a failure, not
+            // by throwing, so the catch below cannot see it. Switch over the
+            // sealed type rather than reading `.success` so a new variant
+            // becomes a compile error here instead of a silent success.
+            moderationDmFailed = switch (dmResult) {
+              // Includes selfWrapPublished: false — the team received the
+              // report; only the sender's own cross-device copy is missing.
+              NIP17SendSuccess() => false,
+              // blocked, retryablePending, and hard failures alike.
+              NIP17SendFailure() => true,
+            };
+            if (dmResult case final NIP17SendFailure failure) {
+              Log.warning(
+                'Moderation DM not delivered '
+                '(recipient=$moderationPubkey, '
+                'blocked=${failure.blocked}, '
+                'retryablePending=${failure.retryablePending}): '
+                '${failure.error}',
+                name: 'ReportContentDialog',
+                category: LogCategory.system,
+              );
+            }
           } catch (e) {
-            // The report itself already succeeded (relay + Zendesk); the
+            // The report reached the team through another channel; the
             // moderation DM is a secondary notification. Don't fail the
             // flow, but surface the outcome instead of swallowing it so
             // the user isn't told the team was reached when it wasn't.
+            // Reachable for pre-flight throws only (uninitialized
+            // repository, invalid recipient) — never for a delivery
+            // outcome, which arrives as a returned value above.
             moderationDmFailed = true;
             Log.warning(
               'Failed to send moderation DM: $e',
