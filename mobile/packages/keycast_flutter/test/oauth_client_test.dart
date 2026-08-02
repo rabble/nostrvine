@@ -282,6 +282,33 @@ void main() {
 
         expect(logoutCalled, isTrue);
       });
+
+      test('does not leak an unhandled error when the server is '
+          'unreachable', () async {
+        final mockClient = MockClient((request) async {
+          throw http.ClientException('Connection refused', request.url);
+        });
+
+        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+
+        final escaped = <Object>[];
+        await runZonedGuarded(
+          () async {
+            await oauth.logout();
+            // Let the fire-and-forget POST reject.
+            await Future<void>.delayed(Duration.zero);
+          },
+          (error, _) => escaped.add(error),
+        );
+
+        expect(
+          escaped,
+          isEmpty,
+          reason:
+              'Local logout is complete; a failed best-effort server '
+              'notification must not surface as an unhandled async error',
+        );
+      });
     });
 
     group('getAuthorizationUrl - additional', () {

@@ -108,27 +108,26 @@ class KeycastOAuth {
     return _storage.read(_storageKeyHandle);
   }
 
-  /// Clear local session and POST to server logout (keeps authorization_handle)
+  /// Clear the local session, keeping the authorization handle.
   ///
-  /// Server-side logout has a 2-second timeout - if it fails or times out,
-  /// we still complete the local logout. The server will eventually expire
-  /// the token anyway.
+  /// Also pings the server's logout endpoint, which revokes nothing: keycast's
+  /// handler takes no extractors and only returns a cookie-clearing header this
+  /// client has no use for, and by this point the tokens it would need to
+  /// identify the session are already deleted. The call is kept because the
+  /// endpoint may grow a real revocation later; tokens expire on their own
+  /// until then. Local logout is complete either way.
   Future<void> logout() async {
     _storageEpoch++;
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
     await _storage.delete(_storageKeyRefreshToken);
-    // Fire-and-forget server logout with short timeout
-    // Local logout is complete, server notification is best-effort
-    try {
-      unawaited(
-        _client
-            .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
-            .timeout(const Duration(seconds: 2)),
-      );
-    } catch (_) {
-      // Ignore timeout or network errors - local logout is complete
-    }
+    // Best-effort server logout; the local one is already complete. The
+    // handler has to be on the future itself — a surrounding try/catch
+    // cannot see a rejection that surfaces after logout() has returned.
+    _client
+        .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
+        .timeout(const Duration(seconds: 2))
+        .ignore();
   }
 
   Future<void> _saveSession(KeycastSession session) async {

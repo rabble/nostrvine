@@ -2,6 +2,8 @@
 // ABOUTME: Options: Email sign-in, Import Nostr Key, Signer App, or Amber
 // DESIGN: https://www.figma.com/design/rp1DsDEUuCaicW0lk6I2aZ/UI-Design?node-id=5061-65986
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -60,9 +62,75 @@ class LoginOptionsScreen extends ConsumerWidget {
             initialEmail: initialEmail,
             initialGeneralError: initialError,
           ),
-      child: const _LoginOptionsView(),
+      child: _CommitAutofillOnAuthenticated(
+        // Re-sample the flag on each auth event rather than passing the
+        // service's own state enum through, so this screen stays clear of
+        // service-layer types (scripts/check_ui_service_boundary.sh).
+        authenticated: authService.authStateStream.map(
+          (_) => authService.isAuthenticated,
+        ),
+        child: const _LoginOptionsView(),
+      ),
     );
   }
+}
+
+/// Commits the autofill context off the auth-state signal rather than off
+/// [DivineAuthSuccess].
+///
+/// A successful sign-in flips `AuthService` to authenticated, which refreshes
+/// the router and closes [DivineAuthCubit] before `_handleSignIn` reaches its
+/// emit. Listening for [DivineAuthSuccess] therefore misses the password-manager
+/// save prompt whenever the redirect wins that race. This listens to the same
+/// stream `RouterRefreshListenable` uses, and stream events are delivered before
+/// the frame that disposes this subtree.
+class _CommitAutofillOnAuthenticated extends StatefulWidget {
+  const _CommitAutofillOnAuthenticated({
+    required this.authenticated,
+    required this.child,
+  });
+
+  /// Emits the session's authenticated flag on every auth-state change.
+  final Stream<bool> authenticated;
+  final Widget child;
+
+  @override
+  State<_CommitAutofillOnAuthenticated> createState() =>
+      _CommitAutofillOnAuthenticatedState();
+}
+
+class _CommitAutofillOnAuthenticatedState
+    extends State<_CommitAutofillOnAuthenticated> {
+  StreamSubscription<bool>? _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = widget.authenticated.listen(_onAuthenticatedChanged);
+  }
+
+  void _onAuthenticatedChanged(bool isAuthenticated) {
+    if (!isAuthenticated) return;
+    // Only the email/password form has credentials worth saving; the other
+    // sign-in methods on this screen leave the autofill context empty.
+    if (!_hasSubmittedCredentials) return;
+    TextInput.finishAutofillContext();
+  }
+
+  bool get _hasSubmittedCredentials {
+    final state = context.read<DivineAuthCubit>().state;
+    return state is DivineAuthFormState && state.isSubmitting;
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel());
+    _subscription = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// Sign-in screen — View that consumes [DivineAuthCubit] state.
@@ -74,7 +142,6 @@ class _LoginOptionsView extends StatelessWidget {
     return BlocListener<DivineAuthCubit, DivineAuthState>(
       listenWhen: (prev, next) =>
           next is DivineAuthEmailVerification ||
-          next is DivineAuthSuccess ||
           (prev is DivineAuthFormState &&
               next is DivineAuthFormState &&
               next.signInFailureReason != null &&
@@ -88,10 +155,6 @@ class _LoginOptionsView extends StatelessWidget {
             Directionality.of(context),
           );
           return;
-        }
-        if (state is DivineAuthSuccess) {
-          // Signal password managers to save credentials.
-          TextInput.finishAutofillContext();
         }
         if (state is DivineAuthEmailVerification) {
           final encodedEmail = Uri.encodeComponent(state.email);

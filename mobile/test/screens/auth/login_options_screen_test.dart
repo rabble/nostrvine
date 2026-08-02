@@ -2,8 +2,11 @@
 // ABOUTME: Verifies form rendering, sign-in flow, forgot password,
 // ABOUTME: and alternative login method buttons
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -44,6 +47,9 @@ void main() {
     mockAuthService = _MockAuthService();
     mockPendingVerification = _MockPendingVerificationService();
     when(() => mockAuthService.isNip07Available).thenReturn(false);
+    when(
+      () => mockAuthService.authStateStream,
+    ).thenAnswer((_) => const Stream<AuthState>.empty());
   });
 
   Widget createTestWidget({String initialLocation = LoginOptionsScreen.path}) {
@@ -532,6 +538,139 @@ void main() {
             scope: any(named: 'scope'),
           ),
         );
+      });
+    });
+
+    group('autofill', () {
+      late StreamController<AuthState> authStates;
+      late List<MethodCall> textInputCalls;
+
+      late bool isAuthenticated;
+
+      setUp(() {
+        authStates = StreamController<AuthState>.broadcast();
+        textInputCalls = <MethodCall>[];
+        // The screen re-samples the flag on each auth event rather than
+        // reading the enum off the stream, so the stub is what decides.
+        isAuthenticated = false;
+        when(
+          () => mockAuthService.isAuthenticated,
+        ).thenAnswer((_) => isAuthenticated);
+        addTearDown(authStates.close);
+      });
+
+      /// Starts recording `flutter/textinput` traffic.
+      ///
+      /// Must run *after* `pumpWidget`: the test binding installs its own
+      /// [TestTextInput] handler on that channel while bringing the widget
+      /// tree up, which would otherwise replace this one.
+      void recordTextInputCalls() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.textInput, (call) async {
+              textInputCalls.add(call);
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.textInput, null),
+        );
+      }
+
+      bool committedAutofill() => textInputCalls.any(
+        (call) => call.method == 'TextInput.finishAutofillContext',
+      );
+
+      /// Pumps the screen with a controllable auth stream, then submits the
+      /// email/password form. [mockOAuth] is stubbed so `headlessLogin` never
+      /// completes, which holds the cubit mid-flight the way a real sign-in
+      /// does while `AuthService` flips underneath it.
+      Future<void> submitSignIn(WidgetTester tester) async {
+        when(
+          () => mockOAuth.headlessLogin(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer((_) => Completer<(HeadlessLoginResult, String)>().future);
+
+        final widget = createTestWidget();
+        when(
+          () => mockAuthService.authStateStream,
+        ).thenAnswer((_) => authStates.stream);
+        await tester.pumpWidget(widget);
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'test@example.com',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+        await tester.tap(find.widgetWithText(DivineButton, 'Sign in'));
+        await tester.pump();
+        recordTextInputCalls();
+      }
+
+      testWidgets(
+        'commits the autofill context when the session authenticates, even '
+        'though the redirect closes the cubit before it can emit success',
+        (tester) async {
+          await submitSignIn(tester);
+
+          isAuthenticated = true;
+          authStates.add(AuthState.authenticated);
+          await tester.pump();
+
+          expect(
+            committedAutofill(),
+            isTrue,
+            reason:
+                'The password-manager save prompt must not depend on '
+                'DivineAuthSuccess, which the post-sign-in redirect races',
+          );
+        },
+      );
+
+      testWidgets(
+        'does not commit the autofill context while unauthenticated',
+        (
+          tester,
+        ) async {
+          await submitSignIn(tester);
+
+          authStates.add(AuthState.unauthenticated);
+          await tester.pump();
+
+          expect(committedAutofill(), isFalse);
+        },
+      );
+
+      testWidgets('does not commit the autofill context without a submitted '
+          'credential form', (tester) async {
+        final widget = createTestWidget();
+        when(
+          () => mockAuthService.authStateStream,
+        ).thenAnswer((_) => authStates.stream);
+        await tester.pumpWidget(widget);
+        await tester.pumpAndSettle();
+        recordTextInputCalls();
+
+        // e.g. Amber or a browser extension authenticating from this screen.
+        isAuthenticated = true;
+        authStates.add(AuthState.authenticated);
+        await tester.pump();
+
+        expect(committedAutofill(), isFalse);
       });
     });
   });

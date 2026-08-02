@@ -70,7 +70,6 @@ class _CreateAccountView extends StatelessWidget {
     return BlocListener<DivineAuthCubit, DivineAuthState>(
       listenWhen: (prev, next) =>
           next is DivineAuthEmailVerification ||
-          next is DivineAuthSuccess ||
           next is DivineAuthFormState && next.showLoginOptionsRecovery,
       listener: (context, state) {
         if (state is DivineAuthFormState && state.showLoginOptionsRecovery) {
