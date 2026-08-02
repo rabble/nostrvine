@@ -1014,6 +1014,54 @@ void main() {
       );
     });
 
+    testWidgets('leaves the report resubmittable after it reached no channel', (
+      tester,
+    ) async {
+      // Leaving Submit live is the whole reason this branch shows an inline
+      // error instead of the confirmation, so pin it: a second tap must
+      // reach the service again. That also proves the reason selection
+      // survived, since _handleSubmitReport short-circuits to
+      // reportSelectReason when _selectedReason is null.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(
+        find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.reportSelectReason), findsNothing);
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(2);
+    });
+
     testWidgets('stays silent when only the sender self-wrap failed', (
       tester,
     ) async {
