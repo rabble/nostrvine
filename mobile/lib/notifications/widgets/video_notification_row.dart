@@ -278,7 +278,8 @@ class _MessageText extends StatelessWidget {
 bool _typeShowsTitle(NotificationKind type) {
   return type == NotificationKind.like ||
       type == NotificationKind.comment ||
-      type == NotificationKind.repost;
+      type == NotificationKind.repost ||
+      type == NotificationKind.newPost;
 }
 
 /// Returns just the verb portion (no actor name) for inline composition.
