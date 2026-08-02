@@ -347,7 +347,7 @@ void main() {
       );
 
       for (final reason in ContentFilterReason.values) {
-        await service.reportContent(
+        final _ = await service.reportContent(
           eventId: _validEventId(reason.index.toRadixString(16)),
           authorPubkey: 'author_${reason.name}',
           reason: reason,
@@ -591,7 +591,7 @@ void main() {
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Act
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: _validEventId('3'),
         authorPubkey: 'bad_actor',
         reason: ContentFilterReason.other,
@@ -719,7 +719,7 @@ void main() {
         ),
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: _validEventId('4'),
         authorPubkey: 'author_1',
         reason: ContentFilterReason.spam,
@@ -779,7 +779,7 @@ void main() {
         ),
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-      await stagingService.reportContent(
+      final _ = await stagingService.reportContent(
         eventId: _validEventId('5'),
         authorPubkey: 'author_relay',
         reason: ContentFilterReason.other,
@@ -820,7 +820,7 @@ void main() {
           ),
         ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-        await service.reportContent(
+        final _ = await service.reportContent(
           eventId: _validEventId('5'),
           authorPubkey: 'author_source_relay',
           reason: ContentFilterReason.other,
@@ -864,7 +864,7 @@ void main() {
         ),
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: _validEventId('6'),
         authorPubkey: 'author_source_relay',
         reason: ContentFilterReason.other,
@@ -907,7 +907,7 @@ void main() {
         ),
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: _validEventId('7'),
         authorPubkey: 'author_relay_hint',
         reason: ContentFilterReason.other,
@@ -949,7 +949,7 @@ void main() {
         ),
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: _validEventId('6'),
         authorPubkey: 'author_invalid_relay',
         reason: ContentFilterReason.other,
@@ -991,7 +991,7 @@ void main() {
         ),
       ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: _validEventId('8'),
         authorPubkey: 'author_plaintext_relay',
         reason: ContentFilterReason.other,
@@ -1049,7 +1049,7 @@ void main() {
 
       const validSpamEventId =
           '6666666666666666666666666666666666666666666666666666666666666666';
-      await service.reportContent(
+      final _ = await service.reportContent(
         eventId: validSpamEventId,
         authorPubkey: 'author_spam',
         reason: ContentFilterReason.spam,
@@ -1118,7 +1118,7 @@ void main() {
         ),
       );
 
-      await service.reportUser(
+      final _ = await service.reportUser(
         userPubkey: reportedPubkey,
         reason: ContentFilterReason.harassment,
         details: 'Reported from DM conversation',
@@ -1181,7 +1181,7 @@ void main() {
         ),
       );
 
-      await service.reportUser(
+      final _ = await service.reportUser(
         userPubkey: reportedPubkey,
         reason: ContentFilterReason.spam,
         details: 'Spam reports from this user',
@@ -1247,7 +1247,7 @@ void main() {
           ),
         );
 
-        await service.reportContent(
+        final _ = await service.reportContent(
           eventId: 'user_not_a_real_event_id',
           authorPubkey:
               'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
@@ -1325,7 +1325,7 @@ void main() {
           ),
         );
 
-        await service.reportContent(
+        final _ = await service.reportContent(
           eventId: _validEventId(entry.key.index.toRadixString(16)),
           authorPubkey: 'author_${entry.key.name}',
           reason: entry.key,

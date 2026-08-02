@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -176,7 +177,14 @@ class ContentReportingService {
     }
   }
 
-  /// Report content for violation
+  /// Report content for violation.
+  ///
+  /// Returns rather than throws for every expected failure — an
+  /// uninitialized service, a missing signer, a refused publish — and a
+  /// `success` result still needs its [ReportResult.delivery] checked. A
+  /// discarded result is therefore indistinguishable from a delivered
+  /// report, which is the defect in #6387 and #6595.
+  @useResult
   Future<ReportResult> reportContent({
     required String eventId,
     required String authorPubkey,
@@ -312,7 +320,11 @@ class ContentReportingService {
     return trimmed;
   }
 
-  /// Report user for harassment or abuse
+  /// Report user for harassment or abuse.
+  ///
+  /// Same contract as [reportContent]: failures come back as a returned
+  /// value, so the result must be read.
+  @useResult
   Future<ReportResult> reportUser({
     required String userPubkey,
     required ContentFilterReason reason,
@@ -341,7 +353,11 @@ class ContentReportingService {
     );
   }
 
-  /// Quick report for common violations
+  /// Quick report for common violations.
+  ///
+  /// Same contract as [reportContent]: failures come back as a returned
+  /// value, so the result must be read.
+  @useResult
   Future<ReportResult> quickReport({
     required String eventId,
     required String authorPubkey,
