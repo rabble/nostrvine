@@ -10610,85 +10610,84 @@ class AppLocalizationsTr extends AppLocalizations {
       'Divine relay\'lerine güven, geri kalanını doğrula.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Çapraz paylaşım';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Videolarını başka platformlarda paylaş';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Çapraz paylaşımı yönetmek için Divine ile giriş yap';
 
   @override
-  String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+  String get crosspostingLoadFailed => 'Çapraz paylaşım ayarların yüklenemedi';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Şu anda kullanılabilir çapraz paylaşım platformu yok';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Tekrar dene';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Bağlı değil';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Bağlı';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Yeniden bağlanması gerekiyor';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Bağlan';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Yeniden Bağla';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Bağlantıyı kes';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Kapalı';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Manuel';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Her videoda sen seçersin';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Otomatik';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Sonraki videolar otomatik paylaşılır — sadece bunu açtıktan sonra yayınladıkların';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Nasıl paylaştığını değiştirmek için önce bu platformu bağla.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Bir şeyler ters gitti. Tekrar dene.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Giriş sayfasından hiç yanıt gelmedi. Orada bağlanmayı bitirdiysen yenile — hesabın çoktan bağlanmış olabilir.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform bağlandı';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform bağlanamadı';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Bağlantı $platform üzerinde iptal edildi';
   }
 
   @override

@@ -10424,85 +10424,81 @@ class AppLocalizationsAm extends AppLocalizations {
       'የDivine ሬሌዮችን እመን፣ የቀሩትን አረጋግጥ።';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'ተሻግሮ ማተም';
 
   @override
-  String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+  String get settingsCrosspostingSubtitle => 'ቪዲዮዎችዎን ወደ ሌሎች መድረኮች ያጋሩ';
 
   @override
-  String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+  String get crosspostingSignInRequired => 'ተሻግሮ ማተምን ለማስተዳደር በDivine ይግቡ';
 
   @override
-  String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+  String get crosspostingLoadFailed => 'የተሻግሮ ማተም ቅንብሮችዎ መጫን አልተቻለም';
 
   @override
-  String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+  String get crosspostingNoPlatforms => 'አሁን ምንም የተሻግሮ ማተሚያ መድረክ የለም';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'እንደገና ይሞክሩ';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'አልተገናኘም';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'ተገናኝቷል።';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'እንደገና መገናኘት ያስፈልገዋል';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'ያገናኙ';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'እንደገና ገና';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'ግንኙነቱን ያቋርጡ';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'ጠፍቷል';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'በእጅ';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'ለእያንዳንዱ ቪዲዮ እርስዎ ይመርጣሉ';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'ራስ-ሰር';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'ወደፊት የሚወጡ ቪዲዮዎች በራሳቸው ይለጠፋሉ — ይህን ካበሩ በኋላ የሚያትሙት ብቻ';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'እንዴት እንደሚለጥፍ ለመቀየር መጀመሪያ ይህን መድረክ ያገናኙ።';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'የሆነ ችግር ተፈጥሯል። እንደገና ይሞክሩ።';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'ከመግቢያ ገጹ ምንም ምላሽ አልደረሰንም። እዚያ ጨርሰው ከሆነ ያድሱ — መለያዎ አስቀድሞ ተያይዞ ሊሆን ይችላል።';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform ተገናኝቷል';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform ማገናኘት አልተቻለም';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'ግንኙነቱ በ$platform ላይ ተሰርዟል';
   }
 
   @override

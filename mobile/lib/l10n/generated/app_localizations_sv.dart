@@ -10653,85 +10653,85 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lita på Divine-relays, verifiera resten.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Korspostning';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Dela dina videor till andra plattformar';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Logga in med Divine för att hantera korspostning';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Det gick inte att läsa in dina korspostningsinställningar';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Inga korspostningsplattformar är tillgängliga just nu';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Försök igen';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Inte ansluten';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Ansluten';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Behöver återanslutas';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Anslut';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Återanslut';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Koppla från';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Av';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Manuellt';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Du väljer för varje video';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Automatiskt';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Framtida videor postas automatiskt — bara videor du publicerar efter att du slagit på det här';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Anslut den här plattformen först för att ändra hur den postar.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Något gick fel. Försök igen.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Vi hörde aldrig något från inloggningssidan. Om du blev klar där, uppdatera — ditt konto kan redan vara länkat.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform anslutet';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Det gick inte att ansluta $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Anslutningen avbröts på $platform';
   }
 
   @override

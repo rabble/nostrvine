@@ -10613,82 +10613,81 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsCrosspostingTitle => 'Crossposting';
 
   @override
-  String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+  String get settingsCrosspostingSubtitle => 'Bagikan videomu ke platform lain';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Masuk dengan Divine untuk mengatur crossposting';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Nggak bisa memuat pengaturan crosspostingmu';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Belum ada platform crossposting yang tersedia sekarang';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Coba lagi';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Tidak terhubung';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Terhubung';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Perlu dihubungkan ulang';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Hubungkan';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Hubungkan ulang';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Putuskan';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Nonaktif';
 
   @override
   String get crosspostingModeManual => 'Manual';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Kamu pilih per video';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Otomatis';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Video berikutnya diposting otomatis — hanya video yang kamu publikasikan setelah ini diaktifkan';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Hubungkan platform ini dulu untuk mengubah cara postingnya.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Ada yang salah. Coba lagi.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Halaman masuk nggak pernah merespons. Kalau kamu sudah selesai menghubungkan di sana, muat ulang — akunmu mungkin sudah tertaut.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform terhubung';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Nggak bisa menghubungkan $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Koneksi dibatalkan di $platform';
   }
 
   @override

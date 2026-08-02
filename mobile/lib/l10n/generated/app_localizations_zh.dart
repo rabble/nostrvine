@@ -10083,85 +10083,80 @@ class AppLocalizationsZh extends AppLocalizations {
       '信任 Divine 中继，验证其余中继。';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => '跨平台发布';
 
   @override
-  String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+  String get settingsCrosspostingSubtitle => '把你的视频分享到其他平台';
 
   @override
-  String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+  String get crosspostingSignInRequired => '用 Divine 登录来管理跨平台发布';
 
   @override
-  String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+  String get crosspostingLoadFailed => '无法加载你的跨平台发布设置';
 
   @override
-  String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+  String get crosspostingNoPlatforms => '目前没有可用的跨平台发布平台';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => '重试';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => '未连接';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => '已连接';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => '需要重新连接';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => '连接';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => '重新连接';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => '断开连接';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => '关闭';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => '手动';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => '每个视频你自己决定';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => '自动';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      '以后的视频会自动发布 —— 只包括你打开这个开关之后发布的视频';
 
   @override
-  String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+  String get crosspostingNotConnectedError => '先连接这个平台，才能更改它的发布方式。';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => '出了点问题，再试一次。';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      '登录页面一直没有回应。如果你已经在那边连接好了，刷新一下 —— 你的账号可能已经关联了。';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '已连接 $platform';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '无法连接 $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return '已在 $platform 上取消连接';
   }
 
   @override

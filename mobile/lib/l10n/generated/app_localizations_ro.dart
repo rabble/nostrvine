@@ -10862,85 +10862,86 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai încredere în releele Divine, verifică restul.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Crosspostare';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Partajează-ți videoclipurile pe alte platforme';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Conectează-te cu Divine ca să gestionezi crosspostarea';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Nu am putut încărca setările tale de crosspostare';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Momentan nu e disponibilă nicio platformă de crosspostare';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Reîncearcă';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Neconectat';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Conectat';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Necesită reconectare';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Conectează';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Reconectează';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Deconectează';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Dezactivat';
 
   @override
   String get crosspostingModeManual => 'Manual';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle =>
+      'Alegi tu pentru fiecare videoclip';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Automat';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Videoclipurile viitoare se publică singure — doar cele publicate după ce activezi asta';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Conectează întâi platforma asta ca să schimbi felul în care postează.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Ceva n-a mers. Mai încearcă.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Pagina de conectare nu ne-a mai răspuns. Dacă ai terminat acolo, reîmprospătează — s-ar putea ca deja contul tău să fie conectat.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform conectat';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Nu am putut conecta $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Conexiunea a fost anulată pe $platform';
   }
 
   @override

@@ -10757,85 +10757,85 @@ class AppLocalizationsBg extends AppLocalizations {
       'Довери се на релеите на Divine, проверявай останалите.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Кръстосано публикуване';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Споделяй видеата си в други платформи';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Влез с Divine, за да управляваш кръстосаното публикуване';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Настройките ти за кръстосано публикуване не се заредиха';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'В момента няма налични платформи за кръстосано публикуване';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Опитай пак';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Няма връзка';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Свързано';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Трябва да се свърже отново';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Свържи';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Свържи отново';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Прекъсни';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Изкл.';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Ръчно';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Ти избираш за всяко видео';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Автоматично';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Следващите видеа се публикуват сами — само тези, които публикуваш след като включиш това';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Първо свържи тази платформа, за да промениш как публикува.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Нещо се обърка. Опитай пак.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Страницата за вход така и не отговори. Ако си приключил там, презареди — акаунтът ти може вече да е свързан.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform е свързана';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform не можа да се свърже';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Свързването беше отменено в $platform';
   }
 
   @override

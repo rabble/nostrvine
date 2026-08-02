@@ -10242,85 +10242,80 @@ class AppLocalizationsKo extends AppLocalizations {
       'Divine 릴레이는 신뢰하고 나머지는 확인합니다.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => '크로스 포스팅';
 
   @override
-  String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+  String get settingsCrosspostingSubtitle => '영상을 다른 플랫폼에 공유해요';
 
   @override
-  String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+  String get crosspostingSignInRequired => '크로스 포스팅을 관리하려면 Divine으로 로그인해 주세요';
 
   @override
-  String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+  String get crosspostingLoadFailed => '크로스 포스팅 설정을 불러오지 못했어요';
 
   @override
-  String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+  String get crosspostingNoPlatforms => '지금은 사용할 수 있는 크로스 포스팅 플랫폼이 없어요';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => '다시 시도';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => '연결되지 않음';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => '연결됨';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => '다시 연결해야 해요';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => '연결';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => '다시 연결';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => '연결 해제';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => '끔';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => '수동';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => '영상마다 직접 선택해요';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => '자동';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      '앞으로 올리는 영상은 자동으로 게시돼요 — 이걸 켠 뒤에 올린 영상만요';
 
   @override
-  String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+  String get crosspostingNotConnectedError => '게시 방식을 바꾸려면 이 플랫폼을 먼저 연결해 주세요.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => '문제가 생겼어요. 다시 시도해 주세요.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      '로그인 페이지에서 응답이 오지 않았어요. 거기서 연결을 마쳤다면 새로 고쳐 보세요 — 이미 계정이 연결되어 있을 수도 있어요.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform 연결됨';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform을(를) 연결하지 못했어요';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return '$platform에서 연결이 취소됐어요';
   }
 
   @override

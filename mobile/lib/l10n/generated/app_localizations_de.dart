@@ -10776,81 +10776,82 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Teile deine Videos auf anderen Plattformen';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Melde dich mit Divine an, um Crossposting zu verwalten';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Deine Crossposting-Einstellungen konnten nicht geladen werden';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Gerade sind keine Crossposting-Plattformen verfügbar';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Erneut versuchen';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Nicht verbunden';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Verbunden';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Muss neu verbunden werden';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Verbinden';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Neu verbinden';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Trennen';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Aus';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Manuell';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Du entscheidest pro Video';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Automatisch';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Künftige Videos werden automatisch gepostet — nur Videos, die du nach dem Einschalten veröffentlichst';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Verbinde diese Plattform zuerst, um zu ändern, wie sie postet.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError =>
+      'Da ist was schiefgelaufen. Versuch es nochmal.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Von der Anmeldeseite kam nie eine Rückmeldung. Wenn du dort fertig geworden bist, aktualisiere — dein Konto ist vielleicht schon verknüpft.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform verbunden';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform konnte nicht verbunden werden';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Verbindung wurde auf $platform abgebrochen';
   }
 
   @override
