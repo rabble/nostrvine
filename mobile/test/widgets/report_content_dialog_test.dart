@@ -76,7 +76,12 @@ void main() {
         additionalContext: any(named: 'additionalContext'),
         hashtags: any(named: 'hashtags'),
       ),
-    ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
+    ).thenAnswer(
+      (_) async => ReportResult.createSuccess(
+        'test_report_id',
+        delivery: ReportDelivery.reached,
+      ),
+    );
 
     when(
       () => mockReportingService.reportUser(
@@ -86,7 +91,10 @@ void main() {
         relatedEventIds: any(named: 'relatedEventIds'),
       ),
     ).thenAnswer(
-      (_) async => ReportResult.createSuccess('test_user_report_id'),
+      (_) async => ReportResult.createSuccess(
+        'test_user_report_id',
+        delivery: ReportDelivery.reached,
+      ),
     );
   });
 
@@ -461,7 +469,12 @@ void main() {
           reason: 'Button must show loading state during submission',
         );
 
-        completer.complete(ReportResult.createSuccess('test_report_id'));
+        completer.complete(
+          ReportResult.createSuccess(
+            'test_report_id',
+            delivery: ReportDelivery.reached,
+          ),
+        );
         await tester.pumpAndSettle();
       },
     );

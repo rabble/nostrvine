@@ -334,7 +334,12 @@ void main() {
               reason: any(named: 'reason'),
               details: any(named: 'details'),
             ),
-          ).thenAnswer((_) async => ReportResult.createSuccess('rid'));
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'rid',
+              delivery: ReportDelivery.reached,
+            ),
+          );
         },
         build: createBloc,
         act: (b) => b.add(

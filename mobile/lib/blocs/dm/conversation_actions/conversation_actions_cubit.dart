@@ -49,7 +49,10 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
 
   /// Report a user from a DM conversation.
   ///
-  /// Returns `true` if the report was submitted successfully.
+  /// Returns `true` only when the report reached a channel off this device.
+  /// A report that was built and recorded locally but published nowhere
+  /// returns `false`, because the caller renders a confirmation off this
+  /// value.
   Future<bool> reportUser(String pubkey) async {
     final service = _reportingService;
     if (service == null) return false;
@@ -64,7 +67,11 @@ class ConversationActionsCubit extends Cubit<ConversationActionsState> {
       if (!isClosed) {
         emit(state.copyWith(status: ConversationActionsStatus.idle));
       }
-      return result.success;
+      // `success` only means the report was built and recorded — it is true
+      // even when the relay publish and the Zendesk ticket both failed and
+      // nothing left the device. The caller shows a "Reported {name}"
+      // confirmation off this bool, so require actual delivery.
+      return result.success && result.delivery == ReportDelivery.reached;
     } catch (e, stackTrace) {
       // `ContentReportingService.reportUser` returns `ReportResult.failure`
       // for expected publish/auth problems. Any throw escaping here is

@@ -35,9 +35,9 @@ class ReportResult {
   const ReportResult({
     required this.success,
     required this.timestamp,
+    required this.delivery,
     this.error,
     this.reportId,
-    this.delivery = ReportDelivery.reached,
   });
   final bool success;
   final String? error;
@@ -46,11 +46,15 @@ class ReportResult {
 
   /// Whether the report reached any channel off this device. Only
   /// meaningful when [success] is true.
+  ///
+  /// Required rather than defaulted: this type exists because a default
+  /// claimed success, so a caller that forgets to say must not inherit
+  /// the optimistic answer.
   final ReportDelivery delivery;
 
   static ReportResult createSuccess(
     String reportId, {
-    ReportDelivery delivery = ReportDelivery.reached,
+    required ReportDelivery delivery,
   }) => ReportResult(
     success: true,
     reportId: reportId,
