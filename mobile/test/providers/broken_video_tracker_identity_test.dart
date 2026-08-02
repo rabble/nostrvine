@@ -18,6 +18,10 @@ class _AlwaysConfirmedMissingChecker implements MediaAvailabilityChecker {
   const _AlwaysConfirmedMissingChecker();
 
   @override
+  Future<MediaAvailability> check(String url) async =>
+      MediaAvailability.missing;
+
+  @override
   Future<bool> isConfirmedMissing(String url) async => true;
 }
 
