@@ -845,5 +845,46 @@ void main() {
         controller2.dispose();
       });
     });
+
+    testWidgets('renders a prefix affix inside the field', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DivineAuthTextField(label: 'Username', prefixText: '@'),
+          ),
+        ),
+      );
+
+      expect(find.text('@'), findsOneWidget);
+    });
+
+    testWidgets('renders a suffix affix inside the field', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: DivineAuthTextField(
+              label: 'Username',
+              suffixText: '.divine.video',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('.divine.video'), findsOneWidget);
+    });
+
+    testWidgets('renders no affixes when none are given', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: DivineAuthTextField(label: 'Username')),
+        ),
+      );
+
+      final decorator = tester.widget<InputDecorator>(
+        find.byType(InputDecorator),
+      );
+      expect(decorator.decoration.prefixText, isNull);
+      expect(decorator.decoration.suffixText, isNull);
+    });
   });
 }

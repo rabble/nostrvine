@@ -9,6 +9,7 @@ class DivineSnackbarContainer extends StatelessWidget {
   const DivineSnackbarContainer({
     required this.label,
     this.error = false,
+    this.backgroundColor,
     this.actionLabel,
     this.onActionPressed,
     this.secondaryActionLabel,
@@ -20,6 +21,7 @@ class DivineSnackbarContainer extends StatelessWidget {
   static SnackBar snackBar(
     String message, {
     bool error = false,
+    Color? backgroundColor,
     String? actionLabel,
     VoidCallback? onActionPressed,
     String? secondaryActionLabel,
@@ -37,6 +39,7 @@ class DivineSnackbarContainer extends StatelessWidget {
     content: DivineSnackbarContainer(
       label: message,
       error: error,
+      backgroundColor: backgroundColor,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
       secondaryActionLabel: secondaryActionLabel,
@@ -49,6 +52,14 @@ class DivineSnackbarContainer extends StatelessWidget {
 
   /// If the snackbar indicates an error.
   final bool error;
+
+  /// Overrides the banner's surface colour.
+  ///
+  /// For the rare banner whose colour carries the message itself — the
+  /// environment indicator in developer options, for instance. Takes
+  /// precedence over [error]'s surface, which still drives the label colour so
+  /// an error banner stays legible on a custom surface.
+  final Color? backgroundColor;
 
   /// The label of the primary action button.
   final String? actionLabel;
@@ -83,7 +94,7 @@ class DivineSnackbarContainer extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: error ? colors.errorContainer : colors.card,
+        color: backgroundColor ?? (error ? colors.errorContainer : colors.card),
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Padding(

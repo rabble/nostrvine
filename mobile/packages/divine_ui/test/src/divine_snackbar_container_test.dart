@@ -289,5 +289,64 @@ void main() {
       final row = tester.widget<Row>(find.byType(Row));
       expect(row.mainAxisAlignment, MainAxisAlignment.spaceBetween);
     });
+
+    testWidgets('paints a custom surface colour when given one', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(
+            body: DivineSnackbarContainer(
+              label: 'Switched to staging',
+              backgroundColor: Color(0xFF123456),
+            ),
+          ),
+        ),
+      );
+
+      final box = tester.widget<DecoratedBox>(
+        find.byType(DecoratedBox).first,
+      );
+      expect(
+        (box.decoration as BoxDecoration).color,
+        const Color(0xFF123456),
+      );
+    });
+
+    testWidgets('a custom surface wins over the error surface', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(
+            body: DivineSnackbarContainer(
+              label: 'Switched to production',
+              error: true,
+              backgroundColor: Color(0xFF123456),
+            ),
+          ),
+        ),
+      );
+
+      final box = tester.widget<DecoratedBox>(
+        find.byType(DecoratedBox).first,
+      );
+      expect(
+        (box.decoration as BoxDecoration).color,
+        const Color(0xFF123456),
+      );
+    });
+
+    testWidgets('snackBar forwards the custom surface colour', (tester) async {
+      final snackBar = DivineSnackbarContainer.snackBar(
+        'Switched to staging',
+        backgroundColor: const Color(0xFF123456),
+      );
+
+      expect(
+        (snackBar.content as DivineSnackbarContainer).backgroundColor,
+        const Color(0xFF123456),
+      );
+    });
   });
 }

@@ -165,5 +165,38 @@ void main() {
       expect(style.color, VineTheme.vineGreen);
       expect(style.letterSpacing, 1.2);
     });
+
+    testWidgets('defaults to the canonical spacing', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(body: DivineSectionHeader('NETWORK')),
+        ),
+      );
+
+      expect(
+        tester.widget<Padding>(find.byType(Padding).first).padding,
+        DivineSectionHeader.defaultPadding,
+      );
+    });
+
+    testWidgets('takes a padding override', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(
+            body: DivineSectionHeader(
+              'NETWORK',
+              padding: EdgeInsets.only(bottom: 8),
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.widget<Padding>(find.byType(Padding).first).padding,
+        const EdgeInsets.only(bottom: 8),
+      );
+    });
   });
 }

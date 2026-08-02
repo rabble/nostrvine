@@ -109,16 +109,25 @@ class DivineListTile extends StatelessWidget {
 /// An uppercase group label separating runs of [DivineListTile]s.
 class DivineSectionHeader extends StatelessWidget {
   /// Creates a Divine design system section header.
-  const DivineSectionHeader(this.title, {super.key});
+  const DivineSectionHeader(this.title, {this.padding, super.key});
+
+  /// Default spacing, sized for an unpadded list.
+  static const defaultPadding = EdgeInsets.fromLTRB(16, 24, 16, 8);
 
   /// The group label. Rendered as given — callers that want shouting caps
   /// pass an already-uppercased string.
   final String title;
 
+  /// Overrides [defaultPadding].
+  ///
+  /// A list that already pads its own horizontal edges passes a padding with
+  /// no horizontal component, so the inset is not applied twice.
+  final EdgeInsetsGeometry? padding;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: padding ?? defaultPadding,
       child: Text(
         title,
         style: VineTheme.labelMediumFont(
