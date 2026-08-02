@@ -10,7 +10,6 @@
 #   UPDATE_BASELINE=1 bash scripts/check_material_button_ceiling.sh
 lib/app_update/view/update_banner.dart	1
 lib/app_update/view/update_dialog.dart	2
-lib/features/feature_flags/screens/feature_flag_screen.dart	7
 lib/notifications/view/notifications_view.dart	2
 lib/screens/auth/create_account_screen.dart	3
 lib/screens/auth/invite_gate_screen.dart	2

@@ -16,9 +16,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
-Finder _divineIcon(DivineIconName name) =>
-    find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
-
 void main() {
   group('Feature Flag System Integration', () {
     late _MockSharedPreferences mockPrefs;
@@ -332,8 +329,8 @@ void main() {
       expect(find.text('Enhanced Camera'), findsNothing);
     });
 
-    testWidgets('should show override indicators correctly', (tester) async {
-      // Set up one flag with user override, one with default
+    testWidgets('renders a stored override as the row state', (tester) async {
+      // Set up one flag with user override; every other flag keeps its default.
       when(() => mockPrefs.getBool('ff_enhancedAnalytics')).thenReturn(true);
       when(
         () => mockPrefs.containsKey('ff_enhancedAnalytics'),
@@ -358,13 +355,27 @@ void main() {
       await service.initialize();
       await tester.pumpAndSettle();
 
-      // Look for override indicators (edit icons)
-      final editIcons = _divineIcon(DivineIconName.pencilSimple);
-      expect(editIcons, findsAtLeast(1));
+      // The row's own switch is the override indicator — a flag forced on
+      // reads on, and every flag left at its default reads off.
+      final overriddenRow = find.ancestor(
+        of: find.text(FeatureFlag.enhancedAnalytics.displayName),
+        matching: find.byType(ListTile),
+      );
+      final overriddenSwitch = tester.widget<DivineSwitch>(
+        find.descendant(of: overriddenRow, matching: find.byType(DivineSwitch)),
+      );
+      expect(overriddenSwitch.value, isTrue);
 
-      // Look for individual reset buttons
-      final undoIcons = find.byIcon(Icons.undo);
-      expect(undoIcons, findsAtLeast(1));
+      // integratedApps shares enhancedAnalytics' false build default but has
+      // no stored override, so it stays off.
+      final defaultedRow = find.ancestor(
+        of: find.text(FeatureFlag.integratedApps.displayName),
+        matching: find.byType(ListTile),
+      );
+      final defaultedSwitch = tester.widget<DivineSwitch>(
+        find.descendant(of: defaultedRow, matching: find.byType(DivineSwitch)),
+      );
+      expect(defaultedSwitch.value, isFalse);
     });
 
     testWidgets('should handle service errors gracefully', (tester) async {
