@@ -398,18 +398,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
                   onTap: () => context.push(AppsPermissionsScreen.path),
                 ),
-                if (isDeveloperMode) ...[
-                  _SettingsTile(
-                    icon: Icons.science,
-                    title: context.l10n.settingsExperimentalFeatures,
-                    subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const FeatureFlagScreen(),
-                      ),
+                _SettingsTile(
+                  icon: Icons.science,
+                  title: context.l10n.settingsExperimentalFeatures,
+                  subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FeatureFlagScreen(),
                     ),
                   ),
+                ),
+                if (isDeveloperMode) ...[
                   _SettingsTile(
                     divineIcon: DivineIconName.bracketsAngle,
                     title: context.l10n.settingsDeveloperOptions,

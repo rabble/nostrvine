@@ -768,7 +768,7 @@ void main() {
       },
     );
 
-    testWidgets('hides Experimental Features tile when developer mode is off', (
+    testWidgets('shows Experimental Features tile when developer mode is off', (
       tester,
     ) async {
       // Tall surface so the whole settings list is laid out; otherwise the
@@ -781,7 +781,12 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.settingsLegal), findsOneWidget);
-      expect(find.text(l10n.settingsExperimentalFeatures), findsNothing);
+      expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
+
+      await tester.tap(find.text(l10n.settingsExperimentalFeatures));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FeatureFlagScreen), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
