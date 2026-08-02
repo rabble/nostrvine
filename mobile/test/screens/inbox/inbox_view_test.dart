@@ -23,6 +23,7 @@ import 'package:openvine/blocs/notifications/badge/notification_badge_cubit.dart
 import 'package:openvine/config/official_accounts.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
@@ -113,6 +114,12 @@ void main() {
       int notificationUnreadCount = 0,
       Stream<int>? notificationStream,
       TextScaler? textScaler,
+      ConversationActionsCubit? actionsCubit,
+      List<dynamic> additionalOverrides = const [],
+      // InboxView has no Scaffold of its own, and a ScaffoldMessenger with
+      // no registered Scaffold silently queues SnackBars instead of showing
+      // them. Opt in when the test asserts on one.
+      bool wrapInScaffold = false,
     }) {
       if (state != null) {
         whenListen(
@@ -156,7 +163,7 @@ void main() {
         initialState: const ConversationMuteState(),
       );
 
-      final mockActionsCubit = _MockConversationActionsCubit();
+      final mockActionsCubit = actionsCubit ?? _MockConversationActionsCubit();
       when(
         () => mockActionsCubit.state,
       ).thenReturn(const ConversationActionsState());
@@ -167,18 +174,20 @@ void main() {
         initialState: const ConversationActionsState(),
       );
 
-      final inbox = textScaler == null
+      final baseInbox = textScaler == null
           ? const InboxView()
           : MediaQuery(
               data: MediaQueryData(textScaler: textScaler),
               child: const InboxView(),
             );
+      final inbox = wrapInScaffold ? Scaffold(body: baseInbox) : baseInbox;
 
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
           notificationRepositoryProvider.overrideWithValue(null),
           goRouterProvider.overrideWithValue(mockGoRouter),
+          ...additionalOverrides,
         ],
         home: MockGoRouterProvider(
           goRouter: mockGoRouter,
@@ -2136,6 +2145,85 @@ void main() {
           expect(find.text(l10n.inboxSupportRowTitle), findsOneWidget);
         },
       );
+    });
+
+    group('report action feedback', () {
+      // #6387: reportUser returns false when the report reached no channel
+      // off this device. Without an else the user got no feedback at all,
+      // which is less than the (false) confirmation it replaced.
+      late _MockConversationActionsCubit reportCubit;
+
+      final conversation = DmConversation(
+        id: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+        participantPubkeys: const [currentPubkey, otherPubkey],
+        isGroup: false,
+        createdAt: nowUnix,
+        lastMessageContent: 'Hello',
+        lastMessageTimestamp: nowUnix,
+      );
+
+      setUp(() {
+        reportCubit = _MockConversationActionsCubit();
+      });
+
+      Widget buildReportSubject() => buildSubject(
+        actionsCubit: reportCubit,
+        wrapInScaffold: true,
+        state: ConversationListState(
+          status: ConversationListStatus.loaded,
+          conversations: [conversation],
+          visibleConversations: [conversation],
+          hasMore: false,
+        ),
+        additionalOverrides: [
+          fetchUserProfileProvider(
+            otherPubkey,
+          ).overrideWith((ref) async => null),
+        ],
+      );
+
+      Future<void> longPressAndReport(WidgetTester tester) async {
+        await tester.pump();
+        await tester.tap(find.text('Messages'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        await tester.longPress(find.byType(ConversationTile));
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.inboxActionReport('user')));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('confirms when the report reached a channel', (tester) async {
+        when(() => reportCubit.reportUser(any())).thenAnswer((_) async => true);
+
+        await tester.pumpWidget(buildReportSubject());
+        await longPressAndReport(tester);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.inboxReportedUser('user')), findsOneWidget);
+      });
+
+      testWidgets('surfaces an error when the report reached no channel', (
+        tester,
+      ) async {
+        when(
+          () => reportCubit.reportUser(any()),
+        ).thenAnswer((_) async => false);
+
+        await tester.pumpWidget(buildReportSubject());
+        await longPressAndReport(tester);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.reportFailed(l10n.commonSomethingWentWrong)),
+          findsOneWidget,
+        );
+        // Silence is the regression, so the confirmation must not render.
+        expect(find.text(l10n.inboxReportedUser('user')), findsNothing);
+      });
     });
   });
 }
