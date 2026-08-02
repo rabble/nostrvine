@@ -2471,6 +2471,13 @@ class AppLocalizationsVi extends AppLocalizations {
       'Khi có người đăng lại video của bạn';
 
   @override
+  String get notificationSettingsNewPosts => 'Vine mới';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Khi người bạn theo dõi đăng bài';
+
+  @override
   String get notificationSettingsSystem => 'Hệ thống';
 
   @override
@@ -7986,6 +7993,11 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName đã đăng một vine mới';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName đã trả lời bình luận của bạn';
   }
@@ -10794,4 +10806,13 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine xác nhận trạng thái người ủng hộ sau khi cửa hàng xác minh giao dịch mua của bạn. Việc ghi nhận là tùy chọn, và vòng hào quang không phải là xác minh danh tính.';
+
+  @override
+  String get profileNotifyBellOff => 'Nhận thông báo về vine mới';
+
+  @override
+  String get profileNotifyBellOn => 'Ngừng thông báo về vine mới';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Không lưu được. Thử lại nhé?';
 }

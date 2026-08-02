@@ -1438,6 +1438,8 @@
   "notificationSettingsMentionsSubtitle": "Apabila anda disebut",
   "notificationSettingsReposts": "Siaran Semula",
   "notificationSettingsRepostsSubtitle": "Apabila seseorang menyiarkan semula video anda",
+  "notificationSettingsNewPosts": "Vine baharu",
+  "notificationSettingsNewPostsSubtitle": "Apabila seseorang yang anda ikuti menyiarkan",
   "notificationSettingsSystem": "Sistem",
   "notificationSettingsSystemSubtitle": "Kemas kini apl dan mesej sistem",
   "notificationSettingsPushNotificationsSection": "Pemberitahuan Tolak",
@@ -4788,6 +4790,7 @@
       }
     }
   },
+  "notificationPostedNewVine": "{actorName} menyiarkan vine baharu",
   "notificationRepliedToYourComment": "{actorName} membalas komen anda",
   "@notificationRepliedToYourComment": {
     "description": "Full sentence shown for a reply notification.",
@@ -6664,5 +6667,8 @@
   "supporterDisclaimer": "Divine mengesahkan status penyokong selepas kedai mengesahkan pembelian anda. Pengiktirafan adalah pilihan, dan halo itu bukan pengesahan.",
   "@supporterDisclaimer": {
     "description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."
-  }
+  },
+  "profileNotifyBellOff": "Beritahu saya tentang vine baharu",
+  "profileNotifyBellOn": "Berhenti beritahu saya tentang vine baharu",
+  "profileNotifyUpdateFailed": "Tidak dapat disimpan. Cuba lagi?"
 }

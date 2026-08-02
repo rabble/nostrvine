@@ -1438,6 +1438,8 @@
   "notificationSettingsMentionsSubtitle": "当有人提到你时",
   "notificationSettingsReposts": "转发",
   "notificationSettingsRepostsSubtitle": "当有人转发你的视频时",
+  "notificationSettingsNewPosts": "新视频",
+  "notificationSettingsNewPostsSubtitle": "当你关注的人发布内容时",
   "notificationSettingsSystem": "系统",
   "notificationSettingsSystemSubtitle": "应用更新和系统消息",
   "notificationSettingsPushNotificationsSection": "推送通知",
@@ -4788,6 +4790,7 @@
       }
     }
   },
+  "notificationPostedNewVine": "{actorName} 发布了新视频",
   "notificationRepliedToYourComment": "{actorName} 回复了你的评论",
   "@notificationRepliedToYourComment": {
     "description": "Full sentence shown for a reply notification.",
@@ -6664,5 +6667,8 @@
   "supporterDisclaimer": "Divine 会在商店验证你的购买后确认支持者状态。展示与否完全自愿，光环标识不代表认证。",
   "@supporterDisclaimer": {
     "description": "Footnote on the supporter screen explaining server-side confirmation and that recognition is optional."
-  }
+  },
+  "profileNotifyBellOff": "接收新视频通知",
+  "profileNotifyBellOn": "停止新视频通知",
+  "profileNotifyUpdateFailed": "没能保存，再试一次？"
 }

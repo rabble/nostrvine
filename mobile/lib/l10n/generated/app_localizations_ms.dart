@@ -2482,6 +2482,13 @@ class AppLocalizationsMs extends AppLocalizations {
       'Apabila seseorang menyiarkan semula video anda';
 
   @override
+  String get notificationSettingsNewPosts => 'Vine baharu';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'Apabila seseorang yang anda ikuti menyiarkan';
+
+  @override
   String get notificationSettingsSystem => 'Sistem';
 
   @override
@@ -8031,6 +8038,11 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName menyiarkan vine baharu';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName membalas komen anda';
   }
@@ -10847,4 +10859,14 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'Divine mengesahkan status penyokong selepas kedai mengesahkan pembelian anda. Pengiktirafan adalah pilihan, dan halo itu bukan pengesahan.';
+
+  @override
+  String get profileNotifyBellOff => 'Beritahu saya tentang vine baharu';
+
+  @override
+  String get profileNotifyBellOn =>
+      'Berhenti beritahu saya tentang vine baharu';
+
+  @override
+  String get profileNotifyUpdateFailed => 'Tidak dapat disimpan. Cuba lagi?';
 }

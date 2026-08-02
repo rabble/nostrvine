@@ -2464,6 +2464,13 @@ class AppLocalizationsUr extends AppLocalizations {
       'جب کوئی آپ کی ویڈیوز ریپوسٹ کرے';
 
   @override
+  String get notificationSettingsNewPosts => 'نئی ویڈیوز';
+
+  @override
+  String get notificationSettingsNewPostsSubtitle =>
+      'جب آپ کا فالو کردہ کوئی شخص پوسٹ کرے';
+
+  @override
   String get notificationSettingsSystem => 'سسٹم';
 
   @override
@@ -7983,6 +7990,11 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String notificationPostedNewVine(String actorName) {
+    return '$actorName نے نئی ویڈیو پوسٹ کی';
+  }
+
+  @override
   String notificationRepliedToYourComment(String actorName) {
     return '$actorName نے آپ کے تبصرے کا جواب دیا';
   }
@@ -10783,4 +10795,14 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get supporterDisclaimer =>
       'اسٹور آپ کی خریداری کی تصدیق کرنے کے بعد Divine سپورٹر اسٹیٹس کی تصدیق کرتا ہے۔ پہچان اختیاری ہے، اور ہالہ تصدیق نہیں ہے۔';
+
+  @override
+  String get profileNotifyBellOff => 'نئی ویڈیوز کی اطلاع دیں';
+
+  @override
+  String get profileNotifyBellOn => 'نئی ویڈیوز کی اطلاعات بند کریں';
+
+  @override
+  String get profileNotifyUpdateFailed =>
+      'محفوظ نہیں ہو سکا۔ دوبارہ کوشش کریں؟';
 }
