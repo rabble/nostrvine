@@ -106,9 +106,12 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   }
 
   /// Every clip row that carries a non-null `ghostFramePath`, projected to the
-  /// fields a ghost-frame reference scan needs: `draftId` to skip the draft
-  /// being deleted, `data` to read the frame out of, and `id` to name the row
-  /// if its blob turns out to be corrupt.
+  /// fields a ghost-frame reference scan needs: `data` to read the frame out
+  /// of, and `id` to name the row if its blob turns out to be corrupt.
+  /// `draftId` is returned too and is NULL for library clips; no caller
+  /// filters on it, and none should — the scan runs after the draft being
+  /// cleaned up has lost its own rows, so every row here is a survivor whose
+  /// ghost frame must stay alive (#6581).
   ///
   /// Ghost frames have no indexed column — they exist only inside the `data`
   /// blob — so the alternative is loading and JSON-decoding *every* clip row in
