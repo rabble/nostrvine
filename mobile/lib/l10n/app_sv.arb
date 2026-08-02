@@ -3226,7 +3226,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loopar}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedRelayPartial": "Den här videon finns kvar på vissa reläer. Försök radera den igen.",
+    "shareMenuDeletePartiallyConfirmed": "Raderad. Alla reläer bekräftade inte, så den kan fortfarande dyka upp i andra appar.",
     "videoEditorAudioSegmentInstruction": "Välj ljudsegmentet för din video",
     "videoEditorClipGalleryInstruction": "Tryck för att redigera. Håll ned och dra för att ändra ordning.",
     "navSearch": "Sök",

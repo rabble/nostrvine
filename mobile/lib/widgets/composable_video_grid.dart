@@ -15,7 +15,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:openvine/utils/delete_failure_localization.dart';
+import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/show_edit_dialog_for_video.dart';
@@ -475,7 +475,8 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid>
                 Expanded(
                   child: Text(
                     result.success
-                        ? context.l10n.videoGridDeleteSuccess
+                        ? localizedPartialDeleteMessage(context, result) ??
+                              context.l10n.videoGridDeleteSuccess
                         : localizedDeleteFailureMessage(context, result),
                   ),
                 ),

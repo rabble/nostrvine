@@ -3974,8 +3974,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không kết nối được với relay. Kiểm tra kết nối của bạn rồi thử lại.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'Video này vẫn còn trên một số relay. Thử xoá lại nhé.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Đã xoá. Không phải relay nào cũng xác nhận, nên nó có thể vẫn hiện ở app khác.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

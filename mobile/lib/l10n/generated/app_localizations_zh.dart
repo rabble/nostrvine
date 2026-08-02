@@ -3748,7 +3748,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shareMenuDeleteFailedRelayNoResponse => '连不上中继。请检查网络连接后重试。';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial => '这个视频还留在部分中继上。再删一次试试。';
+  String get shareMenuDeletePartiallyConfirmed =>
+      '已删除。不是所有中继都确认了，所以它可能还会出现在其他应用里。';
 
   @override
   String get shareMenuDeleteFailedGeneric => '无法删除此视频，请重试。';

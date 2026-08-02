@@ -4001,8 +4001,8 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tidak dapat mencapai relay. Semak sambungan anda dan cuba lagi.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'Video ini masih ada pada sesetengah relay. Cuba padam sekali lagi.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Dipadam. Bukan semua relay mengesahkan, jadi ia mungkin masih muncul dalam apl lain.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

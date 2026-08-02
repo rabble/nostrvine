@@ -25,9 +25,19 @@ String localizedDeleteFailureMessage(
       return l10n.shareMenuDeleteFailedRelayRejected;
     case DeleteFailureKind.relayNoResponse:
       return l10n.shareMenuDeleteFailedRelayNoResponse;
-    case DeleteFailureKind.relayPartial:
-      return l10n.shareMenuDeleteFailedRelayPartial;
     case DeleteFailureKind.unknown:
       return l10n.shareMenuDeleteFailedGeneric;
   }
 }
+
+/// Message for a delete that succeeded but that only part of the relay set
+/// accepted, or `null` when every targeted relay confirmed.
+///
+/// Returning `null` lets each screen keep its own confirmation copy and only
+/// swap it out when there is a caveat to report.
+String? localizedPartialDeleteMessage(
+  BuildContext context,
+  DeleteResult? result,
+) => result != null && result.acceptance == DeleteAcceptance.someRelays
+    ? context.l10n.shareMenuDeletePartiallyConfirmed
+    : null;

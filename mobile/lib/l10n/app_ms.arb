@@ -2226,7 +2226,7 @@
   "shareMenuDeleteFailedCouldNotSign": "Tidak dapat menandatangani permintaan pemadaman. Cuba lagi.",
   "shareMenuDeleteFailedRelayRejected": "Relay tidak menerima permintaan pemadaman ini. Cuba lagi sebentar nanti.",
   "shareMenuDeleteFailedRelayNoResponse": "Tidak dapat mencapai relay. Semak sambungan anda dan cuba lagi.",
-  "shareMenuDeleteFailedRelayPartial": "Video ini masih ada pada sesetengah relay. Cuba padam sekali lagi.",
+  "shareMenuDeletePartiallyConfirmed": "Dipadam. Bukan semua relay mengesahkan, jadi ia mungkin masih muncul dalam apl lain.",
   "shareMenuDeleteFailedGeneric": "Tidak dapat memadam video ini. Cuba lagi.",
   "shareMenuFollowSetName": "Nama Set Ikutan",
   "shareMenuFollowSetNameHint": "cth. Pencipta Kandungan, Pemuzik, dsb.",

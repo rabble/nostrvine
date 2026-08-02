@@ -2226,7 +2226,7 @@
   "shareMenuDeleteFailedCouldNotSign": "Không ký được yêu cầu xóa. Thử lại nhé.",
   "shareMenuDeleteFailedRelayRejected": "Relay không chấp nhận yêu cầu xóa này. Thử lại sau ít phút.",
   "shareMenuDeleteFailedRelayNoResponse": "Không kết nối được với relay. Kiểm tra kết nối của bạn rồi thử lại.",
-  "shareMenuDeleteFailedRelayPartial": "Video này vẫn còn trên một số relay. Thử xoá lại nhé.",
+  "shareMenuDeletePartiallyConfirmed": "Đã xoá. Không phải relay nào cũng xác nhận, nên nó có thể vẫn hiện ở app khác.",
   "shareMenuDeleteFailedGeneric": "Không xóa được video này. Thử lại nhé.",
   "shareMenuFollowSetName": "Tên nhóm theo dõi",
   "shareMenuFollowSetNameHint": "VD: Nhà sáng tạo nội dung, Nhạc sĩ...",

@@ -242,6 +242,7 @@ void main() {
           );
 
           expect(result.success, isTrue);
+          expect(result.acceptance, equals(DeleteAcceptance.everyRelay));
           expect(result.deleteEventId, equals(deleteEvent.id));
           expect(service.hasBeenDeleted(video.id), isTrue);
           expect(
@@ -440,8 +441,8 @@ void main() {
       );
 
       test(
-        'fails with relayPartial and does NOT save locally when one relay '
-        'accepts and another rejects',
+        'saves locally and reports someRelays when one relay accepts and '
+        'another rejects',
         () async {
           final video = createTestVideoEvent(testPublicKey);
           final deleteEvent = createTestEvent(
@@ -475,18 +476,22 @@ void main() {
             reason: 'Personal choice',
           );
 
-          expect(result.success, isFalse);
-          expect(result.failureKind, equals(DeleteFailureKind.relayPartial));
-          // Keeping the video locally is what leaves the retry available;
-          // nothing else republishes to the relay that refused.
-          expect(service.hasBeenDeleted(video.id), isFalse);
-          expect(service.deletionHistory, isEmpty);
-          verifyNever(() => mockProfileStatsDao.deleteStats(any()));
+          // The tombstone exists on a relay, so the video leaves this device's
+          // library. Retrying would only re-ask the relay that refused, which
+          // answers the same way.
+          expect(result.success, isTrue);
+          expect(result.acceptance, equals(DeleteAcceptance.someRelays));
+          expect(service.hasBeenDeleted(video.id), isTrue);
+          expect(service.deletionHistory, hasLength(1));
+          verify(
+            () => mockProfileStatsDao.deleteStats(testPublicKey),
+          ).called(1);
         },
       );
 
       test(
-        'fails with relayPartial when a targeted relay was never reached',
+        'saves locally and reports someRelays when a targeted relay was never '
+        'reached',
         () async {
           final video = createTestVideoEvent(testPublicKey);
           final deleteEvent = createTestEvent(
@@ -522,9 +527,13 @@ void main() {
             reason: 'Personal choice',
           );
 
-          expect(result.success, isFalse);
-          expect(result.failureKind, equals(DeleteFailureKind.relayPartial));
-          expect(service.hasBeenDeleted(video.id), isFalse);
+          // The unreachable relay is the case that used to strand the user:
+          // a pool member the client never connected to stays in the target
+          // set on every retry, so gating on all-of-them made the video
+          // permanently undeletable.
+          expect(result.success, isTrue);
+          expect(result.acceptance, equals(DeleteAcceptance.someRelays));
+          expect(service.hasBeenDeleted(video.id), isTrue);
         },
       );
 

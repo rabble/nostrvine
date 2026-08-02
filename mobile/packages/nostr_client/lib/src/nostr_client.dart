@@ -568,11 +568,13 @@ class NostrClient {
   /// acceptance, never a durability guarantee. Do not surface it to a user as
   /// "saved".
   ///
-  /// Callers should pick the predicate that matches what they need:
-  /// [PublishOutcome.acceptedByAll] when the event must land everywhere it
-  /// was sent (deletions, moderation), or [PublishOutcome.acceptedByAny] when
-  /// one relay is enough. Nothing in this client republishes to relays that
-  /// did not accept, so a partial publish stays partial.
+  /// Nothing in this client republishes to relays that did not accept, so a
+  /// partial publish stays partial. That makes
+  /// [PublishOutcome.acceptedByAll] a poor gate for anything the user is
+  /// waiting on: one pool member that is down, wedged, or refusing blocks it
+  /// on every attempt, and the pool keeps relays it never managed to connect
+  /// to. Gate progress on [PublishOutcome.acceptedByAny] and report
+  /// [PublishOutcome.acceptedByAll] as breadth — which is what it measures.
   ///
   /// Cache writes follow the same rules as [publishEvent], except that the
   /// optimistic cache is rolled back when no relay accepted, and

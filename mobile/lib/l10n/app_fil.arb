@@ -986,7 +986,7 @@
     "shareMenuDeleteFailedCouldNotSign": "Hindi na-sign ang delete request. Subukan ulit.",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Hindi maabot ang relay. Tingnan ang iyong koneksyon at subukan ulit.",
-    "shareMenuDeleteFailedRelayPartial": "Nasa ilang relay pa rin ang video na ito. Subukan ulit itong burahin.",
+    "shareMenuDeletePartiallyConfirmed": "Nabura na. Hindi lahat ng relay ang nakumpirma, kaya baka lumabas pa rin ito sa ibang app.",
     "shareMenuDeleteFailedGeneric": "Hindi nabura ang video na ito. Subukan ulit.",
     "shareMenuFollowSetName": "Pangalan ng Follow Set",
     "shareMenuFollowSetNameHint": "hal., Content Creators, Musicians, atbp.",

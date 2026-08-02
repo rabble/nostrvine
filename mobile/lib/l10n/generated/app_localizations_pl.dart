@@ -4077,8 +4077,8 @@ class AppLocalizationsPl extends AppLocalizations {
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'Ten film wciąż jest na części przekaźników. Spróbuj usunąć go ponownie.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Usunięto. Nie wszystkie przekaźniki potwierdziły, więc może się jeszcze pojawiać w innych aplikacjach.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

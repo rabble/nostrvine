@@ -3221,7 +3221,7 @@
     "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedRelayPartial": "この動画は一部のリレーにまだ残っています。もう一度削除してみてください。",
+    "shareMenuDeletePartiallyConfirmed": "削除しました。すべてのリレーが確認したわけではないので、他のアプリではまだ表示されることがあります。",
     "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
     "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
     "fullscreenFeedRemovedMessage": "動画を削除しました",

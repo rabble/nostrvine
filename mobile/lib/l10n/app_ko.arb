@@ -2552,7 +2552,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedRelayPartial": "이 영상이 일부 릴레이에 아직 남아 있어요. 다시 삭제해 보세요.",
+    "shareMenuDeletePartiallyConfirmed": "삭제했어요. 모든 릴레이가 확인한 건 아니라서 다른 앱에는 아직 보일 수 있어요.",
     "videoEditorAudioSegmentInstruction": "동영상에 사용할 오디오 구간을 선택하세요",
     "videoEditorClipGalleryInstruction": "탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.",
     "fullscreenFeedRemovedMessage": "동영상이 삭제됐어요",

@@ -3228,7 +3228,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
-    "shareMenuDeleteFailedRelayPartial": "Bu video hâlâ bazı relay'lerde duruyor. Tekrar silmeyi dene.",
+    "shareMenuDeletePartiallyConfirmed": "Silindi. Tüm relay'ler onaylamadı, bu yüzden başka uygulamalarda hâlâ görünebilir.",
     "videoEditorAudioSegmentInstruction": "Videon için ses bölümünü seç",
     "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.",
     "fullscreenFeedRemovedMessage": "Video kaldırıldı",

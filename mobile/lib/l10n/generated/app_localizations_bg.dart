@@ -4014,8 +4014,8 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не можем да достигнем релето. Провери връзката си и опитай пак.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'Това видео още го има на някои релета. Опитай да го изтриеш пак.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Изтрито. Не всички релета потвърдиха, така че може още да се вижда в други приложения.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

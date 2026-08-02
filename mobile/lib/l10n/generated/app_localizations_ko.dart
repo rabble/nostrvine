@@ -3786,8 +3786,8 @@ class AppLocalizationsKo extends AppLocalizations {
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      '이 영상이 일부 릴레이에 아직 남아 있어요. 다시 삭제해 보세요.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      '삭제했어요. 모든 릴레이가 확인한 건 아니라서 다른 앱에는 아직 보일 수 있어요.';
 
   @override
   String get shareMenuDeleteFailedGeneric => '이 영상을 삭제하지 못했어요. 다시 시도해요.';

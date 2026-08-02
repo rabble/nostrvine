@@ -4024,8 +4024,8 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi maabot ang relay. Tingnan ang iyong koneksyon at subukan ulit.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'Nasa ilang relay pa rin ang video na ito. Subukan ulit itong burahin.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Nabura na. Hindi lahat ng relay ang nakumpirma, kaya baka lumabas pa rin ito sa ibang app.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

@@ -3967,8 +3967,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'This video is still live on some relays. Try deleting it again.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Deleted. Not every relay confirmed, so it may still show up in other apps.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

@@ -2226,7 +2226,7 @@
   "shareMenuDeleteFailedCouldNotSign": "无法为删除请求签名，请重试。",
   "shareMenuDeleteFailedRelayRejected": "中继拒绝了该删除请求，请稍后再试。",
   "shareMenuDeleteFailedRelayNoResponse": "连不上中继。请检查网络连接后重试。",
-  "shareMenuDeleteFailedRelayPartial": "这个视频还留在部分中继上。再删一次试试。",
+  "shareMenuDeletePartiallyConfirmed": "已删除。不是所有中继都确认了，所以它可能还会出现在其他应用里。",
   "shareMenuDeleteFailedGeneric": "无法删除此视频，请重试。",
   "shareMenuFollowSetName": "关注集合名称",
   "shareMenuFollowSetNameHint": "例如：内容创作者、音乐人等",

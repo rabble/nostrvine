@@ -3897,8 +3897,8 @@ class AppLocalizationsAm extends AppLocalizations {
       'ቅብብሎሹን መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'ይህ ቪዲዮ አሁንም በአንዳንድ ሪሌዎች ላይ አለ። እንደገና ለመሰረዝ ይሞክሩ።';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'ተሰርዟል። ሁሉም ሪሌዎች አላረጋገጡም፣ ስለዚህ በሌሎች መተግበሪያዎች ላይ አሁንም ሊታይ ይችላል።';
 
   @override
   String get shareMenuDeleteFailedGeneric => 'ይህን ቪዲዮ መሰረዝ አልተቻለም። እንደገና ይሞክሩ።';

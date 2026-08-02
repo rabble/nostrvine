@@ -4085,8 +4085,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override
-  String get shareMenuDeleteFailedRelayPartial =>
-      'Videoclipul e încă pe unele relee. Încearcă să-l ștergi din nou.';
+  String get shareMenuDeletePartiallyConfirmed =>
+      'Șters. Nu toate releele au confirmat, așa că poate apărea în continuare în alte aplicații.';
 
   @override
   String get shareMenuDeleteFailedGeneric =>

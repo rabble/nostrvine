@@ -14,7 +14,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/subtitle_editor/subtitle_editor_screen.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
-import 'package:openvine/utils/delete_failure_localization.dart';
+import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Bottom action bar for the video metadata edit screen.
@@ -153,7 +153,8 @@ class _VideoMetadataEditBottomBarState
         if (mounted) {
           final messenger = ScaffoldMessenger.of(context);
           final snackBar = DivineSnackbarContainer.snackBar(
-            context.l10n.shareMenuVideoDeletionRequested,
+            localizedPartialDeleteMessage(context, result) ??
+                context.l10n.shareMenuVideoDeletionRequested,
           );
           context.pop();
           messenger.showSnackBar(snackBar);
