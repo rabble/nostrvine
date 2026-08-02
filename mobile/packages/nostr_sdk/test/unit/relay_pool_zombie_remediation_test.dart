@@ -207,12 +207,12 @@ void main() {
       expect(factory.createdChannels, hasLength(1));
     });
 
-    test('on a multi-relay publish, a healthy sibling that merely lost the '
-        'OK race to a faster relay is not force-cycled', () async {
-      // The tracker resolves on the FIRST OK-true, so the sibling relay
-      // lands in noResponseFrom after only the few-ms race window — far too
-      // short for its silence to mean anything. Cycling it would tear down
-      // a healthy inbox relay on every send.
+    test('on a multi-relay publish, a sibling that stayed silent for the whole '
+        'window is force-cycled even though another relay accepted', () async {
+      // The tracker no longer resolves on the first OK-true, so a sibling in
+      // noResponseFrom has genuinely had the full publish window to answer
+      // and said nothing. That is the wedged-socket signal repair exists for,
+      // and a confirmed publish no longer hides it.
       const siblingUrl = 'wss://inbox.example.com';
       final siblingFactory = _FakeChannelFactory();
       final sibling = RelayBase(
@@ -246,12 +246,57 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(
         siblingFactory.createdChannels,
-        hasLength(1),
+        hasLength(2),
         reason:
-            'a confirmed publish must not cycle the slower sibling relay '
-            'that never got a chance to respond',
+            'a relay that received the frame and never answered is a zombie '
+            'socket, whether or not a sibling accepted',
       );
       expect(factory.createdChannels, hasLength(1));
+    });
+
+    test('a sibling that is still receiving traffic is not force-cycled, even '
+        'when it does not answer the publish', () async {
+      // `isSilentSince` is the guard that keeps the broadened repair from
+      // churning healthy connections: any inbound frame since the publish
+      // proves the socket is alive, so the relay is left alone.
+      const siblingUrl = 'wss://busy.example.com';
+      final siblingFactory = _FakeChannelFactory();
+      final sibling = RelayBase(
+        siblingUrl,
+        RelayStatus(siblingUrl),
+        channelFactory: siblingFactory,
+      );
+      await nostr.relayPool.add(sibling);
+      expect(siblingFactory.createdChannels, hasLength(1));
+
+      final fastChannel = factory.createdChannels.single;
+      final siblingChannel = siblingFactory.createdChannels.single;
+      final outcomeFuture = nostr.relayPool.sendEventAwaitOk(
+        [
+          'EVENT',
+          {'id': 'busy-event-id', 'kind': 14},
+        ],
+        eventId: 'busy-event-id',
+        eventKind: 14,
+        targetRelays: [relayUrl, siblingUrl],
+        timeout: const Duration(milliseconds: 100),
+      );
+      await Future<void>.delayed(Duration.zero);
+      // The sibling stays quiet about this publish but is plainly alive.
+      siblingChannel.simulateMessage(jsonEncode(['NOTICE', 'still here']));
+      fastChannel.simulateMessage(
+        jsonEncode(['OK', 'busy-event-id', true, '']),
+      );
+
+      final outcome = await outcomeFuture;
+      expect(outcome.noResponseFrom, contains(siblingUrl));
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(
+        siblingFactory.createdChannels,
+        hasLength(1),
+        reason: 'inbound traffic proves the socket is not wedged',
+      );
     });
 
     Future<PublishOutcome> publishWithId(String id) {

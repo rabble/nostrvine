@@ -49,7 +49,10 @@ void main() {
             reason: DeleteReason.personalChoice,
           ),
         ).thenAnswer(
-          (_) async => DeleteResult.createSuccess('delete-event-id'),
+          (_) async => DeleteResult.createSuccess(
+            'delete-event-id',
+            acceptance: DeleteAcceptance.everyRelay,
+          ),
         );
       },
       act: (cubit) => cubit.deleteVideo(video),

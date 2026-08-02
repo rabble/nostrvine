@@ -3228,6 +3228,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+    "shareMenuDeletePartiallyConfirmed": "Terhapus. Tidak semua relay mengonfirmasi, jadi ini mungkin masih muncul di aplikasi lain.",
     "videoEditorAudioSegmentInstruction": "Pilih segmen audio untuk videomu",
     "videoEditorClipGalleryInstruction": "Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang.",
     "fullscreenFeedRemovedMessage": "Video dihapus",

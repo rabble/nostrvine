@@ -84,6 +84,25 @@ void main() {
       noResponseFrom: const ['wss://backup-relay.test'],
     );
 
+    /// One relay took the deletion and another refused it, so the video is
+    /// gone from part of the network and still live on the rest.
+    PublishOutcome partiallyAccepted(String eventId) => PublishOutcome(
+      eventId: eventId,
+      acceptedBy: const ['wss://relay.test'],
+      rejectedBy: const {'wss://backup-relay.test': 'blocked: policy'},
+      noResponseFrom: const [],
+    );
+
+    /// One relay took the deletion and a second target was never reached.
+    PublishOutcome acceptedWithUnreachableTarget(String eventId) =>
+        PublishOutcome(
+          eventId: eventId,
+          acceptedBy: const ['wss://relay.test'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+          unreachableTargets: const ['wss://offline-relay.test'],
+        );
+
     test('parseDeletionHistory reads persisted deletion records', () {
       final deletedAt = DateTime.utc(2026);
       final historyJson = jsonEncode([
@@ -223,6 +242,7 @@ void main() {
           );
 
           expect(result.success, isTrue);
+          expect(result.acceptance, equals(DeleteAcceptance.everyRelay));
           expect(result.deleteEventId, equals(deleteEvent.id));
           expect(service.hasBeenDeleted(video.id), isTrue);
           expect(
@@ -417,6 +437,103 @@ void main() {
           expect(result.error, contains('blocked: policy'));
           expect(service.hasBeenDeleted(video.id), isFalse);
           expect(service.deletionHistory, isEmpty);
+        },
+      );
+
+      test(
+        'saves locally and reports someRelays when one relay accepts and '
+        'another rejects',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', video.addressableId!],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer((_) async => partiallyAccepted(deleteEvent.id));
+
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'Personal choice',
+          );
+
+          // The tombstone exists on a relay, so the video leaves this device's
+          // library. Retrying would only re-ask the relay that refused, which
+          // answers the same way.
+          expect(result.success, isTrue);
+          expect(result.acceptance, equals(DeleteAcceptance.someRelays));
+          expect(service.hasBeenDeleted(video.id), isTrue);
+          expect(service.deletionHistory, hasLength(1));
+          verify(
+            () => mockProfileStatsDao.deleteStats(testPublicKey),
+          ).called(1);
+        },
+      );
+
+      test(
+        'saves locally and reports someRelays when a targeted relay was never '
+        'reached',
+        () async {
+          final video = createTestVideoEvent(testPublicKey);
+          final deleteEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', video.id],
+              ['a', video.addressableId!],
+              ['k', '34236'],
+            ],
+            content: 'CONTENT DELETION',
+          );
+
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => deleteEvent);
+
+          when(
+            () => mockNostrService.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+            ),
+          ).thenAnswer(
+            (_) async => acceptedWithUnreachableTarget(deleteEvent.id),
+          );
+
+          final result = await service.deleteContent(
+            video: video,
+            reason: 'Personal choice',
+          );
+
+          // The unreachable relay is the case that used to strand the user:
+          // a pool member the client never connected to stays in the target
+          // set on every retry, so gating on all-of-them made the video
+          // permanently undeletable.
+          expect(result.success, isTrue);
+          expect(result.acceptance, equals(DeleteAcceptance.someRelays));
+          expect(service.hasBeenDeleted(video.id), isTrue);
         },
       );
 

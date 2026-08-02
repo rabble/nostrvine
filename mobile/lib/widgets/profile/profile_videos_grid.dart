@@ -20,7 +20,7 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
-import 'package:openvine/utils/delete_failure_localization.dart';
+import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/utils/video_identity.dart';
 import 'package:openvine/widgets/owner_video_delete_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/pending_collaborator_invite_banner_cubit.dart';
@@ -225,7 +225,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       context.read<ProfileFeedCubit>().add(const ProfileFeedRefreshRequested());
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
-          context.l10n.shareMenuVideoDeletionRequested,
+          localizedPartialDeleteMessage(context, state.deleteResult) ??
+              context.l10n.shareMenuVideoDeletionRequested,
         ),
       );
     } else {

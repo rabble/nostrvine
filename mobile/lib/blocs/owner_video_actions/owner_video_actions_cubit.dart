@@ -24,6 +24,7 @@ class OwnerVideoActionsState extends Equatable {
     deleteStatus,
     deleteResult?.success,
     deleteResult?.failureKind,
+    deleteResult?.acceptance,
     deleteResult?.deleteEventId,
     deleteResult?.error,
   ];

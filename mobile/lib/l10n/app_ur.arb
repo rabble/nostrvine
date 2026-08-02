@@ -2226,6 +2226,7 @@
   "shareMenuDeleteFailedCouldNotSign": "حذف کی درخواست پر دستخط نہیں ہو سکے۔ دوبارہ کوشش کریں۔",
   "shareMenuDeleteFailedRelayRejected": "ریلے نے حذف کی یہ درخواست قبول نہیں کی۔ تھوڑی دیر میں دوبارہ کوشش کریں۔",
   "shareMenuDeleteFailedRelayNoResponse": "ریلے تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔",
+  "shareMenuDeletePartiallyConfirmed": "حذف ہو گیا۔ سب ریلے نے تصدیق نہیں کی، اس لیے یہ اب بھی دوسری ایپس میں دکھائی دے سکتا ہے۔",
   "shareMenuDeleteFailedGeneric": "یہ ویڈیو حذف نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
   "shareMenuFollowSetName": "فالو سیٹ کا نام",
   "shareMenuFollowSetNameHint": "مثلاً مواد تخلیق کار، موسیقار وغیرہ",

@@ -38,6 +38,24 @@ enum DeleteFailureKind {
   unknown,
 }
 
+/// How broadly the relay network took a delete request that succeeded.
+///
+/// Set on every successful [DeleteResult] so callers can tell the user what
+/// actually happened. Deletion under NIP-09 is a *request* relays SHOULD
+/// honour, so neither value is a promise the video is gone from the network.
+enum DeleteAcceptance {
+  /// Every relay the publish targeted answered `OK true`.
+  everyRelay,
+
+  /// At least one relay accepted, and at least one rejected the request,
+  /// stayed silent, or was never reached.
+  ///
+  /// The video is out of this device's library and the tombstone is recorded,
+  /// but the relays that did not accept can still serve it. Nothing here
+  /// republishes to them.
+  someRelays,
+}
+
 /// Delete request result
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class DeleteResult {
@@ -47,6 +65,7 @@ class DeleteResult {
     this.error,
     this.deleteEventId,
     this.failureKind,
+    this.acceptance,
   });
   final bool success;
   final String? error;
@@ -56,9 +75,16 @@ class DeleteResult {
   /// Set when [success] is false; use for localized UI messages.
   final DeleteFailureKind? failureKind;
 
-  static DeleteResult createSuccess(String deleteEventId) => DeleteResult(
+  /// Set when [success] is true; how broadly the relays took the request.
+  final DeleteAcceptance? acceptance;
+
+  static DeleteResult createSuccess(
+    String deleteEventId, {
+    required DeleteAcceptance acceptance,
+  }) => DeleteResult(
     success: true,
     deleteEventId: deleteEventId,
+    acceptance: acceptance,
     timestamp: DateTime.now(),
   );
 
@@ -175,10 +201,16 @@ class ContentDeletionService {
 
   /// Delete user's own content using NIP-09.
   ///
-  /// The deletion is only considered successful when at least one relay
-  /// returns an `OK true` acknowledgement (NIP-20). If every relay rejects
-  /// the event, or none respond before the publish timeout, the operation
-  /// fails and is NOT added to local deletion history — the caller can retry.
+  /// Succeeds once **any** targeted relay returns `OK true`, which is the
+  /// point at which the tombstone exists somewhere other than this device.
+  /// The deletion is then recorded locally and the video leaves the user's
+  /// library. When only part of the relay set accepted, the result carries
+  /// [DeleteAcceptance.someRelays] so the caller can say so rather than
+  /// claiming the video is gone everywhere.
+  ///
+  /// When no relay accepted, nothing was recorded anywhere: the deletion is
+  /// NOT added to local deletion history, the video stays visible, and the
+  /// caller can retry.
   Future<DeleteResult> deleteContent({
     required VideoEvent video,
     required String reason,
@@ -222,6 +254,21 @@ class ContentDeletionService {
         deleteEvent,
       );
 
+      // Counts only — never relay URLs — so this is safe to keep on in every
+      // build and still answers "how often is a delete only partly accepted?".
+      final breadth =
+          'accepted=${publishOutcome.acceptedBy.length}/'
+          '${publishOutcome.targetCount} '
+          'rejected=${publishOutcome.rejectedBy.length} '
+          'silent=${publishOutcome.noResponseFrom.length} '
+          'unreachable=${publishOutcome.unreachableTargets.length}';
+
+      // One acceptance is the bar, not all of them. NIP-09 deletion is a
+      // request relays SHOULD honour, so no acknowledgement proves the video
+      // is gone — requiring every relay buys a guarantee that does not exist
+      // and costs the user the feature, because the target set includes pool
+      // members the client never connected to and nothing here republishes.
+      // Breadth is reported on [DeleteResult.acceptance] instead.
       if (publishOutcome.failed) {
         Log.error(
           'Delete publish not confirmed by any relay: '
@@ -229,22 +276,33 @@ class ContentDeletionService {
           name: 'ContentDeletionService',
           category: LogCategory.system,
         );
-        final failureKind = publishOutcome.rejectedBy.isNotEmpty
-            ? DeleteFailureKind.relayRejected
-            : DeleteFailureKind.relayNoResponse;
         return DeleteResult.failure(
           'Relay did not confirm deletion: ${publishOutcome.summary}',
-          failureKind,
+          publishOutcome.rejectedBy.isNotEmpty
+              ? DeleteFailureKind.relayRejected
+              : DeleteFailureKind.relayNoResponse,
         );
       }
 
-      Log.info(
-        'Delete request confirmed by relay(s): ${publishOutcome.acceptedBy}',
-        name: 'ContentDeletionService',
-        category: LogCategory.system,
-      );
+      final acceptance = publishOutcome.acceptedByAll
+          ? DeleteAcceptance.everyRelay
+          : DeleteAcceptance.someRelays;
 
-      // Relay accepted — now it is safe to persist the deletion locally.
+      if (acceptance == DeleteAcceptance.someRelays) {
+        Log.warning(
+          'Delete only partly accepted: $breadth',
+          name: 'ContentDeletionService',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.info(
+          'Delete request confirmed by every relay: $breadth',
+          name: 'ContentDeletionService',
+          category: LogCategory.system,
+        );
+      }
+
+      // A relay took the tombstone — now it is safe to persist the deletion.
       final deletion = ContentDeletion(
         deleteEventId: deleteEvent.id,
         originalEventId: video.id,
@@ -263,7 +321,10 @@ class ContentDeletionService {
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
-      return DeleteResult.createSuccess(deleteEvent.id);
+      return DeleteResult.createSuccess(
+        deleteEvent.id,
+        acceptance: acceptance,
+      );
     } catch (e) {
       Log.error(
         'Failed to delete content: $e',

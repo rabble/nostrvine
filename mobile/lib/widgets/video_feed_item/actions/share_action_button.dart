@@ -26,7 +26,7 @@ import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_edit_screen.dart';
 import 'package:openvine/services/video_clip_import_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/utils/delete_failure_localization.dart';
+import 'package:openvine/utils/delete_result_localization.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
@@ -429,7 +429,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     if (state.deleteStatus == OwnerVideoDeleteStatus.success) {
       final messenger = ScaffoldMessenger.of(context);
       final snackBar = DivineSnackbarContainer.snackBar(
-        context.l10n.shareMenuVideoDeletionRequested,
+        localizedPartialDeleteMessage(context, state.deleteResult) ??
+            context.l10n.shareMenuVideoDeletionRequested,
       );
       _safePop(context);
       messenger.showSnackBar(snackBar);

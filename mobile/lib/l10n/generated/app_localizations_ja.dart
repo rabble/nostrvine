@@ -3769,6 +3769,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'Couldn\'t reach the relay. Check your connection and try again.';
 
   @override
+  String get shareMenuDeletePartiallyConfirmed =>
+      '削除しました。すべてのリレーが確認したわけではないので、他のアプリではまだ表示されることがあります。';
+
+  @override
   String get shareMenuDeleteFailedGeneric => 'この動画を削除できなかったよ。もう一度試してね。';
 
   @override

@@ -307,7 +307,12 @@ class RelayPool {
           )
           .timeout(timeout, onTimeout: () => false);
       if (!sent) {
-        retry.tracker.onRelayUnavailable(relay.url);
+        // The relay answered — `auth-required` is why we are here — so it is
+        // not an unreachable target, whatever happened to the resend. Report
+        // what it said, the same as the expired-deadline branch above; a
+        // caller told "could not reach this relay" would retry the network
+        // instead of the authentication.
+        retry.tracker.onRejected(relay.url, retry.reason);
         _removeAuthRequiredPublish(eventId, relay.url);
       }
     }
@@ -894,7 +899,21 @@ class RelayPool {
       if (message == null) return;
 
       // Check if this OK is for a publish we are awaiting.
-      final publishTracker = _pendingPublishes[eventId];
+      //
+      // Trackers are keyed on event id alone, so without the membership check
+      // any connected relay could accept or reject a publish it was never
+      // sent — deciding the outcome of, say, a narrowly targeted direct
+      // message it has no part in.
+      final pendingPublish = _pendingPublishes[eventId];
+      final publishTracker =
+          pendingPublish != null && pendingPublish.isTarget(relay.url)
+          ? pendingPublish
+          : null;
+      if (pendingPublish != null && publishTracker == null) {
+        log(
+          '📡 Ignoring OK for $eventId from ${relay.url}: not a publish target',
+        );
+      }
       if (publishTracker != null) {
         if (success) {
           _removeAuthRequiredPublish(eventId, relay.url);
@@ -1474,7 +1493,6 @@ class RelayPool {
     List<String>? targetRelays,
     DateTime? deadline,
     String? diagnosticTag,
-    void Function(String relayUrl)? onSent,
   }) async {
     final sentTo = <String>[];
     final attemptedRelayUrls = <String>{};
@@ -1573,7 +1591,6 @@ class RelayPool {
             }
             if (result) {
               sentTo.add(relay.url);
-              onSent?.call(relay.url);
             }
             logDiagnostic(
               'auth-trigger send kind=$eventKind eventId=$eventId '
@@ -1584,7 +1601,6 @@ class RelayPool {
             relay.pendingAuthedMessages.add(message);
             sentTo.add(relay.url);
             attemptedRelayUrls.add(relay.url);
-            onSent?.call(relay.url);
             logDiagnostic(
               'queued for auth kind=$eventKind eventId=$eventId relay=${relay.url}',
             );
@@ -1625,7 +1641,6 @@ class RelayPool {
           }
           if (result) {
             sentTo.add(relay.url);
-            onSent?.call(relay.url);
           }
           logDiagnostic(
             'send kind=$eventKind eventId=$eventId relay=${relay.url} sent=$result',
@@ -1676,7 +1691,6 @@ class RelayPool {
         }
         if (result) {
           sentTo.add(tempRelay.url);
-          onSent?.call(tempRelay.url);
         }
         logDiagnostic(
           'temp send kind=$eventKind eventId=$eventId relay=${tempRelay.url} sent=$result',
@@ -1691,18 +1705,65 @@ class RelayPool {
     return sentTo;
   }
 
+  /// Record how broadly a publish was accepted.
+  ///
+  /// Counts only — never relay URLs or event ids, so the line is safe to keep
+  /// on in any build and carries nothing that identifies a user. Until this
+  /// existed there was no signal at all about how often a publish is accepted
+  /// by some relays and refused by others.
+  void _recordPublishBreadth(PublishOutcome outcome) {
+    if (outcome.acceptedByAll) return;
+    log(
+      '📡 Publish accepted by ${outcome.acceptedBy.length}/'
+      '${outcome.targetCount} relays '
+      '(rejected=${outcome.rejectedBy.length} '
+      'silent=${outcome.noResponseFrom.length} '
+      'unreachable=${outcome.unreachableTargets.length})',
+    );
+  }
+
+  /// Every relay a publish with these parameters intends to reach.
+  ///
+  /// Mirrors the iteration [_sendCollect] performs, but resolves it *before*
+  /// the fan-out starts so the set is complete even for relays the fan-out
+  /// later fails to write to. Deriving the target set from send results
+  /// instead would silently shrink the denominator: a relay that could not be
+  /// written to would be absent from the outcome entirely, and a publish could
+  /// settle while later relays had not been attempted yet.
+  Set<String> _intendedPublishTargets(
+    List<dynamic> message, {
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) {
+    final targets = <String>{};
+    final isEvent = message.isNotEmpty && message[0] == "EVENT";
+    final hasFilter = targetRelays != null && targetRelays.isNotEmpty;
+    for (final relay in _relaysSnapshot()) {
+      if (isEvent && !relay.relayStatus.writeAccess) continue;
+      if (hasFilter && !targetRelays.contains(relay.url)) continue;
+      targets.add(relay.url);
+    }
+    if (tempRelays != null) targets.addAll(tempRelays);
+    return targets;
+  }
+
   /// Send an `EVENT` message and wait for `OK` confirmations from relays.
   ///
   /// Registers a [PublishTracker] keyed on the event id. The returned future
   /// completes when either:
-  ///  * at least one relay has confirmed acceptance (`OK true`), OR
-  ///  * every targeted relay has responded (accept or reject), OR
+  ///  * every relay the fan-out reached has responded (accept or reject), OR
+  ///  * [PublishTracker.settleWindow] elapses after the first response, OR
   ///  * [timeout] elapses.
   ///
-  /// If no relay received the message at the WebSocket level, the tracker
-  /// completes immediately with an empty [PublishOutcome] (all in
-  /// `noResponseFrom`). Callers must inspect [PublishOutcome.confirmed] to
-  /// decide whether the publish succeeded.
+  /// It does **not** complete on the first acceptance. A publish that one
+  /// relay accepts and another rejects must report both, and nothing in this
+  /// client republishes to the relays that did not accept.
+  ///
+  /// Relays that were targeted but could not be written to are reported in
+  /// [PublishOutcome.unreachableTargets]. Callers should inspect
+  /// [PublishOutcome.acceptedByAll] or [PublishOutcome.acceptedByAny]
+  /// depending on the breadth of acceptance they require — note that relay
+  /// acceptance is not a durability guarantee.
   Future<PublishOutcome> sendEventAwaitOk(
     List<dynamic> message, {
     required String eventId,
@@ -1726,22 +1787,33 @@ class RelayPool {
       diagnosticTag: diagnosticTag,
       message: message,
       deadline: deadline,
-      expectedRelays: <String>{},
+      expectedRelays: _intendedPublishTargets(
+        message,
+        tempRelays: tempRelays,
+        targetRelays: targetRelays,
+      ),
       timeout: timeout,
     );
     _pendingPublishes[eventId] = tracker;
 
-    final sentTo = await _sendCollect(
-      message,
-      tempRelays: tempRelays,
-      targetRelays: targetRelays,
-      deadline: deadline,
-      diagnosticTag: diagnosticTag,
-      onSent: (relayUrl) => tracker.expectedRelays.add(relayUrl),
-    );
-
-    if (sentTo.isEmpty) {
-      tracker.cancel();
+    // Narrow the awaited set to the relays the fan-out actually wrote to. The
+    // rest become unreachable targets rather than blocking the publish until
+    // the timeout. When nothing was written this settles the tracker at once.
+    //
+    // Reported in a `finally` because the tracker defers its hard timeout
+    // until this call arrives: a fan-out that threw would otherwise leave the
+    // publish hanging.
+    var sentTo = const <String>[];
+    try {
+      sentTo = await _sendCollect(
+        message,
+        tempRelays: tempRelays,
+        targetRelays: targetRelays,
+        deadline: deadline,
+        diagnosticTag: diagnosticTag,
+      );
+    } finally {
+      tracker.setReachable(sentTo);
     }
 
     unawaited(
@@ -1753,19 +1825,21 @@ class RelayPool {
                 diagnosticTag,
                 'OK outcome kind=${tracker.eventKind} eventId=$eventId '
                 'acceptedBy=${outcome.acceptedBy} rejectedBy=${outcome.rejectedBy} '
-                'noResponseFrom=${outcome.noResponseFrom}',
+                'noResponseFrom=${outcome.noResponseFrom} '
+                'unreachableTargets=${outcome.unreachableTargets}',
               );
             }
-            // Repair only when the publish went UNCONFIRMED. The tracker
-            // resolves on the FIRST OK-true, so on a multi-relay publish the
-            // slower healthy siblings land in `noResponseFrom` while
-            // `isSilentSince(sentAt)` passes trivially over the few-hundred-ms
-            // race window — cycling them on every send churns connections and
-            // fails concurrent `skipReconnect` publishes. A genuinely zombie
-            // sibling is repaired by the next publish that needs it (its own
-            // OK window then times out) or by the connectivity-transition
-            // forceReconnectAll.
-            if (!outcome.confirmed) {
+            _recordPublishBreadth(outcome);
+            // Repair every relay that stayed silent, whether or not a sibling
+            // accepted. `noResponseFrom` now means "reached this relay and it
+            // never answered", not "lost the OK race", so a confirmed publish
+            // can still be hiding a zombie socket. The existing filters keep
+            // this from churning healthy connections: `isSilentSince` requires
+            // no inbound frame of ANY kind since the publish (so a relay
+            // serving subscriptions is excluded), `silentRepairCooldown`
+            // rate-limits per relay, and `_silentRelayRepairsInFlight`
+            // collapses concurrent repairs of the same URL.
+            if (outcome.noResponseFrom.isNotEmpty) {
               _repairSilentRelays(outcome.noResponseFrom, sentAt);
             }
           })

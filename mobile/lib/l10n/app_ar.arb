@@ -3221,6 +3221,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+    "shareMenuDeletePartiallyConfirmed": "تم الحذف. لم تؤكّد كل المرحّلات، لذا قد يظل ظاهرًا في تطبيقات أخرى.",
     "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
     "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
     "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",

@@ -3226,6 +3226,7 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{Loop} other{Loops}}",
     "shareMenuDeleteFailedRelayRejected": "The relay wouldn't accept this delete request. Try again in a moment.",
     "shareMenuDeleteFailedRelayNoResponse": "Couldn't reach the relay. Check your connection and try again.",
+    "shareMenuDeletePartiallyConfirmed": "Gelöscht. Nicht alle Relays haben bestätigt, es kann also noch in anderen Apps auftauchen.",
     "videoEditorAudioSegmentInstruction": "Wähle den Audiobereich für dein Video aus",
     "videoEditorClipGalleryInstruction": "Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.",
     "navSearch": "Suche",
