@@ -372,7 +372,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           pendingAvatarStatus: PendingAvatarStatus.idle,
           pendingPictureUrl: null,
-          pictureCleared: false,
+          // Left alone on purpose. An empty field stages nothing, so it has
+          // no business cancelling a Remove — resetting the flag here handed
+          // the persisted picture straight back. Matches the banner's mirror
+          // branch in [_onProfileBannerUrlSet].
         ),
       );
       return;

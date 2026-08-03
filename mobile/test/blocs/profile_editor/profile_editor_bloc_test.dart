@@ -3652,6 +3652,26 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'an empty picture URL after a clear leaves the removal staged',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+          pictureCleared: true,
+        ),
+        // Reachable from the UI: Remove empties the sheet's controller, so
+        // re-opening "Paste an image link" and saving hands back an empty
+        // string. That stages nothing and must not resurrect the picture.
+        act: (bloc) => bloc.add(const ProfilePictureUrlSet('   ')),
+        // Nothing changes, so nothing is emitted. Resetting the flag here
+        // emitted `pictureCleared: false` and handed the avatar back.
+        expect: () => <ProfileEditorState>[],
+        verify: (bloc) {
+          expect(bloc.state.pictureCleared, isTrue);
+          expect(bloc.state.effectivePictureUrl, isNull);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfilePictureCleared while uploading is ignored',
         build: createBloc,
         seed: () => const ProfileEditorState(
