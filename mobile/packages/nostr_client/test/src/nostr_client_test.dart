@@ -1527,6 +1527,163 @@ void main() {
       });
     });
 
+    group('subscribe NIP-09 auto-cache suppression', () {
+      // NIP-71 addressable short video (parameterized replaceable).
+      const addressableShortVideoKind = 34236;
+
+      late _MockNostrEventsDao mockNostrEventsDao;
+      late NostrClient clientWithCache;
+
+      /// Subscribes and returns the relay callback the SDK was handed, so a
+      /// test can deliver events exactly as a relay would.
+      void Function(Event) subscribeAndCaptureRelayCallback() {
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenReturn('test-sub-id');
+
+        clientWithCache.subscribe([
+          Filter(kinds: [addressableShortVideoKind], limit: 10),
+        ]);
+
+        final captured = verify(
+          () => mockNostr.subscribe(
+            any(),
+            captureAny(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).captured.single;
+        return captured as void Function(Event);
+      }
+
+      Event videoEvent({String? id, List<List<String>>? tags}) {
+        final event = Event(
+          testPublicKey,
+          addressableShortVideoKind,
+          tags ??
+              [
+                ['d', 'clip-1'],
+              ],
+          'a video',
+        );
+        if (id != null) event.id = id;
+        return event;
+      }
+
+      Event deletionEvent(List<List<String>> tags) => Event(
+        testPublicKey,
+        EventKind.eventDeletion,
+        tags,
+        'deleted',
+      );
+
+      setUp(() {
+        final mockDbClient = _MockAppDbClient();
+        final mockDatabase = _MockAppDatabase();
+        mockNostrEventsDao = _MockNostrEventsDao();
+        when(() => mockDbClient.database).thenReturn(mockDatabase);
+        when(() => mockDatabase.nostrEventsDao).thenReturn(mockNostrEventsDao);
+        when(
+          () => mockNostrEventsDao.upsertEvent(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNostrEventsDao.deleteEventsByIds(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockNostrEventsDao.getEventsByFilter(
+            any(),
+            sortBy: any(named: 'sortBy'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+        when(() => mockRelayManager.connectedRelays).thenReturn([
+          'wss://relay.test',
+        ]);
+
+        clientWithCache = NostrClient.forTesting(
+          nostr: mockNostr,
+          relayManager: mockRelayManager,
+          dbClient: mockDbClient,
+        );
+      });
+
+      test(
+        'does not re-cache an event a Kind 5 already removed by id',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+          final video = videoEvent(id: 'a' * 64);
+
+          onEvent(
+            deletionEvent([
+              ['e', video.id],
+            ]),
+          );
+          await pumpEventQueue();
+
+          // A relay that never saw the deletion redelivers the same event.
+          onEvent(video);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(video));
+        },
+      );
+
+      test(
+        'does not re-cache an edit of a coordinate a Kind 5 removed',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              [
+                'a',
+                '$addressableShortVideoKind:$testPublicKey:clip-1',
+              ],
+            ]),
+          );
+          await pumpEventQueue();
+
+          // An edit carries a new event id but the same pubkey:d-tag identity.
+          final edited = videoEvent(id: 'b' * 64);
+          onEvent(edited);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(edited));
+        },
+      );
+
+      test('still caches events that were never tombstoned', () async {
+        final onEvent = subscribeAndCaptureRelayCallback();
+
+        onEvent(
+          deletionEvent([
+            ['e', 'a' * 64],
+          ]),
+        );
+        await pumpEventQueue();
+
+        final other = videoEvent(
+          id: 'c' * 64,
+          tags: [
+            ['d', 'clip-2'],
+          ],
+        );
+        onEvent(other);
+
+        verify(() => mockNostrEventsDao.upsertEvent(other)).called(1);
+      });
+    });
+
     group('subscribe', () {
       test('creates subscription and returns stream', () {
         final filters = [
