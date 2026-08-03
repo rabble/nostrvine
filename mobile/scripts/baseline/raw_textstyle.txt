@@ -63,7 +63,7 @@ lib/widgets/categories_tab.dart	2
 lib/widgets/classic_vines_tab.dart	7
 lib/widgets/composable_video_grid.dart	8
 lib/widgets/content_warning.dart	11
-lib/widgets/delete_account_dialog.dart	14
+lib/widgets/delete_account_dialog.dart	3
 lib/widgets/environment_indicator.dart	1
 lib/widgets/error_message.dart	1
 lib/widgets/find_people_sheet.dart	7
