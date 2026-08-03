@@ -475,22 +475,19 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// Drives one moderation-DM attempt: a fresh send, or a re-drive of the
   /// row a previous undelivered submit parked.
   ///
-  /// Every `ref` and controller read happens before the first `await`, so
-  /// the undelivered path can fire this unawaited: that call outlives the
-  /// dialog, and a `ref.read` after dispose would throw into nothing.
   Future<bool> _dispatchModerationDm() async {
-    final dmRepo = ref.read(dmRepositoryProvider);
-    final labelService = ref.read(moderationLabelServiceProvider);
-    final moderationPubkey = labelService.divineModerationPubkeyHex;
-    final content = _formatReportDm(
-      reason: _selectedReason!,
-      eventId: _eventId,
-      details: _detailsController.text.trim(),
-    );
-
-    final parked = _queuedModerationDmId;
-
     try {
+      final dmRepo = ref.read(dmRepositoryProvider);
+      final labelService = ref.read(moderationLabelServiceProvider);
+      final moderationPubkey = labelService.divineModerationPubkeyHex;
+      final content = _formatReportDm(
+        reason: _selectedReason!,
+        eventId: _eventId,
+        details: _detailsController.text.trim(),
+      );
+
+      final parked = _queuedModerationDmId;
+
       final NIP17SendResult dmResult;
       if (parked == null) {
         dmResult = await dmRepo.sendMessage(
@@ -515,17 +512,14 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           );
           // ignore: avoid_catching_errors
         } on ArgumentError {
-          // Not a caller bug, so it can't be prevented by checking first:
-          // `recoverFullSend` raises this when the row is gone, and the
-          // sweep can delete it at any point — including between a
-          // would-be existence check and this call.
-          //
-          // The row is gone. For a row this dialog parked that means the
-          // sweep delivered it and the success path deleted it, so the
-          // team has the report and there is nothing left to re-drive.
+          // Ambiguous. `recoverFullSend` throws the same type when the row is
+          // gone (possibly delivered by the sweep, possibly deleted by the
+          // user) and when the row belongs to another account. Coalescing still
+          // must not mint a second report DM, but it also must not claim the
+          // team has this copy when the repository could not prove that.
           _queuedModerationDmId = null;
-          _moderationDmDelivered = true;
-          return false;
+          _moderationDmDelivered = false;
+          return true;
         }
       }
       // sendMessage signals non-delivery by RETURNING a failure, not
