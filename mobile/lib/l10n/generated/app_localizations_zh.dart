@@ -797,7 +797,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
-  String get profileSetupPublicKeyLabel => '公钥（npub）';
+  String get profileSetupPublicKeyLabel => '公钥 (npub)';
 
   @override
   String get profileSetupUsernameLabel => '用户名（可选）';
@@ -864,6 +864,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileSetupBannerClearButton => '清除头图';
+
+  @override
+  String get profileSetupBannerChangeColor => '横幅颜色';
+
+  @override
+  String get profileSetupChangeBannerTitle => '更改横幅';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => '更改横幅颜色';
+
+  @override
+  String get profileSetupBannerColorCustom => '自定义';
+
+  @override
+  String get profileSetupBannerColorNone => '无颜色';
+
+  @override
+  String get profileSetupBannerColorLime => '青柠色';
+
+  @override
+  String get profileSetupBannerColorYellow => '黄色';
+
+  @override
+  String get profileSetupBannerColorViolet => '紫罗兰色';
+
+  @override
+  String get profileSetupBannerColorPink => '粉色';
+
+  @override
+  String get profileSetupBannerColorOrange => '橙色';
+
+  @override
+  String get profileSetupBannerColorPurple => '紫色';
+
+  @override
+  String get profileSetupAvatarClearButton => '移除照片';
+
+  @override
+  String get profileSetupImageTakePhoto => '拍照';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => '从相册上传';
+
+  @override
+  String get profileSetupImagePasteLink => '粘贴图片链接';
+
+  @override
+  String get profileSetupEditAvatarLabel => '编辑头像';
+
+  @override
+  String get profileSetupEditBannerLabel => '编辑横幅';
 
   @override
   String get profileSetupUsernameChecking => '正在检查可用性...';

@@ -59,13 +59,13 @@ class VerifiedAccountChip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              spacing: 6,
               children: [
                 DivineIcon(
                   icon: DivineIconName.globe,
                   size: 14,
                   color: context.vineColors.mutedText,
                 ),
-                const SizedBox(width: 6),
                 Text(
                   '${claim.platform}/${claim.identity}',
                   style: VineTheme.labelMediumFont(

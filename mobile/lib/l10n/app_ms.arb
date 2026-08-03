@@ -486,6 +486,27 @@
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
   },
+  "profileSetupBannerChangeColor": "Warna sepanduk",
+  "profileSetupBannerColorPickerTitle": "Tukar warna sepanduk",
+  "profileSetupBannerColorNone": "Tiada warna",
+  "profileSetupBannerColorCustom": "Tersuai",
+  "profileSetupBannerColorLime": "Limau nipis",
+  "profileSetupBannerColorYellow": "Kuning",
+  "profileSetupBannerColorViolet": "Violet",
+  "profileSetupBannerColorPink": "Merah jambu",
+  "profileSetupBannerColorOrange": "Jingga",
+  "profileSetupBannerColorPurple": "Ungu",
+  "profileSetupAvatarClearButton": "Buang foto",
+  "profileSetupChangeBannerTitle": "Tukar sepanduk",
+  "profileSetupImageTakePhoto": "Ambil foto",
+  "profileSetupImageUploadFromCameraRoll": "Muat naik dari galeri",
+  "profileSetupImagePasteLink": "Tampal pautan imej",
+  "profileSetupEditAvatarLabel": "Edit gambar profil",
+  "profileSetupEditBannerLabel": "Edit sepanduk",
+  "profileSetupPublicKeyLabel": "Kunci awam (npub)",
+  "@profileSetupBannerUploadSuccess": {
+    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
+  },
   "profileSetupUsernameChecking": "Menyemak ketersediaan...",
   "profileSetupUsernameAvailable": "Nama pengguna tersedia!",
   "profileSetupUsernameTakenIndicator": "Nama pengguna sudah diambil",

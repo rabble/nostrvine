@@ -860,7 +860,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
-  String get profileSetupPublicKeyLabel => 'Public key (npub)';
+  String get profileSetupPublicKeyLabel => 'Pampublikong susi (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Username (Optional)';
@@ -934,6 +934,59 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileSetupBannerClearButton => 'I-clear ang banner';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Kulay ng banner';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Palitan ang banner';
+
+  @override
+  String get profileSetupBannerColorPickerTitle =>
+      'Baguhin ang kulay ng banner';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Custom';
+
+  @override
+  String get profileSetupBannerColorNone => 'Walang kulay';
+
+  @override
+  String get profileSetupBannerColorLime => 'Lime';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Dilaw';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Biyoleta';
+
+  @override
+  String get profileSetupBannerColorPink => 'Rosas';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Kahel';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Lila';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Alisin ang larawan';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Kumuha ng larawan';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll =>
+      'Mag-upload mula sa camera roll';
+
+  @override
+  String get profileSetupImagePasteLink => 'I-paste ang link ng larawan';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'I-edit ang larawan sa profile';
+
+  @override
+  String get profileSetupEditBannerLabel => 'I-edit ang banner';
 
   @override
   String get profileSetupUsernameChecking => 'Tinitingnan ang availability...';

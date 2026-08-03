@@ -47,6 +47,8 @@ class _FakeCropLauncher {
 }
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   group(ProfileAvatarSection, () {
     const testPubkeyHex =
         'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
@@ -154,17 +156,69 @@ void main() {
       },
     );
 
+    group('removing the picture', () {
+      Future<void> openSheet(WidgetTester tester) async {
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('offers no remove row when there is no picture', (
+        tester,
+      ) async {
+        await pump(tester);
+        await openSheet(tester);
+
+        expect(find.text(l10n.profileSetupAvatarClearButton), findsNothing);
+      });
+
+      testWidgets('removing a persisted picture dispatches '
+          '$ProfilePictureCleared', (tester) async {
+        when(() => bloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedPictureUrl: 'https://cdn.example.com/old.jpg',
+          ),
+        );
+        await pump(tester);
+        await openSheet(tester);
+
+        await tester.tap(find.text(l10n.profileSetupAvatarClearButton));
+        await tester.pumpAndSettle();
+
+        final captured = verify(() => bloc.add(captureAny())).captured;
+        expect(captured.whereType<ProfilePictureCleared>(), hasLength(1));
+      });
+
+      testWidgets('a cleared picture leaves the preview empty', (tester) async {
+        when(() => bloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedPictureUrl: 'https://cdn.example.com/old.jpg',
+            pictureCleared: true,
+          ),
+        );
+        await pump(tester);
+
+        // Null provider is the placeholder path — the persisted URL must not
+        // come back after the user asked for it to go.
+        expect(
+          tester.widget<UserAvatar>(find.byType(UserAvatar)).imageProvider,
+          isNull,
+        );
+      });
+    });
+
     group('pick → crop → dispatch', () {
       // Gallery picks route through file_selector on desktop and image_picker
       // on mobile; force a mobile platform so the mocked image_picker channel
-      // is exercised. With camera present the source-button order is
-      // [camera, gallery, link], so gallery is the second button.
-      Finder galleryButton() => find
-          .descendant(
-            of: find.byType(ProfileAvatarSection),
-            matching: find.byType(GestureDetector),
-          )
-          .at(1);
+      // is exercised. The sources moved behind the pencil, so each pick is now
+      // two taps: open the sheet, then choose the row.
+      Future<void> pickFromGallery(WidgetTester tester) async {
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(l10n.profileSetupImageUploadFromCameraRoll),
+        );
+        await tester.pumpAndSettle();
+      }
 
       testWidgets(
         'dispatches ProfilePictureUploadRequested with the cropped bytes',
@@ -175,8 +229,7 @@ void main() {
             final launcher = _FakeCropLauncher(croppedBytes);
             await pump(tester, cropLauncher: launcher.launch);
 
-            await tester.tap(galleryButton());
-            await tester.pumpAndSettle();
+            await pickFromGallery(tester);
 
             expect(launcher.callCount, 1);
             expect(launcher.lastKind, ImageCropKind.avatar);
@@ -204,14 +257,51 @@ void main() {
           final launcher = _FakeCropLauncher(null);
           await pump(tester, cropLauncher: launcher.launch);
 
-          await tester.tap(galleryButton());
-          await tester.pumpAndSettle();
+          await pickFromGallery(tester);
 
           expect(launcher.callCount, 1);
           verifyNever(() => bloc.add(any()));
         } finally {
           debugDefaultTargetPlatformOverride = null;
         }
+      });
+
+      Future<void> openUrlSheet(WidgetTester tester) async {
+        await tester.tap(find.byType(DivineIconButton));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileSetupImagePasteLink));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('Save stages the typed image URL', (tester) async {
+        await pump(tester);
+        await openUrlSheet(tester);
+
+        await tester.enterText(
+          find.byType(TextField),
+          'https://cdn.example.com/a.jpg',
+        );
+        await tester.tap(find.text(l10n.profileSetupSaveButton));
+        await tester.pumpAndSettle();
+
+        final captured = verify(() => bloc.add(captureAny())).captured;
+        final staged = captured.whereType<ProfilePictureUrlSet>();
+        expect(staged, hasLength(1));
+        expect(staged.single.url, 'https://cdn.example.com/a.jpg');
+      });
+
+      testWidgets('Cancel leaves the staged picture untouched', (tester) async {
+        await pump(tester);
+        await openUrlSheet(tester);
+
+        await tester.enterText(
+          find.byType(TextField),
+          'https://cdn.example.com/a.jpg',
+        );
+        await tester.tap(find.text(l10n.commonCancel));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => bloc.add(any(that: isA<ProfilePictureUrlSet>())));
       });
 
       testWidgets('skips crop and dispatch when no public key is available', (
@@ -223,8 +313,7 @@ void main() {
           final launcher = _FakeCropLauncher(Uint8List.fromList([1, 2, 3]));
           await pump(tester, cropLauncher: launcher.launch);
 
-          await tester.tap(galleryButton());
-          await tester.pumpAndSettle();
+          await pickFromGallery(tester);
 
           expect(launcher.callCount, 0);
           verifyNever(() => bloc.add(any()));

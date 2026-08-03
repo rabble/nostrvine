@@ -486,6 +486,27 @@
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
   },
+  "profileSetupBannerChangeColor": "横幅颜色",
+  "profileSetupBannerColorPickerTitle": "更改横幅颜色",
+  "profileSetupBannerColorNone": "无颜色",
+  "profileSetupBannerColorCustom": "自定义",
+  "profileSetupBannerColorLime": "青柠色",
+  "profileSetupBannerColorYellow": "黄色",
+  "profileSetupBannerColorViolet": "紫罗兰色",
+  "profileSetupBannerColorPink": "粉色",
+  "profileSetupBannerColorOrange": "橙色",
+  "profileSetupBannerColorPurple": "紫色",
+  "profileSetupAvatarClearButton": "移除照片",
+  "profileSetupChangeBannerTitle": "更改横幅",
+  "profileSetupImageTakePhoto": "拍照",
+  "profileSetupImageUploadFromCameraRoll": "从相册上传",
+  "profileSetupImagePasteLink": "粘贴图片链接",
+  "profileSetupEditAvatarLabel": "编辑头像",
+  "profileSetupEditBannerLabel": "编辑横幅",
+  "profileSetupPublicKeyLabel": "公钥 (npub)",
+  "@profileSetupBannerUploadSuccess": {
+    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
+  },
   "profileSetupUsernameChecking": "正在检查可用性...",
   "profileSetupUsernameAvailable": "用户名可用！",
   "profileSetupUsernameTakenIndicator": "用户名已被占用",

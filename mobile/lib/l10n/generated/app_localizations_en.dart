@@ -923,6 +923,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Clear banner';
 
   @override
+  String get profileSetupBannerChangeColor => 'Banner color';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Change banner';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Change banner color';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Custom';
+
+  @override
+  String get profileSetupBannerColorNone => 'No color';
+
+  @override
+  String get profileSetupBannerColorLime => 'Lime';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Yellow';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violet';
+
+  @override
+  String get profileSetupBannerColorPink => 'Pink';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Orange';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Purple';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Remove photo';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Take photo';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Upload from camera roll';
+
+  @override
+  String get profileSetupImagePasteLink => 'Paste an image link';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Edit profile picture';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Edit banner';
+
+  @override
   String get profileSetupUsernameChecking => 'Checking availability...';
 
   @override

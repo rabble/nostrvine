@@ -958,6 +958,58 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Șterge bannerul';
 
   @override
+  String get profileSetupBannerChangeColor => 'Culoarea bannerului';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Schimbă bannerul';
+
+  @override
+  String get profileSetupBannerColorPickerTitle =>
+      'Schimbă culoarea bannerului';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Personalizată';
+
+  @override
+  String get profileSetupBannerColorNone => 'Fără culoare';
+
+  @override
+  String get profileSetupBannerColorLime => 'Verde lime';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Galben';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violet deschis';
+
+  @override
+  String get profileSetupBannerColorPink => 'Roz';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Portocaliu';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Mov';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Elimină fotografia';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Fă o fotografie';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Încarcă din galerie';
+
+  @override
+  String get profileSetupImagePasteLink => 'Lipește un link de imagine';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Editează poza de profil';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Editează bannerul';
+
+  @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
 
   @override

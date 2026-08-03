@@ -818,7 +818,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
-  String get profileSetupPublicKeyLabel => 'Açık anahtar (npub)';
+  String get profileSetupPublicKeyLabel => 'Genel anahtar (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Kullanıcı Adı (Opsiyonel)';
@@ -891,6 +891,57 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileSetupBannerClearButton => 'Afişi temizle';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Afiş rengi';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Afişi değiştir';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Afiş rengini değiştir';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Özel';
+
+  @override
+  String get profileSetupBannerColorNone => 'Renk yok';
+
+  @override
+  String get profileSetupBannerColorLime => 'Misket limonu';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Sarı';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Menekşe';
+
+  @override
+  String get profileSetupBannerColorPink => 'Pembe';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Turuncu';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Mor';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Fotoğrafı kaldır';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Fotoğraf çek';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Galeriden yükle';
+
+  @override
+  String get profileSetupImagePasteLink => 'Görsel bağlantısı yapıştır';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Profil fotoğrafını düzenle';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Afişi düzenle';
 
   @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';

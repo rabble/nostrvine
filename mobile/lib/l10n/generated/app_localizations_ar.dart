@@ -906,6 +906,57 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupBannerClearButton => 'مسح الغلاف';
 
   @override
+  String get profileSetupBannerChangeColor => 'لون اللافتة';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'تغيير اللافتة';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'تغيير لون اللافتة';
+
+  @override
+  String get profileSetupBannerColorCustom => 'مخصص';
+
+  @override
+  String get profileSetupBannerColorNone => 'بدون لون';
+
+  @override
+  String get profileSetupBannerColorLime => 'ليموني';
+
+  @override
+  String get profileSetupBannerColorYellow => 'أصفر';
+
+  @override
+  String get profileSetupBannerColorViolet => 'بنفسجي فاتح';
+
+  @override
+  String get profileSetupBannerColorPink => 'وردي';
+
+  @override
+  String get profileSetupBannerColorOrange => 'برتقالي';
+
+  @override
+  String get profileSetupBannerColorPurple => 'أرجواني';
+
+  @override
+  String get profileSetupAvatarClearButton => 'إزالة الصورة';
+
+  @override
+  String get profileSetupImageTakePhoto => 'التقاط صورة';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'الرفع من معرض الصور';
+
+  @override
+  String get profileSetupImagePasteLink => 'لصق رابط صورة';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'تعديل صورة الملف الشخصي';
+
+  @override
+  String get profileSetupEditBannerLabel => 'تعديل اللافتة';
+
+  @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';
 
   @override

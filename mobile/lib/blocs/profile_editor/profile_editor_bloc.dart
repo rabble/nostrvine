@@ -90,6 +90,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       transformer: droppable(),
     );
     on<ProfilePictureUploadCleared>(_onProfilePictureUploadCleared);
+    on<ProfilePictureCleared>(_onProfilePictureCleared);
     on<ProfilePictureUrlSet>(_onProfilePictureUrlSet);
     on<InitialPersistedBannerSet>(_onInitialPersistedBannerSet);
     on<ProfileBannerUploadRequested>(
@@ -97,6 +98,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       transformer: droppable(),
     );
     on<ProfileBannerColorSelected>(_onProfileBannerColorSelected);
+    on<ProfileBannerUrlSet>(_onProfileBannerUrlSet);
     on<ProfileBannerCleared>(_onProfileBannerCleared);
     on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
     on<VerifierLaunchHandled>(_onVerifierLaunchHandled);
@@ -201,7 +203,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pendingBannerStatus: PendingBannerStatus.idle,
         pendingBannerUrl: null,
         pendingBannerColor: _parseBannerHexColor(state.persistedBanner),
-        isBannerCleared: false,
+        bannerCleared: false,
       ),
     );
   }
@@ -261,6 +263,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           pendingAvatarStatus: PendingAvatarStatus.staged,
           pendingPictureUrl: stagedPictureUrl,
+          pictureCleared: false,
         ),
       );
       return;
@@ -321,6 +324,28 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       state.copyWith(
         pendingAvatarStatus: PendingAvatarStatus.idle,
         pendingPictureUrl: null,
+        // Reverting to the persisted picture, so a pending removal is off too.
+        pictureCleared: false,
+      ),
+    );
+  }
+
+  void _onProfilePictureCleared(
+    ProfilePictureCleared event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
+      Log.info(
+        'Ignoring ProfilePictureCleared received while an upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+    emit(
+      state.copyWith(
+        pendingAvatarStatus: PendingAvatarStatus.idle,
+        pendingPictureUrl: null,
+        pictureCleared: true,
       ),
     );
   }
@@ -347,6 +372,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           pendingAvatarStatus: PendingAvatarStatus.idle,
           pendingPictureUrl: null,
+          pictureCleared: false,
         ),
       );
       return;
@@ -359,6 +385,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       state.copyWith(
         pendingAvatarStatus: PendingAvatarStatus.staged,
         pendingPictureUrl: trimmed,
+        pictureCleared: false,
       ),
     );
   }
@@ -375,7 +402,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       state.copyWith(
         persistedBanner: banner,
         pendingBannerColor: parsedColor,
-        isBannerCleared: false,
+        bannerCleared: false,
       ),
     );
   }
@@ -452,7 +479,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           pendingBannerUrl: stagedBannerUrl,
           // Image and color are mutually exclusive — clear any staged color.
           pendingBannerColor: null,
-          isBannerCleared: false,
+          bannerCleared: false,
         ),
       );
       return;
@@ -506,8 +533,43 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pendingBannerColor: event.color,
         // Image and color are mutually exclusive — clear any staged URL.
         pendingBannerUrl: null,
-        isBannerCleared: false,
         pendingBannerStatus: PendingBannerStatus.idle,
+        bannerCleared: false,
+      ),
+    );
+  }
+
+  void _onProfileBannerUrlSet(
+    ProfileBannerUrlSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
+      Log.info(
+        'Ignoring ProfileBannerUrlSet received while banner upload is in '
+        'flight',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    final trimmed = event.url.trim();
+    if (trimmed.isEmpty) {
+      emit(
+        state.copyWith(
+          pendingBannerUrl: null,
+          pendingBannerStatus: PendingBannerStatus.idle,
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        pendingBannerUrl: trimmed,
+        // Image and color are mutually exclusive — clear any staged color.
+        pendingBannerColor: null,
+        pendingBannerStatus: PendingBannerStatus.staged,
+        bannerCleared: false,
       ),
     );
   }
@@ -524,8 +586,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       state.copyWith(
         pendingBannerUrl: null,
         pendingBannerColor: null,
-        isBannerCleared: true,
         pendingBannerStatus: PendingBannerStatus.idle,
+        // Staged absence, not just "no staged change" — Save publishes null
+        // over whatever was persisted.
+        bannerCleared: true,
       ),
     );
   }
@@ -620,9 +684,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   /// Priority: staged URL on bloc state > caller-supplied `event.picture`
   /// (legacy fallback) > persisted URL on bloc state. An empty string is
   /// treated as "no picture" at every level.
+  ///
+  /// A staged removal beats both fallbacks — otherwise Remove would publish
+  /// the very picture it was asked to drop.
   String? _resolveEffectivePicture(ProfileSaved event) {
     final staged = state.pendingPictureUrl?.trim();
     if (staged != null && staged.isNotEmpty) return staged;
+    if (state.pictureCleared) return null;
     final fromEvent = event.picture?.trim();
     if (fromEvent != null && fromEvent.isNotEmpty) return fromEvent;
     final persisted = state.persistedPictureUrl?.trim();
@@ -1210,7 +1278,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pendingBannerStatus: PendingBannerStatus.idle,
         pendingBannerUrl: null,
         pendingBannerColor: _parseBannerHexColor(banner),
-        isBannerCleared: false,
+        bannerCleared: false,
         persistedBanner: banner,
       ),
     );

@@ -926,6 +926,57 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Banner wissen';
 
   @override
+  String get profileSetupBannerChangeColor => 'Bannerkleur';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Banner wijzigen';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Bannerkleur wijzigen';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Aangepast';
+
+  @override
+  String get profileSetupBannerColorNone => 'Geen kleur';
+
+  @override
+  String get profileSetupBannerColorLime => 'Limoen';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Geel';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violet';
+
+  @override
+  String get profileSetupBannerColorPink => 'Roze';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Oranje';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Paars';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Foto verwijderen';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Foto maken';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Uploaden uit de fotorol';
+
+  @override
+  String get profileSetupImagePasteLink => 'Afbeeldingslink plakken';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Profielfoto bewerken';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Banner bewerken';
+
+  @override
   String get profileSetupUsernameChecking => 'Beschikbaarheid controleren...';
 
   @override

@@ -1,72 +1,31 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/screens/profile_setup/widgets/profile_setup_field_decorations.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 
-class WebsiteField extends StatefulWidget {
+/// Website field for the profile-setup form.
+///
+/// Not part of the current design for this screen, so it sits below the form
+/// rather than inside it — the field still writes the kind-0 `website` value.
+class WebsiteField extends StatelessWidget {
   const WebsiteField({required this.controller, super.key});
 
   final TextEditingController controller;
 
   @override
-  State<WebsiteField> createState() => _WebsiteFieldState();
-}
-
-class _WebsiteFieldState extends State<WebsiteField> {
-  final _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_onChange);
-  }
-
-  void _onChange() => setState(() {});
-
-  @override
-  void dispose() {
-    _focusNode
-      ..removeListener(_onChange)
-      ..dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 16),
-          child: Text(
-            context.l10n.profileSetupWebsiteLabel,
-            style: VineTheme.labelMediumFont(
-              color: _focusNode.hasFocus
-                  ? VineTheme.primary
-                  : context.vineColors.onSurfaceMuted,
-            ),
-          ),
-        ),
-        TextFormField(
-          controller: widget.controller,
-          focusNode: _focusNode,
-          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
-          decoration: InputDecoration(
-            isCollapsed: true,
-            hintText: context.l10n.profileSetupWebsiteHint,
-            hintStyle: profileFieldHintStyleOf(context),
-            border: profileFieldBorderOf(context),
-            enabledBorder: profileFieldBorderOf(context),
-            focusedBorder: profileFieldBorderOf(context),
-            errorBorder: profileFieldBorderOf(context),
-            focusedErrorBorder: profileFieldBorderOf(context),
-            contentPadding: const EdgeInsets.all(16),
-          ),
-          keyboardType: TextInputType.url,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-        ),
-      ],
+    return DivineTextField(
+      controller: controller,
+      labelText: context.l10n.profileSetupWebsiteLabel,
+      filled: true,
+      fillColor: context.vineColors.surfaceContainer,
+      fillBorderRadius: profileFormCardRadius,
+      primaryWhenFilled: true,
+      textCapitalization: .none,
+      keyboardType: TextInputType.url,
+      // Last field in the form, so done dismisses the keyboard rather than
+      // moving on. Flutter does that for `done` without an onSubmitted.
+      textInputAction: TextInputAction.done,
     );
   }
 }

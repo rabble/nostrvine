@@ -931,6 +931,58 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Quitar banner';
 
   @override
+  String get profileSetupBannerChangeColor => 'Color del banner';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Cambiar banner';
+
+  @override
+  String get profileSetupBannerColorPickerTitle =>
+      'Cambiar el color del banner';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Personalizado';
+
+  @override
+  String get profileSetupBannerColorNone => 'Sin color';
+
+  @override
+  String get profileSetupBannerColorLime => 'Lima';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Amarillo';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violeta';
+
+  @override
+  String get profileSetupBannerColorPink => 'Rosa';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Naranja';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Morado';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Quitar la foto';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Hacer una foto';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Subir desde el carrete';
+
+  @override
+  String get profileSetupImagePasteLink => 'Pegar un enlace de imagen';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Editar foto de perfil';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Editar banner';
+
+  @override
   String get profileSetupUsernameChecking => 'Verificando disponibilidad...';
 
   @override

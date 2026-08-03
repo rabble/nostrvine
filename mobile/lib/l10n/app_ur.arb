@@ -486,6 +486,27 @@
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
   },
+  "profileSetupBannerChangeColor": "بینر کا رنگ",
+  "profileSetupBannerColorPickerTitle": "بینر کا رنگ تبدیل کریں",
+  "profileSetupBannerColorNone": "کوئی رنگ نہیں",
+  "profileSetupBannerColorCustom": "حسبِ ضرورت",
+  "profileSetupBannerColorLime": "لائم",
+  "profileSetupBannerColorYellow": "پیلا",
+  "profileSetupBannerColorViolet": "بنفشی",
+  "profileSetupBannerColorPink": "گلابی",
+  "profileSetupBannerColorOrange": "نارنجی",
+  "profileSetupBannerColorPurple": "جامنی",
+  "profileSetupAvatarClearButton": "تصویر ہٹائیں",
+  "profileSetupChangeBannerTitle": "بینر تبدیل کریں",
+  "profileSetupImageTakePhoto": "تصویر لیں",
+  "profileSetupImageUploadFromCameraRoll": "کیمرہ رول سے اپ لوڈ کریں",
+  "profileSetupImagePasteLink": "تصویر کا لنک چسپاں کریں",
+  "profileSetupEditAvatarLabel": "پروفائل تصویر میں ترمیم کریں",
+  "profileSetupEditBannerLabel": "بینر میں ترمیم کریں",
+  "profileSetupPublicKeyLabel": "عوامی کلید (npub)",
+  "@profileSetupBannerUploadSuccess": {
+    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
+  },
   "profileSetupUsernameChecking": "دستیابی چیک ہو رہی ہے...",
   "profileSetupUsernameAvailable": "صارف نام دستیاب ہے!",
   "profileSetupUsernameTakenIndicator": "صارف نام پہلے ہی لیا جا چکا ہے",

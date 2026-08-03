@@ -896,6 +896,57 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Hapus banner';
 
   @override
+  String get profileSetupBannerChangeColor => 'Warna banner';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Ubah banner';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Ubah warna banner';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Kustom';
+
+  @override
+  String get profileSetupBannerColorNone => 'Tanpa warna';
+
+  @override
+  String get profileSetupBannerColorLime => 'Hijau limau';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Kuning';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violet';
+
+  @override
+  String get profileSetupBannerColorPink => 'Merah muda';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Oranye';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Ungu';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Hapus foto';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Ambil foto';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Unggah dari galeri';
+
+  @override
+  String get profileSetupImagePasteLink => 'Tempel tautan gambar';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Edit foto profil';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Edit banner';
+
+  @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';
 
   @override

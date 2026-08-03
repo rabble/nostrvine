@@ -927,6 +927,57 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Kosongkan sepanduk';
 
   @override
+  String get profileSetupBannerChangeColor => 'Warna sepanduk';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Tukar sepanduk';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Tukar warna sepanduk';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Tersuai';
+
+  @override
+  String get profileSetupBannerColorNone => 'Tiada warna';
+
+  @override
+  String get profileSetupBannerColorLime => 'Limau nipis';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Kuning';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violet';
+
+  @override
+  String get profileSetupBannerColorPink => 'Merah jambu';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Jingga';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Ungu';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Buang foto';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Ambil foto';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Muat naik dari galeri';
+
+  @override
+  String get profileSetupImagePasteLink => 'Tampal pautan imej';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Edit gambar profil';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Edit sepanduk';
+
+  @override
   String get profileSetupUsernameChecking => 'Menyemak ketersediaan...';
 
   @override

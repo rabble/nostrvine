@@ -925,6 +925,58 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupBannerClearButton => 'بینر ہٹائیں';
 
   @override
+  String get profileSetupBannerChangeColor => 'بینر کا رنگ';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'بینر تبدیل کریں';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'بینر کا رنگ تبدیل کریں';
+
+  @override
+  String get profileSetupBannerColorCustom => 'حسبِ ضرورت';
+
+  @override
+  String get profileSetupBannerColorNone => 'کوئی رنگ نہیں';
+
+  @override
+  String get profileSetupBannerColorLime => 'لائم';
+
+  @override
+  String get profileSetupBannerColorYellow => 'پیلا';
+
+  @override
+  String get profileSetupBannerColorViolet => 'بنفشی';
+
+  @override
+  String get profileSetupBannerColorPink => 'گلابی';
+
+  @override
+  String get profileSetupBannerColorOrange => 'نارنجی';
+
+  @override
+  String get profileSetupBannerColorPurple => 'جامنی';
+
+  @override
+  String get profileSetupAvatarClearButton => 'تصویر ہٹائیں';
+
+  @override
+  String get profileSetupImageTakePhoto => 'تصویر لیں';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll =>
+      'کیمرہ رول سے اپ لوڈ کریں';
+
+  @override
+  String get profileSetupImagePasteLink => 'تصویر کا لنک چسپاں کریں';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'پروفائل تصویر میں ترمیم کریں';
+
+  @override
+  String get profileSetupEditBannerLabel => 'بینر میں ترمیم کریں';
+
+  @override
   String get profileSetupUsernameChecking => 'دستیابی چیک ہو رہی ہے...';
 
   @override

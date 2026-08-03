@@ -927,6 +927,57 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Xóa ảnh bìa';
 
   @override
+  String get profileSetupBannerChangeColor => 'Màu biểu ngữ';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Đổi biểu ngữ';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Đổi màu biểu ngữ';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Tùy chỉnh';
+
+  @override
+  String get profileSetupBannerColorNone => 'Không màu';
+
+  @override
+  String get profileSetupBannerColorLime => 'Xanh chanh';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Vàng';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Tím nhạt';
+
+  @override
+  String get profileSetupBannerColorPink => 'Hồng';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Cam';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Tím';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Xóa ảnh';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Chụp ảnh';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Tải lên từ thư viện ảnh';
+
+  @override
+  String get profileSetupImagePasteLink => 'Dán liên kết hình ảnh';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Chỉnh sửa ảnh đại diện';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Chỉnh sửa biểu ngữ';
+
+  @override
   String get profileSetupUsernameChecking => 'Đang kiểm tra...';
 
   @override

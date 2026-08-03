@@ -1,11 +1,12 @@
 // ABOUTME: Widget tests for DisplayNameField in the profile-setup form.
-// ABOUTME: Covers label rendering and controller binding.
+// ABOUTME: Covers label rendering, supporting copy, and controller binding.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/profile_setup/widgets/display_name_field.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
@@ -40,45 +41,78 @@ void main() {
       );
     }
 
-    testWidgets('renders the localized label and hint', (tester) async {
-      await pump(tester);
-      expect(find.text(l10n.profileSetupDisplayNameLabel), findsOneWidget);
-      expect(find.text(l10n.profileSetupDisplayNameHint), findsOneWidget);
-    });
-
-    testWidgets('typing updates the bound controller', (tester) async {
-      await pump(tester);
-      await tester.enterText(find.byType(TextFormField), 'Alice');
-      expect(controller.text, 'Alice');
-    });
-
-    testWidgets('re-subscribes the label highlight when focusNode is swapped', (
+    testWidgets('renders the localized label and nothing under it', (
       tester,
     ) async {
       await pump(tester);
 
-      final swapped = FocusNode();
-      addTearDown(swapped.dispose);
+      expect(find.text(l10n.profileSetupDisplayNameLabel), findsOneWidget);
+      // The card is the plain 76px height in the design — no supporting text.
+      expect(find.text(l10n.profileSetupDisplayNameHelper), findsNothing);
+    });
+
+    testWidgets('typing updates the bound controller', (tester) async {
+      await pump(tester);
+
+      await tester.enterText(find.byType(TextField), 'Alice');
+
+      expect(controller.text, 'Alice');
+    });
+
+    testWidgets('takes focus from the node the parent owns', (tester) async {
+      await pump(tester);
+
+      focusNode.requestFocus();
+      await tester.pump();
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).focusNode,
+        focusNode,
+      );
+      expect(focusNode.hasFocus, isTrue);
+    });
+
+    testWidgets('the keyboard next key moves focus to the following field', (
+      tester,
+    ) async {
+      final nextField = FocusNode();
+      addTearDown(nextField.dispose);
+
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: VineTheme.theme,
           home: Scaffold(
-            body: DisplayNameField(controller: controller, focusNode: swapped),
+            body: Column(
+              children: [
+                DisplayNameField(controller: controller, focusNode: focusNode),
+                TextField(focusNode: nextField),
+                // Stands in for the NIP-05 select card: focusable, but with no
+                // keyboard of its own. Landing here is the bug this pins.
+                InkWell(onTap: () {}, child: const Text('select')),
+              ],
+            ),
           ),
         ),
       );
 
-      // Focusing the new node highlights the label only if the listener was
-      // re-bound in didUpdateWidget.
-      await tester.tap(find.byType(TextFormField));
+      focusNode.requestFocus();
       await tester.pump();
-      expect(swapped.hasFocus, isTrue);
-      final label = tester.widget<Text>(
-        find.text(l10n.profileSetupDisplayNameLabel),
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+
+      expect(nextField.hasFocus, isTrue);
+    });
+
+    testWidgets('sits on the rounder profile card surface', (tester) async {
+      await pump(tester);
+
+      final field = tester.widget<DivineTextField>(
+        find.byType(DivineTextField),
       );
-      expect(label.style?.color, VineTheme.primary);
+      expect(field.filled, isTrue);
+      expect(field.fillBorderRadius, profileFormCardRadius);
     });
   });
 }

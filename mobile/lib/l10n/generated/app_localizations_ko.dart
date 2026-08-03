@@ -852,6 +852,57 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupBannerClearButton => '배너 지우기';
 
   @override
+  String get profileSetupBannerChangeColor => '배너 색상';
+
+  @override
+  String get profileSetupChangeBannerTitle => '배너 변경';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => '배너 색상 변경';
+
+  @override
+  String get profileSetupBannerColorCustom => '사용자 지정';
+
+  @override
+  String get profileSetupBannerColorNone => '색상 없음';
+
+  @override
+  String get profileSetupBannerColorLime => '라임';
+
+  @override
+  String get profileSetupBannerColorYellow => '노랑';
+
+  @override
+  String get profileSetupBannerColorViolet => '바이올렛';
+
+  @override
+  String get profileSetupBannerColorPink => '핑크';
+
+  @override
+  String get profileSetupBannerColorOrange => '오렌지';
+
+  @override
+  String get profileSetupBannerColorPurple => '퍼플';
+
+  @override
+  String get profileSetupAvatarClearButton => '사진 삭제';
+
+  @override
+  String get profileSetupImageTakePhoto => '사진 촬영';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => '카메라 롤에서 업로드';
+
+  @override
+  String get profileSetupImagePasteLink => '이미지 링크 붙여넣기';
+
+  @override
+  String get profileSetupEditAvatarLabel => '프로필 사진 편집';
+
+  @override
+  String get profileSetupEditBannerLabel => '배너 편집';
+
+  @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';
 
   @override

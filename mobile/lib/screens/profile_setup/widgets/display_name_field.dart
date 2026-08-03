@@ -1,14 +1,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/screens/profile_setup/widgets/profile_setup_field_decorations.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 
 /// Display-name field for the profile-setup form.
 ///
 /// The [focusNode] is owned by the parent so the Save action can focus this
-/// field when the name is left empty; this widget only listens to it to drive
-/// the focus-colored label.
-class DisplayNameField extends StatefulWidget {
+/// field when the name is left empty.
+class DisplayNameField extends StatelessWidget {
   const DisplayNameField({
     required this.controller,
     required this.focusNode,
@@ -19,80 +18,21 @@ class DisplayNameField extends StatefulWidget {
   final FocusNode focusNode;
 
   @override
-  State<DisplayNameField> createState() => _DisplayNameFieldState();
-}
-
-class _DisplayNameFieldState extends State<DisplayNameField> {
-  @override
-  void initState() {
-    super.initState();
-    widget.focusNode.addListener(_onChange);
-  }
-
-  @override
-  void didUpdateWidget(DisplayNameField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.focusNode != widget.focusNode) {
-      oldWidget.focusNode.removeListener(_onChange);
-      widget.focusNode.addListener(_onChange);
-    }
-  }
-
-  void _onChange() => setState(() {});
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_onChange);
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 16),
-          child: Text(
-            context.l10n.profileSetupDisplayNameLabel,
-            style: VineTheme.labelMediumFont(
-              color: widget.focusNode.hasFocus
-                  ? VineTheme.primary
-                  : context.vineColors.onSurfaceMuted,
-            ),
-          ),
-        ),
-        TextFormField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
-          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
-          decoration: InputDecoration(
-            isCollapsed: true,
-            hintText: context.l10n.profileSetupDisplayNameHint,
-            helperText: context.l10n.profileSetupDisplayNameHelper,
-            helperStyle: TextStyle(
-              color: context.vineColors.onSurfaceMuted,
-              fontSize: 12,
-            ),
-            hintStyle: profileFieldHintStyleOf(context),
-            border: profileFieldBorderOf(context),
-            enabledBorder: profileFieldBorderOf(context),
-            focusedBorder: profileFieldBorderOf(context),
-            errorBorder: profileFieldBorderOf(context),
-            focusedErrorBorder: profileFieldBorderOf(context),
-            contentPadding: const EdgeInsets.all(16),
-          ),
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return context.l10n.profileSetupDisplayNameRequired;
-            }
-            return null;
-          },
-        ),
-      ],
+    // No supporting text: the design gives this card the plain 76px height,
+    // with the floating label doing the placeholder's job.
+    return DivineTextField(
+      controller: controller,
+      focusNode: focusNode,
+      labelText: context.l10n.profileSetupDisplayNameLabel,
+      filled: true,
+      fillColor: context.vineColors.surfaceContainer,
+      fillBorderRadius: profileFormCardRadius,
+      primaryWhenFilled: true,
+      // No onSubmitted: TextInputAction.next already advances the focus, and
+      // advancing again on submit skipped a field — landing on the NIP-05 card,
+      // which has no keyboard, so the keyboard just closed.
+      textInputAction: TextInputAction.next,
     );
   }
 }

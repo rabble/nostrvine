@@ -494,6 +494,78 @@
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
   },
+  "profileSetupBannerChangeColor": "Banner color",
+  "profileSetupChangeBannerTitle": "Change banner",
+  "@profileSetupChangeBannerTitle": {
+    "description": "Title of the bottom sheet that offers the banner image sources."
+  },
+  "@profileSetupBannerChangeColor": {
+    "description": "Label of the colour input in the banner picker sheet, and the heading of the swatch sheet it opens."
+  },
+  "profileSetupBannerColorPickerTitle": "Change banner color",
+  "@profileSetupBannerColorPickerTitle": {
+    "description": "Title of the bottom sheet holding the banner colour swatches."
+  },
+  "profileSetupBannerColorCustom": "Custom",
+  "@profileSetupBannerColorCustom": {
+    "description": "Name of the banner colour chosen through the full colour picker rather than the preset palette."
+  },
+  "profileSetupBannerColorNone": "No color",
+  "@profileSetupBannerColorNone": {
+    "description": "Name of the swatch that leaves the banner without a colour, shown in the colour picker and as the value of the banner colour input."
+  },
+  "profileSetupBannerColorLime": "Lime",
+  "@profileSetupBannerColorLime": {
+    "description": "Name of the lime green banner colour."
+  },
+  "profileSetupBannerColorYellow": "Yellow",
+  "@profileSetupBannerColorYellow": {
+    "description": "Name of the yellow banner colour."
+  },
+  "profileSetupBannerColorViolet": "Violet",
+  "@profileSetupBannerColorViolet": {
+    "description": "Name of the violet banner colour, a pale blue-purple."
+  },
+  "profileSetupBannerColorPink": "Pink",
+  "@profileSetupBannerColorPink": {
+    "description": "Name of the pink banner colour."
+  },
+  "profileSetupBannerColorOrange": "Orange",
+  "@profileSetupBannerColorOrange": {
+    "description": "Name of the orange banner colour."
+  },
+  "profileSetupBannerColorPurple": "Purple",
+  "@profileSetupBannerColorPurple": {
+    "description": "Name of the purple banner colour, deeper than the violet swatch."
+  },
+  "profileSetupAvatarClearButton": "Remove photo",
+  "@profileSetupAvatarClearButton": {
+    "description": "Action in the profile picture sheet that removes the current picture."
+  },
+  "profileSetupImageTakePhoto": "Take photo",
+  "@profileSetupImageTakePhoto": {
+    "description": "Action in the avatar/banner image sheet that opens the camera."
+  },
+  "profileSetupImageUploadFromCameraRoll": "Upload from camera roll",
+  "@profileSetupImageUploadFromCameraRoll": {
+    "description": "Action in the avatar/banner image sheet that opens the photo gallery."
+  },
+  "profileSetupImagePasteLink": "Paste an image link",
+  "@profileSetupImagePasteLink": {
+    "description": "Action in the avatar/banner image sheet that opens a field for an image URL."
+  },
+  "profileSetupEditAvatarLabel": "Edit profile picture",
+  "@profileSetupEditAvatarLabel": {
+    "description": "Semantic label and tooltip on the pencil button overlapping the avatar."
+  },
+  "profileSetupEditBannerLabel": "Edit banner",
+  "@profileSetupEditBannerLabel": {
+    "description": "Semantic label and tooltip on the pencil button in the banner's top corner."
+  },
+  "profileSetupPublicKeyLabel": "Public key (npub)",
+  "@profileSetupPublicKeyLabel": {
+    "description": "Label above the read-only npub row on the edit-profile screen."
+  },
   "profileSetupUsernameChecking": "Checking availability...",
   "profileSetupUsernameAvailable": "Username available!",
   "profileSetupUsernameTakenIndicator": "Username already taken",

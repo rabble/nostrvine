@@ -29,11 +29,7 @@ lib/screens/following/others_following_screen.dart	1
 lib/screens/inbox/conversation/widgets/message_input_bar.dart	1
 lib/screens/inbox/inbox_view.dart	2
 lib/screens/minor_account_review_screen.dart	1
-lib/screens/profile_setup/view/profile_setup_view.dart	1
-lib/screens/profile_setup/widgets/banner_editing_block.dart	2
 lib/screens/profile_setup/widgets/profile_setup_listeners.dart	2
-lib/screens/profile_setup/widgets/public_key_link.dart	1
-lib/screens/profile_setup/widgets/save_button.dart	1
 lib/screens/search_results/widgets/search_user_tile.dart	1
 lib/screens/sound_detail_screen.dart	4
 lib/screens/subtitle_editor/subtitle_editor_screen.dart	2

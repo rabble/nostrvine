@@ -1512,7 +1512,7 @@ abstract class AppLocalizations {
   /// **'https://yoursite.com'**
   String get profileSetupWebsiteHint;
 
-  /// No description provided for @profileSetupPublicKeyLabel.
+  /// Label above the read-only npub row on the edit-profile screen.
   ///
   /// In en, this message translates to:
   /// **'Public key (npub)'**
@@ -1643,6 +1643,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear banner'**
   String get profileSetupBannerClearButton;
+
+  /// Label of the colour input in the banner picker sheet, and the heading of the swatch sheet it opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Banner color'**
+  String get profileSetupBannerChangeColor;
+
+  /// Title of the bottom sheet that offers the banner image sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Change banner'**
+  String get profileSetupChangeBannerTitle;
+
+  /// Title of the bottom sheet holding the banner colour swatches.
+  ///
+  /// In en, this message translates to:
+  /// **'Change banner color'**
+  String get profileSetupBannerColorPickerTitle;
+
+  /// Name of the banner colour chosen through the full colour picker rather than the preset palette.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get profileSetupBannerColorCustom;
+
+  /// Name of the swatch that leaves the banner without a colour, shown in the colour picker and as the value of the banner colour input.
+  ///
+  /// In en, this message translates to:
+  /// **'No color'**
+  String get profileSetupBannerColorNone;
+
+  /// Name of the lime green banner colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Lime'**
+  String get profileSetupBannerColorLime;
+
+  /// Name of the yellow banner colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get profileSetupBannerColorYellow;
+
+  /// Name of the violet banner colour, a pale blue-purple.
+  ///
+  /// In en, this message translates to:
+  /// **'Violet'**
+  String get profileSetupBannerColorViolet;
+
+  /// Name of the pink banner colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Pink'**
+  String get profileSetupBannerColorPink;
+
+  /// Name of the orange banner colour.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get profileSetupBannerColorOrange;
+
+  /// Name of the purple banner colour, deeper than the violet swatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Purple'**
+  String get profileSetupBannerColorPurple;
+
+  /// Action in the profile picture sheet that removes the current picture.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get profileSetupAvatarClearButton;
+
+  /// Action in the avatar/banner image sheet that opens the camera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take photo'**
+  String get profileSetupImageTakePhoto;
+
+  /// Action in the avatar/banner image sheet that opens the photo gallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload from camera roll'**
+  String get profileSetupImageUploadFromCameraRoll;
+
+  /// Action in the avatar/banner image sheet that opens a field for an image URL.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste an image link'**
+  String get profileSetupImagePasteLink;
+
+  /// Semantic label and tooltip on the pencil button overlapping the avatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile picture'**
+  String get profileSetupEditAvatarLabel;
+
+  /// Semantic label and tooltip on the pencil button in the banner's top corner.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit banner'**
+  String get profileSetupEditBannerLabel;
 
   /// No description provided for @profileSetupUsernameChecking.
   ///

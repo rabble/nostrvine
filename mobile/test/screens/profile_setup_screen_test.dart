@@ -1,6 +1,8 @@
 // ABOUTME: Widget tests for username field in ProfileSetupScreen
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +17,6 @@ import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup/profile_setup.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -529,7 +530,9 @@ void main() {
     });
   });
 
-  group('$ProfileSetupScreen npub demotion (#3933)', () {
+  // #3933 demoted the npub to a bare link; the current design brings the
+  // labeled field back, with copy as its one affordance.
+  group('$ProfileSetupScreen public key', () {
     const testPubkeyHex =
         'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
     const testNpub =
@@ -573,65 +576,46 @@ void main() {
       );
     }
 
-    Widget buildSubjectWithRouter() {
-      final router = GoRouter(
-        initialLocation: ProfileSetupScreen.editPath,
-        routes: [
-          GoRoute(
-            path: ProfileSetupScreen.editPath,
-            name: ProfileSetupScreen.editRouteName,
-            builder: (context, state) =>
-                const ProfileSetupScreen(isNewUser: false),
-          ),
-          GoRoute(
-            path: KeyManagementScreen.path,
-            name: KeyManagementScreen.routeName,
-            builder: (context, state) => const KeyManagementScreen(),
-          ),
-        ],
-      );
-
-      return testProviderScope(
-        additionalOverrides: baseOverrides(),
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
-          routerConfig: router,
-        ),
-      );
-    }
-
-    testWidgets('does not render the labeled npub field', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      expect(find.text('Public key (npub)'), findsNothing);
-    });
-
-    testWidgets('renders a "View your public key" link', (tester) async {
+    testWidgets('renders the npub field with the whole identifier', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.profileEditPublicKeyLink), findsOneWidget);
+      expect(find.text(l10n.profileSetupPublicKeyLabel), findsOneWidget);
+      // Held whole: the row ellipsises on overflow but never shortens the
+      // identifier itself.
+      expect(find.text(testNpub), findsOneWidget);
     });
 
-    testWidgets(
-      'navigates to key management when "View your public key" is tapped',
-      (tester) async {
-        await tester.pumpWidget(buildSubjectWithRouter());
-        await tester.pump();
+    testWidgets('copies the npub to the clipboard', (tester) async {
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      String? copied;
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      });
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+      );
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        final linkFinder = find.text(l10n.profileEditPublicKeyLink);
-        await tester.ensureVisible(linkFinder);
-        await tester.tap(linkFinder);
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
 
-        expect(find.byType(KeyManagementScreen), findsOneWidget);
-      },
-    );
+      final copyButton = find.descendant(
+        of: find.byType(PublicKeyRow),
+        matching: find.byType(DivineIconButton),
+      );
+      await tester.ensureVisible(copyButton);
+      await tester.tap(copyButton);
+      await tester.pump();
+
+      expect(copied, testNpub);
+    });
   });
 
   group(ProfileSetupScreen, () {
@@ -745,6 +729,123 @@ void main() {
         ),
       );
     }
+
+    /// A profile snapshot. [eventId] must differ between snapshots that stand
+    /// for different kind-0 events — `UserProfile` equality is `pubkey` plus
+    /// `eventId`, so same-id profiles compare equal whatever their content.
+    models.UserProfile cachedProfile({
+      String? displayName = 'Cached Name',
+      String? picture = 'https://cdn.example.com/cached-avatar.jpg',
+      String? banner,
+      String eventId =
+          'event111111111111111111111111111111111111111111111111111111111111',
+    }) => models.UserProfile(
+      pubkey: testPubkeyHex,
+      displayName: displayName,
+      about: 'Cached bio',
+      picture: picture,
+      banner: banner,
+      rawData: const {},
+      createdAt: DateTime(2024),
+      eventId: eventId,
+    );
+
+    const freshEventId =
+        'event222222222222222222222222222222222222222222222222222222222222';
+
+    group('seeding the form', () {
+      testWidgets('fills from the cached profile before the relay answers', (
+        tester,
+      ) async {
+        // MyProfileLoading is what carries the cache; MyProfileLoaded only
+        // arrives once fetchFreshProfile returns. Waiting for the latter left
+        // the form blank for the whole round trip.
+        whenListen(
+          mockMyProfileBloc,
+          Stream<MyProfileState>.fromIterable([
+            MyProfileLoading(profile: cachedProfile()),
+          ]),
+          initialState: const MyProfileInitial(),
+        );
+
+        await pumpScreen(tester);
+        await tester.pump();
+
+        expect(find.text('Cached Name'), findsOneWidget);
+        final seeded = verify(
+          () => mockEditorBloc.add(captureAny()),
+        ).captured.whereType<InitialPersistedPictureSet>();
+        expect(seeded, hasLength(1));
+        expect(
+          seeded.single.pictureUrl,
+          'https://cdn.example.com/cached-avatar.jpg',
+        );
+      });
+
+      testWidgets('a later snapshot does not overwrite what the user typed', (
+        tester,
+      ) async {
+        final controller = StreamController<MyProfileState>();
+        addTearDown(controller.close);
+        whenListen(
+          mockMyProfileBloc,
+          controller.stream,
+          initialState: const MyProfileInitial(),
+        );
+
+        await pumpScreen(tester);
+        controller.add(MyProfileLoading(profile: cachedProfile()));
+        await tester.pump();
+
+        await tester.enterText(find.byType(TextField).first, 'My Own Name');
+        await tester.pump();
+
+        // The fresh profile lands while the user is mid-edit.
+        controller.add(
+          MyProfileLoaded(
+            profile: cachedProfile(
+              displayName: 'Relay Name',
+              eventId: freshEventId,
+            ),
+            isFresh: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('My Own Name'), findsOneWidget);
+        expect(find.text('Relay Name'), findsNothing);
+      });
+
+      testWidgets('a fresher profile still refreshes an untouched field', (
+        tester,
+      ) async {
+        final controller = StreamController<MyProfileState>();
+        addTearDown(controller.close);
+        whenListen(
+          mockMyProfileBloc,
+          controller.stream,
+          initialState: const MyProfileInitial(),
+        );
+
+        await pumpScreen(tester);
+        controller.add(MyProfileLoading(profile: cachedProfile()));
+        await tester.pump();
+        expect(find.text('Cached Name'), findsOneWidget);
+
+        controller.add(
+          MyProfileLoaded(
+            profile: cachedProfile(
+              displayName: 'Relay Name',
+              eventId: freshEventId,
+            ),
+            isFresh: true,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Relay Name'), findsOneWidget);
+      });
+    });
 
     testWidgets(
       'refreshes profile on resume after native verifier launch',
@@ -922,6 +1023,17 @@ void main() {
     });
 
     group('banner block', () {
+      /// The colour swatches and Clear sit two sheets deep now: the banner
+      /// pencil opens the source list, whose "Change color" row opens the
+      /// picker.
+      Future<void> openBannerColorSheet(WidgetTester tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileSetupBannerChangeColor));
+        await tester.pumpAndSettle();
+      }
+
       testWidgets(
         'pre-filled hex banner shows color preview',
         (tester) async {
@@ -1012,11 +1124,104 @@ void main() {
         },
       );
 
+      testWidgets('the banner sheet offers an image link', (tester) async {
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.profileSetupChangeBannerTitle), findsOneWidget);
+        expect(find.text(l10n.profileSetupImagePasteLink), findsOneWidget);
+        expect(find.text(l10n.profileSetupBannerChangeColor), findsOneWidget);
+      });
+
+      testWidgets('saving a pasted link stages it as the banner', (
+        tester,
+      ) async {
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileSetupImagePasteLink));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.byType(TextField).last,
+          'https://cdn.example.com/banner.jpg',
+        );
+        await tester.tap(find.text(l10n.profileSetupSaveButton).last);
+        await tester.pumpAndSettle();
+
+        final captured = verify(
+          () => mockEditorBloc.add(captureAny()),
+        ).captured;
+        final staged = captured.whereType<ProfileBannerUrlSet>();
+        expect(staged, hasLength(1));
+        expect(staged.single.url, 'https://cdn.example.com/banner.jpg');
+      });
+
+      testWidgets('clearing hides a persisted banner from the preview', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: 'https://cdn.example.com/banner.jpg',
+            bannerCleared: true,
+          ),
+        );
+
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byKey(const ValueKey('profile_banner_empty_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsNothing,
+        );
+      });
+
+      testWidgets('offers no clear row when there is no banner', (
+        tester,
+      ) async {
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.profileSetupBannerClearButton), findsNothing);
+      });
+
+      testWidgets('the colour row names the staged colour', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(pendingBannerColor: VineTheme.accentYellow),
+        );
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+
+        // Label stays as the caption, with the chosen colour beneath it.
+        expect(find.text(l10n.profileSetupBannerChangeColor), findsOneWidget);
+        expect(find.text(l10n.profileSetupBannerColorYellow), findsOneWidget);
+      });
+
       testWidgets(
         'tapping a color swatch dispatches ProfileBannerColorSelected',
         (tester) async {
           await pumpScreen(tester);
           await tester.pumpAndSettle();
+          await openBannerColorSheet(tester);
 
           final swatch = find.byKey(
             const ValueKey('profile_banner_color_swatch_preset_0'),
@@ -1052,6 +1257,8 @@ void main() {
           await tester.pumpAndSettle();
 
           final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+          await tester.pumpAndSettle();
           final clearButton = find.text(l10n.profileSetupBannerClearButton);
           await tester.ensureVisible(clearButton);
           await tester.tap(clearButton);
@@ -1071,10 +1278,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Provide a display name so the save proceeds.
-          await tester.enterText(
-            find.byType(TextFormField).first,
-            'Test User',
-          );
+          await tester.enterText(find.byType(TextField).first, 'Test User');
           await tester.pumpAndSettle();
 
           final l10n = lookupAppLocalizations(const Locale('en'));

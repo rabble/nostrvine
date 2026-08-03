@@ -5,16 +5,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/image_crop_launcher_provider.dart';
 import 'package:openvine/screens/image_crop_editor/image_crop_editor.dart';
+import 'package:openvine/screens/profile_setup/widgets/image_url_sheet.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_image_actions_sheet.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_image_picker.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Diameter of the avatar in the edit-profile header.
+const double avatarDiameter = 144;
 
 class ProfileAvatarSection extends ConsumerStatefulWidget {
   const ProfileAvatarSection({required this.nameController, super.key});
@@ -67,14 +71,14 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
           _pictureController.text = state.persistedPictureUrl ?? '',
       child: Center(
         child: SizedBox(
-          // 144 avatar + 20 (half of 40px buttons extending below)
-          height: 164,
-          width: 144,
+          height: avatarDiameter,
+          width: avatarDiameter,
           child: BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
             buildWhen: (prev, curr) =>
                 prev.pendingAvatarStatus != curr.pendingAvatarStatus ||
                 prev.pendingPictureUrl != curr.pendingPictureUrl ||
-                prev.persistedPictureUrl != curr.persistedPictureUrl,
+                prev.persistedPictureUrl != curr.persistedPictureUrl ||
+                prev.pictureCleared != curr.pictureCleared,
             builder: (context, editorState) {
               final isUploadingImage =
                   editorState.pendingAvatarStatus ==
@@ -86,7 +90,7 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
                     imageProvider: _buildProfilePictureProvider(editorState),
                     name: widget.nameController.text.trim(),
                     placeholderSeed: pubkey,
-                    size: 144,
+                    size: avatarDiameter,
                     semanticLabel:
                         context.l10n.profileSetupProfilePicturePreview,
                   ),
@@ -94,8 +98,8 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
                     Positioned(
                       top: 0,
                       left: 0,
-                      width: 144,
-                      height: 144,
+                      width: avatarDiameter,
+                      height: avatarDiameter,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(56),
@@ -111,37 +115,16 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
                         ),
                       ),
                     ),
+                  // Overhangs the avatar by 8px on both axes, as drawn.
                   Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Camera capture is mobile-only.
-                        if (!isDesktopImagePickerPlatform()) ...[
-                          _ImageSourceButton(
-                            iconAsset: DivineIconName.cameraPlus.assetPath,
-                            onTap: isUploadingImage
-                                ? null
-                                : () => _pickImage(ImageSource.camera),
-                          ),
-                          const SizedBox(width: 12),
-                        ],
-                        _ImageSourceButton(
-                          iconAsset: DivineIconName.imagesSquare.assetPath,
-                          onTap: isUploadingImage
-                              ? null
-                              : () => _pickImage(ImageSource.gallery),
-                        ),
-                        const SizedBox(width: 12),
-                        _ImageSourceButton(
-                          iconAsset: DivineIconName.linkSimple.assetPath,
-                          onTap: isUploadingImage
-                              ? null
-                              : () => _showImageUrlSheet(context),
-                        ),
-                      ],
+                    right: -8,
+                    bottom: -8,
+                    child: DivineIconButton(
+                      icon: DivineIconName.pencilSimple,
+                      size: DivineIconButtonSize.small,
+                      tooltip: context.l10n.profileSetupEditAvatarLabel,
+                      semanticLabel: context.l10n.profileSetupEditAvatarLabel,
+                      onPressed: isUploadingImage ? null : _openImageActions,
                     ),
                   ),
                 ],
@@ -171,12 +154,49 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
       return NetworkImage(pending);
     }
 
+    // Remove stages the absence of a picture, so the preview must stop falling
+    // back to the persisted one — otherwise it shows what Save will not write.
+    if (editorState.pictureCleared) return null;
+
     final persisted = editorState.persistedPictureUrl;
     if (persisted != null && persisted.isNotEmpty) {
       return NetworkImage(persisted);
     }
 
     return null;
+  }
+
+  /// Opens the picker sheet and runs whichever source the user picked.
+  Future<void> _openImageActions() async {
+    final editorState = context.read<ProfileEditorBloc>().state;
+    final hasPicture = editorState.effectivePictureUrl?.isNotEmpty ?? false;
+
+    final action = await showProfileImageActionsSheet(
+      context,
+      clearLabel: context.l10n.profileSetupAvatarClearButton,
+      actions: {
+        ProfileImageAction.camera,
+        ProfileImageAction.gallery,
+        ProfileImageAction.link,
+        if (hasPicture) ProfileImageAction.clear,
+      },
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case ProfileImageAction.camera:
+        await _pickImage(ImageSource.camera);
+      case ProfileImageAction.gallery:
+        await _pickImage(ImageSource.gallery);
+      case ProfileImageAction.link:
+        await _showImageUrlSheet(context);
+      case ProfileImageAction.clear:
+        setState(() => _selectedImageBytes = null);
+        _pictureController.clear();
+        context.read<ProfileEditorBloc>().add(const ProfilePictureCleared());
+      case ProfileImageAction.color:
+        // Banner-only; the avatar sheet never offers it.
+        break;
+    }
   }
 
   /// Platform-aware image selection with an interactive crop step.
@@ -273,112 +293,30 @@ class _ProfileAvatarSectionState extends ConsumerState<ProfileAvatarSection> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              source == ImageSource.gallery
-                  ? context.l10n.profileSetupImageSelectionFailed
-                  : context.l10n.profileSetupCameraAccessFailed('$e'),
-            ),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            source == ImageSource.gallery
+                ? context.l10n.profileSetupImageSelectionFailed
+                : context.l10n.profileSetupCameraAccessFailed('$e'),
+            error: true,
             duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: context.l10n.profileSetupGotItButton,
-              textColor: context.vineColors.primaryText,
-              onPressed: () {},
-            ),
+            actionLabel: context.l10n.profileSetupGotItButton,
+            onActionPressed: () {},
           ),
         );
       }
     }
   }
 
-  void _showImageUrlSheet(BuildContext context) {
-    // Unfocus any field before opening sheet
-    FocusScope.of(context).unfocus();
-    VineBottomSheet.show<void>(
-      context: context,
-      scrollable: false,
-      expanded: false,
-      isScrollControlled: true,
-      title: Text(
-        context.l10n.profileSetupImageUrlTitle,
-        style: VineTheme.titleMediumFont(color: context.vineColors.onSurface),
-      ),
-      children: [
-        Builder(
-          builder: (sheetContext) => Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-            ),
-            child: TextFormField(
-              controller: _pictureController,
-              style: TextStyle(color: context.vineColors.primaryText),
-              cursorColor: VineTheme.primary,
-              decoration: InputDecoration(
-                hintText: 'https://example.com/image.jpg',
-                hintStyle: TextStyle(color: context.vineColors.mutedText),
-                filled: true,
-                fillColor: context.vineColors.surfaceContainer,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(22),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              textInputAction: TextInputAction.done,
-              onChanged: (_) => setState(() {}),
-              onFieldSubmitted: (_) => Navigator.of(sheetContext).pop(),
-              keyboardType: TextInputType.url,
-              autofocus: true,
-            ),
-          ),
-        ),
-      ],
-    ).then((_) {
-      // Stage the URL the user typed so the avatar widget previews it and
-      // Save can publish it. Empty string clears any prior staged change.
-      if (context.mounted) {
-        context.read<ProfileEditorBloc>().add(
-          ProfilePictureUrlSet(_pictureController.text),
-        );
-        FocusScope.of(context).unfocus();
-      }
-    });
-  }
-}
-
-class _ImageSourceButton extends StatelessWidget {
-  const _ImageSourceButton({required this.iconAsset, required this.onTap});
-
-  final String iconAsset;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: context.vineColors.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.vineColors.outlineMuted, width: 2),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            iconAsset,
-            width: 24,
-            height: 24,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.primary,
-              BlendMode.srcIn,
-            ),
-          ),
-        ),
-      ),
+  Future<void> _showImageUrlSheet(BuildContext context) async {
+    final url = await showImageUrlSheet(
+      context,
+      initialUrl: _pictureController.text,
     );
+    if (url == null || !context.mounted) return;
+
+    _pictureController.text = url;
+    // Stage the URL so the avatar previews it and Save can publish it. An
+    // empty string clears any prior staged change.
+    context.read<ProfileEditorBloc>().add(ProfilePictureUrlSet(url));
   }
 }

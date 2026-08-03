@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -19,56 +20,46 @@ class VerifiedAccountsSection extends StatelessWidget {
       if (state is MyProfileUpdated) return state.verifiedClaims;
       return const [];
     });
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text(
-              l10n.profileEditVerifiedAccountsTitle,
-              style: VineTheme.labelMediumFont(
-                color: context.vineColors.mutedText,
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        Text(
+          l10n.profileEditVerifiedAccountsTitle,
+          style: VineTheme.labelMediumFont(
+            color: context.vineColors.mutedText,
           ),
-          if (claims.isNotEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: VerifiedAccountsRow(claims: claims),
-            ),
-            const SizedBox(height: 8),
-          ],
-          const _GetVerifiedTile(),
-        ],
-      ),
+        ),
+        if (claims.isNotEmpty) VerifiedAccountsRow(claims: claims),
+        const _GetVerifiedTile(),
+      ],
     );
   }
 }
 
+/// The entry point into the verifier, drawn as one of the form's cards.
+///
+/// Same surface, radius and height as the fields above it, with the brand
+/// accent on the affordance — a row that reads as part of the form rather than
+/// a list tile bolted underneath it.
 class _GetVerifiedTile extends StatelessWidget {
   const _GetVerifiedTile();
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return ListTile(
-      title: Text(
-        l10n.profileEditGetVerifiedCta,
-        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
-      ),
-      subtitle: Text(
-        l10n.profileEditGetVerifiedSubtitle,
-        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
-      ),
-      trailing: DivineIcon(
-        icon: DivineIconName.caretRight,
-        color: context.vineColors.mutedText,
-      ),
-      onTap: () => context.read<ProfileEditorBloc>().add(
-        const VerifierLaunchRequested(),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ProfileSelectRow(
+          label: l10n.profileEditGetVerifiedCta,
+          trailingColor: VineTheme.primary,
+          onTap: () => context.read<ProfileEditorBloc>().add(
+            const VerifierLaunchRequested(),
+          ),
+        ),
+        ProfileFieldSupportingText(l10n.profileEditGetVerifiedSubtitle),
+      ],
     );
   }
 }

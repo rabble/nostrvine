@@ -10,6 +10,7 @@ import 'dart:ui' show Color;
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -1473,7 +1474,7 @@ void main() {
         );
         expect(
           const ProfileEditorState(
-            isBannerCleared: true,
+            bannerCleared: true,
             persistedBanner: 'https://cdn.example.com/old.jpg',
           ).hasUnsavedChanges,
           isTrue,
@@ -3219,7 +3220,7 @@ void main() {
         build: createBloc,
         seed: () => const ProfileEditorState(
           persistedBanner: 'https://cdn.example.com/banner.jpg',
-          isBannerCleared: true,
+          bannerCleared: true,
         ),
         act: (bloc) => bloc.add(
           const ProfileSaved(
@@ -3237,6 +3238,41 @@ void main() {
           ).captured;
           final payload = captured[0] as PendingProfileSave;
           expect(payload.banner, isNull);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved after a clear publishes no picture at all',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: testPersistedUrl,
+          pictureCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+            // The legacy caller-supplied fallback must not resurrect it either.
+            picture: testPersistedUrl,
+          ),
+        ),
+        verify: (_) {
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
+            ),
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.picture, isNull);
         },
       );
 
@@ -3487,6 +3523,153 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUrlSet stages the trimmed URL and drops a staged color',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingBannerColor: VineTheme.vineGreen,
+        ),
+        act: (bloc) =>
+            bloc.add(const ProfileBannerUrlSet('  $testStagedUrl  ')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingBannerStatus,
+                'pendingBannerStatus',
+                PendingBannerStatus.staged,
+              )
+              .having(
+                (s) => s.pendingBannerUrl,
+                'pendingBannerUrl',
+                testStagedUrl,
+              )
+              .having(
+                (s) => s.pendingBannerColor,
+                'pendingBannerColor',
+                isNull,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUrlSet with an empty string clears the staged URL',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingBannerUrl: testStagedUrl,
+          pendingBannerStatus: PendingBannerStatus.staged,
+        ),
+        act: (bloc) => bloc.add(const ProfileBannerUrlSet('   ')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.pendingBannerUrl, 'pendingBannerUrl', isNull)
+              .having(
+                (s) => s.pendingBannerStatus,
+                'pendingBannerStatus',
+                PendingBannerStatus.idle,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerCleared drops a persisted banner, not just the staged one',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: 'https://cdn.example.com/old.jpg',
+          pendingBannerUrl: testStagedUrl,
+          pendingBannerStatus: PendingBannerStatus.staged,
+        ),
+        act: (bloc) => bloc.add(const ProfileBannerCleared()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.bannerCleared, 'bannerCleared', isTrue)
+              // What Save publishes — null, not the persisted value.
+              .having((s) => s.effectiveBanner, 'effectiveBanner', isNull),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'staging a new banner after a clear cancels the removal',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: 'https://cdn.example.com/old.jpg',
+          bannerCleared: true,
+        ),
+        act: (bloc) => bloc.add(const ProfileBannerUrlSet(testStagedUrl)),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.bannerCleared, 'bannerCleared', isFalse)
+              .having(
+                (s) => s.effectiveBanner,
+                'effectiveBanner',
+                testStagedUrl,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureCleared drops a persisted picture, not just the staged '
+        'one',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+          pendingPictureUrl: 'https://cdn.example.com/staged-avatar.jpg',
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+        ),
+        act: (bloc) => bloc.add(const ProfilePictureCleared()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.pictureCleared, 'pictureCleared', isTrue)
+              // What Save publishes — null, not the persisted value.
+              .having(
+                (s) => s.effectivePictureUrl,
+                'effectivePictureUrl',
+                isNull,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'staging a new picture after a clear cancels the removal',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+          pictureCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfilePictureUrlSet('https://cdn.example.com/n.jpg'),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.pictureCleared, 'pictureCleared', isFalse)
+              .having(
+                (s) => s.effectivePictureUrl,
+                'effectivePictureUrl',
+                'https://cdn.example.com/n.jpg',
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureCleared while uploading is ignored',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.uploading,
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+        ),
+        act: (bloc) => bloc.add(const ProfilePictureCleared()),
+        expect: () => <ProfileEditorState>[],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUrlSet while uploading is ignored',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingBannerStatus: PendingBannerStatus.uploading,
+        ),
+        act: (bloc) => bloc.add(const ProfileBannerUrlSet(testStagedUrl)),
+        expect: () => const <ProfileEditorState>[],
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(

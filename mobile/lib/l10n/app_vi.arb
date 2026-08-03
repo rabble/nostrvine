@@ -486,6 +486,27 @@
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
   },
+  "profileSetupBannerChangeColor": "Màu biểu ngữ",
+  "profileSetupBannerColorPickerTitle": "Đổi màu biểu ngữ",
+  "profileSetupBannerColorNone": "Không màu",
+  "profileSetupBannerColorCustom": "Tùy chỉnh",
+  "profileSetupBannerColorLime": "Xanh chanh",
+  "profileSetupBannerColorYellow": "Vàng",
+  "profileSetupBannerColorViolet": "Tím nhạt",
+  "profileSetupBannerColorPink": "Hồng",
+  "profileSetupBannerColorOrange": "Cam",
+  "profileSetupBannerColorPurple": "Tím",
+  "profileSetupAvatarClearButton": "Xóa ảnh",
+  "profileSetupChangeBannerTitle": "Đổi biểu ngữ",
+  "profileSetupImageTakePhoto": "Chụp ảnh",
+  "profileSetupImageUploadFromCameraRoll": "Tải lên từ thư viện ảnh",
+  "profileSetupImagePasteLink": "Dán liên kết hình ảnh",
+  "profileSetupEditAvatarLabel": "Chỉnh sửa ảnh đại diện",
+  "profileSetupEditBannerLabel": "Chỉnh sửa biểu ngữ",
+  "profileSetupPublicKeyLabel": "Khóa công khai (npub)",
+  "@profileSetupBannerUploadSuccess": {
+    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
+  },
   "profileSetupUsernameChecking": "Đang kiểm tra...",
   "profileSetupUsernameAvailable": "Tên người dùng còn trống!",
   "profileSetupUsernameTakenIndicator": "Tên người dùng đã có người dùng",

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -17,7 +18,7 @@ import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 /// (profile load -> controllers, save status snackbars/dialogs/navigation,
 /// avatar/banner upload status, and the verifier launch). Kept separate from
 /// the view so the view body stays a thin composition.
-class ProfileSetupListeners extends ConsumerWidget {
+class ProfileSetupListeners extends ConsumerStatefulWidget {
   const ProfileSetupListeners({
     required this.isNewUser,
     required this.nameController,
@@ -42,55 +43,147 @@ class ProfileSetupListeners extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileSetupListeners> createState() =>
+      _ProfileSetupListenersState();
+}
+
+class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
+  /// What the last seed wrote into each field.
+  ///
+  /// Lets a later profile snapshot tell "untouched since we filled it" from
+  /// "the user typed this", so refreshing the form never eats an edit.
+  String? _seededName;
+  String? _seededBio;
+  String? _seededWebsite;
+  String? _seededUsername;
+
+  /// Whether a profile has reached the form yet. The one-shot seeds — mode,
+  /// initial username, external NIP-05 — only run on the first one.
+  bool _hasSeeded = false;
+
+  /// The profile carried by [state], whichever shape it arrived in.
+  static UserProfile? _profileOf(MyProfileState state) => switch (state) {
+    MyProfileLoading(:final profile) => profile,
+    MyProfileLoaded(:final profile) => profile,
+    MyProfileUpdated(:final profile) => profile,
+    _ => null,
+  };
+
+  /// Fills the form from the first snapshot that carries a profile, then keeps
+  /// untouched fields in step as fresher data lands.
+  ///
+  /// The cached profile arrives on [MyProfileLoading], well before the relay
+  /// answers — waiting for [MyProfileLoaded] left the form blank for the whole
+  /// round trip even though the profile screen had already drawn it.
+  void _seedFrom(MyProfileState state) {
+    final profile = _profileOf(state);
+    if (profile == null) return;
+
+    final (extractedUsername, externalNip05) = switch (state) {
+      MyProfileLoading(:final extractedUsername, :final externalNip05) => (
+        extractedUsername,
+        externalNip05,
+      ),
+      MyProfileLoaded(:final extractedUsername, :final externalNip05) => (
+        extractedUsername,
+        externalNip05,
+      ),
+      MyProfileUpdated(:final extractedUsername, :final externalNip05) => (
+        extractedUsername,
+        externalNip05,
+      ),
+      _ => (null, null),
+    };
+
+    _seededName = _seedText(
+      widget.nameController,
+      profile.displayName ?? profile.name ?? '',
+      _seededName,
+    );
+    _seededBio = _seedText(
+      widget.bioController,
+      profile.about ?? '',
+      _seededBio,
+    );
+    _seededWebsite = _seedText(
+      widget.websiteController,
+      profile.website ?? '',
+      _seededWebsite,
+    );
+    if (extractedUsername != null) {
+      _seededUsername = _seedText(
+        widget.nip05Controller,
+        extractedUsername,
+        _seededUsername,
+      );
+    }
+
+    final editorBloc = context.read<ProfileEditorBloc>();
+    if (!_hasSeeded) {
+      _hasSeeded = true;
+      // Seed bloc with the persisted picture so the avatar widget can
+      // render `pendingPictureUrl ?? persistedPictureUrl` purely from
+      // state, no widget-local fallback for the existing avatar. The initial
+      // fields set the baseline that Revert changes restores.
+      editorBloc
+        ..add(
+          InitialProfileFieldsSet(
+            displayName: profile.displayName ?? profile.name ?? '',
+            about: profile.about ?? '',
+            website: profile.website ?? '',
+          ),
+        )
+        ..add(InitialPersistedPictureSet(profile.picture))
+        ..add(InitialPersistedBannerSet(profile.banner));
+      if (extractedUsername != null) {
+        editorBloc.add(InitialUsernameSet(extractedUsername));
+      }
+      if (externalNip05 != null) {
+        // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
+        // Seed editor state here so Save from Edit Profile preserves it.
+        editorBloc
+          ..add(InitialExternalNip05Set(externalNip05))
+          ..add(const Nip05ModeChanged(Nip05Mode.external_))
+          ..add(ExternalNip05Changed(externalNip05));
+      }
+      return;
+    }
+
+    // A fresher picture or banner may replace the seeded one, but only while
+    // the user has staged nothing of their own — InitialPersistedBannerSet
+    // also rewrites the pending colour, which would undo a swatch they just
+    // picked.
+    final editorState = editorBloc.state;
+    if (editorState.pendingPictureUrl == null && !editorState.pictureCleared) {
+      editorBloc.add(InitialPersistedPictureSet(profile.picture));
+    }
+    if (editorState.pendingBannerUrl == null &&
+        editorState.pendingBannerColor == null &&
+        !editorState.bannerCleared) {
+      editorBloc.add(InitialPersistedBannerSet(profile.banner));
+    }
+  }
+
+  /// Writes [value] into [controller] unless the user has edited it since the
+  /// last seed. Returns the value to remember for the next comparison.
+  String _seedText(
+    TextEditingController controller,
+    String value,
+    String? seeded,
+  ) {
+    if (seeded != null && controller.text != seeded) return seeded;
+    if (controller.text != value) controller.text = value;
+    return value;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isNewUser = widget.isNewUser;
     return MultiBlocListener(
       listeners: [
         BlocListener<MyProfileBloc, MyProfileState>(
-          listenWhen: (prev, curr) => curr is MyProfileLoaded,
-          listener: (context, myProfileState) {
-            if (myProfileState is! MyProfileLoaded) return;
-
-            final profile = myProfileState.profile;
-            final extractedUsername = myProfileState.extractedUsername;
-            final externalNip05 = myProfileState.externalNip05;
-            final displayName = profile.displayName ?? profile.name ?? '';
-            final about = profile.about ?? '';
-            final website = profile.website ?? '';
-
-            nameController.text = displayName;
-            bioController.text = about;
-            websiteController.text = website;
-
-            if (extractedUsername != null) {
-              nip05Controller.text = extractedUsername;
-            }
-
-            final editorBloc = context.read<ProfileEditorBloc>();
-            // Seed bloc with the persisted picture so the avatar widget can
-            // render `pendingPictureUrl ?? persistedPictureUrl` purely from
-            // state, no widget-local fallback for the existing avatar.
-            editorBloc
-              ..add(
-                InitialProfileFieldsSet(
-                  displayName: displayName,
-                  about: about,
-                  website: website,
-                ),
-              )
-              ..add(InitialPersistedPictureSet(profile.picture))
-              ..add(InitialPersistedBannerSet(profile.banner));
-            if (extractedUsername != null) {
-              editorBloc.add(InitialUsernameSet(extractedUsername));
-            }
-            if (externalNip05 != null) {
-              // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
-              // Seed editor state here so Save from Edit Profile preserves it.
-              editorBloc
-                ..add(InitialExternalNip05Set(externalNip05))
-                ..add(const Nip05ModeChanged(Nip05Mode.external_))
-                ..add(ExternalNip05Changed(externalNip05));
-            }
-          },
+          listenWhen: (prev, curr) => _profileOf(prev) != _profileOf(curr),
+          listener: (context, myProfileState) => _seedFrom(myProfileState),
         ),
         BlocListener<ProfileEditorBloc, ProfileEditorState>(
           listenWhen: (prev, curr) => prev.status != curr.status,
@@ -106,29 +199,8 @@ class ProfileSetupListeners extends ConsumerWidget {
               }
 
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: VineTheme.vineGreen,
-                          shape: BoxShape.circle,
-                        ),
-                        child: DivineIcon(
-                          icon: DivineIconName.check,
-                          color: context.vineColors.primaryText,
-                          size: 17,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        context.l10n.profileSetupProfilePublished,
-                        style: const TextStyle(color: VineTheme.vineGreen),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: context.vineColors.primaryText,
+                DivineSnackbarContainer.snackBar(
+                  context.l10n.profileSetupProfilePublished,
                 ),
               );
               if (isNewUser) {
@@ -190,9 +262,9 @@ class ProfileSetupListeners extends ConsumerWidget {
               switch (state.error) {
                 case ProfileEditorError.usernameTaken:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.profileSetupUsernameTaken),
-                      backgroundColor: VineTheme.error,
+                    DivineSnackbarContainer.snackBar(
+                      context.l10n.profileSetupUsernameTaken,
+                      error: true,
                       duration: const Duration(seconds: 3),
                     ),
                   );
@@ -209,16 +281,16 @@ class ProfileSetupListeners extends ConsumerWidget {
                 case ProfileEditorError.claimFailed:
                 case ProfileEditorError.claimNetworkError:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.profileSetupClaimFailed),
-                      backgroundColor: VineTheme.error,
+                    DivineSnackbarContainer.snackBar(
+                      context.l10n.profileSetupClaimFailed,
+                      error: true,
                     ),
                   );
                 case ProfileEditorError.publishFailed:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(context.l10n.profileSetupPublishFailed),
-                      backgroundColor: VineTheme.error,
+                    DivineSnackbarContainer.snackBar(
+                      context.l10n.profileSetupPublishFailed,
+                      error: true,
                     ),
                   );
                 case null:
@@ -237,20 +309,17 @@ class ProfileSetupListeners extends ConsumerWidget {
                 // from `effectivePictureUrl`). The snackbar makes the staged
                 // contract explicit: bytes uploaded, not yet published.
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.l10n.profileSetupUploadStaged),
-                    backgroundColor: VineTheme.vineGreen,
+                  DivineSnackbarContainer.snackBar(
+                    context.l10n.profileSetupUploadStaged,
                   ),
                 );
               case PendingAvatarStatus.failed:
                 final classified =
                     state.avatarUploadError ?? AvatarUploadError.generic;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      profileSetupUploadErrorMessage(context.l10n, classified),
-                    ),
-                    backgroundColor: VineTheme.error,
+                  DivineSnackbarContainer.snackBar(
+                    profileSetupUploadErrorMessage(context.l10n, classified),
+                    error: true,
                   ),
                 );
               case PendingAvatarStatus.idle:
@@ -266,23 +335,20 @@ class ProfileSetupListeners extends ConsumerWidget {
             switch (state.pendingBannerStatus) {
               case PendingBannerStatus.staged:
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.l10n.profileSetupUploadStaged),
-                    backgroundColor: VineTheme.vineGreen,
+                  DivineSnackbarContainer.snackBar(
+                    context.l10n.profileSetupUploadStaged,
                   ),
                 );
               case PendingBannerStatus.failed:
                 final classified =
                     state.bannerUploadError ?? BannerUploadError.generic;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      profileSetupBannerUploadErrorMessage(
-                        context.l10n,
-                        classified,
-                      ),
+                  DivineSnackbarContainer.snackBar(
+                    profileSetupBannerUploadErrorMessage(
+                      context.l10n,
+                      classified,
                     ),
-                    backgroundColor: VineTheme.error,
+                    error: true,
                   ),
                 );
               case PendingBannerStatus.idle:
@@ -304,20 +370,20 @@ class ProfileSetupListeners extends ConsumerWidget {
               },
             );
             if (launched && !kIsWeb && context.mounted) {
-              onNativeVerifierLaunched();
+              widget.onNativeVerifierLaunched();
             }
             if (!launched && context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(context.l10n.relaySettingsCouldNotOpenBrowser),
-                  backgroundColor: VineTheme.error,
+                DivineSnackbarContainer.snackBar(
+                  context.l10n.relaySettingsCouldNotOpenBrowser,
+                  error: true,
                 ),
               );
             }
           },
         ),
       ],
-      child: child,
+      child: widget.child,
     );
   }
 }
