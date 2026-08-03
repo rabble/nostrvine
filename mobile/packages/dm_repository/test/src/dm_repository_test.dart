@@ -14243,6 +14243,85 @@ void main() {
       );
 
       test(
+        'a hard failure reports the row it parked, so a retry can re-drive '
+        'that row instead of enqueuing a second copy (#6610)',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure('relay unavailable'),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'parked message',
+          );
+
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          // Without this the caller has no handle on the row and its only
+          // option is another sendMessage, which mints a fresh rumor — the
+          // sweep then delivers one copy and the retry delivers another.
+          expect(result.queuedRumorId, equals(enqueued.id));
+        },
+      );
+
+      test(
+        'a soft-unconfirmed send reports the row it left pending',
+        () async {
+          stubSendRumor(
+            (_, _) async => const NIP17SendResult.failure(
+              'Message recipient OK unconfirmed',
+              retryablePending: true,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'unconfirmed message',
+          );
+
+          final enqueued =
+              verify(
+                    () => mockOutgoingDmsDao.enqueue(captureAny()),
+                  ).captured.single
+                  as OutgoingDm;
+          expect(result.queuedRumorId, equals(enqueued.id));
+        },
+      );
+
+      test(
+        'a policy block reports no parked row — the gate returns before the '
+        'enqueue, so there is nothing to re-drive',
+        () async {
+          when(
+            () => mockMessageService.canSendTo(_validPubkeyB),
+          ).thenAnswer((_) async => false);
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'should be blocked before enqueue',
+          );
+
+          expect(result.blocked, isTrue);
+          expect(result.queuedRumorId, isNull);
+        },
+      );
+
+      test(
         'on publish failure: marks both wraps failed with the error '
         'and leaves the row for the retry service',
         () async {

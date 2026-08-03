@@ -3068,6 +3068,7 @@ class DmRepository {
         isGroup: false,
         content: content,
       );
+      return _stampQueuedRow(result, rumor.id);
     } else if (outgoingDao != null) {
       // Recipient publish hard-failed (explicit rejection / offline / error)
       // before the self-wrap could land, so both wrap statuses remain
@@ -3086,10 +3087,29 @@ class DmRepository {
         isGroup: false,
         content: content,
       );
+      return _stampQueuedRow(result, rumor.id);
     }
 
     return result;
   }
+
+  /// Tag a failure with the `outgoing_dms` row it left parked, so the caller
+  /// can re-drive that row ([recoverFullSend]) instead of calling
+  /// [sendMessage] again — a second call mints a fresh rumor and a second
+  /// durable row, and the sweep then delivers one copy while the retry
+  /// delivers another.
+  ///
+  /// Only ever called from the two branches that finalize a surviving row;
+  /// the blocked branch deletes its row and the success branch consumes it.
+  NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
+      switch (result) {
+        NIP17SendSuccess() => result,
+        NIP17SendFailure() => NIP17SendFailure(
+          result.error,
+          retryablePending: result.retryablePending,
+          queuedRumorId: rumorId,
+        ),
+      };
 
   /// Shares a video into a 1:1 NIP-17 DM as a kind-14 rumor that cites the
   /// video with a NIP-18 `q` tag and a NIP-21 `nostr:` URI, in addition to the

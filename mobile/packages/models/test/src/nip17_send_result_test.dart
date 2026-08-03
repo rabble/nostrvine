@@ -99,6 +99,36 @@ void main() {
         expect(success.retryablePending, isFalse);
         expect(blocked.retryablePending, isFalse);
       });
+
+      test('carries the queued row id when the send parked one, so a retry '
+          'can re-drive that row instead of enqueuing a second', () {
+        const result = NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'rumor_abc',
+        );
+
+        expect(result.queuedRumorId, equals('rumor_abc'));
+      });
+
+      test('defaults queuedRumorId to null — a send that parked no row has '
+          'nothing for a caller to coalesce onto', () {
+        const result = NIP17SendResult.failure('boom');
+
+        expect(result.queuedRumorId, isNull);
+      });
+
+      test('success and blocked never carry a queuedRumorId: success '
+          'consumes the row and the send gate returns before the enqueue', () {
+        final success = NIP17SendResult.success(
+          rumorEventId: rumorEventId,
+          messageEventId: messageEventId,
+          recipientPubkey: recipientPubkey,
+        );
+        const blocked = NIP17SendResult.blocked('policy');
+
+        expect(success.queuedRumorId, isNull);
+        expect(blocked.queuedRumorId, isNull);
+      });
     });
 
     group('blocked factory', () {
@@ -158,6 +188,16 @@ void main() {
         expect(soft.toString(), contains('blocked: false'));
         expect(blocked.toString(), contains('blocked: true'));
         expect(blocked.toString(), contains('retryablePending: false'));
+      });
+
+      test('failure path surfaces the parked queue row — a report of "not '
+          'delivered" is only actionable alongside the row to re-drive', () {
+        const parked = NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'rumor_abc',
+        );
+
+        expect(parked.toString(), contains('queuedRumorId: rumor_abc'));
       });
     });
 
@@ -269,6 +309,18 @@ void main() {
 
         expect(hard, isNot(equals(soft)));
         expect(hard.hashCode, isNot(equals(soft.hashCode)));
+      });
+
+      test('value equality: differing queuedRumorId breaks equality — two '
+          'failures parking different rows are not interchangeable', () {
+        const unparked = NIP17SendFailure('boom');
+        const parked = NIP17SendFailure('boom', queuedRumorId: 'rumor_abc');
+        const other = NIP17SendFailure('boom', queuedRumorId: 'rumor_xyz');
+
+        expect(unparked, isNot(equals(parked)));
+        expect(unparked.hashCode, isNot(equals(parked.hashCode)));
+        expect(parked, isNot(equals(other)));
+        expect(parked.hashCode, isNot(equals(other.hashCode)));
       });
 
       test('value equality: blocked and transient failures with the same '
