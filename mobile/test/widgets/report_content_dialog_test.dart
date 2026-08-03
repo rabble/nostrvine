@@ -178,7 +178,8 @@ void main() {
     });
 
     testWidgets(
-      'Submit button is visible even before selecting a reason (Apple requirement)',
+      'Submit button is visible before selecting a reason (Apple requirement) '
+      'but stays disabled until one is picked',
       (tester) async {
         await setLargeSurface(tester);
 
@@ -189,34 +190,26 @@ void main() {
           DivineButton,
           l10n.reportSubmit,
         );
-        expect(submitButton, findsOneWidget);
-
-        final DivineButton button = tester.widget(submitButton);
         expect(
-          button.onPressed,
-          isNotNull,
+          submitButton,
+          findsOneWidget,
           reason:
-              'Submit button must be visible/enabled before selecting reason '
+              'Submit button must be visible before selecting a reason '
               '(Apple requirement)',
         );
-      },
-    );
+        expect(
+          tester.widget<DivineButton>(submitButton).onPressed,
+          isNull,
+          reason: 'Nothing to submit until a reason is picked',
+        );
 
-    testWidgets(
-      'Submit button shows error when tapped without selecting reason',
-      (tester) async {
-        await setLargeSurface(tester);
-
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.tap(find.text(l10n.reportReasonSpam));
         await tester.pumpAndSettle();
 
         expect(
-          find.text(l10n.reportSelectReason),
-          findsOneWidget,
-          reason: 'Should show error when no reason selected',
+          tester.widget<DivineButton>(submitButton).onPressed,
+          isNotNull,
+          reason: 'Picking a reason enables submission',
         );
       },
     );
@@ -563,16 +556,38 @@ void main() {
         await setLargeSurface(tester);
         await openBottomSheetReport(tester);
 
-        await tester.ensureVisible(
-          find.widgetWithText(DivineButton, l10n.reportSubmit),
-        );
+        await tester.ensureVisible(find.text(l10n.reportReasonOther));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.reportReasonOther));
+        await tester.pumpAndSettle();
+
         await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
 
-        expect(find.text(l10n.reportSelectReason), findsOneWidget);
+        expect(find.text(l10n.reportOtherRequiresDetails), findsOneWidget);
         expect(find.byType(SnackBar), findsNothing);
       },
     );
+
+    testWidgets('dragging the sheet content down dismisses the sheet', (
+      tester,
+    ) async {
+      await setLargeSurface(tester);
+      await openBottomSheetReport(tester);
+
+      expect(find.text(l10n.reportWhyReporting), findsOneWidget);
+
+      // The sheet's scroll view must run on the DraggableScrollableSheet's
+      // own controller — with a private one the drag never reaches the sheet
+      // and the report form traps the user.
+      await tester.drag(
+        find.text(l10n.reportWhyReporting),
+        const Offset(0, 600),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.reportWhyReporting), findsNothing);
+    });
 
     testWidgets('Other reason with details submits successfully', (
       tester,

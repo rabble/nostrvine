@@ -42,6 +42,7 @@ class ReportContentDialog extends ConsumerStatefulWidget {
     this.moderationEventLabel = 'Event',
     this.isFromShareMenu = false,
     this.draggableController,
+    this.scrollController,
   }) {
     final hasVideo = video != null;
     final hasContent = eventId != null && authorPubkey != null;
@@ -87,6 +88,15 @@ class ReportContentDialog extends ConsumerStatefulWidget {
   /// field is reachable above the keyboard).
   final DraggableScrollableController? draggableController;
 
+  /// Scroll controller handed down by the enclosing [VineBottomSheet].
+  ///
+  /// The sheet's [DraggableScrollableSheet] only reacts to a downward drag
+  /// when its own controller drives the scroll view inside it — with a
+  /// foreign controller the drag is swallowed by the content and the sheet
+  /// can no longer be pulled closed. Null when the dialog is shown outside a
+  /// draggable sheet, where an internal controller stands in.
+  final ScrollController? scrollController;
+
   static Future<void> show(
     BuildContext context, {
     required VideoEvent video,
@@ -99,10 +109,11 @@ class ReportContentDialog extends ConsumerStatefulWidget {
           maxChildSize: 0.95,
           minChildSize: 0.5,
           draggableController: controller,
-          body: ReportContentDialog(
+          buildScrollBody: (scrollController) => ReportContentDialog(
             video: video,
             isFromShareMenu: isFromShareMenu,
             draggableController: controller,
+            scrollController: scrollController,
           ),
         )
         .whenComplete(controller.dispose);
@@ -122,12 +133,13 @@ class ReportContentDialog extends ConsumerStatefulWidget {
           maxChildSize: 0.95,
           minChildSize: 0.5,
           draggableController: controller,
-          body: ReportContentDialog(
+          buildScrollBody: (scrollController) => ReportContentDialog(
             eventId: messageId,
             authorPubkey: senderPubkey,
             moderationKindLabel: 'DM Message Report',
             moderationEventLabel: 'Message ID',
             draggableController: controller,
+            scrollController: scrollController,
           ),
         )
         .whenComplete(controller.dispose);
@@ -149,11 +161,12 @@ class ReportContentDialog extends ConsumerStatefulWidget {
           maxChildSize: 0.95,
           minChildSize: 0.5,
           draggableController: controller,
-          body: ReportContentDialog(
+          buildScrollBody: (scrollController) => ReportContentDialog(
             userPubkey: userPubkey,
             moderationKindLabel: 'User Report',
             moderationEventLabel: 'User Pubkey',
             draggableController: controller,
+            scrollController: scrollController,
           ),
         )
         .whenComplete(controller.dispose);
@@ -170,7 +183,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   final FocusNode _detailsFocusNode = FocusNode();
   final GlobalKey _detailsFieldKey = GlobalKey();
   final GlobalKey _otherCardKey = GlobalKey();
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _fallbackScrollController = ScrollController();
   bool _isSubmitting = false;
   bool _submitted = false;
   bool _moderationDmFailed = false;
@@ -179,6 +192,13 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   double _previousViewInsetsBottom = 0;
 
   bool get _isUserReport => widget.userPubkey != null;
+
+  ScrollController get _scrollController =>
+      widget.scrollController ?? _fallbackScrollController;
+
+  /// Submission needs a reason; "Other" additionally needs details, but that
+  /// stays a tap-time inline error so the reason for the block is explained.
+  bool get _canSubmit => _selectedReason != null && !_isSubmitting;
 
   String get _eventId {
     final userPubkey = widget.userPubkey;
@@ -237,169 +257,54 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    if (_submitted) {
-      final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
-      final moderationPubkey = ref
-          .read(moderationLabelServiceProvider)
-          .divineModerationPubkeyHex;
-      // The moderation conversation is an ordinary NIP-17 thread; deep-link
-      // straight to it so the user can follow up about their report. Null
-      // when we have no current pubkey (signed out) — the button hides.
-      final moderationConversationId =
-          (currentPubkey != null && currentPubkey.isNotEmpty)
-          ? DmRepository.computeConversationId([
-              currentPubkey,
-              moderationPubkey,
-            ])
-          : null;
-      return _ReportConfirmationView(
-        isFromShareMenu: widget.isFromShareMenu,
-        moderationDmFailed: _moderationDmFailed,
-        moderationPubkey: moderationPubkey,
-        moderationConversationId: moderationConversationId,
-      );
-    }
-
-    final l10n = context.l10n;
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final safeAreaBottom = MediaQuery.viewPaddingOf(context).bottom;
-    return SingleChildScrollView(
-      controller: _scrollController,
-      padding: EdgeInsetsDirectional.fromSTEB(
-        16,
-        8,
-        16,
-        24 + keyboardInset + safeAreaBottom,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Text(
-            l10n.reportWhyReporting,
-            style: VineTheme.titleMediumFont(
-              color: context.vineColors.primaryText,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.reportPolicyNotice,
-            style: VineTheme.bodyMediumFont(
-              color: context.vineColors.onSurfaceMuted,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...ContentFilterReason.values.map(
-            (reason) => Padding(
-              key: reason == ContentFilterReason.other ? _otherCardKey : null,
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _ReasonCard(
-                title: l10n.reportReasonTitle(reason),
-                subtitle: l10n.reportReasonSubtitle(reason),
-                isSelected: _selectedReason == reason,
-                onTap: () => _onReasonSelected(reason),
-              ),
-            ),
-          ),
-          if (_selectedReason == ContentFilterReason.other) ...[
-            const SizedBox(height: 4),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: context.vineColors.surfaceContainer,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 4,
-                  children: [
-                    Text(
-                      l10n.reportDetailsRequired,
-                      style: VineTheme.labelSmallFont(
-                        color: VineTheme.vineGreen,
-                      ),
-                    ),
-                    TextField(
-                      key: _detailsFieldKey,
-                      controller: _detailsController,
-                      focusNode: _detailsFocusNode,
-                      enableInteractiveSelection: true,
-                      onChanged: (_) {
-                        if (_errorMessage == null) return;
-                        setState(() => _errorMessage = null);
-                      },
-                      style: VineTheme.bodyLargeFont(
-                        color: context.vineColors.primaryText,
-                      ),
-                      minLines: 3,
-                      maxLines: 5,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        isCollapsed: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          if (_errorMessage case final errorMessage?) ...[
-            const SizedBox(height: 16),
-            Semantics(
-              container: true,
-              liveRegion: true,
-              label: errorMessage,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: VineTheme.error.withValues(alpha: 0.1),
-                  border: Border.all(color: VineTheme.error),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      const DivineIcon(
-                        icon: DivineIconName.warningCircle,
-                        color: VineTheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          errorMessage,
-                          style: VineTheme.bodySmallFont(
-                            color: VineTheme.error,
-                          ),
-                        ),
-                      ),
-                    ],
+    // One scroll view across both states so the sheet's scroll controller
+    // stays attached to a single position when the form is swapped for the
+    // confirmation — the actions ride in the pinned footer instead.
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 16),
+            child: _submitted
+                ? _ReportConfirmationBody(
+                    moderationDmFailed: _moderationDmFailed,
+                  )
+                : _ReportFormBody(
+                    selectedReason: _selectedReason,
+                    onReasonSelected: _onReasonSelected,
+                    detailsController: _detailsController,
+                    detailsFocusNode: _detailsFocusNode,
+                    detailsFieldKey: _detailsFieldKey,
+                    otherCardKey: _otherCardKey,
+                    errorMessage: _errorMessage,
+                    onDetailsChanged: _clearErrorMessage,
                   ),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          DivineButton(
-            label: l10n.reportSubmit,
-            expanded: true,
-            onPressed: _isSubmitting ? null : _handleSubmitReport,
-            isLoading: _isSubmitting,
           ),
-        ],
-      ),
+        ),
+        _SheetFooter(
+          child: _submitted
+              ? _ReportConfirmationActions(
+                  isFromShareMenu: widget.isFromShareMenu,
+                )
+              : DivineButton(
+                  label: context.l10n.reportSubmit,
+                  expanded: true,
+                  onPressed: _canSubmit ? _handleSubmitReport : null,
+                  isLoading: _isSubmitting,
+                ),
+        ),
+      ],
     );
+  }
+
+  void _clearErrorMessage() {
+    if (_errorMessage == null) return;
+    setState(() => _errorMessage = null);
   }
 
   void _handleSubmitReport() {
     if (_isSubmitting) return;
-    if (_selectedReason == null) {
-      setState(() {
-        _errorMessage = context.l10n.reportSelectReason;
-      });
-      return;
-    }
     if (_selectedReason == ContentFilterReason.other &&
         _detailsController.text.trim().isEmpty) {
       setState(() {
@@ -530,8 +435,191 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   void dispose() {
     _detailsController.dispose();
     _detailsFocusNode.dispose();
-    _scrollController.dispose();
+    _fallbackScrollController.dispose();
     super.dispose();
+  }
+}
+
+/// Action area pinned below the sheet's scrollable content.
+///
+/// Rides above the keyboard the same way [VineBottomSheet]'s `bottomInput`
+/// slot does — the report form's details field lives in the scroll area
+/// above, and a footer flush with the keyboard would put the button under it.
+class _SheetFooter extends StatelessWidget {
+  const _SheetFooter({required this.child});
+
+  /// Gap kept between a raised keyboard and the footer.
+  static const double _keyboardClearance = 12;
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    return SafeArea(
+      top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.only(
+          bottom: keyboardInset > 0 ? keyboardInset + _keyboardClearance : 0,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Report form
+// =============================================================================
+
+class _ReportFormBody extends StatelessWidget {
+  const _ReportFormBody({
+    required this.selectedReason,
+    required this.onReasonSelected,
+    required this.detailsController,
+    required this.detailsFocusNode,
+    required this.detailsFieldKey,
+    required this.otherCardKey,
+    required this.errorMessage,
+    required this.onDetailsChanged,
+  });
+
+  final ContentFilterReason? selectedReason;
+  final ValueChanged<ContentFilterReason> onReasonSelected;
+  final TextEditingController detailsController;
+  final FocusNode detailsFocusNode;
+  final GlobalKey detailsFieldKey;
+
+  /// Anchors the "Other" card so it can be scrolled back into view once the
+  /// keyboard pushes the details field up.
+  final GlobalKey otherCardKey;
+
+  final String? errorMessage;
+  final VoidCallback onDetailsChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Text(
+          l10n.reportWhyReporting,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.reportPolicyNotice,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...ContentFilterReason.values.map(
+          (reason) => Padding(
+            key: reason == ContentFilterReason.other ? otherCardKey : null,
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _ReasonCard(
+              title: l10n.reportReasonTitle(reason),
+              subtitle: l10n.reportReasonSubtitle(reason),
+              isSelected: selectedReason == reason,
+              onTap: () => onReasonSelected(reason),
+            ),
+          ),
+        ),
+        if (selectedReason == ContentFilterReason.other) ...[
+          const SizedBox(height: 4),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: context.vineColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
+                children: [
+                  Text(
+                    l10n.reportDetailsRequired,
+                    style: VineTheme.labelSmallFont(color: VineTheme.vineGreen),
+                  ),
+                  TextField(
+                    key: detailsFieldKey,
+                    controller: detailsController,
+                    focusNode: detailsFocusNode,
+                    enableInteractiveSelection: true,
+                    onChanged: (_) => onDetailsChanged(),
+                    style: VineTheme.bodyLargeFont(
+                      color: context.vineColors.primaryText,
+                    ),
+                    minLines: 3,
+                    maxLines: 5,
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        if (errorMessage case final message?) ...[
+          const SizedBox(height: 16),
+          _InlineError(message: message),
+        ],
+      ],
+    );
+  }
+}
+
+class _InlineError extends StatelessWidget {
+  const _InlineError({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: message,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.error.withValues(alpha: 0.1),
+          border: Border.all(color: VineTheme.error),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.warningCircle,
+                color: VineTheme.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: VineTheme.bodySmallFont(color: VineTheme.error),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -539,140 +627,160 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 // Confirmation view (shown inside the sheet after successful submission)
 // =============================================================================
 
-class _ReportConfirmationView extends StatelessWidget {
-  const _ReportConfirmationView({
-    required this.isFromShareMenu,
-    required this.moderationDmFailed,
-    required this.moderationPubkey,
-    required this.moderationConversationId,
-  });
-
-  final bool isFromShareMenu;
+class _ReportConfirmationBody extends StatelessWidget {
+  const _ReportConfirmationBody({required this.moderationDmFailed});
 
   /// Whether the secondary NIP-17 DM to the moderation team failed to
   /// send. The report itself still succeeded; this only drives a calm
   /// informational notice so the user isn't misled.
   final bool moderationDmFailed;
 
-  /// The Divine moderation account pubkey, passed to the conversation
-  /// route so it can render the thread.
-  final String moderationPubkey;
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          spacing: 12,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.checkCircle,
+              color: VineTheme.vineGreen,
+              size: 28,
+            ),
+            Expanded(
+              child: Text(
+                l10n.reportReceivedTitle,
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.reportReceivedThankYou,
+          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.reportReceivedReviewNotice,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.onSurfaceMuted,
+          ),
+        ),
+        if (moderationDmFailed) ...[
+          const SizedBox(height: 12),
+          Text(
+            l10n.reportModerationDmDelayed,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
+          ),
+        ],
+        const SizedBox(height: 8),
+        const _SafetyPolicyLink(),
+      ],
+    );
+  }
+}
 
-  /// The 1:1 conversation id between the current user and the moderation
-  /// account. Null when signed out — the "Message the moderation team"
-  /// affordance is hidden in that case.
-  final String? moderationConversationId;
+class _SafetyPolicyLink extends StatelessWidget {
+  const _SafetyPolicyLink();
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return SingleChildScrollView(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Row(
-            spacing: 12,
+    return Semantics(
+      button: true,
+      label: l10n.reportSafetyUrl,
+      child: GestureDetector(
+        onTap: () async {
+          final uri = Uri.parse('https://divine.video/safety');
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        },
+        child: Text.rich(
+          TextSpan(
             children: [
-              const DivineIcon(
-                icon: DivineIconName.checkCircle,
-                color: VineTheme.vineGreen,
-                size: 28,
-              ),
-              Expanded(
-                child: Text(
-                  l10n.reportReceivedTitle,
-                  style: VineTheme.titleMediumFont(
-                    color: context.vineColors.primaryText,
-                  ),
+              TextSpan(
+                text: '${l10n.reportLearnMoreAt} ',
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.onSurfaceMuted,
                 ),
+              ),
+              TextSpan(
+                text: l10n.reportSafetyUrl,
+                style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.reportReceivedThankYou,
-            style: VineTheme.bodyLargeFont(
-              color: context.vineColors.primaryText,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.reportReceivedReviewNotice,
-            style: VineTheme.bodyMediumFont(
-              color: context.vineColors.onSurfaceMuted,
-            ),
-          ),
-          if (moderationDmFailed) ...[
-            const SizedBox(height: 12),
-            Text(
-              l10n.reportModerationDmDelayed,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceMuted,
-              ),
-            ),
-          ],
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: () async {
-              final uri = Uri.parse('https://divine.video/safety');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${l10n.reportLearnMoreAt} ',
-                    style: VineTheme.bodyMediumFont(
-                      color: context.vineColors.onSurfaceMuted,
-                    ),
-                  ),
-                  TextSpan(
-                    text: l10n.reportSafetyUrl,
-                    style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          if (moderationConversationId case final conversationId?) ...[
-            DivineButton(
-              label: l10n.reportContactModeration,
-              type: DivineButtonType.secondary,
-              expanded: true,
-              onPressed: () {
-                // Capture the router before popping the sheet so the push
-                // doesn't run against a defunct context.
-                final router = GoRouter.of(context);
-                final navigator = Navigator.of(context);
-                navigator.pop();
-                if (isFromShareMenu) {
-                  navigator.pop();
-                }
-                router.push(
-                  ConversationPage.pathForId(conversationId),
-                  extra: [moderationPubkey],
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Footer actions for the post-submission confirmation.
+class _ReportConfirmationActions extends ConsumerWidget {
+  const _ReportConfirmationActions({required this.isFromShareMenu});
+
+  final bool isFromShareMenu;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    final moderationPubkey = ref
+        .read(moderationLabelServiceProvider)
+        .divineModerationPubkeyHex;
+    // The moderation conversation is an ordinary NIP-17 thread; deep-link
+    // straight to it so the user can follow up about their report. Null
+    // when we have no current pubkey (signed out) — the button hides.
+    final moderationConversationId =
+        (currentPubkey != null && currentPubkey.isNotEmpty)
+        ? DmRepository.computeConversationId([currentPubkey, moderationPubkey])
+        : null;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      spacing: 8,
+      children: [
+        if (moderationConversationId case final conversationId?)
           DivineButton(
-            label: l10n.reportClose,
+            label: l10n.reportContactModeration,
+            type: DivineButtonType.secondary,
             expanded: true,
             onPressed: () {
-              Navigator.of(context).pop();
+              // Capture the router before popping the sheet so the push
+              // doesn't run against a defunct context.
+              final router = GoRouter.of(context);
+              final navigator = Navigator.of(context);
+              navigator.pop();
               if (isFromShareMenu) {
-                Navigator.of(context).pop();
+                navigator.pop();
               }
+              router.push(
+                ConversationPage.pathForId(conversationId),
+                extra: [moderationPubkey],
+              );
             },
           ),
-        ],
-      ),
+        DivineButton(
+          label: l10n.reportClose,
+          expanded: true,
+          onPressed: () {
+            Navigator.of(context).pop();
+            if (isFromShareMenu) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
     );
   }
 }
