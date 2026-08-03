@@ -1557,7 +1557,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       final matches = await dao.getEventsByFilter(
         Filter(
           kinds: [parsed.kind],
-          authors: [parsed.pubkey],
+          // `pubkey IN (...)` is case-sensitive, so bind the already-lowercased
+          // author the caller matched this coordinate against rather than the
+          // tag's own casing.
+          authors: [deletionPubkey],
           d: [parsed.dTag],
           // NIP-09 scopes an `a` deletion to versions up to the request's
           // own timestamp. Without this, an old Kind 5 that a relay

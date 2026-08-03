@@ -98,18 +98,22 @@ Event _deletionEvent({String pubkey = _authorPubkey}) =>
       ..id = _deletionId
       ..sig = _sig;
 
-Event _addressableDeletionEvent() =>
-    Event(
-        _authorPubkey,
-        5,
-        [
-          ['a', '34236:$_authorPubkey:clip-1'],
-        ],
-        'deleted by author',
-        createdAt: 2000,
-      )
-      ..id = _deletionId
-      ..sig = _sig;
+Event _addressableDeletionEvent({bool uppercaseTagPubkey = false}) {
+  final tagPubkey = uppercaseTagPubkey
+      ? _authorPubkey.toUpperCase()
+      : _authorPubkey;
+  return Event(
+      _authorPubkey,
+      5,
+      [
+        ['a', '34236:$tagPubkey:clip-1'],
+      ],
+      'deleted by author',
+      createdAt: 2000,
+    )
+    ..id = _deletionId
+    ..sig = _sig;
+}
 
 void main() {
   group('VideoEventService NIP-09 local cache purge', () {
@@ -277,6 +281,23 @@ void main() {
         authors: const [_otherPubkey],
       );
       nostrService.emit(_deletionEvent());
+      await settle();
+
+      expect(await cachedVideoRowCount(), 0);
+    });
+
+    test('purges a stored row when the `a` tag uses uppercase hex', () async {
+      await db.nostrEventsDao.upsertEvent(_videoEvent());
+      expect(await cachedVideoRowCount(), 1);
+
+      // The author gate lowercases before comparing, so an uppercase tag is
+      // accepted; the SQL `pubkey IN (...)` behind the purge is case-sensitive
+      // and would match nothing if the tag's own casing were bound.
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.homeFeed,
+        authors: const [_otherPubkey],
+      );
+      nostrService.emit(_addressableDeletionEvent(uppercaseTagPubkey: true));
       await settle();
 
       expect(await cachedVideoRowCount(), 0);
