@@ -832,9 +832,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Anzeigename';
 
   @override
-  String get profileSetupDisplayNameHint => 'Wie sollen dich die Leute kennen?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Beliebiger Name oder Label. Muss nicht einzigartig sein.';
 
@@ -846,22 +843,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (optional)';
 
   @override
-  String get profileSetupBioHint => 'Erzähl den Leuten etwas über dich...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Öffentlicher Schlüssel (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Benutzername (optional)';
-
-  @override
-  String get profileSetupUsernameHint => 'benutzername';
 
   @override
   String get profileSetupUsernameHelper =>
@@ -921,12 +909,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Das Hochladen eines Profilbilds ist im Web noch nicht verfügbar. Nutze die iOS- oder Android-App oder füge eine Bild-URL ein.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Foto hochladen';
 
   @override
   String get profileSetupBannerClearButton => 'Banner entfernen';

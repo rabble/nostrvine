@@ -776,9 +776,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '昵称';
 
   @override
-  String get profileSetupDisplayNameHint => '希望大家怎么称呼你？';
-
-  @override
   String get profileSetupDisplayNameHelper => '任何你想要的名字或称呼，不需要唯一。';
 
   @override
@@ -788,22 +785,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupBioLabel => '简介（可选）';
 
   @override
-  String get profileSetupBioHint => '给大家介绍一下你自己...';
-
-  @override
   String get profileSetupWebsiteLabel => '网站（可选）';
 
   @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
-
-  @override
-  String get profileSetupPublicKeyLabel => '公钥 (npub)';
+  String get profileSetupPublicKeyLabel => '公钥（npub）';
 
   @override
   String get profileSetupUsernameLabel => '用户名（可选）';
-
-  @override
-  String get profileSetupUsernameHint => '用户名';
 
   @override
   String get profileSetupUsernameHelper => '你在 Divine 上的唯一标识';
@@ -855,12 +843,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       '网页版暂不支持上传头像。请使用 iOS 或 Android 应用，或直接粘贴图片链接。';
-
-  @override
-  String get profileSetupBannerSectionTitle => '头图';
-
-  @override
-  String get profileSetupBannerUploadButton => '上传照片';
 
   @override
   String get profileSetupBannerClearButton => '清除头图';

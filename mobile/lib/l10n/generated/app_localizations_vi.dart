@@ -828,9 +828,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Tên hiển thị';
 
   @override
-  String get profileSetupDisplayNameHint => 'Mọi người nên biết bạn là ai?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Bất kỳ tên hay biệt danh nào bạn thích. Không cần phải duy nhất.';
 
@@ -841,22 +838,13 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupBioLabel => 'Tiểu sử (Không bắt buộc)';
 
   @override
-  String get profileSetupBioHint => 'Kể cho mọi người nghe về bạn...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Không bắt buộc)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Khóa công khai (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Tên người dùng (Không bắt buộc)';
-
-  @override
-  String get profileSetupUsernameHint => 'tên người dùng';
 
   @override
   String get profileSetupUsernameHelper =>
@@ -916,12 +904,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Chưa thể tải ảnh đại diện lên trên web. Hãy dùng ứng dụng iOS hoặc Android, hoặc dán URL hình ảnh.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Ảnh bìa';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Tải ảnh lên';
 
   @override
   String get profileSetupBannerClearButton => 'Xóa ảnh bìa';

@@ -806,9 +806,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'የማሳያ ስም';
 
   @override
-  String get profileSetupDisplayNameHint => 'ሰዎች እርስዎን እንዴት ማወቅ አለባቸው?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'የሚፈልጉት ማንኛውም ስም ወይም መለያ። ልዩ መሆን የለበትም።';
 
@@ -819,22 +816,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupBioLabel => 'ባዮ (አማራጭ)';
 
   @override
-  String get profileSetupBioHint => 'ስለራስዎ ለሰዎች ይንገሩ…';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
 
   @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
-
-  @override
-  String get profileSetupPublicKeyLabel => 'የይፋ ቁልፍ (npub)';
+  String get profileSetupPublicKeyLabel => 'የህዝብ ቁልፍ (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'የተጠቃሚ ስም (አማራጭ)';
-
-  @override
-  String get profileSetupUsernameHint => 'የተጠቃሚ ስም';
 
   @override
   String get profileSetupUsernameHelper => 'ልዩ ማንነትህ በDivine ላይ';
@@ -892,12 +880,6 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'ባነር';
-
-  @override
-  String get profileSetupBannerUploadButton => 'ፎቶ ስቀል';
 
   @override
   String get profileSetupBannerClearButton => 'ባነርን አጥፋ';

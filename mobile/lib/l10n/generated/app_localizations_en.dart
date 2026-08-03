@@ -825,9 +825,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Display Name';
 
   @override
-  String get profileSetupDisplayNameHint => 'How should people know you?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Any name or label you want. Doesn\'t have to be unique.';
 
@@ -838,22 +835,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (Optional)';
 
   @override
-  String get profileSetupBioHint => 'Tell people about yourself...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Public key (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Username (Optional)';
-
-  @override
-  String get profileSetupUsernameHint => 'username';
 
   @override
   String get profileSetupUsernameHelper => 'Your unique identity on Divine';
@@ -912,12 +900,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Upload photo';
 
   @override
   String get profileSetupBannerClearButton => 'Clear banner';

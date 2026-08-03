@@ -842,10 +842,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nom affiché';
 
   @override
-  String get profileSetupDisplayNameHint =>
-      'Comment veux-tu qu\'on te reconnaisse ?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'N\'importe quel nom ou pseudo. Pas besoin qu\'il soit unique.';
 
@@ -856,22 +852,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (facultatif)';
 
   @override
-  String get profileSetupBioHint => 'Parle un peu de toi...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Clé publique (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Nom d\'utilisateur (facultatif)';
-
-  @override
-  String get profileSetupUsernameHint => 'nomdutilisateur';
 
   @override
   String get profileSetupUsernameHelper => 'Ton identité unique sur Divine';
@@ -930,12 +917,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'L\'envoi d\'une photo de profil n\'est pas encore disponible sur le web. Utilise l\'app iOS ou Android, ou colle l\'URL d\'une image.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Bannière';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Importer une photo';
 
   @override
   String get profileSetupBannerClearButton => 'Supprimer la bannière';

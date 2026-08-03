@@ -798,9 +798,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nama Tampilan';
 
   @override
-  String get profileSetupDisplayNameHint => 'Bagaimana orang harus mengenalmu?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Nama atau label apa pun yang kamu mau. Tidak harus unik.';
 
@@ -812,22 +809,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (Opsional)';
 
   @override
-  String get profileSetupBioHint => 'Ceritakan tentang dirimu...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Kunci publik (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Username (Opsional)';
-
-  @override
-  String get profileSetupUsernameHint => 'username';
 
   @override
   String get profileSetupUsernameHelper => 'Identitas unikmu di Divine';
@@ -885,12 +873,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Unggah foto';
 
   @override
   String get profileSetupBannerClearButton => 'Hapus banner';

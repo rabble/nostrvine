@@ -809,9 +809,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'الاسم المعروض';
 
   @override
-  String get profileSetupDisplayNameHint => 'كيف يجب أن يعرفك الناس؟';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'أي اسم أو لقب تريد. لا يلزم أن يكون فريدًا.';
 
@@ -822,22 +819,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupBioLabel => 'نبذة (اختيارية)';
 
   @override
-  String get profileSetupBioHint => 'أخبر الناس عن نفسك...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'المفتاح العام (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'اسم المستخدم (اختياري)';
-
-  @override
-  String get profileSetupUsernameHint => 'username';
 
   @override
   String get profileSetupUsernameHelper => 'هويتك الفريدة على Divine';
@@ -895,12 +883,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'الغلاف';
-
-  @override
-  String get profileSetupBannerUploadButton => 'رفع صورة';
 
   @override
   String get profileSetupBannerClearButton => 'مسح الغلاف';

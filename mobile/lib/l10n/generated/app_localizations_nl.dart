@@ -829,9 +829,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Weergavenaam';
 
   @override
-  String get profileSetupDisplayNameHint => 'Hoe moeten mensen je kennen?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Elke naam of label die je wilt. Hoeft niet uniek te zijn.';
 
@@ -842,22 +839,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (optioneel)';
 
   @override
-  String get profileSetupBioHint => 'Vertel iets over jezelf...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Publieke sleutel (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Gebruikersnaam (optioneel)';
-
-  @override
-  String get profileSetupUsernameHint => 'gebruikersnaam';
 
   @override
   String get profileSetupUsernameHelper => 'Je unieke identiteit op Divine';
@@ -915,12 +903,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Het uploaden van een profielfoto is nog niet beschikbaar op web. Gebruik de iOS- of Android-app, of plak een afbeeldings-URL.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Foto uploaden';
 
   @override
   String get profileSetupBannerClearButton => 'Banner wissen';

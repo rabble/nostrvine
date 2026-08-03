@@ -755,9 +755,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '表示名';
 
   @override
-  String get profileSetupDisplayNameHint => 'みんなに何て呼ばれたい?';
-
-  @override
   String get profileSetupDisplayNameHelper => '好きな名前やラベルを使ってOK。一意じゃなくて大丈夫。';
 
   @override
@@ -767,22 +764,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupBioLabel => '自己紹介 (任意)';
 
   @override
-  String get profileSetupBioHint => 'あなたのことを書いてみて...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => '公開鍵 (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'ユーザー名 (任意)';
-
-  @override
-  String get profileSetupUsernameHint => 'ユーザー名';
 
   @override
   String get profileSetupUsernameHelper => 'Divine での固有の ID だよ';
@@ -838,12 +826,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'バナー';
-
-  @override
-  String get profileSetupBannerUploadButton => '写真をアップロード';
 
   @override
   String get profileSetupBannerClearButton => 'バナーをクリア';

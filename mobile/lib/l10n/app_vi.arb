@@ -441,16 +441,12 @@
   "profileSetupNoRelaysConnected": "Không kết nối được với mạng. Kiểm tra kết nối của bạn rồi thử lại nhé.",
   "profileSetupRetryLabel": "Thử lại",
   "profileSetupDisplayNameLabel": "Tên hiển thị",
-  "profileSetupDisplayNameHint": "Mọi người nên biết bạn là ai?",
   "profileSetupDisplayNameHelper": "Bất kỳ tên hay biệt danh nào bạn thích. Không cần phải duy nhất.",
   "profileSetupDisplayNameRequired": "Vui lòng nhập tên hiển thị",
   "profileSetupBioLabel": "Tiểu sử (Không bắt buộc)",
-  "profileSetupBioHint": "Kể cho mọi người nghe về bạn...",
   "profileSetupWebsiteLabel": "Website (Không bắt buộc)",
-  "profileSetupWebsiteHint": "https://yoursite.com",
   "profileSetupPublicKeyLabel": "Khóa công khai (npub)",
   "profileSetupUsernameLabel": "Tên người dùng (Không bắt buộc)",
-  "profileSetupUsernameHint": "tên người dùng",
   "profileSetupUsernameHelper": "Danh tính duy nhất của bạn trên Divine",
   "profileSetupProfileColorLabel": "Màu hồ sơ (Không bắt buộc)",
   "profileSetupSaveButton": "Lưu",
@@ -474,14 +470,6 @@
   "profileSetupUploadFileTooLarge": "Tệp quá lớn: Hãy chọn ảnh nhỏ hơn (tối đa 10MB).",
   "profileSetupUploadServerError": "Tải lên thất bại. Máy chủ của bọn mình đang tạm thời không khả dụng. Vui lòng thử lại sau ít phút.",
   "profileSetupUploadUnsupportedOnWeb": "Chưa thể tải ảnh đại diện lên trên web. Hãy dùng ứng dụng iOS hoặc Android, hoặc dán URL hình ảnh.",
-  "profileSetupBannerSectionTitle": "Ảnh bìa",
-  "@profileSetupBannerSectionTitle": {
-    "description": "Section header above the profile banner editing block on the profile setup screen."
-  },
-  "profileSetupBannerUploadButton": "Tải ảnh lên",
-  "@profileSetupBannerUploadButton": {
-    "description": "Label on the button that opens the image picker to upload a profile banner image."
-  },
   "profileSetupBannerClearButton": "Xóa ảnh bìa",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
@@ -503,7 +491,6 @@
   "profileSetupImagePasteLink": "Dán liên kết hình ảnh",
   "profileSetupEditAvatarLabel": "Chỉnh sửa ảnh đại diện",
   "profileSetupEditBannerLabel": "Chỉnh sửa biểu ngữ",
-  "profileSetupPublicKeyLabel": "Khóa công khai (npub)",
   "@profileSetupBannerUploadSuccess": {
     "description": "Snackbar message shown after a profile banner image is successfully uploaded."
   },

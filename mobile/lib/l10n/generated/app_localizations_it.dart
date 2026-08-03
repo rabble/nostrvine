@@ -835,9 +835,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nome visualizzato';
 
   @override
-  String get profileSetupDisplayNameHint => 'Come ti devono conoscere?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Qualsiasi nome o etichetta. Non deve essere univoco.';
 
@@ -849,22 +846,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (opzionale)';
 
   @override
-  String get profileSetupBioHint => 'Racconta qualcosa di te...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Chiave pubblica (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Nome utente (opzionale)';
-
-  @override
-  String get profileSetupUsernameHint => 'nomeutente';
 
   @override
   String get profileSetupUsernameHelper => 'La tua identità univoca su Divine';
@@ -923,12 +911,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Il caricamento della foto profilo non è ancora disponibile sul web. Usa l\'app iOS o Android oppure incolla l\'URL di un\'immagine.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Carica foto';
 
   @override
   String get profileSetupBannerClearButton => 'Rimuovi banner';

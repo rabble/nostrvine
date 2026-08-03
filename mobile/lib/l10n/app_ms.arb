@@ -441,16 +441,12 @@
   "profileSetupNoRelaysConnected": "Tidak dapat mencapai rangkaian. Semak sambungan anda dan cuba lagi.",
   "profileSetupRetryLabel": "Cuba Semula",
   "profileSetupDisplayNameLabel": "Nama Paparan",
-  "profileSetupDisplayNameHint": "Bagaimana orang patut mengenali anda?",
   "profileSetupDisplayNameHelper": "Apa-apa nama atau label yang anda mahu. Tidak semestinya unik.",
   "profileSetupDisplayNameRequired": "Sila masukkan nama paparan",
   "profileSetupBioLabel": "Bio (Pilihan)",
-  "profileSetupBioHint": "Ceritakan tentang diri anda...",
   "profileSetupWebsiteLabel": "Laman Web (Pilihan)",
-  "profileSetupWebsiteHint": "https://lamananda.com",
   "profileSetupPublicKeyLabel": "Kunci awam (npub)",
   "profileSetupUsernameLabel": "Nama Pengguna (Pilihan)",
-  "profileSetupUsernameHint": "namapengguna",
   "profileSetupUsernameHelper": "Identiti unik anda di Divine",
   "profileSetupProfileColorLabel": "Warna Profil (Pilihan)",
   "profileSetupSaveButton": "Simpan",
@@ -474,14 +470,6 @@
   "profileSetupUploadFileTooLarge": "Fail terlalu besar: Sila pilih imej yang lebih kecil (maks 10MB).",
   "profileSetupUploadServerError": "Muat naik gagal. Pelayan kami tidak tersedia buat sementara. Sila cuba lagi sebentar nanti.",
   "profileSetupUploadUnsupportedOnWeb": "Muat naik gambar profil belum tersedia di web. Guna apl iOS atau Android, atau tampal URL imej.",
-  "profileSetupBannerSectionTitle": "Sepanduk",
-  "@profileSetupBannerSectionTitle": {
-    "description": "Section header above the profile banner editing block on the profile setup screen."
-  },
-  "profileSetupBannerUploadButton": "Muat naik foto",
-  "@profileSetupBannerUploadButton": {
-    "description": "Label on the button that opens the image picker to upload a profile banner image."
-  },
   "profileSetupBannerClearButton": "Kosongkan sepanduk",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
@@ -503,7 +491,6 @@
   "profileSetupImagePasteLink": "Tampal pautan imej",
   "profileSetupEditAvatarLabel": "Edit gambar profil",
   "profileSetupEditBannerLabel": "Edit sepanduk",
-  "profileSetupPublicKeyLabel": "Kunci awam (npub)",
   "@profileSetupBannerUploadSuccess": {
     "description": "Snackbar message shown after a profile banner image is successfully uploaded."
   },

@@ -796,9 +796,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Görünen Ad';
 
   @override
-  String get profileSetupDisplayNameHint => 'Seni nasıl tanısınlar?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'İstediğin herhangi bir ad veya etiket. Benzersiz olması gerekmez.';
 
@@ -809,22 +806,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupBioLabel => 'Biyografi (Opsiyonel)';
 
   @override
-  String get profileSetupBioHint => 'İnsanlara kendinden bahset...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
 
   @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
-
-  @override
-  String get profileSetupPublicKeyLabel => 'Genel anahtar (npub)';
+  String get profileSetupPublicKeyLabel => 'Açık anahtar (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Kullanıcı Adı (Opsiyonel)';
-
-  @override
-  String get profileSetupUsernameHint => 'kullanıcıadı';
 
   @override
   String get profileSetupUsernameHelper => 'Divine\'deki benzersiz kimliğin';
@@ -882,12 +870,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Profil resmi yükleme henüz web\'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL\'si yapıştır.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Afiş';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Fotoğraf yükle';
 
   @override
   String get profileSetupBannerClearButton => 'Afişi temizle';

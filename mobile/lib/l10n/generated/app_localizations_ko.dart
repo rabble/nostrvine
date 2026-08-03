@@ -757,9 +757,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '표시 이름';
 
   @override
-  String get profileSetupDisplayNameHint => '사람들에게 어떻게 불리고 싶으세요?';
-
-  @override
   String get profileSetupDisplayNameHelper => '원하는 아무 이름이나 라벨이요. 고유하지 않아도 돼요.';
 
   @override
@@ -769,22 +766,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupBioLabel => '소개 (선택)';
 
   @override
-  String get profileSetupBioHint => '자신을 소개해보세요...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => '공개 키 (npub)';
 
   @override
   String get profileSetupUsernameLabel => '사용자명 (선택)';
-
-  @override
-  String get profileSetupUsernameHint => '사용자명';
 
   @override
   String get profileSetupUsernameHelper => 'Divine에서의 고유한 당신의 이름';
@@ -841,12 +829,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       '프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.';
-
-  @override
-  String get profileSetupBannerSectionTitle => '배너';
-
-  @override
-  String get profileSetupBannerUploadButton => '사진 업로드';
 
   @override
   String get profileSetupBannerClearButton => '배너 지우기';

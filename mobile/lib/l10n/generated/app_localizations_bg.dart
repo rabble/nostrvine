@@ -833,9 +833,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Име за показване';
 
   @override
-  String get profileSetupDisplayNameHint => 'Как да те познават хората?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Каквото име или етикет искаш. Не е нужно да е уникално.';
 
@@ -846,22 +843,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupBioLabel => 'Био (по избор)';
 
   @override
-  String get profileSetupBioHint => 'Разкажи на хората за себе си...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Публичен ключ (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Потребителско име (по избор)';
-
-  @override
-  String get profileSetupUsernameHint => 'Потребителско име';
 
   @override
   String get profileSetupUsernameHelper =>
@@ -921,12 +909,6 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Банер';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Качи снимка';
 
   @override
   String get profileSetupBannerClearButton => 'Изчисти банера';

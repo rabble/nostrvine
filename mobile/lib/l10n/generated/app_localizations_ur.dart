@@ -827,9 +827,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'ڈسپلے نام';
 
   @override
-  String get profileSetupDisplayNameHint => 'لوگ آپ کو کس نام سے جانیں؟';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'کوئی بھی نام یا لیبل جو آپ چاہیں۔ منفرد ہونا ضروری نہیں۔';
 
@@ -840,22 +837,13 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupBioLabel => 'بائیو (اختیاری)';
 
   @override
-  String get profileSetupBioHint => 'لوگوں کو اپنے بارے میں بتائیں...';
-
-  @override
   String get profileSetupWebsiteLabel => 'ویب سائٹ (اختیاری)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'عوامی کلید (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'صارف نام (اختیاری)';
-
-  @override
-  String get profileSetupUsernameHint => 'صارف نام';
 
   @override
   String get profileSetupUsernameHelper => 'Divine پر آپ کی منفرد شناخت';
@@ -914,12 +902,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'پروفائل تصویر اپلوڈ ابھی ویب پر دستیاب نہیں۔ iOS یا Android ایپ استعمال کریں، یا تصویر کا URL پیسٹ کریں۔';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'بینر';
-
-  @override
-  String get profileSetupBannerUploadButton => 'تصویر اپلوڈ کریں';
 
   @override
   String get profileSetupBannerClearButton => 'بینر ہٹائیں';

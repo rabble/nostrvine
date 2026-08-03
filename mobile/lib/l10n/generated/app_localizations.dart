@@ -1470,12 +1470,6 @@ abstract class AppLocalizations {
   /// **'Display Name'**
   String get profileSetupDisplayNameLabel;
 
-  /// No description provided for @profileSetupDisplayNameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'How should people know you?'**
-  String get profileSetupDisplayNameHint;
-
   /// No description provided for @profileSetupDisplayNameHelper.
   ///
   /// In en, this message translates to:
@@ -1494,23 +1488,11 @@ abstract class AppLocalizations {
   /// **'Bio (Optional)'**
   String get profileSetupBioLabel;
 
-  /// No description provided for @profileSetupBioHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tell people about yourself...'**
-  String get profileSetupBioHint;
-
   /// No description provided for @profileSetupWebsiteLabel.
   ///
   /// In en, this message translates to:
   /// **'Website (Optional)'**
   String get profileSetupWebsiteLabel;
-
-  /// No description provided for @profileSetupWebsiteHint.
-  ///
-  /// In en, this message translates to:
-  /// **'https://yoursite.com'**
-  String get profileSetupWebsiteHint;
 
   /// Label above the read-only npub row on the edit-profile screen.
   ///
@@ -1523,12 +1505,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Username (Optional)'**
   String get profileSetupUsernameLabel;
-
-  /// No description provided for @profileSetupUsernameHint.
-  ///
-  /// In en, this message translates to:
-  /// **'username'**
-  String get profileSetupUsernameHint;
 
   /// No description provided for @profileSetupUsernameHelper.
   ///
@@ -1625,18 +1601,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.'**
   String get profileSetupUploadUnsupportedOnWeb;
-
-  /// Section header above the profile banner editing block on the profile setup screen.
-  ///
-  /// In en, this message translates to:
-  /// **'Banner'**
-  String get profileSetupBannerSectionTitle;
-
-  /// Label on the button that opens the image picker to upload a profile banner image.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload photo'**
-  String get profileSetupBannerUploadButton;
 
   /// Label on the button that removes the currently selected profile banner image.
   ///

@@ -811,9 +811,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Visningsnamn';
 
   @override
-  String get profileSetupDisplayNameHint => 'Hur ska folk känna dig?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Vilket namn eller etikett du vill. Behöver inte vara unikt.';
 
@@ -824,22 +821,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (valfritt)';
 
   @override
-  String get profileSetupBioHint => 'Berätta om dig själv...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Publik nyckel (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Användarnamn (valfritt)';
-
-  @override
-  String get profileSetupUsernameHint => 'användarnamn';
 
   @override
   String get profileSetupUsernameHelper => 'Din unika identitet på Divine';
@@ -897,12 +885,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Ladda upp foto';
 
   @override
   String get profileSetupBannerClearButton => 'Rensa banner';

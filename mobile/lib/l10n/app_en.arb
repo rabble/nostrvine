@@ -449,16 +449,15 @@
   "profileSetupNoRelaysConnected": "Couldn't reach the network. Check your connection and try again.",
   "profileSetupRetryLabel": "Retry",
   "profileSetupDisplayNameLabel": "Display Name",
-  "profileSetupDisplayNameHint": "How should people know you?",
   "profileSetupDisplayNameHelper": "Any name or label you want. Doesn't have to be unique.",
   "profileSetupDisplayNameRequired": "Please enter a display name",
   "profileSetupBioLabel": "Bio (Optional)",
-  "profileSetupBioHint": "Tell people about yourself...",
   "profileSetupWebsiteLabel": "Website (Optional)",
-  "profileSetupWebsiteHint": "https://yoursite.com",
   "profileSetupPublicKeyLabel": "Public key (npub)",
+  "@profileSetupPublicKeyLabel": {
+    "description": "Label above the read-only npub row on the edit-profile screen."
+  },
   "profileSetupUsernameLabel": "Username (Optional)",
-  "profileSetupUsernameHint": "username",
   "profileSetupUsernameHelper": "Your unique identity on Divine",
   "profileSetupProfileColorLabel": "Profile Color (Optional)",
   "profileSetupSaveButton": "Save",
@@ -482,14 +481,6 @@
   "profileSetupUploadFileTooLarge": "File too large: Please choose a smaller image (max 10MB).",
   "profileSetupUploadServerError": "Upload failed. Our servers are temporarily unavailable. Please try again in a moment.",
   "profileSetupUploadUnsupportedOnWeb": "Profile picture upload isn't available on web yet. Use the iOS or Android app, or paste an image URL.",
-  "profileSetupBannerSectionTitle": "Banner",
-  "@profileSetupBannerSectionTitle": {
-    "description": "Section header above the profile banner editing block on the profile setup screen."
-  },
-  "profileSetupBannerUploadButton": "Upload photo",
-  "@profileSetupBannerUploadButton": {
-    "description": "Label on the button that opens the image picker to upload a profile banner image."
-  },
   "profileSetupBannerClearButton": "Clear banner",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
@@ -561,10 +552,6 @@
   "profileSetupEditBannerLabel": "Edit banner",
   "@profileSetupEditBannerLabel": {
     "description": "Semantic label and tooltip on the pencil button in the banner's top corner."
-  },
-  "profileSetupPublicKeyLabel": "Public key (npub)",
-  "@profileSetupPublicKeyLabel": {
-    "description": "Label above the read-only npub row on the edit-profile screen."
   },
   "profileSetupUsernameChecking": "Checking availability...",
   "profileSetupUsernameAvailable": "Username available!",

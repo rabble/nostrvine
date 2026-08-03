@@ -860,9 +860,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nume afișat';
 
   @override
-  String get profileSetupDisplayNameHint => 'Cum să te știe oamenii?';
-
-  @override
   String get profileSetupDisplayNameHelper =>
       'Orice nume sau etichetă vrei. Nu trebuie să fie unic.';
 
@@ -873,22 +870,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (opțional)';
 
   @override
-  String get profileSetupBioHint => 'Spune-le oamenilor despre tine...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Cheie publică (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Nume de utilizator (opțional)';
-
-  @override
-  String get profileSetupUsernameHint => 'nume-utilizator';
 
   @override
   String get profileSetupUsernameHelper => 'Identitatea ta unică pe Divine';
@@ -947,12 +935,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
       'Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.';
-
-  @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Încarcă fotografie';
 
   @override
   String get profileSetupBannerClearButton => 'Șterge bannerul';

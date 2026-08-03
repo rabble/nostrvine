@@ -441,16 +441,12 @@
   "profileSetupNoRelaysConnected": "无法连接网络。请检查连接后重试。",
   "profileSetupRetryLabel": "重试",
   "profileSetupDisplayNameLabel": "昵称",
-  "profileSetupDisplayNameHint": "希望大家怎么称呼你？",
   "profileSetupDisplayNameHelper": "任何你想要的名字或称呼，不需要唯一。",
   "profileSetupDisplayNameRequired": "请输入昵称",
   "profileSetupBioLabel": "简介（可选）",
-  "profileSetupBioHint": "给大家介绍一下你自己...",
   "profileSetupWebsiteLabel": "网站（可选）",
-  "profileSetupWebsiteHint": "https://yoursite.com",
   "profileSetupPublicKeyLabel": "公钥（npub）",
   "profileSetupUsernameLabel": "用户名（可选）",
-  "profileSetupUsernameHint": "用户名",
   "profileSetupUsernameHelper": "你在 Divine 上的唯一标识",
   "profileSetupProfileColorLabel": "资料颜色（可选）",
   "profileSetupSaveButton": "保存",
@@ -474,14 +470,6 @@
   "profileSetupUploadFileTooLarge": "文件过大：请选择更小的图片（最大 10MB）。",
   "profileSetupUploadServerError": "上传失败。我们的服务器暂时开小差了，请稍后再试。",
   "profileSetupUploadUnsupportedOnWeb": "网页版暂不支持上传头像。请使用 iOS 或 Android 应用，或直接粘贴图片链接。",
-  "profileSetupBannerSectionTitle": "头图",
-  "@profileSetupBannerSectionTitle": {
-    "description": "Section header above the profile banner editing block on the profile setup screen."
-  },
-  "profileSetupBannerUploadButton": "上传照片",
-  "@profileSetupBannerUploadButton": {
-    "description": "Label on the button that opens the image picker to upload a profile banner image."
-  },
   "profileSetupBannerClearButton": "清除头图",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
@@ -503,7 +491,6 @@
   "profileSetupImagePasteLink": "粘贴图片链接",
   "profileSetupEditAvatarLabel": "编辑头像",
   "profileSetupEditBannerLabel": "编辑横幅",
-  "profileSetupPublicKeyLabel": "公钥 (npub)",
   "@profileSetupBannerUploadSuccess": {
     "description": "Snackbar message shown after a profile banner image is successfully uploaded."
   },
