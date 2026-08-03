@@ -371,6 +371,42 @@ void main() {
     );
 
     blocTest<FollowListSearchBloc, FollowListSearchState>(
+      'runs the API search once the subject pubkey arrives',
+      build: () => FollowListSearchBloc(
+        followRepository: followRepository,
+        subjectPubkey: '',
+        listKind: FollowListKind.followers,
+        profileRepository: profileRepository,
+      ),
+      setUp: () {
+        // Nothing resolves on device, so only the API can produce this match.
+        when(
+          () => profileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async => const {});
+        when(
+          () => followRepository.searchFollowList(
+            pubkey: _subjectPubkey,
+            query: 'ali',
+            kind: FollowListKind.followers,
+          ),
+        ).thenAnswer((_) async => const {_alicePubkey});
+      },
+      act: (bloc) async {
+        bloc.add(const FollowListSearchQueryChanged('ali', _allPubkeys));
+        await Future<void>.delayed(_pastDebounce);
+        expect(bloc.state.visibleFrom(_allPubkeys), isEmpty);
+
+        bloc.add(const FollowListSearchSubjectPubkeyChanged(_subjectPubkey));
+      },
+      wait: _pastDebounce,
+      verify: (bloc) {
+        expect(bloc.state.visibleFrom(_allPubkeys), [_alicePubkey]);
+      },
+    );
+
+    blocTest<FollowListSearchBloc, FollowListSearchState>(
       'clearing the query restores the full list',
       build: createBloc,
       act: (bloc) async {
