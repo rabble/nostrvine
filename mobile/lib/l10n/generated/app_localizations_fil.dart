@@ -7565,9 +7565,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get followersEmptyTitle => 'Wala pang follower';
 
   @override
-  String get followListSearchHint => 'Maghanap...';
-
-  @override
   String get followersUpdateFollowFailed =>
       'Hindi na-update ang follow status. Subukan ulit.';
 

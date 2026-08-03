@@ -7322,9 +7322,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get followersEmptyTitle => 'እስካሁን ምንም ተከታዮች የሉም';
 
   @override
-  String get followListSearchHint => 'ይፈልጉ...';
-
-  @override
   String get followersUpdateFollowFailed =>
       'የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
 

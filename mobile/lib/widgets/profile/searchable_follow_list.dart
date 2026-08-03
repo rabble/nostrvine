@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/follow_list_search/follow_list_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -41,6 +42,13 @@ class SearchableFollowList extends StatefulWidget {
 
 class _SearchableFollowListState extends State<SearchableFollowList> {
   final _controller = TextEditingController();
+  late List<String> _visiblePubkeys;
+
+  @override
+  void initState() {
+    super.initState();
+    _visiblePubkeys = widget.pubkeys;
+  }
 
   @override
   void didUpdateWidget(SearchableFollowList oldWidget) {
@@ -48,9 +56,13 @@ class _SearchableFollowListState extends State<SearchableFollowList> {
     // A refresh can add rows while a query is on screen. The BLoC resolves
     // names for the list it was handed with the query, so without this the new
     // rows could only ever match their generated fallback name.
-    if (_controller.text.isNotEmpty &&
-        !listEquals(oldWidget.pubkeys, widget.pubkeys)) {
-      _onQueryChanged(_controller.text);
+    if (!listEquals(oldWidget.pubkeys, widget.pubkeys)) {
+      _visiblePubkeys = context.read<FollowListSearchBloc>().state.visibleFrom(
+        widget.pubkeys,
+      );
+      if (_controller.text.isNotEmpty) {
+        _onQueryChanged(_controller.text);
+      }
     }
   }
 
@@ -66,6 +78,21 @@ class _SearchableFollowListState extends State<SearchableFollowList> {
     );
   }
 
+  void _syncVisiblePubkeys(FollowListSearchState state) {
+    final visible = state.visibleFrom(widget.pubkeys);
+    if (listEquals(visible, _visiblePubkeys)) return;
+    setState(() {
+      _visiblePubkeys = visible;
+    });
+    if (state.query.isNotEmpty && visible.isEmpty) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.searchNoResultsFound(state.query),
+        Directionality.of(context),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -74,15 +101,14 @@ class _SearchableFollowListState extends State<SearchableFollowList> {
           padding: const EdgeInsets.all(16),
           child: DivineSearchBar(
             controller: _controller,
-            hintText: context.l10n.followListSearchHint,
+            hintText: context.l10n.exploreSearchHint,
             onChanged: _onQueryChanged,
           ),
         ),
         Expanded(
-          child: BlocBuilder<FollowListSearchBloc, FollowListSearchState>(
+          child: BlocConsumer<FollowListSearchBloc, FollowListSearchState>(
+            listener: (context, state) => _syncVisiblePubkeys(state),
             builder: (context, state) {
-              final visible = state.visibleFrom(widget.pubkeys);
-
               return RefreshIndicator(
                 color: VineTheme.onPrimary,
                 backgroundColor: VineTheme.vineGreen,
@@ -90,12 +116,15 @@ class _SearchableFollowListState extends State<SearchableFollowList> {
                 // Wraps the no-match case too: a stale list is exactly when a
                 // user reaches for pull-to-refresh, and losing the gesture
                 // there would strand them until they clear the field.
-                child: visible.isEmpty
+                child: _visiblePubkeys.isEmpty
                     ? _NoMatches(query: state.query)
                     : ListView.builder(
-                        itemCount: visible.length,
-                        itemBuilder: (context, index) =>
-                            widget.itemBuilder(context, visible[index], index),
+                        itemCount: _visiblePubkeys.length,
+                        itemBuilder: (context, index) => widget.itemBuilder(
+                          context,
+                          _visiblePubkeys[index],
+                          index,
+                        ),
                       ),
               );
             },

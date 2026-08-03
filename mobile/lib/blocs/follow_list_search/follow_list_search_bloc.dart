@@ -1,6 +1,7 @@
 // ABOUTME: BLoC backing the search field on the followers/following screens
 // ABOUTME: Owns the query and lazily resolves display names for matching
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -58,7 +59,10 @@ class FollowListSearchBloc
       _onQueryChanged,
       transformer: debounceRestartable(),
     );
-    on<FollowListSearchProfileRepositoryChanged>(_onProfileRepositoryChanged);
+    on<FollowListSearchProfileRepositoryChanged>(
+      _onProfileRepositoryChanged,
+      transformer: restartable(),
+    );
     on<FollowListSearchSubjectPubkeyChanged>(_onSubjectPubkeyChanged);
   }
 
@@ -75,6 +79,8 @@ class FollowListSearchBloc
   /// cheaper than re-keying the `BlocProvider`, which would tear down the
   /// screen subtree and the user's in-flight query with it.
   ProfileRepository? _profileRepository;
+
+  int _resolveGeneration = 0;
 
   Future<void> _onQueryChanged(
     FollowListSearchQueryChanged event,
@@ -96,10 +102,10 @@ class FollowListSearchBloc
       ),
     );
 
-    // Server-side first: one request, and the only side that can match a
-    // profile this device has never cached.
-    await _searchRemotely(emit, query: query);
-    await _resolveSearchTerms(emit);
+    await Future.wait([
+      _resolveSearchTerms(emit),
+      _searchRemotely(emit, query: query),
+    ]);
   }
 
   /// Ask the API which members of this list match [query].
@@ -131,6 +137,7 @@ class FollowListSearchBloc
   ) async {
     if (identical(event.repository, _profileRepository)) return;
     _profileRepository = event.repository;
+    _resolveGeneration++;
     // Drop the terms resolved through the previous repository: a pubkey it
     // could not reach was pinned to its fallback name, and the resolve pass
     // skips anything already in the map. Without this, "the repository just
@@ -160,16 +167,17 @@ class FollowListSearchBloc
   /// triggers profile traffic.
   Future<void> _resolveSearchTerms(Emitter<FollowListSearchState> emit) async {
     final repository = _profileRepository;
-    if (state.query.isEmpty || repository == null) return;
+    final query = state.query;
+    if (query.isEmpty || repository == null) return;
 
-    var searchTerms = state.searchTerms;
+    final generation = ++_resolveGeneration;
     final unresolved = state.candidatePubkeys
-        .where((pubkey) => !searchTerms.containsKey(pubkey))
+        .where((pubkey) => !state.searchTerms.containsKey(pubkey))
         .toSet()
         .toList();
 
     for (var i = 0; i < unresolved.length; i += searchProfileResolveChunkSize) {
-      if (emit.isDone) return;
+      if (!_canEmitResolve(emit, generation, repository, query)) return;
       final chunk = unresolved
           .skip(i)
           .take(searchProfileResolveChunkSize)
@@ -188,22 +196,31 @@ class FollowListSearchBloc
         continue;
       }
 
-      searchTerms = {
-        ...searchTerms,
-        for (final pubkey in chunk)
-          pubkey: _searchTermFor(pubkey, fetched[pubkey]),
+      final resolved = {
+        for (final entry in fetched.entries)
+          if (chunk.contains(entry.key)) entry.key: _searchTermFor(entry.value),
       };
+      if (resolved.isEmpty) continue;
 
-      if (emit.isDone) return;
-      emit(state.copyWith(searchTerms: searchTerms));
+      if (!_canEmitResolve(emit, generation, repository, query)) return;
+      emit(state.copyWith(searchTerms: {...state.searchTerms, ...resolved}));
     }
   }
 
+  bool _canEmitResolve(
+    Emitter<FollowListSearchState> emit,
+    int generation,
+    ProfileRepository repository,
+    String query,
+  ) {
+    return !emit.isDone &&
+        generation == _resolveGeneration &&
+        identical(repository, _profileRepository) &&
+        state.query == query;
+  }
+
   /// The lowercased haystack matched against the query for one user.
-  static String _searchTermFor(String pubkey, UserProfile? profile) {
-    if (profile == null) {
-      return UserProfile.defaultDisplayNameFor(pubkey).toLowerCase();
-    }
+  static String _searchTermFor(UserProfile profile) {
     return '${profile.bestDisplayName} ${profile.handle}'.trim().toLowerCase();
   }
 }

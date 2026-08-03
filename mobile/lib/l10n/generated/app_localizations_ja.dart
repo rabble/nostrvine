@@ -7144,9 +7144,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get followersEmptyTitle => 'フォロワーはまだいないよ';
 
   @override
-  String get followListSearchHint => '検索...';
-
-  @override
   String get followersUpdateFollowFailed => 'フォロー状態の更新に失敗。もう一回試してみて。';
 
   @override

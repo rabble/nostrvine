@@ -7432,9 +7432,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get followersEmptyTitle => 'لا متابِعون بعد';
 
   @override
-  String get followListSearchHint => 'بحث...';
-
-  @override
   String get followersUpdateFollowFailed =>
       'فشل تحديث حالة المتابعة. حاول مرّة أخرى.';
 

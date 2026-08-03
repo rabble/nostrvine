@@ -7488,9 +7488,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get followersEmptyTitle => 'Chưa có người theo dõi';
 
   @override
-  String get followListSearchHint => 'Tìm kiếm...';
-
-  @override
   String get followersUpdateFollowFailed =>
       'Không cập nhật được trạng thái theo dõi. Vui lòng thử lại.';
 

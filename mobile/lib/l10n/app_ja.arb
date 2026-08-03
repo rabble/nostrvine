@@ -3729,7 +3729,6 @@
         }
     },
     "followersEmptyTitle": "フォロワーはまだいないよ",
-    "followListSearchHint": "検索...",
     "followersUpdateFollowFailed": "フォロー状態の更新に失敗。もう一回試してみて。",
     "reportMessageTitle": "メッセージを報告",
     "reportMessageWhyReporting": "このメッセージを報告する理由は?",

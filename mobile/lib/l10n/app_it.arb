@@ -3729,7 +3729,6 @@
         }
     },
     "followersEmptyTitle": "Ancora nessun follower",
-    "followListSearchHint": "Cerca...",
     "followersUpdateFollowFailed": "Impossibile aggiornare lo stato del follow. Riprova.",
     "reportMessageTitle": "Segnala messaggio",
     "reportMessageWhyReporting": "Perché stai segnalando questo messaggio?",

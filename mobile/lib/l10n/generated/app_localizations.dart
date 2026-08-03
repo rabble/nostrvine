@@ -12932,12 +12932,6 @@ abstract class AppLocalizations {
   /// **'No followers yet'**
   String get followersEmptyTitle;
 
-  /// Placeholder for the search field above a followers or following list.
-  ///
-  /// In en, this message translates to:
-  /// **'Search...'**
-  String get followListSearchHint;
-
   /// No description provided for @followersUpdateFollowFailed.
   ///
   /// In en, this message translates to:

@@ -7471,9 +7471,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get followersEmptyTitle => 'Inga följare än';
 
   @override
-  String get followListSearchHint => 'Sök...';
-
-  @override
   String get followersUpdateFollowFailed =>
       'Kunde inte uppdatera följstatus. Försök igen.';
 

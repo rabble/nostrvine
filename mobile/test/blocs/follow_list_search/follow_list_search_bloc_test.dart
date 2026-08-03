@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for FollowListSearchBloc.
 // ABOUTME: Covers query gating, name resolution, filtering and repo swap.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -339,6 +341,41 @@ void main() {
     );
 
     blocTest<FollowListSearchBloc, FollowListSearchState>(
+      'retries a partial profile fetch instead of pinning missing rows',
+      build: createBloc,
+      setUp: () {
+        var attempt = 0;
+        when(
+          () => profileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async {
+          if (attempt++ == 0) return const <String, UserProfile>{};
+          return {
+            _alicePubkey: _profile(pubkey: _alicePubkey, displayName: 'Alice'),
+          };
+        });
+      },
+      act: (bloc) async {
+        bloc.add(const FollowListSearchQueryChanged('ali', _allPubkeys));
+        await Future<void>.delayed(_pastDebounce);
+        expect(bloc.state.searchTerms, isNot(contains(_alicePubkey)));
+
+        bloc.add(const FollowListSearchQueryChanged('alic', _allPubkeys));
+      },
+      wait: _pastDebounce,
+      verify: (bloc) {
+        expect(bloc.state.searchTerms[_alicePubkey], contains('alice'));
+        expect(bloc.state.visibleFrom(_allPubkeys), [_alicePubkey]);
+        verify(
+          () => profileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).called(2);
+      },
+    );
+
+    blocTest<FollowListSearchBloc, FollowListSearchState>(
       'drops terms resolved through the previous profile repository',
       build: createBloc,
       setUp: () {
@@ -367,6 +404,63 @@ void main() {
       wait: _pastDebounce,
       verify: (bloc) {
         expect(bloc.state.visibleFrom(_allPubkeys), [_alicePubkey]);
+      },
+    );
+
+    blocTest<FollowListSearchBloc, FollowListSearchState>(
+      'ignores stale resolver emissions after the profile repository changes',
+      build: createBloc,
+      act: (bloc) async {
+        final candidatePubkeys = [
+          _alicePubkey,
+          for (var i = 0; i < 50; i++) i.toRadixString(16).padLeft(64, '0'),
+        ];
+
+        final secondOldFetchStarted = Completer<void>();
+        final secondOldFetch = Completer<Map<String, UserProfile>>();
+        var oldCalls = 0;
+        when(
+          () => profileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) {
+          if (oldCalls++ == 0) {
+            return Future.value({
+              _alicePubkey: _profile(
+                pubkey: _alicePubkey,
+                displayName: 'Alicia',
+              ),
+            });
+          }
+          if (!secondOldFetchStarted.isCompleted) {
+            secondOldFetchStarted.complete();
+          }
+          return secondOldFetch.future;
+        });
+
+        bloc.add(FollowListSearchQueryChanged('ali', candidatePubkeys));
+        await Future<void>.delayed(_pastDebounce);
+        await secondOldFetchStarted.future;
+
+        final replacement = _MockProfileRepository();
+        when(
+          () => replacement.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
+        ).thenAnswer(
+          (_) async => {
+            _alicePubkey: _profile(pubkey: _alicePubkey, displayName: 'Alice'),
+          },
+        );
+        bloc.add(FollowListSearchProfileRepositoryChanged(replacement));
+        await Future<void>.delayed(Duration.zero);
+
+        secondOldFetch.complete({
+          _bobPubkey: _profile(pubkey: _bobPubkey, displayName: 'Bobby'),
+        });
+      },
+      wait: _pastDebounce,
+      verify: (bloc) {
+        expect(bloc.state.searchTerms[_alicePubkey], equals('alice'));
+        expect(bloc.state.searchTerms, isNot(contains(_bobPubkey)));
       },
     );
 

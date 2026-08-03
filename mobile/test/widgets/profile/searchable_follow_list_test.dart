@@ -97,7 +97,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.followListSearchHint), findsOneWidget);
+      expect(find.text(l10n.exploreSearchHint), findsOneWidget);
       expect(find.text(_alicePubkey), findsOneWidget);
       expect(find.text(_bobPubkey), findsOneWidget);
     });

@@ -7652,9 +7652,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get followersEmptyTitle => 'Jeszcze brak obserwujących';
 
   @override
-  String get followListSearchHint => 'Szukaj...';
-
-  @override
   String get followersUpdateFollowFailed =>
       'Nie udało się zaktualizować statusu obserwowania. Spróbuj ponownie.';
 

@@ -3729,7 +3729,6 @@
         }
     },
     "followersEmptyTitle": "Henüz takipçi yok",
-    "followListSearchHint": "Ara...",
     "followersUpdateFollowFailed": "Takip durumu güncellenemedi. Lütfen tekrar dene.",
     "reportMessageTitle": "Mesajı Bildir",
     "reportMessageWhyReporting": "Bu mesajı neden bildiriyorsun?",

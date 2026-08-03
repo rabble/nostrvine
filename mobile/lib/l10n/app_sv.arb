@@ -3729,7 +3729,6 @@
         }
     },
     "followersEmptyTitle": "Inga följare än",
-    "followListSearchHint": "Sök...",
     "followersUpdateFollowFailed": "Kunde inte uppdatera följstatus. Försök igen.",
     "reportMessageTitle": "Rapportera meddelande",
     "reportMessageWhyReporting": "Varför rapporterar du det här meddelandet?",
