@@ -1106,6 +1106,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       _knownDeletedVideoCoordinateKeys.add(coordinateKey);
     }
 
+    _purgeEventsFromLocalCache({primaryEventId, ...removedVideoIds});
+
     // Emit on the side-channel BEFORE notifyListeners so that subscribers
     // who react via the stream (e.g. FullscreenFeedBloc) update their
     // state in the same frame as ChangeNotifier consumers. Emit
@@ -1344,6 +1346,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
     }
 
+    _purgeEventsFromLocalCache({...eventIds, ...removedVideoIds});
+
     Log.info(
       removedCount > 0
           ? 'Applied observed video deletion $logIdentity to $removedCount cached location(s)'
@@ -1352,6 +1356,41 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       category: LogCategory.video,
     );
     notifyListeners();
+  }
+
+  /// Deletes tombstoned events from the local event store.
+  ///
+  /// The in-memory removal above only lasts for this service's lifetime, but
+  /// the rows survive it. The cache-first startup query ([_loadCachedEvents])
+  /// reads straight from those rows, so without this purge every launch
+  /// re-serves deleted videos until the relay redelivers the Kind 5 event —
+  /// roughly 700ms of deleted clips on the profile grid, once per app start.
+  ///
+  /// Fire-and-forget: deletion handling has already succeeded in memory, so a
+  /// failed purge must not break it. The next observed deletion retries.
+  void _purgeEventsFromLocalCache(Set<String> eventIds) {
+    final router = _eventRouter;
+    if (router == null || eventIds.isEmpty) return;
+
+    unawaited(
+      Future.wait(eventIds.map(router.db.nostrEventsDao.deleteEventById))
+          .then((results) {
+            final purged = results.where((deleted) => deleted).length;
+            if (purged == 0) return;
+            Log.debug(
+              'Purged $purged deleted event(s) from the local cache',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+          })
+          .catchError((Object error) {
+            Log.warning(
+              'Failed to purge deleted events from local cache: $error',
+              name: 'VideoEventService',
+              category: LogCategory.video,
+            );
+          }),
+    );
   }
 
   /// Emits a video id whenever the service has marked it removed —
