@@ -68,6 +68,7 @@ Event _videoEvent({
   String? id,
   String pubkey = _authorPubkey,
   int createdAt = 1000,
+  String? publishedAt,
 }) =>
     Event(
         pubkey,
@@ -76,6 +77,7 @@ Event _videoEvent({
           ['d', 'clip-1'],
           ['url', 'https://example.com/video.mp4'],
           ['title', 'Deleted clip'],
+          if (publishedAt != null) ['published_at', publishedAt],
         ],
         'a video that gets deleted',
         createdAt: createdAt,
@@ -349,6 +351,33 @@ void main() {
         nostrService.emit(_videoEvent(id: _editedVideoId, createdAt: 5000));
         await settle();
 
+        expect(await cachedVideoRowCount(), 1);
+      },
+    );
+
+    test(
+      'keeps an edited clip whose published_at predates the deletion',
+      () async {
+        // An edit keeps the `d` tag and re-emits the original published_at, so
+        // VideoEvent.createdAt reports the first publication. Comparing that
+        // against the deletion would hide a clip republished after it — the row
+        // survives on disk while every feed drops it.
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+        );
+        nostrService.emit(_addressableDeletionEvent());
+        await settle();
+
+        nostrService.emit(
+          _videoEvent(id: _editedVideoId, createdAt: 3000, publishedAt: '1000'),
+        );
+        await settle();
+
+        expect(
+          service.discoveryVideos.where((v) => v.id == _editedVideoId),
+          isNotEmpty,
+          reason: 'the edit was published after the deletion request',
+        );
         expect(await cachedVideoRowCount(), 1);
       },
     );

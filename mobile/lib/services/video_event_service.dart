@@ -1229,7 +1229,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     return _knownDeletedVideoIds.contains(video.id) ||
         _isCoordinateDeleted(
           _knownDeletionCoordinateKey(video),
-          video.createdAt,
+          video.nostrCreatedAt,
         );
   }
 
@@ -1328,7 +1328,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
       final matchesCoordinate =
           coordinateKeys.contains(_knownDeletionCoordinateKey(video)) &&
-          video.createdAt <= deletionEvent.createdAt;
+          video.nostrCreatedAt <= deletionEvent.createdAt;
 
       if (matchesRequestedId || matchesCoordinate) {
         validatedEventIds.add(video.id);
@@ -1390,7 +1390,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     bool shouldRemove(VideoEvent video) =>
         eventIds.contains(video.id) ||
         (coordinateKeys.contains(_knownDeletionCoordinateKey(video)) &&
-            video.createdAt <= deletionCreatedAt);
+            video.nostrCreatedAt <= deletionCreatedAt);
 
     for (final entry in _eventLists.entries) {
       final initialLength = entry.value.length;
