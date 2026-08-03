@@ -50,12 +50,17 @@ class BioField extends StatelessWidget {
           // label's.
           top: DivineTextField.defaultContentPadding.top - 1,
           right: DivineTextField.defaultContentPadding.right,
-          child: ValueListenableBuilder(
-            valueListenable: controller,
-            builder: (context, value, child) => Text(
-              '${value.text.length}/$bioMaxLength',
-              style: VineTheme.labelSmallFont(
-                color: context.vineColors.onSurfaceMuted,
+          // A readout, not a control: without this the text wins the hit test
+          // over the field beneath it, and tapping the field's top-right
+          // corner dismissed the keyboard instead of placing the caret.
+          child: IgnorePointer(
+            child: ValueListenableBuilder(
+              valueListenable: controller,
+              builder: (context, value, child) => Text(
+                '${value.text.length}/$bioMaxLength',
+                style: VineTheme.labelSmallFont(
+                  color: context.vineColors.onSurfaceMuted,
+                ),
               ),
             ),
           ),

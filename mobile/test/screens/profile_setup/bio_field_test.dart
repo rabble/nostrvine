@@ -75,5 +75,28 @@ void main() {
       await tester.pump();
       expect(find.text('6/1000'), findsOneWidget);
     });
+
+    testWidgets('tapping the counter still focuses the field', (tester) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BioField(controller: controller, focusNode: focusNode),
+          ),
+        ),
+      );
+
+      // The counter is painted over the field's top-right corner. Left
+      // hit-testable it wins that rectangle, and the tap escapes to the
+      // screen's dismiss-the-keyboard gesture instead of reaching the input.
+      await tester.tap(find.text('0/1000'));
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isTrue);
+    });
   });
 }
