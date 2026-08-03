@@ -90,7 +90,7 @@ void main() {
           'Your keys are your account, and nobody at Divine can reset them '
           'for you if you lose them.';
 
-      Widget buildNarrow({String? title, required String message}) =>
+      Widget buildNarrow({required String message, String? title}) =>
           MaterialApp(
             theme: VineTheme.theme,
             home: Scaffold(
