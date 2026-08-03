@@ -82,19 +82,21 @@ class _SearchableFollowListState extends State<SearchableFollowList> {
           child: BlocBuilder<FollowListSearchBloc, FollowListSearchState>(
             builder: (context, state) {
               final visible = state.visibleFrom(widget.pubkeys);
-              if (visible.isEmpty) {
-                return _NoMatches(query: state.query);
-              }
 
               return RefreshIndicator(
                 color: VineTheme.onPrimary,
                 backgroundColor: VineTheme.vineGreen,
                 onRefresh: widget.onRefresh,
-                child: ListView.builder(
-                  itemCount: visible.length,
-                  itemBuilder: (context, index) =>
-                      widget.itemBuilder(context, visible[index], index),
-                ),
+                // Wraps the no-match case too: a stale list is exactly when a
+                // user reaches for pull-to-refresh, and losing the gesture
+                // there would strand them until they clear the field.
+                child: visible.isEmpty
+                    ? _NoMatches(query: state.query)
+                    : ListView.builder(
+                        itemCount: visible.length,
+                        itemBuilder: (context, index) =>
+                            widget.itemBuilder(context, visible[index], index),
+                      ),
               );
             },
           ),
@@ -111,14 +113,24 @@ class _NoMatches extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          context.l10n.searchNoResultsFound(query),
-          textAlign: TextAlign.center,
-          style: VineTheme.bodyMediumFont(
-            color: context.vineColors.secondaryText,
+    // Scrollable rather than a bare Center so the enclosing RefreshIndicator
+    // still has a gesture to attach to when nothing matches.
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                context.l10n.searchNoResultsFound(query),
+                textAlign: TextAlign.center,
+                style: VineTheme.bodyMediumFont(
+                  color: context.vineColors.secondaryText,
+                ),
+              ),
+            ),
           ),
         ),
       ),

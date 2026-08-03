@@ -127,6 +127,30 @@ void main() {
       expect(find.text(_alicePubkey), findsNothing);
     });
 
+    testWidgets('keeps pull-to-refresh reachable when nothing matches', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pump(_pastDebounce);
+      await tester.pump();
+
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+      // The empty state must itself be scrollable, or the gesture never
+      // reaches the indicator. Fling the copy rather than the TextField's own
+      // scrollable.
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.fling(
+        find.text(l10n.searchNoResultsFound('zzz')),
+        const Offset(0, 300),
+        1000,
+      );
+      await tester.pump();
+
+      expect(find.byType(RefreshProgressIndicator), findsOneWidget);
+    });
+
     testWidgets('resolves names for rows added while a query is active', (
       tester,
     ) async {
