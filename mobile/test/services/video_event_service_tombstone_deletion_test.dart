@@ -278,5 +278,33 @@ void main() {
         reason: 'NIP-09 scopes an `a` deletion to its own created_at',
       );
     });
+
+    test('a second, older deletion does not lower the coordinate bound', () {
+      const pubkey =
+          'c3dd74d68e414f0305db9f7dc96ec32e616502e6ccf5bbf5739de19a96b67f3e';
+      const dTag = 'shared-vine-id';
+      final coveredVersion = _videoEvent(
+        id: 'version-between-deletions',
+        pubkey: pubkey,
+        dTag: dTag,
+        createdAt: 5000,
+      );
+
+      // Relays serve deletion requests indefinitely, so a cold-start flood can
+      // deliver an old Kind 5 after a newer one for the same coordinate. The
+      // newest bound has to win, or the version between them reappears.
+      videoEventService.seedLocalDeletionTombstones(
+        addressableDeletedAt: const {'34236:$pubkey:$dTag': 6000},
+      );
+      videoEventService.seedLocalDeletionTombstones(
+        addressableDeletedAt: const {'34236:$pubkey:$dTag': 2000},
+      );
+
+      expect(
+        videoEventService.isVideoEventKnownDeleted(coveredVersion),
+        isTrue,
+        reason: 'the older redelivery must not un-cover the 6000 deletion',
+      );
+    });
   });
 }

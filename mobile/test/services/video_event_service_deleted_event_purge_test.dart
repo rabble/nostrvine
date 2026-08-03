@@ -312,6 +312,25 @@ void main() {
       },
     );
 
+    test('purges a stored row signed in the deletion second', () async {
+      // NIP-09 deletes "up to the created_at timestamp" — inclusive — and the
+      // DAO maps `until` to `created_at <= ?`. Off by one here strands the row
+      // on disk for the cache-first read to re-serve, while the in-memory
+      // guards would still treat the clip as deleted.
+      await db.nostrEventsDao.upsertEvent(
+        _videoEvent(id: _editedVideoId, createdAt: 2000),
+      );
+
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.homeFeed,
+        authors: const [_otherPubkey],
+      );
+      nostrService.emit(_addressableDeletionEvent());
+      await settle();
+
+      expect(await cachedVideoRowCount(), 0);
+    });
+
     test('purges a stored row when the `a` tag uses uppercase hex', () async {
       await db.nostrEventsDao.upsertEvent(_videoEvent());
       expect(await cachedVideoRowCount(), 1);

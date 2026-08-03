@@ -1757,6 +1757,57 @@ void main() {
           verifyNever(() => mockNostrEventsDao.upsertEvent(older));
         },
       );
+
+      test(
+        'skips a coordinate version signed in the deletion second',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+
+          // "up to created_at" is inclusive, and _deleteCachedEventsForDeletion
+          // passes the same value as `until`, which the DAO maps to
+          // `created_at <= ?`. If this side were exclusive the auto-cache would
+          // write back the very row that purge just deleted.
+          final boundary = videoEvent(id: '1' * 64, createdAt: 3000);
+          onEvent(boundary);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(boundary));
+        },
+      );
+
+      test(
+        'keeps the newest bound when an older deletion arrives second',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          // NIP-09 requires relays to serve deletion requests indefinitely, so a
+          // cold-start flood can deliver an old Kind 5 after a newer one for the
+          // same coordinate.
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 1000),
+          );
+          await pumpEventQueue();
+
+          final covered = videoEvent(id: '2' * 64, createdAt: 2000);
+          onEvent(covered);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(covered));
+        },
+      );
     });
 
     group('subscribe', () {
