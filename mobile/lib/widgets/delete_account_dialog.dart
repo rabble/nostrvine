@@ -67,6 +67,9 @@ Future<void> showDeleteAllContentWarningSheet({
   // notifier and reaches the form's state through the key. The controllers
   // themselves stay inside the form's State, which is what disposes them —
   // the exit animation still rebuilds the field after this future completes.
+  // The notifier is safe to dispose here despite that: its only writer is the
+  // field's onChanged, and the text input connection is already closed by the
+  // time the route pops.
   final canConfirm = ValueNotifier<bool>(false);
   final formKey = GlobalKey<_DeleteAllContentFormState>();
 
@@ -197,6 +200,8 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
   /// Called by the footer through the form's key, since the two are sibling
   /// slots of the sheet.
   void confirm() {
+    // Re-derived from the controller rather than trusting the footer's
+    // notifier, which only gates the button's enabled state.
     if (!widget.confirmation.matches(_confirmationController.text)) return;
     context.pop();
     widget.onConfirm(
