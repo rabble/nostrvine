@@ -10,7 +10,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart'
     show BugReportData, LogCategory, LogEntry, LogLevel, NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
 class _MockNIP17MessageService extends Mock implements NIP17MessageService {}
@@ -282,8 +281,10 @@ void main() {
     test(
       'uses static support relay fallback when DM inbox relay resolution is absent',
       () async {
+        const envFallbackRelay = ['wss://relay.test.dvines.org'];
         final serviceWithoutResolvedRelays = BugReportService(
           nip17MessageService: mockNip17,
+          fallbackTargetRelays: envFallbackRelay,
           targetRelayResolver: (_) async => null,
         );
 
@@ -316,21 +317,23 @@ void main() {
           () => mockNip17.sendPrivateMessage(
             recipientPubkey: 'test-pubkey',
             content: any(named: 'content'),
-            targetRelays: BugReportConfig.supportDmTargetRelays,
+            targetRelays: envFallbackRelay,
             awaitRecipientOk: true,
             selfWrapOnSoftUnconfirmed: false,
             additionalTags: any(named: 'additionalTags'),
           ),
         ).called(1);
-        expect(capturedTargetRelays, BugReportConfig.supportDmTargetRelays);
+        expect(capturedTargetRelays, envFallbackRelay);
       },
     );
 
     test(
       'uses static support relay fallback when relay resolution throws',
       () async {
+        const envFallbackRelay = ['wss://relay.test.dvines.org'];
         final serviceWithFailingResolver = BugReportService(
           nip17MessageService: mockNip17,
+          fallbackTargetRelays: envFallbackRelay,
           targetRelayResolver: (_) async => throw StateError('no relays'),
         );
 
@@ -359,7 +362,7 @@ void main() {
           'test-pubkey',
         );
 
-        expect(capturedTargetRelays, BugReportConfig.supportDmTargetRelays);
+        expect(capturedTargetRelays, envFallbackRelay);
       },
     );
   });

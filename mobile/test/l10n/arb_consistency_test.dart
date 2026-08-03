@@ -209,6 +209,7 @@ void main() {
       const mustDifferFromEnglish = {
         'relaySettingsRemoveDefaultRelayTitle',
         'relaySettingsRemoveDefaultRelayMessage',
+        'relaySettingsRemoveRelayTooltip',
       };
 
       for (final file in arbFiles) {

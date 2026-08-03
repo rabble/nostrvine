@@ -333,6 +333,40 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('warns when added relay is saved but not connected', (
+      tester,
+    ) async {
+      const relay = 'wss://pending.example.com';
+      final nostrService = _MockNostrService();
+      final configuredRelays = <String>[];
+      when(
+        () => nostrService.defaultRelayUrl,
+      ).thenReturn('wss://relay.divine.video');
+      when(
+        () => nostrService.configuredRelays,
+      ).thenAnswer((_) => List.unmodifiable(configuredRelays));
+      when(
+        () => nostrService.addRelay(relay, source: RelayAddSource.user),
+      ).thenAnswer((_) async {
+        configuredRelays.add(relay);
+        return false;
+      });
+
+      await pumpScreen(tester, nostrService: nostrService);
+      when(
+        () => nostrService.configuredRelays,
+      ).thenAnswer((_) => List.unmodifiable(configuredRelays));
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await openAddSheetAndSubmit(tester, relay, l10n);
+
+      expect(find.text(l10n.relaySettingsFailedToConnectCheck), findsOneWidget);
+      expect(find.text(l10n.relaySettingsAddedRelay(relay)), findsNothing);
+      verify(
+        () => nostrService.addRelay(relay, source: RelayAddSource.user),
+      ).called(1);
+    });
+
     testWidgets('accepts uppercase WSS:// URL and forwards to NostrClient', (
       tester,
     ) async {

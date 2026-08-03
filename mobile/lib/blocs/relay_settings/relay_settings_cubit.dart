@@ -123,8 +123,12 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
         relayUrl,
         source: RelayRemoveSource.user,
       );
-      if (!success) return RemoveRelayOutcome.failed;
       refreshRelays();
+      if (!success) {
+        return _hasRelayConfigured(relayUrl)
+            ? RemoveRelayOutcome.failed
+            : RemoveRelayOutcome.removed;
+      }
       return RemoveRelayOutcome.removed;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -177,8 +181,6 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
   }
 
   bool _hasRelayConfigured(String relayUrl) {
-    return state.relays.any(
-      (relay) => relayUrlsEquivalent(relay, relayUrl),
-    );
+    return state.relays.any((relay) => relayUrlsEquivalent(relay, relayUrl));
   }
 }

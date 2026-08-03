@@ -65,9 +65,9 @@ bool usesUserChosenRelay(
 /// Nostr relays speak WebSocket only — `wss://` is accepted for any host,
 /// and `ws://` is accepted only for a recognized loopback host. Any other
 /// scheme (`https://`, `http://`, `ftp://`, …), a malformed URL, or a missing
-/// host is rejected. This matches the acceptance rule enforced by
-/// `normalizeRelayUrl` in `nostr_client`, so the predicate doubles
-/// as the upstream "is this URL a usable relay endpoint" check.
+/// host is rejected. Unlike `normalizeRelayUrl` in `nostr_client`, this
+/// requires an explicit scheme and rejects bare hosts because it validates
+/// user/app-layer input before the connection layer canonicalizes identity.
 ///
 /// This predicate is the single source of truth for the application-layer
 /// relay URL allowlist. The loopback host predicate itself lives in

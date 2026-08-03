@@ -154,9 +154,7 @@ void main() {
       },
       expect: () => const <RelaySettingsState>[],
       verify: (_) {
-        verifyNever(
-          () => nostr.addRelay(any(), source: any(named: 'source')),
-        );
+        verifyNever(() => nostr.addRelay(any(), source: any(named: 'source')));
       },
     );
 
@@ -268,6 +266,7 @@ void main() {
         when(
           () => nostr.removeRelay(any(), source: any(named: 'source')),
         ).thenAnswer((_) async => false);
+        when(() => nostr.configuredRelays).thenReturn(['wss://a.example']);
       },
       build: buildCubit,
       act: (cubit) async {
@@ -276,7 +275,28 @@ void main() {
           RemoveRelayOutcome.failed,
         );
       },
-      expect: () => const <RelaySettingsState>[],
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://a.example']),
+      ],
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'removeRelay refreshes and reports removed when relay is already gone',
+      seed: () => const RelaySettingsState(relays: ['wss://stale.example']),
+      setUp: () {
+        when(
+          () => nostr.removeRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
+        when(() => nostr.configuredRelays).thenReturn(const []);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        expect(
+          await cubit.removeRelay('wss://stale.example'),
+          RemoveRelayOutcome.removed,
+        );
+      },
+      expect: () => [const RelaySettingsState()],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(

@@ -378,6 +378,23 @@ void main() {
         );
       });
 
+      test('reports whether a relay is user-removed', () async {
+        final storage = InMemoryRelayStorage([], [testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        expect(
+          await managerWithStorage.isUserRemovedRelay(testCustomRelayUrl),
+          isTrue,
+        );
+        expect(
+          await managerWithStorage.isUserRemovedRelay(testCustomRelayUrl2),
+          isFalse,
+        );
+      });
+
       test('user add clears removed relay ledger and succeeds', () async {
         final storage = InMemoryRelayStorage([], [testCustomRelayUrl]);
         final managerWithStorage = RelayManager(
@@ -826,10 +843,7 @@ void main() {
       test(
         'automatic add before initialize honors persisted removal ledger',
         () async {
-          final storage = InMemoryRelayStorage(
-            const [],
-            [testCustomRelayUrl],
-          );
+          final storage = InMemoryRelayStorage(const [], [testCustomRelayUrl]);
           final managerWithStorage = RelayManager(
             config: _createTestConfig(storage: storage),
             relayPool: mockRelayPool,

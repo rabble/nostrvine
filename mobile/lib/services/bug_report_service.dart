@@ -42,11 +42,13 @@ class BugReportService {
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
     BugReportTargetRelayResolver? targetRelayResolver,
+    List<String> fallbackTargetRelays = BugReportConfig.supportDmTargetRelays,
   }) : _nip17MessageService = nip17MessageService,
        _blossomUploadService = blossomUploadService,
        _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
        _storageManagementService = storageManagementService,
-       _targetRelayResolver = targetRelayResolver;
+       _targetRelayResolver = targetRelayResolver,
+       _fallbackTargetRelays = List.unmodifiable(fallbackTargetRelays);
 
   static const _uuid = Uuid();
   final NIP17MessageService? _nip17MessageService;
@@ -54,6 +56,7 @@ class BugReportService {
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
   final BugReportTargetRelayResolver? _targetRelayResolver;
+  final List<String> _fallbackTargetRelays;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -390,19 +393,19 @@ class BugReportService {
 
   Future<List<String>?> _resolveTargetRelays(String recipientPubkey) async {
     final resolver = _targetRelayResolver;
-    if (resolver == null) return BugReportConfig.supportDmTargetRelays;
+    if (resolver == null) return _fallbackTargetRelays;
     try {
       final relays = await resolver(recipientPubkey);
       if (relays == null || relays.isEmpty) {
-        return BugReportConfig.supportDmTargetRelays;
+        return _fallbackTargetRelays;
       }
       return relays;
     } catch (e) {
       Log.warning(
-        'Failed to resolve bug-report DM target relays; using static support relay fallback: $e',
+        'Failed to resolve bug-report DM target relays; using fallback relays: $e',
         category: LogCategory.system,
       );
-      return BugReportConfig.supportDmTargetRelays;
+      return _fallbackTargetRelays;
     }
   }
 

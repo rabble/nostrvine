@@ -196,10 +196,11 @@ class RelayManager {
       await _ensureUserRemovedRelaysLoaded();
 
       final savedRelays = await storage.loadRelays();
-      // Normalize loaded relays and filter out blocked/duplicate/invalid
-      // relays.
+      // Normalize loaded relays and filter out blocked, duplicate, invalid,
+      // disallowed, or user-suppressed relays.
       var blockedCount = 0;
       var droppedCount = 0;
+      var userRemovedCount = 0;
       for (final url in savedRelays) {
         final normalized = normalizeRelayUrl(url);
         if (normalized == null) {
@@ -220,7 +221,7 @@ class RelayManager {
           continue;
         }
         if (_userRemovedRelays.contains(normalized)) {
-          droppedCount++;
+          userRemovedCount++;
           continue;
         }
         if (!_configuredRelays.contains(normalized)) {
@@ -233,7 +234,10 @@ class RelayManager {
       if (droppedCount > 0) {
         _log('Filtered $droppedCount invalid relay URLs from storage');
       }
-      if (blockedCount > 0 || droppedCount > 0) {
+      if (userRemovedCount > 0) {
+        _log('Filtered $userRemovedCount user-removed relays from storage');
+      }
+      if (blockedCount > 0 || droppedCount > 0 || userRemovedCount > 0) {
         // Persist the filtered list so removed entries don't reappear
         // on the next launch.
         await storage.saveRelays(_configuredRelays);
@@ -397,6 +401,13 @@ class RelayManager {
   bool isRelayConfigured(String url) {
     final normalizedUrl = normalizeRelayUrl(url);
     return normalizedUrl != null && _configuredRelays.contains(normalizedUrl);
+  }
+
+  /// Check if a relay URL is currently suppressed by user-removal intent.
+  Future<bool> isUserRemovedRelay(String url) async {
+    await _ensureUserRemovedRelaysLoaded();
+    final normalizedUrl = normalizeRelayUrl(url);
+    return normalizedUrl != null && _userRemovedRelays.contains(normalizedUrl);
   }
 
   /// Check if a relay is currently connected

@@ -37,6 +37,7 @@ BugReportService bugReportService(Ref ref) {
     blossomUploadService: blossomService,
     errorTracker: ref.watch(errorAnalyticsTrackerProvider),
     storageManagementService: ref.watch(storageManagementServiceProvider),
+    fallbackTargetRelays: [nostrService.defaultRelayUrl],
     targetRelayResolver: (pubkey) =>
         ref.read(dmRepositoryProvider).resolveDmInboxRelays(pubkey),
   );

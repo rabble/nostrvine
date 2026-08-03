@@ -1113,6 +1113,11 @@ class NostrClient {
   /// for the rule. Non-production builds lock to their own relay host.
   bool isRelayAllowed(String url) => _relayManager.isRelayAllowed(url);
 
+  /// Whether [url] is currently suppressed by user-removal intent.
+  Future<bool> isUserRemovedRelay(String url) {
+    return _relayManager.isUserRemovedRelay(url);
+  }
+
   /// The environment default relay URL.
   ///
   /// Resolves per environment (e.g. the staging relay on staging). Users can

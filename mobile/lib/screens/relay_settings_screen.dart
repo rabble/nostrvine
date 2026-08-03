@@ -708,7 +708,6 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
   final outcome = await cubit.addRelay(relayUrl);
   switch (outcome) {
     case AddRelayOutcome.added:
-    case AddRelayOutcome.addedConnectionPending:
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
           l10n.relaySettingsAddedRelay(relayUrl),
@@ -716,6 +715,17 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
       );
       Log.info(
         'Successfully added relay: $relayUrl',
+        name: 'RelaySettingsScreen',
+      );
+    case AddRelayOutcome.addedConnectionPending:
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.relaySettingsFailedToConnectCheck),
+          backgroundColor: VineTheme.warning,
+        ),
+      );
+      Log.info(
+        'Added relay without connection: $relayUrl',
         name: 'RelaySettingsScreen',
       );
     case AddRelayOutcome.invalidUrl:

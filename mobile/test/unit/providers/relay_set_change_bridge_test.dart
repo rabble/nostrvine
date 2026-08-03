@@ -39,6 +39,16 @@ class TestNostrSession extends NostrSession {
   NostrSessionReadiness build() => initialReadiness;
 }
 
+void stubUserRemovedRelays(
+  MockNostrClient client, {
+  Set<String> relays = const {},
+}) {
+  when(() => client.isUserRemovedRelay(any())).thenAnswer((call) async {
+    final relay = call.positionalArguments.single as String;
+    return relays.contains(relay);
+  });
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(<String>[]);
@@ -74,6 +84,7 @@ void main() {
       when(() => mockNostrClient.forceReconnectAll()).thenAnswer((_) async {});
       when(() => mockNostrClient.defaultRelayUrl).thenReturn(defaultRelay);
       when(() => mockNostrClient.publicKey).thenAnswer((_) => clientPublicKey);
+      stubUserRemovedRelays(mockNostrClient);
     });
 
     tearDown(() {
@@ -108,6 +119,7 @@ void main() {
     }) {
       when(() => client.publicKey).thenReturn(pubkey);
       when(() => client.defaultRelayUrl).thenReturn(relay);
+      stubUserRemovedRelays(client);
     }
 
     test('does not trigger reset on initial activation', () {
@@ -459,12 +471,9 @@ void main() {
         when(
           () => replacementClient.publicKey,
         ).thenAnswer((_) => replacementPublicKey);
-        when(
-          () => replacementClient.defaultRelayUrl,
-        ).thenReturn(defaultRelay);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.defaultRelayUrl).thenReturn(defaultRelay);
+        stubUserRemovedRelays(replacementClient);
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -592,9 +601,8 @@ void main() {
           when(
             () => replacementClient.defaultRelayUrl,
           ).thenReturn(defaultRelay);
-          when(
-            () => replacementClient.relayStatuses,
-          ).thenAnswer(
+          stubUserRemovedRelays(replacementClient);
+          when(() => replacementClient.relayStatuses).thenAnswer(
             (_) => {
               for (final relay in replacementRelays)
                 relay: RelayConnectionStatus.connected(relay),
@@ -717,9 +725,7 @@ void main() {
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
         stubClientScope(replacementClient, relay: stagingDefault);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -803,12 +809,9 @@ void main() {
         when(
           () => replacementClient.publicKey,
         ).thenAnswer((_) => replacementPublicKey);
-        when(
-          () => replacementClient.defaultRelayUrl,
-        ).thenReturn(defaultRelay);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.defaultRelayUrl).thenReturn(defaultRelay);
+        stubUserRemovedRelays(replacementClient);
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -912,9 +915,7 @@ void main() {
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
         stubClientScope(replacementClient);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -978,6 +979,102 @@ void main() {
       });
     });
 
+    test(
+      'skips user-suppressed additions while reconciling a replacement client',
+      () {
+        fakeAsync((async) {
+          final replacementClient = MockNostrClient();
+          final replacementStatuses =
+              StreamController<Map<String, RelayConnectionStatus>>.broadcast();
+          const suppressedRelay = 'wss://removed.example.com';
+          const retainedRelay = 'wss://retained.example.com';
+          final replacementRelays = <String>{defaultRelay};
+
+          when(() => mockNostrClient.relayStatuses).thenReturn({
+            defaultRelay: RelayConnectionStatus.connected(defaultRelay),
+          });
+          when(
+            () => mockNostrClient.relayStatusStream,
+          ).thenAnswer((_) => statusController.stream);
+          when(() => replacementClient.isInitialized).thenReturn(true);
+          stubClientScope(replacementClient);
+          stubUserRemovedRelays(replacementClient, relays: {suppressedRelay});
+          when(() => replacementClient.relayStatuses).thenAnswer(
+            (_) => {
+              for (final relay in replacementRelays)
+                relay: RelayConnectionStatus.connected(relay),
+            },
+          );
+          when(
+            () => replacementClient.relayStatusStream,
+          ).thenAnswer((_) => replacementStatuses.stream);
+          when(
+            () => replacementClient.configuredRelays,
+          ).thenAnswer((_) => replacementRelays.toList());
+          when(() => replacementClient.addRelays(any())).thenAnswer((
+            call,
+          ) async {
+            final relays = call.positionalArguments.single as List<String>;
+            replacementRelays.addAll(relays);
+            return relays.length;
+          });
+          when(
+            () => replacementClient.removeRelay(
+              any(),
+              source: any(named: 'source'),
+            ),
+          ).thenAnswer((call) async {
+            final relay = call.positionalArguments.single as String;
+            return replacementRelays.remove(relay);
+          });
+          when(replacementClient.forceReconnectAll).thenAnswer((_) async {});
+
+          final swappableService = SwappableNostrService(mockNostrClient);
+          final container = ProviderContainer(
+            overrides: [
+              nostrServiceProvider.overrideWith(() => swappableService),
+              nostrSessionProvider.overrideWith(() => testNostrSession),
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+            ],
+          );
+          final bridgeSubscription = container.listen<void>(
+            relaySetChangeBridgeProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+
+          statusController.add({
+            defaultRelay: RelayConnectionStatus.connected(defaultRelay),
+            retainedRelay: RelayConnectionStatus.connected(retainedRelay),
+            suppressedRelay: RelayConnectionStatus.connected(suppressedRelay),
+          });
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 1));
+          swappableService.replaceWith(replacementClient);
+          async.flushMicrotasks();
+          async.elapse(const Duration(seconds: 2));
+          async.flushMicrotasks();
+
+          expect(replacementRelays, contains(retainedRelay));
+          expect(replacementRelays, isNot(contains(suppressedRelay)));
+          verify(
+            () => replacementClient.isUserRemovedRelay(suppressedRelay),
+          ).called(1);
+          verify(() => replacementClient.addRelays([retainedRelay])).called(1);
+          verify(replacementClient.forceReconnectAll).called(1);
+          verify(
+            () => mockVideoEventService.resetAndResubscribeAll(),
+          ).called(1);
+
+          bridgeSubscription.close();
+          container.dispose();
+          replacementStatuses.close();
+        });
+      },
+    );
+
     test('retries a thrown replacement reconciliation before reset', () {
       fakeAsync((async) {
         final replacementClient = MockNostrClient();
@@ -995,9 +1092,7 @@ void main() {
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
         stubClientScope(replacementClient);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -1077,9 +1172,7 @@ void main() {
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
         stubClientScope(replacementClient);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -1172,9 +1265,7 @@ void main() {
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
         stubClientScope(replacementClient);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -1246,9 +1337,7 @@ void main() {
         ).thenAnswer((_) => statusController.stream);
         when(() => replacementClient.isInitialized).thenReturn(true);
         stubClientScope(replacementClient);
-        when(
-          () => replacementClient.relayStatuses,
-        ).thenAnswer(
+        when(() => replacementClient.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in replacementRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -1324,9 +1413,7 @@ void main() {
           stubClientScope(client);
           when(client.forceReconnectAll).thenAnswer((_) async {});
         }
-        when(
-          () => firstReplacement.relayStatuses,
-        ).thenAnswer(
+        when(() => firstReplacement.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in firstRelays)
               relay: RelayConnectionStatus.connected(relay),
@@ -1343,9 +1430,7 @@ void main() {
           firstRelays.addAll(call.positionalArguments.single as List<String>);
           return 1;
         });
-        when(
-          () => secondReplacement.relayStatuses,
-        ).thenAnswer(
+        when(() => secondReplacement.relayStatuses).thenAnswer(
           (_) => {
             for (final relay in secondRelays)
               relay: RelayConnectionStatus.connected(relay),
