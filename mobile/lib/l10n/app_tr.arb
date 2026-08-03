@@ -739,26 +739,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Tüm bayrakları varsayılanlara sıfırla",
-    "featureFlagAppRecovery": "Uygulama Kurtarma",
-    "featureFlagAppRecoveryDescription": "Uygulama çöküyor veya tuhaf davranıyorsa, önbelleği temizlemeyi dene.",
-    "featureFlagClearAllCache": "Tüm Önbelleği Temizle",
-    "featureFlagCacheInfo": "Önbellek Bilgisi",
-    "featureFlagClearCacheTitle": "Tüm Önbellek Temizlensin mi?",
-    "featureFlagClearCacheMessage": "Bu işlem önbelleğe alınmış tüm verileri temizleyecektir:\n• Bildirimler\n• Kullanıcı profilleri\n• Yer imleri\n• Geçici dosyalar\n\nTekrar giriş yapman gerekecek. Devam edilsin mi?",
-    "featureFlagClearCache": "Önbelleği Temizle",
-    "featureFlagClearingCache": "Önbellek temizleniyor...",
     "featureFlagError": "Hata",
-    "featureFlagClearCacheSuccess": "Önbellek başarıyla temizlendi. Lütfen uygulamayı yeniden başlat.",
-    "featureFlagClearCacheFailure": "Bazı önbellek öğeleri temizlenemedi. Ayrıntılar için günlükleri kontrol et.",
-    "featureFlagTotalCacheSize": "Toplam önbellek boyutu: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Önbellek şunları içerir:\n• Bildirim geçmişi\n• Kullanıcı profil verileri\n• Video küçük resimleri\n• Geçici dosyalar\n• Veritabanı dizinleri",
     "relaySettingsTitle": "Röleler",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Maksimum önbellek boyutu",
   "settingsStorageApproxVideos": "≈ {count} video",
   "settingsStorageRemoveBrokenConfirmTitle": "Bozuk klipler kaldırılsın mı?",
+  "settingsStorageRepairSectionTitle": "Kurulumu onar",
+  "settingsStorageRepairDescription": "Uygulama sürekli çöküyor ya da tuhaf davranıyorsa yerel verileri sıfırlamak genelde çözer. Kliplerin ve taslakların kalır.",
+  "settingsStorageRepairButton": "Uygulama verilerini sıfırla",
+  "settingsStorageRepairConfirmTitle": "Uygulama verileri sıfırlansın mı?",
+  "settingsStorageRepairConfirmMessage": "Bu; bildirimleri, önbellekteki profilleri, yer imlerini ve geçici dosyaları siler. Kliplerin ve taslakların kalır ama oturumun kapanır ve uygulamayı yeniden başlatman gerekir.",
+  "settingsStorageRepairFootprint": "{size} silinecek",
+  "settingsStorageRepairConfirmAction": "Sıfırla",
+  "settingsStorageRepairInProgress": "Sıfırlanıyor…",
+  "settingsStorageRepairSuccess": "Bitti — tamamlamak için uygulamayı yeniden başlat.",
+  "settingsStorageRepairFailure": "Her şey sıfırlanamadı. Yeniden başlattıktan sonra tekrar dene.",
   "authSignInErrorInvalidCredentials": "E-posta veya şifre yanlış. Tekrar dene.",
   "authSignInErrorEmailNotVerified": "Giriş yapmadan önce e-postanı doğrula — bağlantı için gelen kutunu kontrol et.",
   "authSignInErrorInvalidEmail": "Bu geçerli bir e-posta adresi gibi görünmüyor.",

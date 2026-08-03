@@ -1103,26 +1103,7 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "Đặt lại tất cả cờ về mặc định",
-  "featureFlagAppRecovery": "Khôi phục ứng dụng",
-  "featureFlagAppRecoveryDescription": "Nếu ứng dụng bị văng hoặc hoạt động kỳ lạ, hãy thử xóa bộ nhớ đệm.",
-  "featureFlagClearAllCache": "Xóa toàn bộ bộ nhớ đệm",
-  "featureFlagCacheInfo": "Thông tin bộ nhớ đệm",
-  "featureFlagClearCacheTitle": "Xóa toàn bộ bộ nhớ đệm?",
-  "featureFlagClearCacheMessage": "Thao tác này sẽ xóa tất cả dữ liệu đã lưu bao gồm:\n• Thông báo\n• Hồ sơ người dùng\n• Dấu trang\n• Tệp tạm\n\nBạn sẽ cần đăng nhập lại. Tiếp tục chứ?",
-  "featureFlagClearCache": "Xóa bộ nhớ đệm",
-  "featureFlagClearingCache": "Đang xóa bộ nhớ đệm...",
   "featureFlagError": "Lỗi",
-  "featureFlagClearCacheSuccess": "Đã xóa bộ nhớ đệm thành công. Vui lòng khởi động lại ứng dụng.",
-  "featureFlagClearCacheFailure": "Không xóa được một số mục trong bộ nhớ đệm. Xem nhật ký để biết chi tiết.",
-  "featureFlagTotalCacheSize": "Tổng dung lượng bộ nhớ đệm: {size}",
-  "@featureFlagTotalCacheSize": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "featureFlagCacheIncludes": "Bộ nhớ đệm bao gồm:\n• Lịch sử thông báo\n• Dữ liệu hồ sơ người dùng\n• Ảnh thu nhỏ video\n• Tệp tạm\n• Chỉ mục cơ sở dữ liệu",
   "relaySettingsTitle": "Relay",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
@@ -6555,6 +6536,16 @@
   "@settingsStorageRemoveBrokenConfirmTitle": {
     "description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."
   },
+  "settingsStorageRepairSectionTitle": "Sửa bản cài đặt",
+  "settingsStorageRepairDescription": "Nếu ứng dụng cứ bị lỗi hoặc chạy lạ, đặt lại dữ liệu cục bộ thường sẽ khắc phục được. Clip và bản nháp của bạn vẫn còn.",
+  "settingsStorageRepairButton": "Đặt lại dữ liệu ứng dụng",
+  "settingsStorageRepairConfirmTitle": "Đặt lại dữ liệu ứng dụng?",
+  "settingsStorageRepairConfirmMessage": "Thao tác này xóa thông báo, hồ sơ đã lưu tạm, dấu trang và tệp tạm. Clip và bản nháp của bạn vẫn còn, nhưng bạn sẽ bị đăng xuất và phải khởi động lại ứng dụng.",
+  "settingsStorageRepairFootprint": "Sẽ xóa {size}",
+  "settingsStorageRepairConfirmAction": "Đặt lại",
+  "settingsStorageRepairInProgress": "Đang đặt lại…",
+  "settingsStorageRepairSuccess": "Xong — khởi động lại ứng dụng để hoàn tất.",
+  "settingsStorageRepairFailure": "Không đặt lại được tất cả. Thử lại sau khi khởi động lại.",
   "nostrSettingsSignatureVerification": "Xác minh chữ ký",
   "@nostrSettingsSignatureVerification": {
     "description": "Title for the Nostr relay signature verification setting."

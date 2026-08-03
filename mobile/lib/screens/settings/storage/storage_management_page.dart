@@ -1,6 +1,8 @@
 // ABOUTME: Settings "Storage" screen — clear cached media (never the clip
 // ABOUTME: library) and audit the clip library for broken entries.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -59,14 +61,17 @@ class StorageManagementView extends StatelessWidget {
       body: BlocListener<StorageCubit, StorageState>(
         listenWhen: (prev, curr) =>
             prev.cacheStatus != curr.cacheStatus ||
-            prev.libraryStatus != curr.libraryStatus,
+            prev.libraryStatus != curr.libraryStatus ||
+            prev.recoveryStatus != curr.recoveryStatus,
         listener: _announceOutcomes,
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: ListView(
-              padding: const EdgeInsets.only(bottom: 32),
+              padding: EdgeInsets.only(
+                bottom: 32 + MediaQuery.viewPaddingOf(context).bottom,
+              ),
               children: [
                 DivineSectionHeader(
                   context.l10n.settingsStorageCacheSectionTitle,
@@ -76,8 +81,10 @@ class StorageManagementView extends StatelessWidget {
                   context.l10n.settingsStorageLibrarySectionTitle,
                 ),
                 const _LibrarySection(),
-                DivineSectionHeader(context.l10n.featureFlagAppRecovery),
-                const _RecoverySection(),
+                DivineSectionHeader(
+                  context.l10n.settingsStorageRepairSectionTitle,
+                ),
+                const _RepairSection(),
               ],
             ),
           ),
@@ -94,9 +101,9 @@ class StorageManagementView extends StatelessWidget {
     } else if (state.libraryStatus == StorageLibraryStatus.cleaned) {
       message = l10n.settingsStorageBrokenClipsRemoved;
     } else if (state.recoveryStatus == StorageRecoveryStatus.recovered) {
-      message = l10n.featureFlagClearCacheSuccess;
+      message = l10n.settingsStorageRepairSuccess;
     } else if (state.recoveryStatus == StorageRecoveryStatus.failure) {
-      message = l10n.featureFlagClearCacheFailure;
+      message = l10n.settingsStorageRepairFailure;
     } else if (state.cacheStatus == StorageCacheStatus.failure ||
         state.libraryStatus == StorageLibraryStatus.failure) {
       message = l10n.settingsStorageError;
@@ -351,22 +358,18 @@ class _LibrarySection extends StatelessWidget {
   }
 }
 
-/// Last-resort recovery for a corrupted install. Unlike [_CacheSection] — which
+/// Last-resort reset for a corrupted install. Unlike [_CacheSection] — which
 /// only trims downloaded media — this wipes the Hive boxes, Application Support
-/// and temp directories too, so it lives behind its own confirmation.
-class _RecoverySection extends StatelessWidget {
-  const _RecoverySection();
+/// and temp directories too, signing the user out in the process. It stays
+/// clear of the word "cache" so it cannot be mistaken for a thorough variant
+/// of the routine clear above.
+class _RepairSection extends StatelessWidget {
+  const _RepairSection();
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final status = context.select((StorageCubit c) => c.state.recoveryStatus);
-    final footprint = context.select(
-      (StorageCubit c) => c.state.recoveryFootprint,
-    );
-    final busy =
-        status == StorageRecoveryStatus.measuring ||
-        status == StorageRecoveryStatus.recovering;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -375,79 +378,69 @@ class _RecoverySection extends StatelessWidget {
         spacing: 12,
         children: [
           Text(
-            l10n.featureFlagAppRecoveryDescription,
+            l10n.settingsStorageRepairDescription,
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.mutedText,
             ),
           ),
-          if (status == StorageRecoveryStatus.measuring)
+          if (status == StorageRecoveryStatus.recovering)
             Text(
-              l10n.settingsStorageMeasuring,
-              style: VineTheme.titleMediumFont(
-                color: context.vineColors.primaryText,
-              ),
-            )
-          else if (status == StorageRecoveryStatus.measured)
-            Text(
-              l10n.featureFlagTotalCacheSize(footprint),
-              style: VineTheme.titleMediumFont(
-                color: context.vineColors.primaryText,
-              ),
-            )
-          else if (status == StorageRecoveryStatus.recovering)
-            Text(
-              l10n.featureFlagClearingCache,
+              l10n.settingsStorageRepairInProgress,
               style: VineTheme.titleMediumFont(
                 color: context.vineColors.primaryText,
               ),
             )
           else if (status == StorageRecoveryStatus.recovered)
             Text(
-              l10n.featureFlagClearCacheSuccess,
+              l10n.settingsStorageRepairSuccess,
               style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
-            ),
-          if (status == StorageRecoveryStatus.measured)
+            )
+          else if (status == StorageRecoveryStatus.failure)
             Text(
-              l10n.featureFlagCacheIncludes,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.mutedText,
-              ),
+              l10n.settingsStorageRepairFailure,
+              style: VineTheme.titleMediumFont(color: VineTheme.error),
             ),
           DivineButton(
-            label: l10n.featureFlagCacheInfo,
-            type: DivineButtonType.secondary,
-            expanded: true,
-            onPressed: busy
-                ? null
-                : () => context.read<StorageCubit>().loadRecoveryFootprint(),
-          ),
-          DivineButton(
-            label: l10n.featureFlagClearAllCache,
+            label: l10n.settingsStorageRepairButton,
             type: DivineButtonType.error,
             expanded: true,
-            onPressed: busy ? null : () => _confirmRecover(context),
+            onPressed: status == StorageRecoveryStatus.recovering
+                ? null
+                : () => _confirmRepair(context),
           ),
         ],
       ),
     );
   }
 
-  Future<void> _confirmRecover(BuildContext context) async {
+  Future<void> _confirmRepair(BuildContext context) async {
     final l10n = context.l10n;
     final cubit = context.read<StorageCubit>();
+    // Measure alongside the open sheet rather than on screen entry: walking
+    // Application Support is too slow to pay for on every visit, and the
+    // number only informs this one decision.
+    unawaited(cubit.loadRecoveryFootprint());
     final confirmed = await VineBottomSheet.show<bool>(
       context: context,
       scrollable: false,
-      contentTitle: l10n.featureFlagClearCacheTitle,
+      contentTitle: l10n.settingsStorageRepairConfirmTitle,
+      // The sheet is a sibling route, so it does not inherit the page's
+      // provider — hand the cubit down for _RepairFootprint.
+      contentWrapper: (_, child) =>
+          BlocProvider<StorageCubit>.value(value: cubit, child: child),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text(
-            l10n.featureFlagClearCacheMessage,
+            l10n.settingsStorageRepairConfirmMessage,
             style: VineTheme.bodyMediumFont(
               color: context.vineColors.mutedText,
             ),
           ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: _RepairFootprint(),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -464,7 +457,7 @@ class _RecoverySection extends StatelessWidget {
               ),
               Expanded(
                 child: DivineButton(
-                  label: l10n.featureFlagClearCache,
+                  label: l10n.settingsStorageRepairConfirmAction,
                   type: DivineButtonType.error,
                   expanded: true,
                   onPressed: () => Navigator.of(context).pop(true),
@@ -476,6 +469,36 @@ class _RecoverySection extends StatelessWidget {
       ],
     );
     if (confirmed ?? false) await cubit.recoverFromCorruptedCache();
+  }
+}
+
+/// How much the repair frees, shown inside the confirmation sheet. Renders
+/// nothing until the measurement lands, and nothing at all if it fails — the
+/// size informs the decision but must not block or alarm.
+class _RepairFootprint extends StatelessWidget {
+  const _RepairFootprint();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final status = context.select((StorageCubit c) => c.state.recoveryStatus);
+    final bytes = context.select(
+      (StorageCubit c) => c.state.recoveryFootprintBytes,
+    );
+
+    return switch (status) {
+      StorageRecoveryStatus.measuring => Text(
+        l10n.settingsStorageMeasuring,
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
+      ),
+      StorageRecoveryStatus.measured => Text(
+        l10n.settingsStorageRepairFootprint(_formatBytes(bytes)),
+        style: VineTheme.titleMediumFont(
+          color: context.vineColors.primaryText,
+        ),
+      ),
+      _ => const SizedBox.shrink(),
+    };
   }
 }
 

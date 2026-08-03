@@ -1915,50 +1915,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Réinitialiser tous les indicateurs';
 
   @override
-  String get featureFlagAppRecovery => 'Récupération de l\'app';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Si l\'app plante ou se comporte bizarrement, essaie de vider le cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Vider tout le cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Infos cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Vider tout le cache ?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Ça va effacer toutes les données en cache, y compris :\n• Notifications\n• Profils utilisateurs\n• Favoris\n• Fichiers temporaires\n\nTu devras te reconnecter. Continuer ?';
-
-  @override
-  String get featureFlagClearCache => 'Vider le cache';
-
-  @override
-  String get featureFlagClearingCache => 'Vidage du cache...';
-
-  @override
   String get featureFlagError => 'Erreur';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache vidé avec succès. Redémarre l\'app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Échec du vidage de certains éléments. Vérifie les logs pour les détails.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Taille totale du cache : $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Le cache inclut :\n• Historique des notifications\n• Données de profil utilisateur\n• Miniatures vidéo\n• Fichiers temporaires\n• Index de base de données';
 
   @override
   String get relaySettingsTitle => 'Relays';
@@ -10747,6 +10704,42 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Supprimer les clips défectueux ?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Réparer l\'installation';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Si l\'appli plante ou se comporte bizarrement, réinitialiser ses données locales règle souvent le problème. Tes clips et brouillons restent.';
+
+  @override
+  String get settingsStorageRepairButton => 'Réinitialiser les données';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Réinitialiser les données ?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Ça efface les notifications, les profils en cache, les favoris et les fichiers temporaires. Tes clips et brouillons restent, mais tu devras te reconnecter et redémarrer l\'appli.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size seront supprimés';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Réinitialiser';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Réinitialisation…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'C\'est fait — redémarre l\'appli pour terminer.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Impossible de tout réinitialiser. Réessaie après un redémarrage.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Vérification de signature';

@@ -1103,26 +1103,7 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "将所有开关重置为默认值",
-  "featureFlagAppRecovery": "应用恢复",
-  "featureFlagAppRecoveryDescription": "如果应用总是崩溃或行为异常，试试清除缓存。",
-  "featureFlagClearAllCache": "清除所有缓存",
-  "featureFlagCacheInfo": "缓存信息",
-  "featureFlagClearCacheTitle": "清除所有缓存？",
-  "featureFlagClearCacheMessage": "这会清除所有缓存数据，包括：\n• 通知\n• 用户资料\n• 收藏\n• 临时文件\n\n你需要重新登录。继续吗？",
-  "featureFlagClearCache": "清除缓存",
-  "featureFlagClearingCache": "正在清除缓存...",
   "featureFlagError": "错误",
-  "featureFlagClearCacheSuccess": "缓存清除成功。请重启应用。",
-  "featureFlagClearCacheFailure": "部分缓存项清除失败，详情请查看日志。",
-  "featureFlagTotalCacheSize": "缓存总大小：{size}",
-  "@featureFlagTotalCacheSize": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "featureFlagCacheIncludes": "缓存包括：\n• 通知历史\n• 用户资料数据\n• 视频缩略图\n• 临时文件\n• 数据库索引",
   "relaySettingsTitle": "中继",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
@@ -6555,6 +6536,16 @@
   "@settingsStorageRemoveBrokenConfirmTitle": {
     "description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."
   },
+  "settingsStorageRepairSectionTitle": "修复安装",
+  "settingsStorageRepairDescription": "如果应用总是崩溃或行为异常，重置本地数据通常能解决。你的片段和草稿会保留。",
+  "settingsStorageRepairButton": "重置应用数据",
+  "settingsStorageRepairConfirmTitle": "要重置应用数据吗？",
+  "settingsStorageRepairConfirmMessage": "这会清除通知、缓存的资料、书签和临时文件。你的片段和草稿会保留，但会退出登录，需要重启应用。",
+  "settingsStorageRepairFootprint": "将删除 {size}",
+  "settingsStorageRepairConfirmAction": "重置",
+  "settingsStorageRepairInProgress": "正在重置…",
+  "settingsStorageRepairSuccess": "完成 — 重启应用即可生效。",
+  "settingsStorageRepairFailure": "没能全部重置。重启后再试一次。",
   "nostrSettingsSignatureVerification": "签名验证",
   "@nostrSettingsSignatureVerification": {
     "description": "Title for the Nostr relay signature verification setting."

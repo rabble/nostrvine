@@ -818,26 +818,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Нулирай всички флагове до стойностите по подразбиране",
-    "featureFlagAppRecovery": "Възстановяване на приложението",
-    "featureFlagAppRecoveryDescription": "Ако приложението се срива или се държи странно, опитай да изчистиш кеша.",
-    "featureFlagClearAllCache": "Изчистване на целия кеш",
-    "featureFlagCacheInfo": "Информация за кеша",
-    "featureFlagClearCacheTitle": "Изчистване на целия кеш?",
-    "featureFlagClearCacheMessage": "Това ще изчисти всички кеширани данни, включително:\n• Известия\n• Потребителски профили\n• Отметки\n• Временни файлове\n\nЩе трябва да влезеш отново. Да продължим?",
-    "featureFlagClearCache": "Изчистване на кеша",
-    "featureFlagClearingCache": "Изчистване на кеша...",
     "featureFlagError": "Грешка",
-    "featureFlagClearCacheSuccess": "Кешът е изчистен. Рестартирай приложението.",
-    "featureFlagClearCacheFailure": "Не успяхме да изчистим някои елементи от кеша. Виж логовете за подробности.",
-    "featureFlagTotalCacheSize": "Общ размер на кеша: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Кешът включва:\n• История на известията\n• Данни от потребителския профил\n• Видео миниатюри\n• Временни файлове\n• Индекси на бази данни",
     "relaySettingsTitle": "Релета",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4952,6 +4933,16 @@
   "settingsStorageMaxSizeLabel": "Максимален размер на кеша",
   "settingsStorageApproxVideos": "≈ {count} видеа",
   "settingsStorageRemoveBrokenConfirmTitle": "Премахване на повредените клипове?",
+  "settingsStorageRepairSectionTitle": "Поправяне на инсталацията",
+  "settingsStorageRepairDescription": "Ако приложението постоянно се срива или се държи странно, нулирането на локалните данни обикновено помага. Клиповете и черновите ти остават.",
+  "settingsStorageRepairButton": "Нулиране на данните",
+  "settingsStorageRepairConfirmTitle": "Да нулираме ли данните?",
+  "settingsStorageRepairConfirmMessage": "Това изтрива известията, кешираните профили, отметките и временните файлове. Клиповете и черновите ти остават, но ще излезеш от профила си и ще трябва да рестартираш приложението.",
+  "settingsStorageRepairFootprint": "Ще бъдат изтрити {size}",
+  "settingsStorageRepairConfirmAction": "Нулирай",
+  "settingsStorageRepairInProgress": "Нулиране…",
+  "settingsStorageRepairSuccess": "Готово — рестартирай приложението, за да приключиш.",
+  "settingsStorageRepairFailure": "Не всичко можа да се нулира. Опитай пак след рестарт.",
   "authSignInErrorInvalidCredentials": "Грешен имейл или парола. Опитай отново.",
   "authSignInErrorEmailNotVerified": "Потвърди имейла си, преди да влезеш — провери входящата си поща за връзката.",
   "authSignInErrorInvalidEmail": "Това не изглежда като валиден имейл адрес.",

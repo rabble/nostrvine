@@ -742,26 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Restablecer todas las flags a los valores predeterminados",
-    "featureFlagAppRecovery": "Recuperación de la app",
-    "featureFlagAppRecoveryDescription": "Si la app se está cerrando o anda rara, probá limpiar la caché.",
-    "featureFlagClearAllCache": "Limpiar toda la caché",
-    "featureFlagCacheInfo": "Info de la caché",
-    "featureFlagClearCacheTitle": "¿Limpiar toda la caché?",
-    "featureFlagClearCacheMessage": "Esto va a limpiar todos los datos cacheados, incluyendo:\n• Notificaciones\n• Perfiles de usuario\n• Marcadores\n• Archivos temporales\n\nVas a tener que iniciar sesión de nuevo. ¿Continuamos?",
-    "featureFlagClearCache": "Limpiar caché",
-    "featureFlagClearingCache": "Limpiando la caché...",
     "featureFlagError": "Error",
-    "featureFlagClearCacheSuccess": "Caché limpiada con éxito. Reiniciá la app.",
-    "featureFlagClearCacheFailure": "No se pudieron limpiar algunos elementos de la caché. Mirá los logs para más detalles.",
-    "featureFlagTotalCacheSize": "Tamaño total de la caché: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "La caché incluye:\n• Historial de notificaciones\n• Datos de perfiles\n• Miniaturas de videos\n• Archivos temporales\n• Índices de base de datos",
     "relaySettingsTitle": "Relays",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Tamaño máximo de caché",
   "settingsStorageApproxVideos": "≈ {count} videos",
   "settingsStorageRemoveBrokenConfirmTitle": "¿Eliminar clips dañados?",
+  "settingsStorageRepairSectionTitle": "Reparar instalación",
+  "settingsStorageRepairDescription": "Si la app se cierra o se comporta raro, restablecer sus datos locales suele arreglarlo. Tus clips y borradores se quedan.",
+  "settingsStorageRepairButton": "Restablecer datos de la app",
+  "settingsStorageRepairConfirmTitle": "¿Restablecer datos de la app?",
+  "settingsStorageRepairConfirmMessage": "Esto borra notificaciones, perfiles en caché, marcadores y archivos temporales. Tus clips y borradores se quedan, pero cerrarás sesión y tendrás que reiniciar la app.",
+  "settingsStorageRepairFootprint": "Se borrarán {size}",
+  "settingsStorageRepairConfirmAction": "Restablecer",
+  "settingsStorageRepairInProgress": "Restableciendo…",
+  "settingsStorageRepairSuccess": "Listo: reinicia la app para terminar.",
+  "settingsStorageRepairFailure": "No se pudo restablecer todo. Inténtalo de nuevo tras reiniciar.",
   "authSignInErrorInvalidCredentials": "Correo o contraseña incorrectos. Inténtalo de nuevo.",
   "authSignInErrorEmailNotVerified": "Verifica tu correo antes de iniciar sesión: revisa tu bandeja de entrada para ver el enlace.",
   "authSignInErrorInvalidEmail": "Eso no parece una dirección de correo válida.",

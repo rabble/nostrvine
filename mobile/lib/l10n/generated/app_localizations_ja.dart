@@ -1772,49 +1772,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'すべてのフラグを既定値にリセット';
 
   @override
-  String get featureFlagAppRecovery => 'アプリ復旧';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'アプリがクラッシュしたりおかしい時は、キャッシュのクリアを試してみて。';
-
-  @override
-  String get featureFlagClearAllCache => 'すべてのキャッシュをクリア';
-
-  @override
-  String get featureFlagCacheInfo => 'キャッシュ情報';
-
-  @override
-  String get featureFlagClearCacheTitle => 'すべてのキャッシュをクリアする?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      '次のキャッシュデータを全部クリアするよ:\n• 通知\n• ユーザープロフィール\n• ブックマーク\n• 一時ファイル\n\n再度ログインが必要になるけど、続ける?';
-
-  @override
-  String get featureFlagClearCache => 'キャッシュをクリア';
-
-  @override
-  String get featureFlagClearingCache => 'キャッシュをクリア中...';
-
-  @override
   String get featureFlagError => 'エラー';
-
-  @override
-  String get featureFlagClearCacheSuccess => 'キャッシュをクリアしたよ。アプリを再起動してね。';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      '一部のキャッシュ項目のクリアがうまくいかなかった。ログを確認してみて。';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'キャッシュ合計: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'キャッシュに含まれるもの:\n• 通知履歴\n• ユーザープロフィールデータ\n• 動画サムネイル\n• 一時ファイル\n• データベースインデックス';
 
   @override
   String get relaySettingsTitle => 'リレー';
@@ -10167,6 +10125,40 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => '壊れたクリップを削除しますか？';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'インストールを修復';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'アプリが落ちたり動きがおかしいときは、ローカルデータをリセットすると直ることが多いよ。クリップと下書きはそのまま残る。';
+
+  @override
+  String get settingsStorageRepairButton => 'アプリデータをリセット';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'アプリデータをリセットする?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      '通知、キャッシュ済みのプロフィール、ブックマーク、一時ファイルを消すよ。クリップと下書きは残るけど、ログアウトされるからアプリを再起動してね。';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size を削除するよ';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'リセット';
+
+  @override
+  String get settingsStorageRepairInProgress => 'リセット中…';
+
+  @override
+  String get settingsStorageRepairSuccess => '完了 — 仕上げにアプリを再起動してね。';
+
+  @override
+  String get settingsStorageRepairFailure => '全部はリセットできなかった。再起動してからもう一度試してね。';
 
   @override
   String get nostrSettingsSignatureVerification => '署名の検証';

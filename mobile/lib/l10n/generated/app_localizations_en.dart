@@ -1888,50 +1888,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Reset all flags to defaults';
 
   @override
-  String get featureFlagAppRecovery => 'App Recovery';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'If the app is crashing or behaving strangely, try clearing the cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Clear All Cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Cache Info';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Clear All Cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'This will clear all cached data including:\n• Notifications\n• User profiles\n• Bookmarks\n• Temporary files\n\nYou will need to log in again. Continue?';
-
-  @override
-  String get featureFlagClearCache => 'Clear Cache';
-
-  @override
-  String get featureFlagClearingCache => 'Clearing cache...';
-
-  @override
   String get featureFlagError => 'Error';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache cleared successfully. Please restart the app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Failed to clear some cache items. Check logs for details.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Total cache size: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache includes:\n• Notification history\n• User profile data\n• Video thumbnails\n• Temporary files\n• Database indexes';
 
   @override
   String get relaySettingsTitle => 'Relays';
@@ -10574,6 +10531,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => 'Remove broken clips?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Repair install';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'If the app keeps crashing or acting strange, resetting its local data usually fixes it. Your clips and drafts stay.';
+
+  @override
+  String get settingsStorageRepairButton => 'Reset app data';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Reset app data?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'This wipes notifications, cached profiles, bookmarks and temporary files. Your clips and drafts stay, but you\'ll be signed out and have to restart the app.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size will be removed';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Reset';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Resetting…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Done — restart the app to finish.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Couldn\'t reset everything. Try again after a restart.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Signature verification';

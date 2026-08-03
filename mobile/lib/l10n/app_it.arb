@@ -742,26 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Ripristina tutti i flag ai valori predefiniti",
-    "featureFlagAppRecovery": "Ripristino app",
-    "featureFlagAppRecoveryDescription": "Se l'app si blocca o si comporta in modo strano, prova a svuotare la cache.",
-    "featureFlagClearAllCache": "Svuota tutta la cache",
-    "featureFlagCacheInfo": "Info cache",
-    "featureFlagClearCacheTitle": "Svuotare tutta la cache?",
-    "featureFlagClearCacheMessage": "Questo cancellerà tutti i dati in cache inclusi:\n• Notifiche\n• Profili utente\n• Segnalibri\n• File temporanei\n\nDovrai accedere di nuovo. Continuare?",
-    "featureFlagClearCache": "Svuota cache",
-    "featureFlagClearingCache": "Svuotamento cache...",
     "featureFlagError": "Errore",
-    "featureFlagClearCacheSuccess": "Cache svuotata con successo. Riavvia l'app.",
-    "featureFlagClearCacheFailure": "Impossibile svuotare alcuni elementi della cache. Controlla i log per i dettagli.",
-    "featureFlagTotalCacheSize": "Dimensione totale cache: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "La cache include:\n• Cronologia notifiche\n• Dati profilo utente\n• Miniature video\n• File temporanei\n• Indici del database",
     "relaySettingsTitle": "Relay",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Dimensione massima cache",
   "settingsStorageApproxVideos": "≈ {count} video",
   "settingsStorageRemoveBrokenConfirmTitle": "Rimuovere le clip danneggiate?",
+  "settingsStorageRepairSectionTitle": "Ripara l'installazione",
+  "settingsStorageRepairDescription": "Se l'app continua a crashare o si comporta in modo strano, azzerare i dati locali di solito risolve. I tuoi clip e le bozze restano.",
+  "settingsStorageRepairButton": "Azzera i dati dell'app",
+  "settingsStorageRepairConfirmTitle": "Azzerare i dati dell'app?",
+  "settingsStorageRepairConfirmMessage": "Questo cancella notifiche, profili in cache, segnalibri e file temporanei. I tuoi clip e le bozze restano, ma dovrai accedere di nuovo e riavviare l'app.",
+  "settingsStorageRepairFootprint": "Verranno rimossi {size}",
+  "settingsStorageRepairConfirmAction": "Azzera",
+  "settingsStorageRepairInProgress": "Azzeramento…",
+  "settingsStorageRepairSuccess": "Fatto — riavvia l'app per completare.",
+  "settingsStorageRepairFailure": "Non è stato possibile azzerare tutto. Riprova dopo un riavvio.",
   "authSignInErrorInvalidCredentials": "Email o password errati. Riprova.",
   "authSignInErrorEmailNotVerified": "Verifica la tua email prima di accedere: controlla la posta in arrivo per il link.",
   "authSignInErrorInvalidEmail": "Non sembra un indirizzo email valido.",

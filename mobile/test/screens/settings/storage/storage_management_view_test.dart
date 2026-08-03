@@ -145,7 +145,17 @@ void main() {
     verify(() => service.setCacheLimit(any())).called(1);
   });
 
-  testWidgets('the recovery wipe is gated behind a confirmation', (
+  /// Scrolls the repair button into view and opens its confirmation sheet.
+  Future<void> openRepairSheet(WidgetTester tester) async {
+    final repair = find.text(l10n.settingsStorageRepairButton);
+    await tester.scrollUntilVisible(repair, 200);
+    await tester.ensureVisible(repair);
+    await tester.pumpAndSettle();
+    await tester.tap(repair);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the repair wipe is gated behind a confirmation', (
     tester,
   ) async {
     var recovered = false;
@@ -155,54 +165,93 @@ void main() {
         recovered = true;
         return true;
       },
+      measureRecoveryFootprint: () async => 42 * 1024 * 1024,
     )..loadCacheSize();
     addTearDown(cubit.close);
 
     await tester.pumpWidget(wrap(cubit));
     await tester.pumpAndSettle();
+    await openRepairSheet(tester);
 
-    final clearAll = find.text(l10n.featureFlagClearAllCache);
-    await tester.scrollUntilVisible(clearAll, 200);
-    await tester.ensureVisible(clearAll);
-    await tester.pumpAndSettle();
-    await tester.tap(clearAll);
-    await tester.pumpAndSettle();
-
-    expect(find.text(l10n.featureFlagClearCacheTitle), findsOneWidget);
+    expect(find.text(l10n.settingsStorageRepairConfirmTitle), findsOneWidget);
     expect(recovered, isFalse);
 
-    await tester.tap(find.text(l10n.featureFlagClearCache));
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
     await tester.pumpAndSettle();
 
     expect(recovered, isTrue);
-    expect(find.text(l10n.featureFlagClearCacheSuccess), findsOneWidget);
+    expect(find.text(l10n.settingsStorageRepairSuccess), findsOneWidget);
   });
 
-  testWidgets('the recovery footprint is measured on demand', (tester) async {
+  testWidgets('the confirmation sheet reports what the repair frees', (
+    tester,
+  ) async {
     final cubit = StorageCubit(
       service: service,
-      measureRecoveryFootprint: () async => '42.0 MB',
+      measureRecoveryFootprint: () async => 42 * 1024 * 1024,
     )..loadCacheSize();
     addTearDown(cubit.close);
 
     await tester.pumpWidget(wrap(cubit));
     await tester.pumpAndSettle();
 
-    final cacheInfo = find.text(l10n.featureFlagCacheInfo);
-    await tester.scrollUntilVisible(cacheInfo, 200);
-    await tester.ensureVisible(cacheInfo);
-    await tester.pumpAndSettle();
+    // The size belongs to the decision, not to the screen — nothing is
+    // measured or shown until the sheet opens.
     expect(
-      find.text(l10n.featureFlagTotalCacheSize('42.0 MB')),
+      find.text(l10n.settingsStorageRepairFootprint('42 MB')),
       findsNothing,
     );
 
-    await tester.tap(cacheInfo);
-    await tester.pumpAndSettle();
+    await openRepairSheet(tester);
 
     expect(
-      find.text(l10n.featureFlagTotalCacheSize('42.0 MB')),
+      find.text(l10n.settingsStorageRepairFootprint('42 MB')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('a failed measurement leaves the sheet usable without a size', (
+    tester,
+  ) async {
+    var recovered = false;
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async {
+        recovered = true;
+        return true;
+      },
+      measureRecoveryFootprint: () async => throw Exception('boom'),
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+    await openRepairSheet(tester);
+
+    expect(find.text(l10n.settingsStorageRepairConfirmTitle), findsOneWidget);
+    expect(find.text(l10n.settingsStorageMeasuring), findsNothing);
+
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(recovered, isTrue);
+  });
+
+  testWidgets('a failed repair says so on the screen', (tester) async {
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async => false,
+      measureRecoveryFootprint: () async => 0,
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+    await openRepairSheet(tester);
+
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.settingsStorageRepairFailure), findsOneWidget);
   });
 }

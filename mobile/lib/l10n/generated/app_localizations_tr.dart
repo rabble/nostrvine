@@ -1855,50 +1855,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tüm bayrakları varsayılanlara sıfırla';
 
   @override
-  String get featureFlagAppRecovery => 'Uygulama Kurtarma';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Uygulama çöküyor veya tuhaf davranıyorsa, önbelleği temizlemeyi dene.';
-
-  @override
-  String get featureFlagClearAllCache => 'Tüm Önbelleği Temizle';
-
-  @override
-  String get featureFlagCacheInfo => 'Önbellek Bilgisi';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Tüm Önbellek Temizlensin mi?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Bu işlem önbelleğe alınmış tüm verileri temizleyecektir:\n• Bildirimler\n• Kullanıcı profilleri\n• Yer imleri\n• Geçici dosyalar\n\nTekrar giriş yapman gerekecek. Devam edilsin mi?';
-
-  @override
-  String get featureFlagClearCache => 'Önbelleği Temizle';
-
-  @override
-  String get featureFlagClearingCache => 'Önbellek temizleniyor...';
-
-  @override
   String get featureFlagError => 'Hata';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Önbellek başarıyla temizlendi. Lütfen uygulamayı yeniden başlat.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Bazı önbellek öğeleri temizlenemedi. Ayrıntılar için günlükleri kontrol et.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Toplam önbellek boyutu: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Önbellek şunları içerir:\n• Bildirim geçmişi\n• Kullanıcı profil verileri\n• Video küçük resimleri\n• Geçici dosyalar\n• Veritabanı dizinleri';
 
   @override
   String get relaySettingsTitle => 'Röleler';
@@ -10559,6 +10516,43 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Bozuk klipler kaldırılsın mı?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Kurulumu onar';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Uygulama sürekli çöküyor ya da tuhaf davranıyorsa yerel verileri sıfırlamak genelde çözer. Kliplerin ve taslakların kalır.';
+
+  @override
+  String get settingsStorageRepairButton => 'Uygulama verilerini sıfırla';
+
+  @override
+  String get settingsStorageRepairConfirmTitle =>
+      'Uygulama verileri sıfırlansın mı?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Bu; bildirimleri, önbellekteki profilleri, yer imlerini ve geçici dosyaları siler. Kliplerin ve taslakların kalır ama oturumun kapanır ve uygulamayı yeniden başlatman gerekir.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size silinecek';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Sıfırla';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Sıfırlanıyor…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Bitti — tamamlamak için uygulamayı yeniden başlat.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Her şey sıfırlanamadı. Yeniden başlattıktan sonra tekrar dene.';
 
   @override
   String get nostrSettingsSignatureVerification => 'İmza doğrulaması';

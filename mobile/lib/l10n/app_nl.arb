@@ -742,26 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Alle flags terugzetten naar standaard",
-    "featureFlagAppRecovery": "App-herstel",
-    "featureFlagAppRecoveryDescription": "Als de app crasht of gek doet, probeer dan de cache te wissen.",
-    "featureFlagClearAllCache": "Alle cache wissen",
-    "featureFlagCacheInfo": "Cache-info",
-    "featureFlagClearCacheTitle": "Alle cache wissen?",
-    "featureFlagClearCacheMessage": "Dit wist alle gecachte data, waaronder:\n• Meldingen\n• Gebruikersprofielen\n• Bladwijzers\n• Tijdelijke bestanden\n\nJe moet opnieuw inloggen. Doorgaan?",
-    "featureFlagClearCache": "Cache wissen",
-    "featureFlagClearingCache": "Cache wissen...",
     "featureFlagError": "Fout",
-    "featureFlagClearCacheSuccess": "Cache succesvol gewist. Herstart de app.",
-    "featureFlagClearCacheFailure": "Sommige cache-items zijn niet gewist. Check de logs voor details.",
-    "featureFlagTotalCacheSize": "Totale cache-grootte: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Cache bevat:\n• Meldingsgeschiedenis\n• Gebruikersprofieldata\n• Videominiaturen\n• Tijdelijke bestanden\n• Database-indexen",
     "relaySettingsTitle": "Relays",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Maximale cachegrootte",
   "settingsStorageApproxVideos": "≈ {count} video's",
   "settingsStorageRemoveBrokenConfirmTitle": "Kapotte clips verwijderen?",
+  "settingsStorageRepairSectionTitle": "Installatie repareren",
+  "settingsStorageRepairDescription": "Als de app blijft crashen of raar doet, helpt het meestal om de lokale gegevens te resetten. Je clips en concepten blijven staan.",
+  "settingsStorageRepairButton": "App-gegevens resetten",
+  "settingsStorageRepairConfirmTitle": "App-gegevens resetten?",
+  "settingsStorageRepairConfirmMessage": "Dit wist meldingen, gecachte profielen, bladwijzers en tijdelijke bestanden. Je clips en concepten blijven, maar je wordt uitgelogd en moet de app opnieuw starten.",
+  "settingsStorageRepairFootprint": "{size} wordt verwijderd",
+  "settingsStorageRepairConfirmAction": "Resetten",
+  "settingsStorageRepairInProgress": "Bezig met resetten…",
+  "settingsStorageRepairSuccess": "Klaar — start de app opnieuw om af te ronden.",
+  "settingsStorageRepairFailure": "Kon niet alles resetten. Probeer het opnieuw na een herstart.",
   "authSignInErrorInvalidCredentials": "Verkeerd e-mailadres of wachtwoord. Probeer het opnieuw.",
   "authSignInErrorEmailNotVerified": "Verifieer je e-mail voordat je inlogt — check je inbox voor de link.",
   "authSignInErrorInvalidEmail": "Dat lijkt geen geldig e-mailadres.",

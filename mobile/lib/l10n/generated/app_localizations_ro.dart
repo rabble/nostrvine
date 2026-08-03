@@ -1930,50 +1930,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Resetează toate indicatoarele la valorile implicite';
 
   @override
-  String get featureFlagAppRecovery => 'Recuperare aplicație';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Dacă aplicația se blochează sau se comportă ciudat, încearcă să goli cache-ul.';
-
-  @override
-  String get featureFlagClearAllCache => 'Golește tot cache-ul';
-
-  @override
-  String get featureFlagCacheInfo => 'Informații cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Golești tot cache-ul?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Asta va șterge toate datele din cache, inclusiv:\n• Notificări\n• Profiluri de utilizator\n• Semne de carte\n• Fișiere temporare\n\nVa trebui să te autentifici din nou. Continuăm?';
-
-  @override
-  String get featureFlagClearCache => 'Golește cache-ul';
-
-  @override
-  String get featureFlagClearingCache => 'Se golește cache-ul...';
-
-  @override
   String get featureFlagError => 'Eroare';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache-ul a fost golit cu succes. Repornește aplicația.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Unele elemente din cache n-au putut fi șterse. Verifică jurnalele pentru detalii.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Dimensiunea totală a cache-ului: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache-ul include:\n• Istoricul notificărilor\n• Datele profilurilor de utilizator\n• Miniaturi video\n• Fișiere temporare\n• Indexuri de baze de date';
 
   @override
   String get relaySettingsTitle => 'Relay-uri';
@@ -10813,6 +10770,42 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Elimini clipurile deteriorate?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Repară instalarea';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Dacă aplicația se blochează sau se comportă ciudat, resetarea datelor locale rezolvă de obicei. Clipurile și schițele tale rămân.';
+
+  @override
+  String get settingsStorageRepairButton => 'Resetează datele aplicației';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Resetezi datele aplicației?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Asta șterge notificările, profilurile din cache, marcajele și fișierele temporare. Clipurile și schițele tale rămân, dar vei fi deconectat și va trebui să repornești aplicația.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Se vor șterge $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Resetează';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Se resetează…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Gata — repornește aplicația ca să finalizezi.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Nu s-a putut reseta tot. Încearcă din nou după o repornire.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Verificarea semnăturii';

@@ -44,15 +44,17 @@ enum StorageLibraryStatus {
   failure,
 }
 
-/// Lifecycle of the app-recovery section.
+/// Lifecycle of the repair-install section.
 enum StorageRecoveryStatus {
-  /// Not measured yet.
+  /// Nothing in flight. Also where a failed measurement lands — the footprint
+  /// is decoration on the confirmation sheet, so losing it hides the size line
+  /// instead of claiming the reset itself failed.
   idle,
 
   /// Measuring the total on-disk footprint.
   measuring,
 
-  /// Footprint known and idle; see [StorageState.recoveryFootprint].
+  /// Footprint known and idle; see [StorageState.recoveryFootprintBytes].
   measured,
 
   /// A full recovery wipe is running.
@@ -61,7 +63,7 @@ enum StorageRecoveryStatus {
   /// The wipe finished; the app needs a restart.
   recovered,
 
-  /// The last recovery operation failed.
+  /// The wipe failed.
   failure,
 }
 
@@ -75,7 +77,7 @@ class StorageState extends Equatable {
     this.libraryStatus = StorageLibraryStatus.idle,
     this.brokenClips = const [],
     this.recoveryStatus = StorageRecoveryStatus.idle,
-    this.recoveryFootprint = '',
+    this.recoveryFootprintBytes = 0,
   });
 
   /// Lifecycle of the cache section.
@@ -93,12 +95,11 @@ class StorageState extends Equatable {
   /// Library clips whose backing file is missing (populated after a scan).
   final List<DivineVideoClip> brokenClips;
 
-  /// Lifecycle of the app-recovery section.
+  /// Lifecycle of the repair-install section.
   final StorageRecoveryStatus recoveryStatus;
 
-  /// Human-readable total footprint of everything a recovery wipe would clear,
-  /// or empty while it has not been measured.
-  final String recoveryFootprint;
+  /// Total bytes a repair wipe would clear, or zero while unmeasured.
+  final int recoveryFootprintBytes;
 
   /// Returns a copy with the given fields replaced.
   StorageState copyWith({
@@ -108,7 +109,7 @@ class StorageState extends Equatable {
     StorageLibraryStatus? libraryStatus,
     List<DivineVideoClip>? brokenClips,
     StorageRecoveryStatus? recoveryStatus,
-    String? recoveryFootprint,
+    int? recoveryFootprintBytes,
   }) {
     return StorageState(
       cacheStatus: cacheStatus ?? this.cacheStatus,
@@ -117,7 +118,8 @@ class StorageState extends Equatable {
       libraryStatus: libraryStatus ?? this.libraryStatus,
       brokenClips: brokenClips ?? this.brokenClips,
       recoveryStatus: recoveryStatus ?? this.recoveryStatus,
-      recoveryFootprint: recoveryFootprint ?? this.recoveryFootprint,
+      recoveryFootprintBytes:
+          recoveryFootprintBytes ?? this.recoveryFootprintBytes,
     );
   }
 
@@ -129,6 +131,6 @@ class StorageState extends Equatable {
     libraryStatus,
     brokenClips,
     recoveryStatus,
-    recoveryFootprint,
+    recoveryFootprintBytes,
   ];
 }

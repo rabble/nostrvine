@@ -1848,50 +1848,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Reset semua flag ke bawaan';
 
   @override
-  String get featureFlagAppRecovery => 'Pemulihan Aplikasi';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Kalau aplikasi crash atau berperilaku aneh, coba bersihkan cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Bersihkan Semua Cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Info Cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Bersihkan Semua Cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Ini akan menghapus semua data yang tersimpan di cache termasuk:\n• Notifikasi\n• Profil pengguna\n• Bookmark\n• File sementara\n\nKamu perlu masuk lagi. Lanjutkan?';
-
-  @override
-  String get featureFlagClearCache => 'Bersihkan Cache';
-
-  @override
-  String get featureFlagClearingCache => 'Membersihkan cache...';
-
-  @override
   String get featureFlagError => 'Kesalahan';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache berhasil dibersihkan. Silakan restart aplikasi.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Gagal membersihkan beberapa item cache. Cek log untuk detail.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Total ukuran cache: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache mencakup:\n• Riwayat notifikasi\n• Data profil pengguna\n• Thumbnail video\n• File sementara\n• Indeks database';
 
   @override
   String get relaySettingsTitle => 'Relay';
@@ -10560,6 +10517,42 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => 'Hapus klip rusak?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Perbaiki instalasi';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Kalau aplikasi sering crash atau berperilaku aneh, reset data lokalnya biasanya menyelesaikan masalah. Klip dan draf kamu tetap aman.';
+
+  @override
+  String get settingsStorageRepairButton => 'Reset data aplikasi';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Reset data aplikasi?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Ini menghapus notifikasi, profil di cache, bookmark, dan file sementara. Klip dan draf kamu tetap ada, tapi kamu akan keluar dari akun dan harus memulai ulang aplikasi.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size akan dihapus';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Reset';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Mereset…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Selesai — mulai ulang aplikasi untuk menuntaskan.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Tidak semuanya bisa direset. Coba lagi setelah memulai ulang.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Verifikasi tanda tangan';

@@ -1921,50 +1921,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zresetuj wszystkie flagi do domyślnych';
 
   @override
-  String get featureFlagAppRecovery => 'Odzyskiwanie aplikacji';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Jeśli aplikacja się crashuje lub dziwnie zachowuje, spróbuj wyczyścić cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Wyczyść cały cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Informacje o cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Wyczyścić cały cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'To wyczyści wszystkie dane z cache, w tym:\n• Powiadomienia\n• Profile użytkowników\n• Zakładki\n• Pliki tymczasowe\n\nBędziesz musiał zalogować się ponownie. Kontynuować?';
-
-  @override
-  String get featureFlagClearCache => 'Wyczyść cache';
-
-  @override
-  String get featureFlagClearingCache => 'Czyszczenie cache...';
-
-  @override
   String get featureFlagError => 'Błąd';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache wyczyszczony pomyślnie. Zrestartuj aplikację.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Nie udało się wyczyścić niektórych elementów cache. Sprawdź logi.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Całkowity rozmiar cache: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache zawiera:\n• Historię powiadomień\n• Dane profilu użytkownika\n• Miniatury filmów\n• Pliki tymczasowe\n• Indeksy bazy danych';
 
   @override
   String get relaySettingsTitle => 'Przekaźniki';
@@ -10794,6 +10751,42 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Usunąć uszkodzone klipy?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Napraw instalację';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Jeśli aplikacja się wysypuje albo dziwnie działa, zresetowanie danych lokalnych zwykle pomaga. Twoje klipy i wersje robocze zostają.';
+
+  @override
+  String get settingsStorageRepairButton => 'Zresetuj dane aplikacji';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Zresetować dane aplikacji?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'To usunie powiadomienia, zapisane profile, zakładki i pliki tymczasowe. Twoje klipy i wersje robocze zostaną, ale wylogujemy Cię i trzeba będzie zrestartować aplikację.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Zostanie usunięte: $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Zresetuj';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Resetowanie…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Gotowe — zrestartuj aplikację, żeby zakończyć.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Nie udało się zresetować wszystkiego. Spróbuj ponownie po restarcie.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Weryfikacja podpisu';

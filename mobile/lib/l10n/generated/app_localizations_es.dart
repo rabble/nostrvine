@@ -1908,50 +1908,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Restablecer todas las flags a los valores predeterminados';
 
   @override
-  String get featureFlagAppRecovery => 'Recuperación de la app';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Si la app se está cerrando o anda rara, probá limpiar la caché.';
-
-  @override
-  String get featureFlagClearAllCache => 'Limpiar toda la caché';
-
-  @override
-  String get featureFlagCacheInfo => 'Info de la caché';
-
-  @override
-  String get featureFlagClearCacheTitle => '¿Limpiar toda la caché?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Esto va a limpiar todos los datos cacheados, incluyendo:\n• Notificaciones\n• Perfiles de usuario\n• Marcadores\n• Archivos temporales\n\nVas a tener que iniciar sesión de nuevo. ¿Continuamos?';
-
-  @override
-  String get featureFlagClearCache => 'Limpiar caché';
-
-  @override
-  String get featureFlagClearingCache => 'Limpiando la caché...';
-
-  @override
   String get featureFlagError => 'Error';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Caché limpiada con éxito. Reiniciá la app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'No se pudieron limpiar algunos elementos de la caché. Mirá los logs para más detalles.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Tamaño total de la caché: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'La caché incluye:\n• Historial de notificaciones\n• Datos de perfiles\n• Miniaturas de videos\n• Archivos temporales\n• Índices de base de datos';
 
   @override
   String get relaySettingsTitle => 'Relays';
@@ -10706,6 +10663,43 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       '¿Eliminar clips dañados?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Reparar instalación';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Si la app se cierra o se comporta raro, restablecer sus datos locales suele arreglarlo. Tus clips y borradores se quedan.';
+
+  @override
+  String get settingsStorageRepairButton => 'Restablecer datos de la app';
+
+  @override
+  String get settingsStorageRepairConfirmTitle =>
+      '¿Restablecer datos de la app?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Esto borra notificaciones, perfiles en caché, marcadores y archivos temporales. Tus clips y borradores se quedan, pero cerrarás sesión y tendrás que reiniciar la app.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Se borrarán $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Restablecer';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Restableciendo…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Listo: reinicia la app para terminar.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'No se pudo restablecer todo. Inténtalo de nuevo tras reiniciar.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Verificación de firma';

@@ -739,26 +739,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "すべてのフラグを既定値にリセット",
-    "featureFlagAppRecovery": "アプリ復旧",
-    "featureFlagAppRecoveryDescription": "アプリがクラッシュしたりおかしい時は、キャッシュのクリアを試してみて。",
-    "featureFlagClearAllCache": "すべてのキャッシュをクリア",
-    "featureFlagCacheInfo": "キャッシュ情報",
-    "featureFlagClearCacheTitle": "すべてのキャッシュをクリアする?",
-    "featureFlagClearCacheMessage": "次のキャッシュデータを全部クリアするよ:\n• 通知\n• ユーザープロフィール\n• ブックマーク\n• 一時ファイル\n\n再度ログインが必要になるけど、続ける?",
-    "featureFlagClearCache": "キャッシュをクリア",
-    "featureFlagClearingCache": "キャッシュをクリア中...",
     "featureFlagError": "エラー",
-    "featureFlagClearCacheSuccess": "キャッシュをクリアしたよ。アプリを再起動してね。",
-    "featureFlagClearCacheFailure": "一部のキャッシュ項目のクリアがうまくいかなかった。ログを確認してみて。",
-    "featureFlagTotalCacheSize": "キャッシュ合計: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "キャッシュに含まれるもの:\n• 通知履歴\n• ユーザープロフィールデータ\n• 動画サムネイル\n• 一時ファイル\n• データベースインデックス",
     "relaySettingsTitle": "リレー",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "最大キャッシュサイズ",
   "settingsStorageApproxVideos": "≈ {count} 本の動画",
   "settingsStorageRemoveBrokenConfirmTitle": "壊れたクリップを削除しますか？",
+  "settingsStorageRepairSectionTitle": "インストールを修復",
+  "settingsStorageRepairDescription": "アプリが落ちたり動きがおかしいときは、ローカルデータをリセットすると直ることが多いよ。クリップと下書きはそのまま残る。",
+  "settingsStorageRepairButton": "アプリデータをリセット",
+  "settingsStorageRepairConfirmTitle": "アプリデータをリセットする?",
+  "settingsStorageRepairConfirmMessage": "通知、キャッシュ済みのプロフィール、ブックマーク、一時ファイルを消すよ。クリップと下書きは残るけど、ログアウトされるからアプリを再起動してね。",
+  "settingsStorageRepairFootprint": "{size} を削除するよ",
+  "settingsStorageRepairConfirmAction": "リセット",
+  "settingsStorageRepairInProgress": "リセット中…",
+  "settingsStorageRepairSuccess": "完了 — 仕上げにアプリを再起動してね。",
+  "settingsStorageRepairFailure": "全部はリセットできなかった。再起動してからもう一度試してね。",
   "authSignInErrorInvalidCredentials": "メールアドレスまたはパスワードが違います。もう一度お試しください。",
   "authSignInErrorEmailNotVerified": "サインインする前にメールを認証してください。受信トレイのリンクを確認してください。",
   "authSignInErrorInvalidEmail": "有効なメールアドレスではないようです。",

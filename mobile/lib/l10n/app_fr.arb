@@ -742,26 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Réinitialiser tous les indicateurs",
-    "featureFlagAppRecovery": "Récupération de l'app",
-    "featureFlagAppRecoveryDescription": "Si l'app plante ou se comporte bizarrement, essaie de vider le cache.",
-    "featureFlagClearAllCache": "Vider tout le cache",
-    "featureFlagCacheInfo": "Infos cache",
-    "featureFlagClearCacheTitle": "Vider tout le cache ?",
-    "featureFlagClearCacheMessage": "Ça va effacer toutes les données en cache, y compris :\n• Notifications\n• Profils utilisateurs\n• Favoris\n• Fichiers temporaires\n\nTu devras te reconnecter. Continuer ?",
-    "featureFlagClearCache": "Vider le cache",
-    "featureFlagClearingCache": "Vidage du cache...",
     "featureFlagError": "Erreur",
-    "featureFlagClearCacheSuccess": "Cache vidé avec succès. Redémarre l'app.",
-    "featureFlagClearCacheFailure": "Échec du vidage de certains éléments. Vérifie les logs pour les détails.",
-    "featureFlagTotalCacheSize": "Taille totale du cache : {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Le cache inclut :\n• Historique des notifications\n• Données de profil utilisateur\n• Miniatures vidéo\n• Fichiers temporaires\n• Index de base de données",
     "relaySettingsTitle": "Relays",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Taille maximale du cache",
   "settingsStorageApproxVideos": "≈ {count} vidéos",
   "settingsStorageRemoveBrokenConfirmTitle": "Supprimer les clips défectueux ?",
+  "settingsStorageRepairSectionTitle": "Réparer l'installation",
+  "settingsStorageRepairDescription": "Si l'appli plante ou se comporte bizarrement, réinitialiser ses données locales règle souvent le problème. Tes clips et brouillons restent.",
+  "settingsStorageRepairButton": "Réinitialiser les données",
+  "settingsStorageRepairConfirmTitle": "Réinitialiser les données ?",
+  "settingsStorageRepairConfirmMessage": "Ça efface les notifications, les profils en cache, les favoris et les fichiers temporaires. Tes clips et brouillons restent, mais tu devras te reconnecter et redémarrer l'appli.",
+  "settingsStorageRepairFootprint": "{size} seront supprimés",
+  "settingsStorageRepairConfirmAction": "Réinitialiser",
+  "settingsStorageRepairInProgress": "Réinitialisation…",
+  "settingsStorageRepairSuccess": "C'est fait — redémarre l'appli pour terminer.",
+  "settingsStorageRepairFailure": "Impossible de tout réinitialiser. Réessaie après un redémarrage.",
   "authSignInErrorInvalidCredentials": "E-mail ou mot de passe incorrect. Réessaie.",
   "authSignInErrorEmailNotVerified": "Vérifie ton e-mail avant de te connecter — consulte ta boîte de réception pour le lien.",
   "authSignInErrorInvalidEmail": "Cette adresse e-mail ne semble pas valide.",

@@ -742,26 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Redefinir todas as flags para o padrão",
-    "featureFlagAppRecovery": "Recuperação do app",
-    "featureFlagAppRecoveryDescription": "Se o app estiver travando ou se comportando de forma estranha, tente limpar o cache.",
-    "featureFlagClearAllCache": "Limpar todo o cache",
-    "featureFlagCacheInfo": "Informações do cache",
-    "featureFlagClearCacheTitle": "Limpar todo o cache?",
-    "featureFlagClearCacheMessage": "Isso vai limpar todos os dados em cache, incluindo:\n• Notificações\n• Perfis de usuários\n• Favoritos\n• Arquivos temporários\n\nVocê vai precisar entrar de novo. Continuar?",
-    "featureFlagClearCache": "Limpar cache",
-    "featureFlagClearingCache": "Limpando cache...",
     "featureFlagError": "Erro",
-    "featureFlagClearCacheSuccess": "Cache limpo com sucesso. Reinicie o app.",
-    "featureFlagClearCacheFailure": "Falha ao limpar alguns itens do cache. Verifique os logs para mais detalhes.",
-    "featureFlagTotalCacheSize": "Tamanho total do cache: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "O cache inclui:\n• Histórico de notificações\n• Dados de perfil de usuários\n• Miniaturas de vídeo\n• Arquivos temporários\n• Índices do banco de dados",
     "relaySettingsTitle": "Relays",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Tamanho máximo do cache",
   "settingsStorageApproxVideos": "≈ {count} vídeos",
   "settingsStorageRemoveBrokenConfirmTitle": "Remover clipes quebrados?",
+  "settingsStorageRepairSectionTitle": "Reparar instalação",
+  "settingsStorageRepairDescription": "Se o app trava ou age de forma estranha, redefinir os dados locais costuma resolver. Seus clipes e rascunhos ficam.",
+  "settingsStorageRepairButton": "Redefinir dados do app",
+  "settingsStorageRepairConfirmTitle": "Redefinir dados do app?",
+  "settingsStorageRepairConfirmMessage": "Isso apaga notificações, perfis em cache, favoritos e arquivos temporários. Seus clipes e rascunhos ficam, mas você sairá da conta e terá que reiniciar o app.",
+  "settingsStorageRepairFootprint": "{size} serão removidos",
+  "settingsStorageRepairConfirmAction": "Redefinir",
+  "settingsStorageRepairInProgress": "Redefinindo…",
+  "settingsStorageRepairSuccess": "Pronto — reinicie o app para concluir.",
+  "settingsStorageRepairFailure": "Não foi possível redefinir tudo. Tente de novo após reiniciar.",
   "authSignInErrorInvalidCredentials": "E-mail ou senha incorretos. Tente de novo.",
   "authSignInErrorEmailNotVerified": "Verifique seu e-mail antes de entrar — confira o link na sua caixa de entrada.",
   "authSignInErrorInvalidEmail": "Isso não parece um endereço de e-mail válido.",

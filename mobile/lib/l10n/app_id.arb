@@ -739,26 +739,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Reset semua flag ke bawaan",
-    "featureFlagAppRecovery": "Pemulihan Aplikasi",
-    "featureFlagAppRecoveryDescription": "Kalau aplikasi crash atau berperilaku aneh, coba bersihkan cache.",
-    "featureFlagClearAllCache": "Bersihkan Semua Cache",
-    "featureFlagCacheInfo": "Info Cache",
-    "featureFlagClearCacheTitle": "Bersihkan Semua Cache?",
-    "featureFlagClearCacheMessage": "Ini akan menghapus semua data yang tersimpan di cache termasuk:\n• Notifikasi\n• Profil pengguna\n• Bookmark\n• File sementara\n\nKamu perlu masuk lagi. Lanjutkan?",
-    "featureFlagClearCache": "Bersihkan Cache",
-    "featureFlagClearingCache": "Membersihkan cache...",
     "featureFlagError": "Kesalahan",
-    "featureFlagClearCacheSuccess": "Cache berhasil dibersihkan. Silakan restart aplikasi.",
-    "featureFlagClearCacheFailure": "Gagal membersihkan beberapa item cache. Cek log untuk detail.",
-    "featureFlagTotalCacheSize": "Total ukuran cache: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Cache mencakup:\n• Riwayat notifikasi\n• Data profil pengguna\n• Thumbnail video\n• File sementara\n• Indeks database",
     "relaySettingsTitle": "Relay",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Ukuran cache maksimum",
   "settingsStorageApproxVideos": "≈ {count} video",
   "settingsStorageRemoveBrokenConfirmTitle": "Hapus klip rusak?",
+  "settingsStorageRepairSectionTitle": "Perbaiki instalasi",
+  "settingsStorageRepairDescription": "Kalau aplikasi sering crash atau berperilaku aneh, reset data lokalnya biasanya menyelesaikan masalah. Klip dan draf kamu tetap aman.",
+  "settingsStorageRepairButton": "Reset data aplikasi",
+  "settingsStorageRepairConfirmTitle": "Reset data aplikasi?",
+  "settingsStorageRepairConfirmMessage": "Ini menghapus notifikasi, profil di cache, bookmark, dan file sementara. Klip dan draf kamu tetap ada, tapi kamu akan keluar dari akun dan harus memulai ulang aplikasi.",
+  "settingsStorageRepairFootprint": "{size} akan dihapus",
+  "settingsStorageRepairConfirmAction": "Reset",
+  "settingsStorageRepairInProgress": "Mereset…",
+  "settingsStorageRepairSuccess": "Selesai — mulai ulang aplikasi untuk menuntaskan.",
+  "settingsStorageRepairFailure": "Tidak semuanya bisa direset. Coba lagi setelah memulai ulang.",
   "authSignInErrorInvalidCredentials": "Email atau kata sandi salah. Coba lagi.",
   "authSignInErrorEmailNotVerified": "Verifikasi emailmu sebelum masuk — cek kotak masuk untuk tautannya.",
   "authSignInErrorInvalidEmail": "Itu sepertinya bukan alamat email yang valid.",

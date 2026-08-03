@@ -1920,50 +1920,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Нулирай всички флагове до стойностите по подразбиране';
 
   @override
-  String get featureFlagAppRecovery => 'Възстановяване на приложението';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Ако приложението се срива или се държи странно, опитай да изчистиш кеша.';
-
-  @override
-  String get featureFlagClearAllCache => 'Изчистване на целия кеш';
-
-  @override
-  String get featureFlagCacheInfo => 'Информация за кеша';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Изчистване на целия кеш?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Това ще изчисти всички кеширани данни, включително:\n• Известия\n• Потребителски профили\n• Отметки\n• Временни файлове\n\nЩе трябва да влезеш отново. Да продължим?';
-
-  @override
-  String get featureFlagClearCache => 'Изчистване на кеша';
-
-  @override
-  String get featureFlagClearingCache => 'Изчистване на кеша...';
-
-  @override
   String get featureFlagError => 'Грешка';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Кешът е изчистен. Рестартирай приложението.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Не успяхме да изчистим някои елементи от кеша. Виж логовете за подробности.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Общ размер на кеша: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Кешът включва:\n• История на известията\n• Данни от потребителския профил\n• Видео миниатюри\n• Временни файлове\n• Индекси на бази данни';
 
   @override
   String get relaySettingsTitle => 'Релета';
@@ -10705,6 +10662,42 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Премахване на повредените клипове?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Поправяне на инсталацията';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Ако приложението постоянно се срива или се държи странно, нулирането на локалните данни обикновено помага. Клиповете и черновите ти остават.';
+
+  @override
+  String get settingsStorageRepairButton => 'Нулиране на данните';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Да нулираме ли данните?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Това изтрива известията, кешираните профили, отметките и временните файлове. Клиповете и черновите ти остават, но ще излезеш от профила си и ще трябва да рестартираш приложението.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Ще бъдат изтрити $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Нулирай';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Нулиране…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Готово — рестартирай приложението, за да приключиш.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Не всичко можа да се нулира. Опитай пак след рестарт.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Проверка на подпис';

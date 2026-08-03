@@ -181,24 +181,27 @@ void main() {
     });
 
     group('recovery', () {
+      const footprintBytes = 42 * 1024 * 1024;
+
       blocTest<StorageCubit, StorageState>(
         'loadRecoveryFootprint emits measuring then the measured footprint',
         build: () => StorageCubit(
           service: service,
-          measureRecoveryFootprint: () async => '42.0 MB',
+          measureRecoveryFootprint: () async => footprintBytes,
         ),
         act: (cubit) => cubit.loadRecoveryFootprint(),
         expect: () => const [
           StorageState(recoveryStatus: StorageRecoveryStatus.measuring),
           StorageState(
             recoveryStatus: StorageRecoveryStatus.measured,
-            recoveryFootprint: '42.0 MB',
+            recoveryFootprintBytes: footprintBytes,
           ),
         ],
       );
 
       blocTest<StorageCubit, StorageState>(
-        'loadRecoveryFootprint emits failure when measuring throws',
+        'loadRecoveryFootprint falls back to idle when measuring throws, so '
+        'the sheet hides the size instead of reporting a failed wipe',
         build: () => StorageCubit(
           service: service,
           measureRecoveryFootprint: () async => throw Exception('boom'),
@@ -206,7 +209,7 @@ void main() {
         act: (cubit) => cubit.loadRecoveryFootprint(),
         expect: () => const [
           StorageState(recoveryStatus: StorageRecoveryStatus.measuring),
-          StorageState(recoveryStatus: StorageRecoveryStatus.failure),
+          StorageState(),
         ],
         errors: () => [isA<Exception>()],
       );
@@ -216,7 +219,7 @@ void main() {
         build: () => StorageCubit(
           service: service,
           recoverAllCaches: () async => true,
-          measureRecoveryFootprint: () async => '42.0 MB',
+          measureRecoveryFootprint: () async => footprintBytes,
         ),
         act: (cubit) async {
           await cubit.loadRecoveryFootprint();
@@ -226,7 +229,7 @@ void main() {
         expect: () => const [
           StorageState(
             recoveryStatus: StorageRecoveryStatus.recovering,
-            recoveryFootprint: '42.0 MB',
+            recoveryFootprintBytes: footprintBytes,
           ),
           StorageState(recoveryStatus: StorageRecoveryStatus.recovered),
         ],

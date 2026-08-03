@@ -1911,50 +1911,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ripristina tutti i flag ai valori predefiniti';
 
   @override
-  String get featureFlagAppRecovery => 'Ripristino app';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Se l\'app si blocca o si comporta in modo strano, prova a svuotare la cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Svuota tutta la cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Info cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Svuotare tutta la cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Questo cancellerà tutti i dati in cache inclusi:\n• Notifiche\n• Profili utente\n• Segnalibri\n• File temporanei\n\nDovrai accedere di nuovo. Continuare?';
-
-  @override
-  String get featureFlagClearCache => 'Svuota cache';
-
-  @override
-  String get featureFlagClearingCache => 'Svuotamento cache...';
-
-  @override
   String get featureFlagError => 'Errore';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache svuotata con successo. Riavvia l\'app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Impossibile svuotare alcuni elementi della cache. Controlla i log per i dettagli.';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Dimensione totale cache: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'La cache include:\n• Cronologia notifiche\n• Dati profilo utente\n• Miniature video\n• File temporanei\n• Indici del database';
 
   @override
   String get relaySettingsTitle => 'Relay';
@@ -10705,6 +10662,42 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Rimuovere le clip danneggiate?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Ripara l\'installazione';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Se l\'app continua a crashare o si comporta in modo strano, azzerare i dati locali di solito risolve. I tuoi clip e le bozze restano.';
+
+  @override
+  String get settingsStorageRepairButton => 'Azzera i dati dell\'app';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Azzerare i dati dell\'app?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Questo cancella notifiche, profili in cache, segnalibri e file temporanei. I tuoi clip e le bozze restano, ma dovrai accedere di nuovo e riavviare l\'app.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Verranno rimossi $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Azzera';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Azzeramento…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Fatto — riavvia l\'app per completare.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Non è stato possibile azzerare tutto. Riprova dopo un riavvio.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Verifica della firma';

@@ -742,26 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Zresetuj wszystkie flagi do domyślnych",
-    "featureFlagAppRecovery": "Odzyskiwanie aplikacji",
-    "featureFlagAppRecoveryDescription": "Jeśli aplikacja się crashuje lub dziwnie zachowuje, spróbuj wyczyścić cache.",
-    "featureFlagClearAllCache": "Wyczyść cały cache",
-    "featureFlagCacheInfo": "Informacje o cache",
-    "featureFlagClearCacheTitle": "Wyczyścić cały cache?",
-    "featureFlagClearCacheMessage": "To wyczyści wszystkie dane z cache, w tym:\n• Powiadomienia\n• Profile użytkowników\n• Zakładki\n• Pliki tymczasowe\n\nBędziesz musiał zalogować się ponownie. Kontynuować?",
-    "featureFlagClearCache": "Wyczyść cache",
-    "featureFlagClearingCache": "Czyszczenie cache...",
     "featureFlagError": "Błąd",
-    "featureFlagClearCacheSuccess": "Cache wyczyszczony pomyślnie. Zrestartuj aplikację.",
-    "featureFlagClearCacheFailure": "Nie udało się wyczyścić niektórych elementów cache. Sprawdź logi.",
-    "featureFlagTotalCacheSize": "Całkowity rozmiar cache: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Cache zawiera:\n• Historię powiadomień\n• Dane profilu użytkownika\n• Miniatury filmów\n• Pliki tymczasowe\n• Indeksy bazy danych",
     "relaySettingsTitle": "Przekaźniki",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4821,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Maksymalny rozmiar pamięci podręcznej",
   "settingsStorageApproxVideos": "≈ {count} filmów",
   "settingsStorageRemoveBrokenConfirmTitle": "Usunąć uszkodzone klipy?",
+  "settingsStorageRepairSectionTitle": "Napraw instalację",
+  "settingsStorageRepairDescription": "Jeśli aplikacja się wysypuje albo dziwnie działa, zresetowanie danych lokalnych zwykle pomaga. Twoje klipy i wersje robocze zostają.",
+  "settingsStorageRepairButton": "Zresetuj dane aplikacji",
+  "settingsStorageRepairConfirmTitle": "Zresetować dane aplikacji?",
+  "settingsStorageRepairConfirmMessage": "To usunie powiadomienia, zapisane profile, zakładki i pliki tymczasowe. Twoje klipy i wersje robocze zostaną, ale wylogujemy Cię i trzeba będzie zrestartować aplikację.",
+  "settingsStorageRepairFootprint": "Zostanie usunięte: {size}",
+  "settingsStorageRepairConfirmAction": "Zresetuj",
+  "settingsStorageRepairInProgress": "Resetowanie…",
+  "settingsStorageRepairSuccess": "Gotowe — zrestartuj aplikację, żeby zakończyć.",
+  "settingsStorageRepairFailure": "Nie udało się zresetować wszystkiego. Spróbuj ponownie po restarcie.",
   "authSignInErrorInvalidCredentials": "Nieprawidłowy e-mail lub hasło. Spróbuj ponownie.",
   "authSignInErrorEmailNotVerified": "Zweryfikuj swój e-mail przed zalogowaniem — sprawdź link w skrzynce odbiorczej.",
   "authSignInErrorInvalidEmail": "To nie wygląda na prawidłowy adres e-mail.",

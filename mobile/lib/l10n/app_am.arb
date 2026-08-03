@@ -873,26 +873,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "ሁሉንም ባንዲራዎች ወደ ነባሪዎች ዳግም ያስጀምሩ",
-    "featureFlagAppRecovery": "የመተግበሪያ መልሶ ማግኛ",
-    "featureFlagAppRecoveryDescription": "መተግበሪያው እየተበላሸ ከሆነ ወይም እንግዳ ከሆነ፣ መሸጎጫውን ለማጽዳት ይሞክሩ።",
-    "featureFlagClearAllCache": "ሁሉንም መሸጎጫ ያጽዱ",
-    "featureFlagCacheInfo": "የመሸጎጫ መረጃ",
-    "featureFlagClearCacheTitle": "ሁሉንም መሸጎጫ ይጽዱ?",
-    "featureFlagClearCacheMessage": "ይህ የሚከተሉትን ጨምሮ ሁሉንም የተሸጎጠ ውሂብ ያጸዳል-\n• ማሳወቂያዎች\n• የተጠቃሚ መገለጫዎች\n• ዕልባቶች\n• ጊዜያዊ ፋይሎች\n\nእንደገና መግባት ያስፈልግዎታል። ይቀጥል?",
-    "featureFlagClearCache": "መሸጎጫ አጽዳ",
-    "featureFlagClearingCache": "መሸጎጫ በማጽዳት ላይ...",
     "featureFlagError": "ስህተት",
-    "featureFlagClearCacheSuccess": "መሸጎጫ በተሳካ ሁኔታ ጸድቷል። እባክዎ መተግበሪያውን እንደገና ያስጀምሩት።",
-    "featureFlagClearCacheFailure": "አንዳንድ መሸጎጫ ንጥሎችን ማጽዳት አልተሳካም። ለዝርዝሮች የምዝግብ ማስታወሻዎችን ይመልከቱ።",
-    "featureFlagTotalCacheSize": "ጠቅላላ የመሸጎጫ መጠን፡ {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "መሸጎጫ የሚከተሉትን ያጠቃልላል\n• የማሳወቂያ ታሪክ\n• የተጠቃሚ መገለጫ ውሂብ\n• የቪዲዮ ድንክዬዎች\n• ጊዜያዊ ፋይሎች\n• የውሂብ ጎታ ኢንዴክሶች",
     "relaySettingsTitle": "ቅብብሎሽ",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -4946,6 +4927,16 @@
   "settingsStorageMaxSizeLabel": "ከፍተኛ የመሸጎጫ መጠን",
   "settingsStorageApproxVideos": "≈ {count} ቪዲዮዎች",
   "settingsStorageRemoveBrokenConfirmTitle": "የተበላሹ ክሊፖችን ማስወገድ?",
+  "settingsStorageRepairSectionTitle": "ጭነትን ጠግን",
+  "settingsStorageRepairDescription": "መተግበሪያው በተደጋጋሚ የሚቋረጥ ወይም እንግዳ ባህሪ የሚያሳይ ከሆነ፣ የአካባቢ ውሂቡን ዳግም ማስጀመር አብዛኛውን ጊዜ ይፈታዋል። ክሊፖችህና ረቂቆችህ ይቀራሉ።",
+  "settingsStorageRepairButton": "የመተግበሪያ ውሂብ ዳግም አስጀምር",
+  "settingsStorageRepairConfirmTitle": "የመተግበሪያ ውሂብ ዳግም ይጀመር?",
+  "settingsStorageRepairConfirmMessage": "ይህ ማሳወቂያዎችን፣ የተቀመጡ መገለጫዎችን፣ ዕልባቶችንና ጊዜያዊ ፋይሎችን ያጠፋል። ክሊፖችህና ረቂቆችህ ይቀራሉ፣ ነገር ግን ትወጣለህ እና መተግበሪያውን እንደገና ማስጀመር አለብህ።",
+  "settingsStorageRepairFootprint": "{size} ይሰረዛል",
+  "settingsStorageRepairConfirmAction": "ዳግም አስጀምር",
+  "settingsStorageRepairInProgress": "ዳግም በማስጀመር ላይ…",
+  "settingsStorageRepairSuccess": "ተጠናቋል — ለማጠናቀቅ መተግበሪያውን እንደገና አስጀምር።",
+  "settingsStorageRepairFailure": "ሁሉንም ዳግም ማስጀመር አልተቻለም። እንደገና ካስጀመርክ በኋላ ሞክር።",
   "authSignInErrorInvalidCredentials": "የተሳሳተ ኢሜይል ወይም የይለፍ ቃል። እንደገና ይሞክሩ።",
   "authSignInErrorEmailNotVerified": "ከመግባትዎ በፊት ኢሜይልዎን ያረጋግጡ — ለአገናኙ የገቢ መልእክት ሳጥንዎን ይመልከቱ።",
   "authSignInErrorInvalidEmail": "ይህ ትክክለኛ የኢሜይል አድራሻ አይመስልም።",

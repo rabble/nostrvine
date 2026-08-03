@@ -9,19 +9,19 @@ part 'storage_state.dart';
 
 /// Drives the settings "Storage" screen: reports the clearable cache size,
 /// clears it on demand, audits the clip library for broken entries, and runs
-/// the last-resort recovery wipe for a corrupted install.
+/// the last-resort repair wipe for a corrupted install.
 class StorageCubit extends Cubit<StorageState> {
   /// Creates a cubit backed by [service] and loads the current cache size.
   ///
   /// [recoverAllCaches] and [measureRecoveryFootprint] default to
   /// [CacheRecoveryService]'s static entry points and exist so tests can drive
-  /// the recovery section without touching the real filesystem.
+  /// the repair section without touching the real filesystem.
   StorageCubit({
     required StorageManagementService service,
     Future<bool> Function() recoverAllCaches =
         CacheRecoveryService.clearAllCaches,
-    Future<String> Function() measureRecoveryFootprint =
-        CacheRecoveryService.getCacheSizeInfo,
+    Future<int> Function() measureRecoveryFootprint =
+        CacheRecoveryService.cacheSizeBytes,
   }) : _service = service,
        _recoverAllCaches = recoverAllCaches,
        _measureRecoveryFootprint = measureRecoveryFootprint,
@@ -29,7 +29,7 @@ class StorageCubit extends Cubit<StorageState> {
 
   final StorageManagementService _service;
   final Future<bool> Function() _recoverAllCaches;
-  final Future<String> Function() _measureRecoveryFootprint;
+  final Future<int> Function() _measureRecoveryFootprint;
 
   /// Loads the current clearable cache size and configured limit.
   Future<void> loadCacheSize() async {
@@ -122,9 +122,13 @@ class StorageCubit extends Cubit<StorageState> {
     }
   }
 
-  /// Measures everything a recovery wipe would clear — Hive boxes, Application
+  /// Measures everything a repair wipe would clear — Hive boxes, Application
   /// Support, temp and cache directories — which is a superset of the media
   /// cache [loadCacheSize] reports.
+  ///
+  /// A measurement failure falls back to [StorageRecoveryStatus.idle] rather
+  /// than `failure`: the size is decoration on the confirmation sheet, and
+  /// `failure` is what the UI renders when the wipe itself went wrong.
   Future<void> loadRecoveryFootprint() async {
     emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.measuring));
     try {
@@ -132,12 +136,12 @@ class StorageCubit extends Cubit<StorageState> {
       emit(
         state.copyWith(
           recoveryStatus: StorageRecoveryStatus.measured,
-          recoveryFootprint: footprint,
+          recoveryFootprintBytes: footprint,
         ),
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
-      emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.failure));
+      emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.idle));
     }
   }
 
@@ -153,7 +157,7 @@ class StorageCubit extends Cubit<StorageState> {
           recoveryStatus: succeeded
               ? StorageRecoveryStatus.recovered
               : StorageRecoveryStatus.failure,
-          recoveryFootprint: '',
+          recoveryFootprintBytes: 0,
         ),
       );
     } catch (error, stackTrace) {
