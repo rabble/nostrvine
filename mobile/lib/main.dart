@@ -1311,8 +1311,7 @@ Future<void> _startOpenVineApp() async {
     final recoverableReason = classifyRecoverableFlutterError(details);
     if (recoverableReason != null) {
       Log.warning(
-        'Recoverable Flutter resource load error (non-fatal): '
-        '${details.exception}',
+        '$recoverableReason (non-fatal): ${details.exception}',
         name: 'Main',
       );
       unawaited(
