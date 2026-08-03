@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:media_cache/media_cache.dart';
 
 const _recoverableMediaLoadReason = 'Recoverable media load failure';
+const _recoverableHeroFlightReason = 'Recoverable hero flight layout failure';
 const _recoverableMediaHosts = <String>{
   'media.divine.video',
   'cdn.divine.video',
@@ -10,14 +11,18 @@ const _recoverableMediaHosts = <String>{
   'cdn.vine.co',
 };
 
-/// Returns a non-fatal reporting reason when a Flutter error represents a
-/// recoverable media or image loading failure.
+/// Returns a non-fatal reporting reason when a Flutter error is one the app
+/// recovers from on its own, or `null` when it must stay fatal.
 ///
-/// The signature checks below match against Flutter/Dart SDK-internal library
-/// paths and context descriptions (for example `_network_image_io` and
-/// `image codec`). Those strings are not part of Flutter's public API and may
-/// change silently on a major SDK upgrade — re-verify them when bumping
-/// Flutter to a new major version.
+/// The signature checks below match against Flutter/Dart SDK internals:
+/// library paths, context descriptions (for example `_network_image_io` and
+/// `image codec`), and stack frame symbols (`HeroController`). None are part
+/// of Flutter's public API and they may change silently on a major SDK
+/// upgrade — re-verify them when bumping Flutter to a new major version. The
+/// stack frame match additionally assumes release builds keep Dart symbols in
+/// `StackTrace.toString()`: building with `--obfuscate` *or*
+/// `--split-debug-info` (which implies `--dwarf-stack-traces`) strips them and
+/// silently sends those errors back to the fatal path.
 String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
   final error = details.exception.toString();
   final library = details.library ?? '';
@@ -69,6 +74,21 @@ String? classifyRecoverableFlutterError(FlutterErrorDetails details) {
       isInvalidImageData ||
       isMediaCacheLoadFailure) {
     return _recoverableMediaLoadReason;
+  }
+
+  // A hero flight measures its destination hero in a post-frame callback, and
+  // a route added to the pages stack under an opaque cover was never laid out
+  // — release's RenderBox.size throws where debug would assert. The scheduler
+  // catches it and skips the flight, so nothing actually crashes
+  // (flutter/flutter#136356, closed unfixed; only the swipe-back variant is
+  // guarded upstream). The stack gate is what keeps a genuine app layout bug
+  // fatal, and is read lazily so the common path never stringifies a stack.
+  final isHeroFlightLayoutFailure =
+      error.contains('RenderBox was not laid out') &&
+      (details.stack?.toString().contains('HeroController') ?? false);
+
+  if (isHeroFlightLayoutFailure) {
+    return _recoverableHeroFlightReason;
   }
 
   return null;
