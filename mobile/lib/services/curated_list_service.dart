@@ -465,13 +465,18 @@ class CuratedListService extends ChangeNotifier {
         }
       }
 
-      // Publishing stores the accepted event ID on the in-memory copy. Keep
-      // that enriched copy instead of overwriting it with [updatedList].
-      final persistedList = updatedList.isPublic
-          ? _lists[listIndex]
-          : updatedList;
-      _lists[listIndex] = persistedList;
-      await _saveLists();
+      // The public branch is already persisted: _publishListToNostr writes the
+      // updated list plus its accepted event ID back by ID and saves. Only the
+      // private branch still needs a write, and it must re-resolve the index —
+      // [listIndex] was captured before the publish awaits above.
+      if (!updatedList.isPublic) {
+        final currentIndex = _lists.indexWhere((list) => list.id == listId);
+        if (currentIndex == -1) {
+          return false;
+        }
+        _lists[currentIndex] = updatedList;
+        await _saveLists();
+      }
 
       Log.debug(
         '✏️ Updated list: ${updatedList.name}',
