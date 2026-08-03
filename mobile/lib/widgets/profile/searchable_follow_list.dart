@@ -2,6 +2,7 @@
 // ABOUTME: Reads the query from FollowListSearchBloc and renders the matches
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/follow_list_search/follow_list_search_bloc.dart';
@@ -40,6 +41,18 @@ class SearchableFollowList extends StatefulWidget {
 
 class _SearchableFollowListState extends State<SearchableFollowList> {
   final _controller = TextEditingController();
+
+  @override
+  void didUpdateWidget(SearchableFollowList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A refresh can add rows while a query is on screen. The BLoC resolves
+    // names for the list it was handed with the query, so without this the new
+    // rows could only ever match their generated fallback name.
+    if (_controller.text.isNotEmpty &&
+        !listEquals(oldWidget.pubkeys, widget.pubkeys)) {
+      _onQueryChanged(_controller.text);
+    }
+  }
 
   @override
   void dispose() {

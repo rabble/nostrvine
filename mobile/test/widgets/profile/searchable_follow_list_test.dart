@@ -70,7 +70,7 @@ void main() {
       );
     });
 
-    Widget buildTestWidget() {
+    Widget buildTestWidget({List<String> pubkeys = _allPubkeys}) {
       return MaterialApp(
         theme: VineTheme.theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -84,7 +84,7 @@ void main() {
               profileRepository: profileRepository,
             ),
             child: SearchableFollowList(
-              pubkeys: _allPubkeys,
+              pubkeys: pubkeys,
               onRefresh: () async {},
               itemBuilder: (context, pubkey, index) => Text(pubkey),
             ),
@@ -124,6 +124,28 @@ void main() {
 
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.searchNoResultsFound('zzz')), findsOneWidget);
+      expect(find.text(_alicePubkey), findsNothing);
+    });
+
+    testWidgets('resolves names for rows added while a query is active', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget(pubkeys: const [_alicePubkey]));
+
+      await tester.enterText(find.byType(TextField), 'bob');
+      await tester.pump(_pastDebounce);
+      await tester.pump();
+
+      expect(find.text(_alicePubkey), findsNothing);
+
+      // A refresh lands Bob in the list. His name was never resolved with the
+      // original query, so without a re-dispatch he could only match his
+      // generated fallback name.
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(_pastDebounce);
+      await tester.pump();
+
+      expect(find.text(_bobPubkey), findsOneWidget);
       expect(find.text(_alicePubkey), findsNothing);
     });
   });
