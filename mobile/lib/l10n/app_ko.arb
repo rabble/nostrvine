@@ -3067,6 +3067,7 @@
         }
     },
     "followersEmptyTitle": "아직 팔로워가 없어요",
+    "followListSearchHint": "검색...",
     "followersUpdateFollowFailed": "팔로우 상태를 업데이트하지 못했어요. 다시 시도해주세요.",
     "reportMessageTitle": "메시지 신고",
     "reportMessageWhyReporting": "왜 이 메시지를 신고하시나요?",

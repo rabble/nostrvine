@@ -7439,6 +7439,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get followersEmptyTitle => 'Henüz takipçi yok';
 
   @override
+  String get followListSearchHint => 'Ara...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Takip durumu güncellenemedi. Lütfen tekrar dene.';
 

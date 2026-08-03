@@ -3729,6 +3729,7 @@
         }
     },
     "followersEmptyTitle": "Încă niciun urmăritor",
+    "followListSearchHint": "Caută...",
     "followersUpdateFollowFailed": "Actualizarea stării de urmărire a eșuat. Încearcă din nou.",
     "reportMessageTitle": "Raportează mesajul",
     "reportMessageWhyReporting": "De ce raportezi acest mesaj?",

@@ -3729,6 +3729,7 @@
         }
     },
     "followersEmptyTitle": "Jeszcze brak obserwujących",
+    "followListSearchHint": "Szukaj...",
     "followersUpdateFollowFailed": "Nie udało się zaktualizować statusu obserwowania. Spróbuj ponownie.",
     "reportMessageTitle": "Zgłoś wiadomość",
     "reportMessageWhyReporting": "Dlaczego zgłaszasz tę wiadomość?",

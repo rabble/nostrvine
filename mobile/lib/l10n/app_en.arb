@@ -4242,6 +4242,10 @@
   },
   "followersFailedToLoadList": "Failed to load followers list",
   "followersEmptyTitle": "No followers yet",
+  "followListSearchHint": "Search...",
+  "@followListSearchHint": {
+    "description": "Placeholder for the search field above a followers or following list."
+  },
   "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
   "reportMessageTitle": "Report Message",
   "reportMessageWhyReporting": "Why are you reporting this message?",

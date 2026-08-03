@@ -7439,6 +7439,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get followersEmptyTitle => 'Belum ada pengikut';
 
   @override
+  String get followListSearchHint => 'Cari...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Gagal memperbarui status follow. Coba lagi.';
 

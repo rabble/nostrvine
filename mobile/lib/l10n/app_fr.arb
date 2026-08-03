@@ -3729,6 +3729,7 @@
         }
     },
     "followersEmptyTitle": "Aucun abonné pour l'instant",
+    "followListSearchHint": "Rechercher...",
     "followersUpdateFollowFailed": "Échec de la mise à jour du suivi. Réessaie.",
     "reportMessageTitle": "Signaler le message",
     "reportMessageWhyReporting": "Pourquoi signales-tu ce message ?",

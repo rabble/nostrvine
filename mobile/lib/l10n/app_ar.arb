@@ -3729,6 +3729,7 @@
         }
     },
     "followersEmptyTitle": "لا متابِعون بعد",
+    "followListSearchHint": "بحث...",
     "followersUpdateFollowFailed": "فشل تحديث حالة المتابعة. حاول مرّة أخرى.",
     "reportMessageTitle": "الإبلاغ عن الرسالة",
     "reportMessageWhyReporting": "لماذا تبلّغ عن هذه الرسالة؟",

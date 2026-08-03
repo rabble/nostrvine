@@ -4432,6 +4432,7 @@
   },
   "followersFailedToLoadList": "粉丝列表加载失败",
   "followersEmptyTitle": "还没有粉丝",
+  "followListSearchHint": "搜索...",
   "followersUpdateFollowFailed": "更新关注状态失败，请重试。",
   "reportMessageTitle": "举报消息",
   "reportMessageWhyReporting": "你为什么要举报这条消息？",

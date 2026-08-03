@@ -3076,6 +3076,7 @@
     },
     "followersFailedToLoadList": "የተከታዮች ዝርዝርን መጫን አልተሳካም።",
     "followersEmptyTitle": "እስካሁን ምንም ተከታዮች የሉም",
+    "followListSearchHint": "ይፈልጉ...",
     "followersUpdateFollowFailed": "የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
     "reportMessageTitle": "መልዕክትን ሪፖርት አድርግ",
     "reportMessageWhyReporting": "ይህን መልዕክት ለምን ሪፖርት ያደርጋሉ?",

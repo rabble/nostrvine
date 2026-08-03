@@ -7511,6 +7511,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get followersEmptyTitle => 'Nog geen volgers';
 
   @override
+  String get followListSearchHint => 'Zoeken...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Volgstatus bijwerken mislukt. Probeer het opnieuw.';
 

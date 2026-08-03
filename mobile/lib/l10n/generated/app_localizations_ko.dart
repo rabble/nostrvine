@@ -7170,6 +7170,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get followersEmptyTitle => '아직 팔로워가 없어요';
 
   @override
+  String get followListSearchHint => '검색...';
+
+  @override
   String get followersUpdateFollowFailed => '팔로우 상태를 업데이트하지 못했어요. 다시 시도해주세요.';
 
   @override

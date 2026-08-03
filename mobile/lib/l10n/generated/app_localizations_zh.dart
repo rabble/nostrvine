@@ -7097,6 +7097,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get followersEmptyTitle => '还没有粉丝';
 
   @override
+  String get followListSearchHint => '搜索...';
+
+  @override
   String get followersUpdateFollowFailed => '更新关注状态失败，请重试。';
 
   @override

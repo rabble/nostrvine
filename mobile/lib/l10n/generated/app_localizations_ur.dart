@@ -7482,6 +7482,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get followersEmptyTitle => 'ابھی کوئی فالوور نہیں';
 
   @override
+  String get followListSearchHint => 'تلاش کریں...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'فالو اسٹیٹس اپڈیٹ نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔';
 

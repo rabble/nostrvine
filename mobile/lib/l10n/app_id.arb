@@ -3729,6 +3729,7 @@
         }
     },
     "followersEmptyTitle": "Belum ada pengikut",
+    "followListSearchHint": "Cari...",
     "followersUpdateFollowFailed": "Gagal memperbarui status follow. Coba lagi.",
     "reportMessageTitle": "Laporkan Pesan",
     "reportMessageWhyReporting": "Kenapa kamu melaporkan pesan ini?",

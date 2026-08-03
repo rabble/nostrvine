@@ -3860,6 +3860,7 @@
         }
     },
     "followersEmptyTitle": "Все още няма последователи",
+    "followListSearchHint": "Търсене...",
     "followersUpdateFollowFailed": "Актуализирането на следването не успя. Опитай пак.",
     "reportMessageTitle": "Докладвай съобщението",
     "reportMessageWhyReporting": "Защо докладваш това съобщение?",

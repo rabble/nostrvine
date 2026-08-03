@@ -7650,6 +7650,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get followersEmptyTitle => 'Încă niciun urmăritor';
 
   @override
+  String get followListSearchHint => 'Caută...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Actualizarea stării de urmărire a eșuat. Încearcă din nou.';
 

@@ -7576,6 +7576,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get followersEmptyTitle => 'Aucun abonné pour l\'instant';
 
   @override
+  String get followListSearchHint => 'Rechercher...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Échec de la mise à jour du suivi. Réessaie.';
 

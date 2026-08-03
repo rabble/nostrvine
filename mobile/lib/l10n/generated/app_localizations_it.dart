@@ -7550,6 +7550,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get followersEmptyTitle => 'Ancora nessun follower';
 
   @override
+  String get followListSearchHint => 'Cerca...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Impossibile aggiornare lo stato del follow. Riprova.';
 

@@ -7551,6 +7551,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get followersEmptyTitle => 'Все още няма последователи';
 
   @override
+  String get followListSearchHint => 'Търсене...';
+
+  @override
   String get followersUpdateFollowFailed =>
       'Актуализирането на следването не успя. Опитай пак.';
 

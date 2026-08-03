@@ -2182,6 +2182,7 @@
     "featureRequestWhenHint": "I-describe ang mga sitwasyon kung saan makakatulong ito",
     "featureRequestWhenLabel": "Kailan mo ito gagamitin?",
     "followersEmptyTitle": "Wala pang follower",
+    "followListSearchHint": "Maghanap...",
     "followersTitle": "Mga Follower",
     "followersTitleForName": "Mga Follower ni {displayName}",
     "followersUpdateFollowFailed": "Hindi na-update ang follow status. Subukan ulit.",

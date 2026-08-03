@@ -4432,6 +4432,7 @@
   },
   "followersFailedToLoadList": "فالوورز فہرست لوڈ نہیں ہو سکی",
   "followersEmptyTitle": "ابھی کوئی فالوور نہیں",
+  "followListSearchHint": "تلاش کریں...",
   "followersUpdateFollowFailed": "فالو اسٹیٹس اپڈیٹ نہیں ہو سکا۔ براہ کرم دوبارہ کوشش کریں۔",
   "reportMessageTitle": "پیغام کی رپورٹ کریں",
   "reportMessageWhyReporting": "آپ یہ پیغام کیوں رپورٹ کر رہے ہیں؟",
