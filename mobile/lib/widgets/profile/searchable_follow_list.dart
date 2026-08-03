@@ -1,0 +1,114 @@
+// ABOUTME: Search field plus filtered user list for followers/following screens
+// ABOUTME: Reads the query from FollowListSearchBloc and renders the matches
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/follow_list_search/follow_list_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+
+/// Builds the row rendered for [pubkey] at [index] in a follow list.
+typedef FollowListItemBuilder =
+    Widget Function(BuildContext context, String pubkey, int index);
+
+/// A pull-to-refresh user list with the design's search field pinned above it.
+///
+/// Expects an ambient [FollowListSearchBloc] and a non-empty [pubkeys]. The
+/// screen keeps ownership of the list and of its own "nobody follows you yet"
+/// empty state; this widget only narrows what is shown to the query matches.
+class SearchableFollowList extends StatefulWidget {
+  /// Creates the searchable list.
+  const SearchableFollowList({
+    required this.pubkeys,
+    required this.itemBuilder,
+    required this.onRefresh,
+    super.key,
+  });
+
+  /// The full, already blocklist-filtered list to render and search.
+  final List<String> pubkeys;
+
+  /// Builds one row of the list.
+  final FollowListItemBuilder itemBuilder;
+
+  /// Invoked when the user pulls to refresh.
+  final Future<void> Function() onRefresh;
+
+  @override
+  State<SearchableFollowList> createState() => _SearchableFollowListState();
+}
+
+class _SearchableFollowListState extends State<SearchableFollowList> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onQueryChanged(String query) {
+    context.read<FollowListSearchBloc>().add(
+      FollowListSearchQueryChanged(query, widget.pubkeys),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: DivineSearchBar(
+            controller: _controller,
+            hintText: context.l10n.followListSearchHint,
+            onChanged: _onQueryChanged,
+          ),
+        ),
+        Expanded(
+          child: BlocBuilder<FollowListSearchBloc, FollowListSearchState>(
+            builder: (context, state) {
+              final visible = state.visibleFrom(widget.pubkeys);
+              if (visible.isEmpty) {
+                return _NoMatches(query: state.query);
+              }
+
+              return RefreshIndicator(
+                color: VineTheme.onPrimary,
+                backgroundColor: VineTheme.vineGreen,
+                onRefresh: widget.onRefresh,
+                child: ListView.builder(
+                  itemCount: visible.length,
+                  itemBuilder: (context, index) =>
+                      widget.itemBuilder(context, visible[index], index),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _NoMatches extends StatelessWidget {
+  const _NoMatches({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          context.l10n.searchNoResultsFound(query),
+          textAlign: TextAlign.center,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
+        ),
+      ),
+    );
+  }
+}
