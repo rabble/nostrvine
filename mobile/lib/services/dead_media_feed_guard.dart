@@ -17,6 +17,14 @@ import 'package:openvine/services/media_availability_checker.dart';
 /// widget so the home feed can reuse it. Detection is a deterministic HEAD 404
 /// via [MediaAvailabilityChecker] — NOT the playback error string, which is
 /// platform-divergent (see #5953 findings).
+///
+/// The 404 is deliberately the *only* status that acts here. An age-restricted
+/// blob answers **401**, and the feed already has a real affordance for it: the
+/// player's `ageRestricted` status routes to the Verify-age overlay, and
+/// `FeedLoadingModerationCubit` recovers a mis-classified 401 asynchronously
+/// (moderation-api → auth → retry). Skipping on 401 would beat that recovery
+/// and silently scroll past content the viewer can watch, so this guard leaves
+/// 401 alone entirely. See #6251 for the age-gate work.
 class DeadMediaFeedGuard {
   const DeadMediaFeedGuard({
     required BrokenVideoTracker brokenVideoTracker,

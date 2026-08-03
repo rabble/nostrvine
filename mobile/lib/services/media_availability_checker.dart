@@ -18,9 +18,25 @@ class MediaAvailabilityChecker {
   final http.Client? _injectedClient;
 
   /// Returns `true` only when a HEAD request to [videoUrl] returns a hard
-  /// 404. Any other status (2xx, 3xx, 5xx) or network failure returns
-  /// `false` — the caller must treat the error as transient and keep the
-  /// video in place.
+  /// 404. Every other status — including 401 and 403 — and any network failure
+  /// return `false`, so the caller must treat the failure as transient and keep
+  /// the video in place.
+  ///
+  /// **401 must never widen this predicate.** Divine's media host returns 401,
+  /// not 404, for an age-restricted blob, and grants access as soon as the
+  /// request carries a pubkey — blossom's `access_for` maps `AgeRestricted` to
+  /// `AgeGated` gated on `requester_pubkey.is_some()`, not on the viewer's age.
+  /// An anonymous HEAD therefore cannot tell whether a 401 item is playable,
+  /// and callers of this predicate persist their answer via
+  /// `BrokenVideoTracker`, so treating a 401 as missing would hide a video the
+  /// viewer is entitled to watch for the tracker's full TTL, on every surface
+  /// that consults it. Measured at 8.0% of `classic=true` blobs (n=600) — a
+  /// larger class than the 5.5% that 404. See #5953 / #6251.
+  ///
+  /// Note that `true` means "not retrievable", not "the bytes are gone":
+  /// blossom collapses `Banned`, `Deleted`, `Restricted` *and* genuinely-absent
+  /// metadata into 404. It remains the only status that justifies a persistent
+  /// prune, because none of those become retrievable by authenticating.
   ///
   /// When no [client] is injected a throwaway [http.Client] is created and
   /// closed after the request.

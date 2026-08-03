@@ -2,6 +2,8 @@
 // ABOUTME: the item broken; transient / non-404 / missing-URL cases keep it.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/dead_media_feed_guard.dart';
@@ -84,6 +86,28 @@ void main() {
 
         expect(result, isFalse);
         verifyNever(() => checker.isConfirmedMissing(any()));
+      });
+
+      // Driven through a real MediaAvailabilityChecker rather than a stubbed
+      // bool, so this goes red if the 404 predicate is ever widened to cover
+      // the age gate. Blossom answers 401 for an AgeRestricted blob and serves
+      // it to any authenticated request; pruning that would hide a video the
+      // viewer can watch for the tracker's full TTL. See #5953 / #6251.
+      test('never prunes an age-gated 401', () async {
+        final gatedGuard = DeadMediaFeedGuard(
+          brokenVideoTracker: tracker,
+          availabilityChecker: MediaAvailabilityChecker(
+            client: MockClient((_) async => http.Response('', 401)),
+          ),
+        );
+
+        final result = await gatedGuard.confirmAndMarkMissing(
+          videoId: 'v1',
+          videoUrl: 'https://media.divine.video/agegated',
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => tracker.markVideoBroken(any(), any()));
       });
     });
   });
