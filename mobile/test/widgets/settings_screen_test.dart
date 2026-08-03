@@ -15,6 +15,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/invite_models.dart';
@@ -761,6 +762,51 @@ void main() {
         verify(
           () => mockGoRouter.go(any(that: contains('login-options'))),
         ).called(1);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
+
+    testWidgets('shows Experimental Features tile when developer mode is off', (
+      tester,
+    ) async {
+      // Tall surface so the whole settings list is laid out; otherwise the
+      // lazy ListView never builds the lower tiles and the absence proves
+      // nothing.
+      await tester.binding.setSurfaceSize(const Size(900, 2000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.settingsLegal), findsOneWidget);
+      expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
+
+      await tester.tap(find.text(l10n.settingsExperimentalFeatures));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(FeatureFlagScreen), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets(
+      'shows Experimental Features tile and opens it when developer mode is on',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(900, 2000));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildSubject(developerMode: true));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
+
+        await tester.tap(find.text(l10n.settingsExperimentalFeatures));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(FeatureFlagScreen), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pump();
