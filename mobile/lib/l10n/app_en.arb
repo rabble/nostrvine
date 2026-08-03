@@ -4061,7 +4061,7 @@
   "@deleteAccountConfirmUsernamePrompt": {"description": "Prompt above the confirmation field when the account has a username; the user re-types their username to confirm deletion."},
   "deleteAccountConfirmationHint": "Type DELETE",
   "deleteAccountConfirmationHintUsername": "Type your username",
-  "@deleteAccountConfirmationHintUsername": {"description": "Hint text in the delete-confirmation field when the user must type their username."},
+  "@deleteAccountConfirmationHintUsername": {"description": "Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing."},
   "deleteAccountContentDeletionFailed": "Failed to delete content from relays",
   "deleteAccountDeleteAllContentButton": "Delete All Content",
   "deleteAccountDeletionIncomplete": "We couldn't finish deleting your account. Try again.",
