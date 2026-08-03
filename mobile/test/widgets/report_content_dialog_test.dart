@@ -539,14 +539,57 @@ void main() {
         await tester.tap(find.text(l10n.reportReasonSpam));
         await tester.pumpAndSettle();
 
-        await tester.ensureVisible(
-          find.widgetWithText(DivineButton, l10n.reportSubmit),
-        );
         await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
 
         expect(find.textContaining('Failed to report content'), findsOneWidget);
         expect(find.byType(SnackBar), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'submit failure surfaces the error on screen without scrolling',
+      (tester) async {
+        when(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            sourceRelay: any(named: 'sourceRelay'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).thenAnswer((_) async => ReportResult.failure('Server error'));
+
+        // A real phone, not the roomy default surface: the eleven reason
+        // cards overflow here the way they do on device.
+        const screen = Size(412, 915);
+        await tester.binding.setSurfaceSize(screen);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await openBottomSheetReport(tester);
+
+        // Pick the first reason so the user never has to scroll — the pinned
+        // submit action is reachable from offset zero.
+        await tester.tap(find.text(l10n.reportReasonSpam));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.pumpAndSettle();
+
+        final errorRect = tester.getRect(
+          find.textContaining('Failed to report content'),
+        );
+        expect(
+          errorRect.bottom,
+          lessThanOrEqualTo(screen.height),
+          reason:
+              'The error must be visible where the user tapped. Rendered at '
+              'the end of the scroll content it lands far below the fold and '
+              'the failed submit looks like it did nothing.',
+        );
+        expect(errorRect.top, greaterThanOrEqualTo(0));
       },
     );
 

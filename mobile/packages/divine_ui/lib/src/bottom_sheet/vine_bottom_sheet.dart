@@ -526,7 +526,7 @@ class _ScrollableContent extends StatelessWidget {
 
         // Optional bottom input
         if (bottomInput != null)
-          _KeyboardAwareBottomInput(includeSafeArea: true, child: bottomInput!),
+          VineKeyboardAwareFooter(includeSafeArea: true, child: bottomInput!),
       ],
     );
   }
@@ -632,55 +632,13 @@ class _FixedContent extends StatelessWidget {
 
           // Optional bottom input
           if (bottomInput != null)
-            _KeyboardAwareBottomInput(
+            VineKeyboardAwareFooter(
               includeSafeArea: false,
               child: bottomInput!,
             ),
         ],
       ),
     );
-  }
-}
-
-class _KeyboardAwareBottomInput extends StatelessWidget {
-  const _KeyboardAwareBottomInput({
-    required this.child,
-    required this.includeSafeArea,
-  });
-
-  /// Gap kept between a raised keyboard and the bottom input so
-  /// keyboard-height variance cannot swallow the input's bottom edge.
-  static const double _keyboardClearance = 12;
-
-  final Widget child;
-  final bool includeSafeArea;
-
-  @override
-  Widget build(BuildContext context) {
-    // Let the bottom input ride the keyboard in both scrollable and fixed
-    // sheet layouts so composers stay visible while typing.
-    //
-    // The clearance keeps the input from sitting flush against the keyboard
-    // top. Real keyboards vary in reported height while typing (predictive
-    // bar appearing, inset animation lag), and a flush composer puts its
-    // bottom-anchored action buttons (send, dismiss) under the keyboard.
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final paddedInput = AnimatedPadding(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
-      padding: EdgeInsets.only(
-        bottom: keyboardInset > 0
-            ? keyboardInset + _keyboardClearance
-            : keyboardInset,
-      ),
-      child: child,
-    );
-
-    // Scrollable sheets still need the platform bottom inset once the keyboard
-    // is gone. Fixed sheets are already wrapped in SafeArea higher up.
-    if (!includeSafeArea) return paddedInput;
-
-    return SafeArea(top: false, child: paddedInput);
   }
 }
 

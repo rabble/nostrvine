@@ -2,19 +2,16 @@
 // ABOUTME: Replaces the legacy AlertDialog with a VineBottomSheet-based flow.
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/content_filter_reason_localizations.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/services/content_moderation_types.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/widgets/report_content_confirmation.dart';
 import 'package:unified_logger/unified_logger.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Shows a [VineBottomSheet] for reporting content or a user.
 ///
@@ -267,7 +264,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             controller: _scrollController,
             padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 16),
             child: _submitted
-                ? _ReportConfirmationBody(
+                ? ReportConfirmationBody(
                     moderationDmFailed: _moderationDmFailed,
                   )
                 : _ReportFormBody(
@@ -277,22 +274,38 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                     detailsFocusNode: _detailsFocusNode,
                     detailsFieldKey: _detailsFieldKey,
                     otherCardKey: _otherCardKey,
-                    errorMessage: _errorMessage,
                     onDetailsChanged: _clearErrorMessage,
                   ),
           ),
         ),
-        _SheetFooter(
-          child: _submitted
-              ? _ReportConfirmationActions(
-                  isFromShareMenu: widget.isFromShareMenu,
-                )
-              : DivineButton(
-                  label: context.l10n.reportSubmit,
-                  expanded: true,
-                  onPressed: _canSubmit ? _handleSubmitReport : null,
-                  isLoading: _isSubmitting,
-                ),
+        // The error rides the footer rather than the end of the scroll
+        // content: with the submit action pinned, the user can submit from
+        // any scroll offset, and an error appended below eleven reason cards
+        // lands off-screen — the tap would look like it did nothing.
+        VineKeyboardAwareFooter(
+          includeSafeArea: true,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: _submitted
+                ? ReportConfirmationActions(
+                    isFromShareMenu: widget.isFromShareMenu,
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 12,
+                    children: [
+                      if (_errorMessage case final message?)
+                        _InlineError(message: message),
+                      DivineButton(
+                        label: context.l10n.reportSubmit,
+                        expanded: true,
+                        onPressed: _canSubmit ? _handleSubmitReport : null,
+                        isLoading: _isSubmitting,
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );
@@ -440,39 +453,6 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }
 }
 
-/// Action area pinned below the sheet's scrollable content.
-///
-/// Rides above the keyboard the same way [VineBottomSheet]'s `bottomInput`
-/// slot does — the report form's details field lives in the scroll area
-/// above, and a footer flush with the keyboard would put the button under it.
-class _SheetFooter extends StatelessWidget {
-  const _SheetFooter({required this.child});
-
-  /// Gap kept between a raised keyboard and the footer.
-  static const double _keyboardClearance = 12;
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    return SafeArea(
-      top: false,
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.only(
-          bottom: keyboardInset > 0 ? keyboardInset + _keyboardClearance : 0,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 // =============================================================================
 // Report form
 // =============================================================================
@@ -485,7 +465,6 @@ class _ReportFormBody extends StatelessWidget {
     required this.detailsFocusNode,
     required this.detailsFieldKey,
     required this.otherCardKey,
-    required this.errorMessage,
     required this.onDetailsChanged,
   });
 
@@ -499,7 +478,7 @@ class _ReportFormBody extends StatelessWidget {
   /// keyboard pushes the details field up.
   final GlobalKey otherCardKey;
 
-  final String? errorMessage;
+  /// Clears a pending validation error as soon as the user edits the details.
   final VoidCallback onDetailsChanged;
 
   @override
@@ -573,10 +552,6 @@ class _ReportFormBody extends StatelessWidget {
             ),
           ),
         ],
-        if (errorMessage case final message?) ...[
-          const SizedBox(height: 16),
-          _InlineError(message: message),
-        ],
       ],
     );
   }
@@ -619,168 +594,6 @@ class _InlineError extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// =============================================================================
-// Confirmation view (shown inside the sheet after successful submission)
-// =============================================================================
-
-class _ReportConfirmationBody extends StatelessWidget {
-  const _ReportConfirmationBody({required this.moderationDmFailed});
-
-  /// Whether the secondary NIP-17 DM to the moderation team failed to
-  /// send. The report itself still succeeded; this only drives a calm
-  /// informational notice so the user isn't misled.
-  final bool moderationDmFailed;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        Row(
-          spacing: 12,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.checkCircle,
-              color: VineTheme.vineGreen,
-              size: 28,
-            ),
-            Expanded(
-              child: Text(
-                l10n.reportReceivedTitle,
-                style: VineTheme.titleMediumFont(
-                  color: context.vineColors.primaryText,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.reportReceivedThankYou,
-          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          l10n.reportReceivedReviewNotice,
-          style: VineTheme.bodyMediumFont(
-            color: context.vineColors.onSurfaceMuted,
-          ),
-        ),
-        if (moderationDmFailed) ...[
-          const SizedBox(height: 12),
-          Text(
-            l10n.reportModerationDmDelayed,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.onSurfaceMuted,
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-        const _SafetyPolicyLink(),
-      ],
-    );
-  }
-}
-
-class _SafetyPolicyLink extends StatelessWidget {
-  const _SafetyPolicyLink();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Semantics(
-      button: true,
-      label: l10n.reportSafetyUrl,
-      child: GestureDetector(
-        onTap: () async {
-          final uri = Uri.parse('https://divine.video/safety');
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        },
-        child: Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: '${l10n.reportLearnMoreAt} ',
-                style: VineTheme.bodyMediumFont(
-                  color: context.vineColors.onSurfaceMuted,
-                ),
-              ),
-              TextSpan(
-                text: l10n.reportSafetyUrl,
-                style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Footer actions for the post-submission confirmation.
-class _ReportConfirmationActions extends ConsumerWidget {
-  const _ReportConfirmationActions({required this.isFromShareMenu});
-
-  final bool isFromShareMenu;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
-    final moderationPubkey = ref
-        .read(moderationLabelServiceProvider)
-        .divineModerationPubkeyHex;
-    // The moderation conversation is an ordinary NIP-17 thread; deep-link
-    // straight to it so the user can follow up about their report. Null
-    // when we have no current pubkey (signed out) — the button hides.
-    final moderationConversationId =
-        (currentPubkey != null && currentPubkey.isNotEmpty)
-        ? DmRepository.computeConversationId([currentPubkey, moderationPubkey])
-        : null;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 8,
-      children: [
-        if (moderationConversationId case final conversationId?)
-          DivineButton(
-            label: l10n.reportContactModeration,
-            type: DivineButtonType.secondary,
-            expanded: true,
-            onPressed: () {
-              // Capture the router before popping the sheet so the push
-              // doesn't run against a defunct context.
-              final router = GoRouter.of(context);
-              final navigator = Navigator.of(context);
-              navigator.pop();
-              if (isFromShareMenu) {
-                navigator.pop();
-              }
-              router.push(
-                ConversationPage.pathForId(conversationId),
-                extra: [moderationPubkey],
-              );
-            },
-          ),
-        DivineButton(
-          label: l10n.reportClose,
-          expanded: true,
-          onPressed: () {
-            Navigator.of(context).pop();
-            if (isFromShareMenu) {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-      ],
     );
   }
 }
