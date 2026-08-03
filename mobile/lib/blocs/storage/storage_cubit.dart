@@ -129,10 +129,16 @@ class StorageCubit extends Cubit<StorageState> {
   /// A measurement failure falls back to [StorageRecoveryStatus.idle] rather
   /// than `failure`: the size is decoration on the confirmation sheet, and
   /// `failure` is what the UI renders when the wipe itself went wrong.
+  ///
+  /// The screen fires this unawaited alongside the confirmation sheet, so a
+  /// slow walk can land after the page popped or after the user already
+  /// confirmed. Both results are discarded rather than emitted over a wipe
+  /// that has since started.
   Future<void> loadRecoveryFootprint() async {
     emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.measuring));
     try {
       final footprint = await _measureRecoveryFootprint();
+      if (_measurementSuperseded) return;
       emit(
         state.copyWith(
           recoveryStatus: StorageRecoveryStatus.measured,
@@ -141,17 +147,27 @@ class StorageCubit extends Cubit<StorageState> {
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
+      if (_measurementSuperseded) return;
       emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.idle));
     }
   }
 
+  /// Whether an in-flight measurement has been outlived by its screen or
+  /// overtaken by the wipe it was measuring for.
+  bool get _measurementSuperseded =>
+      isClosed || state.recoveryStatus != StorageRecoveryStatus.measuring;
+
   /// Wipes the app's caches and databases to recover from corruption. The
   /// durable database directory is preserved by [CacheRecoveryService]; the
   /// user still has to restart the app afterwards.
+  ///
+  /// The wipe takes seconds and the user can navigate back while it runs, so
+  /// the outcome is dropped if the screen closed the cubit first.
   Future<void> recoverFromCorruptedCache() async {
     emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.recovering));
     try {
       final succeeded = await _recoverAllCaches();
+      if (isClosed) return;
       emit(
         state.copyWith(
           recoveryStatus: succeeded
@@ -162,6 +178,7 @@ class StorageCubit extends Cubit<StorageState> {
       );
     } catch (error, stackTrace) {
       addError(error, stackTrace);
+      if (isClosed) return;
       emit(state.copyWith(recoveryStatus: StorageRecoveryStatus.failure));
     }
   }
