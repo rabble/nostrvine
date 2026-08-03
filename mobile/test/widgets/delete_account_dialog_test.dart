@@ -41,7 +41,7 @@ DeleteAccountConfirmation _divineUsername() => DeleteAccountConfirmation(
   handle: '@rabble.divine.video',
 );
 
-/// Minimal router wrapper so [context.pop()] works inside the dialog.
+/// Minimal router wrapper so [context.pop()] works inside the sheet.
 Widget _wrapWithRouter(Widget child) {
   final router = GoRouter(
     routes: [GoRoute(path: '/', builder: (_, state) => child)],
@@ -53,7 +53,7 @@ Widget _wrapWithRouter(Widget child) {
   );
 }
 
-Future<void> _showDialog(
+Future<void> _showSheet(
   WidgetTester tester, {
   DeleteAccountConfirmation? confirmation,
   void Function({
@@ -155,7 +155,7 @@ void main() {
 
   group('showDeleteAllContentWarningSheet – confirmation input', () {
     testWidgets('empty string keeps Delete button disabled', (tester) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       final l10n = _englishL10n();
       expect(find.text(l10n.deleteAccountWarningBody), findsOneWidget);
@@ -168,7 +168,7 @@ void main() {
     // The actions belong to the sheet's pinned footer, not to the scrolling
     // form — otherwise they drift off screen while reading the warning.
     testWidgets('keeps the actions out of the scrollable form', (tester) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       expect(
         find.descendant(
@@ -184,7 +184,7 @@ void main() {
     testWidgets('dismisses the sheet when the form is dragged down', (
       tester,
     ) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.drag(
         find.byType(SingleChildScrollView).first,
@@ -196,7 +196,7 @@ void main() {
     });
 
     testWidgets('wrong word keeps Delete button disabled', (tester) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.enterText(find.byType(TextField), 'confirm');
       await tester.pump();
@@ -206,7 +206,7 @@ void main() {
     });
 
     testWidgets('exact uppercase DELETE enables the button', (tester) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
@@ -216,7 +216,7 @@ void main() {
     });
 
     testWidgets('lowercase delete enables the button', (tester) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
@@ -226,7 +226,7 @@ void main() {
     });
 
     testWidgets('mixed case Delete enables the button', (tester) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.enterText(find.byType(TextField), 'Delete');
       await tester.pump();
@@ -238,7 +238,7 @@ void main() {
     testWidgets('DELETE with trailing whitespace enables the button', (
       tester,
     ) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.enterText(find.byType(TextField), 'DELETE ');
       await tester.pump();
@@ -250,7 +250,7 @@ void main() {
     testWidgets('delete with leading whitespace enables the button', (
       tester,
     ) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
 
       await tester.enterText(find.byType(TextField), ' delete');
       await tester.pump();
@@ -261,7 +261,7 @@ void main() {
 
     testWidgets('tapping enabled button calls onConfirm', (tester) async {
       var called = false;
-      await _showDialog(
+      await _showSheet(
         tester,
         onConfirm:
             ({
@@ -282,14 +282,14 @@ void main() {
     testWidgets('burn toggle is hidden when no username is owned', (
       tester,
     ) async {
-      await _showDialog(tester);
+      await _showSheet(tester);
       expect(find.byType(DivineRowCheckbox), findsNothing);
     });
 
     testWidgets('burn toggle is shown when a username is owned', (
       tester,
     ) async {
-      await _showDialog(
+      await _showSheet(
         tester,
         ownedUsername: (name: 'Alice', canonical: 'alice'),
       );
@@ -310,7 +310,7 @@ void main() {
       tester,
     ) async {
       bool? received;
-      await _showDialog(
+      await _showSheet(
         tester,
         ownedUsername: (name: 'alice', canonical: 'alice'),
         onConfirm:
@@ -334,7 +334,7 @@ void main() {
       tester,
     ) async {
       bool? received;
-      await _showDialog(
+      await _showSheet(
         tester,
         ownedUsername: (name: 'alice', canonical: 'alice'),
         onConfirm:
@@ -352,7 +352,7 @@ void main() {
       expect(received, isFalse);
     });
 
-    testWidgets('dialog opens before the lookup resolves and reveals the '
+    testWidgets('sheet opens before the lookup resolves and reveals the '
         'toggle only once it completes', (tester) async {
       final completer = Completer<({String name, String canonical})?>();
       await tester.pumpWidget(
@@ -380,7 +380,7 @@ void main() {
       await tester.tap(find.byKey(const Key('open')));
       await tester.pumpAndSettle();
 
-      // Dialog is already open (lookup still pending) but no toggle yet.
+      // Sheet is already open (lookup still pending) but no toggle yet.
       expect(_deleteAllContentButton(), findsOneWidget);
       expect(find.byType(DivineRowCheckbox), findsNothing);
 
@@ -419,7 +419,7 @@ void main() {
       await tester.tap(find.byKey(const Key('open')));
       await tester.pumpAndSettle();
 
-      // Dialog is open with the lookup still pending, then the lookup fails.
+      // Sheet is open with the lookup still pending, then the lookup fails.
       completer.completeError(Exception('lookup failed'));
       await tester.pumpAndSettle();
 
@@ -433,7 +433,7 @@ void main() {
     ) async {
       ({String name, String canonical})? receivedOwned;
       var receivedBurn = false;
-      await _showDialog(
+      await _showSheet(
         tester,
         ownedUsername: (name: 'Alice', canonical: 'alice'),
         onConfirm:
@@ -460,7 +460,7 @@ void main() {
     testWidgets('shows the identity (name + handle) and username prompt', (
       tester,
     ) async {
-      await _showDialog(tester, confirmation: _divineUsername());
+      await _showSheet(tester, confirmation: _divineUsername());
       expect(find.text('Rabble'), findsOneWidget);
       expect(find.text('@rabble.divine.video'), findsWidgets);
       expect(
@@ -476,7 +476,7 @@ void main() {
     testWidgets('typing DELETE does not enable the button for a username', (
       tester,
     ) async {
-      await _showDialog(tester, confirmation: _divineUsername());
+      await _showSheet(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
       final button = tester.widget<DivineButton>(_deleteAllContentButton());
@@ -484,7 +484,7 @@ void main() {
     });
 
     testWidgets('typing the handle enables the button', (tester) async {
-      await _showDialog(tester, confirmation: _divineUsername());
+      await _showSheet(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), '@rabble.divine.video');
       await tester.pump();
       final button = tester.widget<DivineButton>(_deleteAllContentButton());
@@ -494,7 +494,7 @@ void main() {
     testWidgets('typing the handle without @ also enables the button', (
       tester,
     ) async {
-      await _showDialog(tester, confirmation: _divineUsername());
+      await _showSheet(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), 'rabble.divine.video');
       await tester.pump();
       final button = tester.widget<DivineButton>(_deleteAllContentButton());

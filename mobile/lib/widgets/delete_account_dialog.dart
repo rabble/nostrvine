@@ -1,4 +1,4 @@
-// ABOUTME: Bottom sheets for the account deletion flow
+// ABOUTME: Account deletion flow: confirmation sheets, progress dialog, orchestration
 // ABOUTME: Warning sheets for key removal and content deletion with confirmation
 
 import 'dart:async';
@@ -283,7 +283,7 @@ class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
   }
 }
 
-/// Identity block (avatar + name + handle/npub) for the delete dialog.
+/// Identity block (avatar + name + handle/npub) for the delete sheet.
 class _DeleteIdentityHeader extends StatelessWidget {
   const _DeleteIdentityHeader({required this.confirmation});
 
