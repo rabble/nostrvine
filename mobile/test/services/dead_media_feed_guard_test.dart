@@ -1,7 +1,9 @@
-// ABOUTME: Tests DeadMediaFeedGuard — a hard 404 prunes, the 401 age gate only
-// ABOUTME: skips, and transient / reachable / missing-URL cases keep the item.
+// ABOUTME: Tests DeadMediaFeedGuard — confirms a hard 404 via HEAD and marks
+// ABOUTME: the item broken; transient / non-404 / missing-URL cases keep it.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/dead_media_feed_guard.dart';
@@ -13,8 +15,6 @@ class _MockTracker extends Mock implements BrokenVideoTracker {}
 
 void main() {
   group(DeadMediaFeedGuard, () {
-    const url = 'https://media.divine.video/deadhash';
-
     late _MockChecker checker;
     late _MockTracker tracker;
     late DeadMediaFeedGuard guard;
@@ -31,104 +31,83 @@ void main() {
       );
     });
 
-    void stub(MediaAvailability availability) {
-      when(() => checker.check(url)).thenAnswer((_) async => availability);
-    }
-
-    group('classify', () {
-      test('prunes a HEAD-confirmed hard 404', () async {
-        stub(MediaAvailability.missing);
-
-        final verdict = await guard.classify(videoId: 'v1', videoUrl: url);
-
-        expect(verdict, DeadMediaVerdict.skipAndPrune);
-        verify(() => tracker.markVideoBroken('v1', any())).called(1);
-      });
-
-      // The 401 age gate is the regression this guards: blossom serves
-      // AgeRestricted blobs to any authenticated request, so persisting a prune
-      // would hide a video the viewer is entitled to watch for the tracker's
-      // full TTL, on every surface that consults it. See #5953 / #6251.
-      test('skips but never prunes an age-gated 401', () async {
-        stub(MediaAvailability.authRequired);
-
-        final verdict = await guard.classify(videoId: 'v1', videoUrl: url);
-
-        expect(verdict, DeadMediaVerdict.skipOnly);
-        verifyNever(() => tracker.markVideoBroken(any(), any()));
-      });
-
-      test('keeps a reachable item', () async {
-        stub(MediaAvailability.available);
-
-        final verdict = await guard.classify(videoId: 'v1', videoUrl: url);
-
-        expect(verdict, DeadMediaVerdict.keep);
-        verifyNever(() => tracker.markVideoBroken(any(), any()));
-      });
-
-      // A network flake must never evict a valid video.
-      test('keeps the item when the check is inconclusive', () async {
-        stub(MediaAvailability.unknown);
-
-        final verdict = await guard.classify(videoId: 'v1', videoUrl: url);
-
-        expect(verdict, DeadMediaVerdict.keep);
-        verifyNever(() => tracker.markVideoBroken(any(), any()));
-      });
-
-      test('keeps the item and never probes when the URL is absent', () async {
-        expect(
-          await guard.classify(videoId: 'v1', videoUrl: null),
-          DeadMediaVerdict.keep,
-        );
-        expect(
-          await guard.classify(videoId: 'v1', videoUrl: ''),
-          DeadMediaVerdict.keep,
-        );
-        verifyNever(() => checker.check(any()));
-        verifyNever(() => tracker.markVideoBroken(any(), any()));
-      });
-    });
-
     group('confirmAndMarkMissing', () {
-      test('advances past both a 404 and an age-gated 401', () async {
-        stub(MediaAvailability.missing);
-        expect(
-          await guard.confirmAndMarkMissing(videoId: 'v1', videoUrl: url),
-          isTrue,
+      test(
+        'returns true and marks broken when HEAD confirms a hard 404',
+        () async {
+          const url = 'https://media.divine.video/deadhash';
+          when(
+            () => checker.isConfirmedMissing(url),
+          ).thenAnswer((_) async => true);
+
+          final result = await guard.confirmAndMarkMissing(
+            videoId: 'v1',
+            videoUrl: url,
+          );
+
+          expect(result, isTrue);
+          verify(() => tracker.markVideoBroken('v1', any())).called(1);
+        },
+      );
+
+      test(
+        'returns false and does NOT mark broken when the media is reachable / non-404',
+        () async {
+          when(
+            () => checker.isConfirmedMissing(any()),
+          ).thenAnswer((_) async => false);
+
+          final result = await guard.confirmAndMarkMissing(
+            videoId: 'v1',
+            videoUrl: 'https://media.divine.video/live',
+          );
+
+          expect(result, isFalse);
+          verifyNever(() => tracker.markVideoBroken(any(), any()));
+        },
+      );
+
+      test('returns false without a HEAD when videoUrl is null', () async {
+        final result = await guard.confirmAndMarkMissing(
+          videoId: 'v1',
+          videoUrl: null,
         );
 
-        stub(MediaAvailability.authRequired);
-        expect(
-          await guard.confirmAndMarkMissing(videoId: 'v2', videoUrl: url),
-          isTrue,
-        );
-      });
-
-      test('does not advance past a reachable or inconclusive item', () async {
-        stub(MediaAvailability.available);
-        expect(
-          await guard.confirmAndMarkMissing(videoId: 'v1', videoUrl: url),
-          isFalse,
-        );
-
-        stub(MediaAvailability.unknown);
-        expect(
-          await guard.confirmAndMarkMissing(videoId: 'v2', videoUrl: url),
-          isFalse,
-        );
-      });
-
-      // Only the 404 path may reach the tracker, whichever entry point is used.
-      test('prunes on 404 only', () async {
-        stub(MediaAvailability.authRequired);
-        await guard.confirmAndMarkMissing(videoId: 'v1', videoUrl: url);
+        expect(result, isFalse);
+        verifyNever(() => checker.isConfirmedMissing(any()));
         verifyNever(() => tracker.markVideoBroken(any(), any()));
+      });
 
-        stub(MediaAvailability.missing);
-        await guard.confirmAndMarkMissing(videoId: 'v2', videoUrl: url);
-        verify(() => tracker.markVideoBroken('v2', any())).called(1);
+      test('returns false without a HEAD when videoUrl is empty', () async {
+        final result = await guard.confirmAndMarkMissing(
+          videoId: 'v1',
+          videoUrl: '',
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => checker.isConfirmedMissing(any()));
+      });
+
+      // Driven through a real MediaAvailabilityChecker rather than a stubbed
+      // bool, so this goes red if the 404 predicate is ever widened to cover
+      // the age gate. Blossom answers 401 for an AgeRestricted blob and serves
+      // it to any authenticated request; pruning that would hide a video the
+      // viewer can watch for the tracker's full TTL. See #5953 / #6251.
+      test('never prunes an age-gated 401', () async {
+        final gatedGuard = DeadMediaFeedGuard(
+          brokenVideoTracker: tracker,
+          availabilityChecker: MediaAvailabilityChecker(
+            client: MockClient((_) async => http.Response('', 401)),
+          ),
+        );
+
+        final result = await gatedGuard.confirmAndMarkMissing(
+          videoId: 'v1',
+          videoUrl: 'https://media.divine.video/agegated',
+        );
+
+        expect(result, isFalse);
+        verifyNever(() => tracker.markVideoBroken(any(), any()));
       });
     });
   });

@@ -1,37 +1,30 @@
-// ABOUTME: Classifies a failed feed item's media so the feed can skip past it,
-// ABOUTME: and prunes only genuinely unretrievable media. See #5953.
+// ABOUTME: Confirms a feed item's media is a hard 404 and marks it broken so
+// ABOUTME: the home feed can skip past + persistently prune it. See #5953.
 
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/media_availability_checker.dart';
 
-/// What the feed should do with an item whose player failed.
-enum DeadMediaVerdict {
-  /// Media is retrievable, or the failure looks transient. Keep the item and
-  /// leave today's retry behaviour alone.
-  keep,
-
-  /// Media is a HEAD-confirmed hard 404. Skip past it and prune it persistently.
-  skipAndPrune,
-
-  /// Media requires authentication (blossom's 401 age gate). Skip past it so the
-  /// user is not parked on a dead player, but do **not** prune — an
-  /// authenticated request can succeed, and pruning would hide a video the
-  /// viewer is entitled to watch.
-  skipOnly,
-}
-
-/// Decides how a feed item whose player failed should be treated.
+/// Decides whether a feed item whose player failed should be treated as
+/// permanently unavailable.
 ///
-/// Playback failures are platform-divergent (iOS `COMPOSITION_ERROR` →
-/// `notFound`; Android `PLAYER_ERROR "Source error"` → `generic`), so detection
-/// is a deterministic HEAD classification via [MediaAvailabilityChecker] rather
-/// than the player's error string.
+/// Imported classic-Vine clips can point at `media.divine.video/<sha256>` blobs
+/// that were never stored and return a hard **HTTP 404**. Playback then fails
+/// (iOS `COMPOSITION_ERROR` → `notFound`; Android `PLAYER_ERROR "Source error"`
+/// → `generic`), but the home scrolling feed neither skips nor prunes them —
+/// unlike the fullscreen feed, which HEAD-confirms the 404 and marks it broken.
 ///
-/// The 404/401 split is load-bearing. Divine's media host returns 404 for
-/// banned, deleted and restricted blobs *and* for genuinely absent ones, but
-/// **401** for age-restricted blobs, which play fine once the request is
-/// authenticated. Treating those alike would prune viewable content for the
-/// [BrokenVideoTracker]'s full TTL across every surface that consults it.
+/// This guard lifts that "confirm → mark" contract into a layer below the
+/// widget so the home feed can reuse it. Detection is a deterministic HEAD 404
+/// via [MediaAvailabilityChecker] — NOT the playback error string, which is
+/// platform-divergent (see #5953 findings).
+///
+/// The 404 is deliberately the *only* status that acts here. An age-restricted
+/// blob answers **401**, and the feed already has a real affordance for it: the
+/// player's `ageRestricted` status routes to the Verify-age overlay, and
+/// `FeedLoadingModerationCubit` recovers a mis-classified 401 asynchronously
+/// (moderation-api → auth → retry). Skipping on 401 would beat that recovery
+/// and silently scroll past content the viewer can watch, so this guard leaves
+/// 401 alone entirely. See #6251 for the age-gate work.
 class DeadMediaFeedGuard {
   const DeadMediaFeedGuard({
     required BrokenVideoTracker brokenVideoTracker,
@@ -43,40 +36,27 @@ class DeadMediaFeedGuard {
   final BrokenVideoTracker _tracker;
   final MediaAvailabilityChecker _checker;
 
-  /// Classifies [videoUrl], persisting [videoId] as broken only for a
-  /// HEAD-confirmed hard 404.
+  /// Returns `true` iff [videoUrl] is a HEAD-confirmed hard 404, in which case
+  /// [videoId] is persisted as broken so [BrokenVideoTracker.isVideoBroken]
+  /// (and therefore `filterVideoList`) drops it from every list surface across
+  /// restarts.
   ///
-  /// Returns [DeadMediaVerdict.keep] when the URL is missing, reachable, or the
-  /// HEAD request fails with a network error — this conservative gate is what
-  /// prevents a one-off flake from evicting a valid video.
-  Future<DeadMediaVerdict> classify({
-    required String videoId,
-    required String? videoUrl,
-  }) async {
-    if (videoUrl == null || videoUrl.isEmpty) return DeadMediaVerdict.keep;
-
-    switch (await _checker.check(videoUrl)) {
-      case MediaAvailability.missing:
-        await _tracker.markVideoBroken(videoId, 'Confirmed 404 in home feed');
-        return DeadMediaVerdict.skipAndPrune;
-      case MediaAvailability.authRequired:
-        return DeadMediaVerdict.skipOnly;
-      case MediaAvailability.available:
-      case MediaAvailability.unknown:
-        return DeadMediaVerdict.keep;
-    }
-  }
-
-  /// Whether the feed should advance past this item.
-  ///
-  /// `true` for both a confirmed 404 and the 401 age gate — in either case the
-  /// user cannot play the item anonymously, so parking on it helps no one. Only
-  /// the 404 case also prunes.
+  /// Returns `false` when [videoUrl] is missing, reachable, returns any status
+  /// other than 404, or the HEAD request fails with a network error — the
+  /// caller must then treat the failure as transient and keep the item. This
+  /// conservative gate is what prevents a one-off network flake from evicting a
+  /// valid video.
   Future<bool> confirmAndMarkMissing({
     required String videoId,
     required String? videoUrl,
   }) async {
-    final verdict = await classify(videoId: videoId, videoUrl: videoUrl);
-    return verdict != DeadMediaVerdict.keep;
+    if (videoUrl == null || videoUrl.isEmpty) return false;
+    final missing = await _checker.isConfirmedMissing(videoUrl);
+    if (!missing) return false;
+    await _tracker.markVideoBroken(
+      videoId,
+      'Confirmed 404 in home feed',
+    );
+    return true;
   }
 }

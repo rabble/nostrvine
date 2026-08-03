@@ -58,6 +58,33 @@ void main() {
         expect(result, isFalse);
       });
 
+      // Blossom answers 401 (not 404) for an age-restricted blob and serves it
+      // to any authenticated request, so an anonymous probe cannot conclude the
+      // media is gone. Callers persist this answer via BrokenVideoTracker, so
+      // widening the predicate to 401 would hide viewable content for the
+      // tracker's full TTL. See #5953 / #6251.
+      test('returns false for the 401 age gate', () async {
+        final client = MockClient((_) async => http.Response('', 401));
+        final checker = MediaAvailabilityChecker(client: client);
+
+        final result = await checker.isConfirmedMissing(
+          'https://media.divine.video/agegated',
+        );
+
+        expect(result, isFalse);
+      });
+
+      test('returns false for a 403', () async {
+        final client = MockClient((_) async => http.Response('', 403));
+        final checker = MediaAvailabilityChecker(client: client);
+
+        final result = await checker.isConfirmedMissing(
+          'https://media.divine.video/forbidden',
+        );
+
+        expect(result, isFalse);
+      });
+
       test('returns false for empty URL without hitting the client', () async {
         var calls = 0;
         final client = MockClient((_) async {
@@ -69,77 +96,6 @@ void main() {
         final result = await checker.isConfirmedMissing('');
 
         expect(result, isFalse);
-        expect(calls, equals(0));
-      });
-
-      // The 401 age gate must not read as "missing": blossom serves
-      // AgeRestricted blobs to any authenticated request, so a caller that
-      // pruned on this would hide viewable content. See #5953 / #6251.
-      test('returns false for the 401 age gate', () async {
-        final client = MockClient((_) async => http.Response('', 401));
-        final checker = MediaAvailabilityChecker(client: client);
-
-        expect(
-          await checker.isConfirmedMissing('https://example.com/gated.mp4'),
-          isFalse,
-        );
-      });
-    });
-
-    group('check', () {
-      Future<MediaAvailability> classify(int status) async {
-        final client = MockClient((request) async {
-          expect(request.method, equals('HEAD'));
-          return http.Response('', status);
-        });
-        return MediaAvailabilityChecker(
-          client: client,
-        ).check('https://example.com/video.mp4');
-      }
-
-      test('maps success statuses to available', () async {
-        expect(await classify(200), MediaAvailability.available);
-        expect(await classify(206), MediaAvailability.available);
-      });
-
-      test('maps 404 to missing', () async {
-        expect(await classify(404), MediaAvailability.missing);
-      });
-
-      test('maps 401 and 403 to authRequired', () async {
-        expect(await classify(401), MediaAvailability.authRequired);
-        expect(await classify(403), MediaAvailability.authRequired);
-      });
-
-      test('maps other statuses to unknown', () async {
-        expect(await classify(500), MediaAvailability.unknown);
-        expect(await classify(429), MediaAvailability.unknown);
-      });
-
-      test('maps a network exception to unknown', () async {
-        final client = MockClient(
-          (_) async => throw http.ClientException('timeout'),
-        );
-
-        expect(
-          await MediaAvailabilityChecker(
-            client: client,
-          ).check('https://example.com/slow.mp4'),
-          MediaAvailability.unknown,
-        );
-      });
-
-      test('maps an empty URL to unknown without hitting the client', () async {
-        var calls = 0;
-        final client = MockClient((_) async {
-          calls++;
-          return http.Response('', 404);
-        });
-
-        expect(
-          await MediaAvailabilityChecker(client: client).check(''),
-          MediaAvailability.unknown,
-        );
         expect(calls, equals(0));
       });
     });

@@ -15,13 +15,13 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 /// Behavior by mode (see #5953):
 /// * **Auto mode** ([isAutoAdvanceActive] true) — skips immediately on any
 ///   non-ready status (unchanged), and additionally, when
-///   [confirmAndMarkMissing] is supplied, runs the guard (fire-and-forget) so a
-///   HEAD-confirmed hard-404 item is pruned from every surface on refetch.
+///   [confirmAndMarkMissing] is supplied, marks a HEAD-confirmed hard-404 item
+///   broken (fire-and-forget) so it is pruned from every surface on refetch.
 /// * **Manual scroll** — skips *only* when [confirmAndMarkMissing] resolves
-///   `true`, i.e. the guard HEAD-confirmed that the media cannot be fetched.
-///   Transient or inconclusive failures keep the error tile, so a network flake
-///   can't evict a valid video. Without a [confirmAndMarkMissing] callback,
-///   manual scroll never auto-skips (prior behavior).
+///   `true` (a HEAD-confirmed hard 404, which also marks it broken). Transient
+///   or non-404 failures keep the error tile, so a network flake can't evict a
+///   valid video. Without a [confirmAndMarkMissing] callback, manual scroll
+///   never auto-skips (prior behavior).
 ///
 /// Gated on [isActive] so background / preloaded pages can't yank the feed
 /// forward if they fail while the user is still on an earlier page.
@@ -42,9 +42,8 @@ class FeedAutoAdvancePastErrorListener extends StatefulWidget {
   final VoidCallback onSkipBrokenVideo;
   final Widget child;
 
-  /// Classifies the active item's media via a HEAD request and returns whether
-  /// the feed should advance past it. A confirmed hard 404 is additionally
-  /// marked broken; no other outcome is ever persisted.
+  /// Confirms (via a HEAD request) whether the active item's media is a hard
+  /// 404 and, if so, marks it broken. Returns `true` only for a confirmed 404.
   /// Injected by the feed item from `deadMediaFeedGuardProvider`.
   final Future<bool> Function()? confirmAndMarkMissing;
 
@@ -104,15 +103,15 @@ class _FeedAutoAdvancePastErrorListenerState
     final confirm = widget.confirmAndMarkMissing;
     if (widget.isAutoAdvanceActive) {
       // Auto already skips any non-ready item — preserve that immediately, and
-      // run the guard (fire-and-forget) so a hard 404 is pruned on refetch.
+      // mark a hard-404 item broken (fire-and-forget) so it's pruned on refetch.
       _firedForCurrentBreak = true;
       _deferSkip();
       if (confirm != null) unawaited(confirm());
       return;
     }
 
-    // Manual scroll: only skip once the guard HEAD-confirms the media can't be
-    // fetched. Transient / inconclusive failures keep the error tile.
+    // Manual scroll: only skip past a HEAD-confirmed hard 404 (which also
+    // marks it broken). Transient / non-404 failures keep the error tile.
     //
     // Don't latch `_firedForCurrentBreak` when the guard isn't loaded yet —
     // no confirmation attempt happened, so `didUpdateWidget` must be able to
@@ -122,9 +121,9 @@ class _FeedAutoAdvancePastErrorListenerState
     _firedForCurrentBreak = true;
     final videoId = widget.videoId;
     unawaited(
-      confirm().then((shouldAdvance) {
+      confirm().then((isMissing) {
         if (!mounted) return;
-        if (!shouldAdvance) return;
+        if (!isMissing) return;
         // The result raced a page change, a deactivation, or a recovery —
         // none of which should move a different/now-ready item.
         if (!widget.isActive) return;
