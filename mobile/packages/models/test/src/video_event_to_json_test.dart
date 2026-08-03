@@ -24,6 +24,7 @@ VideoEvent _fullVideo() => VideoEvent(
   id: _id,
   pubkey: _pubkey,
   createdAt: 1704067200,
+  eventCreatedAt: 1704067300,
   content: 'hello vine',
   timestamp: DateTime.fromMillisecondsSinceEpoch(
     1704067200 * 1000,
@@ -104,6 +105,7 @@ const _expectedKeys = <String>{
   'id',
   'pubkey',
   'createdAt',
+  'eventCreatedAt',
   'content',
   'title',
   'videoUrl',
@@ -156,6 +158,7 @@ const _expectedKeys = <String>{
 
 const _excludedDerivedGetters = <String>{
   'hashCode',
+  'nostrCreatedAt',
   'isExpired',
   'shareKind',
   'isAddressableShareKind',

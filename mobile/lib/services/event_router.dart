@@ -140,6 +140,29 @@ class EventRouter {
   /// lifetime.
   int get droppedEventCount => _droppedEventCount;
 
+  /// Drops every queued event whose id is in [eventIds], across all
+  /// priorities. Returns the number of events removed.
+  ///
+  /// Callers use this when an event has just been tombstoned: a write queued
+  /// before the tombstone existed would otherwise flush *after* the row was
+  /// deleted and put it straight back. Only pending writes are affected —
+  /// rows already flushed must be deleted through the DAO.
+  int dropQueuedEvents(Set<String> eventIds) {
+    if (_disposed || eventIds.isEmpty) return 0;
+
+    var dropped = 0;
+    for (final queue in [_visibleQueue, _normalQueue, _backgroundQueue]) {
+      final survivors = queue
+          .where((event) => !eventIds.contains(event.id))
+          .toList();
+      dropped += queue.length - survivors.length;
+      queue
+        ..clear()
+        ..addAll(survivors);
+    }
+    return dropped;
+  }
+
   /// Drops all queued background- and normal-priority events, preserving the
   /// visible queue so the on-screen feed still persists.
   ///

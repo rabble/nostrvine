@@ -172,6 +172,25 @@ class NostrClient {
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
 
+  /// Upper bound on remembered NIP-09 tombstones, per set.
+  static const int _maxTrackedTombstones = 2000;
+
+  /// `pubkey:event-id` pairs removed by an observed or published Kind 5.
+  ///
+  /// Keyed by the *deletion author* so a forged `e` tag cannot suppress
+  /// another author's event: NIP-09 requires a client to check that the
+  /// referenced event's pubkey matches the deletion request's, and the
+  /// referenced event is often not in the store to check against, so the
+  /// pubkey is carried in the key and compared when the event arrives.
+  final Set<String> _tombstonedEventKeys = <String>{};
+
+  /// `kind:pubkey:d-tag` coordinate to the `created_at` of the deletion that
+  /// removed it. NIP-09 scopes an `a` deletion to versions up to that
+  /// timestamp, so a coordinate republished afterwards must cache again.
+  ///
+  /// Insertion-ordered (`LinkedHashMap`) so eviction drops the oldest.
+  final Map<String, int> _tombstonedCoordinates = <String, int>{};
+
   /// `"id:sig"` keys of events already persisted — and therefore already
   /// signature-verified — in a previous session. Seeded once at
   /// [initialize] so the relay pool can skip re-verifying events that relays
@@ -294,12 +313,100 @@ class NostrClient {
 
     if (targetEventIds.isEmpty && targetAddressableIds.isEmpty) return;
 
+    _rememberTombstones(
+      eventIds: targetEventIds,
+      addressableIds: targetAddressableIds,
+      deletionPubkey: deletionEvent.pubkey,
+      deletionCreatedAt: deletionEvent.createdAt,
+    );
+
     await _deleteCachedEventsForDeletion(
       eventIds: targetEventIds,
       addressableIds: targetAddressableIds,
       deletionPubkey: deletionEvent.pubkey,
       deletionCreatedAt: deletionEvent.createdAt,
     );
+  }
+
+  /// Records what a Kind 5 tombstoned so [_shouldSkipAutoCache] can keep the
+  /// auto-cache from writing the row back when a relay redelivers it.
+  ///
+  /// Bounded: the oldest entries are evicted past [_maxTrackedTombstones], so
+  /// a long session cannot grow these sets without limit. Losing an old entry
+  /// only costs a redundant row that the next deletion purges again.
+  void _rememberTombstones({
+    required List<String> eventIds,
+    required List<AId> addressableIds,
+    required String deletionPubkey,
+    required int deletionCreatedAt,
+  }) {
+    for (final eventId in eventIds) {
+      final key = _tombstoneEventKey(pubkey: deletionPubkey, eventId: eventId);
+      _tombstonedEventKeys
+        ..remove(key)
+        ..add(key);
+    }
+    for (final addressableId in addressableIds) {
+      if (addressableId.pubkey != deletionPubkey) continue;
+      final key = _tombstoneCoordinateKey(
+        kind: addressableId.kind,
+        pubkey: addressableId.pubkey,
+        dTag: addressableId.dTag,
+      );
+      // Keep the newest deletion for a coordinate, and re-insert so eviction
+      // still drops the least recently tombstoned.
+      final known = _tombstonedCoordinates.remove(key);
+      _tombstonedCoordinates[key] = known == null
+          ? deletionCreatedAt
+          : (known > deletionCreatedAt ? known : deletionCreatedAt);
+    }
+    while (_tombstonedEventKeys.length > _maxTrackedTombstones) {
+      _tombstonedEventKeys.remove(_tombstonedEventKeys.first);
+    }
+    while (_tombstonedCoordinates.length > _maxTrackedTombstones) {
+      _tombstonedCoordinates.remove(_tombstonedCoordinates.keys.first);
+    }
+  }
+
+  static String _tombstoneEventKey({
+    required String pubkey,
+    required String eventId,
+  }) => '${pubkey.toLowerCase()}:${eventId.toLowerCase()}';
+
+  static String _tombstoneCoordinateKey({
+    required int kind,
+    required String pubkey,
+    required String dTag,
+  }) => '$kind:${pubkey.toLowerCase()}:$dTag';
+
+  /// Whether the auto-cache must skip [event] because a Kind 5 already
+  /// removed it.
+  ///
+  /// Without this the subscription callback re-inserts a deleted event the
+  /// moment any relay redelivers it, undoing the purge and re-serving the
+  /// clip from the local store on the next launch.
+  bool _shouldSkipAutoCache(Event event) {
+    // The key carries the deletion author, so this only matches when the
+    // event's own pubkey signed the deletion that named it.
+    if (_tombstonedEventKeys.contains(
+      _tombstoneEventKey(pubkey: event.pubkey, eventId: event.id),
+    )) {
+      return true;
+    }
+    if (!EventKind.isParameterizedReplaceable(event.kind)) return false;
+
+    for (final tag in event.tags) {
+      if (tag.length < 2 || tag[0] != 'd' || tag[1].isEmpty) continue;
+      final deletedUpTo =
+          _tombstonedCoordinates[_tombstoneCoordinateKey(
+            kind: event.kind,
+            pubkey: event.pubkey,
+            dTag: tag[1],
+          )];
+      // A version published after the deletion request is not covered by it.
+      return deletedUpTo != null && event.createdAt <= deletedUpTo;
+    }
+    return false;
   }
 
   Future<void> _deleteCachedEventsForDeletion({
@@ -990,7 +1097,7 @@ class NostrClient {
         // Handle NIP-09 deletion events by removing target events from DB
         if (event.kind == EventKind.eventDeletion) {
           unawaited(_handleDeletionEvent(event).catchError((Object _) {}));
-        } else {
+        } else if (!_shouldSkipAutoCache(event)) {
           // Auto-cache non-deletion events (fire-and-forget)
           try {
             unawaited(_nostrEventsDao?.upsertEvent(event));

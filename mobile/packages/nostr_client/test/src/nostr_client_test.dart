@@ -1527,6 +1527,289 @@ void main() {
       });
     });
 
+    group('subscribe NIP-09 auto-cache suppression', () {
+      // NIP-71 addressable short video (parameterized replaceable).
+      const addressableShortVideoKind = 34236;
+
+      late _MockNostrEventsDao mockNostrEventsDao;
+      late NostrClient clientWithCache;
+
+      /// Subscribes and returns the relay callback the SDK was handed, so a
+      /// test can deliver events exactly as a relay would.
+      void Function(Event) subscribeAndCaptureRelayCallback() {
+        when(
+          () => mockNostr.subscribe(
+            any(),
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenReturn('test-sub-id');
+
+        clientWithCache.subscribe([
+          Filter(kinds: [addressableShortVideoKind], limit: 10),
+        ]);
+
+        final captured = verify(
+          () => mockNostr.subscribe(
+            any(),
+            captureAny(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).captured.single;
+        return captured as void Function(Event);
+      }
+
+      Event videoEvent({
+        String? id,
+        List<List<String>>? tags,
+        String? pubkey,
+        int createdAt = 1000,
+      }) {
+        final event = Event(
+          pubkey ?? testPublicKey,
+          addressableShortVideoKind,
+          tags ??
+              [
+                ['d', 'clip-1'],
+              ],
+          'a video',
+          createdAt: createdAt,
+        );
+        if (id != null) event.id = id;
+        return event;
+      }
+
+      Event deletionEvent(
+        List<List<String>> tags, {
+        String? pubkey,
+        int createdAt = 2000,
+      }) => Event(
+        pubkey ?? testPublicKey,
+        EventKind.eventDeletion,
+        tags,
+        'deleted',
+        createdAt: createdAt,
+      );
+
+      setUp(() {
+        final mockDbClient = _MockAppDbClient();
+        final mockDatabase = _MockAppDatabase();
+        mockNostrEventsDao = _MockNostrEventsDao();
+        when(() => mockDbClient.database).thenReturn(mockDatabase);
+        when(() => mockDatabase.nostrEventsDao).thenReturn(mockNostrEventsDao);
+        when(
+          () => mockNostrEventsDao.upsertEvent(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockNostrEventsDao.deleteEventsByIds(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockNostrEventsDao.getEventsByFilter(
+            any(),
+            sortBy: any(named: 'sortBy'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+        when(() => mockRelayManager.connectedRelays).thenReturn([
+          'wss://relay.test',
+        ]);
+
+        clientWithCache = NostrClient.forTesting(
+          nostr: mockNostr,
+          relayManager: mockRelayManager,
+          dbClient: mockDbClient,
+        );
+      });
+
+      test(
+        'does not re-cache an event a Kind 5 already removed by id',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+          final video = videoEvent(id: 'a' * 64);
+
+          onEvent(
+            deletionEvent([
+              ['e', video.id],
+            ]),
+          );
+          await pumpEventQueue();
+
+          // A relay that never saw the deletion redelivers the same event.
+          onEvent(video);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(video));
+        },
+      );
+
+      test(
+        'does not re-cache an edit of a coordinate a Kind 5 removed',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              [
+                'a',
+                '$addressableShortVideoKind:$testPublicKey:clip-1',
+              ],
+            ]),
+          );
+          await pumpEventQueue();
+
+          // An edit carries a new event id but the same pubkey:d-tag identity.
+          final edited = videoEvent(id: 'b' * 64);
+          onEvent(edited);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(edited));
+        },
+      );
+
+      test('still caches events that were never tombstoned', () async {
+        final onEvent = subscribeAndCaptureRelayCallback();
+
+        onEvent(
+          deletionEvent([
+            ['e', 'a' * 64],
+          ]),
+        );
+        await pumpEventQueue();
+
+        final other = videoEvent(
+          id: 'c' * 64,
+          tags: [
+            ['d', 'clip-2'],
+          ],
+        );
+        onEvent(other);
+
+        verify(() => mockNostrEventsDao.upsertEvent(other)).called(1);
+      });
+
+      test(
+        'ignores an `e` tag from someone other than the event author',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+          final video = videoEvent(id: 'a' * 64);
+
+          // NIP-09: a client MUST check the referenced event's pubkey against
+          // the deletion request's. Relays are not authoritative here, and
+          // inbound REQ filters are not enforced client-side, so any connected
+          // relay can land a forged deletion on an open subscription.
+          onEvent(
+            deletionEvent([
+              ['e', video.id],
+            ], pubkey: 'f' * 64),
+          );
+          await pumpEventQueue();
+
+          onEvent(video);
+
+          verify(() => mockNostrEventsDao.upsertEvent(video)).called(1);
+        },
+      );
+
+      test(
+        'caches a coordinate republished after the deletion request',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+
+          // NIP-09 scopes an `a` deletion to versions up to its own created_at,
+          // so a later version under the same coordinate is not covered.
+          final republished = videoEvent(id: 'e' * 64, createdAt: 5000);
+          onEvent(republished);
+
+          verify(() => mockNostrEventsDao.upsertEvent(republished)).called(1);
+        },
+      );
+
+      test(
+        'still skips a coordinate version older than the deletion request',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+
+          // Default created_at (1000) predates the deletion above (3000).
+          final older = videoEvent(id: 'f' * 64);
+          onEvent(older);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(older));
+        },
+      );
+
+      test(
+        'skips a coordinate version signed in the deletion second',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+
+          // "up to created_at" is inclusive, and _deleteCachedEventsForDeletion
+          // passes the same value as `until`, which the DAO maps to
+          // `created_at <= ?`. If this side were exclusive the auto-cache would
+          // write back the very row that purge just deleted.
+          final boundary = videoEvent(id: '1' * 64, createdAt: 3000);
+          onEvent(boundary);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(boundary));
+        },
+      );
+
+      test(
+        'keeps the newest bound when an older deletion arrives second',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          // NIP-09 has relays serve deletion requests indefinitely, so a
+          // cold-start flood can deliver an old Kind 5 after a newer one
+          // for the same coordinate.
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 1000),
+          );
+          await pumpEventQueue();
+
+          final covered = videoEvent(id: '2' * 64, createdAt: 2000);
+          onEvent(covered);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(covered));
+        },
+      );
+    });
+
     group('subscribe', () {
       test('creates subscription and returns stream', () {
         final filters = [

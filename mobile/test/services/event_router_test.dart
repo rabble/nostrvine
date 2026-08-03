@@ -314,6 +314,53 @@ void main() {
       },
     );
 
+    group('dropQueuedEvents', () {
+      test('removes matching pending writes across every priority', () async {
+        final visible = videoEvent(6001);
+        final normal = videoEvent(6002);
+        final background = videoEvent(6003);
+        final keeper = videoEvent(6004);
+
+        router
+          ..handleEvent(visible, priority: EventIngestionPriority.visible)
+          ..handleEvent(normal)
+          ..handleEvent(background, priority: EventIngestionPriority.background)
+          ..handleEvent(keeper, priority: EventIngestionPriority.background);
+
+        final dropped = router.dropQueuedEvents({
+          visible.id,
+          normal.id,
+          background.id,
+        });
+
+        expect(dropped, equals(3));
+        expect(router.queuedLength, equals(1));
+
+        await router.drainForTesting();
+
+        expect(await db.nostrEventsDao.getEventById(visible.id), isNull);
+        expect(await db.nostrEventsDao.getEventById(normal.id), isNull);
+        expect(await db.nostrEventsDao.getEventById(background.id), isNull);
+        expect(await db.nostrEventsDao.getEventById(keeper.id), isNotNull);
+      });
+
+      test('ignores ids that are not queued', () {
+        router.handleEvent(videoEvent(6010));
+
+        expect(router.dropQueuedEvents({videoEvent(6011).id}), equals(0));
+        expect(router.queuedLength, equals(1));
+      });
+
+      test('is a no-op after dispose', () {
+        final event = videoEvent(6020);
+        router
+          ..handleEvent(event)
+          ..dispose();
+
+        expect(router.dropQueuedEvents({event.id}), equals(0));
+      });
+    });
+
     group('maxQueueDepth', () {
       test('bounds the queue and drops events once the cap is exceeded', () {
         router.dispose();
