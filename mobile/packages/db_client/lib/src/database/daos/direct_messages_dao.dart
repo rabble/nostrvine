@@ -27,11 +27,13 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Uses `INSERT OR IGNORE` so that violations on either the primary key
   /// (`id`) **or** the UNIQUE index on `gift_wrap_id` are handled gracefully
-  /// without throwing. Callers already dedup via [hasGiftWrap] before calling
-  /// this method; the ignore mode is a safety net for race conditions.
+  /// without throwing. A `false` return means a local uniqueness constraint
+  /// skipped the row, and callers must avoid advancing receive-side state that
+  /// depends on a newly persisted message.
   ///
   /// NIP-17 rumor events are immutable — the same rumor ID always carries
-  /// the same content, so skipping duplicates never loses data.
+  /// the same content. The current message uniqueness constraints are global,
+  /// so callers still need owner-scoped checks where account isolation matters.
   ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
