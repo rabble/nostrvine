@@ -1230,6 +1230,60 @@ void main() {
       },
     );
 
+    testWidgets('never mints a second DM after recovery loses the row', (
+      tester,
+    ) async {
+      // Losing track of the parked row must not re-arm the fresh-send path.
+      // Submit stays live on the undelivered path, so an ambiguous
+      // ArgumentError followed by one more tap is a third dispatch — and
+      // that one has no row to re-drive. Minting a rumor there is the #6610
+      // duplicate wearing a different hat: two kind-1059 wraps, two reports
+      // to triage, and no correlator to collapse them receiver-side.
+      stubReportDeliveries([ReportDelivery.localOnly]);
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      when(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenThrow(
+        ArgumentError.value(
+          'parked_rumor_id',
+          'rumorId',
+          'no queued outgoing DM with this id',
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
+      // Coalescing spent the row, so the re-drive is not retried either.
+      verify(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: 'parked_rumor_id',
+          resetRetryBudget: true,
+        ),
+      ).called(1);
+    });
+
     testWidgets('keeps the delayed caveat when the re-drive also fails', (
       tester,
     ) async {

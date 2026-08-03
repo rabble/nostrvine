@@ -177,6 +177,26 @@ class ReportContentDialog extends ConsumerStatefulWidget {
       _ReportContentDialogState();
 }
 
+/// What this dialog has established about its moderation DM, across every
+/// submit it makes.
+///
+/// The DM is the report itself, so a second copy is a second report to
+/// triage (#6610). Only [pending] may dispatch; the other two are terminal.
+enum _ModerationDmOutcome {
+  /// Nothing sent yet, or a send failed and left a row to re-drive.
+  pending,
+
+  /// The team demonstrably has it: no send, no caveat.
+  delivered,
+
+  /// A parked row went unreachable. `recoverFullSend` raises `ArgumentError`
+  /// both when the row is gone (the sweep may have delivered it, or the user
+  /// deleted it) and when it belongs to another account, so delivery can be
+  /// neither confirmed nor retried — there is no row left to re-drive, and
+  /// minting a fresh one would be the #6610 duplicate. Keeps the caveat.
+  unverifiable,
+}
+
 class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   ContentFilterReason? _selectedReason;
   final TextEditingController _detailsController = TextEditingController();
@@ -197,12 +217,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// (#6610). Cleared once the row is consumed.
   String? _queuedModerationDmId;
 
-  /// Whether the moderation team has demonstrably received this report's DM.
+  /// What this dialog knows about the moderation DM so far.
   ///
   /// A resubmit deliberately re-publishes the kind-1984 and files a second
   /// ticket, but must not send a second identical DM to a team that already
-  /// has one.
-  bool _moderationDmDelivered = false;
+  /// has one — or mint a fresh one to replace a row it can no longer reach.
+  _ModerationDmOutcome _moderationDmOutcome = _ModerationDmOutcome.pending;
 
   /// The in-flight send, so a submit that lands while an earlier one is
   /// still awaiting a relay joins it instead of starting a second send
@@ -457,24 +477,31 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   /// Returns whether it failed to reach them, which drives the
   /// `reportModerationDmDelayed` caveat on the confirmation screen.
   ///
-  /// Three things can already be true when a submit reaches here, and each
+  /// Four things can already be true when a submit reaches here, and each
   /// has to coalesce rather than send again (#6610) — the DM is the report
   /// itself, so a second copy is a second report to triage:
   ///
   /// - the team already received it: nothing to do.
+  /// - a parked row went unreachable: nothing left to drive, and a fresh
+  ///   send would be that second copy. Keep the caveat and stop.
   /// - a send is still in flight: join it and report its outcome.
   /// - an earlier submit parked a queue row: re-drive that row, in
   ///   [_dispatchModerationDm].
-  Future<bool> _sendModerationDm() {
-    if (_moderationDmDelivered) return Future.value(false);
-    return _moderationDmInFlight ??= _dispatchModerationDm().whenComplete(
-      () => _moderationDmInFlight = null,
-    );
-  }
+  Future<bool> _sendModerationDm() => switch (_moderationDmOutcome) {
+    _ModerationDmOutcome.delivered => Future.value(false),
+    _ModerationDmOutcome.unverifiable => Future.value(true),
+    _ModerationDmOutcome.pending =>
+      _moderationDmInFlight ??= _dispatchModerationDm().whenComplete(
+        () => _moderationDmInFlight = null,
+      ),
+  };
 
   /// Drives one moderation-DM attempt: a fresh send, or a re-drive of the
   /// row a previous undelivered submit parked.
   ///
+  /// The whole body sits under the catch, preflight reads included: the
+  /// undelivered path fires this unawaited, so a `ref.read` on a disposed
+  /// dialog would otherwise land in the zone handler with nobody to catch it.
   Future<bool> _dispatchModerationDm() async {
     try {
       final dmRepo = ref.read(dmRepositoryProvider);
@@ -516,9 +543,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // gone (possibly delivered by the sweep, possibly deleted by the
           // user) and when the row belongs to another account. Coalescing still
           // must not mint a second report DM, but it also must not claim the
-          // team has this copy when the repository could not prove that.
+          // team has this copy when the repository could not prove that — so
+          // this dialog stops sending and keeps the caveat.
           _queuedModerationDmId = null;
-          _moderationDmDelivered = false;
+          _moderationDmOutcome = _ModerationDmOutcome.unverifiable;
           return true;
         }
       }
@@ -533,7 +561,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         // blocked, retryablePending, and hard failures alike.
         NIP17SendFailure() => true,
       };
-      _moderationDmDelivered = !failed;
+      _moderationDmOutcome = failed
+          ? _ModerationDmOutcome.pending
+          : _ModerationDmOutcome.delivered;
       _queuedModerationDmId = switch (dmResult) {
         // The row was consumed by the delivery.
         NIP17SendSuccess() => null,
