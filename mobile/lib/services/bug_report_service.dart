@@ -390,17 +390,19 @@ class BugReportService {
 
   Future<List<String>?> _resolveTargetRelays(String recipientPubkey) async {
     final resolver = _targetRelayResolver;
-    if (resolver == null) return null;
+    if (resolver == null) return BugReportConfig.supportDmTargetRelays;
     try {
       final relays = await resolver(recipientPubkey);
-      if (relays == null || relays.isEmpty) return null;
+      if (relays == null || relays.isEmpty) {
+        return BugReportConfig.supportDmTargetRelays;
+      }
       return relays;
     } catch (e) {
       Log.warning(
-        'Failed to resolve bug-report DM target relays; using default relay pool: $e',
+        'Failed to resolve bug-report DM target relays; using static support relay fallback: $e',
         category: LogCategory.system,
       );
-      return null;
+      return BugReportConfig.supportDmTargetRelays;
     }
   }
 

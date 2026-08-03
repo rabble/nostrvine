@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart'
     show BugReportData, LogCategory, LogEntry, LogLevel, NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
 class _MockNIP17MessageService extends Mock implements NIP17MessageService {}
@@ -279,7 +280,7 @@ void main() {
     });
 
     test(
-      'falls back to default pool when DM inbox relay resolution is absent',
+      'uses static support relay fallback when DM inbox relay resolution is absent',
       () async {
         final serviceWithoutResolvedRelays = BugReportService(
           nip17MessageService: mockNip17,
@@ -315,12 +316,50 @@ void main() {
           () => mockNip17.sendPrivateMessage(
             recipientPubkey: 'test-pubkey',
             content: any(named: 'content'),
+            targetRelays: BugReportConfig.supportDmTargetRelays,
             awaitRecipientOk: true,
             selfWrapOnSoftUnconfirmed: false,
             additionalTags: any(named: 'additionalTags'),
           ),
         ).called(1);
-        expect(capturedTargetRelays, isNull);
+        expect(capturedTargetRelays, BugReportConfig.supportDmTargetRelays);
+      },
+    );
+
+    test(
+      'uses static support relay fallback when relay resolution throws',
+      () async {
+        final serviceWithFailingResolver = BugReportService(
+          nip17MessageService: mockNip17,
+          targetRelayResolver: (_) async => throw StateError('no relays'),
+        );
+
+        List<String>? capturedTargetRelays;
+        when(
+          () => mockNip17.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTargetRelays =
+              invocation.namedArguments[#targetRelays] as List<String>?;
+          return NIP17SendResult.success(
+            rumorEventId: 'rumor-fallback-target',
+            messageEventId: 'event-fallback-target',
+            recipientPubkey: 'test-pubkey',
+          );
+        });
+
+        await serviceWithFailingResolver.sendBugReportToRecipient(
+          testData,
+          'test-pubkey',
+        );
+
+        expect(capturedTargetRelays, BugReportConfig.supportDmTargetRelays);
       },
     );
   });

@@ -501,7 +501,7 @@ void main() {
       });
 
       // Scheme validation before bare-host upgrade (#3362 review follow-up).
-      // Without this gate, `_normalizeUrl` would string-prefix `wss://` onto
+      // Without this gate, `normalizeRelayUrl` would string-prefix `wss://` onto
       // any input not already starting with `wss://`/`ws://`, turning
       // `http://attacker.example.com` into `wss://http://attacker.example.com`
       // (host=`http`, path=`//attacker…` — the wrong target).
@@ -584,7 +584,7 @@ void main() {
 
       test('case-folds uppercase scheme to canonical lowercase', () async {
         // Discovery accepts `WSS://relay.example.com` because Dart's Uri
-        // canonicalises the scheme to lowercase. `_normalizeUrl` must do
+        // canonicalises the scheme to lowercase. `normalizeRelayUrl` must do
         // the same so the URL is stored in canonical form and string-based
         // dedup / persistence checks compare equal across casings.
         final result = await manager.addRelay('WSS://relay.example.com');

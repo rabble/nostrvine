@@ -378,7 +378,7 @@ void main() {
       'shows malformed-URL message for https:// input (relays are WS-only)',
       (tester) async {
         // Reviewer ask on PR #3806: form previously accepted https:// /
-        // http://, but `RelayManager._normalizeUrl` only accepts wss:// /
+        // http://, but `normalizeRelayUrl` only accepts wss:// /
         // loopback ws://, so they fell through to a generic "failed to add"
         // message. Surface the structurally-bad-input bucket instead.
         final nostrService = _MockNostrService();

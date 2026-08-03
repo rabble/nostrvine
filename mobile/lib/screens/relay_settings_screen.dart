@@ -708,6 +708,7 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
   final outcome = await cubit.addRelay(relayUrl);
   switch (outcome) {
     case AddRelayOutcome.added:
+    case AddRelayOutcome.addedConnectionPending:
       messenger.showSnackBar(
         DivineSnackbarContainer.snackBar(
           l10n.relaySettingsAddedRelay(relayUrl),

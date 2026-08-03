@@ -14,6 +14,12 @@ class BugReportConfig {
   /// Email address for receiving bug reports (fallback only)
   static const String supportEmail = 'contact@divine.video';
 
+  /// Static fallback DM target for support bug reports when the support
+  /// account's advertised NIP-17 inbox relays cannot be resolved.
+  static const List<String> supportDmTargetRelays = [
+    'wss://relay.divine.video',
+  ];
+
   /// Maximum log entries to include in bug report
   static const int maxLogEntries = 5000;
 

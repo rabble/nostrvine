@@ -45,8 +45,8 @@ void main() {
     });
 
     test('rejects https:// (relays are WebSocket-only)', () {
-      // NIP-65 only ever advertises WS endpoints, and `RelayManager.
-      // _normalizeUrl` only accepts WS — so an https:// URL is not a
+      // NIP-65 only ever advertises WS endpoints, and `normalizeRelayUrl`
+      // only accepts WS — so an https:// URL is not a
       // usable relay regardless of host. The capability service derives
       // its NIP-11 fetch URL from the WS form internally.
       expect(isRelayUrlAllowed('https://relay.divine.video'), isFalse);
@@ -117,6 +117,36 @@ void main() {
       expect(isRelayUrlAllowed('ws://10.0.2.2:1'), isTrue);
       expect(isRelayUrlAllowed('ws://[::1]:1'), isTrue);
       expect(isRelayUrlAllowed('ws://example.com'), isFalse);
+    });
+  });
+
+  group('normalizeRelayUrlForComparison', () {
+    test('matches relay manager identity normalization', () {
+      expect(
+        normalizeRelayUrlForComparison('  relay.example.com/path/  '),
+        'wss://relay.example.com/path',
+      );
+      expect(
+        normalizeRelayUrlForComparison('WSS://relay.example.com/'),
+        'wss://relay.example.com',
+      );
+      expect(
+        normalizeRelayUrlForComparison('ws://localhost:47777/'),
+        'ws://localhost:47777',
+      );
+    });
+
+    test('rejects URLs the relay manager rejects', () {
+      expect(normalizeRelayUrlForComparison(''), isNull);
+      expect(
+        normalizeRelayUrlForComparison('https://relay.example.com'),
+        isNull,
+      );
+      expect(normalizeRelayUrlForComparison('ws://relay.example.com'), isNull);
+      expect(
+        normalizeRelayUrlForComparison('wss://http://attacker.example.com'),
+        isNull,
+      );
     });
   });
 

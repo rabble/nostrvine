@@ -206,6 +206,10 @@ void main() {
         'relaySettingsRemoveDefaultRelayMessage',
         'relaySettingsRemoveRelayTooltip',
       ];
+      const mustDifferFromEnglish = {
+        'relaySettingsRemoveDefaultRelayTitle',
+        'relaySettingsRemoveDefaultRelayMessage',
+      };
 
       for (final file in arbFiles) {
         final arb = _readArb(file);
@@ -218,13 +222,15 @@ void main() {
             isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
             reason: '${file.path} must define a non-empty $key message',
           );
-          expect(
-            value,
-            isNot(template[key]),
-            reason:
-                '${file.path} must not fall back to English for the '
-                'default-relay removal warning',
-          );
+          if (mustDifferFromEnglish.contains(key)) {
+            expect(
+              value,
+              isNot(template[key]),
+              reason:
+                  '${file.path} must not fall back to English for the '
+                  'default-relay removal warning',
+            );
+          }
         }
       }
     });

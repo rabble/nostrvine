@@ -195,7 +195,27 @@ void main() {
         final outcome = await cubit.addRelay('wss://noop.example');
         expect(outcome, AddRelayOutcome.failed);
       },
-      expect: () => const <RelaySettingsState>[],
+      expect: () => [const RelaySettingsState()],
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'addRelay refreshes when relay is saved but connection is pending',
+      setUp: () {
+        when(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://pending.example']);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        final outcome = await cubit.addRelay('wss://pending.example');
+        expect(outcome, AddRelayOutcome.addedConnectionPending);
+      },
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://pending.example']),
+      ],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(

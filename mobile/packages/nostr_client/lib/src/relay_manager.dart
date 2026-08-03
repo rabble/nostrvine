@@ -12,6 +12,43 @@ import 'package:nostr_client/src/models/relay_remove_source.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
 
+/// Normalizes a relay URL into the canonical form used by [RelayManager].
+///
+/// Accepts explicit `ws://` / `wss://` relay URLs and bare
+/// host[:port][/path] values, which are upgraded to `wss://`. Returns `null`
+/// for unsupported schemes, malformed URLs, empty hosts, or cleartext
+/// non-loopback relays.
+String? normalizeRelayUrl(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return null;
+
+  // Validate any explicit scheme BEFORE the bare-host upgrade. Without this
+  // gate, `http://attacker.example.com` would slip past the prefix check below
+  // and be string-prefixed into `wss://http://attacker.example.com` (a URL
+  // whose authority parses as host=`http`, path=`//attacker...` - routed to
+  // the wrong host rather than rejected).
+  String normalized;
+  final initial = Uri.tryParse(trimmed);
+  if (initial != null && initial.hasAuthority) {
+    final scheme = initial.scheme.toLowerCase();
+    if (scheme != 'wss' && scheme != 'ws') return null;
+    if (initial.path.startsWith('//')) return null;
+    normalized = initial.toString();
+  } else {
+    if (trimmed.contains('://')) return null;
+    normalized = 'wss://$trimmed';
+  }
+
+  if (normalized.endsWith('/')) {
+    normalized = normalized.substring(0, normalized.length - 1);
+  }
+
+  final uri = Uri.tryParse(normalized);
+  if (uri == null || uri.host.isEmpty) return null;
+  if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
+  return normalized;
+}
+
 /// {@template relay_manager}
 /// Manages relay configuration and connection status.
 ///
@@ -61,7 +98,7 @@ class RelayManager {
   /// source of truth for the rule — callers that bypass [addRelay] (e.g.
   /// one-off `tempRelays` in `NostrClient`) consult it directly.
   bool isRelayAllowed(String url) {
-    final normalized = _normalizeUrl(url);
+    final normalized = normalizeRelayUrl(url);
     if (normalized == null) return false;
     final allowedHost = _config.allowedRelayHost;
     if (allowedHost == null) return true;
@@ -164,7 +201,7 @@ class RelayManager {
       var blockedCount = 0;
       var droppedCount = 0;
       for (final url in savedRelays) {
-        final normalized = _normalizeUrl(url);
+        final normalized = normalizeRelayUrl(url);
         if (normalized == null) {
           // URL is malformed or now disallowed by the loopback gate
           // (#3362). Drop it from the in-memory list and re-save below so
@@ -206,7 +243,7 @@ class RelayManager {
     }
 
     // Add the environment default unless the user explicitly removed it.
-    final normalizedDefault = _normalizeUrl(_config.defaultRelayUrl);
+    final normalizedDefault = normalizeRelayUrl(_config.defaultRelayUrl);
     if (normalizedDefault != null &&
         isRelayAllowed(normalizedDefault) &&
         !_userRemovedRelays.contains(normalizedDefault) &&
@@ -248,7 +285,7 @@ class RelayManager {
   }) async {
     await _ensureUserRemovedRelaysLoaded();
 
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
 
     if (normalizedUrl == null) {
       _log('Invalid relay URL: $url');
@@ -324,7 +361,7 @@ class RelayManager {
   }) async {
     await _ensureUserRemovedRelaysLoaded();
 
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
 
     if (normalizedUrl == null) {
       _log('Invalid relay URL: $url');
@@ -358,13 +395,13 @@ class RelayManager {
 
   /// Check if a relay URL is configured
   bool isRelayConfigured(String url) {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     return normalizedUrl != null && _configuredRelays.contains(normalizedUrl);
   }
 
   /// Check if a relay is currently connected
   bool isRelayConnected(String url) {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     if (normalizedUrl == null) return false;
 
     final status = _relayStatuses[normalizedUrl];
@@ -373,7 +410,7 @@ class RelayManager {
 
   /// Get the status of a specific relay
   RelayConnectionStatus? getRelayStatus(String url) {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     if (normalizedUrl == null) return null;
     return _relayStatuses[normalizedUrl];
   }
@@ -503,7 +540,7 @@ class RelayManager {
 
   /// Reconnect to a specific relay
   Future<bool> reconnectRelay(String url) async {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     if (normalizedUrl == null || !_configuredRelays.contains(normalizedUrl)) {
       return false;
     }
@@ -737,7 +774,7 @@ class RelayManager {
     final savedRemovedRelays = await storage.loadRemovedRelays();
     final normalizedRelays = <String>{};
     for (final url in savedRemovedRelays) {
-      final normalized = _normalizeUrl(url);
+      final normalized = normalizeRelayUrl(url);
       if (normalized != null && isRelayAllowed(normalized)) {
         normalizedRelays.add(normalized);
       }
@@ -762,52 +799,6 @@ class RelayManager {
     if (_userRemovedRelays.remove(normalizedUrl)) {
       await _saveUserRemovedRelays();
     }
-  }
-
-  String? _normalizeUrl(String url) {
-    final trimmed = url.trim();
-    if (trimmed.isEmpty) return null;
-
-    // Validate any explicit scheme BEFORE the bare-host upgrade. Without this
-    // gate, `http://attacker.example.com` would slip past the prefix check
-    // below and be string-prefixed into `wss://http://attacker.example.com`
-    // (a URL whose authority parses as host=`http`, path=`//attacker…` —
-    // routed to the wrong host rather than rejected). Schemes are
-    // case-insensitive per RFC 3986 §3.1; Dart's Uri canonicalises them to
-    // lowercase, so `WSS://X` round-trips through `toString()` as `wss://X`.
-    String normalized;
-    final initial = Uri.tryParse(trimmed);
-    if (initial != null && initial.hasAuthority) {
-      final scheme = initial.scheme.toLowerCase();
-      if (scheme != 'wss' && scheme != 'ws') return null;
-      // `wss://http://x` parses with host=`http` and path=`//x`. Reject so
-      // an attacker can't smuggle a cleartext URL past us by pre-wrapping
-      // it inside a `wss://` prefix.
-      if (initial.path.startsWith('//')) return null;
-      normalized = initial.toString();
-    } else {
-      // No parsable authority → bare host[:port][/path]; upgrade to wss://.
-      // Reject inputs that contain `://` anywhere we couldn't parse, so we
-      // never silently rewrite something that looked scheme-shaped.
-      if (trimmed.contains('://')) return null;
-      normalized = 'wss://$trimmed';
-    }
-
-    // Remove trailing slash
-    if (normalized.endsWith('/')) {
-      normalized = normalized.substring(0, normalized.length - 1);
-    }
-
-    // Re-parse to apply host validation and the loopback gate. Only wss/ws
-    // can reach this point per the scheme check above; the second
-    // `tryParse` also catches inputs whose bare-host upgrade produced an
-    // unparseable authority (e.g. `wss:relay.example.com` →
-    // `wss://wss:relay.example.com`, where `relay.example.com` is not a
-    // valid port).
-    final uri = Uri.tryParse(normalized);
-    if (uri == null || uri.host.isEmpty) return null;
-    if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
-    return normalized;
   }
 
   void _log(String message) {

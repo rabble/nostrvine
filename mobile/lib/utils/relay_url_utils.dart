@@ -1,6 +1,7 @@
 // ABOUTME: Helpers for resolving API base URLs from Nostr relay WebSocket URLs.
 // ABOUTME: Keeps REST endpoints aligned with active relay configuration.
 
+import 'package:nostr_client/nostr_client.dart' as nostr_client;
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 
 const _divineRelayHost = 'relay.divine.video';
@@ -65,7 +66,7 @@ bool usesUserChosenRelay(
 /// and `ws://` is accepted only for a recognized loopback host. Any other
 /// scheme (`https://`, `http://`, `ftp://`, …), a malformed URL, or a missing
 /// host is rejected. This matches the acceptance rule enforced by
-/// `RelayManager._normalizeUrl` in `nostr_client`, so the predicate doubles
+/// `normalizeRelayUrl` in `nostr_client`, so the predicate doubles
 /// as the upstream "is this URL a usable relay endpoint" check.
 ///
 /// This predicate is the single source of truth for the application-layer
@@ -87,35 +88,10 @@ bool isRelayUrlAllowed(String url) {
 
 /// Normalizes a relay URL for identity comparison in UI state.
 ///
-/// Mirrors the connection-layer normalization closely enough for Settings:
-/// explicit `ws` / `wss` URLs are lowercased by Dart's URI parser, bare
-/// host[:port][/path] inputs are treated as `wss://`, and a single trailing
-/// slash is ignored.
-String? normalizeRelayUrlForComparison(String url) {
-  final trimmed = url.trim();
-  if (trimmed.isEmpty) return null;
-
-  String normalized;
-  final initial = Uri.tryParse(trimmed);
-  if (initial != null && initial.hasAuthority) {
-    final scheme = initial.scheme.toLowerCase();
-    if (scheme != 'wss' && scheme != 'ws') return null;
-    if (initial.path.startsWith('//')) return null;
-    normalized = initial.toString();
-  } else {
-    if (trimmed.contains('://')) return null;
-    normalized = 'wss://$trimmed';
-  }
-
-  if (normalized.endsWith('/')) {
-    normalized = normalized.substring(0, normalized.length - 1);
-  }
-
-  final uri = Uri.tryParse(normalized);
-  if (uri == null || uri.host.isEmpty) return null;
-  if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
-  return normalized;
-}
+/// Delegates to the connection-layer normalizer so Settings identity checks
+/// cannot drift from persisted relay identity.
+String? normalizeRelayUrlForComparison(String url) =>
+    nostr_client.normalizeRelayUrl(url);
 
 /// True when [a] and [b] identify the same relay endpoint.
 bool relayUrlsEquivalent(String a, String b) {
