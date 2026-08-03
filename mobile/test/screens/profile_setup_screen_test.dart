@@ -616,6 +616,28 @@ void main() {
 
       expect(copied, testNpub);
     });
+
+    testWidgets('announces the copy button by its action', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      final announced = tester.getSemantics(
+        find.descendant(
+          of: find.byType(PublicKeyRow),
+          matching: find.byType(DivineIconButton),
+        ),
+      );
+      // Naming the field leaves a screen reader user with "Public key (npub)"
+      // twice and no hint that the button copies; naming the confirmation
+      // claims the copy already happened.
+      expect(announced.label, contains(l10n.profileCopyPublicKey));
+      expect(announced.label, isNot(contains(l10n.profilePublicKeyCopied)));
+      expect(find.byTooltip(l10n.profileCopyPublicKey), findsOneWidget);
+
+      handle.dispose();
+    });
   });
 
   group(ProfileSetupScreen, () {
@@ -844,6 +866,91 @@ void main() {
         await tester.pump();
 
         expect(find.text('Relay Name'), findsOneWidget);
+      });
+
+      testWidgets('seeds a NIP-05 the cached snapshot did not carry', (
+        tester,
+      ) async {
+        // The cache can predate a NIP-05 set on another device. Keying the
+        // one-shot on the first snapshot rather than on the value left the
+        // editor in divine mode with no external address to preserve.
+        final controller = StreamController<MyProfileState>();
+        addTearDown(controller.close);
+        whenListen(
+          mockMyProfileBloc,
+          controller.stream,
+          initialState: const MyProfileInitial(),
+        );
+
+        await pumpScreen(tester);
+        controller.add(MyProfileLoading(profile: cachedProfile()));
+        await tester.pump();
+
+        controller.add(
+          MyProfileLoaded(
+            profile: cachedProfile(eventId: freshEventId),
+            isFresh: true,
+            extractedUsername: 'alice',
+            externalNip05: 'alice@example.com',
+          ),
+        );
+        await tester.pump();
+
+        final captured = verify(
+          () => mockEditorBloc.add(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<InitialUsernameSet>().single.username,
+          'alice',
+        );
+        expect(
+          captured.whereType<InitialExternalNip05Set>().single.nip05,
+          'alice@example.com',
+        );
+        expect(
+          captured.whereType<Nip05ModeChanged>().where(
+            (e) => e.mode == Nip05Mode.external_,
+          ),
+          hasLength(1),
+        );
+      });
+
+      testWidgets('seeds the NIP-05 once, not on every snapshot', (
+        tester,
+      ) async {
+        final controller = StreamController<MyProfileState>();
+        addTearDown(controller.close);
+        whenListen(
+          mockMyProfileBloc,
+          controller.stream,
+          initialState: const MyProfileInitial(),
+        );
+
+        await pumpScreen(tester);
+        controller.add(
+          MyProfileLoading(
+            profile: cachedProfile(),
+            extractedUsername: 'alice',
+            externalNip05: 'alice@example.com',
+          ),
+        );
+        await tester.pump();
+
+        controller.add(
+          MyProfileLoaded(
+            profile: cachedProfile(eventId: freshEventId),
+            isFresh: true,
+            extractedUsername: 'alice',
+            externalNip05: 'alice@example.com',
+          ),
+        );
+        await tester.pump();
+
+        final captured = verify(
+          () => mockEditorBloc.add(captureAny()),
+        ).captured;
+        expect(captured.whereType<InitialUsernameSet>(), hasLength(1));
+        expect(captured.whereType<InitialExternalNip05Set>(), hasLength(1));
       });
     });
 
@@ -1162,6 +1269,53 @@ void main() {
         final staged = captured.whereType<ProfileBannerUrlSet>();
         expect(staged, hasLength(1));
         expect(staged.single.url, 'https://cdn.example.com/banner.jpg');
+      });
+
+      testWidgets('the link sheet opens on the persisted banner image', (
+        tester,
+      ) async {
+        // Opening empty makes editing an existing banner a retype.
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: 'https://cdn.example.com/banner.jpg',
+          ),
+        );
+
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileSetupImagePasteLink));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('https://cdn.example.com/banner.jpg'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('the link sheet opens empty on a persisted colour', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: '0x33ccbf',
+            pendingBannerColor: Color(0xFF33CCBF),
+          ),
+        );
+
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byTooltip(l10n.profileSetupEditBannerLabel));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileSetupImagePasteLink));
+        await tester.pumpAndSettle();
+
+        expect(find.text('0x33ccbf'), findsNothing);
       });
 
       testWidgets('clearing hides a persisted banner from the preview', (

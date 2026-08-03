@@ -31,8 +31,10 @@ class PublicKeyRow extends ConsumerWidget {
         size: DivineIconButtonSize.small,
         backgroundColor: VineTheme.transparent,
         foregroundColor: VineTheme.primary,
-        tooltip: context.l10n.profilePublicKeyCopied,
-        semanticLabel: context.l10n.profileSetupPublicKeyLabel,
+        // Names the action, not the field — `profilePublicKeyCopied` is the
+        // confirmation this button earns, not what it promises beforehand.
+        tooltip: context.l10n.profileCopyPublicKey,
+        semanticLabel: context.l10n.profileCopyPublicKey,
         onPressed: () => _copy(context, npub),
       ),
     );

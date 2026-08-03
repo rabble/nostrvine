@@ -86,6 +86,9 @@ class ProfileSelectRow extends StatelessWidget {
     return _FormCard(
       onTap: onTap,
       semanticLabel: semanticLabel ?? label,
+      // Announced after the label, so the row reads as "Banner color, Lime"
+      // rather than dropping the selection the sighted user can see.
+      semanticValue: selection,
       isEnabled: isEnabled,
       child: Row(
         spacing: 8,
@@ -175,12 +178,18 @@ class _FormCard extends StatelessWidget {
     required this.child,
     this.onTap,
     this.semanticLabel,
+    this.semanticValue,
     this.isEnabled = true,
   });
 
   final Widget child;
   final VoidCallback? onTap;
   final String? semanticLabel;
+
+  /// The current selection, announced after [semanticLabel]. The card excludes
+  /// its own subtree from semantics, so anything not named here is silent.
+  final String? semanticValue;
+
   final bool isEnabled;
 
   @override
@@ -207,6 +216,7 @@ class _FormCard extends StatelessWidget {
       button: true,
       enabled: isEnabled,
       label: semanticLabel,
+      value: semanticValue,
       child: ExcludeSemantics(child: card),
     );
   }

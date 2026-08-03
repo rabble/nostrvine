@@ -117,8 +117,22 @@ Future<void> showBannerUrlSheet(
 ) async {
   final url = await showImageUrlSheet(
     context,
-    initialUrl: editorBloc.state.pendingBannerUrl ?? '',
+    initialUrl: _bannerImageUrl(editorBloc.state),
   );
   if (url == null) return;
   editorBloc.add(ProfileBannerUrlSet(url));
+}
+
+/// The banner image URL the sheet should open on.
+///
+/// Falls back to the persisted banner the way the header preview does, so a
+/// user who already has a banner image edits it rather than retyping it. A
+/// persisted colour is not a URL, and a cleared banner is one the user has
+/// already asked to drop.
+String _bannerImageUrl(ProfileEditorState state) {
+  final staged = state.pendingBannerUrl;
+  if (staged != null && staged.isNotEmpty) return staged;
+  final persisted = state.persistedBanner;
+  if (state.bannerCleared || persisted == null) return '';
+  return persisted.startsWith('http') ? persisted : '';
 }

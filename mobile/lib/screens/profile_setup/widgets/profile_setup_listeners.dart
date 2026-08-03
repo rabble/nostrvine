@@ -57,9 +57,17 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
   String? _seededWebsite;
   String? _seededUsername;
 
-  /// Whether a profile has reached the form yet. The one-shot seeds — mode,
-  /// initial username, external NIP-05 — only run on the first one.
+  /// Whether a profile has reached the form yet.
   bool _hasSeeded = false;
+
+  /// Whether each NIP-05 one-shot has run.
+  ///
+  /// Tracked apart from [_hasSeeded], and keyed on the value rather than on
+  /// the first snapshot: the cached profile that fills the form can predate a
+  /// NIP-05 the relay's fresher copy carries — set on another device, say — and
+  /// gating these on the first snapshot left the editor never learning it.
+  bool _hasSeededUsername = false;
+  bool _hasSeededExternalNip05 = false;
 
   /// The profile carried by [state], whichever shape it arrived in.
   static UserProfile? _profileOf(MyProfileState state) => switch (state) {
@@ -135,32 +143,35 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
         )
         ..add(InitialPersistedPictureSet(profile.picture))
         ..add(InitialPersistedBannerSet(profile.banner));
-      if (extractedUsername != null) {
-        editorBloc.add(InitialUsernameSet(extractedUsername));
+    } else {
+      // A fresher picture or banner may replace the seeded one, but only while
+      // the user has staged nothing of their own — InitialPersistedBannerSet
+      // also rewrites the pending colour, which would undo a swatch they just
+      // picked.
+      final editorState = editorBloc.state;
+      if (editorState.pendingPictureUrl == null &&
+          !editorState.pictureCleared) {
+        editorBloc.add(InitialPersistedPictureSet(profile.picture));
       }
-      if (externalNip05 != null) {
-        // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
-        // Seed editor state here so Save from Edit Profile preserves it.
-        editorBloc
-          ..add(InitialExternalNip05Set(externalNip05))
-          ..add(const Nip05ModeChanged(Nip05Mode.external_))
-          ..add(ExternalNip05Changed(externalNip05));
+      if (editorState.pendingBannerUrl == null &&
+          editorState.pendingBannerColor == null &&
+          !editorState.bannerCleared) {
+        editorBloc.add(InitialPersistedBannerSet(profile.banner));
       }
-      return;
     }
 
-    // A fresher picture or banner may replace the seeded one, but only while
-    // the user has staged nothing of their own — InitialPersistedBannerSet
-    // also rewrites the pending colour, which would undo a swatch they just
-    // picked.
-    final editorState = editorBloc.state;
-    if (editorState.pendingPictureUrl == null && !editorState.pictureCleared) {
-      editorBloc.add(InitialPersistedPictureSet(profile.picture));
+    if (!_hasSeededUsername && extractedUsername != null) {
+      _hasSeededUsername = true;
+      editorBloc.add(InitialUsernameSet(extractedUsername));
     }
-    if (editorState.pendingBannerUrl == null &&
-        editorState.pendingBannerColor == null &&
-        !editorState.bannerCleared) {
-      editorBloc.add(InitialPersistedBannerSet(profile.banner));
+    if (!_hasSeededExternalNip05 && externalNip05 != null) {
+      _hasSeededExternalNip05 = true;
+      // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
+      // Seed editor state here so Save from Edit Profile preserves it.
+      editorBloc
+        ..add(InitialExternalNip05Set(externalNip05))
+        ..add(const Nip05ModeChanged(Nip05Mode.external_))
+        ..add(ExternalNip05Changed(externalNip05));
     }
   }
 
