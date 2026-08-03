@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -235,6 +236,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(recovered, isTrue);
+  });
+
+  // The statuses are sticky, so a listener that matched the cache branch
+  // first would keep re-announcing "Cache cleared" for every later outcome.
+  testWidgets('announces the repair outcome after the cache was cleared', (
+    tester,
+  ) async {
+    final announcements = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+      SystemChannels.accessibility,
+      (message) async {
+        if (message is Map) {
+          final data = message['data'] as Map<Object?, Object?>?;
+          final text = data?['message'];
+          if (text is String) announcements.add(text);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            null,
+          ),
+    );
+    when(service.clearCaches).thenAnswer((_) async {});
+
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async => true,
+      measureRecoveryFootprint: () async => 0,
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.settingsStorageClearButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.settingsStorageClearConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(announcements, [l10n.settingsStorageCleared]);
+
+    await openRepairSheet(tester);
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(announcements.last, l10n.settingsStorageRepairSuccess);
   });
 
   testWidgets('a failed repair says so on the screen', (tester) async {

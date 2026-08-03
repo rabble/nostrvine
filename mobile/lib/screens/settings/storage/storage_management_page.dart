@@ -58,12 +58,27 @@ class StorageManagementView extends StatelessWidget {
         onBackPressed: context.pop,
       ),
       backgroundColor: context.vineColors.background,
-      body: BlocListener<StorageCubit, StorageState>(
-        listenWhen: (prev, curr) =>
-            prev.cacheStatus != curr.cacheStatus ||
-            prev.libraryStatus != curr.libraryStatus ||
-            prev.recoveryStatus != curr.recoveryStatus,
-        listener: _announceOutcomes,
+      body: MultiBlocListener(
+        // One listener per operation. Statuses are sticky — `cacheStatus`
+        // stays `cleared` for the rest of the visit — so a single
+        // first-match-wins listener would keep re-announcing the first
+        // outcome and never reach the later ones.
+        listeners: [
+          BlocListener<StorageCubit, StorageState>(
+            listenWhen: (prev, curr) => prev.cacheStatus != curr.cacheStatus,
+            listener: _announceCache,
+          ),
+          BlocListener<StorageCubit, StorageState>(
+            listenWhen: (prev, curr) =>
+                prev.libraryStatus != curr.libraryStatus,
+            listener: _announceLibrary,
+          ),
+          BlocListener<StorageCubit, StorageState>(
+            listenWhen: (prev, curr) =>
+                prev.recoveryStatus != curr.recoveryStatus,
+            listener: _announceRepair,
+          ),
+        ],
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
@@ -93,21 +108,34 @@ class StorageManagementView extends StatelessWidget {
     );
   }
 
-  void _announceOutcomes(BuildContext context, StorageState state) {
+  void _announceCache(BuildContext context, StorageState state) {
     final l10n = context.l10n;
-    String? message;
-    if (state.cacheStatus == StorageCacheStatus.cleared) {
-      message = l10n.settingsStorageCleared;
-    } else if (state.libraryStatus == StorageLibraryStatus.cleaned) {
-      message = l10n.settingsStorageBrokenClipsRemoved;
-    } else if (state.recoveryStatus == StorageRecoveryStatus.recovered) {
-      message = l10n.settingsStorageRepairSuccess;
-    } else if (state.recoveryStatus == StorageRecoveryStatus.failure) {
-      message = l10n.settingsStorageRepairFailure;
-    } else if (state.cacheStatus == StorageCacheStatus.failure ||
-        state.libraryStatus == StorageLibraryStatus.failure) {
-      message = l10n.settingsStorageError;
-    }
+    _announce(context, switch (state.cacheStatus) {
+      StorageCacheStatus.cleared => l10n.settingsStorageCleared,
+      StorageCacheStatus.failure => l10n.settingsStorageError,
+      _ => null,
+    });
+  }
+
+  void _announceLibrary(BuildContext context, StorageState state) {
+    final l10n = context.l10n;
+    _announce(context, switch (state.libraryStatus) {
+      StorageLibraryStatus.cleaned => l10n.settingsStorageBrokenClipsRemoved,
+      StorageLibraryStatus.failure => l10n.settingsStorageError,
+      _ => null,
+    });
+  }
+
+  void _announceRepair(BuildContext context, StorageState state) {
+    final l10n = context.l10n;
+    _announce(context, switch (state.recoveryStatus) {
+      StorageRecoveryStatus.recovered => l10n.settingsStorageRepairSuccess,
+      StorageRecoveryStatus.failure => l10n.settingsStorageRepairFailure,
+      _ => null,
+    });
+  }
+
+  void _announce(BuildContext context, String? message) {
     if (message == null) return;
     SemanticsService.sendAnnouncement(
       View.of(context),
