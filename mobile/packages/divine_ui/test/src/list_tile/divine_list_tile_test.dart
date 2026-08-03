@@ -116,6 +116,23 @@ void main() {
       expect(trailing.size, 20);
     });
 
+    testWidgets('drops the trailing affordance when asked to', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: DivineListTile(
+              title: 'Take photo',
+              trailingIcon: null,
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.widget<ListTile>(find.byType(ListTile)).trailing, isNull);
+    });
+
     testWidgets('reports taps', (tester) async {
       var tapped = false;
       await tester.pumpWidget(buildSubject(onTap: () => tapped = true));

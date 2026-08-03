@@ -415,8 +415,30 @@ void main() {
         final decoration = decorationOf(tester);
         final expected = UnderlineInputBorder(
           borderRadius: BorderRadius.circular(
-            DivineTextField.fillBorderRadius,
+            DivineTextField.defaultFillBorderRadius,
           ),
+          borderSide: BorderSide.none,
+        );
+        expect(decoration.border, expected);
+        expect(decoration.enabledBorder, expected);
+        expect(decoration.focusedBorder, expected);
+      });
+
+      testWidgets('rounds the fill to a caller-supplied radius', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(
+              body: DivineTextField(filled: true, fillBorderRadius: 24),
+            ),
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        final expected = UnderlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
           borderSide: BorderSide.none,
         );
         expect(decoration.border, expected);
@@ -511,6 +533,50 @@ void main() {
 
         expect(find.text('Required'), findsOneWidget);
         expect(find.text('Brief summary of the issue'), findsOneWidget);
+      });
+    });
+
+    group('affixes', () {
+      InputDecoration decorationOf(WidgetTester tester) =>
+          tester.widget<TextField>(find.byType(TextField)).decoration!;
+
+      testWidgets('pins muted text around the input', (tester) async {
+        late Color muted;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  muted = context.vineColors.onSurfaceMuted;
+                  return const DivineTextField(
+                    prefixText: '@',
+                    suffixText: '.divine.video',
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.prefixText, '@');
+        expect(decoration.suffixText, '.divine.video');
+        expect(decoration.prefixStyle?.color, muted);
+        expect(decoration.suffixStyle?.color, muted);
+      });
+
+      testWidgets('leaves both slots empty when omitted', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(body: DivineTextField()),
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.prefixText, isNull);
+        expect(decoration.suffixText, isNull);
       });
     });
   });

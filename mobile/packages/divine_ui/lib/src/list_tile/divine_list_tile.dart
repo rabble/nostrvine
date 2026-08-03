@@ -63,8 +63,10 @@ class DivineListTile extends StatelessWidget {
   final Color? titleColor;
 
   /// Trailing affordance. Defaults to the forward caret; rows that leave the
-  /// app pass [DivineIconName.arrowUpRight].
-  final DivineIconName trailingIcon;
+  /// app pass [DivineIconName.arrowUpRight]. Pass `null` for rows that act in
+  /// place rather than navigate — the picker sheets, where a caret would
+  /// promise a screen that never opens.
+  final DivineIconName? trailingIcon;
 
   /// Size of the trailing affordance.
   final double trailingIconSize;
@@ -100,11 +102,13 @@ class DivineListTile extends StatelessWidget {
               subtitle!,
               style: VineTheme.bodySmallFont(color: colors.onSurfaceVariant),
             ),
-      trailing: DivineIcon(
-        icon: trailingIcon,
-        color: trailingColor,
-        size: trailingIconSize,
-      ),
+      trailing: trailingIcon == null
+          ? null
+          : DivineIcon(
+              icon: trailingIcon!,
+              color: trailingColor,
+              size: trailingIconSize,
+            ),
       onTap: onTap,
     );
   }
