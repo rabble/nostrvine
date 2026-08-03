@@ -28,7 +28,6 @@ lib/widgets/environment_indicator.dart	2
 lib/widgets/global_error_widget.dart	4
 lib/widgets/profile/profile_header_media.dart	2
 lib/widgets/profile/profile_videos_grid.dart	1
-lib/widgets/support_dialog_utils.dart	5
 lib/widgets/user_avatar.dart	14
 lib/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_eraser.dart	1
 lib/widgets/video_editor/main_editor/video_editor_canvas.dart	1

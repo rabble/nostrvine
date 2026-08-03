@@ -143,11 +143,8 @@ void main() {
         expect(source, isNot(contains("label: 'Subject *'")));
         expect(source, isNot(contains("helper: 'Required'")));
       }
-      expect(bugReportSource, contains('context.l10n.supportReportBug'));
-      expect(
-        featureRequestSource,
-        contains('context.l10n.supportRequestFeature'),
-      );
+      expect(bugReportSource, contains('l10n.supportReportBug'));
+      expect(featureRequestSource, contains('l10n.supportRequestFeature'));
 
       expect(
         profileSetupSource,

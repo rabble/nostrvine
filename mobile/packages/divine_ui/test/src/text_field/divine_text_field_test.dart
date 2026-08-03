@@ -489,5 +489,29 @@ void main() {
         expect(decoration.suffixIcon, isNull);
       });
     });
+
+    group('hint and helper', () {
+      testWidgets('shows the helper text and the hint once the label floats', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(
+              body: DivineTextField(
+                labelText: 'Subject *',
+                hintText: 'Brief summary of the issue',
+                helperText: 'Required',
+                autofocus: true,
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Required'), findsOneWidget);
+        expect(find.text('Brief summary of the issue'), findsOneWidget);
+      });
+    });
   });
 }

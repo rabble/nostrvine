@@ -62,7 +62,7 @@ class SupportCenterScreen extends ConsumerWidget {
                 icon: DivineIconName.sparkle,
                 title: l10n.supportRequestFeature,
                 subtitle: l10n.supportRequestFeatureSubtitle,
-                onTap: () => _showFeatureRequest(context, userPubkey),
+                onTap: () => _showFeatureRequest(context),
               ),
               _SupportTile(
                 icon: DivineIconName.save,
@@ -129,21 +129,11 @@ class SupportCenterScreen extends ConsumerWidget {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => BugReportDialog(
-        bugReportService: bugReportService,
-        currentScreen: 'SupportCenterScreen',
-        userPubkey: userPubkey,
-      ),
-    );
+    context.push(BugReportScreen.path);
   }
 
-  void _showFeatureRequest(BuildContext context, String? userPubkey) {
-    showDialog(
-      context: context,
-      builder: (context) => FeatureRequestDialog(userPubkey: userPubkey),
-    );
+  void _showFeatureRequest(BuildContext context) {
+    context.push(FeatureRequestScreen.path);
   }
 
   Future<void> _exportLogs(

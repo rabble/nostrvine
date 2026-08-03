@@ -224,9 +224,7 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
     return null;
   }
 
-  final reviewStatusAsync = ref.read(
-    currentMinorAccountReviewStatusProvider,
-  );
+  final reviewStatusAsync = ref.read(currentMinorAccountReviewStatusProvider);
   final reviewStatus = reviewStatusAsync.value;
   final moderationConversationId = _moderationConversationId(
     authService,
@@ -243,7 +241,10 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
   final isPublicUnder13Route = location == MinorAccountReviewUnder13Screen.path;
   final isUnder13SupportRoute =
       location == MinorAccountReviewUnder13SupportScreen.path;
-  final isSupportRoute = location == SupportCenterScreen.path;
+  final isSupportRoute =
+      location == SupportCenterScreen.path ||
+      location == BugReportScreen.path ||
+      location == FeatureRequestScreen.path;
   final isModerationConversationRoute =
       moderationConversationId != null &&
       location == ConversationPage.pathForId(moderationConversationId);

@@ -1,4 +1,4 @@
-// ABOUTME: Cubit backing BugReportDialog — diagnostics + Zendesk submission.
+// ABOUTME: Cubit backing the bug report flow — diagnostics + Zendesk submission.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,14 +30,14 @@ typedef SubmitBugReportAction =
 /// Builds the logs summary string the cubit passes to Zendesk.
 typedef BuildLogsSummary = String? Function(List<LogEntry> logs);
 
-/// Cubit backing `BugReportDialog`. Owns the submission lifecycle plus
+/// Cubit backing the bug report flow. Owns the submission lifecycle plus
 /// the `BugReportFailureKey` that distinguishes attachment-upload
 /// failures from generic Zendesk failures — preserves the pre-migration
 /// "show the upload-failed message specifically" UX without state
 /// holding error strings.
 ///
 /// The four `TextEditingController`s + the picked attachments list stay
-/// in the View (hybrid pattern). The View hands the values into
+/// in the route's form state. The View hands the values into
 /// `submit(...)` and the Cubit drives diagnostics + Zendesk.
 class BugReportCubit extends Cubit<BugReportState> {
   BugReportCubit({
@@ -68,10 +68,7 @@ class BugReportCubit extends Cubit<BugReportState> {
     if (trimmedSubject.isEmpty || trimmedDescription.isEmpty) return;
 
     emit(
-      state.copyWith(
-        status: BugReportStatus.submitting,
-        clearFailureKey: true,
-      ),
+      state.copyWith(status: BugReportStatus.submitting, clearFailureKey: true),
     );
     try {
       final reportData = await _bugReportService.collectDiagnostics(

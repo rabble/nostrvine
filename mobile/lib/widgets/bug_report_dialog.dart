@@ -1,8 +1,6 @@
-// ABOUTME: Dialog widget for submitting bug reports to Zendesk
+// ABOUTME: Full-screen flow for submitting bug reports to Zendesk
 // ABOUTME: Collects structured data (subject, description, steps, expected behavior)
 // ABOUTME: Submits directly to Zendesk REST API with custom fields
-
-import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +12,10 @@ import 'package:openvine/blocs/bug_report/bug_report_state.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
-import 'package:openvine/widgets/support_dialog_utils.dart';
+import 'package:openvine/widgets/support_form_actions.dart';
+import 'package:openvine/widgets/support_form_fields.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Build a log summary prioritizing errors/warnings with recent context.
@@ -65,77 +65,200 @@ String? buildLogsSummary(List<LogEntry> logs) {
   return result.isEmpty ? null : result;
 }
 
-/// Dialog for collecting and submitting bug reports.
-///
-/// `BlocProvider` wraps the inner [_BugReportForm] so the form's
-/// `TextEditingController`s and attachment list (the hybrid pattern) stay
-/// in the View while the submission lifecycle + Zendesk integration lives
-/// in [BugReportCubit].
-class BugReportDialog extends StatelessWidget {
-  const BugReportDialog({
+/// Route for collecting and submitting bug reports.
+class BugReportScreen extends StatefulWidget {
+  const BugReportScreen({
     required this.bugReportService,
     super.key,
     this.currentScreen,
     this.userPubkey,
+    this.submitBugReport,
   });
+
+  static const routeName = 'support-report-bug';
+  static const path = '/support-center/report-bug';
 
   final BugReportService bugReportService;
   final String? currentScreen;
   final String? userPubkey;
+  final SubmitBugReportAction? submitBugReport;
+
+  @override
+  State<BugReportScreen> createState() => _BugReportScreenState();
+}
+
+class _BugReportScreenState extends State<BugReportScreen> {
+  final _fields = BugReportFields();
+
+  @override
+  void dispose() {
+    _fields.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => BugReportCubit(
-        bugReportService: bugReportService,
+        bugReportService: widget.bugReportService,
         buildLogsSummary: buildLogsSummary,
+        submitBugReport:
+            widget.submitBugReport ??
+            ZendeskSupportService.createStructuredBugReport,
       ),
-      child: _BugReportForm(
-        currentScreen: currentScreen,
-        userPubkey: userPubkey,
+      child: _BugReportView(
+        fields: _fields,
+        currentScreen: widget.currentScreen,
+        userPubkey: widget.userPubkey,
       ),
     );
   }
 }
 
-class _BugReportForm extends StatefulWidget {
-  const _BugReportForm({this.currentScreen, this.userPubkey});
+/// Form state for the bug report flow.
+@visibleForTesting
+class BugReportFields extends SupportFormFields {
+  final steps = TextEditingController();
+  final expected = TextEditingController();
 
+  /// Plain field rather than a notifier: only `submit` reads it, and it reads
+  /// it once, at the moment the button is tapped.
+  List<XFile> attachments = const [];
+
+  @override
+  void dispose() {
+    steps.dispose();
+    expected.dispose();
+    super.dispose();
+  }
+}
+
+class _BugReportView extends StatelessWidget {
+  const _BugReportView({
+    required this.fields,
+    this.currentScreen,
+    this.userPubkey,
+  });
+
+  final BugReportFields fields;
   final String? currentScreen;
   final String? userPubkey;
 
   @override
-  State<_BugReportForm> createState() => _BugReportFormState();
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final isSubmitting = context.select(
+      (BugReportCubit cubit) =>
+          cubit.state.status == BugReportStatus.submitting,
+    );
+
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: l10n.supportReportBug,
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: context.vineColors.background,
+      body: Column(
+        children: [
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 16,
+                    children: [
+                      DivineTextField(
+                        controller: fields.subject,
+                        labelText: l10n.supportSubjectRequiredLabel,
+                        hintText: l10n.bugReportSubjectHint,
+                        helperText: l10n.supportRequiredHelper,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) =>
+                            fields.descriptionFocus.requestFocus(),
+                      ),
+                      DivineTextField(
+                        controller: fields.description,
+                        focusNode: fields.descriptionFocus,
+                        labelText: l10n.bugReportDescriptionRequiredLabel,
+                        hintText: l10n.bugReportDescriptionHint,
+                        helperText: l10n.supportRequiredHelper,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        minLines: 3,
+                        maxLines: 5,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                      DivineTextField(
+                        controller: fields.steps,
+                        labelText: l10n.bugReportStepsLabel,
+                        hintText: l10n.bugReportStepsHint,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        minLines: 3,
+                        maxLines: 5,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                      DivineTextField(
+                        controller: fields.expected,
+                        labelText: l10n.bugReportExpectedBehaviorLabel,
+                        hintText: l10n.bugReportExpectedBehaviorHint,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        minLines: 2,
+                        maxLines: 4,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                      ImageAttachmentPicker(
+                        enabled: !isSubmitting,
+                        onChanged: (files) => fields.attachments = files,
+                      ),
+                      Text(
+                        l10n.bugReportDiagnosticsNotice,
+                        style: VineTheme.bodySmallFont(
+                          color: context.vineColors.mutedText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: 2, color: VineTheme.outlineDisabled),
+          SafeArea(
+            top: false,
+            child: BugReportActions(
+              fields: fields,
+              currentScreen: currentScreen,
+              userPubkey: userPubkey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _BugReportFormState extends State<_BugReportForm> {
-  final _subjectController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _stepsController = TextEditingController();
-  final _expectedController = TextEditingController();
-  Timer? _closeTimer;
-  List<XFile> _attachments = [];
+/// Pinned footer of the bug report flow: failure banner plus actions.
+@visibleForTesting
+class BugReportActions extends StatelessWidget {
+  const BugReportActions({
+    required this.fields,
+    this.currentScreen,
+    this.userPubkey,
+    super.key,
+  });
 
-  @override
-  void dispose() {
-    _closeTimer?.cancel();
-    _subjectController.dispose();
-    _descriptionController.dispose();
-    _stepsController.dispose();
-    _expectedController.dispose();
-    super.dispose();
-  }
-
-  bool get _canSubmit =>
-      _subjectController.text.trim().isNotEmpty &&
-      _descriptionController.text.trim().isNotEmpty;
-
-  void _scheduleAutoClose(BuildContext context) {
-    _closeTimer = Timer(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      context.pop();
-    });
-  }
+  final BugReportFields fields;
+  final String? currentScreen;
+  final String? userPubkey;
 
   String _failureMessage(BugReportFailureKey? key, BuildContext context) {
     return switch (key) {
@@ -145,177 +268,35 @@ class _BugReportFormState extends State<_BugReportForm> {
     };
   }
 
+  void _submit(BuildContext context, BugReportFields fields) {
+    context.read<BugReportCubit>().submit(
+      subject: fields.subject.text,
+      description: fields.description.text,
+      stepsToReproduce: fields.steps.text,
+      expectedBehavior: fields.expected.text,
+      attachments: fields.attachments,
+      currentScreen: currentScreen,
+      userPubkey: userPubkey,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<BugReportCubit, BugReportState>(
       listenWhen: (prev, curr) =>
           prev.status != curr.status && curr.status == BugReportStatus.success,
-      listener: (context, _) => _scheduleAutoClose(context),
-      builder: (context, state) {
-        final isSubmitting = state.status == BugReportStatus.submitting;
-        final isSuccess = state.status == BugReportStatus.success;
-        final isFailure = state.status == BugReportStatus.failure;
-        return AlertDialog(
-          backgroundColor: context.vineColors.card,
-          title: Text(
-            context.l10n.supportReportBug,
-            style: TextStyle(color: context.vineColors.primaryText),
-          ),
-          content: SizedBox(
-            width: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _subjectController,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.supportSubjectRequiredLabel,
-                      hint: context.l10n.bugReportSubjectHint,
-                      helper: context.l10n.supportRequiredHelper,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.bugReportDescriptionRequiredLabel,
-                      hint: context.l10n.bugReportDescriptionHint,
-                      helper: context.l10n.supportRequiredHelper,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _stepsController,
-                    maxLines: 3,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.bugReportStepsLabel,
-                      hint: context.l10n.bugReportStepsHint,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _expectedController,
-                    maxLines: 2,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.bugReportExpectedBehaviorLabel,
-                      hint: context.l10n.bugReportExpectedBehaviorHint,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  ImageAttachmentPicker(
-                    enabled: !isSubmitting,
-                    onChanged: (files) => setState(() => _attachments = files),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.bugReportDiagnosticsNotice,
-                    style: VineTheme.bodySmallFont(
-                      color: context.vineColors.mutedText,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (isSubmitting)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
-                        ),
-                      ),
-                    ),
-                  if (isSuccess)
-                    _ResultBanner(
-                      message: context.l10n.bugReportSuccessMessage,
-                      isSuccess: true,
-                    ),
-                  if (isFailure)
-                    _ResultBanner(
-                      message: _failureMessage(state.failureKey, context),
-                      isSuccess: false,
-                    ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            if (!isSuccess)
-              TextButton(
-                onPressed: isSubmitting ? null : context.pop,
-                child: Text(
-                  context.l10n.commonCancel,
-                  style: TextStyle(color: context.vineColors.mutedText),
-                ),
-              ),
-            ElevatedButton(
-              onPressed: isSuccess
-                  ? context.pop
-                  : (_canSubmit && !isSubmitting
-                        ? () => context.read<BugReportCubit>().submit(
-                            subject: _subjectController.text,
-                            description: _descriptionController.text,
-                            stepsToReproduce: _stepsController.text,
-                            expectedBehavior: _expectedController.text,
-                            attachments: _attachments,
-                            currentScreen: widget.currentScreen,
-                            userPubkey: widget.userPubkey,
-                          )
-                        : null),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.whiteText,
-              ),
-              child: Text(
-                isSuccess
-                    ? context.l10n.commonClose
-                    : context.l10n.bugReportSendReport,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _ResultBanner extends StatelessWidget {
-  const _ResultBanner({required this.message, required this.isSuccess});
-
-  final String message;
-  final bool isSuccess;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isSuccess
-            ? VineTheme.vineGreen.withValues(alpha: 0.2)
-            : VineTheme.error.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isSuccess ? VineTheme.vineGreen : VineTheme.error,
-        ),
+      listener: (context, _) => closeSupportFlowWithConfirmation(
+        context,
+        message: context.l10n.bugReportSuccessMessage,
       ),
-      child: Text(
-        message,
-        style: TextStyle(
-          color: isSuccess ? VineTheme.vineGreen : VineTheme.error,
-        ),
+      builder: (context, state) => SupportFormActions(
+        fields: fields,
+        sendLabel: context.l10n.bugReportSendReport,
+        isSubmitting: state.status == BugReportStatus.submitting,
+        failureMessage: state.status == BugReportStatus.failure
+            ? _failureMessage(state.failureKey, context)
+            : null,
+        onSubmit: () => _submit(context, fields),
       ),
     );
   }

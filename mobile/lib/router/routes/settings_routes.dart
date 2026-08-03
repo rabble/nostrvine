@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -30,6 +31,8 @@ import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/storage/storage_management_page.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/settings/supporter_screen.dart';
+import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/widgets/feature_request_dialog.dart';
 
 List<RouteBase> settingsRoutes(Ref ref) {
   return [
@@ -52,6 +55,22 @@ List<RouteBase> settingsRoutes(Ref ref) {
       path: SupportCenterScreen.path,
       name: SupportCenterScreen.routeName,
       builder: (_, _) => const SupportCenterScreen(),
+    ),
+    GoRoute(
+      path: BugReportScreen.path,
+      name: BugReportScreen.routeName,
+      builder: (_, _) => BugReportScreen(
+        bugReportService: ref.read(bugReportServiceProvider),
+        currentScreen: 'SupportCenterScreen',
+        userPubkey: ref.read(authServiceProvider).currentPublicKeyHex,
+      ),
+    ),
+    GoRoute(
+      path: FeatureRequestScreen.path,
+      name: FeatureRequestScreen.routeName,
+      builder: (_, _) => FeatureRequestScreen(
+        userPubkey: ref.read(authServiceProvider).currentPublicKeyHex,
+      ),
     ),
     GoRoute(
       path: LegalScreen.path,

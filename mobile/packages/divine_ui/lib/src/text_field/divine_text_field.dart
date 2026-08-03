@@ -8,6 +8,8 @@ class DivineTextField extends StatelessWidget {
   const DivineTextField({
     super.key,
     this.labelText,
+    this.hintText,
+    this.helperText,
     this.minLines,
     this.maxLines,
     this.maxLength,
@@ -60,6 +62,16 @@ class DivineTextField extends StatelessWidget {
 
   /// Label text shown inside the field when empty, floats above when focused.
   final String? labelText;
+
+  /// Example input shown once the label has floated out of the way.
+  ///
+  /// Material only reveals the hint after the label floats (on focus or
+  /// content), so use it for an example rather than for the field's name —
+  /// that belongs in [labelText].
+  final String? hintText;
+
+  /// Persistent note rendered below the field, e.g. "Required".
+  final String? helperText;
 
   /// Minimum number of lines to display.
   final int? minLines;
@@ -200,9 +212,17 @@ class DivineTextField extends StatelessWidget {
       onEditingComplete: onEditingComplete,
       decoration: InputDecoration(
         labelText: labelText,
+        hintText: hintText,
+        helperText: helperText,
         suffixIcon: suffixIcon,
         labelStyle: VineTheme.bodyLargeFont(
           color: context.vineColors.onSurfaceVariant,
+        ),
+        hintStyle: VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
+        helperStyle: VineTheme.labelSmallFont(
+          color: context.vineColors.onSurfaceMuted,
         ),
         // The fill takes its shape from the border's outer path, and every
         // state needs it — InputBorder.none paints a plain rectangle, so a
