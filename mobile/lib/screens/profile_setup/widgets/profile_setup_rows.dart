@@ -217,6 +217,10 @@ class _FormCard extends StatelessWidget {
       enabled: isEnabled,
       label: semanticLabel,
       value: semanticValue,
+      // Carried here because [ExcludeSemantics] drops the ink well's own tap
+      // action — without it the node announces a button that activating does
+      // nothing to.
+      onTap: onTap,
       child: ExcludeSemantics(child: card),
     );
   }

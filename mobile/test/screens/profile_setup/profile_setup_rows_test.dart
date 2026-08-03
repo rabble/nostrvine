@@ -5,6 +5,7 @@ import 'dart:ui' show Tristate;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
@@ -102,6 +103,27 @@ void main() {
       await tester.pump();
 
       expect(taps, 1);
+    });
+
+    testWidgets('a screen reader can activate the row', (tester) async {
+      final handle = tester.ensureSemantics();
+      var taps = 0;
+      await pump(
+        tester,
+        ProfileSelectRow(label: 'Banner color', onTap: () => taps++),
+      );
+
+      // The card excludes its own subtree, which drops the ink well's tap
+      // action — so the announcing node has to carry one itself or the row is
+      // a button VoiceOver/TalkBack cannot press.
+      final node = tester.getSemantics(find.byType(ProfileSelectRow));
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+
+      tester.semantics.tap(find.semantics.byLabel('Banner color'));
+      await tester.pump();
+
+      expect(taps, 1);
+      handle.dispose();
     });
   });
 
