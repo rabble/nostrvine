@@ -424,6 +424,81 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'stays on the fast path for a sub-page window whose IDs are all '
+        'consumed',
+        setUp: () async {
+          // 6 addressable IDs consumed, only 5 resolved to a video. The
+          // window is under a page with nothing left to top it up with, so
+          // revalidation must not re-enter reconcile. See
+          // ProfileLikedVideosBloc's sibling test for the loop this pins.
+          final ids = List.generate(
+            6,
+            (i) => createAddressableId(currentUserPubkey, 'd$i'),
+          );
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_reposted_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: [
+                for (var i = 0; i < 6; i++)
+                  if (i != 3)
+                    createTestVideo(
+                      id: 'e$i',
+                      pubkey: currentUserPubkey,
+                      vineId: 'd$i',
+                    ),
+              ],
+              itemIds: ids,
+              nextPageOffset: 6,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: ids,
+              addressableIdToRepostId: const {},
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((invocation) async {
+            final requested = invocation.positionalArguments[0] as List<String>;
+            return [
+              for (final id in requested)
+                if (id.split(':').last != 'd3')
+                  createTestVideo(
+                    id: 'e${id.split(':').last.substring(1)}',
+                    pubkey: currentUserPubkey,
+                    vineId: id.split(':').last,
+                  ),
+            ];
+          });
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.videos.length, 'cached videos', 5)
+              .having((s) => s.isRefreshing, 'isRefreshing', true),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.videos.length, 'unchanged videos', 5)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 6)
+              .having((s) => s.isRefreshing, 'isRefreshing', false),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'reopen restores the full scrolled-through list from cache',
         setUp: () async {
           final ids = List.generate(
