@@ -205,6 +205,13 @@ void main() {
     testWidgets('dismisses the sheet when the form is dragged down', (
       tester,
     ) async {
+      // Force the form to overflow the sheet regardless of font warm-up, so
+      // the inner scroll view always has extent to consume the drag.
+      tester.view.physicalSize = const Size(400, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await _showSheet(tester);
 
       await tester.drag(
