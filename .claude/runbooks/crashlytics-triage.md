@@ -90,9 +90,11 @@ Follow the repo's AGENTS.md / .claude rules exactly. Summary:
    fail, then fix. Never truncate Nostr IDs anywhere. No `Future.delayed()` timing
    hacks. No error strings in BLoC state.
 3. Verify from `mobile/`: `dart format` on changed files,
-   `flutter analyze lib test integration_test`, scoped tests, plus any package-specific
-   coverage gates the change touches (100% coverage is required on covered packages).
-   Regenerate build_runner outputs if you touched generated-code inputs.
+   `flutter analyze lib test integration_test`, scoped tests, plus the `min_coverage`
+   gate of any package the change touches — read it from that package's own workflow
+   under `.github/workflows/`, do not assume a repo-wide number (see
+   `.claude/rules/testing.md`). Regenerate build_runner outputs if you touched
+   generated-code inputs.
 4. Rebase onto fresh `origin/main`, push with `--force-with-lease` only, open a PR
    targeting `main` (never stacked) with a Conventional Commit title, e.g.
    `fix(feed): guard null controller in video overlay dispose`.
