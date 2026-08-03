@@ -40,12 +40,17 @@ class _BufferingSink implements WebSocketSink {
 }
 
 class _FakeWebSocketChannel implements WebSocketChannel {
-  _FakeWebSocketChannel({this.failReady = false});
+  _FakeWebSocketChannel({this.failReady = false, this.readyDelay});
 
   /// When true, `ready` rejects — the shape of a relay that is configured but
   /// currently unreachable, which is what `RelayBase.connect()` reports as a
   /// failed connect.
   final bool failReady;
+
+  /// How long the handshake takes. While it is outstanding the relay is not
+  /// yet connected, so it is not a *counted* target — but `send` still waits
+  /// it out and writes, so it can still answer.
+  final Duration? readyDelay;
 
   final _BufferingSink _sink = _BufferingSink();
   final StreamController<dynamic> _streamController =
@@ -67,9 +72,11 @@ class _FakeWebSocketChannel implements WebSocketChannel {
   String? get protocol => null;
 
   @override
-  Future<void> get ready => failReady
-      ? Future<void>.error(StateError('unreachable'))
-      : Future.value();
+  Future<void> get ready {
+    if (failReady) return Future<void>.error(StateError('unreachable'));
+    final delay = readyDelay;
+    return delay == null ? Future.value() : Future<void>.delayed(delay);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
@@ -82,14 +89,18 @@ class _FakeWebSocketChannel implements WebSocketChannel {
 }
 
 class _FakeChannelFactory implements WebSocketChannelFactory {
-  _FakeChannelFactory({this.failReady = false});
+  _FakeChannelFactory({this.failReady = false, this.readyDelay});
 
   final bool failReady;
+  final Duration? readyDelay;
   final List<_FakeWebSocketChannel> createdChannels = [];
 
   @override
   WebSocketChannel create(Uri uri) {
-    final channel = _FakeWebSocketChannel(failReady: failReady);
+    final channel = _FakeWebSocketChannel(
+      failReady: failReady,
+      readyDelay: readyDelay,
+    );
     createdChannels.add(channel);
     return channel;
   }
@@ -221,5 +232,89 @@ void main() {
       expect(outcome.rejectedBy.keys, isNot(contains(downUrl)));
       expect(outcome.noResponseFrom, isNot(contains(downUrl)));
     });
+  });
+
+  group('RelayPool publish targets while relays are still connecting', () {
+    const fastUrl = 'wss://relay.fast.example';
+    const slowUrl = 'wss://relay.slow.example';
+    const eventId = 'still-connecting-event-id';
+
+    test(
+      'counts an OK from a relay whose handshake was still in flight',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(
+          signer,
+          [],
+          (url) => RelayBase(url, RelayStatus(url)),
+        );
+        await nostr.refreshPublicKey();
+
+        // Both relays are healthy; both handshakes are simply still in flight
+        // when the publish starts — the ordinary shape right after launch or a
+        // connectivity flap, where `relayStatus.connected` has not caught up
+        // with the socket yet. The fast one lands and answers while the
+        // sequential fan-out is still waiting on the slow one, so its OK
+        // arrives before the fan-out reports which relays it wrote to.
+        final fastFactory = _FakeChannelFactory(
+          readyDelay: const Duration(milliseconds: 30),
+        );
+        unawaited(
+          nostr.relayPool.add(
+            RelayBase(
+              fastUrl,
+              RelayStatus(fastUrl),
+              channelFactory: fastFactory,
+            ),
+          ),
+        );
+        unawaited(
+          nostr.relayPool.add(
+            RelayBase(
+              slowUrl,
+              RelayStatus(slowUrl),
+              channelFactory: _FakeChannelFactory(
+                readyDelay: const Duration(milliseconds: 800),
+              ),
+            ),
+          ),
+        );
+
+        Timer.periodic(const Duration(milliseconds: 5), (timer) {
+          if (fastFactory.createdChannels.isEmpty) return;
+          final channel = fastFactory.createdChannels.single;
+          final sawEvent = channel.sentMessages.any((m) {
+            final frame = jsonDecode(m as String) as List<dynamic>;
+            return frame.first == 'EVENT';
+          });
+          if (!sawEvent) return;
+          timer.cancel();
+          channel.simulateMessage(jsonEncode(['OK', eventId, true, '']));
+        });
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          eventKind: 5,
+          timeout: const Duration(seconds: 3),
+        );
+
+        expect(
+          outcome.acceptedBy,
+          contains(fastUrl),
+          reason:
+              'the relay answered OK true, so it must be allowed to speak for '
+              'the publish however unconnected it looked when targets were '
+              'resolved — discarding the answer turns a confirmed publish into '
+              'a failed one',
+        );
+        expect(outcome.failed, isFalse);
+      },
+    );
   });
 }
