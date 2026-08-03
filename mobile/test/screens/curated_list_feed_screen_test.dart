@@ -279,6 +279,35 @@ void main() {
       expect(find.text(l10n.listDeleteAction), findsOneWidget);
     });
 
+    testWidgets('owned public list without an author hides share', (
+      tester,
+    ) async {
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+      when(
+        () => mockService.isSubscribedToList('owned-list'),
+      ).thenReturn(false);
+      when(() => mockService.getListById('owned-list')).thenReturn(
+        CuratedList(
+          id: 'owned-list',
+          name: 'Puppets',
+          videoEventIds: const [],
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(listId: 'owned-list', listName: 'Puppets'),
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.listShareAction), findsNothing);
+      expect(find.text(l10n.listEditAction), findsOneWidget);
+      expect(find.text(l10n.listDeleteAction), findsOneWidget);
+    });
+
     testWidgets('delete confirms then calls service and pops', (tester) async {
       when(() => mockService.isSubscribedToList('owned-list')).thenReturn(true);
       when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
