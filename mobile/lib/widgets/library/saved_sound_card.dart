@@ -47,7 +47,7 @@ class SavedSoundCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Material(
-          color: Colors.transparent,
+          type: MaterialType.transparency,
           borderRadius: BorderRadius.circular(16),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
