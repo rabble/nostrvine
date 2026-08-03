@@ -227,9 +227,7 @@ class BadgeRepository {
     List<String> cappedRecipients(Nip58BadgeAward award) => award
         .recipientPubkeys
         .take(recipientCheckLimit)
-        .toList(
-          growable: false,
-        );
+        .toList(growable: false);
 
     final definitionsFuture = _definitionsByCoordinate(memo, [
       for (final award in awards) award.definitionCoordinate,
@@ -481,9 +479,9 @@ class BadgeRepository {
         );
         if (byCreatedAt != 0) return byCreatedAt;
 
-        final rightIsCurrent = right.isLegacyProfileBadges ? 0 : 1;
-        final leftIsCurrent = left.isLegacyProfileBadges ? 0 : 1;
-        final byKind = rightIsCurrent.compareTo(leftIsCurrent);
+        final byKind = (right.isLegacyProfileBadges ? 0 : 1).compareTo(
+          left.isLegacyProfileBadges ? 0 : 1,
+        );
         if (byKind != 0) return byKind;
 
         return left.event.id.compareTo(right.event.id);

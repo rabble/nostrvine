@@ -358,8 +358,8 @@ class EventKind {
   static const int ZAP_REQUEST = 9734;
   static const int ZAP = 9735;
   static const int RELAY_LIST_METADATA = 10002;
-  static const int PROFILE_BADGES = 10008;
   static const int BOOKMARKS_LIST = 10003;
+  static const int PROFILE_BADGES = 10008;
   static const int GROUP_LIST = 10009;
   static const int EMOJIS_LIST = 10030;
   static const int NWC_INFO_EVENT = 13194;
