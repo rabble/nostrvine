@@ -1452,27 +1452,27 @@ class AppLocalizationsRo extends AppLocalizations {
       'De acum înainte ascundem postările de genul ăsta.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Ajută la clasificarea asta';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'Lipsește o atenționare de conținut? Sugestia ta e publică, semnată și nu poate fi retrasă.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'Sugerează';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => 'Mulțumim. Sugestia ta a fost trimisă.';
 
   @override
   String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+      'Nu am putut trimite sugestia ta. Încearcă din nou.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Ai sugerat asta';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'Clasifică';
 
   @override
   String get videoErrorNotFound => 'Videoclipul n-a fost găsit';
@@ -3135,28 +3135,28 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'Sau introdu codul de 6 cifre din email';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => 'Cod de 6 cifre';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'Verifică codul';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Nu l-ai primit?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Retrimite';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'Retrimite în $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'Nu am putut retrimite emailul. Încearcă din nou.';
 
   @override
   String get authWelcomeToDivine => 'Bun venit pe Divine!';
@@ -3456,23 +3456,23 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Codul nu se potrivește. Verifică-l din nou și încearcă iar.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Codul a expirat. Apasă Retrimite pentru a primi unul nou.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'Prea multe încercări. Apasă Retrimite pentru a primi un cod nou.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'Nu am putut verifica codul. Încearcă din nou.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Introducerea codului nu e disponibilă acum. Apasă linkul din email sau retrimite pentru a primi unul nou.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3551,78 +3551,78 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareSheetMoreActions => 'Mai multe acțiuni';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'Crosspostează';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'Crosspostează acest videoclip';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Trimite-l pe platformele tale conectate. Postarea poate dura câteva minute.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'Crosspostează';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'În coadă';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Se încarcă';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'Se procesează';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Postat';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Eșuat';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Omis';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Necesită reconectare';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Vezi postarea';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'Reconectează $platform în setările de crosspost ca să continui să postezi.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'Reconectează';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'Doar propriile videoclipuri pot fi crosspostate.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'Acest videoclip nu e eligibil pentru crosspost.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'Platforma asta nu e conectată.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'Reconectează-ți contul, apoi încearcă din nou.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Nu am putut contacta serviciul de crosspost. Încearcă din nou într-o clipă.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Crosspostarea a eșuat.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Încă lucrăm. Poți închide fereastra asta — postarea continuă în fundal.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Gata';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Salvat în galerie';
@@ -7146,34 +7146,35 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Ai schimbat contul, așa că nimic nu a fost șters. Redeschide ștergerea pentru contul pe care vrei să-l elimini.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Nu am putut elibera numele tău de utilizator. Contul tău nu a fost șters. Încearcă din nou sau debifează opțiunea.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'Numele tău de utilizator $username a fost eliberat definitiv, dar nu am putut finaliza ștergerea contului. Apasă Șterge din nou pentru a finaliza.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'Renunță definitiv și la $username';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'Pentru a confirma, scrie:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'Pentru a confirma, scrie numele tău de utilizator:';
 
   @override
   String get deleteAccountConfirmationHint => 'Scrie DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername =>
+      'Scrie numele tău de utilizator';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -7184,7 +7185,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'Nu am putut finaliza ștergerea contului tău. Încearcă din nou.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Confirmare finală';
@@ -10861,154 +10862,155 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ai încredere în releele Divine, verifică restul.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Crosspostare';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Partajează-ți videoclipurile pe alte platforme';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Conectează-te cu Divine ca să gestionezi crosspostarea';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Nu am putut încărca setările tale de crosspostare';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Momentan nu e disponibilă nicio platformă de crosspostare';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Reîncearcă';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Neconectat';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Conectat';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Necesită reconectare';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Conectează';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Reconectează';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Deconectează';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Dezactivat';
 
   @override
   String get crosspostingModeManual => 'Manual';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle =>
+      'Alegi tu pentru fiecare videoclip';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Automat';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Videoclipurile viitoare se publică singure — doar cele publicate după ce activezi asta';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Conectează întâi platforma asta ca să schimbi felul în care postează.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Ceva n-a mers. Mai încearcă.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Pagina de conectare nu ne-a mai răspuns. Dacă ai terminat acolo, reîmprospătează — s-ar putea ca deja contul tău să fie conectat.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform conectat';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Nu am putut conecta $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Conexiunea a fost anulată pe $platform';
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Susținătorii Divine';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'Susține Divine cu un abonament lunar opțional.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Ține Divine pe picioare';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine e gratuit și așa va rămâne. Dacă vrei să ne ajuți să menținem buclele în mișcare, devino susținător lunar. Nimic nu e blocat — pur și simplu ține luminile aprinse și îți câștigă mulțumirile noastre.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Ești Susținător Divine. Mulțumim că ții asta în mișcare.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'Cumpărătura ta așteaptă aprobare.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Se confirmă sprijinul tău…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'Se verifică magazinul…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Abonamentele de susținător nu sunt disponibile aici momentan.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'Restaurează cumpărăturile';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'Închide eroarea';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'Magazinul nu e disponibil pe acest dispozitiv.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'Cumpărătura nu s-a finalizat. Nu ți s-a perceput nicio sumă.';
 
   @override
   String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+      'Cumpărătura ta așteaptă aprobare.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Nu s-a găsit niciun abonament de susținător de restaurat.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Această cumpărătură aparține altui cont Divine.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine nu a putut confirma statutul de susținător momentan.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'Ceva nu a mers bine. Încearcă din nou.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Divine confirmă statutul de susținător după ce magazinul îți verifică cumpărătura. Recunoașterea e opțională, iar haloul nu e o verificare.';
 
   @override
   String get profileNotifyBellOff => 'Anunță-mă despre videoclipuri noi';

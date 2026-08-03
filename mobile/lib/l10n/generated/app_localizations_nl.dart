@@ -1422,27 +1422,27 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vanaf nu verbergen we posts zoals deze.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Help dit te classificeren';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'Mist er een inhoudswaarschuwing? Je suggestie is openbaar, ondertekend en kan niet worden teruggenomen.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'Voorstellen';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => 'Bedankt. Je suggestie is verstuurd.';
 
   @override
   String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+      'Je suggestie kon niet worden verstuurd. Probeer het opnieuw.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Je hebt dit al voorgesteld';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'Classificeren';
 
   @override
   String get videoErrorNotFound => 'Video niet gevonden';
@@ -3054,28 +3054,28 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'Of voer de 6-cijferige code uit je e-mail in';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6-cijferige code';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'Code verifiëren';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Niets ontvangen?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Opnieuw versturen';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'Opnieuw versturen over $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'We konden de e-mail niet opnieuw versturen. Probeer het opnieuw.';
 
   @override
   String get authWelcomeToDivine => 'Welkom bij Divine!';
@@ -3372,23 +3372,23 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Die code klopt niet. Controleer hem en probeer het opnieuw.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Die code is verlopen. Tik op Opnieuw versturen voor een nieuwe.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'Te veel pogingen. Tik op Opnieuw versturen voor een nieuwe code.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'We konden die code niet verifiëren. Probeer het opnieuw.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Een code invoeren is nu niet beschikbaar. Tik op de link in je e-mail, of verstuur opnieuw voor een nieuwe.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3467,78 +3467,78 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareSheetMoreActions => 'Meer acties';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'Crossposten';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'Deze video crossposten';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Stuur \'m naar je gekoppelde platforms. Het posten kan een paar minuten duren.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'Crossposten';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'In de wachtrij';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Uploaden';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'Verwerken';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Geplaatst';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Mislukt';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Overgeslagen';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Opnieuw verbinden nodig';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Post bekijken';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'Verbind $platform opnieuw in de crosspost-instellingen om te blijven posten.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'Opnieuw verbinden';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'Je kunt alleen je eigen video\'s crossposten.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'Deze video komt niet in aanmerking voor crossposting.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'Dat platform is niet gekoppeld.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'Verbind je account opnieuw en probeer het nog eens.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Kan de crossposter niet bereiken. Probeer het zo opnieuw.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Crossposten mislukt.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Nog bezig. Je kunt dit sluiten — het posten gaat op de achtergrond door.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Klaar';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Opgeslagen in camerarol';
@@ -7010,34 +7010,34 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Je bent van account gewisseld, dus er is niets verwijderd. Open de verwijdering opnieuw voor het account dat je wilt verwijderen.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Je gebruikersnaam kon niet worden vrijgegeven. Je account is niet verwijderd. Probeer het opnieuw of vink de optie uit.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'Je gebruikersnaam $username is definitief vrijgegeven, maar we konden je account niet volledig verwijderen. Tik nogmaals op Verwijderen om af te ronden.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'Geef $username ook definitief op';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'Typ ter bevestiging:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'Typ ter bevestiging je gebruikersnaam:';
 
   @override
   String get deleteAccountConfirmationHint => 'Typ DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername => 'Typ je gebruikersnaam';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -7048,7 +7048,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'We konden je account niet volledig verwijderen. Probeer het opnieuw.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Laatste bevestiging';
@@ -10701,154 +10701,155 @@ class AppLocalizationsNl extends AppLocalizations {
       'Vertrouw Divine-relays, verifieer de rest.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Crossposten';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Deel je video’s op andere platforms';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Log in met Divine om crossposten te beheren';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Je crosspost-instellingen konden niet geladen worden';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Er zijn nu geen crosspost-platforms beschikbaar';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Opnieuw proberen';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Niet verbonden';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Verbonden';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Moet opnieuw gekoppeld worden';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Verbinden';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Opnieuw verbinden';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Loskoppelen';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Uit';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Handmatig';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Jij kiest per video';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Automatisch';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Toekomstige video’s worden automatisch gepost — alleen video’s die je publiceert nadat je dit aanzet';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Koppel dit platform eerst om te wijzigen hoe het post.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError =>
+      'Er ging iets mis. Probeer het opnieuw.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'We hebben nooit iets teruggehoord van de inlogpagina. Als je daar klaar was, ververs dan — je account is misschien al gekoppeld.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform verbonden';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Kon $platform niet verbinden';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'De verbinding is geannuleerd op $platform';
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Divine-supporters';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'Steun Divine met een optioneel maandelijks abonnement.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Houd Divine draaiende';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine is gratis en blijft dat ook. Wil je ons helpen de loops te laten doorgaan, word dan maandelijks supporter. Niets zit op slot — het houdt alleen het licht aan en levert onze dank op.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Je bent een Divine-supporter. Bedankt dat je dit laat doorgaan.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'Je aankoop wacht op goedkeuring.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Je steun wordt bevestigd…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'De store wordt gecontroleerd…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Supporter-abonnementen zijn hier nu niet beschikbaar.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'Aankopen herstellen';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'Fout negeren';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'De store is niet beschikbaar op dit apparaat.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'De aankoop is niet voltooid. Er is niets in rekening gebracht.';
 
   @override
   String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+      'Je aankoop wacht op goedkeuring.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Geen supporter-abonnement gevonden om te herstellen.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Deze aankoop hoort bij een ander Divine-account.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine kon je supporterstatus nu niet bevestigen.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'Er ging iets mis. Probeer het opnieuw.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Divine bevestigt je supporterstatus nadat de store je aankoop heeft geverifieerd. Erkenning is optioneel, en de halo is geen verificatie.';
 
   @override
   String get profileNotifyBellOff => 'Melden bij nieuwe vines';

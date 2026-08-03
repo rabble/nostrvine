@@ -1382,27 +1382,26 @@ class AppLocalizationsAm extends AppLocalizations {
       'ከአሁን በኋላ እንደዚህ አይነት ልጥፎችን እንደብቃለን።';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'ለመመደብ ያግዙን';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'የይዘት ማስጠንቀቂያ ይጎድለዋል? ጥቆማዎ የሕዝባዊ፣ የተፈረመ እና ወደ ኋላ መመለስ የማይችል ነው።';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'ጥቆማ አድርግ';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => 'እናመሰግናለን። ጥቆማዎ ተልኳል።';
 
   @override
-  String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+  String get communitySuggestFailure => 'ጥቆማዎን መላክ አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'ይህንን ጥቆማ አድርገዋል';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'መድብ';
 
   @override
   String get videoErrorNotFound => 'ቪዲዮ አልተገኘም።';
@@ -2988,29 +2987,28 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authOpenEmailApp => 'የኢሜል መተግበሪያን ይክፈቱ';
 
   @override
-  String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+  String get authVerificationPinPrompt => 'ወይም ከኢሜይልዎ የ6-አሃዝ ኮድ ያስገቡ';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => 'የ6-አሃዝ ኮድ';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'ኮዱን አረጋግጥ';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'አልደረሰዎትም?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'እንደገና ላክ';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'ከ$time በኋላ እንደገና ላክ';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'ኢሜይሉን እንደገና መላክ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
   String get authWelcomeToDivine => 'እንኳን ወደ Divine በደህና መጣህ!';
@@ -3298,23 +3296,23 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'ያ ኮድ አልተዛመደም። ደግመው ያረጋግጡት እና እንደገና ይሞክሩ።';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'ያ ኮድ ጊዜው አልፎበታል። አዲስ ለማግኘት እንደገና ላክ የሚለውን ይንኩ።';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'በጣም ብዙ ሙከራዎች። አዲስ ኮድ ለማግኘት እንደገና ላክ የሚለውን ይንኩ።';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'ያን ኮድ ማረጋገጥ አልቻልንም። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'የኮድ ማስገቢያ አሁን አይገኝም። በኢሜይልዎ ውስጥ ያለውን አገናኝ ይንኩ፣ ወይም አዲስ ለማግኘት እንደገና ይላኩ።';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3392,78 +3390,75 @@ class AppLocalizationsAm extends AppLocalizations {
   String get shareSheetMoreActions => 'ተጨማሪ ድርጊቶች';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'ተሻግሮ ማተም';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'ይህን ቪዲዮ ተሻግሮ ማተም';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'ወደ የተገናኙ መድረኮችዎ ይላኩት። ማተሙ ጥቂት ደቂቃዎች ሊወስድ ይችላል።';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'ተሻግሮ ማተም';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'ተሰልፏል';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'በመስቀል ላይ';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'በማቀነባበር ላይ';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'ታትሟል';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'አልተሳካም';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'ተዝሏል';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'እንደገና መገናኘት ያስፈልጋል';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'ልጥፉን ይመልከቱ';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'መለጠፍን ለመቀጠል $platformን በተሻግሮ ማተም ቅንብሮች እንደገና ይገናኙ።';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'እንደገና ይገናኙ';
 
   @override
-  String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+  String get crosspostErrorNotOwner => 'የራስዎ ቪዲዮዎች ብቻ ናቸው ተሻግሮ መታተም የሚችሉት።';
 
   @override
-  String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+  String get crosspostErrorNotEligible => 'ይህ ቪዲዮ ለተሻግሮ ማተም አይበቃም።';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'ያ መድረክ አልተገናኘም።';
 
   @override
-  String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+  String get crosspostErrorUnauthorized => 'መለያዎን እንደገና ይገናኙ፣ ከዚያ እንደገና ይሞክሩ።';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'ተሻግሮ ማተሚያው ላይ መድረስ አልተቻለም። ከአፍታ በኋላ እንደገና ይሞክሩ።';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'ተሻግሮ ማተም አልተሳካም።';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'አሁንም በሥራ ላይ ነው። ይህንን መዝጋት ይችላሉ — ማተሙ በጀርባ ይቀጥላል።';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'ተከናውኗል';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'ወደ ካሜራ ጥቅል ተቀምጧል';
@@ -6843,34 +6838,33 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'መለያዎችን ቀይረዋል፣ ስለዚህ ምንም አልተሰረዘም። ለማስወገድ ለሚፈልጉት መለያ ስረዛን እንደገና ይክፈቱ።';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'የተጠቃሚ ስምዎን ማስለቀቅ አልተቻለም። መለያዎ አልተሰረዘም። እንደገና ይሞክሩ፣ ወይም አማራጩን ያስወግዱ።';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'የተጠቃሚ ስምዎ $username በቋሚነት ተለቋል፣ ግን መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። ለማጠናቀቅ ሰርዝ የሚለውን እንደገና ይንኩ።';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return '$usernameንም እንዲሁ በቋሚነት ይተው';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'ለማረጋገጥ፣ ይተይቡ፦';
 
   @override
-  String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+  String get deleteAccountConfirmUsernamePrompt => 'ለማረጋገጥ፣ የተጠቃሚ ስምዎን ይተይቡ፦';
 
   @override
   String get deleteAccountConfirmationHint => 'DELETE ብለው ይተይቡ';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername => 'የተጠቃሚ ስምዎን ይተይቡ';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -6881,7 +6875,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'መለያዎን መሰረዝ ማጠናቀቅ አልቻልንም። እንደገና ይሞክሩ።';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ የመጨረሻ ማረጋገጫ';
@@ -10430,154 +10424,143 @@ class AppLocalizationsAm extends AppLocalizations {
       'የDivine ሬሌዮችን እመን፣ የቀሩትን አረጋግጥ።';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'ተሻግሮ ማተም';
 
   @override
-  String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+  String get settingsCrosspostingSubtitle => 'ቪዲዮዎችዎን ወደ ሌሎች መድረኮች ያጋሩ';
 
   @override
-  String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+  String get crosspostingSignInRequired => 'ተሻግሮ ማተምን ለማስተዳደር በDivine ይግቡ';
 
   @override
-  String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+  String get crosspostingLoadFailed => 'የተሻግሮ ማተም ቅንብሮችዎ መጫን አልተቻለም';
 
   @override
-  String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+  String get crosspostingNoPlatforms => 'አሁን ምንም የተሻግሮ ማተሚያ መድረክ የለም';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'እንደገና ይሞክሩ';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'አልተገናኘም';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'ተገናኝቷል።';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'እንደገና መገናኘት ያስፈልገዋል';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'ያገናኙ';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'እንደገና ገና';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'ግንኙነቱን ያቋርጡ';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'ጠፍቷል';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'በእጅ';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'ለእያንዳንዱ ቪዲዮ እርስዎ ይመርጣሉ';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'ራስ-ሰር';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'ወደፊት የሚወጡ ቪዲዮዎች በራሳቸው ይለጠፋሉ — ይህን ካበሩ በኋላ የሚያትሙት ብቻ';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'እንዴት እንደሚለጥፍ ለመቀየር መጀመሪያ ይህን መድረክ ያገናኙ።';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'የሆነ ችግር ተፈጥሯል። እንደገና ይሞክሩ።';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'ከመግቢያ ገጹ ምንም ምላሽ አልደረሰንም። እዚያ ጨርሰው ከሆነ ያድሱ — መለያዎ አስቀድሞ ተያይዞ ሊሆን ይችላል።';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform ተገናኝቷል';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform ማገናኘት አልተቻለም';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'ግንኙነቱ በ$platform ላይ ተሰርዟል';
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'የDivine ደጋፊዎች';
 
   @override
-  String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+  String get supporterTileSubtitle => 'Divineን በአማራጭ ወርሃዊ የደንበኝነት ምዝገባ ይደግፉ።';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Divineን እንዲቀጥል ያድርጉ';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine ነፃ ነው እና ሁልጊዜም ይሆናል። ሉፖቹ እንዲቀጥሉ ለመርዳት ከፈለጉ፣ ወርሃዊ ደጋፊ ይሁኑ። ምንም አይታገድም — መብራቱን የሚያቆይ እና ምስጋናችንን የሚያገኝ ብቻ ነው።';
 
   @override
-  String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+  String get supporterActiveBadge => 'የDivine ደጋፊ ነዎት። ይህንን ስላስቀጠሉ እናመሰግናለን።';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'ግዢዎ ፈቃድ በመጠባበቅ ላይ ነው።';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'ድጋፍዎን በማረጋገጥ ላይ…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'መደብሩን በመፈተሽ ላይ…';
 
   @override
-  String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+  String get supporterUnavailable => 'የደጋፊ የደንበኝነት ምዝገባዎች እዚህ ለአሁኑ አይገኙም።';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'ግዢዎችን መልስ';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'ስህተቱን አሰናብት';
 
   @override
-  String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+  String get supporterErrorStoreUnavailable => 'መደብሩ በዚህ መሣሪያ ላይ አይገኝም።';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'ግዢው አልተጠናቀቀም። ምንም ክፍያ አልተጠየቀብዎትም።';
 
   @override
-  String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+  String get supporterErrorPurchasePending => 'ግዢዎ ፈቃድ በመጠባበቅ ላይ ነው።';
 
   @override
-  String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+  String get supporterErrorRestoreFailed => 'የሚመለስ የደጋፊ የደንበኝነት ምዝገባ አልተገኘም።';
 
   @override
-  String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+  String get supporterErrorOwnershipConflict => 'ይህ ግዢ የሌላ የDivine መለያ ነው።';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine የደጋፊ ሁኔታን አሁን ማረጋገጥ አልቻለም።';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'የሆነ ችግር ተፈጥሯል። እባክዎ እንደገና ይሞክሩ።';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'መደብሩ ግዢዎን ካረጋገጠ በኋላ Divine የደጋፊ ሁኔታን ያረጋግጣል። እውቅናው አማራጭ ነው፣ እና ሄሎው ማረጋገጫ አይደለም።';
 
   @override
   String get profileNotifyBellOff => 'ስለ አዲስ ቫይኖች አሳውቀኝ';

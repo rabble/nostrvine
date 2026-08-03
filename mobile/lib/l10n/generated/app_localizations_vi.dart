@@ -10661,85 +10661,85 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tin tưởng relay Divine, xác minh phần còn lại.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Đăng chéo';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Chia sẻ video của bạn lên các nền tảng khác';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Đăng nhập bằng Divine để quản lý đăng chéo';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Không tải được cài đặt đăng chéo của bạn';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Hiện chưa có nền tảng đăng chéo nào khả dụng';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Thử lại';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Chưa kết nối';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Đã kết nối';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Cần kết nối lại';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Kết nối';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Kết nối lại';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Ngắt kết nối';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Tắt';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Thủ công';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Bạn chọn cho từng video';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Tự động';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Các video sau sẽ tự đăng — chỉ những video bạn đăng sau khi bật cái này';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Kết nối nền tảng này trước đã để đổi cách nó đăng.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Có gì đó không ổn. Thử lại nhé.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Trang đăng nhập không phản hồi. Nếu bạn đã kết nối xong ở đó, hãy làm mới — tài khoản của bạn có thể đã được liên kết rồi.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return 'Đã kết nối $platform';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Không kết nối được $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Kết nối đã bị hủy trên $platform';
   }
 
   @override

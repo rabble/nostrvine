@@ -1145,7 +1145,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoGridDeleteConfirmNote =>
-      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
+      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
 
   @override
   String get videoGridDeleteCancel => 'Anuluj';
@@ -1439,27 +1439,28 @@ class AppLocalizationsPl extends AppLocalizations {
       'Od teraz będziemy ukrywać takie posty.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Pomóż to sklasyfikować';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'Brakuje ostrzeżenia o treści? Twoja sugestia jest publiczna, podpisana i nie można jej cofnąć.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'Zaproponuj';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess =>
+      'Dzięki. Twoja sugestia została wysłana.';
 
   @override
   String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+      'Nie udało się wysłać sugestii. Spróbuj ponownie.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Twoja sugestia';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'Sklasyfikuj';
 
   @override
   String get videoErrorNotFound => 'Nie znaleziono filmu';
@@ -3120,29 +3121,28 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authOpenEmailApp => 'Otwórz aplikację e-mail';
 
   @override
-  String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+  String get authVerificationPinPrompt => 'Albo wpisz 6-cyfrowy kod z e-maila';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6-cyfrowy kod';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'Zweryfikuj kod';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Nie dotarło?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Wyślij ponownie';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return 'Wyślij ponownie za $time';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'Nie udało się wysłać e-maila ponownie. Spróbuj jeszcze raz.';
 
   @override
   String get authWelcomeToDivine => 'Witaj w Divine!';
@@ -3441,23 +3441,23 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Ten kod nie pasuje. Sprawdź go i spróbuj ponownie.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Ten kod wygasł. Dotknij Wyślij ponownie, aby otrzymać nowy.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'Zbyt wiele prób. Dotknij Wyślij ponownie, aby otrzymać nowy kod.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'Nie udało się zweryfikować tego kodu. Spróbuj ponownie.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Wpisywanie kodu jest teraz niedostępne. Dotknij linku w e-mailu albo wyślij ponownie, aby otrzymać nowy.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3536,78 +3536,78 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareSheetMoreActions => 'Więcej akcji';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'Crosspostuj';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'Crosspostuj ten film';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Wyślij go na połączone platformy. Publikacja może potrwać kilka minut.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'Crosspostuj';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'W kolejce';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Przesyłanie';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'Przetwarzanie';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Opublikowano';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Niepowodzenie';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Pominięto';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Wymaga ponownego połączenia';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Zobacz post';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'Połącz ponownie $platform w ustawieniach crosspostingu, aby kontynuować publikowanie.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'Połącz ponownie';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'Crosspostować można tylko własne filmy.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'Ten film nie kwalifikuje się do crosspostingu.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'Ta platforma nie jest połączona.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'Połącz konto ponownie i spróbuj jeszcze raz.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Nie udało się połączyć z usługą crosspostingu. Spróbuj ponownie za chwilę.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Crossposting nie powiódł się.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Wciąż pracujemy. Możesz to zamknąć — publikowanie będzie kontynuowane w tle.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Gotowe';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Zapisano w rolce aparatu';
@@ -4017,7 +4017,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteWarning =>
-      'To wyślе żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
+      'To wyśle żądanie usunięcia (NIP-09) do wszystkich przekaźników. Niektóre przekaźniki mogą nadal zachować treść.';
 
   @override
   String get shareMenuVideoInTheseLists => 'Film jest na tych listach:';
@@ -4175,7 +4175,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get shareMenuDeleteRelayWarning =>
-      'To wyślе żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
+      'To wyśle żądanie usunięcia do przekaźników. Uwaga: Niektóre przekaźniki mogą nadal mieć zbuforowane kopie.';
 
   @override
   String get shareMenuVideoDeletionRequested => 'Zażądano usunięcia filmu';
@@ -7142,34 +7142,35 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Przełączono konto, więc nic nie zostało usunięte. Otwórz ponownie usuwanie dla konta, które chcesz usunąć.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Nie udało się zwolnić twojej nazwy użytkownika. Twoje konto nie zostało usunięte. Spróbuj ponownie albo odznacz tę opcję.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return 'Twoja nazwa użytkownika $username została trwale zwolniona, ale nie udało się dokończyć usuwania konta. Dotknij Usuń ponownie, aby dokończyć.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return 'Zrezygnuj też trwale z $username';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'Aby potwierdzić, wpisz:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'Aby potwierdzić, wpisz swoją nazwę użytkownika:';
 
   @override
   String get deleteAccountConfirmationHint => 'Wpisz DELETE';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername =>
+      'Wpisz swoją nazwę użytkownika';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -7180,7 +7181,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'Nie udało się dokończyć usuwania konta. Spróbuj ponownie.';
 
   @override
   String get deleteAccountFinalConfirmationTitle =>
@@ -10848,150 +10849,151 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Udostępniaj swoje filmy na innych platformach';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Zaloguj się przez Divine, żeby zarządzać crosspostingiem';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'Nie udało się wczytać twoich ustawień crosspostingu';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'W tej chwili nie ma dostępnych platform crosspostingu';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Ponów';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Niepołączony';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Połączono';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Wymaga ponownego połączenia';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Połącz';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Połącz ponownie';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Odłącz';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Wyłączony';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Ręczny';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Wybierasz przy każdym filmie';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Automatyczny';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Kolejne filmy publikują się same — tylko te opublikowane po włączeniu tej opcji';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Najpierw połącz tę platformę, żeby zmienić sposób publikowania.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError =>
+      'Coś poszło nie tak. Spróbuj ponownie.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Strona logowania nigdy nie odpowiedziała. Jeśli udało ci się tam skończyć, odśwież — twoje konto może już być połączone.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return 'Połączono $platform';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return 'Nie udało się połączyć $platform';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Połączenie zostało anulowane na $platform';
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Wspierający Divine';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'Wesprzyj Divine opcjonalną miesięczną subskrypcją.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Niech Divine działa dalej';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine jest darmowe i zawsze będzie. Jeśli chcesz pomóc nam utrzymać pętle w ruchu, zostań miesięcznym wspierającym. Nic nie jest zablokowane — to po prostu pozwala nam utrzymać światło włączone i zapewnia naszą wdzięczność.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Jesteś w gronie Wspierających Divine. Dziękujemy, że utrzymujesz to w ruchu.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'Zakup oczekuje na zatwierdzenie.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Potwierdzanie wsparcia…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'Sprawdzanie sklepu…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Subskrypcje wspierające nie są tu teraz dostępne.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'Przywróć zakupy';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'Zamknij błąd';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'Sklep jest niedostępny na tym urządzeniu.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'Zakup nie został zrealizowany. Nie pobrano opłaty.';
 
   @override
   String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+      'Zakup oczekuje na zatwierdzenie.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Nie znaleziono subskrypcji wspierającej do przywrócenia.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Ten zakup należy do innego konta Divine.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine nie może teraz potwierdzić statusu wspierającego.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown => 'Coś poszło nie tak. Spróbuj ponownie.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Divine potwierdza status wspierającego po zweryfikowaniu zakupu przez sklep. Wyróżnienie jest opcjonalne, a halo nie jest weryfikacją.';
 
   @override
   String get profileNotifyBellOff => 'Powiadamiaj o nowych vine\'ach';

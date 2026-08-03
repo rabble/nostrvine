@@ -1381,27 +1381,26 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bundan sonra böyle gönderileri gizleyeceğiz.';
 
   @override
-  String get communitySuggestTitle => 'Help classify this';
+  String get communitySuggestTitle => 'Bunu sınıflandırmaya yardım et';
 
   @override
   String get communitySuggestSubtitle =>
-      'Missing a content warning? Your suggestion is public, signed, and can\'t be taken back.';
+      'İçerik uyarısı mı eksik? Önerin herkese açık, imzalı ve geri alınamaz.';
 
   @override
-  String get communitySuggestSubmit => 'Suggest';
+  String get communitySuggestSubmit => 'Öner';
 
   @override
-  String get communitySuggestSuccess => 'Thanks. Your suggestion was sent.';
+  String get communitySuggestSuccess => 'Teşekkürler. Önerin gönderildi.';
 
   @override
-  String get communitySuggestFailure =>
-      'Couldn\'t send your suggestion. Try again.';
+  String get communitySuggestFailure => 'Önerin gönderilemedi. Tekrar dene.';
 
   @override
-  String get communitySuggestAlready => 'You suggested this';
+  String get communitySuggestAlready => 'Bunu önerdin';
 
   @override
-  String get communitySuggestActionLabel => 'Classify';
+  String get communitySuggestActionLabel => 'Sınıflandır';
 
   @override
   String get videoErrorNotFound => 'Video bulunamadı';
@@ -3011,28 +3010,28 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authVerificationPinPrompt =>
-      'Or enter the 6-digit code from your email';
+      'Ya da e-postana gelen 6 haneli kodu gir';
 
   @override
-  String get authVerificationPinFieldLabel => '6-digit code';
+  String get authVerificationPinFieldLabel => '6 haneli kod';
 
   @override
-  String get authVerificationPinSubmit => 'Verify code';
+  String get authVerificationPinSubmit => 'Kodu doğrula';
 
   @override
-  String get authVerificationResendPrompt => 'Didn\'t get it?';
+  String get authVerificationResendPrompt => 'Kod gelmedi mi?';
 
   @override
-  String get authVerificationResend => 'Resend';
+  String get authVerificationResend => 'Tekrar Gönder';
 
   @override
   String authVerificationResendCooldown(String time) {
-    return 'Resend in $time';
+    return '$time sonra tekrar gönder';
   }
 
   @override
   String get authVerificationResendFailed =>
-      'We couldn\'t resend the email. Try again.';
+      'E-posta tekrar gönderilemedi. Yeniden dene.';
 
   @override
   String get authWelcomeToDivine => 'Divine\'a Hoş Geldin!';
@@ -3328,23 +3327,23 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authVerificationErrorPinInvalid =>
-      'That code didn\'t match. Double-check it and try again.';
+      'Kod eşleşmedi. Kontrol edip tekrar dene.';
 
   @override
   String get authVerificationErrorPinExpired =>
-      'That code has expired. Tap resend to get a new one.';
+      'Kodun süresi doldu. Yeni kod almak için Tekrar Gönder\'e dokun.';
 
   @override
   String get authVerificationErrorPinLocked =>
-      'Too many tries. Tap resend to get a fresh code.';
+      'Çok fazla deneme. Yeni kod almak için Tekrar Gönder\'e dokun.';
 
   @override
   String get authVerificationErrorPinFailed =>
-      'We couldn\'t verify that code. Please try again.';
+      'Kod doğrulanamadı. Lütfen tekrar dene.';
 
   @override
   String get authVerificationErrorPinUnavailable =>
-      'Code entry isn\'t available right now. Tap the link in your email, or resend to get a fresh one.';
+      'Kod girişi şu anda kullanılamıyor. E-postandaki bağlantıya dokun ya da yenisini almak için tekrar gönder.';
 
   @override
   String get authInviteErrorAlreadyUsed =>
@@ -3423,78 +3422,78 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareSheetMoreActions => 'Daha fazla işlem';
 
   @override
-  String get shareSheetCrosspost => 'Crosspost';
+  String get shareSheetCrosspost => 'Çapraz Paylaş';
 
   @override
-  String get crosspostSheetTitle => 'Crosspost this video';
+  String get crosspostSheetTitle => 'Bu videoyu çapraz paylaş';
 
   @override
   String get crosspostSheetSubtitle =>
-      'Send it to your connected platforms. Posting can take a few minutes.';
+      'Bağlı platformlarına gönder. Paylaşım birkaç dakika sürebilir.';
 
   @override
-  String get crosspostSubmit => 'Crosspost';
+  String get crosspostSubmit => 'Çapraz Paylaş';
 
   @override
-  String get crosspostStatusQueued => 'Queued';
+  String get crosspostStatusQueued => 'Sırada';
 
   @override
-  String get crosspostStatusUploading => 'Uploading';
+  String get crosspostStatusUploading => 'Yükleniyor';
 
   @override
-  String get crosspostStatusProcessing => 'Processing';
+  String get crosspostStatusProcessing => 'İşleniyor';
 
   @override
-  String get crosspostStatusPosted => 'Posted';
+  String get crosspostStatusPosted => 'Paylaşıldı';
 
   @override
-  String get crosspostStatusFailed => 'Failed';
+  String get crosspostStatusFailed => 'Başarısız';
 
   @override
-  String get crosspostStatusSkipped => 'Skipped';
+  String get crosspostStatusSkipped => 'Atlandı';
 
   @override
-  String get crosspostStatusNeedsReauth => 'Needs reconnecting';
+  String get crosspostStatusNeedsReauth => 'Yeniden bağlantı gerekli';
 
   @override
-  String get crosspostViewPost => 'View post';
+  String get crosspostViewPost => 'Gönderiyi görüntüle';
 
   @override
   String crosspostReconnectPrompt(String platform) {
-    return 'Reconnect $platform in crossposting settings to keep posting.';
+    return 'Paylaşmaya devam etmek için çapraz paylaşım ayarlarından $platform hesabını yeniden bağla.';
   }
 
   @override
-  String get crosspostReconnect => 'Reconnect';
+  String get crosspostReconnect => 'Yeniden Bağla';
 
   @override
   String get crosspostErrorNotOwner =>
-      'Only your own videos can be crossposted.';
+      'Yalnızca kendi videoların çapraz paylaşılabilir.';
 
   @override
   String get crosspostErrorNotEligible =>
-      'This video isn\'t eligible for crossposting.';
+      'Bu video çapraz paylaşım için uygun değil.';
 
   @override
-  String get crosspostErrorNotConnected => 'That platform isn\'t connected.';
+  String get crosspostErrorNotConnected => 'Bu platform bağlı değil.';
 
   @override
   String get crosspostErrorUnauthorized =>
-      'Reconnect your account, then try again.';
+      'Hesabını yeniden bağla, sonra tekrar dene.';
 
   @override
   String get crosspostErrorNetwork =>
-      'Couldn\'t reach the crossposter. Try again in a moment.';
+      'Çapraz paylaşım servisine ulaşılamadı. Birazdan tekrar dene.';
 
   @override
-  String get crosspostFailedGeneric => 'Crosspost failed.';
+  String get crosspostFailedGeneric => 'Çapraz paylaşım başarısız oldu.';
 
   @override
   String get crosspostStillWorking =>
-      'Still working. You can close this — posting continues in the background.';
+      'Hâlâ çalışıyoruz. Bunu kapatabilirsin — paylaşım arka planda devam edecek.';
 
   @override
-  String get crosspostDone => 'Done';
+  String get crosspostDone => 'Bitti';
 
   @override
   String get watermarkDownloadSavedToCameraRoll => 'Kamera Rulosuna Kaydedildi';
@@ -6942,34 +6941,34 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountAccountChanged =>
-      'You switched accounts, so nothing was deleted. Reopen delete for the account you want to remove.';
+      'Hesap değiştirdin, bu yüzden hiçbir şey silinmedi. Kaldırmak istediğin hesap için silme ekranını yeniden aç.';
 
   @override
   String get deleteAccountBurnUsernameFailed =>
-      'Couldn\'t release your username. Your account was not deleted. Try again, or uncheck the option.';
+      'Kullanıcı adın serbest bırakılamadı. Hesabın silinmedi. Tekrar dene ya da seçeneğin işaretini kaldır.';
 
   @override
   String deleteAccountBurnUsernameReleased(String username) {
-    return 'Your username $username has been permanently released, but we couldn\'t finish deleting your account. Tap Delete again to finish.';
+    return '$username kullanıcı adın kalıcı olarak serbest bırakıldı ama hesabının silinmesi tamamlanamadı. Bitirmek için tekrar Sil\'e dokun.';
   }
 
   @override
   String deleteAccountBurnUsernameToggle(String username) {
-    return 'Also permanently give up $username';
+    return '$username adından da kalıcı olarak vazgeç';
   }
 
   @override
-  String get deleteAccountConfirmDeletePrompt => 'To confirm, type:';
+  String get deleteAccountConfirmDeletePrompt => 'Onaylamak için yaz:';
 
   @override
   String get deleteAccountConfirmUsernamePrompt =>
-      'To confirm, type your username:';
+      'Onaylamak için kullanıcı adını yaz:';
 
   @override
   String get deleteAccountConfirmationHint => 'DELETE yaz';
 
   @override
-  String get deleteAccountConfirmationHintUsername => 'Type your username';
+  String get deleteAccountConfirmationHintUsername => 'Kullanıcı adını yaz';
 
   @override
   String get deleteAccountContentDeletionFailed =>
@@ -6980,7 +6979,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get deleteAccountDeletionIncomplete =>
-      'We couldn\'t finish deleting your account. Try again.';
+      'Hesabını silme işlemini tamamlayamadık. Tekrar dene.';
 
   @override
   String get deleteAccountFinalConfirmationTitle => '⚠️ Son Onay';
@@ -10611,154 +10610,153 @@ class AppLocalizationsTr extends AppLocalizations {
       'Divine relay\'lerine güven, geri kalanını doğrula.';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'Çapraz paylaşım';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'Videolarını başka platformlarda paylaş';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'Çapraz paylaşımı yönetmek için Divine ile giriş yap';
 
   @override
-  String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+  String get crosspostingLoadFailed => 'Çapraz paylaşım ayarların yüklenemedi';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'Şu anda kullanılabilir çapraz paylaşım platformu yok';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'Tekrar dene';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'Bağlı değil';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'Bağlı';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'Yeniden bağlanması gerekiyor';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'Bağlan';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'Yeniden Bağla';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'Bağlantıyı kes';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'Kapalı';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'Manuel';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle => 'Her videoda sen seçersin';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'Otomatik';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'Sonraki videolar otomatik paylaşılır — sadece bunu açtıktan sonra yayınladıkların';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'Nasıl paylaştığını değiştirmek için önce bu platformu bağla.';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'Bir şeyler ters gitti. Tekrar dene.';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'Giriş sayfasından hiç yanıt gelmedi. Orada bağlanmayı bitirdiysen yenile — hesabın çoktan bağlanmış olabilir.';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform bağlandı';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform bağlanamadı';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return 'Bağlantı $platform üzerinde iptal edildi';
   }
 
   @override
-  String get supporterTitle => 'Divine Supporters';
+  String get supporterTitle => 'Divine Destekçileri';
 
   @override
   String get supporterTileSubtitle =>
-      'Support Divine with an optional monthly subscription.';
+      'İsteğe bağlı aylık abonelikle Divine\'ı destekle.';
 
   @override
-  String get supporterHeroTitle => 'Keep Divine running';
+  String get supporterHeroTitle => 'Divine\'ı ayakta tut';
 
   @override
   String get supporterHeroBody =>
-      'Divine is free and always will be. If you want to help us keep the loops going, become a monthly supporter. Nothing is locked — it just keeps the lights on and earns our thanks.';
+      'Divine ücretsiz ve hep öyle kalacak. Döngülerin devam etmesine yardım etmek istersen aylık destekçi ol. Hiçbir şey kilitli değil — sadece ışıkları açık tutar ve teşekkürlerimizi kazandırır.';
 
   @override
   String get supporterActiveBadge =>
-      'You\'re a Divine Supporter. Thank you for keeping this going.';
+      'Divine Destekçisisin. Bunu sürdürdüğün için teşekkürler.';
 
   @override
-  String get supporterPurchasePending => 'Your purchase is pending approval.';
+  String get supporterPurchasePending => 'Satın alımın onay bekliyor.';
 
   @override
-  String get supporterPurchaseConfirming => 'Confirming your support…';
+  String get supporterPurchaseConfirming => 'Desteğin onaylanıyor…';
 
   @override
-  String get supporterStoreChecking => 'Checking the store…';
+  String get supporterStoreChecking => 'Mağaza kontrol ediliyor…';
 
   @override
   String get supporterUnavailable =>
-      'Supporter subscriptions are not available here right now.';
+      'Destekçi abonelikleri şu anda burada kullanılamıyor.';
 
   @override
-  String get supporterRestorePurchases => 'Restore purchases';
+  String get supporterRestorePurchases => 'Satın alımları geri yükle';
 
   @override
-  String get supporterDismissError => 'Dismiss error';
+  String get supporterDismissError => 'Hatayı kapat';
 
   @override
   String get supporterErrorStoreUnavailable =>
-      'The store is unavailable on this device.';
+      'Mağaza bu cihazda kullanılamıyor.';
 
   @override
   String get supporterErrorPurchaseFailed =>
-      'The purchase did not complete. You were not charged.';
+      'Satın alma tamamlanamadı. Senden ücret alınmadı.';
 
   @override
-  String get supporterErrorPurchasePending =>
-      'Your purchase is pending approval.';
+  String get supporterErrorPurchasePending => 'Satın alımın onay bekliyor.';
 
   @override
   String get supporterErrorRestoreFailed =>
-      'No supporter subscription was found to restore.';
+      'Geri yüklenecek bir destekçi aboneliği bulunamadı.';
 
   @override
   String get supporterErrorOwnershipConflict =>
-      'This purchase belongs to another Divine account.';
+      'Bu satın alım başka bir Divine hesabına ait.';
 
   @override
   String get supporterErrorVerificationUnavailable =>
-      'Divine could not confirm supporter status right now.';
+      'Divine destekçi durumunu şu anda onaylayamadı.';
 
   @override
-  String get supporterErrorUnknown => 'Something went wrong. Please try again.';
+  String get supporterErrorUnknown =>
+      'Bir şeyler ters gitti. Lütfen tekrar dene.';
 
   @override
   String get supporterDisclaimer =>
-      'Divine confirms supporter status after the store verifies your purchase. Recognition is optional, and the halo is not verification.';
+      'Divine, mağaza satın alımını doğruladıktan sonra destekçi durumunu onaylar. Tanınma isteğe bağlıdır ve hale bir doğrulama değildir.';
 
   @override
   String get profileNotifyBellOff => 'Yeni vine\'lardan haberdar et';

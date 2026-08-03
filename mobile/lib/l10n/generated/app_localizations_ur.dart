@@ -10650,85 +10650,86 @@ class AppLocalizationsUr extends AppLocalizations {
       'Divine ریلے پر بھروسہ کریں، باقی کی تصدیق کریں۔';
 
   @override
-  String get settingsCrosspostingTitle => 'Crossposting';
+  String get settingsCrosspostingTitle => 'کراس پوسٹنگ';
 
   @override
   String get settingsCrosspostingSubtitle =>
-      'Share your videos to other platforms';
+      'اپنی ویڈیوز دوسرے پلیٹ فارمز پر شیئر کریں';
 
   @override
   String get crosspostingSignInRequired =>
-      'Sign in with Divine to manage crossposting';
+      'کراس پوسٹنگ کا انتظام کرنے کے لیے Divine سے سائن ان کریں';
 
   @override
   String get crosspostingLoadFailed =>
-      'Couldn\'t load your crossposting settings';
+      'آپ کی کراس پوسٹنگ ترتیبات لوڈ نہیں ہو سکیں';
 
   @override
   String get crosspostingNoPlatforms =>
-      'No crossposting platforms are available right now';
+      'اس وقت کوئی کراس پوسٹنگ پلیٹ فارم دستیاب نہیں';
 
   @override
-  String get crosspostingRetry => 'Retry';
+  String get crosspostingRetry => 'دوبارہ کوشش کریں';
 
   @override
-  String get crosspostingNotConnected => 'Not connected';
+  String get crosspostingNotConnected => 'منسلک نہیں';
 
   @override
-  String get crosspostingConnected => 'Connected';
+  String get crosspostingConnected => 'منسلک';
 
   @override
-  String get crosspostingNeedsReconnect => 'Needs reconnecting';
+  String get crosspostingNeedsReconnect => 'دوبارہ منسلک کرنا ہوگا';
 
   @override
-  String get crosspostingConnect => 'Connect';
+  String get crosspostingConnect => 'منسلک کریں';
 
   @override
-  String get crosspostingReconnect => 'Reconnect';
+  String get crosspostingReconnect => 'دوبارہ منسلک کریں';
 
   @override
-  String get crosspostingDisconnect => 'Disconnect';
+  String get crosspostingDisconnect => 'منقطع کریں';
 
   @override
-  String get crosspostingModeOff => 'Off';
+  String get crosspostingModeOff => 'بند';
 
   @override
-  String get crosspostingModeManual => 'Manual';
+  String get crosspostingModeManual => 'دستی';
 
   @override
-  String get crosspostingModeManualSubtitle => 'You choose per video';
+  String get crosspostingModeManualSubtitle =>
+      'آپ ہر ویڈیو کے لیے خود منتخب کریں';
 
   @override
-  String get crosspostingModeAutomatic => 'Automatic';
+  String get crosspostingModeAutomatic => 'خودکار';
 
   @override
   String get crosspostingModeAutomaticSubtitle =>
-      'Future videos post automatically — only videos published after you turn this on';
+      'آئندہ ویڈیوز خودکار طور پر پوسٹ ہوں گی — صرف وہ جو آپ اسے آن کرنے کے بعد شائع کریں';
 
   @override
   String get crosspostingNotConnectedError =>
-      'Connect this platform first to change how it posts.';
+      'یہ کیسے پوسٹ کرتا ہے، بدلنے کے لیے پہلے اس پلیٹ فارم کو منسلک کریں۔';
 
   @override
-  String get crosspostingGenericError => 'Something went wrong. Try again.';
+  String get crosspostingGenericError => 'کچھ غلط ہو گیا۔ دوبارہ کوشش کریں۔';
 
   @override
   String get crosspostingCallbackTimeoutError =>
-      'We never heard back from the sign-in page. If you finished connecting there, refresh — your account may already be linked.';
+      'سائن ان صفحے سے کوئی جواب نہیں آیا۔ اگر آپ نے وہاں منسلک کر لیا ہے تو ریفریش کریں — ہو سکتا ہے آپ کا اکاؤنٹ پہلے ہی منسلک ہو۔';
 
   @override
   String crosspostingConnectionSuccess(String platform) {
-    return '$platform connected';
+    return '$platform منسلک ہو گیا';
   }
 
   @override
   String crosspostingConnectionFailed(String platform) {
-    return 'Couldn\'t connect $platform';
+    return '$platform منسلک نہیں ہو سکا';
   }
 
   @override
   String crosspostingConnectionDenied(String platform) {
-    return 'Connection was canceled on $platform';
+    return '$platform پر کنکشن منسوخ کر دیا گیا';
   }
 
   @override
