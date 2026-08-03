@@ -1455,12 +1455,12 @@ class RelayPool {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final sentTo = await _sendCollect(
+    final result = await _sendCollect(
       message,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
-    return sentTo.isNotEmpty;
+    return result.sentTo.isNotEmpty;
   }
 
   /// Same as [send] but returns the list of relay URLs the message reached.
@@ -1487,7 +1487,7 @@ class RelayPool {
   /// the publish call in their own outer guard should size that guard
   /// against `perRelaySendTimeout * configuredRelays.length` plus a small
   /// scheduling buffer.
-  Future<List<String>> _sendCollect(
+  Future<({List<String> sentTo, Set<String> attemptedRelayUrls})> _sendCollect(
     List<dynamic> message, {
     List<String>? tempRelays,
     List<String>? targetRelays,
@@ -1702,7 +1702,7 @@ class RelayPool {
       'send complete kind=$eventKind eventId=$eventId sentTo=$sentTo',
     );
 
-    return sentTo;
+    return (sentTo: sentTo, attemptedRelayUrls: attemptedRelayUrls);
   }
 
   /// Record how broadly a publish was accepted.
@@ -1742,15 +1742,17 @@ class RelayPool {
   /// replied before the fan-out reported, since `send` waits out the
   /// `connecting` state and writes anyway.
   ///
-  /// `counted` narrows that to the relays a *failed* write should be reported
-  /// against, dropping the configured-but-offline ones. `writeAccess` is a
-  /// config flag that defaults to true, so counting on it alone made every
+  /// `counted` starts as the relays a failed write should be reported against,
+  /// dropping configured relays that were plainly offline before the fan-out.
+  /// The fan-out then adds back relays it actually attempted, including ones
+  /// whose in-flight connection waited until the publish deadline. `writeAccess`
+  /// is a config flag that defaults to true, so counting on it alone made every
   /// offline relay a target that could only ever land in
   /// [PublishOutcome.unreachableTargets] — which on mobile, where some relay
   /// is nearly always down, left [PublishOutcome.acceptedByAll] permanently
   /// false and reported every successful publish as partial. Nothing the
-  /// fan-out actually reached drops out: [PublishTracker.setReachable] adds
-  /// whatever was written to, and those relays count however they answer.
+  /// fan-out actually reached or exhausted drops out: [PublishTracker.setReachable]
+  /// receives both the written relays and the attempted denominator.
   ///
   /// [targetRelays] and [tempRelays] are exempt from the narrowing. Naming a
   /// relay is the caller asserting intent for that specific relay, and "we
@@ -1843,16 +1845,19 @@ class RelayPool {
     // until this call arrives: a fan-out that threw would otherwise leave the
     // publish hanging.
     var sentTo = const <String>[];
+    var countedTargets = targets.counted;
     try {
-      sentTo = await _sendCollect(
+      final result = await _sendCollect(
         message,
         tempRelays: tempRelays,
         targetRelays: targetRelays,
         deadline: deadline,
         diagnosticTag: diagnosticTag,
       );
+      sentTo = result.sentTo;
+      countedTargets = {...targets.counted, ...result.attemptedRelayUrls};
     } finally {
-      tracker.setReachable(sentTo);
+      tracker.setReachable(sentTo, countedTargets: countedTargets);
     }
 
     unawaited(

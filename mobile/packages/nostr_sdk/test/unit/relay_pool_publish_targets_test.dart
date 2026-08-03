@@ -106,6 +106,23 @@ class _FakeChannelFactory implements WebSocketChannelFactory {
   }
 }
 
+/// Answers `OK true` from [factory]'s channel as soon as its EVENT lands.
+void _acceptEventWhenSent(_FakeChannelFactory factory, String eventId) {
+  Timer? timer;
+  timer = Timer.periodic(const Duration(milliseconds: 5), (_) {
+    if (factory.createdChannels.isEmpty) return;
+    final channel = factory.createdChannels.single;
+    final sawEvent = channel.sentMessages.any((m) {
+      final frame = jsonDecode(m as String) as List<dynamic>;
+      return frame.first == 'EVENT';
+    });
+    if (!sawEvent) return;
+    timer?.cancel();
+    channel.simulateMessage(jsonEncode(['OK', eventId, true, '']));
+  });
+  addTearDown(() => timer?.cancel());
+}
+
 void main() {
   group('RelayPool publish targets', () {
     const liveUrl = 'wss://relay.divine.video';
@@ -142,16 +159,7 @@ void main() {
 
     /// Answers `OK true` from the live relay as soon as its EVENT lands.
     void acceptFromLiveRelay() {
-      final channel = liveFactory.createdChannels.single;
-      Timer.run(() {
-        final sawEvent = channel.sentMessages.any((m) {
-          final frame = jsonDecode(m as String) as List<dynamic>;
-          return frame.first == 'EVENT';
-        });
-        if (sawEvent) {
-          channel.simulateMessage(jsonEncode(['OK', eventId, true, '']));
-        }
-      });
+      _acceptEventWhenSent(liveFactory, eventId);
     }
 
     test(
@@ -282,17 +290,7 @@ void main() {
           ),
         );
 
-        Timer.periodic(const Duration(milliseconds: 5), (timer) {
-          if (fastFactory.createdChannels.isEmpty) return;
-          final channel = fastFactory.createdChannels.single;
-          final sawEvent = channel.sentMessages.any((m) {
-            final frame = jsonDecode(m as String) as List<dynamic>;
-            return frame.first == 'EVENT';
-          });
-          if (!sawEvent) return;
-          timer.cancel();
-          channel.simulateMessage(jsonEncode(['OK', eventId, true, '']));
-        });
+        _acceptEventWhenSent(fastFactory, eventId);
 
         final outcome = await nostr.relayPool.sendEventAwaitOk(
           [
@@ -314,6 +312,61 @@ void main() {
               'a failed one',
         );
         expect(outcome.failed, isFalse);
+      },
+    );
+
+    test(
+      'reports an attempted connecting relay as unreachable when write times out',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(
+          signer,
+          [],
+          (url) => RelayBase(url, RelayStatus(url)),
+        );
+        await nostr.refreshPublicKey();
+
+        final fastFactory = _FakeChannelFactory();
+        await nostr.relayPool.add(
+          RelayBase(fastUrl, RelayStatus(fastUrl), channelFactory: fastFactory),
+        );
+
+        final slowAdd = nostr.relayPool.add(
+          RelayBase(
+            slowUrl,
+            RelayStatus(slowUrl),
+            channelFactory: _FakeChannelFactory(
+              readyDelay: const Duration(milliseconds: 800),
+            ),
+          ),
+        );
+
+        _acceptEventWhenSent(fastFactory, eventId);
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          eventKind: 5,
+          timeout: const Duration(milliseconds: 250),
+        );
+        await slowAdd;
+
+        expect(outcome.acceptedBy, equals([fastUrl]));
+        expect(outcome.unreachableTargets, equals([slowUrl]));
+        expect(outcome.noResponseFrom, isNot(contains(slowUrl)));
+        expect(outcome.targetCount, equals(2));
+        expect(
+          outcome.acceptedByAll,
+          isFalse,
+          reason:
+              'a relay whose connecting socket was actually attempted and '
+              'timed out must still count as unreachable',
+        );
       },
     );
   });

@@ -23,9 +23,10 @@ import 'dart:async';
 /// Every relay the publish targeted appears in exactly one of [acceptedBy],
 /// [rejectedBy], [noResponseFrom] or [unreachableTargets], and no other relay
 /// appears at all. "Targeted" means every relay the fan-out reached, plus the
-/// ones it was supposed to reach and could not — a configured relay whose
-/// socket was down when the publish started was never asked, and does not
-/// appear (see [PublishTracker.countedTargets]).
+/// relays it meant to count if a write failed. Configured relays that were
+/// plainly disconnected and never attempted do not appear, while relays whose
+/// in-flight connection was actually attempted can still be reported as
+/// unreachable (see [PublishTracker.countedTargets]).
 class PublishOutcome {
   const PublishOutcome({
     required this.eventId,
@@ -154,7 +155,7 @@ class PublishTracker {
     required Duration timeout,
     Set<String>? countedTargets,
     this.settleWindow = defaultSettleWindow,
-  }) : countedTargets = countedTargets ?? expectedRelays {
+  }) : _countedTargets = countedTargets ?? expectedRelays {
     _timer = Timer(timeout, _onTimeout);
   }
 
@@ -200,12 +201,13 @@ class PublishTracker {
 
   /// The relays an unwritten target is reported against.
   ///
-  /// Defaults to [expectedRelays]. A caller narrows it to exclude relays that
-  /// were never going to be reached — a configured relay whose socket is down
-  /// was never asked, so counting it would make every publish read as partial.
-  /// Only [PublishOutcome.unreachableTargets] consults this; anything the
-  /// fan-out actually reached counts through [setReachable] regardless.
-  final Set<String> countedTargets;
+  /// Defaults to [expectedRelays]. A caller narrows it up front to exclude
+  /// relays that were never going to be reached, then may add back relays the
+  /// fan-out actually attempted. Only [PublishOutcome.unreachableTargets]
+  /// consults this; anything the fan-out wrote to counts through [setReachable]
+  /// regardless.
+  Set<String> get countedTargets => _countedTargets;
+  Set<String> _countedTargets;
 
   /// Grace period granted to the remaining relays after the first answer.
   final Duration settleWindow;
@@ -261,9 +263,15 @@ class PublishTracker {
   ///
   /// Relays that were targeted but not reached stop being awaited and are
   /// reported as unreachable.
-  void setReachable(Iterable<String> reachable) {
+  void setReachable(
+    Iterable<String> reachable, {
+    Iterable<String>? countedTargets,
+  }) {
     if (_closed) return;
     _reachable = reachable.toSet();
+    if (countedTargets != null) {
+      _countedTargets = countedTargets.toSet();
+    }
     _fanOutReported = true;
     if (_timedOutBeforeFanOut) {
       _complete();
@@ -379,7 +387,7 @@ class PublishTracker {
         .toList(growable: false);
     // A relay that answered is never unreachable, even if the fan-out reported
     // its write as failed — the answer proves it got the frame.
-    final unreachable = countedTargets
+    final unreachable = _countedTargets
         .where((r) => !awaitable.contains(r) && !answered(r))
         .toList(growable: false);
     _completer.complete(
