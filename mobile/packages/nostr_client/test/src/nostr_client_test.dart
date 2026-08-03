@@ -1569,25 +1569,36 @@ void main() {
         return captured as void Function(Event);
       }
 
-      Event videoEvent({String? id, List<List<String>>? tags}) {
+      Event videoEvent({
+        String? id,
+        List<List<String>>? tags,
+        String? pubkey,
+        int createdAt = 1000,
+      }) {
         final event = Event(
-          testPublicKey,
+          pubkey ?? testPublicKey,
           addressableShortVideoKind,
           tags ??
               [
                 ['d', 'clip-1'],
               ],
           'a video',
+          createdAt: createdAt,
         );
         if (id != null) event.id = id;
         return event;
       }
 
-      Event deletionEvent(List<List<String>> tags) => Event(
-        testPublicKey,
+      Event deletionEvent(
+        List<List<String>> tags, {
+        String? pubkey,
+        int createdAt = 2000,
+      }) => Event(
+        pubkey ?? testPublicKey,
         EventKind.eventDeletion,
         tags,
         'deleted',
+        createdAt: createdAt,
       );
 
       setUp(() {
@@ -1682,6 +1693,70 @@ void main() {
 
         verify(() => mockNostrEventsDao.upsertEvent(other)).called(1);
       });
+
+      test(
+        'ignores an `e` tag from someone other than the event author',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+          final video = videoEvent(id: 'a' * 64);
+
+          // NIP-09: a client MUST check the referenced event's pubkey against
+          // the deletion request's. Relays are not authoritative here, and
+          // inbound REQ filters are not enforced client-side, so any connected
+          // relay can land a forged deletion on an open subscription.
+          onEvent(
+            deletionEvent([
+              ['e', video.id],
+            ], pubkey: 'f' * 64),
+          );
+          await pumpEventQueue();
+
+          onEvent(video);
+
+          verify(() => mockNostrEventsDao.upsertEvent(video)).called(1);
+        },
+      );
+
+      test(
+        'caches a coordinate republished after the deletion request',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+
+          // NIP-09 scopes an `a` deletion to versions up to its own created_at,
+          // so a later version under the same coordinate is not covered.
+          final republished = videoEvent(id: 'e' * 64, createdAt: 5000);
+          onEvent(republished);
+
+          verify(() => mockNostrEventsDao.upsertEvent(republished)).called(1);
+        },
+      );
+
+      test(
+        'still skips a coordinate version older than the deletion request',
+        () async {
+          final onEvent = subscribeAndCaptureRelayCallback();
+
+          onEvent(
+            deletionEvent([
+              ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
+            ], createdAt: 3000),
+          );
+          await pumpEventQueue();
+
+          // Default created_at (1000) predates the deletion above (3000).
+          final older = videoEvent(id: 'f' * 64);
+          onEvent(older);
+
+          verifyNever(() => mockNostrEventsDao.upsertEvent(older));
+        },
+      );
     });
 
     group('subscribe', () {

@@ -175,10 +175,21 @@ class NostrClient {
   /// Upper bound on remembered NIP-09 tombstones, per set.
   static const int _maxTrackedTombstones = 2000;
 
-  /// Event ids and `kind:pubkey:d-tag` coordinates removed by an observed or
-  /// published Kind 5. Insertion-ordered so eviction drops the oldest.
-  final Set<String> _tombstonedEventIds = <String>{};
-  final Set<String> _tombstonedCoordinates = <String>{};
+  /// `pubkey:event-id` pairs removed by an observed or published Kind 5.
+  ///
+  /// Keyed by the *deletion author* so a forged `e` tag cannot suppress
+  /// another author's event: NIP-09 requires a client to check that the
+  /// referenced event's pubkey matches the deletion request's, and the
+  /// referenced event is often not in the store to check against, so the
+  /// pubkey is carried in the key and compared when the event arrives.
+  final Set<String> _tombstonedEventKeys = <String>{};
+
+  /// `kind:pubkey:d-tag` coordinate to the `created_at` of the deletion that
+  /// removed it. NIP-09 scopes an `a` deletion to versions up to that
+  /// timestamp, so a coordinate republished afterwards must cache again.
+  ///
+  /// Insertion-ordered (`LinkedHashMap`) so eviction drops the oldest.
+  final Map<String, int> _tombstonedCoordinates = <String, int>{};
 
   /// `"id:sig"` keys of events already persisted — and therefore already
   /// signature-verified — in a previous session. Seeded once at
@@ -306,6 +317,7 @@ class NostrClient {
       eventIds: targetEventIds,
       addressableIds: targetAddressableIds,
       deletionPubkey: deletionEvent.pubkey,
+      deletionCreatedAt: deletionEvent.createdAt,
     );
 
     await _deleteCachedEventsForDeletion(
@@ -326,11 +338,13 @@ class NostrClient {
     required List<String> eventIds,
     required List<AId> addressableIds,
     required String deletionPubkey,
+    required int deletionCreatedAt,
   }) {
     for (final eventId in eventIds) {
-      _tombstonedEventIds
-        ..remove(eventId)
-        ..add(eventId);
+      final key = _tombstoneEventKey(pubkey: deletionPubkey, eventId: eventId);
+      _tombstonedEventKeys
+        ..remove(key)
+        ..add(key);
     }
     for (final addressableId in addressableIds) {
       if (addressableId.pubkey != deletionPubkey) continue;
@@ -339,19 +353,25 @@ class NostrClient {
         pubkey: addressableId.pubkey,
         dTag: addressableId.dTag,
       );
-      _tombstonedCoordinates
-        ..remove(key)
-        ..add(key);
+      // Keep the newest deletion for a coordinate, and re-insert so eviction
+      // still drops the least recently tombstoned.
+      final known = _tombstonedCoordinates.remove(key);
+      _tombstonedCoordinates[key] = known == null
+          ? deletionCreatedAt
+          : (known > deletionCreatedAt ? known : deletionCreatedAt);
     }
-    _evictOldestTombstones(_tombstonedEventIds);
-    _evictOldestTombstones(_tombstonedCoordinates);
+    while (_tombstonedEventKeys.length > _maxTrackedTombstones) {
+      _tombstonedEventKeys.remove(_tombstonedEventKeys.first);
+    }
+    while (_tombstonedCoordinates.length > _maxTrackedTombstones) {
+      _tombstonedCoordinates.remove(_tombstonedCoordinates.keys.first);
+    }
   }
 
-  void _evictOldestTombstones(Set<String> tracked) {
-    while (tracked.length > _maxTrackedTombstones) {
-      tracked.remove(tracked.first);
-    }
-  }
+  static String _tombstoneEventKey({
+    required String pubkey,
+    required String eventId,
+  }) => '${pubkey.toLowerCase()}:${eventId.toLowerCase()}';
 
   static String _tombstoneCoordinateKey({
     required int kind,
@@ -366,18 +386,25 @@ class NostrClient {
   /// moment any relay redelivers it, undoing the purge and re-serving the
   /// clip from the local store on the next launch.
   bool _shouldSkipAutoCache(Event event) {
-    if (_tombstonedEventIds.contains(event.id)) return true;
+    // The key carries the deletion author, so this only matches when the
+    // event's own pubkey signed the deletion that named it.
+    if (_tombstonedEventKeys.contains(
+      _tombstoneEventKey(pubkey: event.pubkey, eventId: event.id),
+    )) {
+      return true;
+    }
     if (!EventKind.isParameterizedReplaceable(event.kind)) return false;
 
     for (final tag in event.tags) {
       if (tag.length < 2 || tag[0] != 'd' || tag[1].isEmpty) continue;
-      return _tombstonedCoordinates.contains(
-        _tombstoneCoordinateKey(
-          kind: event.kind,
-          pubkey: event.pubkey,
-          dTag: tag[1],
-        ),
-      );
+      final deletedUpTo =
+          _tombstonedCoordinates[_tombstoneCoordinateKey(
+            kind: event.kind,
+            pubkey: event.pubkey,
+            dTag: tag[1],
+          )];
+      // A version published after the deletion request is not covered by it.
+      return deletedUpTo != null && event.createdAt <= deletedUpTo;
     }
     return false;
   }
