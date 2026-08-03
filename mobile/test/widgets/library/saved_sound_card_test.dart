@@ -1,6 +1,7 @@
 // ABOUTME: Tests rich saved-sound cards and their source/private metadata.
 // ABOUTME: Ensures music-only fallbacks stay quiet and actions remain distinct.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -8,6 +9,8 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/widgets/library/saved_sound_card.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+
+import '../../helpers/contrast.dart';
 
 SavedSound _richSound() => const SavedSound(
   audio: AudioEvent(
@@ -35,10 +38,11 @@ Widget _app(
   VoidCallback? onPreview,
   VoidCallback? onEdit,
   VoidCallback? onRemove,
+  ThemeData? theme,
 }) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  theme: ThemeData.dark(),
+  theme: theme ?? ThemeData.dark(),
   home: Scaffold(
     body: SingleChildScrollView(
       child: SavedSoundCard(
@@ -159,4 +163,38 @@ void main() {
     expect((previews, edits, removes), (1, 1, 1));
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  for (final (name, theme) in [
+    ('dark', VineTheme.theme),
+    ('light', VineTheme.lightTheme),
+  ]) {
+    testWidgets('card text stays legible on the $name theme', (tester) async {
+      await tester.pumpWidget(_app(_richSound(), theme: theme));
+
+      final cardFill = find
+          .descendant(
+            of: find.byType(SavedSoundCard),
+            matching: find.byType(DecoratedBox),
+          )
+          .first;
+      final decoration =
+          tester.widget<DecoratedBox>(cardFill).decoration as BoxDecoration;
+
+      for (final label in [
+        'Morning inspiration',
+        'A tiny bird visits',
+        'Filmed outside before breakfast.',
+        'Listen to that little bird.',
+      ]) {
+        final color = tester.widget<Text>(find.text(label)).style!.color!;
+        expect(
+          contrastRatio(color, decoration.color!),
+          greaterThanOrEqualTo(4.5),
+          reason: '"$label" is unreadable on the card fill',
+        );
+      }
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 }

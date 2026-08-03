@@ -168,7 +168,7 @@ class _SavedSoundDetailsEditorState extends State<SavedSoundDetailsEditor> {
           Text(
             context.l10n.savedSoundDeviceOnly,
             style: VineTheme.labelSmallFont(
-              color: VineTheme.onSurfaceVariant,
+              color: context.vineColors.onSurfaceVariant,
             ),
           ),
           if (hasSaveError)

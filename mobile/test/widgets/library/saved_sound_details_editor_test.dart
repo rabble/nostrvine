@@ -1,6 +1,7 @@
 // ABOUTME: Tests private saved-sound label and hashtag autosaving.
 // ABOUTME: Covers debounce, normalization, removal, disposal, and retry state.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,8 @@ import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/contrast.dart';
 
 class _NoProbe implements SavedSoundMediaProbe {
   @override
@@ -59,11 +62,13 @@ Future<(SavedSoundsBloc, SavedSoundsService)> _bloc({
   return (bloc, service);
 }
 
-Widget _app(SavedSoundsBloc bloc) => MaterialApp(
+Widget _app(SavedSoundsBloc bloc, {ThemeData? theme}) => MaterialApp(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
-  theme: ThemeData.dark(),
+  theme: theme ?? ThemeData.dark(),
   home: Scaffold(
+    // Mirrors LibraryScreen, which paints the tab on the palette surface.
+    backgroundColor: theme?.extension<VineThemeColors>()?.surface,
     body: BlocProvider.value(
       value: bloc,
       child: SavedSoundDetailsEditor(sound: _record()),
@@ -183,4 +188,34 @@ void main() {
     expect(find.text('Still visible'), findsOneWidget);
     expect(find.byKey(const Key('saved_sound_details_retry')), findsOneWidget);
   });
+
+  for (final (name, theme) in [
+    ('dark', VineTheme.theme),
+    ('light', VineTheme.lightTheme),
+  ]) {
+    testWidgets('device-only caption stays legible on the $name theme', (
+      tester,
+    ) async {
+      final (bloc, _) = await _bloc();
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await bloc.close();
+      });
+
+      await tester.pumpWidget(_app(bloc, theme: theme));
+
+      final background = theme.extension<VineThemeColors>()!.surface;
+      final caption = tester.widget<Text>(
+        find.text(
+          lookupAppLocalizations(const Locale('en')).savedSoundDeviceOnly,
+        ),
+      );
+
+      expect(
+        contrastRatio(caption.style!.color!, background),
+        greaterThanOrEqualTo(4.5),
+        reason: 'the device-only caption is unreadable on the tab surface',
+      );
+    });
+  }
 }

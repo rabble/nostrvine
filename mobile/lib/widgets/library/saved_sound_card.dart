@@ -177,9 +177,7 @@ class _SavedSoundText extends StatelessWidget {
           displayTitle,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: VineTheme.titleMediumFont(
-            color: context.vineColors.onSurface,
-          ),
+          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
         ),
         if (secondaryTitle != null && secondaryTitle != displayTitle)
           Text(
@@ -201,7 +199,7 @@ class _SavedSoundText extends StatelessWidget {
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
             style: VineTheme.bodySmallFont(
-              color: context.vineColors.onSurfaceVariant,
+              color: VineTheme.onSurfaceVariant,
             ),
           ),
         if (source?.transcript case final transcript?) ...[
