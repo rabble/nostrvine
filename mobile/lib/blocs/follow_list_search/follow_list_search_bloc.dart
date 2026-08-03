@@ -125,6 +125,13 @@ class FollowListSearchBloc
   ) async {
     if (identical(event.repository, _profileRepository)) return;
     _profileRepository = event.repository;
+    // Drop the terms resolved through the previous repository: a pubkey it
+    // could not reach was pinned to its fallback name, and the resolve pass
+    // skips anything already in the map. Without this, "the repository just
+    // improved" could never actually improve a name.
+    if (state.searchTerms.isNotEmpty) {
+      emit(state.copyWith(searchTerms: const {}));
+    }
     // A query typed before the repository resolved matched on fallback names
     // only; complete it now that real profiles are reachable.
     await _resolveSearchTerms(emit);
@@ -151,13 +158,17 @@ class FollowListSearchBloc
           .take(searchProfileResolveChunkSize)
           .toList();
 
-      var fetched = const <String, UserProfile>{};
+      final Map<String, UserProfile> fetched;
       try {
         fetched = await repository.fetchBatchProfiles(pubkeys: chunk);
       } catch (error, stackTrace) {
-        // Expected offline and on relay timeouts. The chunk falls back to
-        // generated names below, which is what the tiles render anyway.
+        // Expected offline and on relay timeouts. Record nothing: the chunk
+        // still matches on generated names through [visibleFrom], and leaving
+        // it out of the map is what lets the next pass retry it. Writing
+        // fallbacks here would pin these rows to a generated name for the
+        // lifetime of the screen.
         addError(error, stackTrace);
+        continue;
       }
 
       searchTerms = {

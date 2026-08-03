@@ -311,6 +311,66 @@ void main() {
     );
 
     blocTest<FollowListSearchBloc, FollowListSearchState>(
+      'retries a chunk whose profile fetch threw instead of pinning it',
+      build: createBloc,
+      setUp: () {
+        var attempt = 0;
+        when(
+          () => profileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async {
+          if (attempt++ == 0) throw Exception('offline');
+          return {
+            _alicePubkey: _profile(pubkey: _alicePubkey, displayName: 'Alice'),
+          };
+        });
+      },
+      act: (bloc) async {
+        bloc.add(const FollowListSearchQueryChanged('ali', _allPubkeys));
+        await Future<void>.delayed(_pastDebounce);
+        bloc.add(const FollowListSearchQueryChanged('alic', _allPubkeys));
+      },
+      wait: _pastDebounce,
+      errors: () => [isA<Exception>()],
+      verify: (bloc) {
+        expect(bloc.state.visibleFrom(_allPubkeys), [_alicePubkey]);
+      },
+    );
+
+    blocTest<FollowListSearchBloc, FollowListSearchState>(
+      'drops terms resolved through the previous profile repository',
+      build: createBloc,
+      setUp: () {
+        // This repository cannot reach Alice, so she is only matchable by her
+        // generated name until a better one arrives.
+        when(
+          () => profileRepository.fetchBatchProfiles(
+            pubkeys: any(named: 'pubkeys'),
+          ),
+        ).thenAnswer((_) async => const {});
+      },
+      act: (bloc) async {
+        bloc.add(const FollowListSearchQueryChanged('ali', _allPubkeys));
+        await Future<void>.delayed(_pastDebounce);
+
+        final replacement = _MockProfileRepository();
+        when(
+          () => replacement.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
+        ).thenAnswer(
+          (_) async => {
+            _alicePubkey: _profile(pubkey: _alicePubkey, displayName: 'Alice'),
+          },
+        );
+        bloc.add(FollowListSearchProfileRepositoryChanged(replacement));
+      },
+      wait: _pastDebounce,
+      verify: (bloc) {
+        expect(bloc.state.visibleFrom(_allPubkeys), [_alicePubkey]);
+      },
+    );
+
+    blocTest<FollowListSearchBloc, FollowListSearchState>(
       'clearing the query restores the full list',
       build: createBloc,
       act: (bloc) async {
