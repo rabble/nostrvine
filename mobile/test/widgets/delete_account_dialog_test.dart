@@ -97,6 +97,9 @@ Finder _deleteAllContentButton() => find.widgetWithText(
   _englishL10n().deleteAccountDeleteAllContentButton,
 );
 
+Finder _deleteSheetCancelButton() =>
+    find.widgetWithText(DivineButton, _englishL10n().commonCancel);
+
 Future<void> _tapBurnUsernameCheckbox(WidgetTester tester) async {
   final tile = find.byType(DivineRowCheckbox);
   await tester.ensureVisible(tile);
@@ -247,6 +250,33 @@ void main() {
       );
 
       await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(_deleteAllContentButton(), findsNothing);
+      expect(confirmCalls, isZero);
+    });
+
+    testWidgets('tapping Cancel after typing the token does not confirm', (
+      tester,
+    ) async {
+      var confirmCalls = 0;
+      await _showSheet(
+        tester,
+        onConfirm:
+            ({
+              required bool burnUsername,
+              ({String name, String canonical})? ownedUsername,
+            }) => confirmCalls++,
+      );
+
+      await tester.enterText(find.byType(TextField), 'DELETE');
+      await tester.pump();
+      expect(
+        tester.widget<DivineButton>(_deleteAllContentButton()).onPressed,
+        isNotNull,
+      );
+
+      await tester.tap(_deleteSheetCancelButton());
       await tester.pumpAndSettle();
 
       expect(_deleteAllContentButton(), findsNothing);
@@ -577,14 +607,9 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(
-        authService.deleteKeycastAccount,
-      ).thenAnswer(
-        (_) async => (
-          success: true,
-          error: null,
-          requiresReauthentication: false,
-        ),
+      when(authService.deleteKeycastAccount).thenAnswer(
+        (_) async =>
+            (success: true, error: null, requiresReauthentication: false),
       );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
@@ -692,14 +717,9 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(
-        authService.deleteKeycastAccount,
-      ).thenAnswer(
-        (_) async => (
-          success: true,
-          error: null,
-          requiresReauthentication: false,
-        ),
+      when(authService.deleteKeycastAccount).thenAnswer(
+        (_) async =>
+            (success: true, error: null, requiresReauthentication: false),
       );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
@@ -753,14 +773,9 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(
-        authService.deleteKeycastAccount,
-      ).thenAnswer(
-        (_) async => (
-          success: true,
-          error: null,
-          requiresReauthentication: false,
-        ),
+      when(authService.deleteKeycastAccount).thenAnswer(
+        (_) async =>
+            (success: true, error: null, requiresReauthentication: false),
       );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
@@ -933,9 +948,7 @@ void main() {
           (_) async => DeleteAccountResult.createSuccess('event-id'),
         );
         // Content deletion succeeded; the server-side account deletion did not.
-        when(
-          authService.deleteKeycastAccount,
-        ).thenAnswer(
+        when(authService.deleteKeycastAccount).thenAnswer(
           (_) async => (
             success: false,
             error: 'server refused',
@@ -1086,9 +1099,7 @@ void main() {
         );
         // Every non-OAuth user reaches this call and fails it: there is no
         // Keycast session to use, so a failure here is expected and benign.
-        when(
-          authService.deleteKeycastAccount,
-        ).thenAnswer(
+        when(authService.deleteKeycastAccount).thenAnswer(
           (_) async => (
             success: false,
             error: 'no keycast session',
@@ -1128,10 +1139,7 @@ void main() {
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.text(l10n.deleteAccountSuccess), findsOneWidget);
-        expect(
-          find.text(l10n.deleteAccountServerDeletionFailed),
-          findsNothing,
-        );
+        expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
       },
     );
 
@@ -1156,9 +1164,7 @@ void main() {
         ).thenAnswer(
           (_) async => DeleteAccountResult.createSuccess('event-id'),
         );
-        when(
-          authService.deleteKeycastAccount,
-        ).thenAnswer(
+        when(authService.deleteKeycastAccount).thenAnswer(
           (_) async => (
             success: false,
             error: 'fk error',
@@ -1510,58 +1516,53 @@ void main() {
     // refreshed. 275 denials across 57 users in 30 days, 48 of whom never
     // completed: content broadcast for deletion, account still alive, still
     // signed in. Nothing destructive may run before the gate clears.
-    testWidgets(
-      'publishes nothing when the session cannot authorize deletion',
-      (tester) async {
-        final deletionService = _MockAccountDeletionService();
-        final authService = _MockAuthService();
-        when(authService.checkAccountDeletionReadiness).thenAnswer(
-          (_) async => AccountDeletionReadiness.requiresReauthentication,
-        );
-        when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
+    testWidgets('publishes nothing when the session cannot authorize deletion', (
+      tester,
+    ) async {
+      final deletionService = _MockAccountDeletionService();
+      final authService = _MockAuthService();
+      when(authService.checkAccountDeletionReadiness).thenAnswer(
+        (_) async => AccountDeletionReadiness.requiresReauthentication,
+      );
+      when(() => authService.currentPublicKeyHex).thenReturn(_pubkeyHex);
 
-        late BuildContext capturedContext;
-        await tester.pumpWidget(
-          _wrapWithRouter(
-            Builder(
-              builder: (context) {
-                capturedContext = context;
-                return const Scaffold(body: SizedBox.shrink());
-              },
-            ),
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const Scaffold(body: SizedBox.shrink());
+            },
           ),
-        );
+        ),
+      );
 
-        await executeAccountDeletion(
-          context: capturedContext,
-          deletionService: deletionService,
-          authService: authService,
-          confirmedPubkey: _pubkeyHex,
-        );
-        await tester.pumpAndSettle();
+      await executeAccountDeletion(
+        context: capturedContext,
+        deletionService: deletionService,
+        authService: authService,
+        confirmedPubkey: _pubkeyHex,
+      );
+      await tester.pumpAndSettle();
 
-        // Nothing irreversible was attempted.
-        verifyNever(
-          () => deletionService.deleteAccount(
-            onProgress: any(named: 'onProgress'),
-            expectedPubkey: any(named: 'expectedPubkey'),
-          ),
-        );
-        verifyNever(authService.deleteKeycastAccount);
-        verifyNever(
-          () =>
-              authService.signOut(deleteKeys: true, deleteLocalUserData: true),
-        );
+      // Nothing irreversible was attempted.
+      verifyNever(
+        () => deletionService.deleteAccount(
+          onProgress: any(named: 'onProgress'),
+          expectedPubkey: any(named: 'expectedPubkey'),
+        ),
+      );
+      verifyNever(authService.deleteKeycastAccount);
+      verifyNever(
+        () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),
+      );
 
-        // The user is told to sign in again, not that their network is at fault.
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(find.text(l10n.deleteAccountReauthRequired), findsOneWidget);
-        expect(
-          find.text(l10n.deleteAccountServerDeletionFailed),
-          findsNothing,
-        );
-      },
-    );
+      // The user is told to sign in again, not that their network is at fault.
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.deleteAccountReauthRequired), findsOneWidget);
+      expect(find.text(l10n.deleteAccountServerDeletionFailed), findsNothing);
+    });
 
     testWidgets('proceeds when confirmedPubkey matches the current account', (
       tester,
@@ -1580,14 +1581,9 @@ void main() {
           expectedPubkey: any(named: 'expectedPubkey'),
         ),
       ).thenAnswer((_) async => DeleteAccountResult.createSuccess('event-id'));
-      when(
-        authService.deleteKeycastAccount,
-      ).thenAnswer(
-        (_) async => (
-          success: true,
-          error: null,
-          requiresReauthentication: false,
-        ),
+      when(authService.deleteKeycastAccount).thenAnswer(
+        (_) async =>
+            (success: true, error: null, requiresReauthentication: false),
       );
       when(
         () => authService.signOut(deleteKeys: true, deleteLocalUserData: true),

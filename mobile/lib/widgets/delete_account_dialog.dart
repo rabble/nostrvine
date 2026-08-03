@@ -1,4 +1,4 @@
-// ABOUTME: Account deletion flow: confirmation sheets, progress dialog, orchestration
+// ABOUTME: Account deletion flow: confirmation sheets, progress sheet, orchestration
 // ABOUTME: Warning sheets for key removal and content deletion with confirmation
 
 import 'dart:async';
@@ -339,77 +339,65 @@ class _DeleteIdentityHeader extends StatelessWidget {
   }
 }
 
-/// Progress dialog that shows deletion progress using BLoC pattern.
-class _DeletionProgressDialog extends StatelessWidget {
-  const _DeletionProgressDialog();
+/// Progress sheet content that shows deletion progress using BLoC pattern.
+class _DeletionProgressSheetContent extends StatelessWidget {
+  const _DeletionProgressSheetContent();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Card(
-        color: context.vineColors.card,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child:
-              BlocBuilder<
-                AccountDeletionProgressCubit,
-                AccountDeletionProgressState
-              >(
-                builder: (context, state) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: switch (state) {
-                      AccountDeletionProgressUpdating(
-                        :final current,
-                        :final total,
-                      ) =>
-                        [
-                          CircularProgressIndicator(
-                            value: current / total,
-                            color: VineTheme.vineGreen,
-                            backgroundColor: context.vineColors.card,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            context.l10n.videoGridDeletingContent,
-                            style: TextStyle(
-                              color: context.vineColors.primaryText,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            context.l10n.deleteAccountProgressEvents(
-                              current,
-                              total,
-                            ),
-                            style: TextStyle(
-                              color: context.vineColors.secondaryText,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      AccountDeletionProgressPreparing() => [
-                        const CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      child:
+          BlocBuilder<
+            AccountDeletionProgressCubit,
+            AccountDeletionProgressState
+          >(
+            builder: (context, state) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: switch (state) {
+                  AccountDeletionProgressUpdating(
+                    :final current,
+                    :final total,
+                  ) =>
+                    [
+                      CircularProgressIndicator(
+                        value: current / total,
+                        color: VineTheme.vineGreen,
+                        backgroundColor: context.vineColors.card,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        context.l10n.videoGridDeletingContent,
+                        style: VineTheme.bodyLargeFont(
+                          color: context.vineColors.primaryText,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          context.l10n.deleteAccountPreparingDeletion,
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.l10n.deleteAccountProgressEvents(
+                          current,
+                          total,
                         ),
-                      ],
-                    },
-                  );
+                        style: VineTheme.bodyMediumFont(
+                          color: context.vineColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  AccountDeletionProgressPreparing() => [
+                    const CircularProgressIndicator(color: VineTheme.vineGreen),
+                    const SizedBox(height: 16),
+                    Text(
+                      context.l10n.deleteAccountPreparingDeletion,
+                      style: VineTheme.bodyLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
+                    ),
+                  ],
                 },
-              ),
-        ),
-      ),
+              );
+            },
+          ),
     );
   }
 }
@@ -429,7 +417,7 @@ class _DeletionProgressDialog extends StatelessWidget {
 /// Aborts before any step (including the burn) when [confirmedPubkey] is set and
 /// no longer matches the signed-in account.
 ///
-/// [context] - BuildContext for showing dialogs
+/// [context] - BuildContext for showing sheets
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
 /// [profileRepository] - Burns the username / re-checks ownership when
@@ -452,25 +440,29 @@ Future<void> executeAccountDeletion({
   // Create cubit for tracking progress
   final cubit = AccountDeletionProgressCubit();
 
-  // Show progress dialog with BlocProvider
+  // Show progress sheet with BlocProvider
   if (!context.mounted) return;
   unawaited(
-    showDialog<void>(
+    VineBottomSheet.show<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => BlocProvider.value(
-        value: cubit,
-        child: const _DeletionProgressDialog(),
-      ),
+      scrollable: false,
+      showHeader: false,
+      showDragHandle: false,
+      isDismissible: false,
+      enableDrag: false,
+      tapOutsideToDismiss: false,
+      body: const _DeletionProgressSheetContent(),
+      contentWrapper: (_, child) =>
+          BlocProvider.value(value: cubit, child: child),
     ),
   );
 
-  // Track if dialog was dismissed to avoid double-popping
-  var dialogDismissed = false;
+  // Track if the progress sheet was dismissed to avoid double-popping.
+  var progressSheetDismissed = false;
 
-  void dismissDialog() {
-    if (!dialogDismissed && context.mounted) {
-      dialogDismissed = true;
+  void dismissProgressSheet() {
+    if (!progressSheetDismissed && context.mounted) {
+      progressSheetDismissed = true;
       context.pop();
     }
   }
@@ -516,7 +508,7 @@ Future<void> executeAccountDeletion({
         name: screenName,
         category: LogCategory.auth,
       );
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(accountChangedText, error: true),
@@ -543,7 +535,7 @@ Future<void> executeAccountDeletion({
         name: screenName,
         category: LogCategory.auth,
       );
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         final text = context.l10n.deleteAccountReauthRequired;
         ScaffoldMessenger.of(
@@ -602,7 +594,7 @@ Future<void> executeAccountDeletion({
           name: screenName,
           category: LogCategory.auth,
         );
-        dismissDialog();
+        dismissProgressSheet();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(message, error: true),
@@ -621,7 +613,7 @@ Future<void> executeAccountDeletion({
         name: screenName,
         category: LogCategory.auth,
       );
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
@@ -655,7 +647,7 @@ Future<void> executeAccountDeletion({
           name: screenName,
           category: LogCategory.auth,
         );
-        dismissDialog();
+        dismissProgressSheet();
         if (context.mounted) {
           // The vanish and the kind-5 sweep have already been published and
           // confirmed by a relay at this point, so neither message may claim
@@ -709,7 +701,7 @@ Future<void> executeAccountDeletion({
 
       // Close loading indicator and show result snackbar
       // Router will automatically redirect to /welcome after sign out
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         // When the relay query that enumerates existing content failed, no
         // per-item deletion request was sent for anything the user had already
@@ -740,7 +732,7 @@ Future<void> executeAccountDeletion({
           category: LogCategory.auth,
         );
       }
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
@@ -756,8 +748,8 @@ Future<void> executeAccountDeletion({
   } finally {
     await cubit.close();
 
-    // Ensure dialog is dismissed even if an exception occurred
-    dismissDialog();
+    // Ensure the progress sheet is dismissed even if an exception occurred.
+    dismissProgressSheet();
   }
 }
 
