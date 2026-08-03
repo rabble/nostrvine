@@ -6,112 +6,16 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:nostr_sdk/relay/client_connected.dart';
 
-class _BufferingSink implements WebSocketSink {
-  final List<dynamic> messages = [];
-  bool closed = false;
-  final Completer<void> _doneCompleter = Completer<void>();
-
-  @override
-  void add(dynamic data) {
-    if (closed) throw StateError('Sink is closed');
-    messages.add(data);
-  }
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {}
-
-  @override
-  Future<dynamic> addStream(Stream<dynamic> stream) async {
-    await for (final data in stream) {
-      add(data);
-    }
-  }
-
-  @override
-  Future<dynamic> close([int? closeCode, String? closeReason]) async {
-    closed = true;
-    if (!_doneCompleter.isCompleted) _doneCompleter.complete();
-  }
-
-  @override
-  Future<dynamic> get done => _doneCompleter.future;
-}
-
-class _FakeWebSocketChannel implements WebSocketChannel {
-  _FakeWebSocketChannel({this.failReady = false, this.readyDelay});
-
-  /// When true, `ready` rejects — the shape of a relay that is configured but
-  /// currently unreachable, which is what `RelayBase.connect()` reports as a
-  /// failed connect.
-  final bool failReady;
-
-  /// How long the handshake takes. While it is outstanding the relay is not
-  /// yet connected, so it is not a *counted* target — but `send` still waits
-  /// it out and writes, so it can still answer.
-  final Duration? readyDelay;
-
-  final _BufferingSink _sink = _BufferingSink();
-  final StreamController<dynamic> _streamController =
-      StreamController<dynamic>.broadcast();
-
-  @override
-  WebSocketSink get sink => _sink;
-
-  @override
-  Stream<dynamic> get stream => _streamController.stream;
-
-  @override
-  int? get closeCode => null;
-
-  @override
-  String? get closeReason => null;
-
-  @override
-  String? get protocol => null;
-
-  @override
-  Future<void> get ready {
-    if (failReady) return Future<void>.error(StateError('unreachable'));
-    final delay = readyDelay;
-    return delay == null ? Future.value() : Future<void>.delayed(delay);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {
-    throw UnimplementedError('${invocation.memberName} not used in this test');
-  }
-
-  void simulateMessage(String message) => _streamController.add(message);
-
-  List<dynamic> get sentMessages => _sink.messages;
-}
-
-class _FakeChannelFactory implements WebSocketChannelFactory {
-  _FakeChannelFactory({this.failReady = false, this.readyDelay});
-
-  final bool failReady;
-  final Duration? readyDelay;
-  final List<_FakeWebSocketChannel> createdChannels = [];
-
-  @override
-  WebSocketChannel create(Uri uri) {
-    final channel = _FakeWebSocketChannel(
-      failReady: failReady,
-      readyDelay: readyDelay,
-    );
-    createdChannels.add(channel);
-    return channel;
-  }
-}
+import '../support/fake_web_socket.dart';
 
 /// Answers `OK true` from [factory]'s channel as soon as its EVENT lands.
-void _acceptEventWhenSent(_FakeChannelFactory factory, String eventId) {
+void _acceptEventWhenSent(FakeWebSocketChannelFactory factory, String eventId) {
   Timer? timer;
   timer = Timer.periodic(const Duration(milliseconds: 5), (_) {
     if (factory.createdChannels.isEmpty) return;
-    final channel = factory.createdChannels.single;
+    final channel = factory.createdChannels.last;
     final sawEvent = channel.sentMessages.any((m) {
       final frame = jsonDecode(m as String) as List<dynamic>;
       return frame.first == 'EVENT';
@@ -123,6 +27,14 @@ void _acceptEventWhenSent(_FakeChannelFactory factory, String eventId) {
   addTearDown(() => timer?.cancel());
 }
 
+Future<void> _waitForRelayState(RelayBase relay, int state) async {
+  for (var i = 0; i < 50; i++) {
+    if (relay.relayStatus.connected == state) return;
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
+  fail('relay ${relay.url} did not reach state $state');
+}
+
 void main() {
   group('RelayPool publish targets', () {
     const liveUrl = 'wss://relay.divine.video';
@@ -131,7 +43,7 @@ void main() {
 
     late LocalNostrSigner signer;
     late Nostr nostr;
-    late _FakeChannelFactory liveFactory;
+    late FakeWebSocketChannelFactory liveFactory;
 
     setUp(() async {
       signer = LocalNostrSigner(
@@ -140,7 +52,7 @@ void main() {
       nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
       await nostr.refreshPublicKey();
 
-      liveFactory = _FakeChannelFactory();
+      liveFactory = FakeWebSocketChannelFactory();
       await nostr.relayPool.add(
         RelayBase(liveUrl, RelayStatus(liveUrl), channelFactory: liveFactory),
       );
@@ -152,7 +64,9 @@ void main() {
         RelayBase(
           downUrl,
           RelayStatus(downUrl),
-          channelFactory: _FakeChannelFactory(failReady: true),
+          channelFactory: FakeWebSocketChannelFactory(
+            readyError: StateError('unreachable'),
+          ),
         ),
       );
     });
@@ -245,6 +159,7 @@ void main() {
   group('RelayPool publish targets while relays are still connecting', () {
     const fastUrl = 'wss://relay.fast.example';
     const slowUrl = 'wss://relay.slow.example';
+    const failedUrl = 'wss://relay.failed.example';
     const eventId = 'still-connecting-event-id';
 
     test(
@@ -266,7 +181,7 @@ void main() {
         // with the socket yet. The fast one lands and answers while the
         // sequential fan-out is still waiting on the slow one, so its OK
         // arrives before the fan-out reports which relays it wrote to.
-        final fastFactory = _FakeChannelFactory(
+        final fastFactory = FakeWebSocketChannelFactory(
           readyDelay: const Duration(milliseconds: 30),
         );
         unawaited(
@@ -283,7 +198,7 @@ void main() {
             RelayBase(
               slowUrl,
               RelayStatus(slowUrl),
-              channelFactory: _FakeChannelFactory(
+              channelFactory: FakeWebSocketChannelFactory(
                 readyDelay: const Duration(milliseconds: 800),
               ),
             ),
@@ -328,7 +243,7 @@ void main() {
         );
         await nostr.refreshPublicKey();
 
-        final fastFactory = _FakeChannelFactory();
+        final fastFactory = FakeWebSocketChannelFactory();
         await nostr.relayPool.add(
           RelayBase(fastUrl, RelayStatus(fastUrl), channelFactory: fastFactory),
         );
@@ -337,7 +252,7 @@ void main() {
           RelayBase(
             slowUrl,
             RelayStatus(slowUrl),
-            channelFactory: _FakeChannelFactory(
+            channelFactory: FakeWebSocketChannelFactory(
               readyDelay: const Duration(milliseconds: 800),
             ),
           ),
@@ -367,6 +282,60 @@ void main() {
               'a relay whose connecting socket was actually attempted and '
               'timed out must still count as unreachable',
         );
+      },
+    );
+
+    test(
+      'reports an attempted connecting relay as unreachable when connect fails',
+      () async {
+        final signer = LocalNostrSigner(
+          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12',
+        );
+        final nostr = Nostr(
+          signer,
+          [],
+          (url) => RelayBase(url, RelayStatus(url)),
+        );
+        await nostr.refreshPublicKey();
+
+        final fastFactory = FakeWebSocketChannelFactory();
+        await nostr.relayPool.add(
+          RelayBase(fastUrl, RelayStatus(fastUrl), channelFactory: fastFactory),
+        );
+
+        final failedReady = Completer<void>();
+        final failedRelay = RelayBase(
+          failedUrl,
+          RelayStatus(failedUrl),
+          channelFactory: FakeWebSocketChannelFactory(
+            readyFutureFactory: () => failedReady.future,
+          ),
+        );
+        final failedAdd = nostr.relayPool.add(failedRelay);
+        await _waitForRelayState(failedRelay, ClientConnected.connecting);
+
+        _acceptEventWhenSent(fastFactory, eventId);
+        final failTimer = Timer(const Duration(milliseconds: 20), () {
+          failedReady.completeError(StateError('connect failed'));
+        });
+        addTearDown(failTimer.cancel);
+
+        final outcome = await nostr.relayPool.sendEventAwaitOk(
+          [
+            'EVENT',
+            {'id': eventId, 'kind': 5},
+          ],
+          eventId: eventId,
+          eventKind: 5,
+          timeout: const Duration(seconds: 1),
+        );
+        await failedAdd;
+
+        expect(outcome.acceptedBy, equals([fastUrl]));
+        expect(outcome.unreachableTargets, equals([failedUrl]));
+        expect(outcome.noResponseFrom, isNot(contains(failedUrl)));
+        expect(outcome.targetCount, equals(2));
+        expect(outcome.acceptedByAll, isFalse);
       },
     );
   });

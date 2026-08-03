@@ -155,7 +155,7 @@ class PublishTracker {
     required Duration timeout,
     Set<String>? countedTargets,
     this.settleWindow = defaultSettleWindow,
-  }) : _countedTargets = countedTargets ?? expectedRelays {
+  }) : _countedTargets = countedTargets?.toSet() ?? expectedRelays.toSet() {
     _timer = Timer(timeout, _onTimeout);
   }
 
@@ -206,7 +206,7 @@ class PublishTracker {
   /// fan-out actually attempted. Only [PublishOutcome.unreachableTargets]
   /// consults this; anything the fan-out wrote to counts through [setReachable]
   /// regardless.
-  Set<String> get countedTargets => _countedTargets;
+  Set<String> get countedTargets => Set.unmodifiable(_countedTargets);
   Set<String> _countedTargets;
 
   /// Grace period granted to the remaining relays after the first answer.

@@ -1551,6 +1551,8 @@ class RelayPool {
         }
       }
 
+      final sendStartedWhileConnecting =
+          relay.relayStatus.connected == ClientConnected.connecting;
       try {
         // Check if relay requires authentication
         if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
@@ -1586,7 +1588,10 @@ class RelayPool {
                     return false;
                   },
                 );
-            if (result || timedOut || deadlineExpired()) {
+            if (result ||
+                timedOut ||
+                sendStartedWhileConnecting ||
+                deadlineExpired()) {
               attemptedRelayUrls.add(relay.url);
             }
             if (result) {
@@ -1636,7 +1641,10 @@ class RelayPool {
                   return false;
                 },
               );
-          if (result || timedOut || deadlineExpired()) {
+          if (result ||
+              timedOut ||
+              sendStartedWhileConnecting ||
+              deadlineExpired()) {
             attemptedRelayUrls.add(relay.url);
           }
           if (result) {
@@ -1647,6 +1655,9 @@ class RelayPool {
           );
         }
       } catch (err) {
+        if (sendStartedWhileConnecting) {
+          attemptedRelayUrls.add(relay.url);
+        }
         logDiagnostic(
           'send error kind=$eventKind eventId=$eventId relay=${relay.url} error=$err',
         );
