@@ -45,6 +45,10 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - During PR review, if GitHub reports no merge conflicts and the update is only addressing review feedback, do not rebase just to refresh history. Push the review fix normally; the PR is squash-merged anyway.
 - Never merge `main` into a feature branch — always rebase.
 
+## Security
+
+- Public issues, PRs, branch names, commit messages, screenshots, and descriptions must not mention corporate partners, customers, brands, campaign names, or other sensitive external identities unless a maintainer explicitly approves it. Use generic descriptors instead. The same applies to identifying values in code, tests, and fixtures — prefer keeping them in server-side configuration over committing them.
+
 ## PR Guardrails
 
 - Every PR title must use Conventional Commit format: `type(scope): summary` or `docs: summary` for docs-only PRs.
@@ -57,7 +61,6 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - Commit the completed work on the task branch before handoff.
 - Open a pull request for that branch once the change is ready for review. Do not leave finished work sitting only in a local branch or worktree.
 - Keep PRs focused and reviewable. If two pieces of work are *truly independent*, split them into separate PRs each targeting `main`. If they depend on each other, **combine them into one PR** rather than splitting and stacking.
-- Public issues, PRs, branch names, commit messages, screenshots, and descriptions must not mention corporate partners, customers, brands, campaign names, or other sensitive external identities unless a maintainer explicitly approves it. Use generic descriptors instead. The same applies to identifying values in code, tests, and fixtures — prefer keeping them in server-side configuration over committing them.
 
 ## No Technical Debt, No Failing Tests
 
