@@ -137,6 +137,37 @@ void main() {
         ],
       );
 
+      test(
+        're-sync of a settled empty tab still settles (pull-to-refresh)',
+        () async {
+          when(
+            () => mockBookmarkService.globalBookmarks,
+          ).thenReturn(const []);
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(const ProfileSavedVideosSyncRequested());
+          await bloc.stream.firstWhere(
+            (state) => state.status == ProfileSavedVideosStatus.success,
+          );
+
+          // Mirrors how ProfileGridView's RefreshIndicator awaits this tab:
+          // it holds the spinner until the bloc reports a settled state.
+          bloc.add(const ProfileSavedVideosSyncRequested());
+          final settled = bloc.stream.firstWhere(
+            (state) =>
+                !state.isRefreshing &&
+                state.status != ProfileSavedVideosStatus.syncing &&
+                state.status != ProfileSavedVideosStatus.loading,
+          );
+
+          await expectLater(
+            settled.timeout(const Duration(seconds: 1)),
+            completes,
+          );
+        },
+      );
+
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
         'reopen restores the cached list, then flips the bar off when '
         'bookmarks are unchanged',

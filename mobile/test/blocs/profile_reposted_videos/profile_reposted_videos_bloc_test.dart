@@ -236,6 +236,37 @@ void main() {
         ],
       );
 
+      test(
+        're-sync of a settled empty tab still settles (pull-to-refresh)',
+        () async {
+          when(
+            () => mockRepostsRepository.syncUserReposts(),
+          ).thenAnswer((_) async => const RepostsSyncResult.empty());
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(const ProfileRepostedVideosSyncRequested());
+          await bloc.stream.firstWhere(
+            (state) => state.status == ProfileRepostedVideosStatus.success,
+          );
+
+          // Mirrors how ProfileGridView's RefreshIndicator awaits this tab:
+          // it holds the spinner until the bloc reports a settled state.
+          bloc.add(const ProfileRepostedVideosSyncRequested());
+          final settled = bloc.stream.firstWhere(
+            (state) =>
+                !state.isRefreshing &&
+                state.status != ProfileRepostedVideosStatus.syncing &&
+                state.status != ProfileRepostedVideosStatus.loading,
+          );
+
+          await expectLater(
+            settled.timeout(const Duration(seconds: 1)),
+            completes,
+          );
+        },
+      );
+
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'emits [success] with videos when reposts found',
         setUp: () {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
@@ -18,6 +20,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
+import 'package:openvine/widgets/profile/profile_tab_kind.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -284,6 +287,33 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ProfileVideosGridSkeleton), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'pull-to-refresh completes after a viewed tab settled empty',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(isOwnProfile: true));
+        await tester.pump();
+
+        // View Saved so it joins the set of tabs a refresh re-syncs, and let
+        // it settle on the empty bookmark list.
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+        tabBar.controller!.animateTo(
+          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.saved),
+        );
+        await tester.pumpAndSettle();
+
+        final refreshIndicator = tester.widget<RefreshIndicator>(
+          find.byType(RefreshIndicator),
+        );
+        var refreshed = false;
+        unawaited(refreshIndicator.onRefresh().then((_) => refreshed = true));
+        await tester.pumpAndSettle();
+
+        // The spinner runs until this future resolves, so a tab that reports
+        // no state change leaves the user stuck on it forever.
+        expect(refreshed, isTrue);
       },
     );
 

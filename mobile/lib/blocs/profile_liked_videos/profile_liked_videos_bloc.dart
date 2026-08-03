@@ -129,9 +129,14 @@ class ProfileLikedVideosBloc
       category: LogCategory.video,
     );
 
-    // Reopen / refresh: keep the cached grid on screen and surface the thin
+    // Reopen / refresh: keep the settled grid on screen and surface the thin
     // progress bar straight away rather than flashing the full-screen spinner.
-    if (state.videos.isNotEmpty && !state.isRefreshing) {
+    // An empty settled grid needs the flag too: a re-sync that stays empty
+    // emits a state equal to the current one, which bloc suppresses, so
+    // without this transition the profile pull-to-refresh (it awaits the next
+    // settled state) hangs.
+    if (state.status != ProfileLikedVideosStatus.initial &&
+        !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));
     }
 

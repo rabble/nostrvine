@@ -225,6 +225,37 @@ void main() {
         ],
       );
 
+      test(
+        're-sync of a settled empty tab still settles (pull-to-refresh)',
+        () async {
+          when(
+            () => mockLikesRepository.syncUserReactions(),
+          ).thenAnswer((_) async => const LikesSyncResult.empty());
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(const ProfileLikedVideosSyncRequested());
+          await bloc.stream.firstWhere(
+            (state) => state.status == ProfileLikedVideosStatus.success,
+          );
+
+          // Mirrors how ProfileGridView's RefreshIndicator awaits this tab:
+          // it holds the spinner until the bloc reports a settled state.
+          bloc.add(const ProfileLikedVideosSyncRequested());
+          final settled = bloc.stream.firstWhere(
+            (state) =>
+                !state.isRefreshing &&
+                state.status != ProfileLikedVideosStatus.syncing &&
+                state.status != ProfileLikedVideosStatus.loading,
+          );
+
+          await expectLater(
+            settled.timeout(const Duration(seconds: 1)),
+            completes,
+          );
+        },
+      );
+
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'emits [success] with videos when liked videos found',
         setUp: () {
