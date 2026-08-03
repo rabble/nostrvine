@@ -243,7 +243,9 @@ void main() {
         await tester.pump();
 
         expect(
-          find.text('3 videos • Private · On this device'),
+          find.text(
+            '${l10n.listVideoCount(3)} • ${l10n.listVisibilityPrivateDevice}',
+          ),
           findsOneWidget,
         );
       },
@@ -274,8 +276,8 @@ void main() {
       await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit list'), findsOneWidget);
-      expect(find.text('Share list'), findsOneWidget);
+      expect(find.text(l10n.listEditAction), findsOneWidget);
+      expect(find.text(l10n.listShareAction), findsOneWidget);
       expect(find.text(l10n.listDeleteAction), findsOneWidget);
     });
 

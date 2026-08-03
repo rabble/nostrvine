@@ -10,6 +10,8 @@ import 'package:openvine/widgets/list_card.dart';
 
 void main() {
   group(CuratedListCard, () {
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     Widget buildSubject({required bool isPublic}) {
       final now = DateTime(2026);
       return MaterialApp(
@@ -36,13 +38,13 @@ void main() {
     testWidgets('labels a public list', (tester) async {
       await tester.pumpWidget(buildSubject(isPublic: true));
 
-      expect(find.text('Public'), findsOneWidget);
+      expect(find.text(l10n.listVisibilityPublic), findsOneWidget);
     });
 
     testWidgets('labels a private list as device-only', (tester) async {
       await tester.pumpWidget(buildSubject(isPublic: false));
 
-      expect(find.text('Private · On this device'), findsOneWidget);
+      expect(find.text(l10n.listVisibilityPrivateDevice), findsOneWidget);
     });
   });
 }
