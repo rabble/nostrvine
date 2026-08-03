@@ -202,7 +202,10 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileShareFailed(e))),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.profileShareFailed(e),
+            error: true,
+          ),
         );
       }
     }
@@ -283,7 +286,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.profilePublicKeyCopied)),
+        DivineSnackbarContainer.snackBar(context.l10n.profilePublicKeyCopied),
       );
     }
   }
@@ -302,7 +305,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.profileEmbedCodeCopied)),
+        DivineSnackbarContainer.snackBar(context.l10n.profileEmbedCodeCopied),
       );
     }
   }

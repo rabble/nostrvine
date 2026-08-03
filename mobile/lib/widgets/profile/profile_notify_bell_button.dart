@@ -23,7 +23,10 @@ class ProfileNotifyBellButton extends StatelessWidget {
           previous.status != NotifyBellStatus.failure,
       listener: (context, state) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileNotifyUpdateFailed)),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.profileNotifyUpdateFailed,
+            error: true,
+          ),
         );
       },
       builder: (context, state) {

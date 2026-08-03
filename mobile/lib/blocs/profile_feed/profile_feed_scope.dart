@@ -1,6 +1,7 @@
 // ABOUTME: Riverpod->BLoC bridge that provides a keyed ProfileFeedCubit.
 // ABOUTME: Reused at every profile-feed entry point (in-shell and off-shell).
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,7 +72,10 @@ class ProfileFeedScope extends ConsumerWidget {
             !previous.hasLoadMoreError && current.hasLoadMoreError,
         listener: (context, state) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.l10n.profileFeedLoadMoreError)),
+            DivineSnackbarContainer.snackBar(
+              context.l10n.profileFeedLoadMoreError,
+              error: true,
+            ),
           );
         },
         child: _BlocklistVersionForwarder(
