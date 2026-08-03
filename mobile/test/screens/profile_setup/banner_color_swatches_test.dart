@@ -29,10 +29,13 @@ void main() {
       when(() => bloc.state).thenReturn(const ProfileEditorState());
     });
 
-    /// Pumps a host screen and opens the sheet, returning its result once it
-    /// closes.
-    Future<bool?> openSheet(WidgetTester tester) async {
-      bool? result;
+    /// Pumps a host screen and opens the sheet.
+    ///
+    /// Returns a holder rather than the result itself: the sheet is still open
+    /// when this returns, so its value only lands after the pop settles. Read
+    /// the holder then, not at the call site.
+    Future<List<bool?>> openSheet(WidgetTester tester) async {
+      final result = <bool?>[];
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -44,7 +47,7 @@ void main() {
               body: Builder(
                 builder: (context) => TextButton(
                   onPressed: () async {
-                    result = await showBannerColorSheet(context, bloc);
+                    result.add(await showBannerColorSheet(context, bloc));
                   },
                   child: const Text('open'),
                 ),
@@ -177,13 +180,15 @@ void main() {
       tester,
     ) async {
       final result = await openSheet(tester);
-      expect(result, isNull, reason: 'sheet is still open');
+      expect(result, isEmpty, reason: 'sheet is still open');
 
       await tester.tap(find.byTooltip(l10n.commonBack));
       await tester.pumpAndSettle();
 
-      // The awaited value lands after the pop settles; re-read via a rebuild.
       expect(find.text(l10n.profileSetupBannerColorPickerTitle), findsNothing);
+      // The value itself, not just the close: `_openBannerActions` reopens the
+      // banner sheet only on `true`, so popping bare turns back into a dead end.
+      expect(result, [isTrue]);
     });
   });
 }
