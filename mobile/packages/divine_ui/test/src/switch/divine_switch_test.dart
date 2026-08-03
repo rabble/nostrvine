@@ -249,17 +249,25 @@ void main() {
     // and flips to enabled once the provider resolves. Recolouring the text
     // across that flip used to hand _RenderListTile a fresh TextPainter for a
     // subtitle that had already been laid out, tripping `debugSize == size`.
+    // Assert the styles themselves are unchanged: the assertion only fires
+    // when the rebuilt paragraph measures differently, which the test font
+    // never does, so `takeException()` cannot catch a regression here.
     testWidgets(
-      'survives a disabled → enabled flip with a wrapping subtitle',
+      'keeps its text styles across a disabled → enabled flip',
       (tester) async {
         const longSubtitle =
             'Include a Divine client tag on events you publish so other Nostr '
             'apps can attribute them correctly.';
 
+        TextStyle styleOf(String data) =>
+            tester.widget<Text>(find.text(data)).style!;
+
         await tester.pumpWidget(
           buildTestWidget(value: true, subtitle: longSubtitle),
         );
         await tester.pump();
+        final disabledTitle = styleOf('Autoplay');
+        final disabledSubtitle = styleOf(longSubtitle);
 
         await tester.pumpWidget(
           buildTestWidget(
@@ -270,6 +278,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        expect(styleOf('Autoplay'), equals(disabledTitle));
+        expect(styleOf(longSubtitle), equals(disabledSubtitle));
         expect(tester.takeException(), isNull);
       },
     );

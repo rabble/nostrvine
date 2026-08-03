@@ -121,18 +121,26 @@ void main() {
     });
 
     // Same trap as DivineSwitchTile: a row gated on an async value is built
-    // disabled first and flips once it resolves.
+    // disabled first and flips once it resolves. Assert the styles rather
+    // than the absence of an exception — the layout assertion needs a
+    // paragraph that remeasures, which the deterministic test font never
+    // produces.
     testWidgets(
-      'survives a disabled → enabled flip with a wrapping subtitle',
+      'keeps its text styles across a disabled → enabled flip',
       (tester) async {
         const longSubtitle =
             'You must confirm you are over 18 before adult content can be '
             'shown in your feed on this device.';
 
+        TextStyle styleOf(String data) =>
+            tester.widget<Text>(find.text(data)).style!;
+
         await tester.pumpWidget(
           buildSubject(value: false, subtitle: longSubtitle),
         );
         await tester.pump();
+        final disabledTitle = styleOf('I am 18 or older');
+        final disabledSubtitle = styleOf(longSubtitle);
 
         await tester.pumpWidget(
           buildSubject(
@@ -143,6 +151,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        expect(styleOf('I am 18 or older'), equals(disabledTitle));
+        expect(styleOf(longSubtitle), equals(disabledSubtitle));
         expect(tester.takeException(), isNull);
       },
     );
