@@ -10,11 +10,15 @@ Seven findings from this audit have shipped and are closed: SEC-01
 COR-04 (#5059), COR-12 (#5060), and COR-11 (#5080). Everything else in
 the table below is unverified since the audit date.
 
+Open security findings are intentionally summarized without precise locations
+or exploit instructions. Track those details in the private security tracker;
+do not re-expand them in this public repo until the finding is fixed.
+
 **Date:** 2026-06-12 · **Scope:** `mobile/` app (~1,190 Dart files in `lib/`, ~243k non-generated lines) + 50 workspace packages · **Method:** read-only analysis; every finding cites code that was actually read. Headline criticals were independently double-verified.
 
 ## Executive summary
 
-The codebase is in *managed* drift: four CI ratchets freeze the debt (skipped tests, UI→service imports, untested services, `Future.delayed` in tests) and the new BLoC/package architecture is being built correctly — no package cycles, no BLoC-to-BLoC coupling. The legacy core has not shrunk: `lib/services/` is a 59,655-line shadow layer the documented architecture says shouldn't exist, with three god objects (`video_event_service` 5,813 lines, `auth_service` 5,260, `upload_manager` 2,802) that 95 UI files reach into directly. The audit's most dangerous single finding — **relay events were never signature-verified on the live ingestion path**, leaving the trust model assuming honest relays — has since been fixed (#5894, #5934) and inbound events are now verified by default; see SEC-01. The most dangerous *systemic* bug: `NostrClient.subscribe` never closes relay REQs or stream controllers on cancel, leaking subscriptions on every feed refresh/pagination and silently breaking re-subscription. One verified path can write a raw **nsec into logs that get uploaded with bug reports**. Performance-wise, event ingestion is super-linear (3 O(n) scans + full re-sort per event, eager re-filtering per notification) on the main isolate during scroll. The test suite is a partial safety net: auth is well covered, upload moderately, but **the exact behaviors a `video_event_service` refactor would break (dedup, pagination, subscription lifecycle) are all skipped**, and the e2e suite never runs automatically. Refactoring must start by resurrecting that net.
+The codebase is in *managed* drift: four CI ratchets freeze the debt (skipped tests, UI→service imports, untested services, `Future.delayed` in tests) and the new BLoC/package architecture is being built correctly — no package cycles, no BLoC-to-BLoC coupling. The legacy core has not shrunk: `lib/services/` is a 59,655-line shadow layer the documented architecture says shouldn't exist, with three god objects (`video_event_service` 5,813 lines, `auth_service` 5,260, `upload_manager` 2,802) that 95 UI files reach into directly. The audit's most dangerous single finding — **relay events were never signature-verified on the live ingestion path**, leaving the trust model assuming honest relays — has since been fixed (#5894, #5934) and inbound events are now verified by default; see SEC-01. The most dangerous *systemic* bug: `NostrClient.subscribe` never closes relay REQs or stream controllers on cancel, leaking subscriptions on every feed refresh/pagination and silently breaking re-subscription. A previously verified path could write a raw **nsec into logs that get uploaded with bug reports**; this has since been fixed (#5055), see SEC-02. Performance-wise, event ingestion is super-linear (3 O(n) scans + full re-sort per event, eager re-filtering per notification) on the main isolate during scroll. The test suite is a partial safety net: auth is well covered, upload moderately, but **the exact behaviors a `video_event_service` refactor would break (dedup, pagination, subscription lifecycle) are all skipped**, and the e2e suite never runs automatically. Refactoring must start by resurrecting that net.
 
 ---
 
@@ -28,16 +32,16 @@ Severity = production blast radius. Effort: S < ½ day, M = days, L = weeks/epic
 |----|-----|----------|-------------|--------|
 | COR-01 | critical | `packages/nostr_client/lib/src/nostr_client.dart:667` (+ call sites `lib/services/video_event_service.dart:4743,1704,3473,3621,3766`) | Cancelling a feed subscription never closes the relay REQ or the broadcast StreamController — systemic leak on every refresh/pagination/timeout | M |
 | COR-02 | critical | `packages/nostr_client/lib/src/nostr_client.dart:655-658` | Filter-hash dedup returns the stale stream and silently drops `onEose`; identical re-subscribe sends no new REQ → stuck spinners / false "feed exhausted" | M |
-| COR-03 | high | `lib/services/video_event_publisher.dart:416,1260-1264` | Video publish marked `published` on WebSocket send, not relay `OK`; policy-rejected videos silently lost while shown as published | S |
-| COR-04 | high | `lib/services/video_event_service.dart:1627→1955` | Check-then-act race in `subscribeToVideoFeed` across two awaits; concurrent calls double-subscribe and orphan the first REQ | S |
-| COR-05 | high | `lib/services/auth_service.dart:578-637` | Background RPC upgrade unconditionally reinstates `_keycastSigner`/`_currentIdentity` after the await — resurrects the previous account's signer after sign-out/switch | S |
+| COR-03 | ~~high~~ **fixed (#5056)** | `lib/services/video_event_publisher.dart` | Video publish status no longer relies on the audited unconfirmed path. Current code also records the deliberate WebSocket fallback decision: video publishes intentionally avoid `publishEventAwaitOk` where relays accept and serve the event but drop `OK` | — |
+| COR-04 | ~~high~~ **fixed (#5059)** | `lib/services/video_event_service.dart` | Shipped synchronous pending-subscription claims so concurrent identical `subscribeToVideoFeed` calls cannot both issue relay REQs across the setup async gap | — |
+| COR-05 | ~~high~~ **fixed (#5057)** | `lib/services/auth_service.dart` | Shipped an auth-context guard so a background RPC upgrade is discarded if the signed-in account changes while the refresh is in flight | — |
 | COR-06 | medium | `lib/blocs/video_feed/video_feed_bloc.dart:66-74,688-722` | Source-change/refresh handlers run `concurrent` with no post-await source check; rapid source switching can render the wrong feed | S |
 | COR-07 | medium | `lib/blocs/video_feed/video_feed_bloc.dart:402` | `until = oldestCreatedAt - 1` permanently skips same-second videos; id-dedup at :419 already makes the `-1` unnecessary | S |
 | COR-08 | medium | `packages/nostr_sdk/lib/relay/relay.dart:76-88`, `relay_base.dart:153-156` | `onConnected` iterates `pendingMessages` while failed sends append → ConcurrentModificationError swallowed, queued publishes wiped on reconnect | S |
 | COR-09 | medium | `packages/nostr_sdk/lib/relay/relay_pool.dart:392-404` | `onEose` waits for EOSE from *every* relay; one dead relay suppresses EOSE for the whole subscription (30s timeout backstop only) | S |
 | COR-10 | medium | `lib/services/auth_service.dart:3604-3611,3773-3779` | `catch (_) {}` around OAuth logout / `KeycastSession.clear()` during destructive sign-out — tokens can survive "remove keys" silently | S |
-| COR-11 | medium | `lib/services/video_event_service.dart:4048-4080` | Online-retry `Timer.periodic` never cancelled once attempts exhausted; retry hardcodes `discovery`, so other feeds never recover | S |
-| COR-12 | medium | `lib/services/upload_manager.dart:2679-2725` | `_startProcessingPoll` timer is anonymous and survives `dispose()` — fires against a disposed manager for up to 5 min | S |
+| COR-11 | ~~medium~~ **fixed (#5080)** | `lib/services/video_event_service.dart` | Shipped tracked retry types and timer cancellation so online retry no longer hardcodes discovery or keeps an exhausted periodic timer alive | — |
+| COR-12 | ~~medium~~ **fixed (#5060)** | `lib/services/upload_manager.dart` | Shipped processing-poll timer tracking and disposal so periodic polls are cancelled on completion, timeout, and manager disposal | — |
 | COR-13 | medium | `lib/services/video_event_service.dart:1940-1951` | `onDone` cleanup removes `_activeSubscriptions[type]` without checking it still points at this subscription — can delete a newer subscription's tracking | S |
 | COR-14 | low | `lib/services/video_event_service.dart:5323-5368` | Search timeout returns partial results but leaks the search subscription and relay REQ | S |
 | COR-15 | low | `packages/nostr_sdk/lib/relay/relay_isolate_worker.dart:84-90,126-140` | Unguarded `jsonDecode` in isolate WS listener; `_closeWS` nulls its *parameter*, not the field (not on hot path today — app uses `RelayBase`) | S |
@@ -48,16 +52,16 @@ Severity = production blast radius. Effort: S < ½ day, M = days, L = weeks/epic
 | ID | Sev | Location | Description | Effort |
 |----|-----|----------|-------------|--------|
 | SEC-01 | ~~critical~~ **fixed** | `packages/nostr_sdk/lib/relay/relay_pool.dart` | Relay event signatures were never verified on live ingestion — any relay/MITM could forge events from any pubkey, including kind-5 deletions. **Shipped in #5894 / #5934:** `_onEvent` now drops an event on failed id recompute, empty `sig`, or failed Schnorr verify, and the default policy verifies every relay | — |
-| SEC-02 | high | `lib/blocs/email_verification/email_verification_cubit.dart:297` | Logs `verifier=$_pendingVerifier` in full; in BYOK flow the verifier embeds the raw **nsec** (`keycast_flutter/lib/src/oauth/pkce.dart:9`); the unified-log ring buffer is uploaded by bug reports (`bug_report_service.dart:168-186`). Line 286 already redacts the same field — :297 was missed | S |
-| SEC-03 | high | `lib/services/nostr_app_bridge_service.dart:369-386`, `nostr_app_bridge_policy.dart:126-130` | WebView nip44 decrypt/encrypt consent is gated on the *remote* directory manifest (`prompt_required_for`); only `signEvent` is code-forced to prompt — a compromised directory entry gets a silent decryption oracle | S |
-| SEC-04 | medium | `packages/funnelcake_api_client/lib/...:1628`, `packages/db_client/.../nostr_events_dao.dart:268` | REST-fetched and Drift-cached events are also never signature-verified; forged higher-`created_at` replaceable events can overwrite real ones (SEC-01's relay path is now verified, so this is the remaining unverified ingress — state not re-checked since the audit; `api.divine.video` is CDN-cached) | M |
-| SEC-05 | medium | `packages/nostr_sdk/lib/relay/relay_pool.dart:275,411-413,490,542-544` | Bare index/cast on relay-controlled JSON outside try/catch — malformed frames crash (remote DoS vector) | S |
-| SEC-06 | medium | `lib/services/zendesk_support_service.dart:781,1020`, `zendesk_config.dart:26` | Agent-API token path bakes a tickets-read/write token into the binary if `ZENDESK_API_TOKEN` is ever defined at build. **Verified: codemagic.yaml does NOT inject it today** — latent, but the dangerous fallback should go | S |
-| SEC-07 | medium | `lib/providers/auth_providers.dart:65-71`, `packages/keycast_flutter/.../secure_storage.dart:13` | App-wide secure-storage instances lack hardened options (iOS defaults to `whenUnlocked`, no Android `encryptedSharedPreferences`) while the key manager itself is hardened — inconsistent; these back keycast tokens and the transient BYOK verifier+nsec | S |
-| SEC-08 | low | `lib/screens/apps/nostr_app_sandbox_screen.dart:631-633,734-741` | Manifest-supplied `autoLoginScript` injected raw; `_escapeJs` doesn't neutralize `</script>` in the HTML-injection path | S |
-| SEC-09 | low | `lib/screens/apps/nostr_app_sandbox_screen.dart:293-303,448-458` | Main-frame attestation is iOS-only; Android falls back to a same-origin-readable DOM nonce for bridge isolation | M |
-| SEC-10 | low | `mobile/overrides/`, `pubspec.yaml:122-125,317-320` | Vendored `cryptography_flutter-2.3.2` (fork of unmaintained upstream, security-sensitive) and `app_device_integrity` get no upstream fixes; rationale undocumented in-tree | S |
-| SEC-11 | low | `packages/db_client/lib/src/database/app_database.dart:582-585` | Identifier interpolation into `PRAGMA`/`ALTER TABLE` — constants today, injectable if ever fed dynamic input | S |
+| SEC-02 | ~~high~~ **fixed (#5055)** | `lib/blocs/email_verification/email_verification_cubit.dart` | Shipped verifier redaction for the BYOK email-verification completion path; logs record presence only and do not interpolate the raw verifier | — |
+| SEC-03 | high | Private security tracker | Still-open Nostr app bridge consent-boundary issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
+| SEC-04 | medium | Private security tracker | Still-open non-relay Nostr event ingress verification issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | M |
+| SEC-05 | medium | Private security tracker | Still-open relay frame validation hardening issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
+| SEC-06 | medium | Private security tracker | Still-open support API token configuration risk. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
+| SEC-07 | medium | Private security tracker | Still-open secure-storage hardening inconsistency. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
+| SEC-08 | low | Private security tracker | Still-open sandbox script-injection escaping issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
+| SEC-09 | low | Private security tracker | Still-open Android sandbox bridge isolation issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | M |
+| SEC-10 | low | Private security tracker | Still-open security-sensitive dependency provenance issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
+| SEC-11 | low | Private security tracker | Still-open database migration hardening issue. Details, locations, exploit framing, and fix notes are intentionally redacted from the public repo until fixed | S |
 
 Verified clean: no committed secrets or `.env`; transport security properly locked down on iOS/Android; nsec never crosses the JS bridge; primary key storage (memory-wiped containers + Keychain/Keystore) is sound; NIP-59 DMs *do* verify signatures.
 
@@ -71,10 +75,10 @@ Verified clean: no committed secrets or `.env`; transport security properly lock
 | DED-04 | medium | 34 files (largest: `screens/sounds_screen.dart` 707, `widgets/hashtag_search_view.dart` 231) | Imported ONLY by their own tests — dead code kept green at CI cost; delete file + test together | M |
 | DED-05 | medium | `mobile/deploy*.sh`, `fix_video_feed_items.sh` (7 tracked scripts, 915 lines) | All reference the pre-rebrand OpenVine/Cloudflare stack; none referenced by CI; last touched 2025-09 | S |
 | DED-06 | low | `lib/features/feature_flags/services/build_configuration.dart:13-31` | 5 flags (`FF_NEW_CAMERA_UI`, `FF_ENHANCED_ANALYTICS`, `FF_NEW_PROFILE_LAYOUT`, `FF_ROUTER_DRIVEN_HOME`, `FF_CLASSICS_HASHTAGS`) defined, never checked anywhere | S |
-| DED-07 | medium | `lib/router/app_shell.dart:205,209,216,221` | Four `TODO(#3339)` transitional blocks reference a **closed** issue — violates the repo's own transitional-code rule | S |
+| DED-07 | ~~medium~~ **fixed on main** | `lib/router/app_shell.dart` | The audited closed-issue transitional TODO blocks no longer appear on `main` | — |
 | DED-08 | medium | `lib/services/notification_service.dart` vs `notification_service_enhanced.dart` | Not duplicates (local-push vs Nostr-social) but the naming implies supersession; both live — rename, don't delete | S |
 | DED-09 | medium | `lib/blocs/profile_liked_videos/` vs `profile_reposted_videos/` (+ `profile_saved_videos`) | ~74% byte-identical after name normalization (335/453 lines) — extract a shared paged ids→videos base | M |
-| DED-10 | low | `.claude/rules/state_management.md` | Cites canonical `_PooledVideoFeedItem` sites that no longer exist (already refactored) — doc drift | S |
+| DED-10 | ~~low~~ **fixed on main** | `.claude/rules/state_management.md` | The audited `_PooledVideoFeedItem` state-management reference no longer appears on `main` | — |
 | DED-11 | low | `wingspan/` (agent session artifacts), `website/` (deployable CF worker, zero CI), untracked root debris (`pr4904-console.log`, `explore-layout.png`, `path/`) | Repo hygiene; debris is untracked (local rm only); `website/` needs an owner | S |
 
 ### Architecture drift
@@ -154,15 +158,15 @@ Fixed on `main` by **#5894** (merged 2026-07-07, closing #5863) and **#5934** (m
 
 *Superseded decision, kept for the record:* a note dated 2026-07-28 recorded a decision to do no proactive or bulk verification on CPU/battery grounds, and to verify lazily at DM-view time only — leaving feeds, profiles, videos and deletions unverified as an accepted risk. That is not what the code does, and proactive verification had already shipped three weeks before that date. **Do not act on it.** If lazy DM-only verification is still wanted, it needs re-deciding against the shipped implementation and the policy setting #5934 added.
 
-**SEC-02 — nsec in uploaded logs (high).** Verified chain: BYOK export → `generateVerifier(nsec:)` embeds the raw key in the PKCE verifier → edge-case error log prints `verifier=$_pendingVerifier` in full → unified-log ring buffer → bug-report upload to Blossom. **Fix:** one line — redact :297 the same way :286 already does. Ship immediately.
+**SEC-02 — nsec in uploaded logs (high) — FIXED.** Shipped in **#5055**. The audited BYOK email-verification completion path now logs verifier presence only instead of interpolating the raw verifier.
 
-**COR-03 — Publish success without relay OK (high).** `publishEvent` resolves when the WS frame is sent; the divine relay rejects policy-violating video events (e.g. missing thumbnail) via `OK false`, but the upload is already marked `published` and injected into the local cache — the user's video is gone while the app says it's live. **Fix:** switch the video-publish path to the existing `publishEventAwaitOk`, mapping rejection into the retry/failed flow.
+**COR-03 — Publish success without relay OK (high) — FIXED.** Shipped in **#5056**. Do not mechanically replace the current video-publish WebSocket fallback with `publishEventAwaitOk`: current code intentionally avoids waiting for `OK` in that fallback because relays can accept and serve the event while dropping the `OK` frame. Re-evaluate that product/reliability tradeoff before changing it.
 
-**COR-04 — subscribeToVideoFeed race (high).** Duplicate-check and registration are separated by two awaits; the retry timer and reconnection logic can race a user-triggered subscribe, double-subscribing and orphaning a REQ. **Fix:** claim the subscription slot synchronously before the first await.
+**COR-04 — subscribeToVideoFeed race (high) — FIXED.** Shipped in **#5059**. The subscription id is now claimed synchronously before the setup async gap.
 
-**COR-05 — Stale signer resurrection (high).** `_upgradeDivineRpcInBackground` runs unawaited with up to a 10 s window and unconditionally reinstates the signer/identity it captured — after sign-out or account switch this is signing-as-the-wrong-identity. **Fix:** capture an auth generation/pubkey before the await; bail if it changed.
+**COR-05 — Stale signer resurrection (high) — FIXED.** Shipped in **#5057**. Background RPC upgrade now verifies the auth context is still current before applying refreshed signer state.
 
-**SEC-03 — Manifest-gated decryption oracle (high).** Only `signEvent` is code-forced to prompt; `nip44.decrypt` prompts only if the remote directory manifest says so. **Fix:** code-enforce consent for decrypt/encrypt regardless of manifest — treat decryption as privileged as signing.
+**SEC-03 — Nostr app bridge consent boundary (high).** Still open as of this historical audit unless the private tracker says otherwise. Public details are redacted until fixed; re-verify current code and consult the private security tracker before acting.
 
 **ARC-01..05 — God objects + 95-file UI bypass (high).** Not a single failure mode but the bug nursery: setter-injected deps that silently no-op (ARC-06 — same class as shipped bug #3503), mixed UI strings in transport code, and a 95-call-site blast radius for any service change. **Fix approach:** incremental carve-outs along existing seams (signer protocols out of auth_service; filtering policy out of VES into the existing blocklist/filter layer; error-string mapper out of upload_manager), burning down the UI-import baseline by cluster, not by file. Aligns with existing epics #4337/#4338/#4339.
 
@@ -180,16 +184,16 @@ Each batch is independently shippable; tests pass after each; earlier batches de
 Resurrect/rewrite VES dedup, pagination, replaceable-event, and subscription-lifecycle tests (TST-01); add `schedule:` nightly trigger to the service e2e workflow (TST-02); un-tag or relocate the 17 orphaned `integration`-tagged tests (TST-06); lower the VGV baseline to 57 (TST-07); regenerate `skipped_tests_report.md`. No production code changes.
 
 **Batch 1 — Surgical correctness & security fixes (small diffs, independent of all refactors).**
-SEC-02 (one-line redaction — ship same day), COR-03 (awaitOk), COR-04 (synchronous claim), COR-05 (generation guard), SEC-03 (code-enforced decrypt prompt), COR-06 (restartable + source guard), COR-07 (drop `-1`), COR-10 (stop swallowing sign-out failures), COR-11/COR-12 (timer lifecycle), COR-08 (copy-then-iterate), SEC-05 (guard relay JSON parse), DED-07 (resolve closed-issue TODOs). Each is an isolated PR with a targeted test.
+SEC-03 (consult private security tracker first), COR-06 (restartable + source guard), COR-07 (drop `-1`), COR-10 (stop swallowing sign-out failures), COR-08 (copy-then-iterate), SEC-05 (consult private security tracker first). Each is an isolated PR with a targeted test. Already shipped and removed from this work queue: SEC-02 (#5055), COR-03 (#5056), COR-04 (#5059), COR-05 (#5057), COR-11 (#5080), COR-12 (#5060), and DED-07 (fixed on `main`).
 
 **Batch 2 — Fix the NostrClient subscription contract (gated on Batch 0).**
 COR-01 + COR-02 in `NostrClient.subscribe` (onCancel → CLOSE + close + evict; onEose-aware dedup), then sweep the VES call sites that work around the broken contract (COR-13, COR-14, COR-09 quorum-EOSE). Highest-leverage single change in the audit; one package, one behavior contract, verified by the resurrected lifecycle tests.
 
 **Batch 3 — Signature verification (SEC-01 already shipped).**
-SEC-01 landed at the relay_pool ingestion boundary via #5894 / #5934 and verifies every relay by default. What remains is SEC-04 at the funnelcake and Drift-cache boundaries — re-verify its current state before planning work.
+SEC-01 landed at the relay_pool ingestion boundary via #5894 / #5934 and verifies every relay by default. What remains is SEC-04; consult the private security tracker and re-verify current code before planning work.
 
 **Batch 4 — Dead-code sweep (fully independent; do anytime; shrinks later batches).**
-DED-01/02/03/04 deletions (~7k lines + 34 test-only files), DED-05 script removal, DED-06 flag removal, DED-08 renames, DED-10 doc fix. Mechanical, reviewable in clusters, zero behavior change. Reduces the surface Batches 5–6 must reason about.
+DED-01/02/03/04 deletions (~7k lines + 34 test-only files), DED-05 script removal, DED-06 flag removal, DED-08 renames. DED-10 is already fixed on `main`. Mechanical, reviewable in clusters, zero behavior change. Reduces the surface Batches 5–6 must reason about.
 
 **Batch 5 — Hot-path performance (gated on Batch 0; mostly inside VES without splitting it).**
 PRF-01/02 (id map + cached score + deferred sort), PRF-03/04 (filter inside debounce; lift out of build), PRF-05 (opacity-only rebuild), PRF-06/07 (batch profile fetches), PRF-09 (lazy logging), PRF-10 (memCache sizes), PRF-08 (bucket eviction). Each measurable; profile before/after per the repo's own performance rule.
@@ -198,7 +202,7 @@ PRF-01/02 (id map + cached score + deferred sort), PRF-03/04 (filter inside debo
 ARC-04 first (smallest: error-string mapper to UI, then transport/queue split), ARC-03 signer-protocol extraction, ARC-02 filtering-policy extraction into the existing blocklist layer + constructor injection (kills ARC-06), ARC-07 mechanical main.dart moves, ARC-08 migration into the existing `curated_list_repository` package, ARC-09 static→DI. Burn the ARC-05 baseline down by cluster as each seam moves. Each extraction ships with tests per repo rule.
 
 **Batch 7 — Dependency hygiene (independent, low urgency).**
-DEP-03 (pin c2pa to SHA + consider mirroring), DEP-02 (finish alchemist migration, unblock by replacing `flutter_test_config.dart` usage), SEC-07 (align secure-storage options), DEP-05 (drop sqflite), SEC-06 (remove agent-token fallback), DEP-04/SEC-10 (document vendoring rationale), DEP-06 batch upgrades, DEP-01 successor plan for SQLCipher.
+DEP-03 (pin c2pa to SHA + consider mirroring), DEP-02 (finish alchemist migration, unblock by replacing `flutter_test_config.dart` usage), SEC-07 (consult private security tracker first), DEP-05 (drop sqflite), SEC-06 (consult private security tracker first), DEP-04/SEC-10 (consult private security tracker first), DEP-06 batch upgrades, DEP-01 successor plan for SQLCipher.
 
 ---
 
@@ -210,7 +214,7 @@ DEP-03 (pin c2pa to SHA + consider mirroring), DEP-02 (finish alchemist migratio
 4. **`website/` and `wingspan/`.** Who owns the apps-directory worker under `website/` (zero CI, last touched 2026-04)? Is `wingspan/` (committed agent-planning artifacts) intentional documentation or accidental commits?
 5. **Deploy scripts (DED-05).** All seven look stale/pre-rebrand, but `deploy_android.sh` (2025-10) may still be used manually — confirm before deleting.
 6. **Feature flags (DED-06).** Are the 5 unchecked `FF_*` flags reserved for planned work or abandoned?
-7. **Zendesk agent-token path (SEC-06).** Codemagic doesn't inject `ZENDESK_API_TOKEN`; are there *other* build pipelines (local release builds, Shorebird patches) that might?
+7. **Support API token configuration (SEC-06).** The audited public-build pipeline did not inject the risky token configuration; are there other build pipelines that might?
 8. **34 test-only files (DED-04).** Some may be staged for in-flight features rather than dead — needs a quick owner pass over the list before bulk deletion.
 9. **Epic sequencing.** Batches 2/5/6 overlap epics #4338/#4339 — the owners of those epics should reconcile this sequence with their plans rather than running both in parallel.
 10. **`notification_service` naming (DED-08).** Rename is safe but churns ~dozens of imports — worth bundling with a planned notifications change rather than standalone.
