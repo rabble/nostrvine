@@ -67,7 +67,7 @@ Future<void> startAccountDeletionFlow({
     handle: profile?.displayNip05,
   );
 
-  await showDeleteAllContentWarningDialog(
+  await showDeleteAllContentWarningSheet(
     context: context,
     confirmation: confirmation,
     ownedUsernameFuture: ownedUsernameFuture,

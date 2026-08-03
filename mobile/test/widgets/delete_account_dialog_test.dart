@@ -1,8 +1,9 @@
-// ABOUTME: Tests for the delete account confirmation dialog
+// ABOUTME: Tests for the delete account confirmation sheet
 // ABOUTME: Verifies that the DELETE confirmation is case-insensitive and trims whitespace
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -68,7 +69,7 @@ Future<void> _showDialog(
         builder: (context) => Scaffold(
           body: ElevatedButton(
             key: const Key('open'),
-            onPressed: () => showDeleteAllContentWarningDialog(
+            onPressed: () => showDeleteAllContentWarningSheet(
               context: context,
               confirmation: confirmation ?? _deleteFallback(),
               ownedUsernameFuture: Future.value(ownedUsername),
@@ -92,21 +93,67 @@ Future<void> _showDialog(
 AppLocalizations _englishL10n() => lookupAppLocalizations(const Locale('en'));
 
 Finder _deleteAllContentButton() => find.widgetWithText(
-  ElevatedButton,
+  DivineButton,
   _englishL10n().deleteAccountDeleteAllContentButton,
 );
 
 Future<void> _tapBurnUsernameCheckbox(WidgetTester tester) async {
-  await tester.drag(
-    find.byType(SingleChildScrollView).first,
-    const Offset(0, -160),
-  );
+  final tile = find.byType(DivineRowCheckbox);
+  await tester.ensureVisible(tile);
   await tester.pumpAndSettle();
-  await tester.tap(find.byType(Checkbox));
+  await tester.tap(tile);
 }
 
 void main() {
-  group('showDeleteAllContentWarningDialog – confirmation input', () {
+  group('showRemoveKeysWarningSheet', () {
+    // Written by the sheet's future, which only completes after the sheet
+    // closes — so the tests read it once they have settled.
+    bool? result;
+
+    Future<void> openSheet(WidgetTester tester) async {
+      result = null;
+      await tester.pumpWidget(
+        _wrapWithRouter(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                key: const Key('open'),
+                onPressed: () async {
+                  result = await showRemoveKeysWarningSheet(context);
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('open')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('returns true after confirming', (tester) async {
+      await openSheet(tester);
+      final l10n = _englishL10n();
+
+      expect(find.text(l10n.deleteAccountRemoveKeysTitle), findsOneWidget);
+
+      await tester.tap(find.text(l10n.deleteAccountRemoveKeysConfirm));
+      await tester.pumpAndSettle();
+
+      expect(result, isTrue);
+    });
+
+    testWidgets('returns false after cancelling', (tester) async {
+      await openSheet(tester);
+
+      await tester.tap(find.text(_englishL10n().commonCancel));
+      await tester.pumpAndSettle();
+
+      expect(result, isFalse);
+    });
+  });
+
+  group('showDeleteAllContentWarningSheet – confirmation input', () {
     testWidgets('empty string keeps Delete button disabled', (tester) async {
       await _showDialog(tester);
 
@@ -114,8 +161,38 @@ void main() {
       expect(find.text(l10n.deleteAccountWarningBody), findsOneWidget);
       expect(find.text(l10n.deleteAccountConfirmDeletePrompt), findsOneWidget);
       // Button should be disabled (onPressed == null → tapping does nothing)
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNull);
+    });
+
+    // The actions belong to the sheet's pinned footer, not to the scrolling
+    // form — otherwise they drift off screen while reading the warning.
+    testWidgets('keeps the actions out of the scrollable form', (tester) async {
+      await _showDialog(tester);
+
+      expect(
+        find.descendant(
+          of: find.byType(SingleChildScrollView).first,
+          matching: _deleteAllContentButton(),
+        ),
+        findsNothing,
+      );
+    });
+
+    // The form has to scroll through the sheet's own controller, otherwise
+    // dragging it down no longer collapses and dismisses the sheet.
+    testWidgets('dismisses the sheet when the form is dragged down', (
+      tester,
+    ) async {
+      await _showDialog(tester);
+
+      await tester.drag(
+        find.byType(SingleChildScrollView).first,
+        const Offset(0, 600),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_deleteAllContentButton(), findsNothing);
     });
 
     testWidgets('wrong word keeps Delete button disabled', (tester) async {
@@ -124,7 +201,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'confirm');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNull);
     });
 
@@ -134,7 +211,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -144,7 +221,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'delete');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -154,7 +231,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Delete');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -166,7 +243,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'DELETE ');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -178,7 +255,7 @@ void main() {
       await tester.enterText(find.byType(TextField), ' delete');
       await tester.pump();
 
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -206,7 +283,7 @@ void main() {
       tester,
     ) async {
       await _showDialog(tester);
-      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(find.byType(DivineRowCheckbox), findsNothing);
     });
 
     testWidgets('burn toggle is shown when a username is owned', (
@@ -216,7 +293,7 @@ void main() {
         tester,
         ownedUsername: (name: 'Alice', canonical: 'alice'),
       );
-      expect(find.byType(CheckboxListTile), findsOneWidget);
+      expect(find.byType(DivineRowCheckbox), findsOneWidget);
       // Pin the consent label naming the exact handle (display form, not
       // canonical) so swapping the interpolated variable can't slip through.
       expect(
@@ -284,7 +361,7 @@ void main() {
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 key: const Key('open'),
-                onPressed: () => showDeleteAllContentWarningDialog(
+                onPressed: () => showDeleteAllContentWarningSheet(
                   context: context,
                   confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
@@ -305,12 +382,12 @@ void main() {
 
       // Dialog is already open (lookup still pending) but no toggle yet.
       expect(_deleteAllContentButton(), findsOneWidget);
-      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(find.byType(DivineRowCheckbox), findsNothing);
 
       completer.complete((name: 'Alice', canonical: 'alice'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(CheckboxListTile), findsOneWidget);
+      expect(find.byType(DivineRowCheckbox), findsOneWidget);
     });
 
     testWidgets('a failed lookup leaves the toggle hidden without crashing', (
@@ -323,7 +400,7 @@ void main() {
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 key: const Key('open'),
-                onPressed: () => showDeleteAllContentWarningDialog(
+                onPressed: () => showDeleteAllContentWarningSheet(
                   context: context,
                   confirmation: _deleteFallback(),
                   ownedUsernameFuture: completer.future,
@@ -347,7 +424,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_deleteAllContentButton(), findsOneWidget);
-      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(find.byType(DivineRowCheckbox), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -402,7 +479,7 @@ void main() {
       await _showDialog(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), 'DELETE');
       await tester.pump();
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNull);
     });
 
@@ -410,7 +487,7 @@ void main() {
       await _showDialog(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), '@rabble.divine.video');
       await tester.pump();
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
 
@@ -420,7 +497,7 @@ void main() {
       await _showDialog(tester, confirmation: _divineUsername());
       await tester.enterText(find.byType(TextField), 'rabble.divine.video');
       await tester.pump();
-      final button = tester.widget<ElevatedButton>(_deleteAllContentButton());
+      final button = tester.widget<DivineButton>(_deleteAllContentButton());
       expect(button.onPressed, isNotNull);
     });
   });

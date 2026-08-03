@@ -50,7 +50,6 @@ lib/widgets/categories_tab.dart	1
 lib/widgets/circular_icon_button.dart	1
 lib/widgets/composable_video_grid.dart	3
 lib/widgets/content_warning.dart	5
-lib/widgets/delete_account_dialog.dart	4
 lib/widgets/library/drafts_tab.dart	3
 lib/widgets/owner_video_delete_confirmation_dialog.dart	2
 lib/widgets/profile/follow_from_profile_button.dart	1
