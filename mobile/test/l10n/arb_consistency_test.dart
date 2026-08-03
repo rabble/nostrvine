@@ -318,23 +318,6 @@ const _knownUntranslatedDebt = <String>{
   'soundCreditPublicHashtagsLabel',
   'soundsSaveFailed',
   'soundsRemoveFailed',
-  'listContinue',
-  'listEditAction',
-  'listEditTitle',
-  'listMakePrivateTitle',
-  'listMakePrivateWarning',
-  'listMakePublicTitle',
-  'listMakePublicWarning',
-  'listPrivateListSubtitle',
-  'listSave',
-  'listShareAction',
-  'listShareFailed',
-  'listShareSubject',
-  'listShareText',
-  'listUpdateFailed',
-  'listVisibilityPrivateDevice',
-  'listVisibilityPublic',
-  'profileListsEmpty',
 };
 
 const _signatureVerificationKeys = <String>{

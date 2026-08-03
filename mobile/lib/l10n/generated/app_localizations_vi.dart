@@ -5066,61 +5066,63 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+      'Danh sách riêng tư chỉ nằm trên thiết bị này và không được sao lưu';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => 'Công khai';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => 'Riêng tư · Trên thiết bị này';
 
   @override
   String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+      'Chưa có danh sách nào. Tạo một cái cho những loop bạn muốn để chung.';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => 'Sửa danh sách';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => 'Sửa danh sách';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => 'Chia sẻ danh sách';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed =>
+      'Không chia sẻ được danh sách này. Thử lại nhé.';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => 'Lưu';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => 'Tiếp tục';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed =>
+      'Không cập nhật được danh sách này. Thử lại nhé.';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => 'Chuyển danh sách này thành riêng tư?';
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      'Liên kết công khai sẽ ngừng hoạt động. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => 'Chuyển danh sách này thành công khai?';
 
   @override
   String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+      'Bất kỳ ai có liên kết đều xem được danh sách này và các video trong đó.';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return 'Xem $name trên Divine: $url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return '$name trên Divine';
   }
 
   @override

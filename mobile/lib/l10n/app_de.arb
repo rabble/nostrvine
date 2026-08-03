@@ -2041,6 +2041,40 @@
     "listDescriptionLabel": "Beschreibung (optional)",
     "listPublicList": "Öffentliche Liste",
     "listPublicListSubtitle": "Andere können folgen und diese Liste sehen",
+    "listPrivateListSubtitle": "Private Listen bleiben auf diesem Gerät und werden nicht gesichert",
+    "listVisibilityPublic": "Öffentlich",
+    "listVisibilityPrivateDevice": "Privat · Auf diesem Gerät",
+    "profileListsEmpty": "Noch keine Listen. Leg eine an für die Loops, die zusammengehören.",
+    "listEditTitle": "Liste bearbeiten",
+    "listEditAction": "Liste bearbeiten",
+    "listShareAction": "Liste teilen",
+    "listShareFailed": "Liste konnte nicht geteilt werden. Versuch es nochmal.",
+    "listSave": "Speichern",
+    "listContinue": "Weiter",
+    "listUpdateFailed": "Liste konnte nicht aktualisiert werden. Versuch es nochmal.",
+    "listMakePrivateTitle": "Diese Liste privat machen?",
+    "listMakePrivateWarning": "Der öffentliche Link funktioniert dann nicht mehr. Die Liste liegt nur noch auf diesem Gerät und wird nicht gesichert.",
+    "listMakePublicTitle": "Diese Liste öffentlich machen?",
+    "listMakePublicWarning": "Alle mit dem Link können diese Liste und ihre Videos sehen.",
+    "listShareText": "Schau dir {name} auf Divine an: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} auf Divine",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "Abbrechen",
     "listCreate": "Erstellen",
     "listCreateFailed": "Liste konnte nicht erstellt werden",

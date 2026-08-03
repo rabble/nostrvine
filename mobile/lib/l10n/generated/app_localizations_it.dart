@@ -5112,61 +5112,63 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+      'Le liste private restano su questo dispositivo e non finiscono nel backup';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => 'Pubblica';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => 'Privata · Su questo dispositivo';
 
   @override
   String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+      'Ancora nessuna lista. Creane una per i loop che vuoi tenere insieme.';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => 'Modifica lista';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => 'Modifica lista';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => 'Condividi lista';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed =>
+      'Impossibile condividere questa lista. Riprova.';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => 'Salva';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => 'Continua';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed =>
+      'Impossibile aggiornare questa lista. Riprova.';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => 'Rendere privata questa lista?';
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      'Il suo link pubblico smetterà di funzionare. Questa lista resterà solo su questo dispositivo e non finirà nel backup.';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => 'Rendere pubblica questa lista?';
 
   @override
   String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+      'Chiunque abbia il link può vedere questa lista e i suoi video.';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return 'Guarda $name su Divine: $url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return '$name su Divine';
   }
 
   @override

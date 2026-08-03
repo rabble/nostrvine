@@ -4795,62 +4795,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listPublicListSubtitle => '其他人可以关注并查看此列表';
 
   @override
-  String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+  String get listPrivateListSubtitle => '私密列表只保存在本设备，不会备份';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => '公开';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => '私密 · 仅本设备';
 
   @override
-  String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+  String get profileListsEmpty => '还没有列表。为想放在一起的循环建一个吧。';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => '编辑列表';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => '编辑列表';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => '分享列表';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed => '无法分享此列表，请重试。';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => '保存';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => '继续';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed => '无法更新此列表，请重试。';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => '将此列表设为私密？';
 
   @override
-  String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+  String get listMakePrivateWarning => '它的公开链接将失效。此列表只会保存在本设备，且不会备份。';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => '将此列表设为公开？';
 
   @override
-  String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+  String get listMakePublicWarning => '任何拿到链接的人都能看到此列表及其视频。';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return '来 Divine 看看 $name：$url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return 'Divine 上的 $name';
   }
 
   @override

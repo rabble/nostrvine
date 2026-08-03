@@ -5204,61 +5204,61 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+      'Listele private rămân pe acest dispozitiv și nu au backup';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => 'Publică';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => 'Privată · Pe acest dispozitiv';
 
   @override
   String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+      'Încă n-ai liste. Fă una pentru buclele pe care vrei să le ții împreună.';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => 'Editează lista';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => 'Editează lista';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => 'Distribuie lista';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed => 'N-am putut distribui lista. Mai încearcă.';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => 'Salvează';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => 'Continuă';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed => 'N-am putut actualiza lista. Mai încearcă.';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => 'Faci lista privată?';
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      'Linkul public nu va mai funcționa. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => 'Faci lista publică?';
 
   @override
   String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+      'Oricine are linkul poate vedea lista și videoclipurile din ea.';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return 'Vezi $name pe Divine: $url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return '$name pe Divine';
   }
 
   @override

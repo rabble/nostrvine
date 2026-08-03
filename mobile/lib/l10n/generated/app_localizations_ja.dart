@@ -4811,62 +4811,59 @@ class AppLocalizationsJa extends AppLocalizations {
   String get listPublicListSubtitle => 'みんながフォロー・閲覧できるよ';
 
   @override
-  String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+  String get listPrivateListSubtitle => '非公開リストはこの端末にだけ残って、バックアップされないよ';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => '公開';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => '非公開 · この端末のみ';
 
   @override
-  String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+  String get profileListsEmpty => 'まだリストがないよ。まとめておきたいループでひとつ作ってみて。';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => 'リストを編集';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => 'リストを編集';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => 'リストを共有';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed => 'リストを共有できなかった。もう一度試してね。';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => '保存';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => '続ける';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed => 'リストを更新できなかった。もう一度試してね。';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => 'このリストを非公開にする？';
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      '公開リンクは使えなくなるよ。このリストはこの端末にだけ残って、バックアップされないよ。';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => 'このリストを公開する？';
 
   @override
-  String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+  String get listMakePublicWarning => 'リンクを知っている人なら誰でも、このリストと動画を見られるよ。';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return 'Divineで$nameをチェックしてみて: $url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return 'Divineの$name';
   }
 
   @override

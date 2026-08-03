@@ -2439,6 +2439,40 @@
     "listDescriptionLabel": "መግለጫ (አማራጭ)",
     "listPublicList": "የህዝብ ዝርዝር",
     "listPublicListSubtitle": "ሌሎች ሊከተሉት እና ይህንን ዝርዝር ማየት ይችላሉ።",
+    "listPrivateListSubtitle": "የግል ዝርዝሮች በዚህ መሣሪያ ላይ ብቻ ይቆያሉ፤ ምትኬም አይያዝላቸውም",
+    "listVisibilityPublic": "ይፋዊ",
+    "listVisibilityPrivateDevice": "የግል · በዚህ መሣሪያ ላይ",
+    "profileListsEmpty": "እስካሁን ዝርዝር የለም። አብረው እንዲቆዩ የሚፈልጓቸውን ሉፖች የሚያሰባስብ ዝርዝር ይፍጠሩ።",
+    "listEditTitle": "ዝርዝር አርትዕ",
+    "listEditAction": "ዝርዝር አርትዕ",
+    "listShareAction": "ዝርዝር አጋራ",
+    "listShareFailed": "ይህን ዝርዝር ማጋራት አልተቻለም። እንደገና ይሞክሩ።",
+    "listSave": "አስቀምጥ",
+    "listContinue": "ቀጥል",
+    "listUpdateFailed": "ይህን ዝርዝር ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
+    "listMakePrivateTitle": "ይህ ዝርዝር የግል ይሁን?",
+    "listMakePrivateWarning": "ይፋዊ አገናኙ መስራት ያቆማል። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።",
+    "listMakePublicTitle": "ይህ ዝርዝር ይፋዊ ይሁን?",
+    "listMakePublicWarning": "አገናኙ ያለው ማንኛውም ሰው ይህን ዝርዝርና ቪዲዮዎቹን ማየት ይችላል።",
+    "listShareText": "{name}ን በDivine ላይ ይመልከቱ፦ {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "{name} በDivine ላይ",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "ሰርዝ",
     "listCreate": "ፍጠር",
     "listCreateFailed": "ዝርዝር መፍጠር አልተሳካም።",

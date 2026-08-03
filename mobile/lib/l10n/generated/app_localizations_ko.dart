@@ -4831,62 +4831,59 @@ class AppLocalizationsKo extends AppLocalizations {
   String get listPublicListSubtitle => '다른 사람들이 이 목록을 팔로우하고 볼 수 있어요';
 
   @override
-  String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+  String get listPrivateListSubtitle => '비공개 목록은 이 기기에만 남고 백업되지 않아요';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => '공개';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => '비공개 · 이 기기에만';
 
   @override
-  String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+  String get profileListsEmpty => '아직 목록이 없어요. 함께 모아 두고 싶은 루프로 하나 만들어 보세요.';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => '목록 편집';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => '목록 편집';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => '목록 공유';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed => '이 목록을 공유하지 못했어요. 다시 시도해 주세요.';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => '저장';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => '계속';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed => '이 목록을 업데이트하지 못했어요. 다시 시도해 주세요.';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => '이 목록을 비공개로 바꿀까요?';
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      '공개 링크가 더 이상 작동하지 않아요. 이 목록은 이 기기에만 남고 백업되지 않아요.';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => '이 목록을 공개로 바꿀까요?';
 
   @override
-  String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+  String get listMakePublicWarning => '링크가 있는 사람은 누구나 이 목록과 동영상을 볼 수 있어요.';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return 'Divine에서 $name 확인해 보세요: $url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return 'Divine의 $name';
   }
 
   @override

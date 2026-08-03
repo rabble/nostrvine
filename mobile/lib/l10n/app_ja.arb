@@ -2033,6 +2033,40 @@
     "listDescriptionLabel": "説明 (任意)",
     "listPublicList": "公開リスト",
     "listPublicListSubtitle": "みんながフォロー・閲覧できるよ",
+    "listPrivateListSubtitle": "非公開リストはこの端末にだけ残って、バックアップされないよ",
+    "listVisibilityPublic": "公開",
+    "listVisibilityPrivateDevice": "非公開 · この端末のみ",
+    "profileListsEmpty": "まだリストがないよ。まとめておきたいループでひとつ作ってみて。",
+    "listEditTitle": "リストを編集",
+    "listEditAction": "リストを編集",
+    "listShareAction": "リストを共有",
+    "listShareFailed": "リストを共有できなかった。もう一度試してね。",
+    "listSave": "保存",
+    "listContinue": "続ける",
+    "listUpdateFailed": "リストを更新できなかった。もう一度試してね。",
+    "listMakePrivateTitle": "このリストを非公開にする？",
+    "listMakePrivateWarning": "公開リンクは使えなくなるよ。このリストはこの端末にだけ残って、バックアップされないよ。",
+    "listMakePublicTitle": "このリストを公開する？",
+    "listMakePublicWarning": "リンクを知っている人なら誰でも、このリストと動画を見られるよ。",
+    "listShareText": "Divineで{name}をチェックしてみて: {url}",
+    "@listShareText": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            },
+            "url": {
+                "type": "String"
+            }
+        }
+    },
+    "listShareSubject": "Divineの{name}",
+    "@listShareSubject": {
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
     "listCancel": "キャンセル",
     "listCreate": "作成",
     "listCreateFailed": "リストの作成がうまくいかなかった",

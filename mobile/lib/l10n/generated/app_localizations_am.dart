@@ -4952,61 +4952,61 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get listPrivateListSubtitle =>
-      'Private lists stay on this device and aren\'t backed up';
+      'የግል ዝርዝሮች በዚህ መሣሪያ ላይ ብቻ ይቆያሉ፤ ምትኬም አይያዝላቸውም';
 
   @override
-  String get listVisibilityPublic => 'Public';
+  String get listVisibilityPublic => 'ይፋዊ';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · On this device';
+  String get listVisibilityPrivateDevice => 'የግል · በዚህ መሣሪያ ላይ';
 
   @override
   String get profileListsEmpty =>
-      'No lists yet. Make one for the loops you want to keep together.';
+      'እስካሁን ዝርዝር የለም። አብረው እንዲቆዩ የሚፈልጓቸውን ሉፖች የሚያሰባስብ ዝርዝር ይፍጠሩ።';
 
   @override
-  String get listEditTitle => 'Edit list';
+  String get listEditTitle => 'ዝርዝር አርትዕ';
 
   @override
-  String get listEditAction => 'Edit list';
+  String get listEditAction => 'ዝርዝር አርትዕ';
 
   @override
-  String get listShareAction => 'Share list';
+  String get listShareAction => 'ዝርዝር አጋራ';
 
   @override
-  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+  String get listShareFailed => 'ይህን ዝርዝር ማጋራት አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
-  String get listSave => 'Save';
+  String get listSave => 'አስቀምጥ';
 
   @override
-  String get listContinue => 'Continue';
+  String get listContinue => 'ቀጥል';
 
   @override
-  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+  String get listUpdateFailed => 'ይህን ዝርዝር ማዘመን አልተቻለም። እንደገና ይሞክሩ።';
 
   @override
-  String get listMakePrivateTitle => 'Make this list private?';
+  String get listMakePrivateTitle => 'ይህ ዝርዝር የግል ይሁን?';
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      'ይፋዊ አገናኙ መስራት ያቆማል። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።';
 
   @override
-  String get listMakePublicTitle => 'Make this list public?';
+  String get listMakePublicTitle => 'ይህ ዝርዝር ይፋዊ ይሁን?';
 
   @override
   String get listMakePublicWarning =>
-      'Anyone with the link can see this list and its videos.';
+      'አገናኙ ያለው ማንኛውም ሰው ይህን ዝርዝርና ቪዲዮዎቹን ማየት ይችላል።';
 
   @override
   String listShareText(String name, String url) {
-    return 'Check out $name on Divine: $url';
+    return '$nameን በDivine ላይ ይመልከቱ፦ $url';
   }
 
   @override
   String listShareSubject(String name) {
-    return '$name on Divine';
+    return '$name በDivine ላይ';
   }
 
   @override
