@@ -241,17 +241,30 @@ void main() {
 
           // Mirrors how ProfileGridView's RefreshIndicator awaits this tab:
           // it holds the spinner until the bloc reports a settled state.
-          bloc.add(const ProfileLikedVideosSyncRequested());
-          final settled = bloc.stream.firstWhere(
-            (state) =>
-                !state.isRefreshing &&
-                state.status != ProfileLikedVideosStatus.syncing &&
-                state.status != ProfileLikedVideosStatus.loading,
-          );
+          final emitted = <ProfileLikedVideosState>[];
+          final subscription = bloc.stream.listen(emitted.add);
+          addTearDown(subscription.cancel);
 
-          await expectLater(
-            settled.timeout(const Duration(seconds: 1)),
-            completes,
+          bloc.add(const ProfileLikedVideosSyncRequested());
+          final settled = await bloc.stream
+              .firstWhere(
+                (state) =>
+                    !state.isRefreshing &&
+                    state.status != ProfileLikedVideosStatus.syncing &&
+                    state.status != ProfileLikedVideosStatus.loading,
+              )
+              .timeout(const Duration(seconds: 1));
+
+          expect(settled.status, ProfileLikedVideosStatus.success);
+          expect(settled.videos, isEmpty);
+          // The start/end edges are what let the refresh settle — without them
+          // the terminal state equals the current one and bloc suppresses it.
+          expect(
+            emitted.map((state) => (state.status, state.isRefreshing)),
+            const [
+              (ProfileLikedVideosStatus.success, true),
+              (ProfileLikedVideosStatus.success, false),
+            ],
           );
         },
       );

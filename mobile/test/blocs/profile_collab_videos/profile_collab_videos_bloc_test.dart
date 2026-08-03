@@ -230,6 +230,88 @@ void main() {
         ],
       );
 
+      test(
+        're-fetch of a settled empty tab keeps it, without the loading state',
+        () async {
+          when(
+            () => mockVideosRepository.getCollabVideos(
+              taggedPubkey: targetPubkey,
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(const ProfileCollabVideosFetchRequested());
+          await bloc.stream.firstWhere(
+            (state) => state.status == ProfileCollabVideosStatus.success,
+          );
+
+          // Mirrors how ProfileGridView's RefreshIndicator awaits this tab:
+          // it holds the spinner until the bloc reports a settled state.
+          final emitted = <ProfileCollabVideosState>[];
+          final subscription = bloc.stream.listen(emitted.add);
+          addTearDown(subscription.cancel);
+
+          bloc.add(const ProfileCollabVideosFetchRequested());
+          final settled = await bloc.stream
+              .firstWhere(
+                (state) =>
+                    !state.isRefreshing &&
+                    state.status != ProfileCollabVideosStatus.loading,
+              )
+              .timeout(const Duration(seconds: 1));
+
+          expect(settled.status, ProfileCollabVideosStatus.success);
+          expect(settled.videos, isEmpty);
+          // The empty grid stays put under the thin bar — no full-tab spinner
+          // flash — and the bar's start/end edges are what let the refresh
+          // settle.
+          expect(
+            emitted.map((state) => (state.status, state.isRefreshing)),
+            const [
+              (ProfileCollabVideosStatus.success, true),
+              (ProfileCollabVideosStatus.success, false),
+            ],
+          );
+        },
+      );
+
+      test('a failing re-fetch of a settled empty tab still settles', () async {
+        var calls = 0;
+        when(
+          () => mockVideosRepository.getCollabVideos(
+            taggedPubkey: targetPubkey,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async {
+          calls++;
+          if (calls > 1) throw Exception('Network error');
+          return <VideoEvent>[];
+        });
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        bloc.add(const ProfileCollabVideosFetchRequested());
+        await bloc.stream.firstWhere(
+          (state) => state.status == ProfileCollabVideosStatus.success,
+        );
+
+        bloc.add(const ProfileCollabVideosFetchRequested());
+        final settled = await bloc.stream
+            .firstWhere(
+              (state) =>
+                  !state.isRefreshing &&
+                  state.status != ProfileCollabVideosStatus.loading,
+            )
+            .timeout(const Duration(seconds: 1));
+
+        // The empty grid now enters the catch block with the bar on, so the
+        // failure emit has to turn it back off or the refresh never settles.
+        expect(settled.status, ProfileCollabVideosStatus.failure);
+        expect(settled.isRefreshing, isFalse);
+      });
+
       blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
         'trusts repository results as confirmed collabs without p-tag filtering',
         build: () {

@@ -55,7 +55,11 @@ class ProfileCollabVideosBloc
     ProfileCollabVideosFetchRequested event,
     Emitter<ProfileCollabVideosState> emit,
   ) async {
-    if (state.videos.isNotEmpty && !state.isRefreshing) {
+    // Flag the revalidation whenever a settled result is on screen — an empty
+    // one included — so a re-sync always has an observable start edge, matching
+    // the liked/reposted/saved tabs.
+    if (state.status != ProfileCollabVideosStatus.initial &&
+        !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));
     }
 
@@ -91,13 +95,29 @@ class ProfileCollabVideosBloc
         emit(state.copyWith(isRefreshing: false));
         return;
       }
-      emit(state.copyWith(status: ProfileCollabVideosStatus.failure));
+      // Clearing the flag is what lets the refresh settle: an empty grid now
+      // enters here with isRefreshing on, and the tab bar waits for it to
+      // drop.
+      emit(
+        state.copyWith(
+          status: ProfileCollabVideosStatus.failure,
+          isRefreshing: false,
+        ),
+      );
     }
   }
 
   /// Cold path: nothing cached. Fetch the first page from the collabs feed.
+  ///
+  /// A settled-empty grid re-syncs through here too (the routing keys off
+  /// `videos.isEmpty`). Tearing it down for the full-tab spinner would flash
+  /// the tab on every pull-to-refresh, so the loading state is only emitted
+  /// when there is no settled result to keep. A failure screen is still
+  /// replaced by the spinner — an explicit retry should look like one.
   Future<void> _coldLoad(Emitter<ProfileCollabVideosState> emit) async {
-    emit(state.copyWith(status: ProfileCollabVideosStatus.loading));
+    if (state.status != ProfileCollabVideosStatus.success) {
+      emit(state.copyWith(status: ProfileCollabVideosStatus.loading));
+    }
 
     final videos = await _videosRepository.getCollabVideos(
       taggedPubkey: _targetUserPubkey,
