@@ -302,31 +302,11 @@ class _AppsDirectoryIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.vineColors.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.vineColors.outlineMuted),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 8,
-          children: [
-            Text(
-              context.l10n.appsDirectoryIntroTitle,
-              style: VineTheme.titleMediumFont(
-                color: context.vineColors.onSurface,
-              ),
-            ),
-            Text(
-              context.l10n.appsDirectoryIntroBody,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      child: DivineInfoCard(
+        icon: null,
+        tone: DivineInfoCardTone.neutral,
+        title: context.l10n.appsDirectoryIntroTitle,
+        message: context.l10n.appsDirectoryIntroBody,
       ),
     );
   }

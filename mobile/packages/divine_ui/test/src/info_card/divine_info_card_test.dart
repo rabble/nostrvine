@@ -85,6 +85,42 @@ void main() {
       expect(find.text('Copy my private key'), findsOneWidget);
     });
 
+    group('without a glyph', () {
+      testWidgets('renders title and message alone', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: DivineInfoCard(
+                icon: null,
+                title: 'Support links',
+                message: 'Add the places people can support you from.',
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(DivineIcon), findsNothing);
+        expect(find.text('Support links'), findsOneWidget);
+        expect(
+          find.text('Add the places people can support you from.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders a message-only card', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: DivineInfoCard(icon: null, message: 'Nothing set up yet.'),
+            ),
+          ),
+        );
+
+        expect(find.byType(DivineIcon), findsNothing);
+        expect(find.text('Nothing set up yet.'), findsOneWidget);
+      });
+    });
+
     group('glyph alignment', () {
       const wrapping =
           'Your keys are your account, and nobody at Divine can reset them '

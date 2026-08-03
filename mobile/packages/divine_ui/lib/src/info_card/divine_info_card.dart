@@ -65,7 +65,11 @@ class DivineInfoCard extends StatelessWidget {
 
   /// Glyph at the start of the card. Defaults to the info glyph; pass a more
   /// specific one where it carries meaning — a key, a shield, a warning.
-  final DivineIconName icon;
+  ///
+  /// Pass `null` for a card that opens a screen rather than flagging something
+  /// in it: a section intro reads as prose, and a glyph there turns it into a
+  /// callout the user is meant to act on.
+  final DivineIconName? icon;
 
   /// What the card means, which picks its accent colour.
   final DivineInfoCardTone tone;
@@ -98,14 +102,17 @@ class DivineInfoCard extends StatelessWidget {
     final below = footer;
 
     final glyphSize = compact ? 20.0 : 24.0;
-    final glyph = DivineIcon(icon: icon, color: accent, size: glyphSize);
+    final glyphName = icon;
+    final glyph = glyphName == null
+        ? null
+        : DivineIcon(icon: glyphName, color: accent, size: glyphSize);
     final bodyStyle = compact
         ? VineTheme.bodySmallFont(color: colors.onSurfaceVariant)
         : VineTheme.bodyMediumFont(color: colors.onSurfaceVariant);
     final titleColor = isNeutral ? colors.primaryText : accent;
 
     final explanation = heading == null
-        ? _GlyphBesideText(
+        ? _TextLine(
             glyph: glyph,
             glyphSize: glyphSize,
             text: message,
@@ -117,7 +124,7 @@ class DivineInfoCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             spacing: gap,
             children: [
-              _GlyphBesideText(
+              _TextLine(
                 glyph: glyph,
                 glyphSize: glyphSize,
                 text: heading,
@@ -160,21 +167,21 @@ class DivineInfoCard extends StatelessWidget {
   }
 }
 
-/// A glyph beside a run of text, centred on that text's **first line**.
+/// A line of card copy, with the card's glyph beside it when it has one.
 ///
 /// The glyph is taller than one line of the copy it labels, so plain
 /// top-alignment leaves a single short line riding high beside it, while
 /// centring the whole row would float the glyph into the middle of a wrapped
-/// paragraph. Centring on the first line reads right either way: for one-line
-/// copy it is exactly vertical centring, and for wrapped copy the glyph stays
-/// with the line it introduces.
+/// paragraph. It is therefore centred on the text's **first line**, which
+/// reads right either way: for one-line copy that is exactly vertical
+/// centring, and for wrapped copy the glyph stays with the line it introduces.
 ///
 /// The offset comes from the style's own metrics rather than from measuring
 /// the laid-out text, so this survives an ancestor that asks for intrinsic
 /// dimensions — `IntrinsicHeight`, `SliverFillRemaining`, a `Table` — which a
 /// `LayoutBuilder` here would not.
-class _GlyphBesideText extends StatelessWidget {
-  const _GlyphBesideText({
+class _TextLine extends StatelessWidget {
+  const _TextLine({
     required this.glyph,
     required this.glyphSize,
     required this.text,
@@ -182,7 +189,7 @@ class _GlyphBesideText extends StatelessWidget {
     required this.spacing,
   });
 
-  final Widget glyph;
+  final Widget? glyph;
   final double glyphSize;
   final String text;
   final TextStyle style;
@@ -190,6 +197,9 @@ class _GlyphBesideText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final leading = glyph;
+    if (leading == null) return Text(text, style: style);
+
     // Every VineTheme style sets an explicit `height`, so one line box is
     // exactly fontSize * height. The 1.2 fallback is the usual default for a
     // style that leaves it unset.
@@ -204,7 +214,7 @@ class _GlyphBesideText extends StatelessWidget {
       children: [
         Padding(
           padding: EdgeInsets.only(top: overhang < 0 ? -overhang : 0),
-          child: glyph,
+          child: leading,
         ),
         Expanded(
           child: Padding(

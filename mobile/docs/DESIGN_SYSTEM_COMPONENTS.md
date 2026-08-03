@@ -74,7 +74,7 @@ Complete dark-mode design system providing:
 - `warning` — something to read before acting
 - `error` — a risk or a failure
 
-The tinted tones derive their surface from one accent colour (background 15%, border 30%), so tones stay consistent by construction. `compact: true` tightens padding, radius, icon, and type by one step, for a note beside a control rather than a section-level explanation.
+The tinted tones derive their surface from one accent colour (background 15%, border 30%), so tones stay consistent by construction. `compact: true` tightens padding, radius, icon, and type by one step, for a note beside a control rather than a section-level explanation. `icon: null` drops the glyph, for a section intro that reads as prose rather than as a callout to act on.
 
 ### Loading
 

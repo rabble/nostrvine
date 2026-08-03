@@ -306,46 +306,20 @@ class _SectionIntro extends StatelessWidget {
     final configured = monetizationLinksForCurrentStorefront(
       profile?.enabledMonetizationLinks ?? const [],
     ).length;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: context.vineColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: context.vineColors.outlineMuted),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 8,
-          children: [
-            Text(
-              appStoreTipPolicy
-                  ? context.l10n.monetizationTipsSettingsIntroTitle
-                  : context.l10n.monetizationSettingsIntroTitle,
-              style: VineTheme.titleMediumFont(
-                color: context.vineColors.onSurface,
-              ),
-            ),
-            Text(
-              appStoreTipPolicy
-                  ? context.l10n.monetizationTipsSettingsIntroBody
-                  : context.l10n.monetizationSettingsIntroBody,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            ),
-            Text(
-              appStoreTipPolicy
-                  ? context.l10n.monetizationTipsSettingsConfiguredCount(
-                      configured,
-                    )
-                  : context.l10n.monetizationSettingsConfiguredCount(
-                      configured,
-                    ),
-              style: VineTheme.bodySmallFont(color: VineTheme.primary),
-            ),
-          ],
-        ),
+    return DivineInfoCard(
+      icon: null,
+      tone: DivineInfoCardTone.neutral,
+      title: appStoreTipPolicy
+          ? context.l10n.monetizationTipsSettingsIntroTitle
+          : context.l10n.monetizationSettingsIntroTitle,
+      message: appStoreTipPolicy
+          ? context.l10n.monetizationTipsSettingsIntroBody
+          : context.l10n.monetizationSettingsIntroBody,
+      footer: Text(
+        appStoreTipPolicy
+            ? context.l10n.monetizationTipsSettingsConfiguredCount(configured)
+            : context.l10n.monetizationSettingsConfiguredCount(configured),
+        style: VineTheme.bodySmallFont(color: VineTheme.primary),
       ),
     );
   }
@@ -370,50 +344,37 @@ class _ProviderEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: context.vineColors.card,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: context.vineColors.outlineMuted),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 10,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      provider.displayName,
-                      style: VineTheme.titleMediumFont(
-                        color: context.vineColors.onSurface,
-                      ),
-                    ),
-                  ),
-                  DivineSwitch(
-                    value: enabled,
-                    onChanged: onEnabledChanged,
-                    semanticLabel: provider.displayName,
-                  ),
-                ],
-              ),
-              DivineAuthTextField(
-                label: _hintForProvider(context, provider),
-                controller: controller,
-                enabled: enabled,
-                autocorrect: false,
-                keyboardType: TextInputType.url,
-                textInputAction: TextInputAction.next,
-                errorText: errorText,
-                onChanged: onChanged,
-              ),
-            ],
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      // The tile's ink has to stay inside the rounded border.
+      clipBehavior: Clip.hardEdge,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: context.vineColors.outlineMuted),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          DivineSwitchTile(
+            title: provider.displayName,
+            value: enabled,
+            onChanged: onEnabledChanged,
           ),
-        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: DivineAuthTextField(
+              label: _hintForProvider(context, provider),
+              controller: controller,
+              enabled: enabled,
+              autocorrect: false,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.next,
+              errorText: errorText,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
       ),
     );
   }
