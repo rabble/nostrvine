@@ -647,6 +647,21 @@ void main() {
         );
       });
 
+      test('clears the Nostr event id when a list becomes private', () async {
+        final list = await service.createList(name: 'Public List');
+        expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
+        reset(mockNostr);
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        await service.updateList(listId: list.id, isPublic: false);
+
+        expect(service.getListById(list.id)!.nostrEventId, isNull);
+        expect(service.myLists.map((l) => l.id), contains(list.id));
+      });
+
       test('keeps a list public when deletion publication fails', () async {
         final list = await service.createList(name: 'Public List');
         reset(mockNostr);

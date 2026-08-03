@@ -166,6 +166,9 @@ class CuratedList extends Equatable {
   final PlayOrder playOrder;
 
   /// Creates a copy of this list with the given fields replaced.
+  ///
+  /// Passing `null` leaves a nullable field unchanged. To null one out, set
+  /// its `clear*` flag to `true`.
   CuratedList copyWith({
     String? id,
     String? name,
@@ -177,6 +180,7 @@ class CuratedList extends Equatable {
     DateTime? updatedAt,
     bool? isPublic,
     String? nostrEventId,
+    bool clearNostrEventId = false,
     List<String>? tags,
     bool? isCollaborative,
     List<String>? allowedCollaborators,
@@ -193,7 +197,7 @@ class CuratedList extends Equatable {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     isPublic: isPublic ?? this.isPublic,
-    nostrEventId: nostrEventId ?? this.nostrEventId,
+    nostrEventId: clearNostrEventId ? null : nostrEventId ?? this.nostrEventId,
     tags: tags ?? this.tags,
     isCollaborative: isCollaborative ?? this.isCollaborative,
     allowedCollaborators: allowedCollaborators ?? this.allowedCollaborators,

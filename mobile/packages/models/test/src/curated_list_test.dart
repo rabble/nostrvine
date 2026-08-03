@@ -109,6 +109,21 @@ void main() {
         expect(copied.updatedAt, equals(later));
         expect(copied.createdAt, equals(list.createdAt));
       });
+
+      test('keeps nostrEventId when it is not passed', () {
+        final list = createSubject(nostrEventId: 'event-123');
+        expect(
+          list.copyWith(name: 'Renamed').nostrEventId,
+          equals('event-123'),
+        );
+      });
+
+      test('nulls nostrEventId when clearNostrEventId is set', () {
+        final list = createSubject(nostrEventId: 'event-123');
+        final copied = list.copyWith(clearNostrEventId: true);
+        expect(copied.nostrEventId, isNull);
+        expect(copied.name, equals(list.name));
+      });
     });
 
     group('toJson', () {

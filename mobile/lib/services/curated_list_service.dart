@@ -458,6 +458,14 @@ class CuratedListService extends ChangeNotifier {
         return false;
       }
 
+      // A list that is no longer published must not keep the event ID of the
+      // event we just asked relays to delete: [myLists] treats a non-null
+      // nostrEventId as "published", so a stale one drops the list from My
+      // Lists as soon as the owner signs out.
+      final persistedPrivateList = becamePrivate
+          ? updatedList.copyWith(clearNostrEventId: true)
+          : updatedList;
+
       if (updatedList.isPublic) {
         if (!_authService.isAuthenticated ||
             !await _publishListToNostr(updatedList)) {
@@ -474,7 +482,7 @@ class CuratedListService extends ChangeNotifier {
         if (currentIndex == -1) {
           return false;
         }
-        _lists[currentIndex] = updatedList;
+        _lists[currentIndex] = persistedPrivateList;
         await _saveLists();
       }
 
