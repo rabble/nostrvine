@@ -118,6 +118,13 @@ void main() {
         );
       });
 
+      test('nulls description when clearDescription is set', () {
+        final list = createSubject(description: 'Original');
+        final copied = list.copyWith(clearDescription: true);
+        expect(copied.description, isNull);
+        expect(copied.name, equals(list.name));
+      });
+
       test('nulls nostrEventId when clearNostrEventId is set', () {
         final list = createSubject(nostrEventId: 'event-123');
         final copied = list.copyWith(clearNostrEventId: true);

@@ -420,7 +420,12 @@ class CuratedListService extends ChangeNotifier {
     }
   }
 
-  /// Update list metadata with enhanced playlist features
+  /// Update list metadata with enhanced playlist features.
+  ///
+  /// A null field is left unchanged. Passing an empty [description] clears it
+  /// back to unset, which is how the edit dialog expresses "I emptied this
+  /// field": stored as `''` it would render an empty description block on the
+  /// list card and publish empty event content.
   Future<bool> updateList({
     required String listId,
     String? name,
@@ -443,6 +448,7 @@ class CuratedListService extends ChangeNotifier {
       final updatedList = list.copyWith(
         name: name ?? list.name,
         description: description ?? list.description,
+        clearDescription: description != null && description.isEmpty,
         imageUrl: imageUrl ?? list.imageUrl,
         isPublic: isPublic ?? list.isPublic,
         tags: tags ?? list.tags,

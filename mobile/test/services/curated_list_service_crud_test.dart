@@ -647,6 +647,34 @@ void main() {
         );
       });
 
+      test('unsets the description when the edit clears it', () async {
+        final list = await service.createList(
+          name: 'Described',
+          description: 'Original',
+          isPublic: false,
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          description: '',
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.description, isNull);
+      });
+
+      test('leaves the description alone when it is not passed', () async {
+        final list = await service.createList(
+          name: 'Described',
+          description: 'Original',
+          isPublic: false,
+        );
+
+        await service.updateList(listId: list!.id, name: 'Renamed');
+
+        expect(service.getListById(list.id)!.description, equals('Original'));
+      });
+
       test('clears the Nostr event id when a list becomes private', () async {
         final list = await service.createList(name: 'Public List');
         expect(service.getListById(list!.id)!.nostrEventId, isNotNull);
