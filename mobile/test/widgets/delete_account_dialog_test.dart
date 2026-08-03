@@ -151,6 +151,27 @@ void main() {
 
       expect(result, isFalse);
     });
+
+    // Dismissing is the only path that reaches the `?? false` default, and the
+    // dialog this replaced was barrierDismissible: false — so the path is new.
+    // If the default ever flips, a stray barrier tap deletes the keys.
+    testWidgets('returns false when dismissed without choosing', (
+      tester,
+    ) async {
+      await openSheet(tester);
+
+      // System back rather than a barrier tap: it dismisses without touching
+      // either button regardless of how tall the sheet renders, so the test
+      // pins the default instead of the sheet's layout.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(_englishL10n().deleteAccountRemoveKeysTitle),
+        findsNothing,
+      );
+      expect(result, isFalse);
+    });
   });
 
   group('showDeleteAllContentWarningSheet – confirmation input', () {
@@ -193,6 +214,36 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(_deleteAllContentButton(), findsNothing);
+    });
+
+    // The sheet documents that dismissing cancels. Typing the token arms the
+    // destructive action, so the case worth pinning is dismissing *after* it
+    // is armed: nothing may reach the caller.
+    testWidgets('dismissing after typing the token does not confirm', (
+      tester,
+    ) async {
+      var confirmCalls = 0;
+      await _showSheet(
+        tester,
+        onConfirm:
+            ({
+              required bool burnUsername,
+              ({String name, String canonical})? ownedUsername,
+            }) => confirmCalls++,
+      );
+
+      await tester.enterText(find.byType(TextField), 'DELETE');
+      await tester.pump();
+      expect(
+        tester.widget<DivineButton>(_deleteAllContentButton()).onPressed,
+        isNotNull,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(_deleteAllContentButton(), findsNothing);
+      expect(confirmCalls, isZero);
     });
 
     testWidgets('wrong word keeps Delete button disabled', (tester) async {
