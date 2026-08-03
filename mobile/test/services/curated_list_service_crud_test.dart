@@ -724,6 +724,40 @@ void main() {
                 as Event;
         expect(publication.kind, 30005);
       });
+
+      test('keeps a list private when publication is rejected', () async {
+        final list = await service.createList(
+          name: 'Private List',
+          description: 'Original',
+          isPublic: false,
+        );
+        when(
+          () => mockNostr.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final result = await service.updateList(
+          listId: list!.id,
+          name: 'Renamed',
+          isPublic: true,
+        );
+
+        expect(result, isFalse);
+        final stored = service.getListById(list.id)!;
+        expect(stored.isPublic, isFalse);
+        expect(stored.name, equals('Private List'));
+      });
+
+      test('keeps the published event id on a public update', () async {
+        final list = await service.createList(name: 'Public List');
+        final publishedId = service.getListById(list!.id)!.nostrEventId;
+        expect(publishedId, isNotNull);
+
+        await service.updateList(listId: list.id, name: 'Renamed');
+
+        final stored = service.getListById(list.id)!;
+        expect(stored.name, equals('Renamed'));
+        expect(stored.nostrEventId, isNotNull);
+      });
     });
 
     group('deleteList()', () {
