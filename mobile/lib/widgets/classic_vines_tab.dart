@@ -456,34 +456,9 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.vineColors.card,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: VineTheme.vineGreen.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                children: [
-                  const DivineIcon(
-                    icon: DivineIconName.info,
-                    color: VineTheme.vineGreen,
-                    size: 20,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.classicsUnavailableSettingsHint,
-                    style: TextStyle(
-                      color: context.vineColors.secondaryText,
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            DivineInfoCard(
+              compact: true,
+              message: context.l10n.classicsUnavailableSettingsHint,
             ),
           ],
         ),

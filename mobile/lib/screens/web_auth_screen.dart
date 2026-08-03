@@ -533,41 +533,11 @@ class _NostrHelpBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.vineColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Builder(
-        builder: (context) => Column(
-          children: [
-            Row(
-              children: [
-                const DivineIcon(
-                  icon: DivineIconName.info,
-                  color: VineTheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  context.l10n.webAuthNewToNostr,
-                  style: VineTheme.titleSmallFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.l10n.webAuthNostrHelp,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return DivineInfoCard(
+      tone: DivineInfoCardTone.neutral,
+      compact: true,
+      title: context.l10n.webAuthNewToNostr,
+      message: context.l10n.webAuthNostrHelp,
     );
   }
 }

@@ -199,80 +199,93 @@ class _CreatorAnalyticsScreenState
           child: FutureBuilder<_CreatorAnalyticsData>(
             future: _analyticsFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: BrandedLoadingIndicator(size: 60));
-              }
-
-              if (snapshot.hasError) {
-                return _ErrorView(error: snapshot.error, onRetry: _refresh);
-              }
-
               final data = snapshot.data;
-              if (data == null) {
-                return _ErrorView(
+              final Widget content;
+
+              if (snapshot.connectionState != ConnectionState.done) {
+                content = Padding(
+                  padding: .only(
+                    bottom: MediaQuery.viewPaddingOf(context).bottom,
+                  ),
+                  child: const Center(child: BrandedLoadingIndicator()),
+                );
+              } else if (snapshot.hasError) {
+                content = _ErrorView(error: snapshot.error, onRetry: _refresh);
+              } else if (data == null) {
+                content = _ErrorView(
                   error: context.l10n.analyticsUnableToLoad,
                   onRetry: _refresh,
                 );
-              }
+              } else {
+                final summary = _CreatorAnalyticsSummary.build(
+                  data: data,
+                  window: _selectedWindow,
+                );
+                final useFixture = ref.watch(
+                  useFixtureCreatorAnalyticsProvider,
+                );
 
-              final summary = _CreatorAnalyticsSummary.build(
-                data: data,
-                window: _selectedWindow,
-              );
-              final useFixture = ref.watch(useFixtureCreatorAnalyticsProvider);
-
-              return RefreshIndicator(
-                color: VineTheme.onPrimary,
-                backgroundColor: VineTheme.vineGreen,
-                onRefresh: _refresh,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    12,
-                    16,
-                    // Important on Android to ensure content is not behind the
-                    // device navigation bar.
-                    24 + MediaQuery.viewPaddingOf(context).bottom,
-                  ),
-                  children: [
-                    _RangeSelector(
-                      selected: _selectedWindow,
-                      onSelected: (window) {
-                        setState(() {
-                          _selectedWindow = window;
-                        });
-                      },
+                content = RefreshIndicator(
+                  color: VineTheme.onPrimary,
+                  backgroundColor: VineTheme.vineGreen,
+                  onRefresh: _refresh,
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      12,
+                      16,
+                      // Important on Android to ensure content is not behind
+                      // the device navigation bar.
+                      24 + MediaQuery.viewPaddingOf(context).bottom,
                     ),
-                    if (_showDiagnostics) ...[
-                      const SizedBox(height: 16),
-                      _DiagnosticsPanel(
-                        diagnostics: data.diagnostics,
-                        useFixture: useFixture,
-                        onToggleFixture: (enabled) async {
-                          ref
-                                  .read(
-                                    useFixtureCreatorAnalyticsProvider.notifier,
-                                  )
-                                  .state =
-                              enabled;
-                          await _refresh();
+                    children: [
+                      _RangeSelector(
+                        selected: _selectedWindow,
+                        onSelected: (window) {
+                          setState(() {
+                            _selectedWindow = window;
+                          });
                         },
                       ),
+                      if (_showDiagnostics) ...[
+                        const SizedBox(height: 16),
+                        _DiagnosticsPanel(
+                          diagnostics: data.diagnostics,
+                          useFixture: useFixture,
+                          onToggleFixture: (enabled) async {
+                            ref
+                                    .read(
+                                      useFixtureCreatorAnalyticsProvider
+                                          .notifier,
+                                    )
+                                    .state =
+                                enabled;
+                            await _refresh();
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      ..._buildOverviewSection(summary, data),
+                      const SizedBox(height: 12),
+                      Text(
+                        context.l10n.analyticsUpdatedTimestamp(
+                          _formatLastUpdated(context.l10n, data.fetchedAt),
+                        ),
+                        style: VineTheme.bodySmallFont(
+                          color: context.vineColors.onSurfaceMuted,
+                        ),
+                      ),
                     ],
-                    const SizedBox(height: 16),
-                    ..._buildOverviewSection(summary, data),
-                    const SizedBox(height: 12),
-                    Text(
-                      context.l10n.analyticsUpdatedTimestamp(
-                        _formatLastUpdated(context.l10n, data.fetchedAt),
-                      ),
-                      style: VineTheme.bodySmallFont(
-                        color: context.vineColors.onSurfaceMuted,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                );
+              }
+
+              return AnimatedSwitcher(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 200),
+                child: content,
               );
             },
           ),

@@ -104,68 +104,51 @@ class _InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      color: context.vineColors.card,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              DivineIcon(
-                icon: DivineIconName.info,
-                color: context.vineColors.mutedText,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  context.l10n.relaySettingsInfoTitle,
-                  style: VineTheme.labelLargeFont(
-                    color: context.vineColors.primaryText,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.relaySettingsInfoDescription,
-            style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
-          ),
-          const SizedBox(height: 8),
-          Semantics(
-            button: true,
-            label: context.l10n.relaySettingsLearnMoreNostr,
-            child: GestureDetector(
-              onTap: () =>
-                  _launchExternalUrl(context, Uri.parse('https://nostr.com')),
-              child: Text(
-                context.l10n.relaySettingsLearnMoreNostr,
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.vineGreen,
-                ).copyWith(decoration: TextDecoration.underline),
-              ),
+      child: DivineInfoCard(
+        tone: DivineInfoCardTone.neutral,
+        compact: true,
+        title: context.l10n.relaySettingsInfoTitle,
+        message: context.l10n.relaySettingsInfoDescription,
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 4,
+          children: [
+            _ExternalLink(
+              label: context.l10n.relaySettingsLearnMoreNostr,
+              url: 'https://nostr.com',
             ),
-          ),
-          const SizedBox(height: 4),
-          Semantics(
-            button: true,
-            label: context.l10n.relaySettingsFindPublicRelays,
-            child: GestureDetector(
-              onTap: () => _launchExternalUrl(
-                context,
-                Uri.parse('https://nostr.co.uk/relays/'),
-              ),
-              child: Text(
-                context.l10n.relaySettingsFindPublicRelays,
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.vineGreen,
-                ).copyWith(decoration: TextDecoration.underline),
-              ),
+            _ExternalLink(
+              label: context.l10n.relaySettingsFindPublicRelays,
+              url: 'https://nostr.co.uk/relays/',
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExternalLink extends StatelessWidget {
+  const _ExternalLink({required this.label, required this.url});
+
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () => _launchExternalUrl(context, Uri.parse(url)),
+        child: Text(
+          label,
+          style: VineTheme.bodySmallFont(
+            color: VineTheme.vineGreen,
+          ).copyWith(decoration: TextDecoration.underline),
+        ),
       ),
     );
   }

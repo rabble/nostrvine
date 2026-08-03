@@ -28,43 +28,16 @@ class KeycastKeyExportCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
-        children: [
-          Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.key,
-                color: VineTheme.vineGreen,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  context.l10n.keyManagementKeycastRemoteSigning,
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          DivineButton(
-            label: context.l10n.keyManagementCopyNsec,
-            leadingIcon: DivineIconName.copy,
-            type: DivineButtonType.secondary,
-            size: DivineButtonSize.small,
-            onPressed: () => _copyKeycastKey(context, ref),
-          ),
-        ],
+    return DivineInfoCard(
+      icon: DivineIconName.key,
+      compact: true,
+      message: context.l10n.keyManagementKeycastRemoteSigning,
+      footer: DivineButton(
+        label: context.l10n.keyManagementCopyNsec,
+        leadingIcon: DivineIconName.copy,
+        type: DivineButtonType.secondary,
+        size: DivineButtonSize.small,
+        onPressed: () => _copyKeycastKey(context, ref),
       ),
     );
   }
@@ -328,31 +301,11 @@ class _PasswordStep extends StatelessWidget {
         // The local-nsec path warns beside its copy button, before the key
         // moves. Confirming here is that same moment, so the warning belongs
         // ahead of the field rather than after the copy has already happened.
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: VineTheme.error.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: VineTheme.error.withValues(alpha: 0.5)),
-          ),
-          child: Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.warning,
-                color: VineTheme.error,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  l10n.keyManagementNeverShare,
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        DivineInfoCard(
+          icon: DivineIconName.warning,
+          tone: DivineInfoCardTone.error,
+          compact: true,
+          message: l10n.keyManagementNeverShare,
         ),
         DivineAuthTextField(
           label: l10n.authPasswordLabel,

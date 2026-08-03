@@ -66,6 +66,15 @@ Complete dark-mode design system providing:
 | Component | Description |
 |-----------|-------------|
 | `DivineSnackbarContainer` | Themed snackbar container |
+| `DivineInfoCard` | Explanation callout — icon, optional title, body, optional footer. Four tones (`info`, `neutral`, `warning`, `error`) and a `compact` step. Replaces the per-screen "about this setting" boxes. |
+
+**DivineInfoCard tones:**
+- `info` — brand green, for explaining a feature or a concept (default)
+- `neutral` — card surface with a muted outline, for detail that should recede
+- `warning` — something to read before acting
+- `error` — a risk or a failure
+
+The tinted tones derive their surface from one accent colour (background 15%, border 30%), so tones stay consistent by construction. `compact: true` tightens padding, radius, icon, and type by one step, for a note beside a control rather than a section-level explanation.
 
 ### Loading
 

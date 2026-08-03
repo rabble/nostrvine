@@ -324,38 +324,9 @@ class _InfoCard extends StatelessWidget {
   const _InfoCard();
 
   @override
-  Widget build(BuildContext context) => Card(
-    color: context.vineColors.card,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            spacing: 8,
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.info,
-                color: VineTheme.commentBlue,
-                size: 20,
-              ),
-              Text(
-                context.l10n.notificationSettingsAbout,
-                style: VineTheme.titleMediumFont(
-                  color: context.vineColors.primaryText,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.notificationSettingsAboutDescription,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.secondaryText,
-            ),
-          ),
-        ],
-      ),
-    ),
+  Widget build(BuildContext context) => DivineInfoCard(
+    tone: DivineInfoCardTone.neutral,
+    title: context.l10n.notificationSettingsAbout,
+    message: context.l10n.notificationSettingsAboutDescription,
   );
 }

@@ -156,40 +156,11 @@ class _AboutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const .symmetric(horizontal: 16),
-      color: context.vineColors.background.withValues(alpha: 0.7),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                DivineIcon(
-                  icon: DivineIconName.info,
-                  color: VineTheme.vineGreen.withValues(alpha: 0.8),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  context.l10n.blossomAboutTitle,
-                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              context.l10n.blossomAboutDescription,
-              style: VineTheme.bodyMediumFont(
-                color: context.vineColors.onSurface,
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: DivineInfoCard(
+        title: context.l10n.blossomAboutTitle,
+        message: context.l10n.blossomAboutDescription,
       ),
     );
   }

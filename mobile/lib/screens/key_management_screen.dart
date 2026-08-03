@@ -64,8 +64,10 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               const _NpubDisplayBlock(),
               const SizedBox(height: 24),
 
-              // What are Nostr keys explanation
-              _buildExplanationCard(),
+              DivineInfoCard(
+                title: context.l10n.keyManagementWhatAreKeys,
+                message: context.l10n.keyManagementExplanation,
+              ),
               const SizedBox(height: 24),
 
               // Protected minors (#182) cannot export their nsec or swap the
@@ -89,43 +91,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     );
   }
 
-  Widget _buildExplanationCard() {
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.info,
-                color: VineTheme.vineGreen,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                l10n.keyManagementWhatAreKeys,
-                style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.keyManagementExplanation,
-            style: VineTheme.bodyMediumFont(
-              color: context.vineColors.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildImportSection(BuildContext context, nostrService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,77 +109,41 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: context.vineColors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.vineColors.card),
+        DivineTextField(
+          controller: _importController,
+          labelText: 'nsec1...',
+          minLines: 1,
+          maxLines: 3,
+          enabled: !_isProcessing,
+          autocorrect: false,
+          textCapitalization: TextCapitalization.none,
+          spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
+          filled: true,
+          suffixIcon: DivineIconButton(
+            icon: DivineIconName.clipboard,
+            size: DivineIconButtonSize.small,
+            backgroundColor: VineTheme.transparent,
+            foregroundColor: context.vineColors.onSurfaceVariant,
+            showShadow: false,
+            tooltip: context.l10n.keyManagementPasteKey,
+            onPressed: _isProcessing ? null : _pasteKeyFromClipboard,
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DivineTextField(
-                controller: _importController,
-                labelText: 'nsec1...',
-                minLines: 1,
-                maxLines: 3,
-                enabled: !_isProcessing,
-                autocorrect: false,
-                textCapitalization: TextCapitalization.none,
-                spellCheckConfiguration:
-                    const SpellCheckConfiguration.disabled(),
-                filled: true,
-                suffixIcon: DivineIconButton(
-                  icon: DivineIconName.clipboard,
-                  size: DivineIconButtonSize.small,
-                  backgroundColor: VineTheme.transparent,
-                  foregroundColor: context.vineColors.onSurfaceVariant,
-                  showShadow: false,
-                  tooltip: context.l10n.keyManagementPasteKey,
-                  onPressed: _isProcessing ? null : _pasteKeyFromClipboard,
-                ),
-              ),
-              const SizedBox(height: 16),
-              DivineButton(
-                label: context.l10n.keyManagementImportButton,
-                expanded: true,
-                isLoading: _isProcessing,
-                onPressed: _isProcessing
-                    ? null
-                    : () => _importKey(context, nostrService),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: VineTheme.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: VineTheme.warning.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.warning,
-                      color: VineTheme.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        context.l10n.keyManagementImportWarning,
-                        style: VineTheme.bodySmallFont(
-                          color: context.vineColors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        ),
+        const SizedBox(height: 12),
+        DivineInfoCard(
+          icon: DivineIconName.warning,
+          tone: DivineInfoCardTone.warning,
+          compact: true,
+          message: context.l10n.keyManagementImportWarning,
+        ),
+        const SizedBox(height: 16),
+        DivineButton(
+          label: context.l10n.keyManagementImportButton,
+          expanded: true,
+          isLoading: _isProcessing,
+          onPressed: _isProcessing
+              ? null
+              : () => _importKey(context, nostrService),
         ),
       ],
     );
@@ -244,56 +173,22 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: context.vineColors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.vineColors.card),
+        if (canExportLocalNsec) ...[
+          DivineInfoCard(
+            icon: DivineIconName.shieldCheck,
+            tone: DivineInfoCardTone.error,
+            compact: true,
+            message: context.l10n.keyManagementNeverShare,
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              if (canExportLocalNsec) ...[
-                DivineButton(
-                  label: context.l10n.keyManagementCopyNsec,
-                  leadingIcon: DivineIconName.copy,
-                  expanded: true,
-                  onPressed: _isProcessing ? null : () => _exportKey(context),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: VineTheme.error.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: VineTheme.error.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const DivineIcon(
-                        icon: DivineIconName.shieldCheck,
-                        color: VineTheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          context.l10n.keyManagementNeverShare,
-                          style: VineTheme.bodySmallFont(
-                            color: context.vineColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (showKeycastRemoteSigningInfo)
-                const KeycastKeyExportCard(),
-            ],
+          const SizedBox(height: 16),
+          DivineButton(
+            label: context.l10n.keyManagementCopyNsec,
+            leadingIcon: DivineIconName.copy,
+            expanded: true,
+            onPressed: _isProcessing ? null : () => _exportKey(context),
           ),
-        ),
+        ] else if (showKeycastRemoteSigningInfo)
+          const KeycastKeyExportCard(),
       ],
     );
   }
@@ -525,42 +420,10 @@ class _KeyManagementLockedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const DivineIcon(
-            icon: DivineIconName.shieldCheck,
-            color: VineTheme.vineGreen,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 8,
-              children: [
-                Text(
-                  l10n.keyManagementRestrictedTitle,
-                  style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
-                ),
-                Text(
-                  l10n.keyManagementRestrictedBody,
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return DivineInfoCard(
+      icon: DivineIconName.shieldCheck,
+      title: context.l10n.keyManagementRestrictedTitle,
+      message: context.l10n.keyManagementRestrictedBody,
     );
   }
 }

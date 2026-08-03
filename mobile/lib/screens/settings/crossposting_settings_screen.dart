@@ -97,7 +97,7 @@ class _CrosspostingSettingsViewState extends State<CrosspostingSettingsView> {
         builder: (context, state) => switch (state.status) {
           CrosspostingSettingsStatus.initial ||
           CrosspostingSettingsStatus.loading => const Center(
-            child: BrandedLoadingIndicator(size: 60),
+            child: BrandedLoadingIndicator(),
           ),
           CrosspostingSettingsStatus.failure => const _LoadFailed(),
           CrosspostingSettingsStatus.loaded when state.entries.isEmpty =>

@@ -24,7 +24,7 @@ lib/screens/comments/widgets/comments_empty_state.dart	2
 lib/screens/curated_list_feed_screen.dart	12
 lib/screens/discover_lists_screen.dart	13
 lib/screens/explore/explore_view.dart	1
-lib/screens/explore/tabs/explore_lists_tab.dart	11
+lib/screens/explore/tabs/explore_lists_tab.dart	5
 lib/screens/explore/widgets/explore_buffered_videos_banner.dart	1
 lib/screens/explore_screen_router.dart	1
 lib/screens/feed/video_feed_page/feed_empty_widget.dart	1
@@ -61,7 +61,7 @@ lib/widgets/auth/forgot_password_dialog.dart	4
 lib/widgets/bug_report_dialog.dart	7
 lib/widgets/categories/category_glyph.dart	1
 lib/widgets/categories_tab.dart	2
-lib/widgets/classic_vines_tab.dart	8
+lib/widgets/classic_vines_tab.dart	7
 lib/widgets/composable_video_grid.dart	8
 lib/widgets/content_warning.dart	11
 lib/widgets/delete_account_dialog.dart	14
@@ -69,7 +69,7 @@ lib/widgets/environment_indicator.dart	1
 lib/widgets/error_message.dart	1
 lib/widgets/feature_request_dialog.dart	7
 lib/widgets/find_people_sheet.dart	7
-lib/widgets/for_you_tab.dart	15
+lib/widgets/for_you_tab.dart	13
 lib/widgets/global_error_widget.dart	7
 lib/widgets/library/sounds_tab.dart	7
 lib/widgets/linkified_text/linkified_text.dart	2

@@ -75,119 +75,27 @@ class ExploreListsTab extends ConsumerWidget {
           ),
 
           // Help text - ALWAYS VISIBLE
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.vineColors.card,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: VineTheme.vineGreen.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.info,
-                      color: VineTheme.vineGreen,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.l10n.exploreAboutLists,
-                      style: TextStyle(
-                        color: context.vineColors.primaryText,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  context.l10n.exploreAboutListsDescription,
-                  style: TextStyle(
-                    color: context.vineColors.primaryText,
-                    fontSize: 14,
-                    height: 1.5,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: DivineInfoCard(
+              title: context.l10n.exploreAboutLists,
+              message: context.l10n.exploreAboutListsDescription,
+              footer: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 12,
+                children: [
+                  _ListKindExplainer(
+                    icon: DivineIconName.user,
+                    title: context.l10n.explorePeopleLists,
+                    description: context.l10n.explorePeopleListsDescription,
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.user,
-                      color: VineTheme.vineGreen,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.explorePeopleLists,
-                            style: TextStyle(
-                              color: context.vineColors.primaryText,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            context.l10n.explorePeopleListsDescription,
-                            style: TextStyle(
-                              color: context.vineColors.secondaryText,
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.playlist,
-                      color: VineTheme.vineGreen,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.exploreVideoLists,
-                            style: TextStyle(
-                              color: context.vineColors.primaryText,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            context.l10n.exploreVideoListsDescription,
-                            style: TextStyle(
-                              color: context.vineColors.secondaryText,
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  _ListKindExplainer(
+                    icon: DivineIconName.playlist,
+                    title: context.l10n.exploreVideoLists,
+                    description: context.l10n.exploreVideoListsDescription,
+                  ),
+                ],
+              ),
             ),
           ),
 
@@ -414,6 +322,50 @@ class _SubscribedListsSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+/// One "what this kind of list is" row inside the tab's explanation card.
+class _ListKindExplainer extends StatelessWidget {
+  const _ListKindExplainer({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final DivineIconName icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 8,
+      children: [
+        DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 18),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 4,
+            children: [
+              Text(
+                title,
+                style: VineTheme.labelLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+              Text(
+                description,
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.secondaryText,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

@@ -838,41 +838,11 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
 
               const SizedBox(height: 16),
 
-              // Instructions
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: context.vineColors.card,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        DivineIcon(
-                          icon: DivineIconName.info,
-                          color: context.vineColors.secondaryText,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          context.l10n.relayDiagnosticTroubleshooting,
-                          style: VineTheme.titleSmallFont(
-                            color: context.vineColors.secondaryText,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.l10n.relayDiagnosticTroubleshootingGuide,
-                      style: VineTheme.bodySmallFont(
-                        color: context.vineColors.mutedText,
-                      ),
-                    ),
-                  ],
-                ),
+              DivineInfoCard(
+                tone: DivineInfoCardTone.neutral,
+                compact: true,
+                title: context.l10n.relayDiagnosticTroubleshooting,
+                message: context.l10n.relayDiagnosticTroubleshootingGuide,
               ),
             ],
           ),

@@ -44,12 +44,13 @@ class SupportCenterScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              _SupportTile(
-                icon: DivineIconName.chat,
-                title: l10n.supportContactSupport,
-                subtitle: l10n.supportContactSupportSubtitle,
-                onTap: () => _viewSupportMessages(context),
-              ),
+              if (ZendeskSupportService.isAvailable)
+                _SupportTile(
+                  icon: DivineIconName.chat,
+                  title: l10n.supportContactSupport,
+                  subtitle: l10n.supportContactSupportSubtitle,
+                  onTap: () => _viewSupportMessages(context),
+                ),
               _SupportTile(
                 icon: DivineIconName.warningCircle,
                 title: l10n.supportReportBug,
@@ -204,14 +205,12 @@ class SupportCenterScreen extends ConsumerWidget {
 
   Future<void> _viewSupportMessages(BuildContext context) async {
     if (!ZendeskSupportService.isAvailable) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.supportChatNotAvailable,
-            error: true,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.supportChatNotAvailable,
+          error: true,
+        ),
+      );
       return;
     }
 
