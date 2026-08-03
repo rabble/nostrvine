@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/screens/explore/explore_view.dart';
 
@@ -15,13 +14,13 @@ class ExploreScreen extends ConsumerWidget {
   const ExploreScreen({super.key, this.initialTabName});
 
   static const _routeTabNames = <String>{
-    'classics',
-    'new',
-    'popular',
-    'categories',
+    exploreClassicsTabName,
+    exploreDefaultTabName,
+    explorePopularTabName,
+    exploreCategoriesTabName,
     exploreForYouTabName,
-    'lists',
-    'apps',
+    exploreListsTabName,
+    exploreAppsTabName,
   };
 
   /// Route name for this screen.
@@ -63,8 +62,7 @@ class ExploreScreen extends ConsumerWidget {
     return _routeTabNames.contains(name) ? name : null;
   }
 
-  /// Optional tab name to select on first build. Takes precedence over
-  /// the saved [exploreTabIndexProvider].
+  /// Optional tab name to select on first build.
   final String? initialTabName;
 
   @override

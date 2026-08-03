@@ -1,84 +1,52 @@
-// ABOUTME: TDD test for Lists tab in ExploreScreen
-// ABOUTME: Ensures Lists tab replaces Divine Team tab - simple unit tests
+// ABOUTME: Unit tests for Explore's Lists tab identity and persistence.
+// ABOUTME: Ensures tab selection is stored by name rather than shifting index.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 
 void main() {
-  group('ExploreScreen Lists Tab Structure TDD', () {
-    test('RED: ExploreScreen should have 3 tabs, not 4', () {
-      // This test will pass once we change TabController length from 4 to 3
-      const expectedTabCount = 3;
+  group('ExploreScreen Lists tab structure', () {
+    test('base Explore tab order includes Lists by stable name', () {
+      const state = ExploreTabsState();
 
-      // The actual check will be in the implementation where we create TabController
-      // TabController(length: 3, vsync: this) - currently length is 4
-      expect(
-        expectedTabCount,
-        3,
-        reason:
-            'ExploreScreen should have exactly 3 tabs after removing Divine Team',
-      );
+      expect(state.tabNames, const [
+        exploreDefaultTabName,
+        explorePopularTabName,
+        exploreCategoriesTabName,
+        exploreListsTabName,
+      ]);
     });
 
-    test('RED: Tab labels should be [New, Popular, Lists]', () {
-      // This defines the expected tab configuration
-      const expectedTabs = [
-        'New',
-        'Popular',
-        'Lists', // Replaces 'Divine Team'
-      ];
+    test('Tab name provider supports stable Explore tab identities', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
 
+      // Test representative tab identities without depending on tab order.
+      container.read(exploreTabNameProvider.notifier).state =
+          exploreDefaultTabName;
       expect(
-        expectedTabs.length,
-        3,
-        reason: 'Should have exactly 3 tab labels',
+        container.read(exploreTabNameProvider),
+        exploreDefaultTabName,
+        reason: 'New tab persists by name',
       );
-      expect(expectedTabs[0], 'New', reason: 'First tab should be New');
+
+      container.read(exploreTabNameProvider.notifier).state =
+          explorePopularTabName;
       expect(
-        expectedTabs[1],
-        'Popular',
-        reason: 'Second tab should be Popular',
+        container.read(exploreTabNameProvider),
+        explorePopularTabName,
+        reason: 'Popular tab persists by name',
       );
+
+      container.read(exploreTabNameProvider.notifier).state =
+          exploreListsTabName;
       expect(
-        expectedTabs[2],
-        'Lists',
-        reason: 'Third tab should be Lists (replaces Divine Team)',
+        container.read(exploreTabNameProvider),
+        exploreListsTabName,
+        reason: 'Lists tab persists by name',
       );
     });
-
-    // Widget tests commented out due to Firebase dependency issues
-    // TODO: Add widget tests once Firebase mock setup is completed
-    // For now, we rely on manual testing and the unit tests above
-
-    test(
-      'Tab index provider should support 3 tabs (0=New, 1=Popular, 2=Lists)',
-      () {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        // Test all valid tab indices
-        container.read(exploreTabIndexProvider.notifier).state = 0;
-        expect(
-          container.read(exploreTabIndexProvider),
-          0,
-          reason: 'Index 0 = New',
-        );
-
-        container.read(exploreTabIndexProvider.notifier).state = 1;
-        expect(
-          container.read(exploreTabIndexProvider),
-          1,
-          reason: 'Index 1 = Popular',
-        );
-
-        container.read(exploreTabIndexProvider.notifier).state = 2;
-        expect(
-          container.read(exploreTabIndexProvider),
-          2,
-          reason: 'Index 2 = Lists',
-        );
-      },
-    );
   });
 }

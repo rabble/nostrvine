@@ -12,6 +12,21 @@ const exploreForYouTabSlug = 'for-you';
 /// Default tab name selected when no other selection applies.
 const exploreDefaultTabName = 'new';
 
+/// Internal tab name for the Classics tab.
+const exploreClassicsTabName = 'classics';
+
+/// Internal tab name for the Trending tab.
+const explorePopularTabName = 'popular';
+
+/// Internal tab name for the Categories tab.
+const exploreCategoriesTabName = 'categories';
+
+/// Internal tab name for the Lists tab.
+const exploreListsTabName = 'lists';
+
+/// Internal tab name for the integrated Apps tab.
+const exploreAppsTabName = 'apps';
+
 /// Immutable explore tab configuration derived from feature availability.
 class ExploreTabsState extends Equatable {
   /// Creates a tab state with the given optional-tab availability.
@@ -35,13 +50,13 @@ class ExploreTabsState extends Equatable {
   /// Canonical order: `classics?`, `new`, `popular`, `categories`,
   /// `for_you?`, `lists`, `apps?`.
   List<String> get tabNames => [
-    if (classicsAvailable) 'classics',
-    'new',
-    'popular',
-    'categories',
+    if (classicsAvailable) exploreClassicsTabName,
+    exploreDefaultTabName,
+    explorePopularTabName,
+    exploreCategoriesTabName,
     if (forYouAvailable) exploreForYouTabName,
-    'lists',
-    if (appsAvailable) 'apps',
+    exploreListsTabName,
+    if (appsAvailable) exploreAppsTabName,
   ];
 
   /// Number of visible tabs.
@@ -65,7 +80,7 @@ class ExploreTabsState extends Equatable {
   String nameForIndex(int index) {
     final names = tabNames;
     if (index >= 0 && index < names.length) return names[index];
-    return 'popular';
+    return explorePopularTabName;
   }
 
   /// Returns a copy with the given availability overrides.

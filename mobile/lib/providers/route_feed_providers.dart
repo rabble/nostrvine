@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/providers/moderation_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -38,10 +39,14 @@ final exploreTabVideoUpdateListenerProvider = Provider<void>((ref) {
   ref.onDispose(unregister);
 });
 
-/// Provider to persist the current tab index across widget recreation.
-/// Default to 1. Note: navigate to `ExploreScreen.pathForTab(name)` for
-/// semantic tab selection that survives tab count changes.
-final exploreTabIndexProvider = StateProvider<int>((ref) => 1);
+/// Provider to persist the current Explore tab by stable name across widget
+/// recreation and feed-mode chrome updates.
+///
+/// Tab indices shift whenever optional tabs appear or disappear, so all shared
+/// state outside the live TabController stores tab identity by name.
+final exploreTabNameProvider = StateProvider<String>(
+  (ref) => exploreDefaultTabName,
+);
 
 /// Index of the currently-active bottom-nav branch
 /// (0 = Home, 1 = Explore, 2 = Inbox, 3 = Profile).

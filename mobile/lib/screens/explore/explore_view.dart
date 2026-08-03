@@ -129,8 +129,9 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final index = _tabController!.index;
     final tabName = _tabsState.nameForIndex(index);
 
-    // Always persist the current index
-    ref.read(exploreTabIndexProvider.notifier).state = index;
+    // Persist the selected tab by stable name because optional tabs can shift
+    // raw indices while Explore is alive.
+    ref.read(exploreTabNameProvider.notifier).state = tabName;
 
     // Track tab change
     _tabs.trackTabChange(tabName);
