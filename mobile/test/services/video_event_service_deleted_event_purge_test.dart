@@ -52,17 +52,21 @@ class _StreamingNostrService implements NostrClient {
 
 const _authorPubkey =
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _otherPubkey =
+    'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 const _videoId =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const _editedVideoId =
+    'baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab';
 const _deletionId =
     'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 const _sig =
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
-Event _videoEvent() =>
+Event _videoEvent({String? id, String pubkey = _authorPubkey}) =>
     Event(
-        _authorPubkey,
+        pubkey,
         34236,
         [
           ['d', 'clip-1'],
@@ -72,15 +76,28 @@ Event _videoEvent() =>
         'a video that gets deleted',
         createdAt: 1000,
       )
-      ..id = _videoId
+      ..id = id ?? _videoId
       ..sig = _sig;
 
-Event _deletionEvent() =>
+Event _deletionEvent({String pubkey = _authorPubkey}) =>
+    Event(
+        pubkey,
+        5,
+        [
+          ['e', _videoId],
+        ],
+        'deleted by author',
+        createdAt: 2000,
+      )
+      ..id = _deletionId
+      ..sig = _sig;
+
+Event _addressableDeletionEvent() =>
     Event(
         _authorPubkey,
         5,
         [
-          ['e', _videoId],
+          ['a', '34236:$_authorPubkey:clip-1'],
         ],
         'deleted by author',
         createdAt: 2000,
@@ -184,6 +201,93 @@ void main() {
       await pumpEventQueue();
 
       expect(await cachedVideoRowCount(), 0);
+    });
+
+    test(
+      'does not re-persist a tombstoned video the relay redelivers',
+      () async {
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+        );
+        nostrService.emit(_videoEvent());
+        await settle();
+        nostrService.emit(_deletionEvent());
+        await settle();
+        expect(await cachedVideoRowCount(), 0);
+
+        // A relay that never received the Kind 5 — or a second subscription —
+        // serves the deleted clip again.
+        nostrService.emit(_videoEvent());
+        await settle();
+
+        expect(await cachedVideoRowCount(), 0);
+      },
+    );
+
+    test(
+      'does not re-persist an edit of a tombstoned addressable video',
+      () async {
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+        );
+        nostrService.emit(_videoEvent());
+        await settle();
+        nostrService.emit(_addressableDeletionEvent());
+        await settle();
+        expect(await cachedVideoRowCount(), 0);
+
+        // An edit mints a new event id for the same `pubkey:d-tag` clip, so only
+        // the coordinate half of the tombstone can catch it.
+        nostrService.emit(_videoEvent(id: _editedVideoId));
+        await settle();
+
+        expect(await cachedVideoRowCount(), 0);
+      },
+    );
+
+    test('a deletion arriving in the same burst still wins', () async {
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+      );
+
+      // Video and its Kind 5 share one REQ, so the video is still queued in
+      // the router — unflushed — when the deletion is applied. The purge must
+      // evict that pending write, not just DELETE a row that isn't there yet.
+      nostrService.emit(_videoEvent());
+      await pumpEventQueue();
+      nostrService.emit(_deletionEvent());
+      await settle();
+
+      expect(await cachedVideoRowCount(), 0);
+    });
+
+    test('purges a stored row that no feed has loaded into memory', () async {
+      await db.nostrEventsDao.upsertEvent(_videoEvent());
+      expect(await cachedVideoRowCount(), 1);
+
+      // A feed for a different author: the row stays in the store, unloaded.
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.homeFeed,
+        authors: const [_otherPubkey],
+      );
+      nostrService.emit(_deletionEvent());
+      await settle();
+
+      expect(await cachedVideoRowCount(), 0);
+    });
+
+    test('ignores a deletion that does not come from the row author', () async {
+      await db.nostrEventsDao.upsertEvent(_videoEvent());
+      expect(await cachedVideoRowCount(), 1);
+
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+      );
+      // Forged `e` tag: a relay cannot delete another author's cached rows.
+      nostrService.emit(_deletionEvent(pubkey: _otherPubkey));
+      await settle();
+
+      expect(await cachedVideoRowCount(), 1);
     });
   });
 }

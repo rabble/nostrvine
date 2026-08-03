@@ -1222,23 +1222,34 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   /// Whether a raw relay event is already tombstoned, by id or — for
   /// addressable videos, where an edit mints a new id for the same clip — by
-  /// its `pubkey:d-tag` coordinate.
+  /// its `pubkey:stable-id` coordinate.
   bool _isKnownDeletedRawEvent(Event event) {
     if (_knownDeletedVideoIds.contains(event.id)) return true;
     if (!NIP71VideoKinds.isVideoKind(event.kind)) return false;
 
+    final stableId = _rawStableId(event);
+    if (stableId == null) return false;
+
+    return _knownDeletedVideoCoordinateKeys.contains(
+      _knownDeletionCoordinateKeyFromParts(
+        pubkey: event.pubkey,
+        stableId: stableId,
+      ),
+    );
+  }
+
+  /// The stable id a raw event will parse into, mirroring
+  /// [VideoEvent.stableId]: the `d` tag, else the `vine_id` tag some clients
+  /// send instead. Returns null when neither is present, where the event id
+  /// is the identity and the id check above already covers it.
+  String? _rawStableId(Event event) {
+    String? vineId;
     for (final tag in event.tags) {
-      if (tag.length < 2 || tag[0] != 'd') continue;
-      final dTag = tag[1];
-      if (dTag.isEmpty) return false;
-      return _knownDeletedVideoCoordinateKeys.contains(
-        _knownDeletionCoordinateKeyFromParts(
-          pubkey: event.pubkey,
-          stableId: dTag,
-        ),
-      );
+      if (tag.length < 2 || tag[1].isEmpty) continue;
+      if (tag[0] == 'd') return tag[1];
+      if (tag[0] == 'vine_id') vineId ??= tag[1];
     }
-    return false;
+    return vineId;
   }
 
   void _handleObservedDeletionEvent(Event deletionEvent) {
@@ -1292,6 +1303,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         validatedEventIds.add(video.id);
       }
     }
+
+    // The store is purged from the *requested* ids, not the validated ones:
+    // a row that no feed has loaded is exactly the case that survives a
+    // restart and flashes on the next launch. Authorship is re-checked
+    // against the stored row instead of against memory.
+    _purgeDeletedVideosFromStore(
+      deletionPubkey: deletionPubkey,
+      requestedEventIds: requestedEventIds,
+      addressableIds: addressableIds,
+    );
 
     if (validatedEventIds.isEmpty && coordinateKeys.isEmpty) return;
 
@@ -1385,13 +1406,23 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// the rows survive it. The cache-first startup query ([_loadCachedEvents])
   /// reads straight from those rows, so without this purge every launch
   /// re-serves deleted videos until the relay redelivers the Kind 5 event —
-  /// roughly 700ms of deleted clips on the profile grid, once per app start.
+  /// several hundred milliseconds of deleted clips on the profile grid, once
+  /// per app start.
+  ///
+  /// `NostrClient` purges the same rows when it sees or publishes a Kind 5,
+  /// but only when it was given a database; this keeps the service correct on
+  /// its own and adds the authorship check that the client-side purge lacks.
   ///
   /// Fire-and-forget: deletion handling has already succeeded in memory, so a
-  /// failed purge must not break it. The next observed deletion retries.
+  /// failed purge must not break it.
   void _purgeEventsFromLocalCache(Set<String> eventIds) {
     final router = _eventRouter;
     if (router == null || eventIds.isEmpty) return;
+
+    // Evict pending writes first. A row queued before the tombstone existed
+    // passed the ingestion guard, and its flush would land after the DELETE
+    // below and re-create exactly what was just removed.
+    router.dropQueuedEvents(eventIds);
 
     unawaited(
       router.db.nostrEventsDao
@@ -1411,6 +1442,88 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               category: LogCategory.video,
             );
           }),
+    );
+  }
+
+  /// Purges the rows an observed NIP-09 deletion targets, including rows no
+  /// feed has loaded — the ones that survive a restart and flash on the next
+  /// launch.
+  ///
+  /// Every id is re-checked against the stored row's own pubkey, so a relay
+  /// cannot use a forged `e` tag to delete another author's cached videos.
+  /// Addressable `a` tags were already author-matched by the caller.
+  void _purgeDeletedVideosFromStore({
+    required String deletionPubkey,
+    required Set<String> requestedEventIds,
+    required Set<String> addressableIds,
+  }) {
+    final router = _eventRouter;
+    if (router == null) return;
+    if (requestedEventIds.isEmpty && addressableIds.isEmpty) return;
+
+    unawaited(
+      _resolveAndPurgeDeletedRows(
+        router: router,
+        deletionPubkey: deletionPubkey,
+        requestedEventIds: requestedEventIds,
+        addressableIds: addressableIds,
+      ).catchError((Object error) {
+        Log.warning(
+          'Failed to purge deleted events from local cache: $error',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }),
+    );
+  }
+
+  Future<void> _resolveAndPurgeDeletedRows({
+    required EventRouter router,
+    required String deletionPubkey,
+    required Set<String> requestedEventIds,
+    required Set<String> addressableIds,
+  }) async {
+    final dao = router.db.nostrEventsDao;
+    final idsToPurge = <String>{};
+
+    if (requestedEventIds.isNotEmpty) {
+      // One query for the whole `e` tag set — a Kind 5 may name many ids.
+      // The author check stays in Dart so it tolerates pubkey casing the way
+      // the rest of this class does; `pubkey IN (...)` would not.
+      final stored = await dao.getEventsByFilter(
+        Filter(
+          ids: requestedEventIds.toList(),
+          limit: requestedEventIds.length,
+        ),
+      );
+      for (final event in stored) {
+        if (event.pubkey.toLowerCase() != deletionPubkey) continue;
+        idsToPurge.add(event.id);
+      }
+    }
+
+    for (final addressableId in addressableIds) {
+      final parsed = AId.fromString(addressableId);
+      if (parsed == null) continue;
+      final matches = await dao.getEventsByFilter(
+        Filter(
+          kinds: [parsed.kind],
+          authors: [parsed.pubkey],
+          d: [parsed.dTag],
+        ),
+      );
+      idsToPurge.addAll(matches.map((event) => event.id));
+    }
+
+    if (idsToPurge.isEmpty) return;
+
+    router.dropQueuedEvents(idsToPurge);
+    final purged = await dao.deleteEventsByIds(idsToPurge.toList());
+    if (purged == 0) return;
+    Log.debug(
+      'Purged $purged deleted event(s) from the local cache',
+      name: 'VideoEventService',
+      category: LogCategory.video,
     );
   }
 
@@ -2263,10 +2376,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           (event) {
             eventCount++;
 
-            // Route events to normal-priority persistence without blocking
-            // visible feed updates.
-            _eventRouter?.handleEvent(event);
-
             // Track first event arrival time
             if (firstEventTime == null) {
               firstEventTime = DateTime.now();
@@ -2309,7 +2418,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               } catch (_) {}
             }
 
-            _handleNewVideoEvent(event, subscriptionType);
+            // Normal priority: the live feed is on screen, so these rows
+            // should reach the store ahead of background ingestion.
+            _handleNewVideoEvent(
+              event,
+              subscriptionType,
+              priority: EventIngestionPriority.normal,
+            );
           },
           onError: (error) {
             feedLoadingTimeout?.cancel();
@@ -2503,15 +2618,21 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
   /// Handle new video event from subscription.
   ///
+  /// This is the service's single persistence entry point: every ingestion
+  /// path routes through here so the tombstone guard below cannot be bypassed.
+  ///
   /// [persist] must be false for events that were just read back out of the
   /// local store. They are already persisted, and re-queueing them is not
   /// merely redundant: the router drains the background queue last, so under
   /// the startup relay burst those writes land *after* an observed deletion
   /// has purged the same rows — resurrecting deleted videos on every launch.
+  ///
+  /// [priority] lets an on-screen feed jump the background ingestion backlog.
   void _handleNewVideoEvent(
     dynamic eventData,
     SubscriptionType subscriptionType, {
     bool persist = true,
+    EventIngestionPriority priority = EventIngestionPriority.background,
   }) {
     try {
       // The event should already be an Event object from NostrService
@@ -2531,10 +2652,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       // Tombstoned events are never re-persisted — a queued write that lands
       // after the purge would put the row straight back.
       if (persist && !_isKnownDeletedRawEvent(event)) {
-        _eventRouter?.handleEvent(
-          event,
-          priority: EventIngestionPriority.background,
-        );
+        _eventRouter?.handleEvent(event, priority: priority);
       }
 
       // Fast-path de-duplication before logging and processing
