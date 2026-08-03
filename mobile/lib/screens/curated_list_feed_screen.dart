@@ -13,6 +13,7 @@ import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -429,9 +430,13 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             final isOwned = service?.isOwnedList(widget.listId) ?? false;
             if (isOwned) {
               final list = service?.getListById(widget.listId);
+              // Sharing needs an author pubkey for the canonical URL, so a
+              // public list without one must not offer a no-op menu entry.
+              final isShareable =
+                  (list?.isPublic ?? false) && list?.pubkey != null;
               return [
                 _CuratedListAction.edit,
-                if (list?.isPublic ?? false) _CuratedListAction.share,
+                if (isShareable) _CuratedListAction.share,
                 _CuratedListAction.delete,
               ];
             }
@@ -461,10 +466,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     final authorPubkey = list?.pubkey;
     if (list == null || !list.isPublic || authorPubkey == null) return;
 
-    final path =
-        '${CuratedListFeedScreen.basePath}/'
-        '${Uri.encodeComponent(authorPubkey)}'
-        '/${Uri.encodeComponent(list.id)}';
+    final path = CuratedListByAuthorScreen.pathFor(
+      pubkey: authorPubkey,
+      listId: list.id,
+    );
     final url = 'https://divine.video$path';
     try {
       await SharePlus.instance.share(
