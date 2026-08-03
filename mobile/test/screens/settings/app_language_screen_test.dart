@@ -88,7 +88,7 @@ void main() {
       verify(() => localeCubit.clearLocale()).called(1);
     });
 
-    testWidgets('shows selected radio for current locale', (tester) async {
+    testWidgets('marks the current locale as selected', (tester) async {
       when(
         () => localeCubit.state,
       ).thenReturn(const LocaleState(locale: Locale('fr')));
@@ -97,13 +97,11 @@ void main() {
       await tester.pumpAndSettle();
 
       final frenchTile = await findLocaleTile(tester, 'Français');
-      final icon = frenchTile.leading! as Icon;
-      expect(icon.icon, equals(Icons.radio_button_checked));
+      expect(frenchTile.selected, isTrue);
+      expect((frenchTile.trailing! as DivineIcon).icon, DivineIconName.check);
     });
 
-    testWidgets('shows unselected radio for non-current locale', (
-      tester,
-    ) async {
+    testWidgets('leaves a non-current locale unmarked', (tester) async {
       when(
         () => localeCubit.state,
       ).thenReturn(const LocaleState(locale: Locale('fr')));
@@ -116,8 +114,8 @@ void main() {
       final deutschTile = tester.widget<ListTile>(
         find.widgetWithText(ListTile, 'Deutsch'),
       );
-      final icon = deutschTile.leading! as Icon;
-      expect(icon.icon, equals(Icons.radio_button_off));
+      expect(deutschTile.selected, isFalse);
+      expect(deutschTile.trailing, isNull);
     });
 
     testWidgets('renders visible locale tiles from supportedLocales', (

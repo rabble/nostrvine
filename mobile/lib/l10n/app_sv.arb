@@ -742,30 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Återställ alla flaggor till standard",
-    "featureFlagResetToDefault": "Återställ till standard",
-    "featureFlagAppRecovery": "Appåterställning",
-    "featureFlagAppRecoveryDescription": "Om appen kraschar eller beter sig konstigt, testa att rensa cachen.",
-    "featureFlagClearAllCache": "Rensa all cache",
-    "featureFlagCacheInfo": "Cacheinfo",
-    "featureFlagClearCacheTitle": "Rensa all cache?",
-    "featureFlagClearCacheMessage": "Detta rensar all cachad data inklusive:\n• Aviseringar\n• Användarprofiler\n• Bokmärken\n• Temporära filer\n\nDu behöver logga in igen. Fortsätta?",
-    "featureFlagClearCache": "Rensa cache",
-    "featureFlagClearingCache": "Rensar cache...",
-    "featureFlagSuccess": "Klart",
     "featureFlagError": "Fel",
-    "featureFlagClearCacheSuccess": "Cachen rensades. Starta om appen.",
-    "featureFlagClearCacheFailure": "Kunde inte rensa vissa cacheobjekt. Kolla loggarna för detaljer.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Cacheinformation",
-    "featureFlagTotalCacheSize": "Total cachestorlek: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Cachen innehåller:\n• Aviseringshistorik\n• Profildata\n• Videominiatyrer\n• Temporära filer\n• Databasindex",
     "relaySettingsTitle": "Reler",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -1032,6 +1009,7 @@
     "safetySettingsAddCustomLabeler": "Lägg till egen etiketterare",
     "safetySettingsAddCustomLabelerHint": "Ange npub...",
     "safetySettingsAddCustomLabelerListTitle": "Lägg till egen etiketterare",
+    "safetySettingsRemoveLabeler": "Ta bort etiketterare",
     "safetySettingsAddCustomLabelerListSubtitle": "Ange npub-adress",
     "safetySettingsNoBlockedUsers": "Inga blockerade användare",
     "safetySettingsUnblock": "Avblockera",
@@ -3362,10 +3340,7 @@
     "appearanceSettingsDark": "Mörkt",
     "generalSettingsClosedCaptions": "Undertexter",
     "generalSettingsClosedCaptionsSubtitle": "Visa undertexter när videor har dem",
-    "generalSettingsVideoShape": "Videoform",
     "generalSettingsVideoShapeSquareOnly": "Endast kvadratiska videor",
-    "generalSettingsVideoShapeSquareAndPortrait": "Kvadrat och stående",
-    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Visa hela mixen av Divine-videor",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Behåll flöden i klassiskt kvadratiskt format",
     "generalSettingsHoldToRecord": "Håll inne för att spela in",
     "generalSettingsHoldToRecordSubtitle": "Inspelning startar när du håller inne och stannar när du släpper",
@@ -4827,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Maximal cachestorlek",
   "settingsStorageApproxVideos": "≈ {count} videor",
   "settingsStorageRemoveBrokenConfirmTitle": "Ta bort trasiga klipp?",
+  "settingsStorageRepairSectionTitle": "Reparera installationen",
+  "settingsStorageRepairDescription": "Om appen kraschar eller beter sig konstigt brukar en återställning av lokala data lösa det. Dina klipp och utkast finns kvar.",
+  "settingsStorageRepairButton": "Återställ appdata",
+  "settingsStorageRepairConfirmTitle": "Återställa appdata?",
+  "settingsStorageRepairConfirmMessage": "Det här raderar aviseringar, cachade profiler, bokmärken och tillfälliga filer. Dina klipp och utkast finns kvar, men du loggas ut och måste starta om appen.",
+  "settingsStorageRepairFootprint": "{size} tas bort",
+  "settingsStorageRepairConfirmAction": "Återställ",
+  "settingsStorageRepairInProgress": "Återställer…",
+  "settingsStorageRepairSuccess": "Klart — starta om appen för att slutföra.",
+  "settingsStorageRepairFailure": "Kunde inte återställa allt. Försök igen efter en omstart.",
   "authSignInErrorInvalidCredentials": "Fel e-post eller lösenord. Försök igen.",
   "authSignInErrorEmailNotVerified": "Verifiera din e-post innan du loggar in – kolla din inkorg efter länken.",
   "authSignInErrorInvalidEmail": "Det där ser inte ut som en giltig e-postadress.",

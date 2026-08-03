@@ -234,17 +234,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mostrar legendas quando os vídeos tiverem';
 
   @override
-  String get generalSettingsVideoShape => 'Formato do vídeo';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Só vídeos quadrados';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Quadrado e retrato';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Mostrar a mistura completa de vídeos do Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1916,62 +1906,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Redefinir todas as flags para o padrão';
 
   @override
-  String get featureFlagResetToDefault => 'Redefinir para o padrão';
-
-  @override
-  String get featureFlagAppRecovery => 'Recuperação do app';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Se o app estiver travando ou se comportando de forma estranha, tente limpar o cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Limpar todo o cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Informações do cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Limpar todo o cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Isso vai limpar todos os dados em cache, incluindo:\n• Notificações\n• Perfis de usuários\n• Favoritos\n• Arquivos temporários\n\nVocê vai precisar entrar de novo. Continuar?';
-
-  @override
-  String get featureFlagClearCache => 'Limpar cache';
-
-  @override
-  String get featureFlagClearingCache => 'Limpando cache...';
-
-  @override
-  String get featureFlagSuccess => 'Sucesso';
-
-  @override
   String get featureFlagError => 'Erro';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache limpo com sucesso. Reinicie o app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Falha ao limpar alguns itens do cache. Verifique os logs para mais detalhes.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Informações do cache';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Tamanho total do cache: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'O cache inclui:\n• Histórico de notificações\n• Dados de perfil de usuários\n• Miniaturas de vídeo\n• Arquivos temporários\n• Índices do banco de dados';
 
   @override
   String get relaySettingsTitle => 'Relays';
@@ -2611,6 +2546,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Adicionar rótulo personalizado';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Remover rótulo';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
@@ -10692,6 +10630,42 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Remover clipes quebrados?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Reparar instalação';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Se o app trava ou age de forma estranha, redefinir os dados locais costuma resolver. Seus clipes e rascunhos ficam.';
+
+  @override
+  String get settingsStorageRepairButton => 'Redefinir dados do app';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Redefinir dados do app?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Isso apaga notificações, perfis em cache, favoritos e arquivos temporários. Seus clipes e rascunhos ficam, mas você sairá da conta e terá que reiniciar o app.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size serão removidos';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Redefinir';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Redefinindo…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Pronto — reinicie o app para concluir.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Não foi possível redefinir tudo. Tente de novo após reiniciar.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Verificação de assinatura';

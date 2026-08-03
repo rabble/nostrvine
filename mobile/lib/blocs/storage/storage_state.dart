@@ -44,6 +44,29 @@ enum StorageLibraryStatus {
   failure,
 }
 
+/// Lifecycle of the repair-install section.
+enum StorageRecoveryStatus {
+  /// Nothing in flight. Also where a failed measurement lands — the footprint
+  /// is decoration on the confirmation sheet, so losing it hides the size line
+  /// instead of claiming the reset itself failed.
+  idle,
+
+  /// Measuring the total on-disk footprint.
+  measuring,
+
+  /// Footprint known and idle; see [StorageState.recoveryFootprintBytes].
+  measured,
+
+  /// A full recovery wipe is running.
+  recovering,
+
+  /// The wipe finished; the app needs a restart.
+  recovered,
+
+  /// The wipe failed.
+  failure,
+}
+
 /// State for the settings "Storage" screen.
 class StorageState extends Equatable {
   /// Creates a state.
@@ -53,6 +76,8 @@ class StorageState extends Equatable {
     this.cacheLimitBytes = kCacheLimitDefaultBytes,
     this.libraryStatus = StorageLibraryStatus.idle,
     this.brokenClips = const [],
+    this.recoveryStatus = StorageRecoveryStatus.idle,
+    this.recoveryFootprintBytes = 0,
   });
 
   /// Lifecycle of the cache section.
@@ -70,6 +95,12 @@ class StorageState extends Equatable {
   /// Library clips whose backing file is missing (populated after a scan).
   final List<DivineVideoClip> brokenClips;
 
+  /// Lifecycle of the repair-install section.
+  final StorageRecoveryStatus recoveryStatus;
+
+  /// Total bytes a repair wipe would clear, or zero while unmeasured.
+  final int recoveryFootprintBytes;
+
   /// Returns a copy with the given fields replaced.
   StorageState copyWith({
     StorageCacheStatus? cacheStatus,
@@ -77,6 +108,8 @@ class StorageState extends Equatable {
     int? cacheLimitBytes,
     StorageLibraryStatus? libraryStatus,
     List<DivineVideoClip>? brokenClips,
+    StorageRecoveryStatus? recoveryStatus,
+    int? recoveryFootprintBytes,
   }) {
     return StorageState(
       cacheStatus: cacheStatus ?? this.cacheStatus,
@@ -84,6 +117,9 @@ class StorageState extends Equatable {
       cacheLimitBytes: cacheLimitBytes ?? this.cacheLimitBytes,
       libraryStatus: libraryStatus ?? this.libraryStatus,
       brokenClips: brokenClips ?? this.brokenClips,
+      recoveryStatus: recoveryStatus ?? this.recoveryStatus,
+      recoveryFootprintBytes:
+          recoveryFootprintBytes ?? this.recoveryFootprintBytes,
     );
   }
 
@@ -94,5 +130,7 @@ class StorageState extends Equatable {
     cacheLimitBytes,
     libraryStatus,
     brokenClips,
+    recoveryStatus,
+    recoveryFootprintBytes,
   ];
 }

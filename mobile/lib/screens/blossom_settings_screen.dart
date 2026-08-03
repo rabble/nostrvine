@@ -10,6 +10,7 @@ import 'package:openvine/blocs/blossom_settings/blossom_settings_cubit.dart';
 import 'package:openvine/blocs/blossom_settings/blossom_settings_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Page: bridges `BlossomUploadService` into [BlossomSettingsCubit].
 class BlossomSettingsScreen extends ConsumerWidget {
@@ -74,13 +75,7 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
       listener: (context, state) {
         if (state.status == BlossomSettingsStatus.saveSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.l10n.blossomSettingsSaved,
-                style: TextStyle(color: context.vineColors.primaryText),
-              ),
-              backgroundColor: VineTheme.vineGreen,
-            ),
+            DivineSnackbarContainer.snackBar(context.l10n.blossomSettingsSaved),
           );
           context.pop();
         } else if (state.status == BlossomSettingsStatus.saveFailure) {
@@ -94,10 +89,7 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
             null => context.l10n.blossomFailedToSaveSettings(''),
           };
           messenger.showSnackBar(
-            SnackBar(
-              content: Text(message),
-              backgroundColor: VineTheme.error,
-            ),
+            DivineSnackbarContainer.snackBar(message, error: true),
           );
         }
       },
@@ -128,15 +120,18 @@ class _BlossomSettingsViewState extends State<BlossomSettingsView> {
           ),
           backgroundColor: context.vineColors.background,
           body: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                )
+              ? const Center(child: BrandedLoadingIndicator(size: 60))
               : Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: ListView(
-                      padding: const EdgeInsets.all(16),
+                      padding: .fromLTRB(
+                        0,
+                        16,
+                        0,
+                        16 + MediaQuery.viewPaddingOf(context).bottom,
+                      ),
                       children: [
                         const _AboutCard(),
                         const SizedBox(height: 20),
@@ -161,44 +156,11 @@ class _AboutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: context.vineColors.background.withValues(alpha: 0.7),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                DivineIcon(
-                  icon: DivineIconName.info,
-                  color: VineTheme.vineGreen.withValues(alpha: 0.8),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  context.l10n.blossomAboutTitle,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              context.l10n.blossomAboutDescription,
-              style: TextStyle(
-                color: context.vineColors.onSurface,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: DivineInfoCard(
+        title: context.l10n.blossomAboutTitle,
+        message: context.l10n.blossomAboutDescription,
       ),
     );
   }
@@ -212,23 +174,14 @@ class _EnableToggle extends StatelessWidget {
     final isEnabled = context.select(
       (BlossomSettingsCubit cubit) => cubit.state.isBlossomEnabled,
     );
-    return SwitchListTile(
-      title: Text(
-        context.l10n.blossomUseCustomServer,
-        style: TextStyle(color: context.vineColors.primaryText, fontSize: 16),
-      ),
-      subtitle: Text(
-        isEnabled
-            ? context.l10n.blossomCustomServerEnabledSubtitle
-            : context.l10n.blossomCustomServerDisabledSubtitle,
-        style: TextStyle(color: context.vineColors.onSurfaceMuted),
-      ),
+    return DivineSwitchTile(
+      title: context.l10n.blossomUseCustomServer,
+      subtitle: isEnabled
+          ? context.l10n.blossomCustomServerEnabledSubtitle
+          : context.l10n.blossomCustomServerDisabledSubtitle,
       value: isEnabled,
       onChanged: (value) =>
           context.read<BlossomSettingsCubit>().setEnabled(value),
-      activeThumbColor: VineTheme.vineGreen,
-      inactiveThumbColor: context.vineColors.mutedText,
-      inactiveTrackColor: context.vineColors.mutedText.withValues(alpha: 0.3),
     );
   }
 }
@@ -248,75 +201,49 @@ class _ServerUrlSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.l10n.blossomCustomServerUrl,
-          style: TextStyle(
-            color: context.vineColors.primaryText,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          style: TextStyle(color: context.vineColors.primaryText),
-          decoration: InputDecoration(
-            hintText: 'https://blossom.band',
-            hintStyle: TextStyle(color: context.vineColors.disabled),
-            filled: true,
-            fillColor: context.vineColors.surfaceContainer,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: VineTheme.vineGreen.withValues(alpha: 0.3),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: VineTheme.vineGreen.withValues(alpha: 0.3),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VineTheme.vineGreen),
-            ),
-            prefixIcon: const Icon(
-              Icons.cloud_upload,
-              color: VineTheme.vineGreen,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.blossomCustomServerUrl,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
             ),
           ),
-          keyboardType: TextInputType.url,
-          autocorrect: false,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          context.l10n.blossomCustomServerHelper,
-          style: TextStyle(
-            color: context.vineColors.onSurfaceMuted,
-            fontSize: 12,
+          const SizedBox(height: 8),
+          DivineTextField(
+            controller: controller,
+            labelText: 'https://blossom.band',
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            textCapitalization: TextCapitalization.none,
+            spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
           ),
-        ),
-        const SizedBox(height: 30),
-        Text(
-          context.l10n.blossomPopularServers,
-          style: TextStyle(
-            color: context.vineColors.primaryText,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.blossomCustomServerHelper,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceMuted,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        for (final entry in _popularServers)
-          _ServerOption(
-            url: entry.$1,
-            name: entry.$2,
-            onSelect: () => controller.text = entry.$1,
+          const SizedBox(height: 30),
+          Text(
+            context.l10n.blossomPopularServers,
+            style: VineTheme.titleMediumFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
-      ],
+          const SizedBox(height: 12),
+          for (final entry in _popularServers)
+            _ServerOption(
+              url: entry.$1,
+              name: entry.$2,
+              onSelect: () => controller.text = entry.$1,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -340,13 +267,12 @@ class _ServerOption extends StatelessWidget {
       child: ListTile(
         title: Text(
           name,
-          style: TextStyle(color: context.vineColors.primaryText),
+          style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
         ),
         subtitle: Text(
           url,
-          style: TextStyle(
+          style: VineTheme.bodySmallFont(
             color: context.vineColors.onSurfaceMuted,
-            fontSize: 12,
           ),
         ),
         trailing: const DivineIcon(

@@ -233,17 +233,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'جب ویڈیوز میں کیپشن شامل ہوں تو دکھائیں';
 
   @override
-  String get generalSettingsVideoShape => 'ویڈیو کی شکل';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'صرف چوکور ویڈیوز';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'چوکور اور عمودی';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Divine ویڈیوز کا پورا امتزاج دکھائیں';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1902,62 +1892,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'تمام فلیگز ڈیفالٹ پر ری سیٹ کریں';
 
   @override
-  String get featureFlagResetToDefault => 'ڈیفالٹ پر ری سیٹ کریں';
-
-  @override
-  String get featureFlagAppRecovery => 'ایپ ریکوری';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'اگر ایپ کریش ہو رہی ہے یا عجیب برتاؤ کر رہی ہے تو کیش صاف کر کے دیکھیں۔';
-
-  @override
-  String get featureFlagClearAllCache => 'ساری کیش صاف کریں';
-
-  @override
-  String get featureFlagCacheInfo => 'کیش کی معلومات';
-
-  @override
-  String get featureFlagClearCacheTitle => 'ساری کیش صاف کریں؟';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'اس سے تمام کیش شدہ ڈیٹا صاف ہو جائے گا بشمول:\n• اطلاعات\n• صارف پروفائلز\n• بک مارکس\n• عارضی فائلیں\n\nآپ کو دوبارہ لاگ ان کرنا ہوگا۔ جاری رکھیں؟';
-
-  @override
-  String get featureFlagClearCache => 'کیش صاف کریں';
-
-  @override
-  String get featureFlagClearingCache => 'کیش صاف ہو رہی ہے...';
-
-  @override
-  String get featureFlagSuccess => 'کامیاب';
-
-  @override
   String get featureFlagError => 'خرابی';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'کیش کامیابی سے صاف ہو گئی۔ براہ کرم ایپ دوبارہ شروع کریں۔';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'کچھ کیش آئٹمز صاف نہیں ہو سکے۔ تفصیلات کے لیے لاگز دیکھیں۔';
-
-  @override
-  String get featureFlagOk => 'ٹھیک ہے';
-
-  @override
-  String get featureFlagCacheInformation => 'کیش کی معلومات';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'کل کیش سائز: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'کیش میں شامل ہے:\n• اطلاعات کی تاریخ\n• صارف پروفائل ڈیٹا\n• ویڈیو تھمب نیلز\n• عارضی فائلیں\n• ڈیٹابیس انڈیکسز';
 
   @override
   String get relaySettingsTitle => 'ریلے';
@@ -2589,6 +2524,9 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get safetySettingsAddCustomLabelerListTitle => 'کسٹم لیبلر شامل کریں';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'لیبلر ہٹائیں';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
@@ -10619,6 +10557,42 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'ٹوٹی ہوئی کلپس ہٹائیں؟';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'انسٹالیشن کی مرمت';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'اگر ایپ بار بار بند ہو رہی ہے یا عجیب چل رہی ہے تو مقامی ڈیٹا ری سیٹ کرنے سے عموماً مسئلہ حل ہو جاتا ہے۔ آپ کی کلپس اور ڈرافٹس محفوظ رہیں گے۔';
+
+  @override
+  String get settingsStorageRepairButton => 'ایپ ڈیٹا ری سیٹ کریں';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'ایپ ڈیٹا ری سیٹ کریں؟';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'اس سے اطلاعات، کیش شدہ پروفائلز، بک مارکس اور عارضی فائلیں مٹ جائیں گی۔ آپ کی کلپس اور ڈرافٹس رہیں گے، لیکن آپ لاگ آؤٹ ہو جائیں گے اور ایپ دوبارہ شروع کرنی ہوگی۔';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size حذف ہو جائے گا';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'ری سیٹ';
+
+  @override
+  String get settingsStorageRepairInProgress => 'ری سیٹ ہو رہا ہے…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'ہو گیا — مکمل کرنے کے لیے ایپ دوبارہ شروع کریں۔';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'سب کچھ ری سیٹ نہیں ہو سکا۔ دوبارہ شروع کرنے کے بعد کوشش کریں۔';
 
   @override
   String get nostrSettingsSignatureVerification => 'دستخط کی تصدیق';

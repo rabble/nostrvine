@@ -107,7 +107,7 @@ void main() {
       final title = tester.widget<Text>(
         find.text(l10n.appearanceSettingsLight),
       );
-      expect(title.style?.color, VineTheme.lightColors.primaryText);
+      expect(title.style?.color, VineTheme.lightColors.onSurface);
       expect(VineThemeColors.debugFallbackCount, 0);
     });
 

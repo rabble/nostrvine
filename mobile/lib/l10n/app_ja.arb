@@ -739,30 +739,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "すべてのフラグを既定値にリセット",
-    "featureFlagResetToDefault": "既定にリセット",
-    "featureFlagAppRecovery": "アプリ復旧",
-    "featureFlagAppRecoveryDescription": "アプリがクラッシュしたりおかしい時は、キャッシュのクリアを試してみて。",
-    "featureFlagClearAllCache": "すべてのキャッシュをクリア",
-    "featureFlagCacheInfo": "キャッシュ情報",
-    "featureFlagClearCacheTitle": "すべてのキャッシュをクリアする?",
-    "featureFlagClearCacheMessage": "次のキャッシュデータを全部クリアするよ:\n• 通知\n• ユーザープロフィール\n• ブックマーク\n• 一時ファイル\n\n再度ログインが必要になるけど、続ける?",
-    "featureFlagClearCache": "キャッシュをクリア",
-    "featureFlagClearingCache": "キャッシュをクリア中...",
-    "featureFlagSuccess": "成功！",
     "featureFlagError": "エラー",
-    "featureFlagClearCacheSuccess": "キャッシュをクリアしたよ。アプリを再起動してね。",
-    "featureFlagClearCacheFailure": "一部のキャッシュ項目のクリアがうまくいかなかった。ログを確認してみて。",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "キャッシュ情報",
-    "featureFlagTotalCacheSize": "キャッシュ合計: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "キャッシュに含まれるもの:\n• 通知履歴\n• ユーザープロフィールデータ\n• 動画サムネイル\n• 一時ファイル\n• データベースインデックス",
     "relaySettingsTitle": "リレー",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -1029,6 +1006,7 @@
     "safetySettingsAddCustomLabeler": "カスタムラベラーを追加",
     "safetySettingsAddCustomLabelerHint": "npub を入力...",
     "safetySettingsAddCustomLabelerListTitle": "カスタムラベラーを追加",
+    "safetySettingsRemoveLabeler": "ラベラーを削除",
     "safetySettingsAddCustomLabelerListSubtitle": "npub アドレスを入力してね",
     "safetySettingsNoBlockedUsers": "ブロック済みユーザーはいないよ",
     "safetySettingsUnblock": "ブロック解除",
@@ -3355,10 +3333,7 @@
     "appearanceSettingsDark": "ダーク",
     "generalSettingsClosedCaptions": "字幕",
     "generalSettingsClosedCaptionsSubtitle": "動画に字幕がある場合に表示するよ",
-    "generalSettingsVideoShape": "動画の形",
     "generalSettingsVideoShapeSquareOnly": "正方形の動画のみ",
-    "generalSettingsVideoShapeSquareAndPortrait": "正方形と縦型",
-    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Divine の動画をフルミックスで表示",
     "generalSettingsVideoShapeSquareOnlySubtitle": "クラシックな正方形フォーマットでフィードを保つ",
     "generalSettingsHoldToRecord": "長押しで録画",
     "generalSettingsHoldToRecordSubtitle": "長押しすると録画が始まり、離すと止まります",
@@ -4827,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "最大キャッシュサイズ",
   "settingsStorageApproxVideos": "≈ {count} 本の動画",
   "settingsStorageRemoveBrokenConfirmTitle": "壊れたクリップを削除しますか？",
+  "settingsStorageRepairSectionTitle": "インストールを修復",
+  "settingsStorageRepairDescription": "アプリが落ちたり動きがおかしいときは、ローカルデータをリセットすると直ることが多いよ。クリップと下書きはそのまま残る。",
+  "settingsStorageRepairButton": "アプリデータをリセット",
+  "settingsStorageRepairConfirmTitle": "アプリデータをリセットする?",
+  "settingsStorageRepairConfirmMessage": "通知、キャッシュ済みのプロフィール、ブックマーク、一時ファイルを消すよ。クリップと下書きは残るけど、ログアウトされるからアプリを再起動してね。",
+  "settingsStorageRepairFootprint": "{size} を削除するよ",
+  "settingsStorageRepairConfirmAction": "リセット",
+  "settingsStorageRepairInProgress": "リセット中…",
+  "settingsStorageRepairSuccess": "完了 — 仕上げにアプリを再起動してね。",
+  "settingsStorageRepairFailure": "全部はリセットできなかった。再起動してからもう一度試してね。",
   "authSignInErrorInvalidCredentials": "メールアドレスまたはパスワードが違います。もう一度お試しください。",
   "authSignInErrorEmailNotVerified": "サインインする前にメールを認証してください。受信トレイのリンクを確認してください。",
   "authSignInErrorInvalidEmail": "有効なメールアドレスではないようです。",

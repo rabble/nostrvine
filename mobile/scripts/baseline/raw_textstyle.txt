@@ -7,14 +7,10 @@
 # Issue: #6145. Regenerate after migrating:
 #   UPDATE_BASELINE=1 bash scripts/check_raw_textstyle_ceiling.sh
 lib/app_update/view/update_dialog.dart	2
-lib/features/feature_flags/screens/feature_flag_screen.dart	4
 lib/main.dart	2
 lib/mixins/async_value_ui_helpers_mixin.dart	1
 lib/router/app_shell.dart	1
 lib/router/widgets/sound_detail_loader.dart	2
-lib/screens/apps/app_detail_screen.dart	10
-lib/screens/apps/apps_directory_screen.dart	7
-lib/screens/apps/web_iframe_sandbox_screen_io.dart	1
 lib/screens/auth/create_account_screen.dart	7
 lib/screens/auth/email_verification_screen.dart	10
 lib/screens/auth/invite_gate_screen.dart	12
@@ -22,16 +18,13 @@ lib/screens/auth/login_options_screen.dart	4
 lib/screens/auth/nostr_connect_screen.dart	12
 lib/screens/auth/reset_password.dart	2
 lib/screens/auth/welcome_screen.dart	1
-lib/screens/blossom_settings_screen.dart	12
 lib/screens/category_gallery_screen.dart	2
 lib/screens/comments/widgets/comment_item.dart	1
 lib/screens/comments/widgets/comments_empty_state.dart	2
-lib/screens/content_filters_screen.dart	4
 lib/screens/curated_list_feed_screen.dart	12
-lib/screens/developer_options_screen.dart	36
 lib/screens/discover_lists_screen.dart	13
 lib/screens/explore/explore_view.dart	1
-lib/screens/explore/tabs/explore_lists_tab.dart	11
+lib/screens/explore/tabs/explore_lists_tab.dart	5
 lib/screens/explore/widgets/explore_buffered_videos_banner.dart	1
 lib/screens/explore_screen_router.dart	1
 lib/screens/feed/video_feed_page/feed_empty_widget.dart	1
@@ -46,9 +39,7 @@ lib/screens/inbox/conversation/widgets/reaction_picker_overlay.dart	1
 lib/screens/inbox/conversation/widgets/reactions_detail_sheet.dart	1
 lib/screens/inbox/conversation/widgets/reactions_row.dart	1
 lib/screens/key_import_screen.dart	3
-lib/screens/key_management_screen.dart	15
 lib/screens/liked_videos_screen_router.dart	3
-lib/screens/notification_settings_screen.dart	7
 lib/screens/original_sound_detail_screen.dart	4
 lib/screens/other_profile_screen.dart	2
 lib/screens/profile_setup/widgets/display_name_field.dart	1
@@ -56,19 +47,7 @@ lib/screens/profile_setup/widgets/profile_avatar_section.dart	2
 lib/screens/profile_setup/widgets/profile_setup_field_decorations.dart	1
 lib/screens/profile_setup/widgets/profile_setup_listeners.dart	5
 lib/screens/profile_setup/widgets/username_field.dart	2
-lib/screens/relay_diagnostic_screen.dart	22
-lib/screens/relay_settings_screen.dart	33
-lib/screens/safety_settings_screen.dart	23
 lib/screens/search_results/widgets/videos_section.dart	1
-lib/screens/settings/account_content_labels_tile.dart	6
-lib/screens/settings/bluesky_settings_screen.dart	10
-lib/screens/settings/content_preferences_screen.dart	19
-lib/screens/settings/general_settings_screen.dart	4
-lib/screens/settings/invites_screen.dart	3
-lib/screens/settings/legal_screen.dart	2
-lib/screens/settings/nip05_settings_screen.dart	3
-lib/screens/settings/nostr_settings_screen.dart	9
-lib/screens/settings/support_center_screen.dart	2
 lib/screens/sound_detail_screen.dart	12
 lib/screens/user_list_people_screen.dart	15
 lib/services/watermark_image_generator.dart	1
@@ -82,7 +61,7 @@ lib/widgets/auth/forgot_password_dialog.dart	4
 lib/widgets/bug_report_dialog.dart	7
 lib/widgets/categories/category_glyph.dart	1
 lib/widgets/categories_tab.dart	2
-lib/widgets/classic_vines_tab.dart	8
+lib/widgets/classic_vines_tab.dart	7
 lib/widgets/composable_video_grid.dart	8
 lib/widgets/content_warning.dart	11
 lib/widgets/delete_account_dialog.dart	14
@@ -90,7 +69,7 @@ lib/widgets/environment_indicator.dart	1
 lib/widgets/error_message.dart	1
 lib/widgets/feature_request_dialog.dart	7
 lib/widgets/find_people_sheet.dart	7
-lib/widgets/for_you_tab.dart	15
+lib/widgets/for_you_tab.dart	13
 lib/widgets/global_error_widget.dart	7
 lib/widgets/library/sounds_tab.dart	7
 lib/widgets/linkified_text/linkified_text.dart	2

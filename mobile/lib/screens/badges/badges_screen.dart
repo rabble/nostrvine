@@ -12,6 +12,7 @@ import 'package:openvine/blocs/badges/badges_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Shows the current user's Nostr badge dashboard.
@@ -51,6 +52,8 @@ class _BadgesView extends StatelessWidget {
       body: BlocBuilder<BadgesCubit, BadgesState>(
         builder: (context, state) {
           return RefreshIndicator(
+            color: VineTheme.onPrimary,
+            backgroundColor: VineTheme.vineGreen,
             onRefresh: () => context.read<BadgesCubit>().refresh(),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -420,7 +423,9 @@ class _BadgesLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _Panel(child: Center(child: CircularProgressIndicator()));
+    return const _Panel(
+      child: Center(child: BrandedLoadingIndicator(size: 60)),
+    );
   }
 }
 

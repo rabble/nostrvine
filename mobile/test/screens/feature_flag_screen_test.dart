@@ -341,10 +341,19 @@ void main() {
       await service.initialize();
       await tester.pumpAndSettle();
 
-      // Look for individual reset buttons (if implemented)
-      // This tests the interface for individual flag reset
-      final resetButtons = find.byType(IconButton);
-      expect(resetButtons, findsAtLeast(1)); // At least the main reset button
+      // Rows carry no per-flag reset — an experimental flag reads off by
+      // default, so an "overridden" badge next to it says nothing useful.
+      // The app bar's reset-all action is the only way back to defaults.
+      await tester.tap(
+        find.bySemanticsLabel(
+          lookupAppLocalizations(
+            const Locale('en'),
+          ).featureFlagResetAllTooltip,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(() => mockPrefs.remove('ff_enhancedAnalytics')).called(1);
     });
 
     testWidgets('should be scrollable with many flags', (tester) async {

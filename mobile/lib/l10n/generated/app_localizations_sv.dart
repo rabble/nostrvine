@@ -221,18 +221,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visa undertexter när videor har dem';
 
   @override
-  String get generalSettingsVideoShape => 'Videoform';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Endast kvadratiska videor';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Kvadrat och stående';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Visa hela mixen av Divine-videor';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1892,62 +1881,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Återställ alla flaggor till standard';
 
   @override
-  String get featureFlagResetToDefault => 'Återställ till standard';
-
-  @override
-  String get featureFlagAppRecovery => 'Appåterställning';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Om appen kraschar eller beter sig konstigt, testa att rensa cachen.';
-
-  @override
-  String get featureFlagClearAllCache => 'Rensa all cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Cacheinfo';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Rensa all cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Detta rensar all cachad data inklusive:\n• Aviseringar\n• Användarprofiler\n• Bokmärken\n• Temporära filer\n\nDu behöver logga in igen. Fortsätta?';
-
-  @override
-  String get featureFlagClearCache => 'Rensa cache';
-
-  @override
-  String get featureFlagClearingCache => 'Rensar cache...';
-
-  @override
-  String get featureFlagSuccess => 'Klart';
-
-  @override
   String get featureFlagError => 'Fel';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cachen rensades. Starta om appen.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Kunde inte rensa vissa cacheobjekt. Kolla loggarna för detaljer.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Cacheinformation';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Total cachestorlek: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cachen innehåller:\n• Aviseringshistorik\n• Profildata\n• Videominiatyrer\n• Temporära filer\n• Databasindex';
 
   @override
   String get relaySettingsTitle => 'Reler';
@@ -2585,6 +2519,9 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Lägg till egen etiketterare';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Ta bort etiketterare';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'Ange npub-adress';
@@ -10621,6 +10558,42 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Ta bort trasiga klipp?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Reparera installationen';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Om appen kraschar eller beter sig konstigt brukar en återställning av lokala data lösa det. Dina klipp och utkast finns kvar.';
+
+  @override
+  String get settingsStorageRepairButton => 'Återställ appdata';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Återställa appdata?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Det här raderar aviseringar, cachade profiler, bokmärken och tillfälliga filer. Dina klipp och utkast finns kvar, men du loggas ut och måste starta om appen.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size tas bort';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Återställ';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Återställer…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Klart — starta om appen för att slutföra.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Kunde inte återställa allt. Försök igen efter en omstart.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Signaturverifiering';

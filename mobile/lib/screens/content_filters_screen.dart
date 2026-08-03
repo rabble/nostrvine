@@ -13,6 +13,7 @@ import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_filter_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Page: bridges the filter + age services into [ContentFiltersCubit].
 class ContentFiltersScreen extends ConsumerWidget {
@@ -77,13 +78,13 @@ class ContentFiltersView extends StatelessWidget {
           child: BlocBuilder<ContentFiltersCubit, ContentFiltersState>(
             builder: (context, state) {
               if (state.status != ContentFiltersStatus.ready) {
-                return const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                );
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
               final cubit = context.read<ContentFiltersCubit>();
               return ListView(
-                padding: const EdgeInsets.only(bottom: 32),
+                padding: .only(
+                  bottom: 32 + MediaQuery.viewPaddingOf(context).bottom,
+                ),
                 children: [
                   if (!state.isAgeVerified) const _AgeGateBanner(),
                   _CategoryGroup(
@@ -137,9 +138,8 @@ class _AgeGateBanner extends StatelessWidget {
           Expanded(
             child: Text(
               context.l10n.contentFiltersAgeGateMessage,
-              style: TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 13,
               ),
             ),
           ),
@@ -171,7 +171,7 @@ class _CategoryGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(title: title),
+        DivineSectionHeader(title),
         ...labels.map(
           (label) => _ContentFilterRow(
             label: label,
@@ -183,28 +183,6 @@ class _CategoryGroup extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 }
@@ -228,15 +206,15 @@ class _ContentFilterRow extends StatelessWidget {
       key: ValueKey('content-filter-${label.value}'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
+        spacing: 8,
         children: [
           Expanded(
             child: Text(
               localizedContentLabelName(context.l10n, label),
-              style: TextStyle(
+              style: VineTheme.bodyLargeFont(
                 color: locked
                     ? context.vineColors.disabled
                     : context.vineColors.primaryText,
-                fontSize: 15,
               ),
             ),
           ),
@@ -321,24 +299,43 @@ class _FilterSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: _selected ? VineTheme.vineGreen : VineTheme.transparent,
-          borderRadius: BorderRadius.circular(7),
-        ),
-        child: Text(
-          _label,
-          style: TextStyle(
-            color: _locked
-                ? context.vineColors.disabled
-                : _selected
-                ? context.vineColors.background
-                : context.vineColors.secondaryText,
-            fontSize: 12,
-            fontWeight: _selected ? FontWeight.w600 : FontWeight.w400,
+    // MergeSemantics lifts the child Text's label onto this node instead of
+    // repeating it in `label:`, so the announced string cannot drift from the
+    // rendered one.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        enabled: _onTap != null,
+        selected: _selected,
+        inMutuallyExclusiveGroup: true,
+        child: GestureDetector(
+          onTap: _onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Container(
+            constraints: const BoxConstraints(
+              minHeight: kMinInteractiveDimension,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              // The active segment stays green even when locked — dimming the
+              // fill to `outlineDisabled` made it indistinguishable from the
+              // card behind it, so a locked row showed no active mode at all.
+              // Locked-ness is carried by the label colour instead.
+              color: _selected ? VineTheme.vineGreen : VineTheme.transparent,
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Center(
+              child: Text(
+                _label,
+                style: VineTheme.labelMediumFont(
+                  color: _selected
+                      ? context.vineColors.background
+                      : _locked
+                      ? context.vineColors.disabled
+                      : context.vineColors.secondaryText,
+                ),
+              ),
+            ),
           ),
         ),
       ),

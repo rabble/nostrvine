@@ -233,18 +233,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Untertitel anzeigen, wenn Videos welche haben';
 
   @override
-  String get generalSettingsVideoShape => 'Videoformat';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Nur quadratische Videos';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Quadratisch und Hochformat';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Zeig den ganzen Mix der Divine-Videos';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1919,62 +1908,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Alle Flags auf Standard zurücksetzen';
 
   @override
-  String get featureFlagResetToDefault => 'Auf Standard zurücksetzen';
-
-  @override
-  String get featureFlagAppRecovery => 'App-Wiederherstellung';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Wenn die App abstürzt oder sich seltsam verhält, versuch den Cache zu leeren.';
-
-  @override
-  String get featureFlagClearAllCache => 'Gesamten Cache leeren';
-
-  @override
-  String get featureFlagCacheInfo => 'Cache-Info';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Gesamten Cache leeren?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Damit werden alle zwischengespeicherten Daten gelöscht, einschließlich:\n• Benachrichtigungen\n• Nutzerprofile\n• Lesezeichen\n• Temporäre Dateien\n\nDu musst dich erneut anmelden. Weitermachen?';
-
-  @override
-  String get featureFlagClearCache => 'Cache leeren';
-
-  @override
-  String get featureFlagClearingCache => 'Cache wird geleert...';
-
-  @override
-  String get featureFlagSuccess => 'Erfolg';
-
-  @override
   String get featureFlagError => 'Fehler';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache erfolgreich geleert. Bitte starte die App neu.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Einige Cache-Einträge konnten nicht geleert werden. Siehe Logs für Details.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Cache-Informationen';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Gesamte Cache-Größe: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache umfasst:\n• Benachrichtigungsverlauf\n• Nutzerprofildaten\n• Video-Vorschaubilder\n• Temporäre Dateien\n• Datenbank-Indizes';
 
   @override
   String get relaySettingsTitle => 'Relays';
@@ -2618,6 +2552,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Eigenen Labeler hinzufügen';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Labeler entfernen';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
@@ -10740,6 +10677,42 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Defekte Clips entfernen?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Installation reparieren';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Wenn die App ständig abstürzt oder sich seltsam verhält, hilft meist ein Zurücksetzen der lokalen Daten. Deine Clips und Entwürfe bleiben.';
+
+  @override
+  String get settingsStorageRepairButton => 'App-Daten zurücksetzen';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'App-Daten zurücksetzen?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Das löscht Benachrichtigungen, zwischengespeicherte Profile, Lesezeichen und temporäre Dateien. Deine Clips und Entwürfe bleiben, aber du wirst abgemeldet und musst die App neu starten.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size werden gelöscht';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Zurücksetzen';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Wird zurückgesetzt…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Fertig — starte die App neu, um abzuschließen.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Es konnte nicht alles zurückgesetzt werden. Versuch es nach einem Neustart nochmal.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Signaturprüfung';

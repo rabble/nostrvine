@@ -223,17 +223,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => '视频带字幕时自动显示';
 
   @override
-  String get generalSettingsVideoShape => '视频画幅';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => '仅方形视频';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => '方形和竖屏';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      '展示 Divine 全部形态的视频';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle => '让信息流保持经典方形格式';
@@ -1806,59 +1796,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get featureFlagResetAllTooltip => '将所有开关重置为默认值';
 
   @override
-  String get featureFlagResetToDefault => '重置为默认';
-
-  @override
-  String get featureFlagAppRecovery => '应用恢复';
-
-  @override
-  String get featureFlagAppRecoveryDescription => '如果应用总是崩溃或行为异常，试试清除缓存。';
-
-  @override
-  String get featureFlagClearAllCache => '清除所有缓存';
-
-  @override
-  String get featureFlagCacheInfo => '缓存信息';
-
-  @override
-  String get featureFlagClearCacheTitle => '清除所有缓存？';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      '这会清除所有缓存数据，包括：\n• 通知\n• 用户资料\n• 收藏\n• 临时文件\n\n你需要重新登录。继续吗？';
-
-  @override
-  String get featureFlagClearCache => '清除缓存';
-
-  @override
-  String get featureFlagClearingCache => '正在清除缓存...';
-
-  @override
-  String get featureFlagSuccess => '成功';
-
-  @override
   String get featureFlagError => '错误';
-
-  @override
-  String get featureFlagClearCacheSuccess => '缓存清除成功。请重启应用。';
-
-  @override
-  String get featureFlagClearCacheFailure => '部分缓存项清除失败，详情请查看日志。';
-
-  @override
-  String get featureFlagOk => '好';
-
-  @override
-  String get featureFlagCacheInformation => '缓存信息';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return '缓存总大小：$size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      '缓存包括：\n• 通知历史\n• 用户资料数据\n• 视频缩略图\n• 临时文件\n• 数据库索引';
 
   @override
   String get relaySettingsTitle => '中继';
@@ -2457,6 +2395,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get safetySettingsAddCustomLabelerListTitle => '添加自定义标记服务';
+
+  @override
+  String get safetySettingsRemoveLabeler => '移除标记服务';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => '输入 npub 地址';
@@ -10053,6 +9994,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => '移除损坏片段？';
+
+  @override
+  String get settingsStorageRepairSectionTitle => '修复安装';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      '如果应用总是崩溃或行为异常，重置本地数据通常能解决。你的片段和草稿会保留。';
+
+  @override
+  String get settingsStorageRepairButton => '重置应用数据';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => '要重置应用数据吗？';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      '这会清除通知、缓存的资料、书签和临时文件。你的片段和草稿会保留，但会退出登录，需要重启应用。';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '将删除 $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => '重置';
+
+  @override
+  String get settingsStorageRepairInProgress => '正在重置…';
+
+  @override
+  String get settingsStorageRepairSuccess => '完成 — 重启应用即可生效。';
+
+  @override
+  String get settingsStorageRepairFailure => '没能全部重置。重启后再试一次。';
 
   @override
   String get nostrSettingsSignatureVerification => '签名验证';

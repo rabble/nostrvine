@@ -4,29 +4,20 @@
 # more raw icons, a new file, or a raised ceiling fails CI vs origin/main.
 # Issues: #4803 (migration), #4339 (epic). Full-line comments are not counted.
 # Regenerate after migrating: UPDATE_BASELINE=1 bash scripts/check_raw_icons_ceiling.sh
-lib/features/feature_flags/screens/feature_flag_screen.dart	4
-lib/screens/apps/app_detail_screen.dart	1
-lib/screens/apps/nostr_app_sandbox_screen.dart	1
-lib/screens/blossom_settings_screen.dart	1
 lib/screens/comments/comments_screen.dart	3
 lib/screens/comments/widgets/comments_empty_state.dart	1
-lib/screens/creator_analytics_screen.dart	9
+lib/screens/creator_analytics_screen.dart	5
 lib/screens/curated_list_feed_screen.dart	2
 lib/screens/discover_lists_screen.dart	1
 lib/screens/hashtag_feed_screen.dart	1
-lib/screens/key_management_screen.dart	2
 lib/screens/original_sound_detail_screen.dart	1
-lib/screens/relay_diagnostic_screen.dart	12
-lib/screens/relay_settings_screen.dart	3
-lib/screens/safety_settings_screen.dart	3
-lib/screens/settings/app_language_screen.dart	4
-lib/screens/settings/bluesky_settings_screen.dart	2
-lib/screens/settings/content_preferences_screen.dart	8
+lib/screens/relay_diagnostic_screen.dart	6
+lib/screens/safety_settings_screen.dart	1
+lib/screens/settings/bluesky_settings_screen.dart	1
 lib/screens/settings/general_settings_screen.dart	1
-lib/screens/settings/legal_screen.dart	7
-lib/screens/settings/nip05_settings_screen.dart	2
-lib/screens/settings/nostr_settings_screen.dart	6
-lib/screens/settings/settings_screen.dart	6
+lib/screens/settings/legal_screen.dart	4
+lib/screens/settings/nostr_settings_screen.dart	5
+lib/screens/settings/settings_screen.dart	5
 lib/screens/sound_detail_screen.dart	4
 lib/screens/user_list_people_screen.dart	3
 lib/widgets/auth/forgot_password_dialog.dart	1

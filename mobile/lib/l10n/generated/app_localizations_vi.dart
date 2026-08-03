@@ -234,17 +234,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Hiện phụ đề khi video có sẵn';
 
   @override
-  String get generalSettingsVideoShape => 'Định dạng video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Chỉ video vuông';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Vuông và dọc';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Hiển thị đầy đủ các loại video Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1908,62 +1898,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'Đặt lại tất cả cờ về mặc định';
 
   @override
-  String get featureFlagResetToDefault => 'Đặt lại về mặc định';
-
-  @override
-  String get featureFlagAppRecovery => 'Khôi phục ứng dụng';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Nếu ứng dụng bị văng hoặc hoạt động kỳ lạ, hãy thử xóa bộ nhớ đệm.';
-
-  @override
-  String get featureFlagClearAllCache => 'Xóa toàn bộ bộ nhớ đệm';
-
-  @override
-  String get featureFlagCacheInfo => 'Thông tin bộ nhớ đệm';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Xóa toàn bộ bộ nhớ đệm?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Thao tác này sẽ xóa tất cả dữ liệu đã lưu bao gồm:\n• Thông báo\n• Hồ sơ người dùng\n• Dấu trang\n• Tệp tạm\n\nBạn sẽ cần đăng nhập lại. Tiếp tục chứ?';
-
-  @override
-  String get featureFlagClearCache => 'Xóa bộ nhớ đệm';
-
-  @override
-  String get featureFlagClearingCache => 'Đang xóa bộ nhớ đệm...';
-
-  @override
-  String get featureFlagSuccess => 'Thành công';
-
-  @override
   String get featureFlagError => 'Lỗi';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Đã xóa bộ nhớ đệm thành công. Vui lòng khởi động lại ứng dụng.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Không xóa được một số mục trong bộ nhớ đệm. Xem nhật ký để biết chi tiết.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Thông tin bộ nhớ đệm';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Tổng dung lượng bộ nhớ đệm: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Bộ nhớ đệm bao gồm:\n• Lịch sử thông báo\n• Dữ liệu hồ sơ người dùng\n• Ảnh thu nhỏ video\n• Tệp tạm\n• Chỉ mục cơ sở dữ liệu';
 
   @override
   String get relaySettingsTitle => 'Relay';
@@ -2598,6 +2533,9 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Thêm bên gắn nhãn tùy chỉnh';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Xóa bên gắn nhãn';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'Nhập địa chỉ npub';
@@ -10629,6 +10567,42 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => 'Xóa các clip hỏng?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Sửa bản cài đặt';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Nếu ứng dụng cứ bị lỗi hoặc chạy lạ, đặt lại dữ liệu cục bộ thường sẽ khắc phục được. Clip và bản nháp của bạn vẫn còn.';
+
+  @override
+  String get settingsStorageRepairButton => 'Đặt lại dữ liệu ứng dụng';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Đặt lại dữ liệu ứng dụng?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Thao tác này xóa thông báo, hồ sơ đã lưu tạm, dấu trang và tệp tạm. Clip và bản nháp của bạn vẫn còn, nhưng bạn sẽ bị đăng xuất và phải khởi động lại ứng dụng.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Sẽ xóa $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Đặt lại';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Đang đặt lại…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Xong — khởi động lại ứng dụng để hoàn tất.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Không đặt lại được tất cả. Thử lại sau khi khởi động lại.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Xác minh chữ ký';

@@ -166,7 +166,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
       if (!mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.settingsAccountSwitchFailed)),
+        DivineSnackbarContainer.snackBar(
+          context.l10n.settingsAccountSwitchFailed,
+          error: true,
+        ),
       );
       return false;
     }
@@ -240,8 +243,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 );
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(context.l10n.settingsAccountSwitchFailed),
+                  DivineSnackbarContainer.snackBar(
+                    context.l10n.settingsAccountSwitchFailed,
+                    error: true,
                   ),
                 );
               }
@@ -308,15 +312,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     accountSwitchingEnabled: accountSwitchingEnabled,
                   ),
                   if (authService.isAnonymous)
-                    _SettingsTile(
-                      icon: Icons.security,
+                    DivineListTile(
+                      icon: DivineIconName.shieldCheck,
                       title: context.l10n.settingsSecureAccount,
                       onTap: () => context.push(SecureAccountScreen.path),
                     ),
                   if (!authService.isAnonymous &&
                       authService.hasExpiredOAuthSession)
-                    _SettingsTile(
-                      divineIcon: DivineIconName.arrowClockwise,
+                    DivineListTile(
+                      icon: DivineIconName.arrowClockwise,
                       title: context.l10n.settingsSessionExpired,
                       subtitle: context.l10n.settingsSessionExpiredSubtitle,
                       onTap: _handleSessionExpired,
@@ -324,17 +328,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                 ],
 
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsCreatorAnalytics,
-                  divineIcon: DivineIconName.trendUp,
+                  icon: DivineIconName.trendUp,
                   onTap: () => context.push(CreatorAnalyticsScreen.path),
                 ),
                 if (isAuthenticated && monetizationLinksEnabled)
-                  _SettingsTile(
+                  DivineListTile(
                     title: appStoreTipPolicy
                         ? context.l10n.monetizationTipsSettingsTitle
                         : context.l10n.monetizationSettingsTitle,
-                    divineIcon: DivineIconName.heart,
+                    icon: DivineIconName.heart,
                     subtitle: appStoreTipPolicy
                         ? context.l10n.monetizationTipsSettingsSubtitle
                         : context.l10n.monetizationSettingsSubtitle,
@@ -342,64 +346,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         context.push(MonetizationLinksSettingsScreen.path),
                   ),
                 if (divineSupportersEnabled)
-                  _SettingsTile(
+                  DivineListTile(
                     title: context.l10n.supporterTitle,
-                    divineIcon: DivineIconName.heart,
+                    icon: DivineIconName.heart,
                     subtitle: context.l10n.supporterTileSubtitle,
                     onTap: () => context.push(SupporterScreen.path),
                   ),
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsSupportCenter,
-                  icon: Icons.support_agent,
+                  leading: const Icon(Icons.support_agent),
                   onTap: () => context.push(SupportCenterScreen.path),
                 ),
 
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsNotifications,
-                  divineIcon: DivineIconName.bellSimple,
+                  icon: DivineIconName.bellSimple,
                   onTap: () => context.push(NotificationSettingsScreen.path),
                 ),
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsGeneralTitle,
-                  divineIcon: DivineIconName.globe,
+                  icon: DivineIconName.globe,
                   onTap: () => context.push(GeneralSettingsScreen.path),
                 ),
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsContentSafetyTitle,
-                  divineIcon: DivineIconName.faders,
+                  icon: DivineIconName.faders,
                   onTap: () => context.push(SafetySettingsScreen.path),
                 ),
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsNostrSettings,
-                  divineIcon: DivineIconName.graph,
+                  icon: DivineIconName.graph,
                   onTap: () => context.push(NostrSettingsScreen.path),
                 ),
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsBadgesTitle,
-                  divineIcon: DivineIconName.sealCheck,
+                  icon: DivineIconName.sealCheck,
                   subtitle: context.l10n.settingsBadgesSubtitle,
                   onTap: () => context.push(BadgesScreen.path),
                 ),
                 if (nostrAppsSandboxSupported)
-                  _SettingsTile(
-                    icon: Icons.apps,
+                  DivineListTile(
+                    leading: const Icon(Icons.apps),
                     title: context.l10n.settingsIntegratedApps,
                     subtitle: context.l10n.settingsIntegratedAppsSubtitle,
                     onTap: () => context.push(AppsDirectoryScreen.path),
                   ),
-                _SettingsTile(
+                DivineListTile(
                   title: context.l10n.settingsLegal,
-                  icon: Icons.gavel,
+                  leading: const Icon(Icons.gavel),
                   onTap: () => context.push(LegalScreen.path),
                 ),
-                _SettingsTile(
-                  icon: Icons.lock_open,
+                DivineListTile(
+                  leading: const Icon(Icons.lock_open),
                   title: context.l10n.settingsIntegrationPermissions,
                   subtitle: context.l10n.settingsIntegrationPermissionsSubtitle,
                   onTap: () => context.push(AppsPermissionsScreen.path),
                 ),
-                _SettingsTile(
-                  icon: Icons.science,
+                DivineListTile(
+                  leading: const Icon(Icons.science),
                   title: context.l10n.settingsExperimentalFeatures,
                   subtitle: context.l10n.settingsExperimentalFeaturesSubtitle,
                   onTap: () => Navigator.push(
@@ -410,8 +414,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 ),
                 if (isDeveloperMode) ...[
-                  _SettingsTile(
-                    divineIcon: DivineIconName.bracketsAngle,
+                  DivineListTile(
+                    icon: DivineIconName.bracketsAngle,
                     title: context.l10n.settingsDeveloperOptions,
                     subtitle: context.l10n.settingsDeveloperOptionsSubtitle,
                     iconColor: VineTheme.warning,
@@ -652,9 +656,8 @@ class _VersionTile extends ConsumerWidget {
         onTap: () async {
           if (isDeveloperMode) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.l10n.settingsDeveloperModeAlreadyEnabled),
-                backgroundColor: VineTheme.vineGreen,
+              DivineSnackbarContainer.snackBar(
+                context.l10n.settingsDeveloperModeAlreadyEnabled,
               ),
             );
             return;
@@ -676,9 +679,8 @@ class _VersionTile extends ConsumerWidget {
 
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(context.l10n.settingsDeveloperModeEnabled),
-                  backgroundColor: VineTheme.vineGreen,
+                DivineSnackbarContainer.snackBar(
+                  context.l10n.settingsDeveloperModeEnabled,
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -704,59 +706,6 @@ class _VersionTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.title,
-    required this.onTap,
-    this.divineIcon,
-    this.icon,
-    this.iconColor,
-    this.subtitle,
-  }) : assert(
-         divineIcon != null || icon != null,
-         '_SettingsTile requires either divineIcon or icon',
-       );
-
-  final DivineIconName? divineIcon;
-  final IconData? icon;
-  final String title;
-  final String? subtitle;
-  final VoidCallback onTap;
-  final Color? iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final Widget leadingWidget = divineIcon != null
-        ? DivineIcon(
-            icon: divineIcon!,
-            color: iconColor ?? context.vineColors.onSurfaceVariant,
-          )
-        : Icon(icon, color: iconColor ?? context.vineColors.onSurfaceVariant);
-
-    return ListTile(
-      minTileHeight: 64,
-      leading: leadingWidget,
-      title: Text(
-        title,
-        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: VineTheme.bodySmallFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            )
-          : null,
-      trailing: const DivineIcon(
-        icon: DivineIconName.caretRight,
-        color: VineTheme.primary,
-      ),
-      onTap: onTap,
     );
   }
 }

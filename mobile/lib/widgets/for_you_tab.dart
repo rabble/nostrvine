@@ -433,51 +433,11 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Open source callout
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: VineTheme.vineGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: VineTheme.vineGreen.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.bracketsAngle,
-                      color: VineTheme.vineGreen,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.forYouAlgorithmOpenSourceTitle,
-                            style: const TextStyle(
-                              color: VineTheme.vineGreen,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            context.l10n.forYouAlgorithmOpenSourceBody,
-                            style: TextStyle(
-                              color: context.vineColors.secondaryText,
-                              fontSize: 13,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              DivineInfoCard(
+                icon: DivineIconName.bracketsAngle,
+                compact: true,
+                title: context.l10n.forYouAlgorithmOpenSourceTitle,
+                message: context.l10n.forYouAlgorithmOpenSourceBody,
               ),
               const SizedBox(height: 32),
             ],

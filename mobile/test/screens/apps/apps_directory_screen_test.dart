@@ -8,6 +8,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import '../../helpers/go_router.dart';
@@ -58,6 +59,30 @@ void main() {
       );
     }
 
+    testWidgets('announces an app row as one button, not three text stops', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      when(
+        () => mockDirectoryService.fetchApprovedApps(),
+      ).thenAnswer((_) async => [_fixture()]);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSemantics(find.text('Primal')),
+        isSemantics(
+          label:
+              'Primal\nFast Nostr feeds and messages\n'
+              'A vetted Nostr client for timelines and DMs.',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      handle.dispose();
+    });
+
     testWidgets('loads approved apps from the directory service', (
       tester,
     ) async {
@@ -77,8 +102,10 @@ void main() {
         find.text('A vetted Nostr client for timelines and DMs.'),
         findsOneWidget,
       );
-      final image = tester.widget<Image>(find.byType(Image).first);
-      expect(image.image, isA<NetworkImage>());
+      final image = tester.widget<VineCachedImage>(
+        find.byType(VineCachedImage),
+      );
+      expect(image.imageUrl, 'https://cdn.divine.video/primal.png');
     });
 
     testWidgets('embedded mode omits its own app bar', (tester) async {

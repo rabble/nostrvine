@@ -9,6 +9,7 @@ class DivineSnackbarContainer extends StatelessWidget {
   const DivineSnackbarContainer({
     required this.label,
     this.error = false,
+    this.backgroundColor,
     this.actionLabel,
     this.onActionPressed,
     this.secondaryActionLabel,
@@ -20,6 +21,7 @@ class DivineSnackbarContainer extends StatelessWidget {
   static SnackBar snackBar(
     String message, {
     bool error = false,
+    Color? backgroundColor,
     String? actionLabel,
     VoidCallback? onActionPressed,
     String? secondaryActionLabel,
@@ -37,6 +39,7 @@ class DivineSnackbarContainer extends StatelessWidget {
     content: DivineSnackbarContainer(
       label: message,
       error: error,
+      backgroundColor: backgroundColor,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
       secondaryActionLabel: secondaryActionLabel,
@@ -49,6 +52,14 @@ class DivineSnackbarContainer extends StatelessWidget {
 
   /// If the snackbar indicates an error.
   final bool error;
+
+  /// Overrides the banner's surface colour.
+  ///
+  /// For the rare banner whose colour carries the message itself — the
+  /// environment indicator in developer options, for instance. Takes
+  /// precedence over [error]'s surface, and a light one also flips the label
+  /// to dark ink so the banner stays readable.
+  final Color? backgroundColor;
 
   /// The label of the primary action button.
   final String? actionLabel;
@@ -65,25 +76,31 @@ class DivineSnackbarContainer extends StatelessWidget {
   /// Callback when the secondary action button is pressed.
   final VoidCallback? onSecondaryActionPressed;
 
+  /// Label colour that stays legible on the resolved surface.
+  ///
+  /// A [backgroundColor] comes from the caller, not from the theme, so a light
+  /// one (the yellow staging indicator, say) would leave the theme's
+  /// white-on-dark label unreadable — those flip to dark ink instead.
+  Color _labelColor(VineThemeColors colors) {
+    final surface = backgroundColor;
+    if (surface != null &&
+        ThemeData.estimateBrightnessForColor(surface) == Brightness.light) {
+      return VineTheme.primaryDarkGreen;
+    }
+    return error ? colors.onErrorContainer : colors.primaryText;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.vineColors;
-    final textStyle = VineTheme.labelLargeFont(color: colors.primaryText);
+    final textStyle = VineTheme.labelLargeFont(color: _labelColor(colors));
     final hasSecondary =
         secondaryActionLabel != null && onSecondaryActionPressed != null;
-    late final Widget bannerText;
-    if (error) {
-      bannerText = Text(
-        label,
-        style: textStyle.copyWith(color: colors.onErrorContainer),
-      );
-    } else {
-      bannerText = Text(label, style: textStyle);
-    }
+    final bannerText = Text(label, style: textStyle);
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: error ? colors.errorContainer : colors.card,
+        color: backgroundColor ?? (error ? colors.errorContainer : colors.card),
         borderRadius: const BorderRadius.all(Radius.circular(16)),
       ),
       child: Padding(

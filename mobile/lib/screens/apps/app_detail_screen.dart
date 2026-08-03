@@ -11,6 +11,7 @@ import 'package:openvine/blocs/app_detail/app_detail_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_launch_mode.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 /// Displays detailed information about a single approved
 /// third-party integration.
@@ -72,7 +73,7 @@ class _AppDetailContent extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 600),
               child: switch (state) {
                 AppDetailLoading() => const Center(
-                  child: CircularProgressIndicator(),
+                  child: BrandedLoadingIndicator(size: 60),
                 ),
                 AppDetailNotFound() => _AppDetailMessage(
                   title: context.l10n.appsDetailNotFoundTitle,
@@ -84,23 +85,23 @@ class _AppDetailContent extends StatelessWidget {
                     CircleAvatar(
                       radius: 28,
                       backgroundColor: context.vineColors.card,
-                      child: const Icon(Icons.apps, color: VineTheme.vineGreen),
+                      child: const DivineIcon(
+                        icon: DivineIconName.gridNine,
+                        color: VineTheme.vineGreen,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       app.name,
-                      style: TextStyle(
+                      style: VineTheme.headlineSmallFont(
                         color: context.vineColors.primaryText,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       app.tagline,
-                      style: TextStyle(
+                      style: VineTheme.bodyLargeFont(
                         color: context.vineColors.mutedText,
-                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -108,10 +109,8 @@ class _AppDetailContent extends StatelessWidget {
                       title: context.l10n.appsDetailHowItWorksTitle,
                       child: Text(
                         context.l10n.appsDetailHowItWorksBody,
-                        style: TextStyle(
+                        style: VineTheme.bodyMediumFont(
                           color: context.vineColors.primaryText,
-                          fontSize: 15,
-                          height: 1.5,
                         ),
                       ),
                     ),
@@ -119,10 +118,8 @@ class _AppDetailContent extends StatelessWidget {
                       title: context.l10n.appsDetailAboutTitle,
                       child: Text(
                         app.description,
-                        style: TextStyle(
+                        style: VineTheme.bodyMediumFont(
                           color: context.vineColors.primaryText,
-                          fontSize: 15,
-                          height: 1.5,
                         ),
                       ),
                     ),
@@ -130,9 +127,8 @@ class _AppDetailContent extends StatelessWidget {
                       title: context.l10n.appsDetailPrimaryOriginTitle,
                       child: Text(
                         app.primaryOrigin,
-                        style: const TextStyle(
+                        style: VineTheme.bodyMediumFont(
                           color: VineTheme.vineGreen,
-                          fontSize: 15,
                         ),
                       ),
                     ),
@@ -184,10 +180,8 @@ class _AppDetailSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(
+            style: VineTheme.labelMediumFont(
               color: context.vineColors.mutedText,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
@@ -208,7 +202,7 @@ class _PillList extends StatelessWidget {
     if (items.isEmpty) {
       return Text(
         context.l10n.appsDetailNoneDeclared,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       );
     }
 
@@ -226,9 +220,8 @@ class _PillList extends StatelessWidget {
               ),
               child: Text(
                 item,
-                style: TextStyle(
+                style: VineTheme.labelMediumFont(
                   color: context.vineColors.primaryText,
-                  fontSize: 13,
                 ),
               ),
             ),
@@ -253,20 +246,16 @@ class _AppDetailMessage extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: VineTheme.headlineSmallFont(
               color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: VineTheme.bodyLargeFont(
               color: context.vineColors.mutedText,
-              fontSize: 14,
-              height: 1.4,
             ),
           ),
         ],

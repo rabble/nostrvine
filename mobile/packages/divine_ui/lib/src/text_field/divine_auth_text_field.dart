@@ -50,6 +50,9 @@ class DivineAuthTextField extends StatefulWidget {
     this.onEditingComplete,
     this.maxLength,
     this.contentPadding,
+    this.prefixText,
+    this.suffixText,
+    this.hintText,
     this.errorText,
     this.autofillHints,
     this.showPasswordSemanticLabel = 'Show password',
@@ -111,6 +114,24 @@ class DivineAuthTextField extends StatefulWidget {
 
   /// Custom content padding for the text field.
   final EdgeInsetsGeometry? contentPadding;
+
+  /// Fixed text rendered inside the field, before the caret.
+  ///
+  /// For inputs where the user only supplies a fragment of a larger value —
+  /// an `@` before a handle, a currency symbol before an amount. Shown at all
+  /// times so the full value takes shape while typing.
+  final String? prefixText;
+
+  /// Fixed text rendered inside the field, after the input.
+  ///
+  /// The counterpart of [prefixText] — a domain suffix, a unit.
+  final String? suffixText;
+
+  /// Example of the value the field wants, e.g. `you@example.com`.
+  ///
+  /// The label floats out of the way on focus, so this shows once the user is
+  /// in the field and it is still empty — a format hint, not a second label.
+  final String? hintText;
 
   /// Error message to display below the field.
   ///
@@ -277,6 +298,9 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
                         onEditingComplete: widget.onEditingComplete,
                         maxLength: widget.maxLength,
                         contentPadding: widget.contentPadding,
+                        prefixText: widget.prefixText,
+                        suffixText: widget.suffixText,
+                        hintText: widget.hintText,
                         hasError: _hasError,
                         autofillHints: widget.autofillHints,
                       ),
@@ -380,6 +404,9 @@ class _AuthTextFieldInput extends StatelessWidget {
     this.onEditingComplete,
     this.maxLength,
     this.contentPadding,
+    this.prefixText,
+    this.suffixText,
+    this.hintText,
     this.autofillHints,
   });
 
@@ -402,6 +429,9 @@ class _AuthTextFieldInput extends StatelessWidget {
   final VoidCallback? onEditingComplete;
   final int? maxLength;
   final EdgeInsetsGeometry? contentPadding;
+  final String? prefixText;
+  final String? suffixText;
+  final String? hintText;
   final Iterable<String>? autofillHints;
 
   /// Input top offset when the label is floating (36px).
@@ -418,42 +448,53 @@ class _AuthTextFieldInput extends StatelessWidget {
       ),
       duration: _fieldAnimationDuration,
       curve: Curves.easeOut,
-      builder: (context, inputTop, _) => TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        obscureText: obscureText,
-        obscuringCharacter: '✱',
-        enabled: enabled,
-        readOnly: readOnly,
-        autocorrect: autocorrect,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        textCapitalization: textCapitalization,
-        inputFormatters: inputFormatters,
-        validator: validator,
-        onTap: onTap,
-        onChanged: onChanged,
-        onFieldSubmitted: onSubmitted,
-        onEditingComplete: onEditingComplete,
-        maxLength: maxLength,
-        autofillHints: autofillHints,
-        style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
-        cursorColor: hasError ? VineTheme.error : VineTheme.primary,
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: contentPadding ?? EdgeInsets.only(top: inputTop),
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          filled: false,
-          // Hide the built-in error text from TextFormField.
-          // Error display is handled by _ErrorSupportingText via errorText.
-          errorStyle: const TextStyle(fontSize: 0, height: 0),
-        ),
-      ),
+      builder: (context, inputTop, _) {
+        final affixStyle = VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceMuted,
+        );
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          obscureText: obscureText,
+          obscuringCharacter: '✱',
+          enabled: enabled,
+          readOnly: readOnly,
+          autocorrect: autocorrect,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          textCapitalization: textCapitalization,
+          inputFormatters: inputFormatters,
+          validator: validator,
+          onTap: onTap,
+          onChanged: onChanged,
+          onFieldSubmitted: onSubmitted,
+          onEditingComplete: onEditingComplete,
+          maxLength: maxLength,
+          autofillHints: autofillHints,
+          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
+          cursorColor: hasError ? VineTheme.error : VineTheme.primary,
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: contentPadding ?? EdgeInsets.only(top: inputTop),
+            prefixText: prefixText,
+            suffixText: suffixText,
+            hintText: hintText,
+            hintStyle: affixStyle,
+            prefixStyle: affixStyle,
+            suffixStyle: affixStyle,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            focusedErrorBorder: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            filled: false,
+            // Hide the built-in error text from TextFormField.
+            // Error display is handled by _ErrorSupportingText via errorText.
+            errorStyle: const TextStyle(fontSize: 0, height: 0),
+          ),
+        );
+      },
     );
   }
 }

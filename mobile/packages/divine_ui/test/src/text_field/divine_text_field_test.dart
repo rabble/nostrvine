@@ -357,5 +357,137 @@ void main() {
         );
       });
     });
+
+    group('filled', () {
+      InputDecoration decorationOf(WidgetTester tester) =>
+          tester.widget<TextField>(find.byType(TextField)).decoration!;
+
+      testWidgets('paints no surface by default', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(body: DivineTextField()),
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.filled, isFalse);
+        expect(decoration.fillColor, isNull);
+        expect(decoration.border, InputBorder.none);
+      });
+
+      testWidgets('falls back to containerLow when filled', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(body: DivineTextField(filled: true)),
+          ),
+        );
+
+        final decoration = decorationOf(tester);
+        expect(decoration.filled, isTrue);
+        expect(decoration.fillColor, VineTheme.darkColors.containerLow);
+      });
+
+      testWidgets('prefers an explicit fillColor', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(
+              body: DivineTextField(filled: true, fillColor: VineTheme.error),
+            ),
+          ),
+        );
+
+        expect(decorationOf(tester).fillColor, VineTheme.error);
+      });
+
+      testWidgets('rounds the fill on every border state', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(body: DivineTextField(filled: true)),
+          ),
+        );
+
+        // Material squares off the corners unless each border state carries
+        // the radius, so all three must be the same rounded border.
+        final decoration = decorationOf(tester);
+        final expected = UnderlineInputBorder(
+          borderRadius: BorderRadius.circular(
+            DivineTextField.fillBorderRadius,
+          ),
+          borderSide: BorderSide.none,
+        );
+        expect(decoration.border, expected);
+        expect(decoration.enabledBorder, expected);
+        expect(decoration.focusedBorder, expected);
+      });
+
+      testWidgets('keeps a floating label inside the fill', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(
+              body: DivineTextField(filled: true, labelText: 'Relay'),
+            ),
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'wss://relay.test');
+        await tester.pumpAndSettle();
+
+        // An outline border notches the floating label onto the top edge,
+        // which strands it above a borderless fill. The fill must contain it.
+        final fill = tester.getRect(find.byType(TextField));
+        final label = tester.getRect(find.text('Relay'));
+        expect(label.top, greaterThanOrEqualTo(fill.top));
+        expect(label.bottom, lessThanOrEqualTo(fill.bottom));
+      });
+    });
+
+    group('suffixIcon', () {
+      testWidgets('renders the suffix inside the field', (tester) async {
+        var pressed = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: Scaffold(
+              body: DivineTextField(
+                suffixIcon: DivineIconButton(
+                  icon: DivineIconName.clipboard,
+                  onPressed: () => pressed = true,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(
+          find.descendant(
+            of: find.byType(TextField),
+            matching: find.byType(DivineIconButton),
+          ),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.byType(DivineIconButton));
+        expect(pressed, isTrue);
+      });
+
+      testWidgets('leaves the slot empty when omitted', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: VineTheme.theme,
+            home: const Scaffold(body: DivineTextField()),
+          ),
+        );
+
+        final decoration = tester
+            .widget<TextField>(find.byType(TextField))
+            .decoration!;
+        expect(decoration.suffixIcon, isNull);
+      });
+    });
   });
 }

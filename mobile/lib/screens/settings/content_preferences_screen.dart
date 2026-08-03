@@ -1,8 +1,6 @@
 // ABOUTME: Content preferences screen for language, audio sharing, and content filters
 // ABOUTME: Composes three small Cubits (one per independent sub-setting).
 
-import 'dart:ui';
-
 import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
@@ -66,15 +64,11 @@ class _ContentFiltersTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.contentPreferencesContentFilters,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.contentPreferencesContentFiltersSubtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
       trailing: DivineIcon(
         icon: DivineIconName.caretRight,
@@ -121,15 +115,11 @@ class _LanguageSettingTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.contentPreferencesContentLanguage,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
       ),
       trailing: DivineIcon(
         icon: DivineIconName.caretRight,
@@ -142,33 +132,15 @@ class _LanguageSettingTile extends StatelessWidget {
   Future<void> _showLanguagePicker(BuildContext context) async {
     final cubit = context.read<LanguageSettingCubit>();
     final state = cubit.state;
-    await showModalBottomSheet<void>(
+    await VineBottomSheet.show<void>(
       context: context,
-      backgroundColor: context.vineColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      isScrollControlled: true,
-      builder: (sheetContext) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        maxChildSize: 0.85,
-        minChildSize: 0.3,
-        expand: false,
-        builder: (_, scrollController) => SafeArea(
-          child: _LanguagePickerContent(
-            scrollController: scrollController,
-            currentCode: state.currentCode,
-            isCustomLanguageSet: state.isCustomLanguageSet,
-            onUseDeviceLanguage: () async {
-              await cubit.clearLanguage();
-              if (sheetContext.mounted) Navigator.pop(sheetContext);
-            },
-            onSelectLanguage: (code) async {
-              await cubit.setLanguage(code);
-              if (sheetContext.mounted) Navigator.pop(sheetContext);
-            },
-          ),
-        ),
+      contentTitle: context.l10n.contentPreferencesContentLanguage,
+      buildScrollBody: (scrollController) => _LanguagePickerContent(
+        scrollController: scrollController,
+        currentCode: state.currentCode,
+        isCustomLanguageSet: state.isCustomLanguageSet,
+        onUseDeviceLanguage: cubit.clearLanguage,
+        onSelectLanguage: cubit.setLanguage,
       ),
     );
   }
@@ -183,93 +155,70 @@ class _LanguagePickerContent extends StatelessWidget {
     required this.onSelectLanguage,
   });
 
+  /// The sheet's own controller — without it the drag never reaches the
+  /// [DraggableScrollableSheet], so the sheet cannot be resized or flung shut
+  /// from the list.
   final ScrollController scrollController;
   final String currentCode;
   final bool isCustomLanguageSet;
-  final VoidCallback onUseDeviceLanguage;
-  final ValueChanged<String> onSelectLanguage;
+  final Future<void> Function() onUseDeviceLanguage;
+  final Future<void> Function(String code) onSelectLanguage;
+
+  /// Runs [mutate], then closes the sheet from inside it. The guard is the
+  /// sheet's own element, so a pop that lands after the user already dismissed
+  /// it is dropped instead of closing the screen underneath.
+  Future<void> _applyAndClose(
+    BuildContext context,
+    Future<void> Function() mutate,
+  ) async {
+    await mutate();
+    if (context.mounted) Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            context.l10n.contentPreferencesContentLanguage,
-            style: TextStyle(
-              color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            context.l10n.contentPreferencesTagYourVideos,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 13),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Divider(color: context.vineColors.mutedText, height: 1),
-        ListTile(
-          leading: Icon(
-            !isCustomLanguageSet
-                ? Icons.radio_button_checked
-                : Icons.radio_button_off,
-            color: VineTheme.vineGreen,
-          ),
-          title: Text(
-            context.l10n.contentPreferencesUseDeviceLanguage,
-            style: TextStyle(color: context.vineColors.primaryText),
-          ),
-          subtitle: Text(
-            LanguagePreferenceService.displayNameFor(
-              PlatformDispatcher.instance.locale.languageCode,
-            ),
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 12),
-          ),
-          onTap: onUseDeviceLanguage,
-        ),
-        Divider(color: context.vineColors.mutedText, height: 1),
-        Expanded(
-          child: ListView.builder(
-            controller: scrollController,
-            itemCount: LanguagePreferenceService.supportedLanguages.length,
-            itemBuilder: (context, index) {
-              final entry = LanguagePreferenceService.supportedLanguages.entries
-                  .elementAt(index);
-              final code = entry.key;
-              final name = entry.value;
-              final isSelected = isCustomLanguageSet && currentCode == code;
-
-              return ListTile(
-                leading: Icon(
-                  isSelected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: VineTheme.vineGreen,
-                ),
-                title: Text(
-                  name,
-                  style: TextStyle(color: context.vineColors.primaryText),
-                ),
-                subtitle: Text(
-                  code.toUpperCase(),
-                  style: TextStyle(
+    final languages = LanguagePreferenceService.supportedLanguages.entries
+        .toList(growable: false);
+    return ListView.builder(
+      controller: scrollController,
+      padding: EdgeInsets.zero,
+      itemCount: languages.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  context.l10n.contentPreferencesTagYourVideos,
+                  style: VineTheme.bodySmallFont(
                     color: context.vineColors.mutedText,
-                    fontSize: 12,
                   ),
                 ),
-                onTap: () => onSelectLanguage(code),
-              );
-            },
+              ),
+              DivineSelectableRow(
+                title: context.l10n.contentPreferencesUseDeviceLanguage,
+                subtitle: LanguagePreferenceService.displayNameFor(
+                  PlatformDispatcher.instance.locale.languageCode,
+                ),
+                isSelected: !isCustomLanguageSet,
+                onTap: () => _applyAndClose(context, onUseDeviceLanguage),
+              ),
+            ],
+          );
+        }
+        final entry = languages[index - 1];
+        return DivineSelectableRow(
+          title: entry.value,
+          subtitle: entry.key.toUpperCase(),
+          isSelected: isCustomLanguageSet && currentCode == entry.key,
+          onTap: () => _applyAndClose(
+            context,
+            () => onSelectLanguage(entry.key),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -296,26 +245,12 @@ class _AudioSharingToggleTile extends StatelessWidget {
     final isEnabled = context.select(
       (AudioSharingCubit cubit) => cubit.state.isEnabled,
     );
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.musicNote,
+      title: context.l10n.contentPreferencesAudioSharing,
+      subtitle: context.l10n.contentPreferencesAudioSharingSubtitle,
       value: isEnabled,
       onChanged: (value) => context.read<AudioSharingCubit>().setEnabled(value),
-      title: Text(
-        context.l10n.contentPreferencesAudioSharing,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        context.l10n.contentPreferencesAudioSharingSubtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: const DivineIcon(
-        icon: DivineIconName.musicNote,
-        color: VineTheme.vineGreen,
-      ),
     );
   }
 }
@@ -362,15 +297,15 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
           ),
           title: Text(
             context.l10n.contentPreferencesAudioInputDevice,
-            style: TextStyle(
+            style: VineTheme.titleMediumFont(
               color: context.vineColors.primaryText,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
             ),
           ),
           subtitle: Text(
             currentDisplayName,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           trailing: DivineIcon(
             icon: DivineIconName.caretRight,
@@ -407,103 +342,59 @@ class _AudioDeviceSelectorTile extends StatelessWidget {
     required String? currentDeviceId,
   }) async {
     final cubit = context.read<AudioDeviceCubit>();
-    await showModalBottomSheet<void>(
+    await VineBottomSheet.show<void>(
       context: context,
-      backgroundColor: context.vineColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: _AudioDevicePickerContent(
+      scrollable: false,
+      contentTitle: context.l10n.contentPreferencesSelectAudioInput,
+      children: [
+        _AudioDevicePickerContent(
           devices: devices,
           currentDeviceId: currentDeviceId,
-          onUseAuto: () async {
-            await cubit.setDeviceId(null);
-            if (sheetContext.mounted) Navigator.pop(sheetContext);
-          },
-          onSelectDevice: (deviceId) async {
-            await cubit.setDeviceId(deviceId);
-            if (sheetContext.mounted) Navigator.pop(sheetContext);
-          },
+          onSelectDevice: cubit.setDeviceId,
         ),
-      ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
 
+/// The audio-input rows, as a widget so each tap closes the sheet through the
+/// sheet's own element rather than the settings screen's.
 class _AudioDevicePickerContent extends StatelessWidget {
   const _AudioDevicePickerContent({
     required this.devices,
     required this.currentDeviceId,
-    required this.onUseAuto,
     required this.onSelectDevice,
   });
 
   final List<AudioDevice> devices;
   final String? currentDeviceId;
-  final VoidCallback onUseAuto;
-  final ValueChanged<String> onSelectDevice;
+  final Future<void> Function(String? deviceId) onSelectDevice;
+
+  Future<void> _applyAndClose(BuildContext context, String? deviceId) async {
+    await onSelectDevice(deviceId);
+    if (context.mounted) Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            context.l10n.contentPreferencesSelectAudioInput,
-            style: TextStyle(
-              color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+        DivineSelectableRow(
+          title: context.l10n.contentPreferencesAutoRecommended,
+          subtitle: context.l10n.contentPreferencesAutoSelectsBest,
+          isSelected: currentDeviceId == null,
+          onTap: () => _applyAndClose(context, null),
         ),
-        Divider(color: context.vineColors.mutedText, height: 1),
-        ListTile(
-          leading: Icon(
-            currentDeviceId == null
-                ? Icons.radio_button_checked
-                : Icons.radio_button_off,
-            color: VineTheme.vineGreen,
-          ),
-          title: Text(
-            context.l10n.contentPreferencesAutoRecommended,
-            style: TextStyle(color: context.vineColors.primaryText),
-          ),
-          subtitle: Text(
-            context.l10n.contentPreferencesAutoSelectsBest,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 12),
-          ),
-          onTap: onUseAuto,
-        ),
-        Divider(color: context.vineColors.mutedText, height: 1),
         ...devices.map(
-          (device) => ListTile(
-            leading: Icon(
-              currentDeviceId == device.id
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off,
-              color: VineTheme.vineGreen,
-            ),
-            title: Text(
-              _formatAudioDeviceName(context, device.name),
-              style: TextStyle(color: context.vineColors.primaryText),
-            ),
-            subtitle: Text(
-              device.id,
-              style: TextStyle(
-                color: context.vineColors.mutedText,
-                fontSize: 11,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-            onTap: () => onSelectDevice(device.id),
+          (device) => DivineSelectableRow(
+            title: _formatAudioDeviceName(context, device.name),
+            subtitle: device.id,
+            isSelected: currentDeviceId == device.id,
+            onTap: () => _applyAndClose(context, device.id),
           ),
         ),
-        const SizedBox(height: 16),
       ],
     );
   }

@@ -115,10 +115,7 @@
   "appearanceSettingsDark": "Gelap",
   "generalSettingsClosedCaptions": "Sarikata Tertutup",
   "generalSettingsClosedCaptionsSubtitle": "Papar sarikata apabila video menyertainya",
-  "generalSettingsVideoShape": "Bentuk Video",
   "generalSettingsVideoShapeSquareOnly": "Video segi empat sahaja",
-  "generalSettingsVideoShapeSquareAndPortrait": "Segi empat dan potret",
-  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Tunjukkan gabungan penuh video Divine",
   "generalSettingsVideoShapeSquareOnlySubtitle": "Kekalkan suapan dalam format segi empat klasik",
   "contentPreferencesTitle": "Keutamaan Kandungan",
   "@contentPreferencesTitle": {
@@ -1106,30 +1103,7 @@
     "description": "Feature flags screen app bar title"
   },
   "featureFlagResetAllTooltip": "Tetapkan semula semua bendera kepada lalai",
-  "featureFlagResetToDefault": "Tetapkan semula kepada lalai",
-  "featureFlagAppRecovery": "Pemulihan Apl",
-  "featureFlagAppRecoveryDescription": "Jika apl ranap atau berkelakuan pelik, cuba kosongkan cache.",
-  "featureFlagClearAllCache": "Kosongkan Semua Cache",
-  "featureFlagCacheInfo": "Maklumat Cache",
-  "featureFlagClearCacheTitle": "Kosongkan Semua Cache?",
-  "featureFlagClearCacheMessage": "Ini akan mengosongkan semua data cache termasuk:\n• Pemberitahuan\n• Profil pengguna\n• Penanda buku\n• Fail sementara\n\nAnda perlu log masuk semula. Teruskan?",
-  "featureFlagClearCache": "Kosongkan Cache",
-  "featureFlagClearingCache": "Mengosongkan cache...",
-  "featureFlagSuccess": "Berjaya",
   "featureFlagError": "Ralat",
-  "featureFlagClearCacheSuccess": "Cache berjaya dikosongkan. Sila mulakan semula apl.",
-  "featureFlagClearCacheFailure": "Gagal mengosongkan sesetengah item cache. Semak log untuk butiran.",
-  "featureFlagOk": "OK",
-  "featureFlagCacheInformation": "Maklumat Cache",
-  "featureFlagTotalCacheSize": "Jumlah saiz cache: {size}",
-  "@featureFlagTotalCacheSize": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "featureFlagCacheIncludes": "Cache merangkumi:\n• Sejarah pemberitahuan\n• Data profil pengguna\n• Lakaran kecil video\n• Fail sementara\n• Indeks pangkalan data",
   "relaySettingsTitle": "Relay",
   "@relaySettingsTitle": {
     "description": "Relay settings screen app bar title"
@@ -1482,6 +1456,7 @@
   "safetySettingsAddCustomLabeler": "Tambah Pelabel Tersuai",
   "safetySettingsAddCustomLabelerHint": "Masukkan npub...",
   "safetySettingsAddCustomLabelerListTitle": "Tambah pelabel tersuai",
+  "safetySettingsRemoveLabeler": "Buang pelabel",
   "safetySettingsAddCustomLabelerListSubtitle": "Masukkan alamat npub",
   "safetySettingsNoBlockedUsers": "Tiada pengguna disekat",
   "safetySettingsUnblock": "Nyahsekat",
@@ -6561,6 +6536,16 @@
   "@settingsStorageRemoveBrokenConfirmTitle": {
     "description": "Title of the confirmation sheet before permanently removing broken clips whose video file is gone."
   },
+  "settingsStorageRepairSectionTitle": "Baiki pemasangan",
+  "settingsStorageRepairDescription": "Kalau apl kerap crash atau berkelakuan pelik, set semula data setempat biasanya membantu. Klip dan draf anda kekal.",
+  "settingsStorageRepairButton": "Set semula data apl",
+  "settingsStorageRepairConfirmTitle": "Set semula data apl?",
+  "settingsStorageRepairConfirmMessage": "Ini memadamkan pemberitahuan, profil dalam cache, penanda buku dan fail sementara. Klip dan draf anda kekal, tetapi anda akan dilog keluar dan perlu mulakan semula apl.",
+  "settingsStorageRepairFootprint": "{size} akan dipadam",
+  "settingsStorageRepairConfirmAction": "Set semula",
+  "settingsStorageRepairInProgress": "Menetapkan semula…",
+  "settingsStorageRepairSuccess": "Siap — mulakan semula apl untuk selesai.",
+  "settingsStorageRepairFailure": "Tidak semua dapat diset semula. Cuba lagi selepas mulakan semula.",
   "nostrSettingsSignatureVerification": "Pengesahan tandatangan",
   "@nostrSettingsSignatureVerification": {
     "description": "Title for the Nostr relay signature verification setting."

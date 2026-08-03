@@ -234,17 +234,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Ipakita ang captions kapag may captions ang video';
 
   @override
-  String get generalSettingsVideoShape => 'Hugis ng Video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Square videos lang';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'Square at portrait';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Ipakita ang full mix ng Divine videos';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1930,62 +1920,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'I-reset lahat ng flag sa default';
 
   @override
-  String get featureFlagResetToDefault => 'I-reset sa default';
-
-  @override
-  String get featureFlagAppRecovery => 'App Recovery';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Kung nag-cra-crash o weird ang app, subukang i-clear ang cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'I-clear lahat ng Cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Cache Info';
-
-  @override
-  String get featureFlagClearCacheTitle => 'I-clear lahat ng Cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Iki-clear nito ang lahat ng cached data kabilang ang:\n• Mga Notification\n• Mga User profile\n• Mga Bookmark\n• Mga Temporary file\n\nKakailanganin mong mag-log in ulit. Ituloy?';
-
-  @override
-  String get featureFlagClearCache => 'I-clear ang Cache';
-
-  @override
-  String get featureFlagClearingCache => 'Kine-clear ang cache...';
-
-  @override
-  String get featureFlagSuccess => 'Tagumpay';
-
-  @override
   String get featureFlagError => 'Error';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Matagumpay na na-clear ang cache. I-restart ang app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Nabigong i-clear ang ilang cache item. Tingnan ang logs para sa detalye.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Impormasyon ng Cache';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Total cache size: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Kasama sa cache:\n• Notification history\n• User profile data\n• Mga video thumbnail\n• Mga temporary file\n• Database indexes';
 
   @override
   String get relaySettingsTitle => 'Mga Relay';
@@ -2630,6 +2565,9 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Magdagdag ng custom labeler';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Alisin ang labeler';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
@@ -10735,6 +10673,42 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Alisin ang mga sirang clip?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Ayusin ang install';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Kung paulit-ulit na nagka-crash o kakaiba ang app, kadalasang nakakatulong ang pag-reset ng lokal na data. Nananatili ang mga clip at draft mo.';
+
+  @override
+  String get settingsStorageRepairButton => 'I-reset ang app data';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'I-reset ang app data?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Buburahin nito ang mga notification, naka-cache na profile, bookmark, at pansamantalang file. Mananatili ang mga clip at draft mo, pero masa-sign out ka at kailangan mong i-restart ang app.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'Buburahin ang $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'I-reset';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Nagre-reset…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Tapos na — i-restart ang app para makumpleto.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Hindi lahat ay na-reset. Subukan ulit pagkatapos mag-restart.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Pag-verify ng lagda';

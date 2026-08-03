@@ -247,7 +247,7 @@ void main() {
     expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
     expect(find.text('ውህደቶች'), findsOneWidget);
     expect(find.text('የተዘጉ መግለጫዎች'), findsOneWidget);
-    expect(find.text('የቪዲዮ ቅርጽ'), findsOneWidget);
+    expect(find.text('ካሬ ቪዲዮዎች ብቻ'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -291,7 +291,7 @@ void main() {
     );
     expect(find.text('Bluesky Publishing'), findsOneWidget);
     expect(find.text('Closed Captions'), findsOneWidget);
-    expect(find.text('Video Shape'), findsOneWidget);
+    expect(find.text('Square videos only'), findsOneWidget);
     expect(find.text('App Language'), findsOneWidget);
     expect(find.text('Appearance'), findsNothing);
     await tester.scrollUntilVisible(
@@ -310,9 +310,7 @@ void main() {
 
     final captionsToggle = find.byWidgetPredicate(
       (widget) =>
-          widget is SwitchListTile &&
-          widget.title is Text &&
-          (widget.title! as Text).data == 'Closed Captions',
+          widget is DivineSwitchTile && widget.title == 'Closed Captions',
     );
     expect(captionsToggle, findsOneWidget);
     expect(

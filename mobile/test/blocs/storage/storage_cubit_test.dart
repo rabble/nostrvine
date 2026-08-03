@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -178,6 +179,164 @@ void main() {
         ],
         verify: (_) => verify(() => service.setCacheLimit(oneGb)).called(1),
       );
+    });
+
+    group('recovery', () {
+      const footprintBytes = 42 * 1024 * 1024;
+
+      blocTest<StorageCubit, StorageState>(
+        'loadRecoveryFootprint emits measuring then the measured footprint',
+        build: () => StorageCubit(
+          service: service,
+          measureRecoveryFootprint: () async => footprintBytes,
+        ),
+        act: (cubit) => cubit.loadRecoveryFootprint(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.measuring),
+          StorageState(
+            recoveryStatus: StorageRecoveryStatus.measured,
+            recoveryFootprintBytes: footprintBytes,
+          ),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'loadRecoveryFootprint falls back to idle when measuring throws, so '
+        'the sheet hides the size instead of reporting a failed wipe',
+        build: () => StorageCubit(
+          service: service,
+          measureRecoveryFootprint: () async => throw Exception('boom'),
+        ),
+        act: (cubit) => cubit.loadRecoveryFootprint(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.measuring),
+          StorageState(),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'recoverFromCorruptedCache clears the stale footprint on success',
+        build: () => StorageCubit(
+          service: service,
+          recoverAllCaches: () async => true,
+          measureRecoveryFootprint: () async => footprintBytes,
+        ),
+        act: (cubit) async {
+          await cubit.loadRecoveryFootprint();
+          await cubit.recoverFromCorruptedCache();
+        },
+        skip: 2,
+        expect: () => const [
+          StorageState(
+            recoveryStatus: StorageRecoveryStatus.recovering,
+            recoveryFootprintBytes: footprintBytes,
+          ),
+          StorageState(recoveryStatus: StorageRecoveryStatus.recovered),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'recoverFromCorruptedCache emits failure when the wipe reports false',
+        build: () => StorageCubit(
+          service: service,
+          recoverAllCaches: () async => false,
+        ),
+        act: (cubit) => cubit.recoverFromCorruptedCache(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.recovering),
+          StorageState(recoveryStatus: StorageRecoveryStatus.failure),
+        ],
+      );
+
+      blocTest<StorageCubit, StorageState>(
+        'recoverFromCorruptedCache emits failure when the wipe throws',
+        build: () => StorageCubit(
+          service: service,
+          recoverAllCaches: () async => throw Exception('boom'),
+        ),
+        act: (cubit) => cubit.recoverFromCorruptedCache(),
+        expect: () => const [
+          StorageState(recoveryStatus: StorageRecoveryStatus.recovering),
+          StorageState(recoveryStatus: StorageRecoveryStatus.failure),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      // The screen fires the measure unawaited alongside the sheet, so a slow
+      // walk can still be in flight when the user confirms. Landing on top of
+      // the wipe would clear the "Repairing" line and re-enable the
+      // destructive button mid-wipe.
+      test(
+        'a measurement landing mid-wipe does not overwrite recovering',
+        () async {
+          final measure = Completer<int>();
+          final wipe = Completer<bool>();
+          final cubit = StorageCubit(
+            service: service,
+            measureRecoveryFootprint: () => measure.future,
+            recoverAllCaches: () => wipe.future,
+          );
+          addTearDown(cubit.close);
+
+          unawaited(cubit.loadRecoveryFootprint());
+          unawaited(cubit.recoverFromCorruptedCache());
+          expect(cubit.state.recoveryStatus, StorageRecoveryStatus.recovering);
+
+          measure.complete(footprintBytes);
+          await pumpEventQueue();
+
+          expect(cubit.state.recoveryStatus, StorageRecoveryStatus.recovering);
+          expect(cubit.state.recoveryFootprintBytes, 0);
+
+          wipe.complete(true);
+          await pumpEventQueue();
+
+          expect(cubit.state.recoveryStatus, StorageRecoveryStatus.recovered);
+        },
+      );
+
+      test('a measurement landing after close does not emit', () async {
+        final measure = Completer<int>();
+        final cubit = StorageCubit(
+          service: service,
+          measureRecoveryFootprint: () => measure.future,
+        );
+
+        unawaited(cubit.loadRecoveryFootprint());
+        await cubit.close();
+        measure.complete(footprintBytes);
+
+        await expectLater(pumpEventQueue(), completes);
+      });
+
+      test('a failed measurement landing after close does not emit', () async {
+        final measure = Completer<int>();
+        final cubit = StorageCubit(
+          service: service,
+          measureRecoveryFootprint: () => measure.future,
+        );
+
+        unawaited(cubit.loadRecoveryFootprint());
+        await cubit.close();
+        measure.completeError(Exception('boom'));
+
+        await expectLater(pumpEventQueue(), completes);
+      });
+
+      test('a wipe landing after close does not emit', () async {
+        final wipe = Completer<bool>();
+        final cubit = StorageCubit(
+          service: service,
+          recoverAllCaches: () => wipe.future,
+        );
+
+        unawaited(cubit.recoverFromCorruptedCache());
+        await cubit.close();
+        wipe.complete(true);
+
+        await expectLater(pumpEventQueue(), completes);
+      });
     });
   });
 }

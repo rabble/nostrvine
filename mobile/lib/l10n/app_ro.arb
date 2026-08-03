@@ -742,30 +742,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "Resetează toate indicatoarele la valorile implicite",
-    "featureFlagResetToDefault": "Resetează la valoarea implicită",
-    "featureFlagAppRecovery": "Recuperare aplicație",
-    "featureFlagAppRecoveryDescription": "Dacă aplicația se blochează sau se comportă ciudat, încearcă să goli cache-ul.",
-    "featureFlagClearAllCache": "Golește tot cache-ul",
-    "featureFlagCacheInfo": "Informații cache",
-    "featureFlagClearCacheTitle": "Golești tot cache-ul?",
-    "featureFlagClearCacheMessage": "Asta va șterge toate datele din cache, inclusiv:\n• Notificări\n• Profiluri de utilizator\n• Semne de carte\n• Fișiere temporare\n\nVa trebui să te autentifici din nou. Continuăm?",
-    "featureFlagClearCache": "Golește cache-ul",
-    "featureFlagClearingCache": "Se golește cache-ul...",
-    "featureFlagSuccess": "Succes",
     "featureFlagError": "Eroare",
-    "featureFlagClearCacheSuccess": "Cache-ul a fost golit cu succes. Repornește aplicația.",
-    "featureFlagClearCacheFailure": "Unele elemente din cache n-au putut fi șterse. Verifică jurnalele pentru detalii.",
-    "featureFlagOk": "OK",
-    "featureFlagCacheInformation": "Informații despre cache",
-    "featureFlagTotalCacheSize": "Dimensiunea totală a cache-ului: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "Cache-ul include:\n• Istoricul notificărilor\n• Datele profilurilor de utilizator\n• Miniaturi video\n• Fișiere temporare\n• Indexuri de baze de date",
     "relaySettingsTitle": "Relay-uri",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -1032,6 +1009,7 @@
     "safetySettingsAddCustomLabeler": "Adaugă etichetator personalizat",
     "safetySettingsAddCustomLabelerHint": "Introdu npub...",
     "safetySettingsAddCustomLabelerListTitle": "Adaugă etichetator personalizat",
+    "safetySettingsRemoveLabeler": "Elimină etichetatorul",
     "safetySettingsAddCustomLabelerListSubtitle": "Introdu adresa npub",
     "safetySettingsNoBlockedUsers": "Niciun utilizator blocat",
     "safetySettingsUnblock": "Deblochează",
@@ -3362,10 +3340,7 @@
     "appearanceSettingsDark": "Întunecat",
     "generalSettingsClosedCaptions": "Subtitrări",
     "generalSettingsClosedCaptionsSubtitle": "Afișează subtitrările când videoclipurile le includ",
-    "generalSettingsVideoShape": "Forma videoclipurilor",
     "generalSettingsVideoShapeSquareOnly": "Doar videoclipuri pătrate",
-    "generalSettingsVideoShapeSquareAndPortrait": "Pătrate și portret",
-    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Arată tot amestecul de videoclipuri Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "Păstrează feedurile în formatul clasic pătrat",
     "generalSettingsHoldToRecord": "Ține apăsat pentru a înregistra",
     "generalSettingsHoldToRecordSubtitle": "Înregistrarea începe când ții apăsat și se oprește când eliberezi",
@@ -4827,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "Dimensiune maximă cache",
   "settingsStorageApproxVideos": "≈ {count} videoclipuri",
   "settingsStorageRemoveBrokenConfirmTitle": "Elimini clipurile deteriorate?",
+  "settingsStorageRepairSectionTitle": "Repară instalarea",
+  "settingsStorageRepairDescription": "Dacă aplicația se blochează sau se comportă ciudat, resetarea datelor locale rezolvă de obicei. Clipurile și schițele tale rămân.",
+  "settingsStorageRepairButton": "Resetează datele aplicației",
+  "settingsStorageRepairConfirmTitle": "Resetezi datele aplicației?",
+  "settingsStorageRepairConfirmMessage": "Asta șterge notificările, profilurile din cache, marcajele și fișierele temporare. Clipurile și schițele tale rămân, dar vei fi deconectat și va trebui să repornești aplicația.",
+  "settingsStorageRepairFootprint": "Se vor șterge {size}",
+  "settingsStorageRepairConfirmAction": "Resetează",
+  "settingsStorageRepairInProgress": "Se resetează…",
+  "settingsStorageRepairSuccess": "Gata — repornește aplicația ca să finalizezi.",
+  "settingsStorageRepairFailure": "Nu s-a putut reseta tot. Încearcă din nou după o repornire.",
   "authSignInErrorInvalidCredentials": "E-mail sau parolă greșite. Mai încearcă o dată.",
   "authSignInErrorEmailNotVerified": "Verifică-ți e-mailul înainte de a te conecta — caută linkul în inbox.",
   "authSignInErrorInvalidEmail": "Nu pare o adresă de e-mail validă.",

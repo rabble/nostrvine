@@ -486,29 +486,11 @@ abstract class AppLocalizations {
   /// **'Show captions when videos include them'**
   String get generalSettingsClosedCaptionsSubtitle;
 
-  /// No description provided for @generalSettingsVideoShape.
-  ///
-  /// In en, this message translates to:
-  /// **'Video Shape'**
-  String get generalSettingsVideoShape;
-
   /// No description provided for @generalSettingsVideoShapeSquareOnly.
   ///
   /// In en, this message translates to:
   /// **'Square videos only'**
   String get generalSettingsVideoShapeSquareOnly;
-
-  /// No description provided for @generalSettingsVideoShapeSquareAndPortrait.
-  ///
-  /// In en, this message translates to:
-  /// **'Square and portrait'**
-  String get generalSettingsVideoShapeSquareAndPortrait;
-
-  /// No description provided for @generalSettingsVideoShapeSquareAndPortraitSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Show the full mix of Divine videos'**
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle;
 
   /// No description provided for @generalSettingsVideoShapeSquareOnlySubtitle.
   ///
@@ -3316,107 +3298,11 @@ abstract class AppLocalizations {
   /// **'Reset all flags to defaults'**
   String get featureFlagResetAllTooltip;
 
-  /// No description provided for @featureFlagResetToDefault.
-  ///
-  /// In en, this message translates to:
-  /// **'Reset to default'**
-  String get featureFlagResetToDefault;
-
-  /// No description provided for @featureFlagAppRecovery.
-  ///
-  /// In en, this message translates to:
-  /// **'App Recovery'**
-  String get featureFlagAppRecovery;
-
-  /// No description provided for @featureFlagAppRecoveryDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'If the app is crashing or behaving strangely, try clearing the cache.'**
-  String get featureFlagAppRecoveryDescription;
-
-  /// No description provided for @featureFlagClearAllCache.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear All Cache'**
-  String get featureFlagClearAllCache;
-
-  /// No description provided for @featureFlagCacheInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache Info'**
-  String get featureFlagCacheInfo;
-
-  /// No description provided for @featureFlagClearCacheTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear All Cache?'**
-  String get featureFlagClearCacheTitle;
-
-  /// No description provided for @featureFlagClearCacheMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'This will clear all cached data including:\n• Notifications\n• User profiles\n• Bookmarks\n• Temporary files\n\nYou will need to log in again. Continue?'**
-  String get featureFlagClearCacheMessage;
-
-  /// No description provided for @featureFlagClearCache.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear Cache'**
-  String get featureFlagClearCache;
-
-  /// No description provided for @featureFlagClearingCache.
-  ///
-  /// In en, this message translates to:
-  /// **'Clearing cache...'**
-  String get featureFlagClearingCache;
-
-  /// No description provided for @featureFlagSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Success'**
-  String get featureFlagSuccess;
-
   /// No description provided for @featureFlagError.
   ///
   /// In en, this message translates to:
   /// **'Error'**
   String get featureFlagError;
-
-  /// No description provided for @featureFlagClearCacheSuccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache cleared successfully. Please restart the app.'**
-  String get featureFlagClearCacheSuccess;
-
-  /// No description provided for @featureFlagClearCacheFailure.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to clear some cache items. Check logs for details.'**
-  String get featureFlagClearCacheFailure;
-
-  /// No description provided for @featureFlagOk.
-  ///
-  /// In en, this message translates to:
-  /// **'OK'**
-  String get featureFlagOk;
-
-  /// No description provided for @featureFlagCacheInformation.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache Information'**
-  String get featureFlagCacheInformation;
-
-  /// No description provided for @featureFlagTotalCacheSize.
-  ///
-  /// In en, this message translates to:
-  /// **'Total cache size: {size}'**
-  String featureFlagTotalCacheSize(String size);
-
-  /// No description provided for @featureFlagCacheIncludes.
-  ///
-  /// In en, this message translates to:
-  /// **'Cache includes:\n• Notification history\n• User profile data\n• Video thumbnails\n• Temporary files\n• Database indexes'**
-  String get featureFlagCacheIncludes;
 
   /// Relay settings screen app bar title
   ///
@@ -4513,6 +4399,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add custom labeler'**
   String get safetySettingsAddCustomLabelerListTitle;
+
+  /// No description provided for @safetySettingsRemoveLabeler.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove labeler'**
+  String get safetySettingsRemoveLabeler;
 
   /// No description provided for @safetySettingsAddCustomLabelerListSubtitle.
   ///
@@ -18305,6 +18197,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove broken clips?'**
   String get settingsStorageRemoveBrokenConfirmTitle;
+
+  /// Section header for the last-resort local-data reset on the Storage screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Repair install'**
+  String get settingsStorageRepairSectionTitle;
+
+  /// Explains when to reach for the repair reset and what survives it.
+  ///
+  /// In en, this message translates to:
+  /// **'If the app keeps crashing or acting strange, resetting its local data usually fixes it. Your clips and drafts stay.'**
+  String get settingsStorageRepairDescription;
+
+  /// Button that wipes local app data to recover from a broken install.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset app data'**
+  String get settingsStorageRepairButton;
+
+  /// Title of the confirmation sheet before the repair reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset app data?'**
+  String get settingsStorageRepairConfirmTitle;
+
+  /// Body of the repair confirmation sheet: what is removed, what survives, and that a restart is needed.
+  ///
+  /// In en, this message translates to:
+  /// **'This wipes notifications, cached profiles, bookmarks and temporary files. Your clips and drafts stay, but you\'ll be signed out and have to restart the app.'**
+  String get settingsStorageRepairConfirmMessage;
+
+  /// Shows how much disk the repair reset frees, inside the confirmation sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} will be removed'**
+  String settingsStorageRepairFootprint(String size);
+
+  /// Confirm button that performs the repair reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsStorageRepairConfirmAction;
+
+  /// Shown while the repair reset is running.
+  ///
+  /// In en, this message translates to:
+  /// **'Resetting…'**
+  String get settingsStorageRepairInProgress;
+
+  /// Shown and announced after a successful repair reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Done — restart the app to finish.'**
+  String get settingsStorageRepairSuccess;
+
+  /// Shown and announced when the repair reset could not complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reset everything. Try again after a restart.'**
+  String get settingsStorageRepairFailure;
 
   /// Title for the Nostr relay signature verification setting.
   ///

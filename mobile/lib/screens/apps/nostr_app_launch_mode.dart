@@ -81,7 +81,7 @@ Future<void> launchNostrApp(
   final errorText = context.l10n.relaySettingsCouldNotOpenBrowser;
   if (!isAllowedSystemBrowserTarget(app.launchUrl)) {
     messenger.showSnackBar(
-      SnackBar(content: Text(errorText), backgroundColor: VineTheme.error),
+      DivineSnackbarContainer.snackBar(errorText, error: true),
     );
     return;
   }
@@ -100,7 +100,7 @@ Future<void> launchNostrApp(
   }
   if (!launched) {
     messenger.showSnackBar(
-      SnackBar(content: Text(errorText), backgroundColor: VineTheme.error),
+      DivineSnackbarContainer.snackBar(errorText, error: true),
     );
   }
 }

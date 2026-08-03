@@ -15,6 +15,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Page: bridges the seven moderation services + repositories into
@@ -89,52 +90,32 @@ class SafetySettingsView extends StatelessWidget {
           child: BlocBuilder<SafetySettingsCubit, SafetySettingsState>(
             builder: (context, state) {
               if (state.status == SafetySettingsStatus.loading) {
-                return const Center(
-                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
-                );
+                return const Center(child: BrandedLoadingIndicator(size: 60));
               }
               return ListView(
                 children: [
-                  _SectionHeader(context.l10n.safetySettingsWhatYouSee),
+                  DivineSectionHeader(context.l10n.safetySettingsWhatYouSee),
                   const _ContentFiltersTile(),
-                  _SectionHeader(context.l10n.safetySettingsAgeVerification),
+                  DivineSectionHeader(
+                    context.l10n.safetySettingsAgeVerification,
+                  ),
                   const _AgeVerificationTile(),
                   const SizedBox(height: 8),
                   const _DivineHostedOnlyTile(),
-                  _SectionHeader(context.l10n.safetySettingsModeration),
+                  DivineSectionHeader(context.l10n.safetySettingsModeration),
                   const _DivineProviderTile(),
                   const _PeopleIFollowProviderTile(),
                   const _CustomLabelersSection(),
-                  _SectionHeader(context.l10n.safetySettingsBlockedUsers),
+                  DivineSectionHeader(context.l10n.safetySettingsBlockedUsers),
                   const _BlockedUsersSection(),
-                  _SectionHeader(context.l10n.safetySettingsWhatYouPublish),
+                  DivineSectionHeader(
+                    context.l10n.safetySettingsWhatYouPublish,
+                  ),
                   const AccountContentLabelsTile(),
                 ],
               );
             },
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
         ),
       ),
     );
@@ -153,11 +134,13 @@ class _ContentFiltersTile extends StatelessWidget {
       ),
       title: Text(
         context.l10n.contentPreferencesContentFilters,
-        style: TextStyle(color: context.vineColors.primaryText),
+        style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
       ),
       subtitle: Text(
         context.l10n.contentPreferencesContentFiltersSubtitle,
-        style: TextStyle(color: context.vineColors.secondaryText),
+        style: VineTheme.bodyMediumFont(
+          color: context.vineColors.secondaryText,
+        ),
       ),
       trailing: DivineIcon(
         icon: DivineIconName.caretRight,
@@ -179,28 +162,16 @@ class _AgeVerificationTile extends StatelessWidget {
     final isLocked = context.select(
       (SafetySettingsCubit cubit) => cubit.state.isAdultContentLocked,
     );
-    return CheckboxListTile(
+    return DivineCheckboxTile(
+      title: context.l10n.safetySettingsAgeConfirmation,
+      subtitle: isLocked
+          ? context.l10n.safetySettingsAgeLockedForMinor
+          : context.l10n.safetySettingsAgeRequired,
       value: !isLocked && isAgeVerified,
       onChanged: isLocked
           ? null
-          : (value) {
-              if (value != null) {
-                context.read<SafetySettingsCubit>().setAgeVerified(value);
-              }
-            },
-      title: Text(
-        context.l10n.safetySettingsAgeConfirmation,
-        style: TextStyle(color: context.vineColors.primaryText),
-      ),
-      subtitle: Text(
-        isLocked
-            ? context.l10n.safetySettingsAgeLockedForMinor
-            : context.l10n.safetySettingsAgeRequired,
-        style: TextStyle(color: context.vineColors.secondaryText),
-      ),
-      activeColor: VineTheme.vineGreen,
-      checkColor: context.vineColors.background,
-      controlAffinity: ListTileControlAffinity.leading,
+          : (value) =>
+                context.read<SafetySettingsCubit>().setAgeVerified(value),
     );
   }
 }
@@ -213,23 +184,13 @@ class _DivineHostedOnlyTile extends StatelessWidget {
     final showDivineHostedOnly = context.select(
       (SafetySettingsCubit cubit) => cubit.state.showDivineHostedOnly,
     );
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.sealCheck,
+      title: context.l10n.safetySettingsShowDivineHostedOnly,
+      subtitle: context.l10n.safetySettingsShowDivineHostedOnlySubtitle,
       value: showDivineHostedOnly,
       onChanged: (value) =>
           context.read<SafetySettingsCubit>().setShowDivineHostedOnly(value),
-      secondary: const DivineIcon(
-        icon: DivineIconName.sealCheck,
-        color: VineTheme.vineGreen,
-      ),
-      title: Text(
-        context.l10n.safetySettingsShowDivineHostedOnly,
-        style: TextStyle(color: context.vineColors.primaryText),
-      ),
-      subtitle: Text(
-        context.l10n.safetySettingsShowDivineHostedOnlySubtitle,
-        style: TextStyle(color: context.vineColors.secondaryText),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
     );
   }
 }
@@ -240,22 +201,12 @@ class _DivineProviderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // The built-in Divine moderation labeler is always on by product design.
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.shieldCheck,
+      title: context.l10n.safetySettingsDivine,
+      subtitle: context.l10n.safetySettingsDivineSubtitle,
       value: true,
       onChanged: null,
-      secondary: const DivineIcon(
-        icon: DivineIconName.shieldCheck,
-        color: VineTheme.vineGreen,
-      ),
-      title: Text(
-        context.l10n.safetySettingsDivine,
-        style: TextStyle(color: context.vineColors.primaryText),
-      ),
-      subtitle: Text(
-        context.l10n.safetySettingsDivineSubtitle,
-        style: TextStyle(color: context.vineColors.secondaryText),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
     );
   }
 }
@@ -268,23 +219,13 @@ class _PeopleIFollowProviderTile extends StatelessWidget {
     final isEnabled = context.select(
       (SafetySettingsCubit cubit) => cubit.state.isPeopleIFollowEnabled,
     );
-    return SwitchListTile(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.users,
+      title: context.l10n.safetySettingsPeopleIFollow,
+      subtitle: context.l10n.safetySettingsPeopleIFollowSubtitle,
       value: isEnabled,
       onChanged: (value) =>
           context.read<SafetySettingsCubit>().setPeopleIFollowEnabled(value),
-      title: Text(
-        context.l10n.safetySettingsPeopleIFollow,
-        style: TextStyle(color: context.vineColors.primaryText),
-      ),
-      subtitle: Text(
-        context.l10n.safetySettingsPeopleIFollowSubtitle,
-        style: TextStyle(color: context.vineColors.secondaryText),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: DivineIcon(
-        icon: DivineIconName.users,
-        color: isEnabled ? VineTheme.vineGreen : context.vineColors.disabled,
-      ),
     );
   }
 }
@@ -307,32 +248,39 @@ class _CustomLabelersSection extends StatelessWidget {
             ),
             title: Text(
               NostrKeyUtils.truncateNpub(pubkey),
-              style: TextStyle(color: context.vineColors.primaryText),
+              style: VineTheme.bodyLargeFont(
+                color: context.vineColors.primaryText,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: IconButton(
-              icon: Icon(
-                Icons.remove_circle_outline,
-                color: context.vineColors.secondaryText,
-              ),
+            trailing: DivineIconButton(
+              icon: DivineIconName.minus,
+              backgroundColor: VineTheme.transparent,
+              foregroundColor: context.vineColors.secondaryText,
+              showShadow: false,
+              tooltip: context.l10n.safetySettingsRemoveLabeler,
               onPressed: () =>
                   context.read<SafetySettingsCubit>().removeLabeler(pubkey),
             ),
           ),
         ),
         ListTile(
-          leading: Icon(
-            Icons.add_circle_outline,
+          leading: DivineIcon(
+            icon: DivineIconName.plus,
             color: context.vineColors.disabled,
           ),
           title: Text(
             context.l10n.safetySettingsAddCustomLabelerListTitle,
-            style: TextStyle(color: context.vineColors.primaryText),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
           ),
           subtitle: Text(
             context.l10n.safetySettingsAddCustomLabelerListSubtitle,
-            style: TextStyle(color: context.vineColors.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
           ),
           onTap: () => _showAddLabelerDialog(context),
         ),
@@ -342,9 +290,11 @@ class _CustomLabelersSection extends StatelessWidget {
 
   Future<void> _showAddLabelerDialog(BuildContext context) async {
     final cubit = context.read<SafetySettingsCubit>();
-    final result = await showDialog<String>(
+    final result = await VineBottomSheet.show<String>(
       context: context,
-      builder: (dialogContext) => const _AddLabelerDialog(),
+      scrollable: false,
+      contentTitle: context.l10n.safetySettingsAddCustomLabeler,
+      body: const _AddLabelerSheet(),
     );
     if (result != null && result.isNotEmpty) {
       await cubit.addLabeler(result);
@@ -352,14 +302,14 @@ class _CustomLabelersSection extends StatelessWidget {
   }
 }
 
-class _AddLabelerDialog extends StatefulWidget {
-  const _AddLabelerDialog();
+class _AddLabelerSheet extends StatefulWidget {
+  const _AddLabelerSheet();
 
   @override
-  State<_AddLabelerDialog> createState() => _AddLabelerDialogState();
+  State<_AddLabelerSheet> createState() => _AddLabelerSheetState();
 }
 
-class _AddLabelerDialogState extends State<_AddLabelerDialog> {
+class _AddLabelerSheetState extends State<_AddLabelerSheet> {
   final _controller = TextEditingController();
 
   @override
@@ -370,42 +320,50 @@ class _AddLabelerDialogState extends State<_AddLabelerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: context.vineColors.card,
-      title: Text(
-        context.l10n.safetySettingsAddCustomLabeler,
-        style: TextStyle(color: context.vineColors.primaryText),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        4 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      content: TextField(
-        controller: _controller,
-        style: TextStyle(color: context.vineColors.primaryText),
-        decoration: InputDecoration(
-          hintText: context.l10n.safetySettingsAddCustomLabelerHint,
-          hintStyle: TextStyle(color: context.vineColors.secondaryText),
-          enabledBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: context.vineColors.secondaryText),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 16,
+        children: [
+          DivineTextField(
+            controller: _controller,
+            labelText: context.l10n.safetySettingsAddCustomLabelerHint,
+            textCapitalization: TextCapitalization.none,
+            autofocus: true,
+            filled: true,
+            textInputAction: .done,
+            onSubmitted: (_) => Navigator.pop(context, _controller.text.trim()),
+            spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
           ),
-          focusedBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: VineTheme.vineGreen),
+          Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.safetySettingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.safetySettingsAdd,
+                  expanded: true,
+                  onPressed: () =>
+                      Navigator.pop(context, _controller.text.trim()),
+                ),
+              ),
+            ],
           ),
-        ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            context.l10n.safetySettingsCancel,
-            style: TextStyle(color: context.vineColors.secondaryText),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: Text(
-            context.l10n.safetySettingsAdd,
-            style: const TextStyle(color: VineTheme.vineGreen),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -423,10 +381,9 @@ class _BlockedUsersSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Text(
           context.l10n.safetySettingsNoBlockedUsers,
-          style: TextStyle(
+          style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
-            fontStyle: FontStyle.italic,
-          ),
+          ).copyWith(fontStyle: FontStyle.italic),
         ),
       );
     }
@@ -448,8 +405,8 @@ class _BlockedUsersSection extends StatelessWidget {
     final l10n = context.l10n;
     await cubit.unblockUser(pubkey);
     messenger.showSnackBar(
-      SnackBar(
-        content: Text(l10n.safetySettingsUserUnblocked),
+      DivineSnackbarContainer.snackBar(
+        l10n.safetySettingsUserUnblocked,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -508,22 +465,21 @@ class _BlockedUserTile extends ConsumerWidget {
       ),
       title: Text(
         displayName,
-        style: TextStyle(color: context.vineColors.primaryText),
+        style: VineTheme.bodyLargeFont(color: context.vineColors.primaryText),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         truncatedNpub,
-        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: TextButton(
+      trailing: DivineButton(
+        label: context.l10n.safetySettingsUnblock,
+        type: DivineButtonType.link,
+        size: DivineButtonSize.small,
         onPressed: onUnblock,
-        child: Text(
-          context.l10n.safetySettingsUnblock,
-          style: const TextStyle(color: VineTheme.vineGreen),
-        ),
       ),
     );
   }

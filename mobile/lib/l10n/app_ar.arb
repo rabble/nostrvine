@@ -739,30 +739,7 @@
         "description": "Feature flags screen app bar title"
     },
     "featureFlagResetAllTooltip": "إعادة جميع الأعلام إلى الافتراضي",
-    "featureFlagResetToDefault": "إعادة إلى الافتراضي",
-    "featureFlagAppRecovery": "استرداد التطبيق",
-    "featureFlagAppRecoveryDescription": "إذا كان التطبيق يتعطّل أو يتصرف بغرابة، جرّب مسح الذاكرة المؤقتة.",
-    "featureFlagClearAllCache": "مسح كل الذاكرة المؤقتة",
-    "featureFlagCacheInfo": "معلومات الذاكرة المؤقتة",
-    "featureFlagClearCacheTitle": "مسح كل الذاكرة المؤقتة؟",
-    "featureFlagClearCacheMessage": "سيؤدي هذا إلى مسح جميع البيانات المخزّنة بما في ذلك:\n• الإشعارات\n• ملفات المستخدمين\n• الإشارات المرجعية\n• الملفات المؤقتة\n\nستحتاج إلى تسجيل الدخول مجددًا. هل تريد المتابعة؟",
-    "featureFlagClearCache": "مسح الذاكرة المؤقتة",
-    "featureFlagClearingCache": "جاري مسح الذاكرة المؤقتة...",
-    "featureFlagSuccess": "نجح",
     "featureFlagError": "خطأ",
-    "featureFlagClearCacheSuccess": "تم مسح الذاكرة المؤقتة بنجاح. يرجى إعادة تشغيل التطبيق.",
-    "featureFlagClearCacheFailure": "فشل مسح بعض عناصر الذاكرة المؤقتة. راجع السجلات للتفاصيل.",
-    "featureFlagOk": "حسنًا",
-    "featureFlagCacheInformation": "معلومات الذاكرة المؤقتة",
-    "featureFlagTotalCacheSize": "إجمالي حجم الذاكرة المؤقتة: {size}",
-    "@featureFlagTotalCacheSize": {
-        "placeholders": {
-            "size": {
-                "type": "String"
-            }
-        }
-    },
-    "featureFlagCacheIncludes": "الذاكرة المؤقتة تشمل:\n• سجل الإشعارات\n• بيانات ملفات المستخدمين\n• صور الفيديو المصغّرة\n• الملفات المؤقتة\n• فهارس قاعدة البيانات",
     "relaySettingsTitle": "المحولات",
     "@relaySettingsTitle": {
         "description": "Relay settings screen app bar title"
@@ -1029,6 +1006,7 @@
     "safetySettingsAddCustomLabeler": "إضافة واسم مخصّص",
     "safetySettingsAddCustomLabelerHint": "أدخل npub...",
     "safetySettingsAddCustomLabelerListTitle": "إضافة واسم مخصّص",
+    "safetySettingsRemoveLabeler": "إزالة الواسم",
     "safetySettingsAddCustomLabelerListSubtitle": "أدخل عنوان npub",
     "safetySettingsNoBlockedUsers": "لا يوجد مستخدمون محظورون",
     "safetySettingsUnblock": "إلغاء الحظر",
@@ -3355,10 +3333,7 @@
     "appearanceSettingsDark": "داكن",
     "generalSettingsClosedCaptions": "الترجمة المصاحبة",
     "generalSettingsClosedCaptionsSubtitle": "اعرض الترجمة عندما تتضمّنها الفيديوهات",
-    "generalSettingsVideoShape": "شكل الفيديو",
     "generalSettingsVideoShapeSquareOnly": "فيديوهات مربّعة فقط",
-    "generalSettingsVideoShapeSquareAndPortrait": "مربّع وعمودي",
-    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "اعرض المزيج الكامل لفيديوهات Divine",
     "generalSettingsVideoShapeSquareOnlySubtitle": "أبقِ التغذيات بالشكل المربّع الكلاسيكي",
     "generalSettingsHoldToRecord": "اضغط مطولاً للتسجيل",
     "generalSettingsHoldToRecordSubtitle": "يبدأ التسجيل عند الضغط المطوّل ويتوقف عند الإفراج",
@@ -4827,6 +4802,16 @@
   "settingsStorageMaxSizeLabel": "الحد الأقصى لحجم ذاكرة التخزين المؤقت",
   "settingsStorageApproxVideos": "≈ {count} مقطع فيديو",
   "settingsStorageRemoveBrokenConfirmTitle": "إزالة المقاطع التالفة؟",
+  "settingsStorageRepairSectionTitle": "إصلاح التثبيت",
+  "settingsStorageRepairDescription": "إذا كان التطبيق يتعطل أو يتصرف بغرابة، فإعادة ضبط بياناته المحلية تحل المشكلة غالبًا. مقاطعك ومسوداتك تبقى كما هي.",
+  "settingsStorageRepairButton": "إعادة ضبط بيانات التطبيق",
+  "settingsStorageRepairConfirmTitle": "إعادة ضبط بيانات التطبيق؟",
+  "settingsStorageRepairConfirmMessage": "سيؤدي هذا إلى حذف الإشعارات والملفات الشخصية المخزنة مؤقتًا والإشارات المرجعية والملفات المؤقتة. تبقى مقاطعك ومسوداتك، لكن سيتم تسجيل خروجك وعليك إعادة تشغيل التطبيق.",
+  "settingsStorageRepairFootprint": "سيتم حذف {size}",
+  "settingsStorageRepairConfirmAction": "إعادة ضبط",
+  "settingsStorageRepairInProgress": "جارٍ إعادة الضبط…",
+  "settingsStorageRepairSuccess": "تم — أعد تشغيل التطبيق لإنهاء العملية.",
+  "settingsStorageRepairFailure": "تعذّرت إعادة ضبط كل شيء. حاول مرة أخرى بعد إعادة التشغيل.",
   "authSignInErrorInvalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مرة أخرى.",
   "authSignInErrorEmailNotVerified": "تحقق من بريدك الإلكتروني قبل تسجيل الدخول — راجع صندوق الوارد للحصول على الرابط.",
   "authSignInErrorInvalidEmail": "لا يبدو هذا عنوان بريد إلكتروني صالحًا.",

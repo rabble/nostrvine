@@ -194,17 +194,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => '영상에 자막이 있을 때 보여줘요';
 
   @override
-  String get generalSettingsVideoShape => '영상 모양';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => '정사각형 영상만';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => '정사각형 및 세로형';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Divine 영상의 모든 종류를 보여줘요';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1792,61 +1782,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get featureFlagResetAllTooltip => '모든 플래그를 기본값으로 재설정';
 
   @override
-  String get featureFlagResetToDefault => '기본값으로 재설정';
-
-  @override
-  String get featureFlagAppRecovery => '앱 복구';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      '앱이 멈추거나 이상한 동작을 하면 캐시를 지워보세요.';
-
-  @override
-  String get featureFlagClearAllCache => '모든 캐시 삭제';
-
-  @override
-  String get featureFlagCacheInfo => '캐시 정보';
-
-  @override
-  String get featureFlagClearCacheTitle => '모든 캐시를 지울까요?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      '다음을 포함한 모든 캐시 데이터가 지워져요:\n• 알림\n• 사용자 프로필\n• 북마크\n• 임시 파일\n\n다시 로그인해야 해요. 계속할까요?';
-
-  @override
-  String get featureFlagClearCache => '캐시 삭제';
-
-  @override
-  String get featureFlagClearingCache => '캐시 삭제 중...';
-
-  @override
-  String get featureFlagSuccess => '성공';
-
-  @override
   String get featureFlagError => '오류';
-
-  @override
-  String get featureFlagClearCacheSuccess => '캐시를 지웠어요. 앱을 다시 시작해주세요.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      '일부 캐시 항목을 지우지 못했어요. 자세한 내용은 로그를 확인해주세요.';
-
-  @override
-  String get featureFlagOk => '확인';
-
-  @override
-  String get featureFlagCacheInformation => '캐시 정보';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return '전체 캐시 크기: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      '캐시 포함 항목:\n• 알림 기록\n• 사용자 프로필 데이터\n• 영상 썸네일\n• 임시 파일\n• 데이터베이스 인덱스';
 
   @override
   String get relaySettingsTitle => '릴레이';
@@ -2458,6 +2394,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get safetySettingsAddCustomLabelerListTitle => '커스텀 라벨러 추가';
+
+  @override
+  String get safetySettingsRemoveLabeler => '라벨러 제거';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'npub 주소를 입력해주세요';
@@ -10212,6 +10151,40 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => '손상된 클립을 제거할까요?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => '설치 복구';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      '앱이 자꾸 종료되거나 이상하게 작동하면 로컬 데이터를 초기화하면 대개 해결돼요. 클립과 초안은 그대로 남아요.';
+
+  @override
+  String get settingsStorageRepairButton => '앱 데이터 초기화';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => '앱 데이터를 초기화할까요?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      '알림, 캐시된 프로필, 북마크, 임시 파일이 삭제돼요. 클립과 초안은 남지만 로그아웃되고 앱을 다시 시작해야 해요.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size가 삭제돼요';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => '초기화';
+
+  @override
+  String get settingsStorageRepairInProgress => '초기화 중…';
+
+  @override
+  String get settingsStorageRepairSuccess => '완료 — 앱을 다시 시작하면 끝나요.';
+
+  @override
+  String get settingsStorageRepairFailure => '전부 초기화하지 못했어요. 다시 시작한 뒤 시도해 주세요.';
 
   @override
   String get nostrSettingsSignatureVerification => '서명 확인';

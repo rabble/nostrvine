@@ -94,22 +94,40 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// On confirm: persist + unlock adult categories.
   /// On un-confirm: persist + lock adult categories + filter the existing
   /// feed (kept to mirror `_setAgeVerified` pre-migration behavior).
+  ///
+  /// Emits optimistically so the row moves on the tap frame; see
+  /// [setPeopleIFollowEnabled] for why.
   Future<void> setAgeVerified(bool value) async {
     if (_isAdultContentLocked) return; // protected minors cannot toggle
-    await _ageVerificationService.setAdultContentVerified(value);
-    if (value) {
-      await _contentFilterService.unlockAdultCategories();
-    } else {
-      await _contentFilterService.lockAdultCategories();
-      _videoEventService.filterAdultContentFromExistingVideos();
-    }
+    final previous = state.isAgeVerified;
     emit(state.copyWith(isAgeVerified: value));
+    try {
+      await _ageVerificationService.setAdultContentVerified(value);
+      if (value) {
+        await _contentFilterService.unlockAdultCategories();
+      } else {
+        await _contentFilterService.lockAdultCategories();
+        _videoEventService.filterAdultContentFromExistingVideos();
+      }
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(isAgeVerified: previous));
+    }
   }
 
   /// Toggle the "show only Divine-hosted content" filter.
+  ///
+  /// Emits optimistically so the row moves on the tap frame; see
+  /// [setPeopleIFollowEnabled] for why.
   Future<void> setShowDivineHostedOnly(bool value) async {
-    await _divineHostFilterService.setShowDivineHostedOnly(value);
+    final previous = state.showDivineHostedOnly;
     emit(state.copyWith(showDivineHostedOnly: value));
+    try {
+      await _divineHostFilterService.setShowDivineHostedOnly(value);
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(showDivineHostedOnly: previous));
+    }
   }
 
   /// Toggle "use people I follow as trusted labelers".
@@ -121,12 +139,25 @@ class SafetySettingsCubit extends Cubit<SafetySettingsState> {
   /// `FollowRepository.followingStream` and re-runs `syncFollowedLabelers` on
   /// every follow-graph change (a no-op while disabled), so the feature stays
   /// live without the cubit owning that subscription.
+  ///
+  /// The emit is optimistic: enabling this fans out one relay query per
+  /// followed pubkey, awaited one after another, so emitting after the
+  /// service call left the switch pinned to its old position for seconds —
+  /// long enough that the only way to see the new value was to leave the
+  /// screen and come back (which re-reads the persisted flag in [load]).
+  /// On failure the toggle snaps back.
   Future<void> setPeopleIFollowEnabled(bool value) async {
-    await _moderationLabelService.setFollowingModerationEnabled(
-      value,
-      followedPubkeys: _followRepository.followingPubkeys,
-    );
+    final previous = state.isPeopleIFollowEnabled;
     emit(state.copyWith(isPeopleIFollowEnabled: value));
+    try {
+      await _moderationLabelService.setFollowingModerationEnabled(
+        value,
+        followedPubkeys: _followRepository.followingPubkeys,
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(isPeopleIFollowEnabled: previous));
+    }
   }
 
   /// Subscribe to a custom labeler.

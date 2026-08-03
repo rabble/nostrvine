@@ -234,17 +234,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get generalSettingsClosedCaptionsSubtitle => 'ቪዲዮዎች መግለጫዎችን ሲያካትቱ አሳይ';
 
   @override
-  String get generalSettingsVideoShape => 'የቪዲዮ ቅርጽ';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'ካሬ ቪዲዮዎች ብቻ';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'ካሬ እና ቁመታዊ';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'የDivine ቪዲዮዎችን ሙሉ ድብልቅ አሳይ';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1865,62 +1855,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'ሁሉንም ባንዲራዎች ወደ ነባሪዎች ዳግም ያስጀምሩ';
 
   @override
-  String get featureFlagResetToDefault => 'ወደ ነባሪ ዳግም አስጀምር';
-
-  @override
-  String get featureFlagAppRecovery => 'የመተግበሪያ መልሶ ማግኛ';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'መተግበሪያው እየተበላሸ ከሆነ ወይም እንግዳ ከሆነ፣ መሸጎጫውን ለማጽዳት ይሞክሩ።';
-
-  @override
-  String get featureFlagClearAllCache => 'ሁሉንም መሸጎጫ ያጽዱ';
-
-  @override
-  String get featureFlagCacheInfo => 'የመሸጎጫ መረጃ';
-
-  @override
-  String get featureFlagClearCacheTitle => 'ሁሉንም መሸጎጫ ይጽዱ?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'ይህ የሚከተሉትን ጨምሮ ሁሉንም የተሸጎጠ ውሂብ ያጸዳል-\n• ማሳወቂያዎች\n• የተጠቃሚ መገለጫዎች\n• ዕልባቶች\n• ጊዜያዊ ፋይሎች\n\nእንደገና መግባት ያስፈልግዎታል። ይቀጥል?';
-
-  @override
-  String get featureFlagClearCache => 'መሸጎጫ አጽዳ';
-
-  @override
-  String get featureFlagClearingCache => 'መሸጎጫ በማጽዳት ላይ...';
-
-  @override
-  String get featureFlagSuccess => 'ስኬት';
-
-  @override
   String get featureFlagError => 'ስህተት';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'መሸጎጫ በተሳካ ሁኔታ ጸድቷል። እባክዎ መተግበሪያውን እንደገና ያስጀምሩት።';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'አንዳንድ መሸጎጫ ንጥሎችን ማጽዳት አልተሳካም። ለዝርዝሮች የምዝግብ ማስታወሻዎችን ይመልከቱ።';
-
-  @override
-  String get featureFlagOk => 'እሺ';
-
-  @override
-  String get featureFlagCacheInformation => 'መሸጎጫ መረጃ';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'ጠቅላላ የመሸጎጫ መጠን፡ $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'መሸጎጫ የሚከተሉትን ያጠቃልላል\n• የማሳወቂያ ታሪክ\n• የተጠቃሚ መገለጫ ውሂብ\n• የቪዲዮ ድንክዬዎች\n• ጊዜያዊ ፋይሎች\n• የውሂብ ጎታ ኢንዴክሶች';
 
   @override
   String get relaySettingsTitle => 'ቅብብሎሽ';
@@ -2546,6 +2481,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get safetySettingsAddCustomLabelerListTitle => 'ብጁ መለያ አክል';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'መለያ አስወግድ';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'npub አድራሻ አስገባ';
@@ -10394,6 +10332,42 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get settingsStorageRemoveBrokenConfirmTitle => 'የተበላሹ ክሊፖችን ማስወገድ?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'ጭነትን ጠግን';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'መተግበሪያው በተደጋጋሚ የሚቋረጥ ወይም እንግዳ ባህሪ የሚያሳይ ከሆነ፣ የአካባቢ ውሂቡን ዳግም ማስጀመር አብዛኛውን ጊዜ ይፈታዋል። ክሊፖችህና ረቂቆችህ ይቀራሉ።';
+
+  @override
+  String get settingsStorageRepairButton => 'የመተግበሪያ ውሂብ ዳግም አስጀምር';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'የመተግበሪያ ውሂብ ዳግም ይጀመር?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'ይህ ማሳወቂያዎችን፣ የተቀመጡ መገለጫዎችን፣ ዕልባቶችንና ጊዜያዊ ፋይሎችን ያጠፋል። ክሊፖችህና ረቂቆችህ ይቀራሉ፣ ነገር ግን ትወጣለህ እና መተግበሪያውን እንደገና ማስጀመር አለብህ።';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size ይሰረዛል';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'ዳግም አስጀምር';
+
+  @override
+  String get settingsStorageRepairInProgress => 'ዳግም በማስጀመር ላይ…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'ተጠናቋል — ለማጠናቀቅ መተግበሪያውን እንደገና አስጀምር።';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'ሁሉንም ዳግም ማስጀመር አልተቻለም። እንደገና ካስጀመርክ በኋላ ሞክር።';
 
   @override
   String get nostrSettingsSignatureVerification => 'የፊርማ ማረጋገጫ';

@@ -98,10 +98,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data ==
-                l10n.contentPreferencesAudioSharing &&
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing &&
             !widget.value,
       );
       expect(switchFinder, findsOneWidget);
@@ -120,10 +118,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data ==
-                l10n.contentPreferencesAudioSharing &&
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing &&
             widget.value,
       );
       expect(switchFinder, findsOneWidget);
@@ -145,9 +141,8 @@ void main() {
 
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data == l10n.contentPreferencesAudioSharing,
+            widget is DivineSwitchTile &&
+            widget.title == l10n.contentPreferencesAudioSharing,
       );
 
       await tester.tap(switchFinder);
@@ -156,24 +151,6 @@ void main() {
       verify(
         () => mockAudioSharingService.setAudioSharingEnabled(true),
       ).called(1);
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
-
-    testWidgets('uses correct VineTheme colors', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      final switchFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is SwitchListTile &&
-            widget.title is Text &&
-            (widget.title! as Text).data ==
-                l10n.contentPreferencesAudioSharing &&
-            widget.activeThumbColor == VineTheme.vineGreen,
-      );
-      expect(switchFinder, findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

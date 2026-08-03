@@ -1028,10 +1028,28 @@ class VineTheme {
 
   static ThemeData _buildTheme(Brightness brightness, VineThemeColors colors) {
     final isLight = brightness == Brightness.light;
+    // Material 3 ignores `primarySwatch`, so without an explicit scheme this
+    // falls back to the M3 baseline — a purple primary that surfaces on every
+    // widget defaulting to `colorScheme.primary` (RefreshIndicator, bare
+    // progress indicators, Chip, Slider).
+    final seeded = ColorScheme.fromSeed(
+      seedColor: vineGreen,
+      brightness: brightness,
+    );
+    // Dark mode pins the exact brand green. Light mode keeps the seeded tone,
+    // which is the same hue darkened to clear contrast on a white surface —
+    // vineGreen itself only reaches ~2.2:1 there.
+    final scheme = isLight
+        ? seeded
+        : seeded.copyWith(primary: vineGreen, onPrimary: onPrimary);
     return ThemeData(
       brightness: brightness,
       primarySwatch: _createMaterialColor(vineGreen),
       primaryColor: vineGreen,
+      colorScheme: scheme,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: scheme.primary,
+      ),
       scaffoldBackgroundColor: colors.background,
       extensions: <ThemeExtension<dynamic>>[colors],
       appBarTheme: AppBarTheme(

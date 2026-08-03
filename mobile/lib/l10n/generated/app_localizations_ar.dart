@@ -220,17 +220,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'اعرض الترجمة عندما تتضمّنها الفيديوهات';
 
   @override
-  String get generalSettingsVideoShape => 'شكل الفيديو';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'فيديوهات مربّعة فقط';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait => 'مربّع وعمودي';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'اعرض المزيج الكامل لفيديوهات Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1884,62 +1874,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get featureFlagResetAllTooltip => 'إعادة جميع الأعلام إلى الافتراضي';
 
   @override
-  String get featureFlagResetToDefault => 'إعادة إلى الافتراضي';
-
-  @override
-  String get featureFlagAppRecovery => 'استرداد التطبيق';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'إذا كان التطبيق يتعطّل أو يتصرف بغرابة، جرّب مسح الذاكرة المؤقتة.';
-
-  @override
-  String get featureFlagClearAllCache => 'مسح كل الذاكرة المؤقتة';
-
-  @override
-  String get featureFlagCacheInfo => 'معلومات الذاكرة المؤقتة';
-
-  @override
-  String get featureFlagClearCacheTitle => 'مسح كل الذاكرة المؤقتة؟';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'سيؤدي هذا إلى مسح جميع البيانات المخزّنة بما في ذلك:\n• الإشعارات\n• ملفات المستخدمين\n• الإشارات المرجعية\n• الملفات المؤقتة\n\nستحتاج إلى تسجيل الدخول مجددًا. هل تريد المتابعة؟';
-
-  @override
-  String get featureFlagClearCache => 'مسح الذاكرة المؤقتة';
-
-  @override
-  String get featureFlagClearingCache => 'جاري مسح الذاكرة المؤقتة...';
-
-  @override
-  String get featureFlagSuccess => 'نجح';
-
-  @override
   String get featureFlagError => 'خطأ';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'تم مسح الذاكرة المؤقتة بنجاح. يرجى إعادة تشغيل التطبيق.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'فشل مسح بعض عناصر الذاكرة المؤقتة. راجع السجلات للتفاصيل.';
-
-  @override
-  String get featureFlagOk => 'حسنًا';
-
-  @override
-  String get featureFlagCacheInformation => 'معلومات الذاكرة المؤقتة';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'إجمالي حجم الذاكرة المؤقتة: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'الذاكرة المؤقتة تشمل:\n• سجل الإشعارات\n• بيانات ملفات المستخدمين\n• صور الفيديو المصغّرة\n• الملفات المؤقتة\n• فهارس قاعدة البيانات';
 
   @override
   String get relaySettingsTitle => 'المحولات';
@@ -2569,6 +2504,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get safetySettingsAddCustomLabelerListTitle => 'إضافة واسم مخصّص';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'إزالة الواسم';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'أدخل عنوان npub';
@@ -10545,6 +10483,42 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'إزالة المقاطع التالفة؟';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'إصلاح التثبيت';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'إذا كان التطبيق يتعطل أو يتصرف بغرابة، فإعادة ضبط بياناته المحلية تحل المشكلة غالبًا. مقاطعك ومسوداتك تبقى كما هي.';
+
+  @override
+  String get settingsStorageRepairButton => 'إعادة ضبط بيانات التطبيق';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'إعادة ضبط بيانات التطبيق؟';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'سيؤدي هذا إلى حذف الإشعارات والملفات الشخصية المخزنة مؤقتًا والإشارات المرجعية والملفات المؤقتة. تبقى مقاطعك ومسوداتك، لكن سيتم تسجيل خروجك وعليك إعادة تشغيل التطبيق.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return 'سيتم حذف $size';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'إعادة ضبط';
+
+  @override
+  String get settingsStorageRepairInProgress => 'جارٍ إعادة الضبط…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'تم — أعد تشغيل التطبيق لإنهاء العملية.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'تعذّرت إعادة ضبط كل شيء. حاول مرة أخرى بعد إعادة التشغيل.';
 
   @override
   String get nostrSettingsSignatureVerification => 'التحقق من التوقيع';

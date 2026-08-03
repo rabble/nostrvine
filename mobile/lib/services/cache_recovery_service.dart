@@ -268,27 +268,24 @@ class CacheRecoveryService {
     return cleared;
   }
 
-  /// Get total cache size for display purposes
-  static Future<String> getCacheSizeInfo() async {
-    try {
-      int totalSize = 0;
+  /// Total bytes held by everything [clearAllCaches] would remove.
+  ///
+  /// Best-effort: a directory that cannot be read contributes zero. Throws if
+  /// the platform cannot resolve one of the directories at all.
+  static Future<int> cacheSizeBytes() async {
+    final dirs = [
+      await getApplicationSupportDirectory(),
+      await getTemporaryDirectory(),
+      await getApplicationCacheDirectory(),
+    ];
 
-      final dirs = [
-        await getApplicationSupportDirectory(),
-        await getTemporaryDirectory(),
-        await getApplicationCacheDirectory(),
-      ];
-
-      for (final dir in dirs) {
-        if (dir.existsSync()) {
-          totalSize += await _getDirectorySize(dir);
-        }
+    var totalSize = 0;
+    for (final dir in dirs) {
+      if (dir.existsSync()) {
+        totalSize += await _getDirectorySize(dir);
       }
-
-      return _formatBytes(totalSize);
-    } catch (e) {
-      return 'Unknown';
     }
+    return totalSize;
   }
 
   /// Calculate directory size recursively
@@ -304,15 +301,5 @@ class CacheRecoveryService {
       // Ignore permission errors
     }
     return size;
-  }
-
-  /// Format bytes into human readable string
-  static String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

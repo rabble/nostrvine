@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,7 +112,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.blueskyUsernameRequired), findsOneWidget);
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.byType(DivineSwitchTile), findsOneWidget);
       expect(find.text(l10n.blueskyPublishVideos), findsOneWidget);
       expect(find.text(l10n.blueskyDisabledSubtitle), findsOneWidget);
     });
@@ -151,7 +152,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(
-        find.widgetWithText(TextButton, l10n.blueskySetUpHandle),
+        find.widgetWithText(DivineButton, l10n.blueskySetUpHandle),
       );
       await tester.pumpAndSettle();
 
@@ -182,7 +183,13 @@ void main() {
             enabled: any(named: 'enabled'),
           ),
         );
-        expect(find.byType(SnackBarAction), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(DivineSnackbarContainer),
+            matching: find.text(l10n.blueskySetUpHandle),
+          ),
+          findsOneWidget,
+        );
 
         await tester.tap(find.text(l10n.blueskySetUpHandle).last);
         await tester.pumpAndSettle();
@@ -220,7 +227,7 @@ void main() {
         expect(find.text(l10n.blueskyUsernameRequired), findsOneWidget);
 
         await tester.tap(
-          find.widgetWithText(TextButton, l10n.blueskySetUpHandle),
+          find.widgetWithText(DivineButton, l10n.blueskySetUpHandle),
         );
         await tester.pumpAndSettle();
         expect(find.text(claimRouteMarker), findsOneWidget);
@@ -309,7 +316,7 @@ void main() {
         expect(find.text(l10n.blueskyUsernameRequired), findsNothing);
         expect(find.text(l10n.blueskyStatusUnavailableRetry), findsOneWidget);
         expect(
-          find.widgetWithText(TextButton, l10n.blueskySetUpHandle),
+          find.widgetWithText(DivineButton, l10n.blueskySetUpHandle),
           findsNothing,
         );
       },
@@ -335,14 +342,26 @@ void main() {
 
         await tester.tap(find.byType(Switch));
         await tester.pumpAndSettle();
-        expect(find.byType(SnackBarAction), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(DivineSnackbarContainer),
+            matching: find.text(l10n.blueskySetUpHandle),
+          ),
+          findsOneWidget,
+        );
 
         // The root ScaffoldMessenger sits above the Navigator, so the snackbar
         // migrates to the previous route's Scaffold instead of going away.
         router.pop();
         await tester.pumpAndSettle();
         expect(find.text(openSettings), findsOneWidget);
-        expect(find.byType(SnackBarAction), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(DivineSnackbarContainer),
+            matching: find.text(l10n.blueskySetUpHandle),
+          ),
+          findsOneWidget,
+        );
 
         await tester.tap(find.text(l10n.blueskySetUpHandle).last);
         await tester.pumpAndSettle();

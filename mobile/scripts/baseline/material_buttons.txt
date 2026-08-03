@@ -10,7 +10,6 @@
 #   UPDATE_BASELINE=1 bash scripts/check_material_button_ceiling.sh
 lib/app_update/view/update_banner.dart	1
 lib/app_update/view/update_dialog.dart	2
-lib/features/feature_flags/screens/feature_flag_screen.dart	7
 lib/notifications/view/notifications_view.dart	2
 lib/screens/auth/create_account_screen.dart	3
 lib/screens/auth/invite_gate_screen.dart	2
@@ -19,9 +18,7 @@ lib/screens/category_gallery_screen.dart	1
 lib/screens/comments/widgets/comment_input.dart	3
 lib/screens/comments/widgets/comment_options_modal.dart	1
 lib/screens/comments/widgets/comments_header.dart	1
-lib/screens/creator_analytics_screen.dart	2
 lib/screens/curated_list_feed_screen.dart	4
-lib/screens/developer_options_screen.dart	2
 lib/screens/discover_lists_screen.dart	2
 lib/screens/feed/video_feed_page/feed_empty_widget.dart	1
 lib/screens/feed/video_feed_page/feed_error_widget.dart	1
@@ -31,21 +28,13 @@ lib/screens/following/my_following_screen.dart	1
 lib/screens/following/others_following_screen.dart	1
 lib/screens/inbox/conversation/widgets/message_input_bar.dart	1
 lib/screens/inbox/inbox_view.dart	2
-lib/screens/key_management_screen.dart	6
 lib/screens/minor_account_review_screen.dart	1
 lib/screens/profile_setup/view/profile_setup_view.dart	1
 lib/screens/profile_setup/widgets/banner_editing_block.dart	2
 lib/screens/profile_setup/widgets/profile_setup_listeners.dart	2
 lib/screens/profile_setup/widgets/public_key_link.dart	1
 lib/screens/profile_setup/widgets/save_button.dart	1
-lib/screens/relay_diagnostic_screen.dart	6
-lib/screens/relay_settings_screen.dart	10
-lib/screens/safety_settings_screen.dart	4
 lib/screens/search_results/widgets/search_user_tile.dart	1
-lib/screens/settings/account_content_labels_tile.dart	2
-lib/screens/settings/bluesky_settings_screen.dart	1
-lib/screens/settings/invites_screen.dart	3
-lib/screens/settings/nip05_settings_screen.dart	2
 lib/screens/sound_detail_screen.dart	4
 lib/screens/subtitle_editor/subtitle_editor_screen.dart	2
 lib/screens/user_list_people_screen.dart	6

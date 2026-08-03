@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -143,5 +144,165 @@ void main() {
     await tester.pumpAndSettle();
 
     verify(() => service.setCacheLimit(any())).called(1);
+  });
+
+  /// Scrolls the repair button into view and opens its confirmation sheet.
+  Future<void> openRepairSheet(WidgetTester tester) async {
+    final repair = find.text(l10n.settingsStorageRepairButton);
+    await tester.scrollUntilVisible(repair, 200);
+    await tester.ensureVisible(repair);
+    await tester.pumpAndSettle();
+    await tester.tap(repair);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the repair wipe is gated behind a confirmation', (
+    tester,
+  ) async {
+    var recovered = false;
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async {
+        recovered = true;
+        return true;
+      },
+      measureRecoveryFootprint: () async => 42 * 1024 * 1024,
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+    await openRepairSheet(tester);
+
+    expect(find.text(l10n.settingsStorageRepairConfirmTitle), findsOneWidget);
+    expect(recovered, isFalse);
+
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(recovered, isTrue);
+    expect(find.text(l10n.settingsStorageRepairSuccess), findsOneWidget);
+  });
+
+  testWidgets('the confirmation sheet reports what the repair frees', (
+    tester,
+  ) async {
+    final cubit = StorageCubit(
+      service: service,
+      measureRecoveryFootprint: () async => 42 * 1024 * 1024,
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    // The size belongs to the decision, not to the screen — nothing is
+    // measured or shown until the sheet opens.
+    expect(
+      find.text(l10n.settingsStorageRepairFootprint('42 MB')),
+      findsNothing,
+    );
+
+    await openRepairSheet(tester);
+
+    expect(
+      find.text(l10n.settingsStorageRepairFootprint('42 MB')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a failed measurement leaves the sheet usable without a size', (
+    tester,
+  ) async {
+    var recovered = false;
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async {
+        recovered = true;
+        return true;
+      },
+      measureRecoveryFootprint: () async => throw Exception('boom'),
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+    await openRepairSheet(tester);
+
+    expect(find.text(l10n.settingsStorageRepairConfirmTitle), findsOneWidget);
+    expect(find.text(l10n.settingsStorageMeasuring), findsNothing);
+
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(recovered, isTrue);
+  });
+
+  // The statuses are sticky, so a listener that matched the cache branch
+  // first would keep re-announcing "Cache cleared" for every later outcome.
+  testWidgets('announces the repair outcome after the cache was cleared', (
+    tester,
+  ) async {
+    final announcements = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+      SystemChannels.accessibility,
+      (message) async {
+        if (message is Map) {
+          final data = message['data'] as Map<Object?, Object?>?;
+          final text = data?['message'];
+          if (text is String) announcements.add(text);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger
+          .setMockDecodedMessageHandler<Object?>(
+            SystemChannels.accessibility,
+            null,
+          ),
+    );
+    when(service.clearCaches).thenAnswer((_) async {});
+
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async => true,
+      measureRecoveryFootprint: () async => 0,
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text(l10n.settingsStorageClearButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.settingsStorageClearConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(announcements, [l10n.settingsStorageCleared]);
+
+    await openRepairSheet(tester);
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(announcements.last, l10n.settingsStorageRepairSuccess);
+  });
+
+  testWidgets('a failed repair says so on the screen', (tester) async {
+    final cubit = StorageCubit(
+      service: service,
+      recoverAllCaches: () async => false,
+      measureRecoveryFootprint: () async => 0,
+    )..loadCacheSize();
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(wrap(cubit));
+    await tester.pumpAndSettle();
+    await openRepairSheet(tester);
+
+    await tester.tap(find.text(l10n.settingsStorageRepairConfirmAction));
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.settingsStorageRepairFailure), findsOneWidget);
   });
 }

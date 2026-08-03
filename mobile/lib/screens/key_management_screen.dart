@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/authentication_source.dart';
@@ -65,8 +64,10 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               const _NpubDisplayBlock(),
               const SizedBox(height: 24),
 
-              // What are Nostr keys explanation
-              _buildExplanationCard(),
+              DivineInfoCard(
+                title: context.l10n.keyManagementWhatAreKeys,
+                message: context.l10n.keyManagementExplanation,
+              ),
               const SizedBox(height: 24),
 
               // Protected minors (#182) cannot export their nsec or swap the
@@ -90,189 +91,59 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     );
   }
 
-  Widget _buildExplanationCard() {
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const DivineIcon(
-                icon: DivineIconName.info,
-                color: VineTheme.vineGreen,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                l10n.keyManagementWhatAreKeys,
-                style: const TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.keyManagementExplanation,
-            style: TextStyle(
-              color: context.vineColors.onSurfaceVariant,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildImportSection(BuildContext context, nostrService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           context.l10n.keyManagementImportTitle,
-          style: TextStyle(
+          style: VineTheme.titleMediumFont(
             color: context.vineColors.primaryText,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           context.l10n.keyManagementImportSubtitle,
-          style: TextStyle(
+          style: VineTheme.bodyMediumFont(
             color: context.vineColors.onSurfaceMuted,
-            fontSize: 14,
-            height: 1.4,
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: context.vineColors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.vineColors.card),
+        DivineTextField(
+          controller: _importController,
+          labelText: 'nsec1...',
+          minLines: 1,
+          maxLines: 3,
+          enabled: !_isProcessing,
+          autocorrect: false,
+          textCapitalization: TextCapitalization.none,
+          spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
+          filled: true,
+          suffixIcon: DivineIconButton(
+            icon: DivineIconName.clipboard,
+            size: DivineIconButtonSize.small,
+            backgroundColor: VineTheme.transparent,
+            foregroundColor: context.vineColors.onSurfaceVariant,
+            showShadow: false,
+            tooltip: context.l10n.keyManagementPasteKey,
+            onPressed: _isProcessing ? null : _pasteKeyFromClipboard,
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _importController,
-                style: TextStyle(
-                  color: context.vineColors.primaryText,
-                  fontSize: 14,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'nsec1...',
-                  hintStyle: TextStyle(color: context.vineColors.mutedText),
-                  filled: true,
-                  fillColor: context.vineColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: context.vineColors.card,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: context.vineColors.card,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: VineTheme.vineGreen),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      Icons.paste,
-                      color: context.vineColors.secondaryText,
-                    ),
-                    onPressed: () async {
-                      final data = await Clipboard.getData('text/plain');
-                      if (data?.text != null) {
-                        _importController.text = data!.text!.trim();
-                      }
-                    },
-                  ),
-                ),
-                maxLines: 3,
-                enabled: !_isProcessing,
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isProcessing
-                      ? null
-                      : () => _importKey(context, nostrService),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: VineTheme.whiteText,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: _isProcessing
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.vineColors.primaryText,
-                          ),
-                        )
-                      : Text(
-                          context.l10n.keyManagementImportButton,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: VineTheme.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: VineTheme.warning.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const DivineIcon(
-                      icon: DivineIconName.warning,
-                      color: VineTheme.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        context.l10n.keyManagementImportWarning,
-                        style: TextStyle(
-                          color: context.vineColors.onSurfaceVariant,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        ),
+        const SizedBox(height: 12),
+        DivineInfoCard(
+          icon: DivineIconName.warning,
+          tone: DivineInfoCardTone.warning,
+          compact: true,
+          message: context.l10n.keyManagementImportWarning,
+        ),
+        const SizedBox(height: 16),
+        DivineButton(
+          label: context.l10n.keyManagementImportButton,
+          expanded: true,
+          isLoading: _isProcessing,
+          onPressed: _isProcessing
+              ? null
+              : () => _importKey(context, nostrService),
         ),
       ],
     );
@@ -290,96 +161,43 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       children: [
         Text(
           context.l10n.keyManagementBackupTitle,
-          style: TextStyle(
+          style: VineTheme.titleMediumFont(
             color: context.vineColors.primaryText,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           context.l10n.keyManagementBackupSubtitle,
-          style: TextStyle(
+          style: VineTheme.bodyMediumFont(
             color: context.vineColors.onSurfaceMuted,
-            fontSize: 14,
-            height: 1.4,
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: context.vineColors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.vineColors.card),
+        if (canExportLocalNsec) ...[
+          DivineInfoCard(
+            icon: DivineIconName.shieldCheck,
+            tone: DivineInfoCardTone.error,
+            compact: true,
+            message: context.l10n.keyManagementNeverShare,
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              if (canExportLocalNsec) ...[
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _isProcessing ? null : () => _exportKey(context),
-                    icon: DivineIcon(
-                      icon: DivineIconName.copy,
-                      size: 20,
-                      color: context.vineColors.primaryText,
-                    ),
-                    label: Text(
-                      context.l10n.keyManagementCopyNsec,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: VineTheme.whiteText,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: VineTheme.error.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: VineTheme.error.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.security,
-                        color: VineTheme.error,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          context.l10n.keyManagementNeverShare,
-                          style: TextStyle(
-                            color: context.vineColors.onSurfaceVariant,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else if (showKeycastRemoteSigningInfo)
-                const KeycastKeyExportCard(),
-            ],
+          const SizedBox(height: 16),
+          DivineButton(
+            label: context.l10n.keyManagementCopyNsec,
+            leadingIcon: DivineIconName.copy,
+            expanded: true,
+            onPressed: _isProcessing ? null : () => _exportKey(context),
           ),
-        ),
+        ] else if (showKeycastRemoteSigningInfo)
+          const KeycastKeyExportCard(),
       ],
     );
+  }
+
+  Future<void> _pasteKeyFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim();
+    if (text == null || text.isEmpty) return;
+    _importController.text = text;
   }
 
   Future<void> _importKey(BuildContext context, nostrService) async {
@@ -387,9 +205,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
     if (nsec.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.keyManagementPasteKey),
-          backgroundColor: VineTheme.warning,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.keyManagementPasteKey,
+          error: true,
         ),
       );
       return;
@@ -397,44 +215,53 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
     if (!nsec.startsWith('nsec1')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.keyManagementInvalidFormat),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.keyManagementInvalidFormat,
+          error: true,
         ),
       );
       return;
     }
 
     // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
+    final confirmed = await VineBottomSheet.show<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: context.vineColors.card,
-        title: Text(
-          dialogContext.l10n.keyManagementConfirmImportTitle,
-          style: TextStyle(color: context.vineColors.primaryText),
-        ),
-        content: Text(
-          dialogContext.l10n.keyManagementConfirmImportBody,
-          style: TextStyle(color: context.vineColors.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => dialogContext.pop(false),
-            child: Text(
-              dialogContext.l10n.reportCancel,
-              style: const TextStyle(color: VineTheme.vineGreen),
+      scrollable: false,
+      contentTitle: context.l10n.keyManagementConfirmImportTitle,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text(
+            context.l10n.keyManagementConfirmImportBody,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurfaceVariant,
             ),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.vineGreen,
-            ),
-            onPressed: () => dialogContext.pop(true),
-            child: Text(dialogContext.l10n.keyManagementImportConfirm),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.reportCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.keyManagementImportConfirm,
+                  expanded: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
 
     if (confirmed != true) return;
@@ -468,9 +295,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       if (context.mounted) {
         _importController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.keyManagementImportSuccess),
-            backgroundColor: VineTheme.vineGreen,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.keyManagementImportSuccess,
             duration: const Duration(seconds: 3),
           ),
         );
@@ -480,9 +306,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.keyManagementImportFailed(e)),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.keyManagementImportFailed(e),
+            error: true,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -511,18 +337,17 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.keyManagementExportSuccess),
-            backgroundColor: VineTheme.vineGreen,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.keyManagementExportSuccess,
           ),
         );
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.keyManagementExportFailed(e)),
-            backgroundColor: VineTheme.error,
+          DivineSnackbarContainer.snackBar(
+            context.l10n.keyManagementExportFailed(e),
+            error: true,
           ),
         );
       }
@@ -564,12 +389,12 @@ class _NpubDisplayBlock extends ConsumerWidget {
               ],
             ),
           ),
-          IconButton(
+          DivineIconButton(
+            icon: DivineIconName.copy,
+            backgroundColor: VineTheme.transparent,
+            foregroundColor: context.vineColors.onSurface,
+            showShadow: false,
             tooltip: l10n.keyManagementCopyPublicKeyTooltip,
-            icon: DivineIcon(
-              icon: DivineIconName.copy,
-              color: context.vineColors.onSurface,
-            ),
             onPressed: () => _copyNpub(context, npub),
           ),
         ],
@@ -581,9 +406,9 @@ class _NpubDisplayBlock extends ConsumerWidget {
     final l10n = context.l10n;
     await Clipboard.setData(ClipboardData(text: npub));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.keyManagementPublicKeyCopied)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(l10n.keyManagementPublicKeyCopied),
+    );
   }
 }
 
@@ -595,42 +420,10 @@ class _KeyManagementLockedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VineTheme.vineGreen.withValues(alpha: 0.15),
-        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const DivineIcon(
-            icon: DivineIconName.shieldCheck,
-            color: VineTheme.vineGreen,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: 8,
-              children: [
-                Text(
-                  l10n.keyManagementRestrictedTitle,
-                  style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
-                ),
-                Text(
-                  l10n.keyManagementRestrictedBody,
-                  style: VineTheme.bodyMediumFont(
-                    color: context.vineColors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return DivineInfoCard(
+      icon: DivineIconName.shieldCheck,
+      title: context.l10n.keyManagementRestrictedTitle,
+      message: context.l10n.keyManagementRestrictedBody,
     );
   }
 }

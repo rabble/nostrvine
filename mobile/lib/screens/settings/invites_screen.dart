@@ -9,6 +9,7 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:share_plus/share_plus.dart';
 
 class InvitesScreen extends StatefulWidget {
@@ -32,10 +33,10 @@ class _InvitesScreenState extends State<InvitesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.vineColors.background,
-      appBar: AppBar(
-        // No override: appBarTheme already paints the nav surface, which is
-        // the dark brand green this used to hardcode.
-        title: Text(context.l10n.invitesTitle),
+      appBar: DiVineAppBar(
+        title: context.l10n.invitesTitle,
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
       ),
       body: const InvitesView(),
     );
@@ -58,7 +59,7 @@ class InvitesView extends StatelessWidget {
               InviteStatusLoadingStatus.initial ||
               InviteStatusLoadingStatus.waitingForAuth ||
               InviteStatusLoadingStatus.loading => const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                child: BrandedLoadingIndicator(size: 60),
               ),
               InviteStatusLoadingStatus.error => _ErrorView(
                 onRetry: () => context.read<InviteStatusCubit>().load(),
@@ -95,8 +96,7 @@ class _LoadedView extends StatelessWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             context.l10n.invitesNoneAvailable,
-            style: TextStyle(
-              fontSize: 16,
+            style: VineTheme.bodyLargeFont(
               color: context.vineColors.secondaryText,
             ),
             textAlign: TextAlign.center,
@@ -228,11 +228,14 @@ class _InviteCodeCard extends StatelessWidget {
                 ),
               ),
             ),
-            IconButton(
-              icon: const DivineIcon(
-                icon: DivineIconName.copy,
-                color: VineTheme.vineGreen,
-              ),
+            DivineIconButton(
+              icon: DivineIconName.copy,
+              // Transparent chrome keeps the bare-icon look these card
+              // actions have always had, while the DS widget supplies the
+              // 48px tap target and semantics.
+              backgroundColor: VineTheme.transparent,
+              foregroundColor: VineTheme.vineGreen,
+              showShadow: false,
               tooltip: context.l10n.invitesCopyInvite,
               onPressed: () => ClipboardUtils.copy(
                 context,
@@ -240,11 +243,11 @@ class _InviteCodeCard extends StatelessWidget {
                 message: context.l10n.invitesCopied,
               ),
             ),
-            IconButton(
-              icon: const DivineIcon(
-                icon: DivineIconName.shareFat,
-                color: VineTheme.vineGreen,
-              ),
+            DivineIconButton(
+              icon: DivineIconName.shareFat,
+              backgroundColor: VineTheme.transparent,
+              foregroundColor: VineTheme.vineGreen,
+              showShadow: false,
               tooltip: context.l10n.invitesShareInvite,
               onPressed: () => SharePlus.instance.share(
                 ShareParams(
@@ -310,18 +313,15 @@ class _ErrorView extends StatelessWidget {
         children: [
           Text(
             context.l10n.invitesCouldNotLoad,
-            style: TextStyle(
-              fontSize: 16,
+            style: VineTheme.bodyLargeFont(
               color: context.vineColors.secondaryText,
             ),
           ),
           const SizedBox(height: 16),
-          TextButton(
+          DivineButton(
+            label: context.l10n.invitesRetry,
+            type: DivineButtonType.link,
             onPressed: onRetry,
-            child: Text(
-              context.l10n.invitesRetry,
-              style: const TextStyle(color: VineTheme.vineGreen),
-            ),
           ),
         ],
       ),

@@ -184,5 +184,46 @@ void main() {
         () => filterService.setPreference(any(), ContentFilterPreference.warn),
       ).called(1);
     });
+
+    testWidgets('announces each filter segment as a selectable button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      when(() => ageService.isAdultContentVerified).thenReturn(true);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final l10n = l10nOf(tester);
+      expect(
+        tester.getSemantics(find.text(l10n.contentFiltersShow).first),
+        isSemantics(
+          // The label rides up from the child Text rather than being repeated
+          // in `label:`, so it cannot drift from the rendered string.
+          label: l10n.contentFiltersShow,
+          isButton: true,
+          isSelected: true,
+          isInMutuallyExclusiveGroup: true,
+          hasEnabledState: true,
+          isEnabled: true,
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('announces a locked segment as disabled', (tester) async {
+      final handle = tester.ensureSemantics();
+      when(() => ageService.isAdultContentVerified).thenReturn(false);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final l10n = l10nOf(tester);
+      expect(
+        tester.getSemantics(find.text(l10n.contentFiltersWarn).first),
+        isSemantics(hasEnabledState: true, isEnabled: false),
+      );
+      handle.dispose();
+    });
   });
 }

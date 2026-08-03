@@ -1,6 +1,8 @@
 // ABOUTME: Branded loading indicator using sprite sheet animation
 // ABOUTME: Efficient GPU-based rendering with single texture, cached frames
 
+import 'dart:ui' as ui;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -58,8 +60,36 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
     super.dispose();
   }
 
+  /// Blur radius of the light-mode shadow, as a fraction of `size`, so a 16px
+  /// inline spinner and an 80px full-screen one carry the same weight.
+  static const double _shadowBlurRatio = 0.055;
+
+  /// Downward shadow offset, as a fraction of `size`.
+  static const double _shadowOffsetRatio = 0.025;
+
+  /// Opacity of the shadow against the light surface.
+  static const double _shadowOpacity = 0.4;
+
   @override
   Widget build(BuildContext context) {
+    // The mark is white, which all but disappears on the light palette's
+    // off-white surfaces. A shadow gives it an edge while it stays white.
+    final shadowSprite = Theme.of(context).brightness == Brightness.light
+        ? Image.asset(
+            BrandedLoadingIndicator.spriteAsset,
+            width: widget.size,
+            height: widget.size * BrandedLoadingIndicator.frameCount,
+            fit: BoxFit.fitWidth,
+            color: context.vineColors.onSurface.withValues(
+              alpha: _shadowOpacity,
+            ),
+            colorBlendMode: BlendMode.srcIn,
+            // The mark layer already surfaces a failed sheet.
+            errorBuilder: (context, error, stackTrace) =>
+                const SizedBox.shrink(),
+          )
+        : null;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -71,23 +101,35 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           BrandedLoadingIndicator.frameCount - 1,
         );
 
-        // Calculate the vertical offset to show the correct frame
-        final yOffset = -clampedFrame * widget.size;
+        final mark = _SpriteFrame(
+          size: widget.size,
+          frameIndex: clampedFrame,
+          child: child!,
+        );
 
-        return SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: ClipRect(
-            child: OverflowBox(
-              maxWidth: widget.size,
-              maxHeight: widget.size * BrandedLoadingIndicator.frameCount,
-              alignment: Alignment.topCenter,
-              child: Transform.translate(
-                offset: Offset(0, yOffset),
-                child: child,
+        if (shadowSprite == null) return mark;
+
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Transform.translate(
+              offset: Offset(0, widget.size * _shadowOffsetRatio),
+              // Blurring the sliced frame rather than the full sheet keeps the
+              // filter layer at the indicator's size.
+              child: ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(
+                  sigmaX: widget.size * _shadowBlurRatio,
+                  sigmaY: widget.size * _shadowBlurRatio,
+                ),
+                child: _SpriteFrame(
+                  size: widget.size,
+                  frameIndex: clampedFrame,
+                  child: shadowSprite,
+                ),
               ),
             ),
-          ),
+            mark,
+          ],
         );
       },
       child: Image.asset(
@@ -114,6 +156,41 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Windows the vertically stacked sheet down to a single square frame.
+class _SpriteFrame extends StatelessWidget {
+  const _SpriteFrame({
+    required this.size,
+    required this.frameIndex,
+    required this.child,
+  });
+
+  final double size;
+  final int frameIndex;
+
+  /// The full sheet, sized `size` × `size * frameCount`.
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRect(
+        child: OverflowBox(
+          maxWidth: size,
+          maxHeight: size * BrandedLoadingIndicator.frameCount,
+          alignment: Alignment.topCenter,
+          // Scrolls the sheet up until the wanted frame fills the box.
+          child: Transform.translate(
+            offset: Offset(0, -frameIndex * size),
+            child: child,
+          ),
+        ),
       ),
     );
   }

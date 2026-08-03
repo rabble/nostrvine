@@ -1,0 +1,92 @@
+// ABOUTME: Widget tests for DivineSelectableRow — the single-select row
+// ABOUTME: shared by the language, audio-input and video-shape pickers.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  group(DivineSelectableRow, () {
+    Widget buildSubject({
+      required bool isSelected,
+      String? subtitle,
+      DivineIconName? leadingIcon,
+      VoidCallback? onTap,
+    }) {
+      return MaterialApp(
+        theme: VineTheme.theme,
+        home: Scaffold(
+          body: DivineSelectableRow(
+            title: 'Deutsch',
+            subtitle: subtitle,
+            leadingIcon: leadingIcon,
+            isSelected: isSelected,
+            onTap: onTap ?? () {},
+          ),
+        ),
+      );
+    }
+
+    testWidgets('renders the title', (tester) async {
+      await tester.pumpWidget(buildSubject(isSelected: false));
+
+      expect(find.text('Deutsch'), findsOneWidget);
+    });
+
+    testWidgets('renders the subtitle when given one', (tester) async {
+      await tester.pumpWidget(buildSubject(isSelected: false, subtitle: 'DE'));
+
+      expect(find.text('DE'), findsOneWidget);
+    });
+
+    testWidgets('omits the subtitle when absent', (tester) async {
+      await tester.pumpWidget(buildSubject(isSelected: false));
+
+      expect(tester.widget<ListTile>(find.byType(ListTile)).subtitle, isNull);
+    });
+
+    testWidgets('marks the active row with a check', (tester) async {
+      await tester.pumpWidget(buildSubject(isSelected: true));
+
+      final tile = tester.widget<ListTile>(find.byType(ListTile));
+      expect(tile.selected, isTrue);
+      expect((tile.trailing! as DivineIcon).icon, DivineIconName.check);
+    });
+
+    testWidgets('leaves an inactive row unmarked', (tester) async {
+      await tester.pumpWidget(buildSubject(isSelected: false));
+
+      final tile = tester.widget<ListTile>(find.byType(ListTile));
+      expect(tile.selected, isFalse);
+      expect(tile.trailing, isNull);
+    });
+
+    testWidgets('renders the leading icon when given one', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(isSelected: false, leadingIcon: DivineIconName.globe),
+      );
+
+      final leading =
+          tester.widget<ListTile>(find.byType(ListTile)).leading! as DivineIcon;
+      expect(leading.icon, DivineIconName.globe);
+    });
+
+    testWidgets('omits the leading icon when absent', (tester) async {
+      await tester.pumpWidget(buildSubject(isSelected: false));
+
+      expect(tester.widget<ListTile>(find.byType(ListTile)).leading, isNull);
+    });
+
+    testWidgets('reports taps', (tester) async {
+      var tapped = false;
+      await tester.pumpWidget(
+        buildSubject(isSelected: false, onTap: () => tapped = true),
+      );
+
+      await tester.tap(find.byType(DivineSelectableRow));
+      await tester.pumpAndSettle();
+
+      expect(tapped, isTrue);
+    });
+  });
+}

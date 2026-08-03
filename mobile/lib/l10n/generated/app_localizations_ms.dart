@@ -232,18 +232,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Papar sarikata apabila video menyertainya';
 
   @override
-  String get generalSettingsVideoShape => 'Bentuk Video';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Video segi empat sahaja';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Segi empat dan potret';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Tunjukkan gabungan penuh video Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1915,62 +1904,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Tetapkan semula semua bendera kepada lalai';
 
   @override
-  String get featureFlagResetToDefault => 'Tetapkan semula kepada lalai';
-
-  @override
-  String get featureFlagAppRecovery => 'Pemulihan Apl';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Jika apl ranap atau berkelakuan pelik, cuba kosongkan cache.';
-
-  @override
-  String get featureFlagClearAllCache => 'Kosongkan Semua Cache';
-
-  @override
-  String get featureFlagCacheInfo => 'Maklumat Cache';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Kosongkan Semua Cache?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Ini akan mengosongkan semua data cache termasuk:\n• Pemberitahuan\n• Profil pengguna\n• Penanda buku\n• Fail sementara\n\nAnda perlu log masuk semula. Teruskan?';
-
-  @override
-  String get featureFlagClearCache => 'Kosongkan Cache';
-
-  @override
-  String get featureFlagClearingCache => 'Mengosongkan cache...';
-
-  @override
-  String get featureFlagSuccess => 'Berjaya';
-
-  @override
   String get featureFlagError => 'Ralat';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache berjaya dikosongkan. Sila mulakan semula apl.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Gagal mengosongkan sesetengah item cache. Semak log untuk butiran.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Maklumat Cache';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Jumlah saiz cache: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache merangkumi:\n• Sejarah pemberitahuan\n• Data profil pengguna\n• Lakaran kecil video\n• Fail sementara\n• Indeks pangkalan data';
 
   @override
   String get relaySettingsTitle => 'Relay';
@@ -2613,6 +2547,9 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Tambah pelabel tersuai';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Buang pelabel';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle =>
@@ -10682,6 +10619,42 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Alih keluar klip rosak?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Baiki pemasangan';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Kalau apl kerap crash atau berkelakuan pelik, set semula data setempat biasanya membantu. Klip dan draf anda kekal.';
+
+  @override
+  String get settingsStorageRepairButton => 'Set semula data apl';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'Set semula data apl?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Ini memadamkan pemberitahuan, profil dalam cache, penanda buku dan fail sementara. Klip dan draf anda kekal, tetapi anda akan dilog keluar dan perlu mulakan semula apl.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size akan dipadam';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Set semula';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Menetapkan semula…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Siap — mulakan semula apl untuk selesai.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Tidak semua dapat diset semula. Cuba lagi selepas mulakan semula.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Pengesahan tandatangan';

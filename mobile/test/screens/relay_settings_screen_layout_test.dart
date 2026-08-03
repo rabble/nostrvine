@@ -144,13 +144,13 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    Future<void> openAddDialogAndSubmit(
+    Future<void> openAddSheetAndSubmit(
       WidgetTester tester,
       String url,
       AppLocalizations l10n,
     ) async {
       // The empty-relay state surfaces an "Add custom relay" button; it
-      // opens the same dialog that the populated state's "Add relay" button
+      // opens the same sheet that the populated state's "Add relay" button
       // does. Tap whichever is showing.
       await tester.tap(find.text(l10n.relaySettingsAddCustomRelay));
       await tester.pumpAndSettle();
@@ -158,7 +158,7 @@ void main() {
       await tester.enterText(find.byType(TextField), url);
       await tester.pumpAndSettle();
 
-      // Dialog's confirm button uses relaySettingsAdd ("Add").
+      // The sheet's confirm button uses relaySettingsAdd ("Add").
       await tester.tap(find.text(l10n.relaySettingsAdd));
       await tester.pumpAndSettle();
     }
@@ -170,7 +170,7 @@ void main() {
       await pumpScreen(tester, nostrService: nostrService);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      await openAddDialogAndSubmit(tester, 'ws://attacker.example.com', l10n);
+      await openAddSheetAndSubmit(tester, 'ws://attacker.example.com', l10n);
 
       expect(find.text(l10n.relaySettingsInsecureUrl), findsOneWidget);
       verifyNever(() => nostrService.addRelay(any()));
@@ -185,7 +185,7 @@ void main() {
       await pumpScreen(tester, nostrService: nostrService);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      await openAddDialogAndSubmit(tester, 'wss://relay.example.com', l10n);
+      await openAddSheetAndSubmit(tester, 'wss://relay.example.com', l10n);
 
       verify(() => nostrService.addRelay('wss://relay.example.com')).called(1);
     });
@@ -199,7 +199,7 @@ void main() {
       await pumpScreen(tester, nostrService: nostrService);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      await openAddDialogAndSubmit(tester, 'WSS://relay.example.com', l10n);
+      await openAddSheetAndSubmit(tester, 'WSS://relay.example.com', l10n);
 
       verify(() => nostrService.addRelay('WSS://relay.example.com')).called(1);
     });
@@ -215,7 +215,7 @@ void main() {
       await pumpScreen(tester, nostrService: nostrService);
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      await openAddDialogAndSubmit(tester, 'wss://', l10n);
+      await openAddSheetAndSubmit(tester, 'wss://', l10n);
 
       expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
       expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
@@ -233,7 +233,7 @@ void main() {
         await pumpScreen(tester, nostrService: nostrService);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await openAddDialogAndSubmit(tester, 'https://relay.example.com', l10n);
+        await openAddSheetAndSubmit(tester, 'https://relay.example.com', l10n);
 
         expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
         expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
@@ -248,7 +248,7 @@ void main() {
         await pumpScreen(tester, nostrService: nostrService);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await openAddDialogAndSubmit(
+        await openAddSheetAndSubmit(
           tester,
           'http://attacker.example.com',
           l10n,

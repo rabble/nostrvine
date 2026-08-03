@@ -41,10 +41,8 @@ class _AccountContentLabelsTileView extends StatelessWidget {
           ),
           title: Text(
             context.l10n.contentPreferencesAccountLabels,
-            style: TextStyle(
+            style: VineTheme.titleMediumFont(
               color: context.vineColors.primaryText,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
             ),
           ),
           subtitle: Text(
@@ -56,7 +54,9 @@ class _AccountContentLabelsTileView extends StatelessWidget {
                       )
                       .join(', ')
                 : context.l10n.contentPreferencesAccountLabelsEmpty,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
           trailing: DivineIcon(
             icon: DivineIconName.caretRight,
@@ -73,15 +73,25 @@ class _AccountContentLabelsTileView extends StatelessWidget {
     Set<ContentLabel> current,
   ) async {
     final cubit = context.read<AccountContentLabelsCubit>();
-    final result = await showModalBottomSheet<Set<ContentLabel>>(
+    // Shared between the scroll body and the pinned bottom action, which
+    // VineBottomSheet renders as sibling slots rather than one subtree.
+    final selection = ValueNotifier<Set<ContentLabel>>(Set.of(current));
+    final result = await VineBottomSheet.show<Set<ContentLabel>>(
       context: context,
-      backgroundColor: context.vineColors.card,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      contentTitle: context.l10n.contentPreferencesAccountContentLabels,
+      maxChildSize: 1,
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      // On the title row rather than the header: the header sits above the
+      // divider, which reads as chrome detached from the list it clears.
+      contentTitleTrailing: _ClearAllAction(selection: selection),
+      bottomInput: _AccountLabelDoneButton(selection: selection),
+      buildScrollBody: (scrollController) => _AccountLabelMultiSelect(
+        scrollController: scrollController,
+        selection: selection,
       ),
-      isScrollControlled: true,
-      builder: (_) => _AccountLabelMultiSelect(selected: current),
     );
+    selection.dispose();
 
     if (result != null) {
       await cubit.setLabels(result);
@@ -89,157 +99,108 @@ class _AccountContentLabelsTileView extends StatelessWidget {
   }
 }
 
-class _AccountLabelMultiSelect extends StatefulWidget {
-  const _AccountLabelMultiSelect({required this.selected});
+/// Title-row action that clears the in-progress selection.
+class _ClearAllAction extends StatelessWidget {
+  const _ClearAllAction({required this.selection});
 
-  final Set<ContentLabel> selected;
+  final ValueNotifier<Set<ContentLabel>> selection;
 
   @override
-  State<_AccountLabelMultiSelect> createState() =>
-      _AccountLabelMultiSelectState();
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Set<ContentLabel>>(
+      valueListenable: selection,
+      builder: (context, selected, _) {
+        if (selected.isEmpty) return const SizedBox.shrink();
+        return DivineButton(
+          label: context.l10n.contentPreferencesClearAll,
+          type: DivineButtonType.link,
+          size: DivineButtonSize.small,
+          onPressed: () => selection.value = <ContentLabel>{},
+        );
+      },
+    );
+  }
 }
 
-class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
-  late Set<ContentLabel> _selected;
+/// Pinned bottom action that closes the sheet with the current selection.
+class _AccountLabelDoneButton extends StatelessWidget {
+  const _AccountLabelDoneButton({required this.selection});
+
+  final ValueNotifier<Set<ContentLabel>> selection;
 
   @override
-  void initState() {
-    super.initState();
-    _selected = Set.of(widget.selected);
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Set<ContentLabel>>(
+      valueListenable: selection,
+      builder: (context, selected, _) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: DivineButton(
+            label: selected.isEmpty
+                ? context.l10n.contentPreferencesDoneNoLabels
+                : context.l10n.contentPreferencesDoneCount(selected.length),
+            expanded: true,
+            onPressed: () => Navigator.of(context).pop(selected),
+          ),
+        ),
+      ),
+    );
   }
+}
+
+class _AccountLabelMultiSelect extends StatelessWidget {
+  const _AccountLabelMultiSelect({
+    required this.scrollController,
+    required this.selection,
+  });
+
+  final ValueNotifier<Set<ContentLabel>> selection;
+  final ScrollController scrollController;
 
   void _toggle(ContentLabel label) {
-    setState(() {
-      if (_selected.contains(label)) {
-        _selected.remove(label);
-      } else {
-        _selected.add(label);
-      }
-    });
-  }
-
-  void _clearAll() {
-    setState(() {
-      _selected.clear();
-    });
+    final next = Set.of(selection.value);
+    if (!next.remove(label)) next.add(label);
+    selection.value = next;
   }
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.vineColors.onSurfaceMuted,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      context.l10n.contentPreferencesAccountContentLabels,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: VineTheme.titleLargeFont(
-                        color: context.vineColors.primaryText,
-                      ),
-                    ),
-                  ),
-                  if (_selected.isNotEmpty)
-                    TextButton(
-                      onPressed: _clearAll,
-                      child: Text(
-                        context.l10n.contentPreferencesClearAll,
-                        style: const TextStyle(color: VineTheme.vineGreen),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+    return ValueListenableBuilder<Set<ContentLabel>>(
+      valueListenable: selection,
+      builder: (context, selected, _) => ListView.builder(
+        controller: scrollController,
+        padding: EdgeInsets.zero,
+        itemCount: ContentLabel.values.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
                 context.l10n.contentPreferencesSelectAllThatApply,
-                style: TextStyle(
+                style: VineTheme.bodySmallFont(
                   color: context.vineColors.secondaryText,
-                  fontSize: 13,
+                ),
+              ),
+            );
+          }
+          final label = ContentLabel.values[index - 1];
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: DivineRowCheckbox(
+              state: selected.contains(label)
+                  ? DivineCheckboxState.selected
+                  : DivineCheckboxState.unselected,
+              onChanged: (_) => _toggle(label),
+              label: Text(
+                localizedContentLabelName(context.l10n, label),
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.primaryText,
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: ContentLabel.values.length,
-                itemBuilder: (context, index) {
-                  final label = ContentLabel.values[index];
-                  final isChecked = _selected.contains(label);
-                  return CheckboxListTile(
-                    value: isChecked,
-                    onChanged: (_) => _toggle(label),
-                    title: Text(
-                      localizedContentLabelName(context.l10n, label),
-                      style: TextStyle(
-                        color: context.vineColors.primaryText,
-                        fontSize: 15,
-                      ),
-                    ),
-                    activeColor: VineTheme.vineGreen,
-                    checkColor: VineTheme.whiteText,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    dense: true,
-                  );
-                },
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(_selected),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: VineTheme.whiteText,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      _selected.isEmpty
-                          ? context.l10n.contentPreferencesDoneNoLabels
-                          : context.l10n.contentPreferencesDoneCount(
-                              _selected.length,
-                            ),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

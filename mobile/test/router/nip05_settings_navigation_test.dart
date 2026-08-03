@@ -144,6 +144,10 @@ void main() {
         250,
         scrollable: find.byType(Scrollable),
       );
+      // scrollUntilVisible stops once the row is built, which in a ListView
+      // can still leave it below the viewport edge.
+      await tester.ensureVisible(nip05Tile);
+      await tester.pumpAndSettle();
       await tester.tap(nip05Tile);
       await tester.pumpAndSettle();
 

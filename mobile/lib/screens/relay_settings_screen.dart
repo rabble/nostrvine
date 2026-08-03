@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -103,74 +104,51 @@ class _InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      color: context.vineColors.card,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              DivineIcon(
-                icon: DivineIconName.info,
-                color: context.vineColors.mutedText,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  context.l10n.relaySettingsInfoTitle,
-                  style: TextStyle(
-                    color: context.vineColors.primaryText,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.relaySettingsInfoDescription,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-          Semantics(
-            button: true,
-            label: context.l10n.relaySettingsLearnMoreNostr,
-            child: GestureDetector(
-              onTap: () =>
-                  _launchExternalUrl(context, Uri.parse('https://nostr.com')),
-              child: Text(
-                context.l10n.relaySettingsLearnMoreNostr,
-                style: const TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontSize: 13,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
+      child: DivineInfoCard(
+        tone: DivineInfoCardTone.neutral,
+        compact: true,
+        title: context.l10n.relaySettingsInfoTitle,
+        message: context.l10n.relaySettingsInfoDescription,
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 4,
+          children: [
+            _ExternalLink(
+              label: context.l10n.relaySettingsLearnMoreNostr,
+              url: 'https://nostr.com',
             ),
-          ),
-          const SizedBox(height: 4),
-          Semantics(
-            button: true,
-            label: context.l10n.relaySettingsFindPublicRelays,
-            child: GestureDetector(
-              onTap: () => _launchExternalUrl(
-                context,
-                Uri.parse('https://nostr.co.uk/relays/'),
-              ),
-              child: Text(
-                context.l10n.relaySettingsFindPublicRelays,
-                style: const TextStyle(
-                  color: VineTheme.vineGreen,
-                  fontSize: 13,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
+            _ExternalLink(
+              label: context.l10n.relaySettingsFindPublicRelays,
+              url: 'https://nostr.co.uk/relays/',
             ),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExternalLink extends StatelessWidget {
+  const _ExternalLink({required this.label, required this.url});
+
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () => _launchExternalUrl(context, Uri.parse(url)),
+        child: Text(
+          label,
+          style: VineTheme.bodySmallFont(
+            color: VineTheme.vineGreen,
+          ).copyWith(decoration: TextDecoration.underline),
+        ),
       ),
     );
   }
@@ -193,10 +171,8 @@ class _EmptyRelayList extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             context.l10n.relaySettingsAppNotFunctional,
-            style: TextStyle(
+            style: VineTheme.titleLargeFont(
               color: context.vineColors.primaryText,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
@@ -205,43 +181,23 @@ class _EmptyRelayList extends StatelessWidget {
             child: Text(
               context.l10n.relaySettingsRequiresRelay,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: VineTheme.bodyMediumFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 14,
               ),
             ),
           ),
           const SizedBox(height: 32),
-          ElevatedButton.icon(
+          DivineButton(
+            label: context.l10n.relaySettingsRestoreDefaultRelay,
+            leadingIcon: DivineIconName.arrowCounterClockwise,
             onPressed: () => _restoreDefaultRelay(context),
-            icon: DivineIcon(
-              icon: DivineIconName.arrowCounterClockwise,
-              color: context.vineColors.primaryText,
-            ),
-            label: Text(
-              context.l10n.relaySettingsRestoreDefaultRelay,
-              style: TextStyle(color: context.vineColors.primaryText),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.vineGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            ),
           ),
           const SizedBox(height: 12),
-          ElevatedButton.icon(
+          DivineButton(
+            label: context.l10n.relaySettingsAddCustomRelay,
+            leadingIcon: DivineIconName.plus,
+            type: DivineButtonType.secondary,
             onPressed: () => _showAddRelayDialog(context),
-            icon: DivineIcon(
-              icon: DivineIconName.plus,
-              color: context.vineColors.primaryText,
-            ),
-            label: Text(
-              context.l10n.relaySettingsAddCustomRelay,
-              style: TextStyle(color: context.vineColors.primaryText),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.vineColors.card,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-            ),
           ),
         ],
       ),
@@ -261,46 +217,23 @@ class _RelayList extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           child: Row(
+            spacing: 12,
             children: [
               Expanded(
-                child: ElevatedButton.icon(
+                child: DivineButton(
+                  label: context.l10n.relaySettingsAddRelay,
+                  leadingIcon: DivineIconName.plus,
+                  expanded: true,
                   onPressed: () => _showAddRelayDialog(context),
-                  icon: DivineIcon(
-                    icon: DivineIconName.plus,
-                    color: context.vineColors.primaryText,
-                  ),
-                  label: Text(
-                    context.l10n.relaySettingsAddRelay,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
-                child: ElevatedButton.icon(
+                child: DivineButton(
+                  label: context.l10n.relaySettingsRetry,
+                  leadingIcon: DivineIconName.arrowClockwise,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
                   onPressed: () => _retryConnection(context),
-                  icon: DivineIcon(
-                    icon: DivineIconName.arrowClockwise,
-                    color: context.vineColors.primaryText,
-                  ),
-                  label: Text(
-                    context.l10n.relaySettingsRetry,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.vineColors.card,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
                 ),
               ),
             ],
@@ -333,37 +266,42 @@ class _RelayTile extends ConsumerWidget {
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: VineTheme.transparent),
       child: ExpansionTile(
-        leading: Icon(
-          isConnected ? Icons.cloud_done : Icons.cloud_off,
+        leading: DivineIcon(
+          // The icon set has no cloud pair; connected / not-connected reads
+          // just as clearly on the check-vs-warning pair the rest of this
+          // screen already uses.
+          icon: isConnected
+              ? DivineIconName.checkCircle
+              : DivineIconName.warningCircle,
           color: isConnected ? VineTheme.success : VineTheme.warning,
           size: 20,
         ),
         title: Text(
           relayUrl,
-          style: TextStyle(color: context.vineColors.primaryText, fontSize: 14),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.primaryText,
+          ),
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           statusSummary,
-          style: TextStyle(
+          style: VineTheme.bodySmallFont(
             color: isConnected
                 ? context.vineColors.mutedText
                 : VineTheme.warning,
-            fontSize: 12,
           ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const DivineIcon(
-                icon: DivineIconName.trash,
-                color: VineTheme.error,
-                size: 20,
-              ),
+            DivineIconButton(
+              icon: DivineIconName.trash,
+              size: DivineIconButtonSize.small,
+              backgroundColor: VineTheme.transparent,
+              foregroundColor: VineTheme.error,
+              showShadow: false,
+              tooltip: context.l10n.relaySettingsRemove,
               onPressed: () => _confirmRemoveRelay(context, relayUrl),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
             const SizedBox(width: 8),
             DivineIcon(
@@ -399,7 +337,7 @@ class _RelayDetails extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Text(
           context.l10n.relaySettingsNoStats,
-          style: TextStyle(color: context.vineColors.mutedText, fontSize: 13),
+          style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
         ),
       );
     }
@@ -483,14 +421,14 @@ class _RelayDetails extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               context.l10n.relaySettingsLastError(stats!.lastError!),
-              style: const TextStyle(color: VineTheme.error, fontSize: 12),
+              style: VineTheme.bodySmallFont(color: VineTheme.error),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             if (stats!.lastErrorTime != null)
               Text(
                 _formatTime(context, stats!.lastErrorTime!),
-                style: const TextStyle(color: VineTheme.error, fontSize: 11),
+                style: VineTheme.bodySmallFont(color: VineTheme.error),
               ),
           ],
           _RelayInfoSection(relayUrl: relayUrl, entry: entry),
@@ -521,17 +459,13 @@ class _RelayInfoSection extends StatelessWidget {
               const SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: VineTheme.vineGreen,
-                ),
+                child: BrandedLoadingIndicator(size: 16),
               ),
               const SizedBox(width: 8),
               Text(
                 context.l10n.relaySettingsLoadingRelayInfo,
-                style: TextStyle(
+                style: VineTheme.bodySmallFont(
                   color: context.vineColors.mutedText,
-                  fontSize: 13,
                 ),
               ),
             ],
@@ -548,10 +482,8 @@ class _RelayInfoSection extends StatelessWidget {
         Divider(color: context.vineColors.mutedText, height: 24),
         Text(
           context.l10n.relaySettingsAboutRelay,
-          style: TextStyle(
+          style: VineTheme.labelLargeFont(
             color: context.vineColors.secondaryText,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
@@ -560,10 +492,8 @@ class _RelayInfoSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               capabilities.name!,
-              style: TextStyle(
+              style: VineTheme.titleMediumFont(
                 color: context.vineColors.primaryText,
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -573,9 +503,8 @@ class _RelayInfoSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               capabilities.description!,
-              style: TextStyle(
+              style: VineTheme.bodySmallFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 13,
               ),
             ),
           ),
@@ -592,24 +521,12 @@ class _RelayInfoSection extends StatelessWidget {
             valueColor: context.vineColors.secondaryText,
           ),
         const SizedBox(height: 12),
-        ElevatedButton.icon(
+        DivineButton(
+          label: context.l10n.relaySettingsViewWebsite,
+          leadingIcon: DivineIconName.arrowUpRight,
+          type: DivineButtonType.secondary,
+          size: DivineButtonSize.small,
           onPressed: () => _openRelayWebsite(context, relayUrl),
-          icon: Icon(
-            Icons.open_in_new,
-            size: 16,
-            color: context.vineColors.primaryText,
-          ),
-          label: Text(
-            context.l10n.relaySettingsViewWebsite,
-            style: TextStyle(
-              color: context.vineColors.primaryText,
-              fontSize: 13,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: context.vineColors.card,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
         ),
       ],
     );
@@ -636,25 +553,25 @@ class _StatRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 13),
+            style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
           ),
-          Text(value, style: TextStyle(color: valueColor, fontSize: 13)),
+          Text(value, style: VineTheme.bodySmallFont(color: valueColor)),
         ],
       ),
     );
   }
 }
 
-/// Add-relay dialog. The `TextEditingController` lives in this widget per
+/// Add-relay sheet body. The `TextEditingController` lives in this widget per
 /// the hybrid pattern (controllers are UI plumbing, not Cubit state).
-class _AddRelayDialog extends StatefulWidget {
-  const _AddRelayDialog();
+class _AddRelaySheet extends StatefulWidget {
+  const _AddRelaySheet();
 
   @override
-  State<_AddRelayDialog> createState() => _AddRelayDialogState();
+  State<_AddRelaySheet> createState() => _AddRelaySheetState();
 }
 
-class _AddRelayDialogState extends State<_AddRelayDialog> {
+class _AddRelaySheetState extends State<_AddRelaySheet> {
   final _controller = TextEditingController();
 
   @override
@@ -665,21 +582,27 @@ class _AddRelayDialogState extends State<_AddRelayDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: context.vineColors.card,
-      title: Text(
-        context.l10n.relaySettingsAddRelayTitle,
-        style: TextStyle(color: context.vineColors.primaryText),
+    return Padding(
+      // The sheet is fixed-mode, so nothing else lifts it clear of the
+      // keyboard — without the view inset the URL field and both buttons sit
+      // underneath it the moment the field takes focus.
+      padding: EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        4 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      content: Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
         children: [
           Text(
             context.l10n.relaySettingsAddRelayPrompt,
-            style: TextStyle(color: context.vineColors.mutedText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.mutedText,
+            ),
           ),
-          const SizedBox(height: 8),
           Semantics(
             button: true,
             label: context.l10n.relaySettingsBrowsePublicRelays,
@@ -690,52 +613,53 @@ class _AddRelayDialogState extends State<_AddRelayDialog> {
               ),
               child: Text(
                 context.l10n.relaySettingsBrowsePublicRelays,
-                style: const TextStyle(
+                style: VineTheme.bodySmallFont(
                   color: VineTheme.vineGreen,
-                  fontSize: 13,
-                  decoration: TextDecoration.underline,
-                ),
+                ).copyWith(decoration: TextDecoration.underline),
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: 8),
+          DivineTextField(
             controller: _controller,
+            labelText: 'wss://relay.example.com',
+            keyboardType: TextInputType.url,
+            textCapitalization: TextCapitalization.none,
             autofocus: true,
-            style: TextStyle(color: context.vineColors.primaryText),
-            decoration: InputDecoration(
-              hintText: 'wss://relay.example.com',
-              hintStyle: TextStyle(color: context.vineColors.mutedText),
-              border: const OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: context.vineColors.card),
+            filled: true,
+            textInputAction: .done,
+            onSubmitted: (_) {
+              final url = _controller.text.trim();
+              if (url.isNotEmpty) Navigator.pop(context, url);
+            },
+            spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            spacing: 16,
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.relaySettingsCancel,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => Navigator.pop(context),
+                ),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.vineGreen),
+              Expanded(
+                child: DivineButton(
+                  label: context.l10n.relaySettingsAdd,
+                  expanded: true,
+                  onPressed: () {
+                    final url = _controller.text.trim();
+                    if (url.isNotEmpty) Navigator.pop(context, url);
+                  },
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            context.l10n.relaySettingsCancel,
-            style: TextStyle(color: context.vineColors.secondaryText),
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            final url = _controller.text.trim();
-            if (url.isNotEmpty) Navigator.pop(context, url);
-          },
-          child: Text(
-            context.l10n.relaySettingsAdd,
-            style: const TextStyle(color: VineTheme.vineGreen),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -749,9 +673,11 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
   final messenger = ScaffoldMessenger.of(context);
   final l10n = context.l10n;
 
-  final relayUrl = await showDialog<String>(
+  final relayUrl = await VineBottomSheet.show<String>(
     context: context,
-    builder: (_) => const _AddRelayDialog(),
+    scrollable: false,
+    contentTitle: l10n.relaySettingsAddRelayTitle,
+    children: const [_AddRelaySheet()],
   );
   if (relayUrl == null || relayUrl.isEmpty) return;
 
@@ -759,9 +685,8 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
   switch (outcome) {
     case AddRelayOutcome.added:
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(l10n.relaySettingsAddedRelay(relayUrl)),
-          backgroundColor: VineTheme.success,
+        DivineSnackbarContainer.snackBar(
+          l10n.relaySettingsAddedRelay(relayUrl),
         ),
       );
       Log.info(
@@ -782,35 +707,45 @@ Future<void> _confirmRemoveRelay(BuildContext context, String relayUrl) async {
   final messenger = ScaffoldMessenger.of(context);
   final l10n = context.l10n;
 
-  final confirm = await showDialog<bool>(
+  final confirm = await VineBottomSheet.show<bool>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
-      backgroundColor: context.vineColors.card,
-      title: Text(
-        l10n.relaySettingsRemoveRelayTitle,
-        style: TextStyle(color: context.vineColors.primaryText),
-      ),
-      content: Text(
-        l10n.relaySettingsRemoveRelayMessage(relayUrl),
-        style: TextStyle(color: context.vineColors.secondaryText),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext, false),
-          child: Text(
-            l10n.relaySettingsCancel,
-            style: TextStyle(color: context.vineColors.secondaryText),
+    scrollable: false,
+    contentTitle: l10n.relaySettingsRemoveRelayTitle,
+    children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+        child: Text(
+          l10n.relaySettingsRemoveRelayMessage(relayUrl),
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
           ),
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext, true),
-          child: Text(
-            l10n.relaySettingsRemove,
-            style: const TextStyle(color: VineTheme.error),
-          ),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+        child: Row(
+          spacing: 16,
+          children: [
+            Expanded(
+              child: DivineButton(
+                label: l10n.relaySettingsCancel,
+                type: DivineButtonType.secondary,
+                expanded: true,
+                onPressed: () => Navigator.pop(context, false),
+              ),
+            ),
+            Expanded(
+              child: DivineButton(
+                label: l10n.relaySettingsRemove,
+                type: DivineButtonType.error,
+                expanded: true,
+                onPressed: () => Navigator.pop(context, true),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
+      ),
+    ],
   );
   if (confirm != true) return;
 
@@ -818,9 +753,8 @@ Future<void> _confirmRemoveRelay(BuildContext context, String relayUrl) async {
   switch (outcome) {
     case RemoveRelayOutcome.removed:
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(l10n.relaySettingsRemovedRelay(relayUrl)),
-          backgroundColor: VineTheme.warning,
+        DivineSnackbarContainer.snackBar(
+          l10n.relaySettingsRemovedRelay(relayUrl),
         ),
       );
       Log.info(
@@ -838,21 +772,15 @@ Future<void> _retryConnection(BuildContext context) async {
   final l10n = context.l10n;
 
   messenger.showSnackBar(
-    SnackBar(
-      content: Text(l10n.relaySettingsForcingReconnection),
-      backgroundColor: VineTheme.warning,
-    ),
+    DivineSnackbarContainer.snackBar(l10n.relaySettingsForcingReconnection),
   );
 
   final outcome = await cubit.retryConnection();
   switch (outcome.kind) {
     case RetryConnectionOutcomeKind.connected:
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.relaySettingsConnectedToRelays(outcome.connectedCount),
-          ),
-          backgroundColor: VineTheme.success,
+        DivineSnackbarContainer.snackBar(
+          l10n.relaySettingsConnectedToRelays(outcome.connectedCount),
         ),
       );
     case RetryConnectionOutcomeKind.notConnected:
@@ -870,11 +798,8 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
   switch (outcome) {
     case RestoreDefaultRelayOutcome.restored:
       messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.relaySettingsRestoredDefault(cubit.defaultRelayUrl),
-          ),
-          backgroundColor: VineTheme.success,
+        DivineSnackbarContainer.snackBar(
+          l10n.relaySettingsRestoredDefault(cubit.defaultRelayUrl),
         ),
       );
       Log.info('Restored default relay', name: 'RelaySettingsScreen');
@@ -909,7 +834,7 @@ Future<void> _launchExternalUrl(BuildContext context, Uri url) async {
 
 void _showError(ScaffoldMessengerState messenger, String message) {
   messenger.showSnackBar(
-    SnackBar(content: Text(message), backgroundColor: VineTheme.error),
+    DivineSnackbarContainer.snackBar(message, error: true),
   );
 }
 

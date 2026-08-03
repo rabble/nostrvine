@@ -12,6 +12,8 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_launch_mode.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Displays the directory of approved third-party apps.
 class AppsDirectoryScreen extends ConsumerWidget {
@@ -62,7 +64,7 @@ class _AppsDirectoryContent extends StatelessWidget {
             builder: (context, state) {
               return switch (state.status) {
                 AppsDirectoryStatus.initial || AppsDirectoryStatus.loading =>
-                  const Center(child: CircularProgressIndicator()),
+                  const Center(child: BrandedLoadingIndicator(size: 60)),
                 AppsDirectoryStatus.error => _AppsDirectoryMessage(
                   title: context.l10n.appsDirectoryErrorTitle,
                   subtitle: context.l10n.appsDirectoryErrorSubtitle,
@@ -79,6 +81,8 @@ class _AppsDirectoryContent extends StatelessWidget {
                         context.read<AppsDirectoryCubit>().refreshApps(),
                   ),
                 AppsDirectoryStatus.loaded => RefreshIndicator(
+                  color: VineTheme.onPrimary,
+                  backgroundColor: VineTheme.vineGreen,
                   onRefresh: () =>
                       context.read<AppsDirectoryCubit>().refreshApps(),
                   child: ListView.builder(
@@ -137,69 +141,70 @@ class _AppsDirectoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Ink(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: context.vineColors.card,
+    // Name, tagline and description are one logical row, so they merge into a
+    // single announcement rather than three stops.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Material(
+            color: VineTheme.transparent,
+            child: InkWell(
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: context.vineColors.outlineMuted),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _AppsDirectoryIcon(iconUrl: app.iconUrl),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        app.name,
-                        style: TextStyle(
-                          color: context.vineColors.primaryText,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        app.tagline,
-                        style: const TextStyle(
-                          color: VineTheme.vineGreen,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        app.description,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: context.vineColors.mutedText,
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
+              onTap: onTap,
+              child: Ink(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.vineColors.card,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: context.vineColors.outlineMuted),
                 ),
-                const SizedBox(width: 12),
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: DivineIcon(
-                    icon: DivineIconName.caretRight,
-                    color: context.vineColors.mutedText,
-                  ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _AppsDirectoryIcon(iconUrl: app.iconUrl),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            app.name,
+                            style: VineTheme.titleMediumFont(
+                              color: context.vineColors.primaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            app.tagline,
+                            style: VineTheme.labelLargeFont(
+                              color: VineTheme.vineGreen,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            app.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: VineTheme.bodyMediumFont(
+                              color: context.vineColors.mutedText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: DivineIcon(
+                        icon: DivineIconName.caretRight,
+                        color: context.vineColors.mutedText,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -234,12 +239,12 @@ class _AppsDirectoryIcon extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Image.network(
-        iconUrl,
+      child: VineCachedImage(
+        imageUrl: iconUrl,
         width: 56,
         height: 56,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => fallback,
+        placeholder: (_, _) => fallback,
+        errorWidget: (_, _, _) => fallback,
       ),
     );
   }
@@ -269,19 +274,16 @@ class _AppsDirectoryMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: VineTheme.headlineSmallFont(
                 color: context.vineColors.primaryText,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: VineTheme.bodyLargeFont(
                 color: context.vineColors.mutedText,
-                fontSize: 15,
               ),
             ),
             const SizedBox(height: 16),
@@ -300,31 +302,11 @@ class _AppsDirectoryIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.vineColors.card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.vineColors.outlineMuted),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.l10n.appsDirectoryIntroTitle,
-              style: VineTheme.headlineSmallFont(
-                color: context.vineColors.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              context.l10n.appsDirectoryIntroBody,
-              style: VineTheme.bodyLargeFont(
-                color: context.vineColors.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      child: DivineInfoCard(
+        icon: null,
+        tone: DivineInfoCardTone.neutral,
+        title: context.l10n.appsDirectoryIntroTitle,
+        message: context.l10n.appsDirectoryIntroBody,
       ),
     );
   }
@@ -344,19 +326,16 @@ class _AppsDirectoryUnsupportedMessage extends StatelessWidget {
             Text(
               context.l10n.appsDirectoryUnsupportedTitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: VineTheme.headlineSmallFont(
                 color: context.vineColors.primaryText,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               context.l10n.appsDirectoryUnsupportedSubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: VineTheme.bodyLargeFont(
                 color: context.vineColors.mutedText,
-                fontSize: 15,
               ),
             ),
           ],

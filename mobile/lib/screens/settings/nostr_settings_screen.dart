@@ -58,31 +58,36 @@ class NostrSettingsScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   context.l10n.nostrSettingsIntro,
-                  style: TextStyle(
+                  style: VineTheme.bodyMediumFont(
                     color: context.vineColors.mutedText,
-                    fontSize: 14,
                   ),
                 ),
               ),
 
               // Network section
-              _SectionHeader(title: context.l10n.nostrSettingsSectionNetwork),
+              DivineSectionHeader(context.l10n.nostrSettingsSectionNetwork),
               if (showAdvancedRelaySettings) ...[
-                _SettingsTile(
-                  icon: Icons.hub,
+                DivineListTile(
+                  leading: const Icon(Icons.hub, color: VineTheme.vineGreen),
                   title: context.l10n.nostrSettingsRelays,
                   subtitle: context.l10n.nostrSettingsRelaysSubtitle,
                   onTap: () => context.push(RelaySettingsScreen.path),
                 ),
-                _SettingsTile(
-                  icon: Icons.troubleshoot,
+                DivineListTile(
+                  leading: const Icon(
+                    Icons.troubleshoot,
+                    color: VineTheme.vineGreen,
+                  ),
                   title: context.l10n.nostrSettingsRelayDiagnostics,
                   subtitle: context.l10n.nostrSettingsRelayDiagnosticsSubtitle,
                   onTap: () => context.push(RelayDiagnosticScreen.path),
                 ),
               ],
-              _SettingsTile(
-                icon: Icons.cloud_upload,
+              DivineListTile(
+                leading: const Icon(
+                  Icons.cloud_upload,
+                  color: VineTheme.vineGreen,
+                ),
                 title: context.l10n.nostrSettingsMediaServers,
                 subtitle: context.l10n.nostrSettingsMediaServersSubtitle,
                 onTap: () => context.push(BlossomSettingsScreen.path),
@@ -91,30 +96,35 @@ class NostrSettingsScreen extends ConsumerWidget {
 
               // Account section
               if (isAuthenticated) ...[
-                _SectionHeader(title: context.l10n.nostrSettingsSectionAccount),
-                _SettingsTile(
-                  divineIcon: DivineIconName.key,
+                DivineSectionHeader(context.l10n.nostrSettingsSectionAccount),
+                DivineListTile(
+                  icon: DivineIconName.key,
+                  iconColor: VineTheme.vineGreen,
                   title: context.l10n.nostrSettingsKeyManagement,
                   subtitle: context.l10n.nostrSettingsKeyManagementSubtitle,
                   onTap: () => context.push(KeyManagementScreen.path),
                 ),
                 const _ClientAttributionToggle(),
-                _SettingsTile(
-                  icon: Icons.alternate_email,
+                DivineListTile(
+                  leading: const Icon(
+                    Icons.alternate_email,
+                    color: VineTheme.vineGreen,
+                  ),
                   title: context.l10n.nostrSettingsNip05Address,
                   subtitle: context.l10n.nostrSettingsNip05AddressSubtitle,
                   onTap: () => context.pushNamed(Nip05SettingsScreen.routeName),
                 ),
                 _RemoveKeysTile(ref: ref),
-                _SectionHeader(
-                  title: context.l10n.nostrSettingsSectionDangerZone,
+                DivineSectionHeader(
+                  context.l10n.nostrSettingsSectionDangerZone,
                 ),
-                _SettingsTile(
-                  divineIcon: DivineIconName.trash,
+                DivineListTile(
+                  icon: DivineIconName.trash,
                   title: context.l10n.nostrSettingsDeleteAccount,
                   subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
                   iconColor: VineTheme.error,
                   titleColor: VineTheme.error,
+                  trailingColor: VineTheme.error,
                   onTap: () => startAccountDeletionFlow(
                     context: context,
                     ref: ref,
@@ -137,12 +147,12 @@ class _RemoveKeysTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SettingsTile(
-      icon: Icons.key_off,
+    return DivineListTile(
+      leading: const Icon(Icons.key_off, color: VineTheme.warning),
       title: context.l10n.nostrSettingsRemoveKeys,
       subtitle: context.l10n.nostrSettingsRemoveKeysSubtitle,
       onTap: () => _handleRemoveLocalAccount(context, ref),
-      iconColor: VineTheme.warning,
+      trailingColor: VineTheme.warning,
       titleColor: VineTheme.warning,
     );
   }
@@ -211,7 +221,10 @@ class _ClientAttributionToggle extends ConsumerWidget {
     final enabledAsync = ref.watch(nip89ClientTagEnabledProvider);
     final enabled = enabledAsync.value ?? true;
 
-    return SwitchListTile.adaptive(
+    return DivineSwitchTile(
+      leadingIcon: DivineIconName.globe,
+      title: context.l10n.nostrSettingsClientAttribution,
+      subtitle: context.l10n.nostrSettingsClientAttributionSubtitle,
       value: enabled,
       onChanged: enabledAsync.isLoading
           ? null
@@ -219,20 +232,6 @@ class _ClientAttributionToggle extends ConsumerWidget {
               await Nip89ClientTag.setEnabled(enabled: value);
               ref.invalidate(nip89ClientTagEnabledProvider);
             },
-      title: Text(
-        context.l10n.nostrSettingsClientAttribution,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        context.l10n.nostrSettingsClientAttributionSubtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.travel_explore, color: VineTheme.vineGreen),
     );
   }
 }
@@ -244,8 +243,9 @@ class _SignatureVerificationTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final policy = ref.watch(nostrSignatureVerificationPolicyProvider);
 
-    return _SettingsTile(
-      divineIcon: DivineIconName.shieldCheck,
+    return DivineListTile(
+      icon: DivineIconName.shieldCheck,
+      iconColor: VineTheme.vineGreen,
       title: context.l10n.nostrSettingsSignatureVerification,
       subtitle: _policySubtitle(context, policy),
       onTap: () => Navigator.of(context).push(
@@ -281,44 +281,21 @@ class _SignatureVerificationPolicyScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
                   context.l10n.nostrSettingsSignatureVerificationIntro,
-                  style: TextStyle(
+                  style: VineTheme.bodyMediumFont(
                     color: context.vineColors.mutedText,
-                    fontSize: 14,
                   ),
                 ),
               ),
-              RadioGroup<NostrSignatureVerificationPolicy>(
-                groupValue: current,
-                onChanged: (value) {
-                  if (value == null || value == current) return;
-                  unawaited(_setPolicy(ref, value));
-                },
-                child: Column(
-                  children: [
-                    for (final policy
-                        in NostrSignatureVerificationPolicy.values)
-                      RadioListTile<NostrSignatureVerificationPolicy>(
-                        value: policy,
-                        activeColor: VineTheme.vineGreen,
-                        title: Text(
-                          _policyTitle(context, policy),
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _policySubtitle(context, policy),
-                          style: TextStyle(
-                            color: context.vineColors.mutedText,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                  ],
+              for (final policy in NostrSignatureVerificationPolicy.values)
+                DivineSelectableRow(
+                  title: _policyTitle(context, policy),
+                  subtitle: _policySubtitle(context, policy),
+                  isSelected: policy == current,
+                  onTap: () {
+                    if (policy == current) return;
+                    unawaited(_setPolicy(ref, policy));
+                  },
                 ),
-              ),
             ],
           ),
         ),
@@ -363,76 +340,5 @@ String _policySubtitle(
       return context.l10n.nostrSettingsSignatureVerificationUntrustedSubtitle;
     case NostrSignatureVerificationPolicy.nonDivineRelays:
       return context.l10n.nostrSettingsSignatureVerificationNonDivineSubtitle;
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.icon,
-    this.divineIcon,
-    this.iconColor,
-    this.titleColor,
-  }) : assert(icon != null || divineIcon != null);
-
-  final IconData? icon;
-  final DivineIconName? divineIcon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final Color? iconColor;
-  final Color? titleColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: divineIcon != null
-          ? DivineIcon(
-              icon: divineIcon!,
-              color: iconColor ?? VineTheme.vineGreen,
-            )
-          : Icon(icon, color: iconColor ?? VineTheme.vineGreen),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: titleColor ?? context.vineColors.primaryText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: context.vineColors.mutedText, fontSize: 14),
-      ),
-      trailing: DivineIcon(
-        icon: DivineIconName.caretRight,
-        color: context.vineColors.mutedText,
-      ),
-      onTap: onTap,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
-    );
   }
 }

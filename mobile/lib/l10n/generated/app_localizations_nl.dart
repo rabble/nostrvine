@@ -233,18 +233,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Toon ondertiteling als video\'s die hebben';
 
   @override
-  String get generalSettingsVideoShape => 'Videovorm';
-
-  @override
   String get generalSettingsVideoShapeSquareOnly => 'Alleen vierkante video\'s';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Vierkant en portret';
-
-  @override
-  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Toon de volledige mix van Divine-video\'s';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
@@ -1909,62 +1898,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Alle flags terugzetten naar standaard';
 
   @override
-  String get featureFlagResetToDefault => 'Terug naar standaard';
-
-  @override
-  String get featureFlagAppRecovery => 'App-herstel';
-
-  @override
-  String get featureFlagAppRecoveryDescription =>
-      'Als de app crasht of gek doet, probeer dan de cache te wissen.';
-
-  @override
-  String get featureFlagClearAllCache => 'Alle cache wissen';
-
-  @override
-  String get featureFlagCacheInfo => 'Cache-info';
-
-  @override
-  String get featureFlagClearCacheTitle => 'Alle cache wissen?';
-
-  @override
-  String get featureFlagClearCacheMessage =>
-      'Dit wist alle gecachte data, waaronder:\n• Meldingen\n• Gebruikersprofielen\n• Bladwijzers\n• Tijdelijke bestanden\n\nJe moet opnieuw inloggen. Doorgaan?';
-
-  @override
-  String get featureFlagClearCache => 'Cache wissen';
-
-  @override
-  String get featureFlagClearingCache => 'Cache wissen...';
-
-  @override
-  String get featureFlagSuccess => 'Gelukt';
-
-  @override
   String get featureFlagError => 'Fout';
-
-  @override
-  String get featureFlagClearCacheSuccess =>
-      'Cache succesvol gewist. Herstart de app.';
-
-  @override
-  String get featureFlagClearCacheFailure =>
-      'Sommige cache-items zijn niet gewist. Check de logs voor details.';
-
-  @override
-  String get featureFlagOk => 'OK';
-
-  @override
-  String get featureFlagCacheInformation => 'Cache-informatie';
-
-  @override
-  String featureFlagTotalCacheSize(String size) {
-    return 'Totale cache-grootte: $size';
-  }
-
-  @override
-  String get featureFlagCacheIncludes =>
-      'Cache bevat:\n• Meldingsgeschiedenis\n• Gebruikersprofieldata\n• Videominiaturen\n• Tijdelijke bestanden\n• Database-indexen';
 
   @override
   String get relaySettingsTitle => 'Relays';
@@ -2602,6 +2536,9 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get safetySettingsAddCustomLabelerListTitle =>
       'Eigen labeler toevoegen';
+
+  @override
+  String get safetySettingsRemoveLabeler => 'Labeler verwijderen';
 
   @override
   String get safetySettingsAddCustomLabelerListSubtitle => 'Voer npub-adres in';
@@ -10669,6 +10606,42 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get settingsStorageRemoveBrokenConfirmTitle =>
       'Kapotte clips verwijderen?';
+
+  @override
+  String get settingsStorageRepairSectionTitle => 'Installatie repareren';
+
+  @override
+  String get settingsStorageRepairDescription =>
+      'Als de app blijft crashen of raar doet, helpt het meestal om de lokale gegevens te resetten. Je clips en concepten blijven staan.';
+
+  @override
+  String get settingsStorageRepairButton => 'App-gegevens resetten';
+
+  @override
+  String get settingsStorageRepairConfirmTitle => 'App-gegevens resetten?';
+
+  @override
+  String get settingsStorageRepairConfirmMessage =>
+      'Dit wist meldingen, gecachte profielen, bladwijzers en tijdelijke bestanden. Je clips en concepten blijven, maar je wordt uitgelogd en moet de app opnieuw starten.';
+
+  @override
+  String settingsStorageRepairFootprint(String size) {
+    return '$size wordt verwijderd';
+  }
+
+  @override
+  String get settingsStorageRepairConfirmAction => 'Resetten';
+
+  @override
+  String get settingsStorageRepairInProgress => 'Bezig met resetten…';
+
+  @override
+  String get settingsStorageRepairSuccess =>
+      'Klaar — start de app opnieuw om af te ronden.';
+
+  @override
+  String get settingsStorageRepairFailure =>
+      'Kon niet alles resetten. Probeer het opnieuw na een herstart.';
 
   @override
   String get nostrSettingsSignatureVerification => 'Handtekeningverificatie';
