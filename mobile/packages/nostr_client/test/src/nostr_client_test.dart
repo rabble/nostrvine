@@ -1786,9 +1786,9 @@ void main() {
         () async {
           final onEvent = subscribeAndCaptureRelayCallback();
 
-          // NIP-09 requires relays to serve deletion requests indefinitely, so a
-          // cold-start flood can deliver an old Kind 5 after a newer one for the
-          // same coordinate.
+          // NIP-09 has relays serve deletion requests indefinitely, so a
+          // cold-start flood can deliver an old Kind 5 after a newer one
+          // for the same coordinate.
           onEvent(
             deletionEvent([
               ['a', '$addressableShortVideoKind:$testPublicKey:clip-1'],
