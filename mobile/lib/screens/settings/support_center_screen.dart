@@ -129,21 +129,16 @@ class SupportCenterScreen extends ConsumerWidget {
       return;
     }
 
-    showDialog(
-      context: context,
-      builder: (context) => BugReportDialog(
-        bugReportService: bugReportService,
-        currentScreen: 'SupportCenterScreen',
-        userPubkey: userPubkey,
-      ),
+    showBugReportSheet(
+      context,
+      bugReportService: bugReportService,
+      currentScreen: 'SupportCenterScreen',
+      userPubkey: userPubkey,
     );
   }
 
   void _showFeatureRequest(BuildContext context, String? userPubkey) {
-    showDialog(
-      context: context,
-      builder: (context) => FeatureRequestDialog(userPubkey: userPubkey),
-    );
+    showFeatureRequestSheet(context, userPubkey: userPubkey);
   }
 
   Future<void> _exportLogs(

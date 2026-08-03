@@ -1,4 +1,4 @@
-// ABOUTME: Cubit backing FeatureRequestDialog — Zendesk submission lifecycle.
+// ABOUTME: Cubit backing the feature request sheet — Zendesk submission.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/feature_request/feature_request_state.dart';
@@ -18,7 +18,7 @@ typedef SubmitFeatureRequestAction =
       String? userPubkey,
     });
 
-/// Cubit backing `FeatureRequestDialog`. Owns only the submission
+/// Cubit backing the feature request sheet. Owns only the submission
 /// lifecycle (`idle / submitting / success / failure`); the four
 /// `TextEditingController`s stay in the View per the hybrid pattern.
 ///

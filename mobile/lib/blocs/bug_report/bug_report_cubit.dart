@@ -1,4 +1,4 @@
-// ABOUTME: Cubit backing BugReportDialog — diagnostics + Zendesk submission.
+// ABOUTME: Cubit backing the bug report sheet — diagnostics + Zendesk submission.
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -30,7 +30,7 @@ typedef SubmitBugReportAction =
 /// Builds the logs summary string the cubit passes to Zendesk.
 typedef BuildLogsSummary = String? Function(List<LogEntry> logs);
 
-/// Cubit backing `BugReportDialog`. Owns the submission lifecycle plus
+/// Cubit backing the bug report sheet. Owns the submission lifecycle plus
 /// the `BugReportFailureKey` that distinguishes attachment-upload
 /// failures from generic Zendesk failures — preserves the pre-migration
 /// "show the upload-failed message specifically" UX without state

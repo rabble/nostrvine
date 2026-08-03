@@ -1,8 +1,6 @@
-// ABOUTME: Dialog widget for submitting bug reports to Zendesk
+// ABOUTME: Bottom sheet for submitting bug reports to Zendesk
 // ABOUTME: Collects structured data (subject, description, steps, expected behavior)
 // ABOUTME: Submits directly to Zendesk REST API with custom fields
-
-import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +13,8 @@ import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
-import 'package:openvine/widgets/support_dialog_utils.dart';
+import 'package:openvine/widgets/support_failure_banner.dart';
+import 'package:openvine/widgets/support_form_scope.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Build a log summary prioritizing errors/warnings with recent context.
@@ -65,76 +64,182 @@ String? buildLogsSummary(List<LogEntry> logs) {
   return result.isEmpty ? null : result;
 }
 
-/// Dialog for collecting and submitting bug reports.
+/// Shows the bug report form in a [VineBottomSheet].
 ///
-/// `BlocProvider` wraps the inner [_BugReportForm] so the form's
-/// `TextEditingController`s and attachment list (the hybrid pattern) stay
-/// in the View while the submission lifecycle + Zendesk integration lives
-/// in [BugReportCubit].
-class BugReportDialog extends StatelessWidget {
-  const BugReportDialog({
-    required this.bugReportService,
-    super.key,
-    this.currentScreen,
-    this.userPubkey,
-  });
+/// The fields scroll while the actions stay pinned in the sheet footer.
+/// [VineBottomSheet] renders those as sibling slots rather than one subtree,
+/// so `contentWrapper` puts both the [BugReportCubit] and the
+/// [BugReportFields] controllers above them.
+Future<void> showBugReportSheet(
+  BuildContext context, {
+  required BugReportService bugReportService,
+  String? currentScreen,
+  String? userPubkey,
+}) {
+  return VineBottomSheet.show<void>(
+    context: context,
+    title: Text(context.l10n.supportReportBug),
+    initialChildSize: 1,
+    minChildSize: 0.75,
+    maxChildSize: 1,
+    contentWrapper: (_, child) => SupportFormScope<BugReportFields>(
+      create: BugReportFields.new,
+      onDispose: (fields) => fields.dispose(),
+      child: BlocProvider(
+        create: (_) => BugReportCubit(
+          bugReportService: bugReportService,
+          buildLogsSummary: buildLogsSummary,
+        ),
+        child: child,
+      ),
+    ),
+    bottomInput: BugReportActions(
+      currentScreen: currentScreen,
+      userPubkey: userPubkey,
+    ),
+    buildScrollBody: (scrollController) =>
+        BugReportForm(scrollController: scrollController),
+  );
+}
 
-  final BugReportService bugReportService;
-  final String? currentScreen;
-  final String? userPubkey;
+/// Form state shared between the sheet's scroll body and its pinned footer.
+@visibleForTesting
+class BugReportFields {
+  final subject = TextEditingController();
+  final description = TextEditingController();
+  final steps = TextEditingController();
+  final expected = TextEditingController();
+  final attachments = ValueNotifier<List<XFile>>(const []);
+
+  /// Target of the subject field's keyboard "next" action. The remaining
+  /// fields are multiline, so their action key inserts a newline instead of
+  /// advancing.
+  final descriptionFocus = FocusNode();
+
+  /// Notifies when a required field changes, so the footer can re-evaluate
+  /// whether the report can be sent.
+  ///
+  /// Built once: a fresh `Listenable.merge` per read would make every rebuild
+  /// re-subscribe, and a rebuild during the sheet's exit animation would then
+  /// touch controllers that are already disposed.
+  late final Listenable requiredFields = Listenable.merge([
+    subject,
+    description,
+  ]);
+
+  bool get canSubmit =>
+      subject.text.trim().isNotEmpty && description.text.trim().isNotEmpty;
+
+  void dispose() {
+    subject.dispose();
+    description.dispose();
+    steps.dispose();
+    expected.dispose();
+    attachments.dispose();
+    descriptionFocus.dispose();
+  }
+}
+
+/// Scrollable body of the bug report sheet.
+///
+/// [scrollController] comes from the sheet's `DraggableScrollableSheet`, so
+/// dragging the form down collapses and dismisses the sheet.
+@visibleForTesting
+class BugReportForm extends StatelessWidget {
+  const BugReportForm({required this.scrollController, super.key});
+
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => BugReportCubit(
-        bugReportService: bugReportService,
-        buildLogsSummary: buildLogsSummary,
-      ),
-      child: _BugReportForm(
-        currentScreen: currentScreen,
-        userPubkey: userPubkey,
+    final l10n = context.l10n;
+    final fields = SupportFormScope.of<BugReportFields>(context);
+    final isSubmitting = context.select(
+      (BugReportCubit cubit) =>
+          cubit.state.status == BugReportStatus.submitting,
+    );
+
+    return SingleChildScrollView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 16,
+        children: [
+          DivineTextField(
+            controller: fields.subject,
+            labelText: l10n.supportSubjectRequiredLabel,
+            hintText: l10n.bugReportSubjectHint,
+            helperText: l10n.supportRequiredHelper,
+            enabled: !isSubmitting,
+            filled: true,
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) => fields.descriptionFocus.requestFocus(),
+          ),
+          DivineTextField(
+            controller: fields.description,
+            focusNode: fields.descriptionFocus,
+            labelText: l10n.bugReportDescriptionRequiredLabel,
+            hintText: l10n.bugReportDescriptionHint,
+            helperText: l10n.supportRequiredHelper,
+            enabled: !isSubmitting,
+            filled: true,
+            minLines: 3,
+            maxLines: 5,
+            keyboardType: TextInputType.multiline,
+          ),
+          DivineTextField(
+            controller: fields.steps,
+            labelText: l10n.bugReportStepsLabel,
+            hintText: l10n.bugReportStepsHint,
+            enabled: !isSubmitting,
+            filled: true,
+            minLines: 3,
+            maxLines: 5,
+            keyboardType: TextInputType.multiline,
+          ),
+          DivineTextField(
+            controller: fields.expected,
+            labelText: l10n.bugReportExpectedBehaviorLabel,
+            hintText: l10n.bugReportExpectedBehaviorHint,
+            enabled: !isSubmitting,
+            filled: true,
+            minLines: 2,
+            maxLines: 4,
+            keyboardType: TextInputType.multiline,
+          ),
+          ImageAttachmentPicker(
+            enabled: !isSubmitting,
+            onChanged: (files) => fields.attachments.value = files,
+          ),
+          Text(
+            l10n.bugReportDiagnosticsNotice,
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.mutedText,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _BugReportForm extends StatefulWidget {
-  const _BugReportForm({this.currentScreen, this.userPubkey});
+/// Pinned footer of the bug report sheet: failure banner plus actions.
+@visibleForTesting
+class BugReportActions extends StatelessWidget {
+  const BugReportActions({this.currentScreen, this.userPubkey, super.key});
 
   final String? currentScreen;
   final String? userPubkey;
 
-  @override
-  State<_BugReportForm> createState() => _BugReportFormState();
-}
-
-class _BugReportFormState extends State<_BugReportForm> {
-  final _subjectController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _stepsController = TextEditingController();
-  final _expectedController = TextEditingController();
-  Timer? _closeTimer;
-  List<XFile> _attachments = [];
-
-  @override
-  void dispose() {
-    _closeTimer?.cancel();
-    _subjectController.dispose();
-    _descriptionController.dispose();
-    _stepsController.dispose();
-    _expectedController.dispose();
-    super.dispose();
-  }
-
-  bool get _canSubmit =>
-      _subjectController.text.trim().isNotEmpty &&
-      _descriptionController.text.trim().isNotEmpty;
-
-  void _scheduleAutoClose(BuildContext context) {
-    _closeTimer = Timer(const Duration(milliseconds: 1500), () {
-      if (!mounted) return;
-      context.pop();
-    });
+  /// Closes the sheet and confirms on the screen behind it. Read the
+  /// messenger and the message before popping — the sheet's context is
+  /// defunct afterwards.
+  void _onSuccess(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = context.l10n.bugReportSuccessMessage;
+    context.pop();
+    messenger.showSnackBar(DivineSnackbarContainer.snackBar(message));
   }
 
   String _failureMessage(BugReportFailureKey? key, BuildContext context) {
@@ -145,178 +250,68 @@ class _BugReportFormState extends State<_BugReportForm> {
     };
   }
 
+  void _submit(BuildContext context, BugReportFields fields) {
+    context.read<BugReportCubit>().submit(
+      subject: fields.subject.text,
+      description: fields.description.text,
+      stepsToReproduce: fields.steps.text,
+      expectedBehavior: fields.expected.text,
+      attachments: fields.attachments.value,
+      currentScreen: currentScreen,
+      userPubkey: userPubkey,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final fields = SupportFormScope.of<BugReportFields>(context);
+
     return BlocConsumer<BugReportCubit, BugReportState>(
       listenWhen: (prev, curr) =>
           prev.status != curr.status && curr.status == BugReportStatus.success,
-      listener: (context, _) => _scheduleAutoClose(context),
+      listener: (context, _) => _onSuccess(context),
       builder: (context, state) {
+        final l10n = context.l10n;
         final isSubmitting = state.status == BugReportStatus.submitting;
-        final isSuccess = state.status == BugReportStatus.success;
-        final isFailure = state.status == BugReportStatus.failure;
-        return AlertDialog(
-          backgroundColor: context.vineColors.card,
-          title: Text(
-            context.l10n.supportReportBug,
-            style: TextStyle(color: context.vineColors.primaryText),
-          ),
-          content: SizedBox(
-            width: 400,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: _subjectController,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.supportSubjectRequiredLabel,
-                      hint: context.l10n.bugReportSubjectHint,
-                      helper: context.l10n.supportRequiredHelper,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _descriptionController,
-                    maxLines: 3,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.bugReportDescriptionRequiredLabel,
-                      hint: context.l10n.bugReportDescriptionHint,
-                      helper: context.l10n.supportRequiredHelper,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _stepsController,
-                    maxLines: 3,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.bugReportStepsLabel,
-                      hint: context.l10n.bugReportStepsHint,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _expectedController,
-                    maxLines: 2,
-                    enabled: !isSubmitting,
-                    style: TextStyle(color: context.vineColors.primaryText),
-                    decoration: buildSupportInputDecoration(
-                      label: context.l10n.bugReportExpectedBehaviorLabel,
-                      hint: context.l10n.bugReportExpectedBehaviorHint,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-                  ImageAttachmentPicker(
-                    enabled: !isSubmitting,
-                    onChanged: (files) => setState(() => _attachments = files),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.bugReportDiagnosticsNotice,
-                    style: VineTheme.bodySmallFont(
-                      color: context.vineColors.mutedText,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (isSubmitting)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
-                        ),
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 12,
+            children: [
+              if (state.status == BugReportStatus.failure)
+                SupportFailureBanner(
+                  message: _failureMessage(state.failureKey, context),
+                ),
+              ListenableBuilder(
+                listenable: fields.requiredFields,
+                builder: (context, _) => Row(
+                  spacing: 12,
+                  children: [
+                    Expanded(
+                      child: DivineButton(
+                        label: l10n.commonCancel,
+                        type: DivineButtonType.secondary,
+                        onPressed: isSubmitting ? null : context.pop,
                       ),
                     ),
-                  if (isSuccess)
-                    _ResultBanner(
-                      message: context.l10n.bugReportSuccessMessage,
-                      isSuccess: true,
+                    Expanded(
+                      child: DivineButton(
+                        label: l10n.bugReportSendReport,
+                        isLoading: isSubmitting,
+                        onPressed: fields.canSubmit && !isSubmitting
+                            ? () => _submit(context, fields)
+                            : null,
+                      ),
                     ),
-                  if (isFailure)
-                    _ResultBanner(
-                      message: _failureMessage(state.failureKey, context),
-                      isSuccess: false,
-                    ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            if (!isSuccess)
-              TextButton(
-                onPressed: isSubmitting ? null : context.pop,
-                child: Text(
-                  context.l10n.commonCancel,
-                  style: TextStyle(color: context.vineColors.mutedText),
+                  ],
                 ),
               ),
-            ElevatedButton(
-              onPressed: isSuccess
-                  ? context.pop
-                  : (_canSubmit && !isSubmitting
-                        ? () => context.read<BugReportCubit>().submit(
-                            subject: _subjectController.text,
-                            description: _descriptionController.text,
-                            stepsToReproduce: _stepsController.text,
-                            expectedBehavior: _expectedController.text,
-                            attachments: _attachments,
-                            currentScreen: widget.currentScreen,
-                            userPubkey: widget.userPubkey,
-                          )
-                        : null),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.whiteText,
-              ),
-              child: Text(
-                isSuccess
-                    ? context.l10n.commonClose
-                    : context.l10n.bugReportSendReport,
-              ),
-            ),
-          ],
+            ],
+          ),
         );
       },
-    );
-  }
-}
-
-class _ResultBanner extends StatelessWidget {
-  const _ResultBanner({required this.message, required this.isSuccess});
-
-  final String message;
-  final bool isSuccess;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isSuccess
-            ? VineTheme.vineGreen.withValues(alpha: 0.2)
-            : VineTheme.error.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isSuccess ? VineTheme.vineGreen : VineTheme.error,
-        ),
-      ),
-      child: Text(
-        message,
-        style: TextStyle(
-          color: isSuccess ? VineTheme.vineGreen : VineTheme.error,
-        ),
-      ),
     );
   }
 }

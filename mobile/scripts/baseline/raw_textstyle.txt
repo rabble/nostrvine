@@ -58,7 +58,6 @@ lib/widgets/auth/auth_error_box.dart	1
 lib/widgets/auth/auth_form_scaffold.dart	1
 lib/widgets/auth/auth_hero_section.dart	2
 lib/widgets/auth/forgot_password_dialog.dart	4
-lib/widgets/bug_report_dialog.dart	7
 lib/widgets/categories/category_glyph.dart	1
 lib/widgets/categories_tab.dart	2
 lib/widgets/classic_vines_tab.dart	7
@@ -67,7 +66,6 @@ lib/widgets/content_warning.dart	11
 lib/widgets/delete_account_dialog.dart	14
 lib/widgets/environment_indicator.dart	1
 lib/widgets/error_message.dart	1
-lib/widgets/feature_request_dialog.dart	7
 lib/widgets/find_people_sheet.dart	7
 lib/widgets/for_you_tab.dart	13
 lib/widgets/global_error_widget.dart	7
@@ -85,7 +83,6 @@ lib/widgets/profile/nostr_info_sheet_content.dart	5
 lib/widgets/profile/profile_comments_grid.dart	1
 lib/widgets/profile_editor/username_status_indicator.dart	15
 lib/widgets/sound_tile.dart	3
-lib/widgets/support_dialog_utils.dart	3
 lib/widgets/trending_hashtags_section.dart	1
 lib/widgets/upload_progress_dialog.dart	2
 lib/widgets/user_name.dart	1
