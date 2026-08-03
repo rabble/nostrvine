@@ -5022,6 +5022,65 @@ class AppLocalizationsId extends AppLocalizations {
       'Orang lain bisa mengikuti dan melihat daftar ini';
 
   @override
+  String get listPrivateListSubtitle =>
+      'Private lists stay on this device and aren\'t backed up';
+
+  @override
+  String get listVisibilityPublic => 'Public';
+
+  @override
+  String get listVisibilityPrivateDevice => 'Private · On this device';
+
+  @override
+  String get profileListsEmpty =>
+      'No lists yet. Make one for the loops you want to keep together.';
+
+  @override
+  String get listEditTitle => 'Edit list';
+
+  @override
+  String get listEditAction => 'Edit list';
+
+  @override
+  String get listShareAction => 'Share list';
+
+  @override
+  String get listShareFailed => 'Couldn\'t share this list. Try again.';
+
+  @override
+  String get listSave => 'Save';
+
+  @override
+  String get listContinue => 'Continue';
+
+  @override
+  String get listUpdateFailed => 'Couldn\'t update this list. Try again.';
+
+  @override
+  String get listMakePrivateTitle => 'Make this list private?';
+
+  @override
+  String get listMakePrivateWarning =>
+      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+
+  @override
+  String get listMakePublicTitle => 'Make this list public?';
+
+  @override
+  String get listMakePublicWarning =>
+      'Anyone with the link can see this list and its videos.';
+
+  @override
+  String listShareText(String name, String url) {
+    return 'Check out $name on Divine: $url';
+  }
+
+  @override
+  String listShareSubject(String name) {
+    return '$name on Divine';
+  }
+
+  @override
   String get listCancel => 'Batal';
 
   @override

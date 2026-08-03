@@ -422,19 +422,18 @@ void main() {
         verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
-      test('keeps list locally when publish fails', () async {
+      test('does not claim a failed publication is a public list', () async {
         when(
           () => mockNostr.publishEvent(any()),
         ).thenAnswer((_) => Future<PublishResult>.value(const PublishFailed()));
 
         final list = await service.createList(name: 'Unlucky List');
 
-        expect(list, isNotNull);
-        expect(service.getListById(list!.id), isNotNull);
-        expect(service.getListById(list.id)!.nostrEventId, isNull);
+        expect(list, isNull);
+        expect(service.lists, isEmpty);
       });
 
-      test('keeps list locally when event signing fails', () async {
+      test('does not keep a public list when event signing fails', () async {
         when(
           () => mockAuth.createAndSignEvent(
             kind: any(named: 'kind'),
@@ -445,8 +444,8 @@ void main() {
 
         final list = await service.createList(name: 'Unsigned List');
 
-        expect(list, isNotNull);
-        expect(service.getListById(list!.id)!.nostrEventId, isNull);
+        expect(list, isNull);
+        expect(service.lists, isEmpty);
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 
@@ -621,6 +620,66 @@ void main() {
         final updatedList = service.getListById(list.id);
         expect(updatedList!.description, 'Original description');
         expect(updatedList.tags, ['original', 'tags']);
+      });
+
+      test('publishes deletion before making a public list private', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(() => mockNostr.publishEvent(any())).thenAnswer(
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isFalse);
+        final deletion =
+            verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                as Event;
+        expect(deletion.kind, EventKind.eventDeletion);
+        expect(
+          deletion.tags,
+          contains(equals(['a', '30005:$_ownerPubkey:${list.id}'])),
+        );
+      });
+
+      test('keeps a list public when deletion publication fails', () async {
+        final list = await service.createList(name: 'Public List');
+        reset(mockNostr);
+        when(
+          () => mockNostr.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: false,
+        );
+
+        expect(result, isFalse);
+        expect(service.getListById(list.id)!.isPublic, isTrue);
+      });
+
+      test('publishes a private list before marking it public', () async {
+        final list = await service.createList(
+          name: 'Private List',
+          isPublic: false,
+        );
+
+        final result = await service.updateList(
+          listId: list!.id,
+          isPublic: true,
+        );
+
+        expect(result, isTrue);
+        expect(service.getListById(list.id)!.isPublic, isTrue);
+        final publication =
+            verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                as Event;
+        expect(publication.kind, 30005);
       });
     });
 

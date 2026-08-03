@@ -8804,6 +8804,108 @@ abstract class AppLocalizations {
   /// **'Others can follow and see this list'**
   String get listPublicListSubtitle;
 
+  /// No description provided for @listPrivateListSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private lists stay on this device and aren\'t backed up'**
+  String get listPrivateListSubtitle;
+
+  /// No description provided for @listVisibilityPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get listVisibilityPublic;
+
+  /// No description provided for @listVisibilityPrivateDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Private · On this device'**
+  String get listVisibilityPrivateDevice;
+
+  /// No description provided for @profileListsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No lists yet. Make one for the loops you want to keep together.'**
+  String get profileListsEmpty;
+
+  /// No description provided for @listEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit list'**
+  String get listEditTitle;
+
+  /// No description provided for @listEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit list'**
+  String get listEditAction;
+
+  /// No description provided for @listShareAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Share list'**
+  String get listShareAction;
+
+  /// No description provided for @listShareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t share this list. Try again.'**
+  String get listShareFailed;
+
+  /// No description provided for @listSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get listSave;
+
+  /// No description provided for @listContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get listContinue;
+
+  /// No description provided for @listUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update this list. Try again.'**
+  String get listUpdateFailed;
+
+  /// No description provided for @listMakePrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make this list private?'**
+  String get listMakePrivateTitle;
+
+  /// No description provided for @listMakePrivateWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Its public link will stop working. This list will live only on this device and won\'t be backed up.'**
+  String get listMakePrivateWarning;
+
+  /// No description provided for @listMakePublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make this list public?'**
+  String get listMakePublicTitle;
+
+  /// No description provided for @listMakePublicWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone with the link can see this list and its videos.'**
+  String get listMakePublicWarning;
+
+  /// No description provided for @listShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out {name} on Divine: {url}'**
+  String listShareText(String name, String url);
+
+  /// No description provided for @listShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} on Divine'**
+  String listShareSubject(String name);
+
   /// No description provided for @listCancel.
   ///
   /// In en, this message translates to:

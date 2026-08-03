@@ -58,7 +58,10 @@ void main() {
       () async {
         when(() => mockAuth.isAuthenticated).thenReturn(true);
 
-        final list = await service.createList(name: 'Local List');
+        final list = await service.createList(
+          name: 'Local List',
+          isPublic: false,
+        );
         final localList = list!;
 
         expect(localList.pubkey, currentPubkey);
@@ -187,7 +190,10 @@ void main() {
     }
 
     test('includes local-only list that has not published', () async {
-      final list = await service.createList(name: 'Local List');
+      final list = await service.createList(
+        name: 'Local List',
+        isPublic: false,
+      );
 
       expect(service.myLists.map((l) => l.id), contains(list!.id));
     });

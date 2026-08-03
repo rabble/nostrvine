@@ -85,7 +85,7 @@ void main() {
 
       expect(find.text('Add to List'), findsOneWidget);
       expect(find.text('My Test List'), findsOneWidget);
-      expect(find.text('0 videos'), findsOneWidget);
+      expect(find.text('0 videos • Public'), findsOneWidget);
     });
 
     testWidgets('shows check icon for video already in list', (tester) async {
@@ -144,7 +144,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('3 videos'), findsOneWidget);
+      expect(find.text('3 videos • Public'), findsOneWidget);
     });
 
     testWidgets('tapping list item adds video and shows snackbar', (
@@ -283,8 +283,15 @@ void main() {
       updatedAt: DateTime.now(),
     );
 
-    Widget buildSubject({VideoEvent? video, MockGoRouter? goRouter}) {
-      final dialog = CreateListDialog(video: video);
+    Widget buildSubject({
+      VideoEvent? video,
+      CuratedList? existingList,
+      MockGoRouter? goRouter,
+    }) {
+      final dialog = CreateListDialog(
+        video: video,
+        existingList: existingList,
+      );
       return testProviderScope(
         additionalOverrides: [
           curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
@@ -335,6 +342,69 @@ void main() {
       await tester.pumpWidget(buildSubject());
 
       expect(find.text('Others can follow and see this list'), findsOneWidget);
+    });
+
+    testWidgets('editing shows the current private visibility and warning', (
+      tester,
+    ) async {
+      final list = createdList('Puppets').copyWith(isPublic: false);
+
+      await tester.pumpWidget(buildSubject(existingList: list));
+
+      expect(find.text('Edit list'), findsOneWidget);
+      expect(find.text('Puppets'), findsOneWidget);
+      expect(
+        find.text("Private lists stay on this device and aren't backed up"),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+        isFalse,
+      );
+    });
+
+    testWidgets('confirms before publishing a private list', (tester) async {
+      final list = createdList('Puppets').copyWith(isPublic: false);
+      final goRouter = MockGoRouter();
+      when(goRouter.canPop).thenReturn(true);
+      when(() => goRouter.pop<Object?>()).thenReturn(null);
+      when(
+        () => mockListService.updateList(
+          listId: any(named: 'listId'),
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        buildSubject(existingList: list, goRouter: goRouter),
+      );
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Make this list public?'), findsOneWidget);
+      verifyNever(
+        () => mockListService.updateList(
+          listId: any(named: 'listId'),
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
+        ),
+      );
+
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockListService.updateList(
+          listId: list.id,
+          name: 'Puppets',
+          description: '',
+          isPublic: true,
+        ),
+      ).called(1);
     });
 
     testWidgets('Create button does nothing when name is empty', (

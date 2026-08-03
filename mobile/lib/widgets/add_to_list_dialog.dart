@@ -9,6 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class _LoadingIndicator extends StatelessWidget {
@@ -76,7 +77,8 @@ class SelectListDialog extends StatelessWidget {
                       style: TextStyle(color: context.vineColors.primaryText),
                     ),
                     subtitle: Text(
-                      l10n.listVideoCount(list.videoEventIds.length),
+                      '${l10n.listVideoCount(list.videoEventIds.length)} • '
+                      '${list.isPublic ? l10n.listVisibilityPublic : l10n.listVisibilityPrivateDevice}',
                       style: TextStyle(color: context.vineColors.secondaryText),
                     ),
                     onTap: () => _toggleVideoInList(
@@ -146,8 +148,9 @@ class SelectListDialog extends StatelessWidget {
 
 /// Dialog for creating a new curated list, optionally adding [video] to it.
 class CreateListDialog extends ConsumerStatefulWidget {
-  const CreateListDialog({this.video, super.key});
+  const CreateListDialog({this.video, this.existingList, super.key});
   final VideoEvent? video;
+  final CuratedList? existingList;
 
   @override
   ConsumerState<CreateListDialog> createState() => _CreateListDialogState();
@@ -158,13 +161,25 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
   final TextEditingController _descriptionController = TextEditingController();
   bool _isPublic = true;
 
+  bool get _isEditing => widget.existingList != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final list = widget.existingList;
+    if (list == null) return;
+    _nameController.text = list.name;
+    _descriptionController.text = list.description ?? '';
+    _isPublic = list.isPublic;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AlertDialog(
       backgroundColor: context.vineColors.card,
       title: Text(
-        l10n.listCreateNewList,
+        _isEditing ? l10n.listEditTitle : l10n.listCreateNewList,
         style: TextStyle(color: context.vineColors.primaryText),
       ),
       content: Column(
@@ -197,7 +212,9 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
               style: TextStyle(color: context.vineColors.primaryText),
             ),
             subtitle: Text(
-              l10n.listPublicListSubtitle,
+              _isPublic
+                  ? l10n.listPublicListSubtitle
+                  : l10n.listPrivateListSubtitle,
               style: TextStyle(color: context.vineColors.secondaryText),
             ),
             value: _isPublic,
@@ -207,17 +224,41 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
       ),
       actions: [
         TextButton(onPressed: context.pop, child: Text(l10n.listCancel)),
-        TextButton(onPressed: _createList, child: Text(l10n.listCreate)),
+        TextButton(
+          onPressed: _saveList,
+          child: Text(_isEditing ? l10n.listSave : l10n.listCreate),
+        ),
       ],
     );
   }
 
-  Future<void> _createList() async {
+  Future<void> _saveList() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
     try {
       final listService = ref.read(curatedListsStateProvider.notifier).service;
+      final existingList = widget.existingList;
+      if (existingList != null) {
+        if (existingList.isPublic != _isPublic &&
+            !await _confirmVisibilityChange(existingList.isPublic)) {
+          return;
+        }
+        final updated = await listService?.updateList(
+          listId: existingList.id,
+          name: name,
+          description: _descriptionController.text.trim(),
+          isPublic: _isPublic,
+        );
+        if (!mounted) return;
+        if (updated ?? false) {
+          context.pop();
+        } else {
+          _showSaveFailed();
+        }
+        return;
+      }
+
       final newList = await listService?.createList(
         name: name,
         description: _descriptionController.text.trim().isEmpty
@@ -231,7 +272,7 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
       // createList catches its own exceptions and returns null — without
       // feedback here the dialog used to sit open doing nothing.
       if (newList == null) {
-        _showCreateFailed();
+        _showSaveFailed();
         return;
       }
 
@@ -251,16 +292,57 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
       );
 
       if (mounted) {
-        _showCreateFailed();
+        _showSaveFailed();
       }
     }
   }
 
+  Future<bool> _confirmVisibilityChange(bool wasPublic) async {
+    final confirmed = await context.showVideoPausingDialog<bool>(
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: context.vineColors.card,
+        title: Text(
+          wasPublic
+              ? context.l10n.listMakePrivateTitle
+              : context.l10n.listMakePublicTitle,
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.primaryText,
+          ),
+        ),
+        content: Text(
+          wasPublic
+              ? context.l10n.listMakePrivateWarning
+              : context.l10n.listMakePublicWarning,
+          style: VineTheme.bodyMediumFont(
+            color: context.vineColors.secondaryText,
+          ),
+        ),
+        actions: [
+          DivineButton(
+            label: context.l10n.commonCancel,
+            type: DivineButtonType.link,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+          ),
+          DivineButton(
+            label: context.l10n.listContinue,
+            type: DivineButtonType.link,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
   // Keeps the dialog open so the typed name and description survive a retry.
-  void _showCreateFailed() {
+  void _showSaveFailed() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(context.l10n.listCreateFailed),
+        content: Text(
+          _isEditing
+              ? context.l10n.listUpdateFailed
+              : context.l10n.listCreateFailed,
+        ),
         duration: const Duration(seconds: 2),
       ),
     );

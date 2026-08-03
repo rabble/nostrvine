@@ -56,22 +56,25 @@ void main() {
     Widget buildSubject({
       String listId = 'external-list',
       String listName = 'External List',
-      String authorPubkey = 'external-pubkey',
+      String? authorPubkey = 'external-pubkey',
+      List<String>? videoIds = const [],
+      bool isPublic = true,
       MockGoRouter? goRouter,
     }) {
       final list = CuratedList(
         id: listId,
         name: listName,
-        videoEventIds: const [],
+        videoEventIds: videoIds ?? const ['one', 'two', 'three'],
         pubkey: authorPubkey,
         createdAt: DateTime(2026),
         updatedAt: DateTime(2026),
+        isPublic: isPublic,
       );
 
       final screen = CuratedListFeedScreen(
         listId: listId,
         listName: listName,
-        videoIds: const [],
+        videoIds: videoIds,
         authorPubkey: authorPubkey,
       );
 
@@ -208,6 +211,72 @@ void main() {
 
       expect(find.text(l10n.listDeleteAction), findsOneWidget);
       expect(find.text(l10n.curatedListUnfollowAction), findsNothing);
+    });
+
+    testWidgets(
+      'owned-list route shows its stored video count and visibility',
+      (tester) async {
+        when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+        when(
+          () => mockService.isSubscribedToList('owned-list'),
+        ).thenReturn(false);
+        when(() => mockService.getListById('owned-list')).thenReturn(
+          CuratedList(
+            id: 'owned-list',
+            name: 'Puppets',
+            videoEventIds: const ['one', 'two', 'three'],
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            isPublic: false,
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            listId: 'owned-list',
+            listName: 'Puppets',
+            authorPubkey: null,
+            videoIds: null,
+            isPublic: false,
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('3 videos • Private · On this device'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('owned public list offers edit, share, and delete', (
+      tester,
+    ) async {
+      when(() => mockService.isOwnedList('owned-list')).thenReturn(true);
+      when(
+        () => mockService.isSubscribedToList('owned-list'),
+      ).thenReturn(false);
+      when(() => mockService.getListById('owned-list')).thenReturn(
+        CuratedList(
+          id: 'owned-list',
+          name: 'Puppets',
+          pubkey: 'owned-pubkey',
+          videoEventIds: const [],
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        ),
+      );
+
+      await tester.pumpWidget(
+        buildSubject(listId: 'owned-list', listName: 'Puppets'),
+      );
+      await tester.pump();
+      await tester.tap(find.byTooltip(l10n.curatedListActionsTooltip));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Edit list'), findsOneWidget);
+      expect(find.text('Share list'), findsOneWidget);
+      expect(find.text(l10n.listDeleteAction), findsOneWidget);
     });
 
     testWidgets('delete confirms then calls service and pops', (tester) async {

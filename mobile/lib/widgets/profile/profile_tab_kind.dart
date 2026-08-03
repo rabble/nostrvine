@@ -2,14 +2,14 @@
 // ABOUTME: Pure ordering logic extracted from ProfileGridView for testability.
 
 /// The distinct content tabs a profile can show.
-enum ProfileTabKind { videos, collabs, liked, reposts, saved, comments }
+enum ProfileTabKind { videos, collabs, liked, reposts, lists, comments }
 
 /// Returns the ordered tabs for a profile.
 ///
 /// The own profile surfaces the user's confirmed collaborations (between
-/// Videos and Liked, per #5213) in addition to the Saved bookmarks tab.
+/// Videos and Liked, per #5213) in addition to the owned Lists tab.
 /// Other profiles keep their existing order — Collabs in the 4th slot and no
-/// Saved tab — so their layout is unchanged.
+/// Lists tab — so their layout is unchanged.
 List<ProfileTabKind> profileTabKinds({required bool isOwnProfile}) {
   if (isOwnProfile) {
     return const [
@@ -17,7 +17,7 @@ List<ProfileTabKind> profileTabKinds({required bool isOwnProfile}) {
       ProfileTabKind.collabs,
       ProfileTabKind.liked,
       ProfileTabKind.reposts,
-      ProfileTabKind.saved,
+      ProfileTabKind.lists,
       ProfileTabKind.comments,
     ];
   }

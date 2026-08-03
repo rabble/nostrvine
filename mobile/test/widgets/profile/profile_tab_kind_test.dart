@@ -3,7 +3,7 @@ import 'package:openvine/widgets/profile/profile_tab_kind.dart';
 
 void main() {
   group('profileTabKinds', () {
-    test('own profile shows Collabs between Videos and Liked, plus Saved', () {
+    test('own profile shows Collabs between Videos and Liked, plus Lists', () {
       expect(
         profileTabKinds(isOwnProfile: true),
         equals(const [
@@ -11,7 +11,7 @@ void main() {
           ProfileTabKind.collabs,
           ProfileTabKind.liked,
           ProfileTabKind.reposts,
-          ProfileTabKind.saved,
+          ProfileTabKind.lists,
           ProfileTabKind.comments,
         ]),
       );
@@ -23,10 +23,10 @@ void main() {
       expect(kinds.indexOf(ProfileTabKind.collabs), equals(1));
     });
 
-    test('own profile keeps the Saved tab', () {
+    test('own profile exposes Lists instead of unreachable bookmarks', () {
       expect(
         profileTabKinds(isOwnProfile: true),
-        contains(ProfileTabKind.saved),
+        contains(ProfileTabKind.lists),
       );
     });
 
@@ -43,10 +43,10 @@ void main() {
       );
     });
 
-    test('other profile keeps Collabs at index 3 and has no Saved tab', () {
+    test('other profile keeps Collabs at index 3 and has no Lists tab', () {
       final kinds = profileTabKinds(isOwnProfile: false);
       expect(kinds.indexOf(ProfileTabKind.collabs), equals(3));
-      expect(kinds, isNot(contains(ProfileTabKind.saved)));
+      expect(kinds, isNot(contains(ProfileTabKind.lists)));
     });
 
     test('own profile has 6 tabs, other profile has 5', () {

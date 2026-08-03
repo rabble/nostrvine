@@ -19,7 +19,6 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_tab_kind.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
@@ -92,7 +91,6 @@ void main() {
     late _MockVideosRepository videosRepository;
     late _MockCommentsRepository commentsRepository;
     late _MockContentBlocklistRepository blocklistRepository;
-    late _MockBookmarkService bookmarkService;
     late _MockProfileFeedCubit profileFeedCubit;
     late _MockMyProfileBloc myProfileBloc;
     late MockNostrClient nostrClient;
@@ -111,7 +109,6 @@ void main() {
       videosRepository = _MockVideosRepository();
       commentsRepository = _MockCommentsRepository();
       blocklistRepository = _MockContentBlocklistRepository();
-      bookmarkService = _MockBookmarkService();
       profileFeedCubit = _MockProfileFeedCubit();
       myProfileBloc = _MockMyProfileBloc();
       nostrClient = createMockNostrService();
@@ -132,7 +129,6 @@ void main() {
       when(() => blocklistRepository.isBlocked(any())).thenReturn(false);
       when(() => blocklistRepository.hasMutedUs(any())).thenReturn(false);
       when(() => blocklistRepository.hasBlockedUs(any())).thenReturn(false);
-      when(() => bookmarkService.globalBookmarks).thenReturn(const []);
       whenListen(
         profileFeedCubit,
         const Stream<ProfileFeedState>.empty(),
@@ -203,7 +199,6 @@ void main() {
           contentBlocklistRepositoryProvider.overrideWithValue(
             blocklistRepository,
           ),
-          bookmarkServiceProvider.overrideWith((_) => bookmarkService),
           isFeatureEnabledProvider(
             FeatureFlag.videoReplies,
           ).overrideWith((_) => false),
@@ -247,7 +242,7 @@ void main() {
 
         expect(find.bySemanticsLabel('videos_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('saved_tab'), findsNothing);
+        expect(find.bySemanticsLabel('lists_tab'), findsNothing);
         expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
 
         await tester.pumpWidget(buildSubject(isOwnProfile: true));
@@ -258,7 +253,7 @@ void main() {
         expect(find.bySemanticsLabel('collabs_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('liked_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('reposted_tab'), findsOneWidget);
-        expect(find.bySemanticsLabel('saved_tab'), findsOneWidget);
+        expect(find.bySemanticsLabel('lists_tab'), findsOneWidget);
         expect(find.bySemanticsLabel('comments_tab'), findsOneWidget);
       },
     );
@@ -293,7 +288,6 @@ void main() {
             contentBlocklistRepositoryProvider.overrideWithValue(
               blocklistRepository,
             ),
-            bookmarkServiceProvider.overrideWith((_) => bookmarkService),
             isFeatureEnabledProvider(
               FeatureFlag.videoReplies,
             ).overrideWith((_) => false),

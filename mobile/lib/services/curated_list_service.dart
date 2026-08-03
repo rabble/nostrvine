@@ -272,7 +272,11 @@ class CuratedListService extends ChangeNotifier {
 
       // Publish to Nostr if user is authenticated and list is public
       if (_authService.isAuthenticated && isPublic) {
-        await _publishListToNostr(newList);
+        if (!await _publishListToNostr(newList)) {
+          _lists.removeWhere((list) => list.id == listId);
+          await _saveLists();
+          return null;
+        }
       }
 
       Log.info(
@@ -449,13 +453,25 @@ class CuratedListService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      _lists[listIndex] = updatedList;
-      await _saveLists();
-
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
-        await _publishListToNostr(updatedList);
+      final becamePrivate = list.isPublic && !updatedList.isPublic;
+      if (becamePrivate && !await _publishListDeletion(updatedList.id)) {
+        return false;
       }
+
+      if (updatedList.isPublic) {
+        if (!_authService.isAuthenticated ||
+            !await _publishListToNostr(updatedList)) {
+          return false;
+        }
+      }
+
+      // Publishing stores the accepted event ID on the in-memory copy. Keep
+      // that enriched copy instead of overwriting it with [updatedList].
+      final persistedList = updatedList.isPublic
+          ? _lists[listIndex]
+          : updatedList;
+      _lists[listIndex] = persistedList;
+      await _saveLists();
 
       Log.debug(
         '✏️ Updated list: ${updatedList.name}',
@@ -549,30 +565,7 @@ class CuratedListService extends ChangeNotifier {
       }
 
       if (list.isPublic) {
-        final currentPubkey = _currentAuthenticatedPubkey();
-        if (currentPubkey == null || currentPubkey.isEmpty) {
-          return false;
-        }
-
-        final event = await _authService.createAndSignEvent(
-          kind: EventKind.eventDeletion,
-          content: 'Deleted curated list $listId',
-          tags: [
-            ['a', '30005:$currentPubkey:$listId'],
-            ['k', '30005'],
-          ],
-        );
-        if (event == null) {
-          return false;
-        }
-
-        final publishResult = await _nostrService.publishEvent(event);
-        if (publishResult is! PublishSuccess) {
-          Log.warning(
-            'Failed to publish curated list deletion: ${publishResult.failureReason}',
-            name: 'CuratedListService',
-            category: LogCategory.system,
-          );
+        if (!await _publishListDeletion(listId)) {
           return false;
         }
       }
@@ -596,6 +589,34 @@ class CuratedListService extends ChangeNotifier {
       );
       return false;
     }
+  }
+
+  Future<bool> _publishListDeletion(String listId) async {
+    final currentPubkey = _currentAuthenticatedPubkey();
+    if (currentPubkey == null || currentPubkey.isEmpty) {
+      return false;
+    }
+
+    final event = await _authService.createAndSignEvent(
+      kind: EventKind.eventDeletion,
+      content: 'Deleted curated list $listId',
+      tags: [
+        ['a', '30005:$currentPubkey:$listId'],
+        ['k', '30005'],
+      ],
+    );
+    if (event == null) return false;
+
+    final publishResult = await _nostrService.publishEvent(event);
+    if (publishResult is PublishSuccess) return true;
+
+    Log.warning(
+      'Failed to publish curated list deletion: '
+      '${publishResult.failureReason}',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+    return false;
   }
 
   Future<void> _removeListAndSubscription(String listId, int listIndex) async {
@@ -1030,8 +1051,7 @@ class CuratedListService extends ChangeNotifier {
   /// Empty lists are published too — a freshly created public list must
   /// reach the relay immediately or it exists only on this device.
   ///
-  /// Returns `true` when the relay accepted the event. Failures are logged
-  /// and leave the local list intact with a null [CuratedList.nostrEventId].
+  /// Returns `true` when the relay accepted the event. Failures are logged.
   Future<bool> _publishListToNostr(CuratedList list) async {
     try {
       if (!_authService.isAuthenticated) {

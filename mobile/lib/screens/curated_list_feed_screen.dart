@@ -17,11 +17,15 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/utils/share_position_origin.dart';
+import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-enum _CuratedListAction { delete, unfollow }
+enum _CuratedListAction { edit, share, delete, unfollow }
 
 /// Pops the delete-confirmation dialog with [confirmed].
 ///
@@ -94,7 +98,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    widget.listName,
+                    _localList()?.name ?? widget.listName,
                     style: VineTheme.titleLargeFont(
                       color: context.vineColors.onNav,
                     ),
@@ -289,7 +293,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
   /// Build the subheading showing the creator and video count.
   Widget _buildSubheading() {
-    final videoCount = widget.videoIds?.length ?? 0;
+    final localList = _localList();
+    final videoCount =
+        widget.videoIds?.length ?? localList?.videoEventIds.length ?? 0;
     final videoText = context.l10n.listVideoCount(videoCount);
     final authorPubkey = widget.authorPubkey;
 
@@ -335,14 +341,24 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     }
 
     // No author - just show video count
+    final visibility = localList == null
+        ? null
+        : localList.isPublic
+        ? context.l10n.listVisibilityPublic
+        : context.l10n.listVisibilityPrivateDevice;
     return Text(
-      videoText,
+      visibility == null ? videoText : '$videoText • $visibility',
       style: TextStyle(
         color: context.vineColors.onSurfaceVariant,
         fontSize: 12,
       ),
     );
   }
+
+  CuratedList? _localList() => ref
+      .read(curatedListsStateProvider.notifier)
+      .service
+      ?.getListById(widget.listId);
 
   bool _isOwnedList() {
     final serviceAsync = ref.watch(curatedListsStateProvider);
@@ -380,16 +396,20 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
   }
 
   List<Widget> _buildListCustomActions() {
-    final action = _primaryListAction();
-    if (action == null) {
+    final actions = _listActions();
+    if (actions.isEmpty) {
       return const [];
     }
 
     return [
       _CuratedListActionsMenu(
-        action: action,
+        actions: actions,
         onSelected: (action) {
           switch (action) {
+            case _CuratedListAction.edit:
+              _editList();
+            case _CuratedListAction.share:
+              _shareList();
             case _CuratedListAction.delete:
               _confirmDeleteList();
             case _CuratedListAction.unfollow:
@@ -400,26 +420,74 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     ];
   }
 
-  _CuratedListAction? _primaryListAction() {
+  List<_CuratedListAction> _listActions() {
     final serviceAsync = ref.watch(curatedListsStateProvider);
     final service = ref.read(curatedListsStateProvider.notifier).service;
 
     return serviceAsync.whenOrNull(
-      data: (_) {
-        final isOwned = service?.isOwnedList(widget.listId) ?? false;
-        if (isOwned) {
-          return _CuratedListAction.delete;
-        }
+          data: (_) {
+            final isOwned = service?.isOwnedList(widget.listId) ?? false;
+            if (isOwned) {
+              final list = service?.getListById(widget.listId);
+              return [
+                _CuratedListAction.edit,
+                if (list?.isPublic ?? false) _CuratedListAction.share,
+                _CuratedListAction.delete,
+              ];
+            }
 
-        final isSubscribed =
-            service?.isSubscribedToList(widget.listId) ?? false;
-        if (isSubscribed) {
-          return _CuratedListAction.unfollow;
-        }
+            final isSubscribed =
+                service?.isSubscribedToList(widget.listId) ?? false;
+            if (isSubscribed) {
+              return const [_CuratedListAction.unfollow];
+            }
 
-        return null;
-      },
+            return const <_CuratedListAction>[];
+          },
+        ) ??
+        const <_CuratedListAction>[];
+  }
+
+  Future<void> _editList() async {
+    final list = _localList();
+    if (list == null) return;
+    await context.showVideoPausingDialog<void>(
+      builder: (_) => CreateListDialog(existingList: list),
     );
+  }
+
+  Future<void> _shareList() async {
+    final list = _localList();
+    final authorPubkey = list?.pubkey;
+    if (list == null || !list.isPublic || authorPubkey == null) return;
+
+    final path =
+        '${CuratedListFeedScreen.basePath}/'
+        '${Uri.encodeComponent(authorPubkey)}'
+        '/${Uri.encodeComponent(list.id)}';
+    final url = 'https://divine.video$path';
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: context.l10n.listShareText(list.name, url),
+          subject: context.l10n.listShareSubject(list.name),
+          sharePositionOrigin: sharePositionOriginForContext(context),
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      Log.error(
+        'Failed to share public list ${list.id}: $error',
+        name: 'CuratedListFeedScreen',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.listShareFailed)),
+        );
+      }
+    }
   }
 
   Future<void> _confirmDeleteList() async {
@@ -605,11 +673,11 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
 class _CuratedListActionsMenu extends StatelessWidget {
   const _CuratedListActionsMenu({
-    required this.action,
+    required this.actions,
     required this.onSelected,
   });
 
-  final _CuratedListAction action;
+  final List<_CuratedListAction> actions;
   final ValueChanged<_CuratedListAction> onSelected;
 
   @override
@@ -623,14 +691,17 @@ class _CuratedListActionsMenu extends StatelessWidget {
       ),
       onSelected: onSelected,
       itemBuilder: (context) => [
-        PopupMenuItem(
-          value: action,
-          child: Text(switch (action) {
-            _CuratedListAction.delete => context.l10n.listDeleteAction,
-            _CuratedListAction.unfollow =>
-              context.l10n.curatedListUnfollowAction,
-          }, style: TextStyle(color: context.vineColors.primaryText)),
-        ),
+        for (final action in actions)
+          PopupMenuItem(
+            value: action,
+            child: Text(switch (action) {
+              _CuratedListAction.edit => context.l10n.listEditAction,
+              _CuratedListAction.share => context.l10n.listShareAction,
+              _CuratedListAction.delete => context.l10n.listDeleteAction,
+              _CuratedListAction.unfollow =>
+                context.l10n.curatedListUnfollowAction,
+            }, style: TextStyle(color: context.vineColors.primaryText)),
+          ),
       ],
     );
   }

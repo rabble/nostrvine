@@ -145,6 +145,7 @@ class ExploreListsTab extends ConsumerWidget {
                     ...myLists.map(
                       (curatedList) => CuratedListCard(
                         curatedList: curatedList,
+                        showVisibility: true,
                         onTap: () {
                           Log.info(
                             'Tapped my curated list: ${curatedList.name}',
