@@ -6,6 +6,7 @@ library;
 
 export 'package:cache_sync/cache_sync.dart' show CacheResult;
 
+export 'src/follow_list_kind.dart';
 export 'src/follow_repository.dart';
 export 'src/follower_stats.dart';
 export 'src/followers_snapshot.dart';

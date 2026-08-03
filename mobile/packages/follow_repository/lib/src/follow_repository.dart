@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:cache_sync/cache_sync.dart';
 import 'package:db_client/db_client.dart' hide Filter;
+import 'package:follow_repository/src/follow_list_kind.dart';
 import 'package:follow_repository/src/follower_stats.dart';
 import 'package:follow_repository/src/followers_snapshot.dart';
 import 'package:follow_repository/src/following_snapshot.dart';
@@ -520,6 +521,71 @@ class FollowRepository {
       limit: limit,
       offset: offset,
     );
+  }
+
+  /// Server-side name search within [pubkey]'s follower or following list.
+  ///
+  /// Returns the subset of that list whose profile name, display name, or
+  /// NIP-05 matches [query] — the work a client would otherwise do by pulling
+  /// every profile down to the device.
+  ///
+  /// Returns an **empty set** when the search cannot be answered: no
+  /// Funnelcake client, a blank query, an API error, or a deployment whose
+  /// follow endpoints do not understand `q` yet. Callers must read that as
+  /// "no remote matches", never as "no matches" — the API only indexes kind-3
+  /// events seen on the Divine relay, so its answer is a supplement to local
+  /// matching, not a replacement for it.
+  ///
+  /// The unsupported-deployment case is the dangerous one and is why the
+  /// response's echoed filter is checked rather than assumed: an older server
+  /// ignores the unknown `q` key and answers with the plain first page, which
+  /// would otherwise be read as "these hundred people all match".
+  ///
+  /// Capped at one page: a filter UI does not page its own results, and the
+  /// server clamps `limit` to 100 regardless.
+  Future<Set<String>> searchFollowList({
+    required String pubkey,
+    required String query,
+    required FollowListKind kind,
+  }) async {
+    final trimmed = query.trim();
+    if (pubkey.isEmpty || trimmed.isEmpty) return const {};
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return const {};
+    }
+
+    try {
+      final page = switch (kind) {
+        FollowListKind.followers => await _funnelcakeApiClient.getFollowers(
+          pubkey: pubkey,
+          query: trimmed,
+        ),
+        FollowListKind.following => await _funnelcakeApiClient.getFollowing(
+          pubkey: pubkey,
+          query: trimmed,
+        ),
+      };
+      // Only trust the page when the server says which filter produced it.
+      if (page.appliedQuery?.trim().toLowerCase() != trimmed.toLowerCase()) {
+        Log.warning(
+          'Follow-list search ignored by the API; falling back to local '
+          'matching',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+        return const {};
+      }
+      return page.pubkeys.toSet();
+    } on FunnelcakeException catch (e) {
+      // Expected while the `q` parameter is rolling out, and on any network
+      // blip. The caller still has its local filter.
+      Log.warning(
+        'Follow-list search unavailable: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return const {};
+    }
   }
 
   // === FOLLOWER STATS (count stabilization with hysteresis) ===

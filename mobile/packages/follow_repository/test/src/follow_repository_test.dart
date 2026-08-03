@@ -2306,6 +2306,216 @@ void main() {
       });
     });
 
+    group('searchFollowList', () {
+      late _MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = _MockFunnelcakeApiClient();
+      });
+
+      FollowRepository buildRepository({FunnelcakeApiClient? client}) {
+        return FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          funnelcakeApiClient: client,
+          indexerRelayUrls: const [],
+        );
+      }
+
+      test('returns the matching followers from the API', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            query: 'ali',
+          ),
+        ).thenAnswer(
+          (_) async => const PaginatedPubkeys(
+            pubkeys: [testTargetPubkey],
+            total: 1,
+            appliedQuery: 'ali',
+          ),
+        );
+
+        final result = await buildRepository(client: mockFunnelcakeClient)
+            .searchFollowList(
+              pubkey: testCurrentUserPubkey,
+              query: 'ali',
+              kind: FollowListKind.followers,
+            );
+
+        expect(result, equals({testTargetPubkey}));
+      });
+
+      test('queries the following endpoint for the following kind', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: testCurrentUserPubkey,
+            query: 'ali',
+          ),
+        ).thenAnswer(
+          (_) async => const PaginatedPubkeys(
+            pubkeys: [testTargetPubkey],
+            total: 1,
+            appliedQuery: 'ali',
+          ),
+        );
+
+        final result = await buildRepository(client: mockFunnelcakeClient)
+            .searchFollowList(
+              pubkey: testCurrentUserPubkey,
+              query: 'ali',
+              kind: FollowListKind.following,
+            );
+
+        expect(result, equals({testTargetPubkey}));
+        verifyNever(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            query: any(named: 'query'),
+          ),
+        );
+      });
+
+      test('trims the query before sending it', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            query: 'ali',
+          ),
+        ).thenAnswer(
+          (_) async => const PaginatedPubkeys(pubkeys: [], appliedQuery: 'ali'),
+        );
+
+        await buildRepository(client: mockFunnelcakeClient).searchFollowList(
+          pubkey: testCurrentUserPubkey,
+          query: '  ali  ',
+          kind: FollowListKind.followers,
+        );
+
+        verify(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            query: 'ali',
+          ),
+        ).called(1);
+      });
+
+      test('returns empty without calling the API for a blank query', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+        final result = await buildRepository(client: mockFunnelcakeClient)
+            .searchFollowList(
+              pubkey: testCurrentUserPubkey,
+              query: '   ',
+              kind: FollowListKind.followers,
+            );
+
+        expect(result, isEmpty);
+        verifyNever(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            query: any(named: 'query'),
+          ),
+        );
+      });
+
+      test(
+        'ignores a page from a server that did not apply the filter',
+        () async {
+          // A deployment predating the `q` parameter drops the unknown key and
+          // answers with the plain first page. Trusting it would show a hundred
+          // unrelated people as matches.
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getFollowers(
+              pubkey: any(named: 'pubkey'),
+              query: any(named: 'query'),
+            ),
+          ).thenAnswer(
+            (_) async => const PaginatedPubkeys(
+              pubkeys: [testTargetPubkey],
+              total: 1,
+            ),
+          );
+
+          final result = await buildRepository(client: mockFunnelcakeClient)
+              .searchFollowList(
+                pubkey: testCurrentUserPubkey,
+                query: 'ali',
+                kind: FollowListKind.followers,
+              );
+
+          expect(result, isEmpty);
+        },
+      );
+
+      test('ignores a page echoing a different query', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            query: any(named: 'query'),
+          ),
+        ).thenAnswer(
+          (_) async => const PaginatedPubkeys(
+            pubkeys: [testTargetPubkey],
+            total: 1,
+            appliedQuery: 'something else',
+          ),
+        );
+
+        final result = await buildRepository(client: mockFunnelcakeClient)
+            .searchFollowList(
+              pubkey: testCurrentUserPubkey,
+              query: 'ali',
+              kind: FollowListKind.followers,
+            );
+
+        expect(result, isEmpty);
+      });
+
+      test('returns empty when no API client is configured', () async {
+        final result = await buildRepository().searchFollowList(
+          pubkey: testCurrentUserPubkey,
+          query: 'ali',
+          kind: FollowListKind.followers,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('swallows API errors so the caller can fall back', () async {
+        // A deployment without the `q` parameter answers 404 here; the caller
+        // still has its local filter, so this must not throw.
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            query: any(named: 'query'),
+          ),
+        ).thenThrow(
+          FunnelcakeNotFoundException(
+            resource: 'Followers',
+            url: 'https://example.com/api/users/x/followers',
+          ),
+        );
+
+        final result = await buildRepository(client: mockFunnelcakeClient)
+            .searchFollowList(
+              pubkey: testCurrentUserPubkey,
+              query: 'ali',
+              kind: FollowListKind.followers,
+            );
+
+        expect(result, isEmpty);
+      });
+    });
+
     group('getFollowersFromApi', () {
       late _MockFunnelcakeApiClient mockFunnelcakeClient;
 
