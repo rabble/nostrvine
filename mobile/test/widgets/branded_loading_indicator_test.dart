@@ -4,6 +4,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -44,7 +45,10 @@ void main() {
   group(BrandedLoadingIndicator, () {
     testWidgets('configures the branded sprite sheet', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: BrandedLoadingIndicator())),
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(body: BrandedLoadingIndicator()),
+        ),
       );
 
       final image = tester.widget<Image>(find.byType(Image));
@@ -52,9 +56,43 @@ void main() {
       expect(BrandedLoadingIndicator.spriteAsset, equals(_spriteAssetKey));
     });
 
+    testWidgets('draws the mark alone in dark mode', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(body: BrandedLoadingIndicator()),
+        ),
+      );
+
+      // White on the dark palette needs no help, so the shadow layer — and
+      // its per-frame blur — stays out of the tree entirely.
+      expect(find.byType(Image), findsOneWidget);
+      expect(find.byType(ImageFiltered), findsNothing);
+    });
+
+    testWidgets('backs the mark with a shadow in light mode', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.lightTheme,
+          home: const Scaffold(body: BrandedLoadingIndicator()),
+        ),
+      );
+
+      // Untinted, the white mark all but vanishes on the light surfaces.
+      expect(find.byType(ImageFiltered), findsOneWidget);
+      final layers = tester.widgetList<Image>(find.byType(Image)).toList();
+      expect(layers, hasLength(2));
+      // Only the layer behind carries the tint; the mark stays pure white.
+      expect(layers.first.color?.a, closeTo(0.4, 0.001));
+      expect(layers.last.color, isNull);
+    });
+
     testWidgets('advances through the sheet while loading', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: BrandedLoadingIndicator())),
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: const Scaffold(body: BrandedLoadingIndicator()),
+        ),
       );
 
       // Storage index 13 is the matrix's y translation — how far up the sheet
@@ -142,8 +180,9 @@ void main() {
         greaterThan(solid),
         reason: 'the mark sits on transparency, not a baked-in backdrop',
       );
-      // Divine is dark-mode only, so the spinner ships pre-coloured white for
-      // contrast. The retired brand pack is cream (blue channel ~234).
+      // The sheet ships white so it reads on the dark palette; the widget
+      // reuses it as an alpha mask for the light-mode shadow. The retired
+      // brand pack is cream (blue channel ~234).
       expect(sumR / solid, greaterThan(250));
       expect(sumG / solid, greaterThan(250));
       expect(sumB / solid, greaterThan(250));
