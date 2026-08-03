@@ -6,11 +6,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/saved_sound.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/library/saved_sound_card.dart';
 import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
@@ -144,14 +146,12 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          switch (result) {
-            SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
-            SavedSoundSaveResult.alreadySaved =>
-              context.l10n.soundsAlreadySavedToLibrary,
-            null => context.l10n.soundsSaveFailed,
-          },
-        ),
+        content: Text(switch (result) {
+          SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
+          SavedSoundSaveResult.alreadySaved =>
+            context.l10n.soundsAlreadySavedToLibrary,
+          null => context.l10n.soundsSaveFailed,
+        }),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -182,6 +182,11 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           state: state,
           editingSoundId: _editingSoundId,
           onPreview: (sound) => _onPreviewTap(sound.audio),
+          onOpenDetails: (sound) async {
+            await _stopPreview();
+            if (!context.mounted) return;
+            context.push(SoundDetailScreen.pathForId(sound.audio.id));
+          },
           onEdit: (sound) {
             setState(() {
               _editingSoundId = _editingSoundId == sound.id ? null : sound.id;
@@ -311,6 +316,7 @@ class _SavedSoundsSection extends StatelessWidget {
     required this.state,
     required this.editingSoundId,
     required this.onPreview,
+    required this.onOpenDetails,
     required this.onEdit,
     required this.onRemove,
   });
@@ -318,6 +324,7 @@ class _SavedSoundsSection extends StatelessWidget {
   final SavedSoundsState state;
   final String? editingSoundId;
   final ValueChanged<SavedSound> onPreview;
+  final ValueChanged<SavedSound> onOpenDetails;
   final ValueChanged<SavedSound> onEdit;
   final ValueChanged<SavedSound> onRemove;
 
@@ -376,9 +383,7 @@ class _SavedSoundsSection extends StatelessWidget {
                       selected: state.selectedHashtag == hashtag,
                       onSelected: (selected) {
                         context.read<SavedSoundsBloc>().add(
-                          SavedSoundsHashtagSelected(
-                            selected ? hashtag : null,
-                          ),
+                          SavedSoundsHashtagSelected(selected ? hashtag : null),
                         );
                       },
                     ),
@@ -395,6 +400,7 @@ class _SavedSoundsSection extends StatelessWidget {
                 children: [
                   SavedSoundCard(
                     sound: sound,
+                    onTap: () => onOpenDetails(sound),
                     onPreview: () => onPreview(sound),
                     onEdit: () => onEdit(sound),
                     onRemove: () => onRemove(sound),

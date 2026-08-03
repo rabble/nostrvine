@@ -18696,11 +18696,23 @@ abstract class AppLocalizations {
   /// **'Allow others to remix this sound'**
   String get soundAllowRemix;
 
+  /// No description provided for @soundReuseUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This sound can\'t be remixed right now.'**
+  String get soundReuseUnavailable;
+
   /// No description provided for @soundPublicCredit.
   ///
   /// In en, this message translates to:
   /// **'Public sound credit'**
   String get soundPublicCredit;
+
+  /// No description provided for @soundCreditRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add public sound credit before posting.'**
+  String get soundCreditRequired;
 
   /// No description provided for @soundSharedAs.
   ///

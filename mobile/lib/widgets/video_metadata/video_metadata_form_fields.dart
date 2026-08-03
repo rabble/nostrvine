@@ -239,6 +239,24 @@ class _VideoMetadataAudioSharingSection extends ConsumerWidget {
     final external = sound?.externalSource;
     final derivativesAllowed = external?.license.allowsDerivatives ?? true;
     final allowAudioReuse = editorState.allowAudioReuse && derivativesAllowed;
+    final needsAttribution =
+        allowAudioReuse &&
+        external == null &&
+        editorState.audioShareAttribution == null;
+    if (needsAttribution) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final current = ref.read(videoEditorProvider);
+        final currentSound = current.audioForAttribution;
+        if (!current.allowAudioReuse ||
+            current.audioShareAttribution != null ||
+            currentSound?.externalSource != null) {
+          return;
+        }
+        ref
+            .read(videoEditorProvider.notifier)
+            .setAudioShareAttribution(_initialAttribution(ref, currentSound));
+      });
+    }
 
     void updateReuse(bool value) {
       final notifier = ref.read(videoEditorProvider.notifier);
@@ -248,9 +266,7 @@ class _VideoMetadataAudioSharingSection extends ConsumerWidget {
           editorState.audioShareAttribution != null) {
         return;
       }
-      notifier.setAudioShareAttribution(
-        _initialAttribution(ref, sound),
-      );
+      notifier.setAudioShareAttribution(_initialAttribution(ref, sound));
     }
 
     return Padding(
@@ -289,15 +305,22 @@ class _VideoMetadataAudioSharingSection extends ConsumerWidget {
               key: ValueKey(sound?.id ?? 'original-audio'),
               sound: sound,
             ),
+          if (editorState.requiresPublicAudioAttribution &&
+              !editorState.hasValidPublicAudioAttribution)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Text(
+                context.l10n.soundCreditRequired,
+                key: const Key('audio_credit_validation'),
+                style: VineTheme.bodySmallFont(color: VineTheme.error),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  AudioShareAttribution _initialAttribution(
-    WidgetRef ref,
-    AudioEvent? sound,
-  ) {
+  AudioShareAttribution _initialAttribution(WidgetRef ref, AudioEvent? sound) {
     final pubkey = ref.read(authServiceProvider).currentPublicKeyHex ?? '';
     final profile = pubkey.isEmpty
         ? null
@@ -488,9 +511,8 @@ class _PublicAudioCreditEditorState
             controller: _tagsController,
             labelText: context.l10n.soundCreditPublicHashtagsLabel,
             autocorrect: false,
-            onChanged: (value) => _update(
-              publicTags: value.split(RegExp(r'[,\s]+')),
-            ),
+            onChanged: (value) =>
+                _update(publicTags: value.split(RegExp(r'[,\s]+'))),
           ),
           Text(
             context.l10n.soundSharedAs,

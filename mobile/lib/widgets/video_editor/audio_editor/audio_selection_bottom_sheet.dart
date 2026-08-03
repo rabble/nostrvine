@@ -245,7 +245,22 @@ class _AudioSelectionBottomSheetState
         sound.isExternalProviderSound ||
         sound.allowsReuse ||
         await ref.read(audioReuseConsentProvider(sound).future);
-    if (!canReuse || !mounted) return;
+    if (!mounted) return;
+    if (!canReuse) {
+      Log.info(
+        'Sound selection blocked because reuse consent could not be verified: '
+        '${sound.id}',
+        name: 'AudioSelectionBottomSheet',
+        category: LogCategory.ui,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.soundReuseUnavailable),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     Log.info(
       'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
@@ -297,9 +312,9 @@ class _AudioSelectionBottomSheetState
       await _togglePlayPause(enforcePlay: true);
     } on LocalAudioImportException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e, s) {
       Log.error(
         'Failed to import audio: $e',

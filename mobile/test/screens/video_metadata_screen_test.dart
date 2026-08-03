@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -160,10 +161,7 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text('Allow others to remix this sound'),
-          findsOneWidget,
-        );
+        expect(find.text('Allow others to remix this sound'), findsOneWidget);
         expect(find.text(l10n.videoMetadataAudioReuseSubtitle), findsOneWidget);
         expect(container.read(videoEditorProvider).allowAudioReuse, isFalse);
 
@@ -239,6 +237,11 @@ void main() {
           container.read(videoEditorProvider).audioShareAttribution?.isValid,
           isFalse,
         );
+        expect(container.read(videoEditorProvider).isValidToPost, isFalse);
+        expect(
+          find.byKey(const Key('audio_credit_validation')),
+          findsOneWidget,
+        );
 
         await tester.enterText(
           find.byKey(const Key('audio_credit_creator')),
@@ -256,6 +259,82 @@ void main() {
         expect(credit?.creatorName, 'Bucket drummer');
         expect(credit?.sourceUrl, 'https://example.com/source');
         expect(credit?.isValid, isTrue);
+        expect(container.read(videoEditorProvider).isValidToPost, isTrue);
+        expect(
+          find.byKey(const Key('audio_credit_validation')),
+          findsNothing,
+        );
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      });
+
+      testWidgets('reseeds attribution after selected sound changes', (
+        tester,
+      ) async {
+        final original = models.AudioEvent.fromLocalImport(
+          id: 'local_import_original',
+          filePath: '/tmp/original.m4a',
+          title: 'Original kitchen rhythm',
+          createdAt: 1700000000,
+          mimeType: 'audio/mp4',
+        );
+        final replacement = models.AudioEvent.fromLocalImport(
+          id: 'local_import_replacement',
+          filePath: '/tmp/replacement.m4a',
+          title: 'Replacement kitchen rhythm',
+          createdAt: 1700000001,
+          mimeType: 'audio/mp4',
+        );
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(
+                  finalRenderedClip: testClip,
+                  selectedSound: original,
+                  allowAudioReuse: true,
+                  audioShareAttribution: const AudioShareAttribution(
+                    title: 'Original kitchen rhythm',
+                    creatorName: 'Bucket drummer',
+                    publicTags: [],
+                    confirmedOwnWork: true,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        container.read(videoEditorProvider.notifier).selectSound(replacement);
+        await tester.pump();
+        final credit = container
+            .read(videoEditorProvider)
+            .audioShareAttribution;
+        expect(credit?.title, 'Replacement kitchen rhythm');
+        expect(credit?.creatorName, isEmpty);
+        expect(credit?.isValid, isFalse);
+        expect(
+          find.byKey(const Key('audio_credit_validation')),
+          findsOneWidget,
+        );
 
         await tester.pump(const Duration(seconds: 1));
         await tester.pumpWidget(const SizedBox.shrink());
@@ -330,65 +409,60 @@ void main() {
     });
 
     group('C2PA signing prompt (#6058)', () {
-      testWidgets(
-        'prompts to regenerate or skip when signing fails, and '
-        '"Skip" clears the flag',
-        (tester) async {
-          final container = ProviderContainer(
-            overrides: [
-              sharedPreferencesProvider.overrideWithValue(prefs),
-              clipManagerProvider.overrideWith(
-                () => _MockClipManagerNotifier([testClip]),
-              ),
-              videoEditorProvider.overrideWith(
-                () => _MockVideoEditorNotifier(
-                  VideoEditorProviderState(finalRenderedClip: testClip),
-                ),
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: const MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: VideoMetadataScreen(),
+      testWidgets('prompts to regenerate or skip when signing fails, and '
+          '"Skip" clears the flag', (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoEditorProvider.overrideWith(
+              () => _MockVideoEditorNotifier(
+                VideoEditorProviderState(finalRenderedClip: testClip),
               ),
             ),
-          );
-          await tester.pumpAndSettle();
+          ],
+        );
+        addTearDown(container.dispose);
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          // Nothing while signing hasn't failed.
-          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // The render finishes without a C2PA content credential.
-          final notifier = container.read(videoEditorProvider.notifier);
-          notifier.state = notifier.state.copyWith(c2paSigningFailed: true);
-          await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        // Nothing while signing hasn't failed.
+        expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
 
-          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsOneWidget);
-          expect(
-            find.text(l10n.videoMetadataC2paMissingRegenerate),
-            findsOneWidget,
-          );
+        // The render finishes without a C2PA content credential.
+        final notifier = container.read(videoEditorProvider.notifier);
+        notifier.state = notifier.state.copyWith(c2paSigningFailed: true);
+        await tester.pumpAndSettle();
 
-          await tester.tap(
-            find.text(l10n.videoMetadataC2paMissingSkip),
-          );
-          await tester.pumpAndSettle();
+        expect(find.text(l10n.videoMetadataC2paMissingTitle), findsOneWidget);
+        expect(
+          find.text(l10n.videoMetadataC2paMissingRegenerate),
+          findsOneWidget,
+        );
 
-          expect(
-            container.read(videoEditorProvider).c2paSigningFailed,
-            isFalse,
-            reason: 'skipping clears the pending prompt',
-          );
-          expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
-        },
-      );
+        await tester.tap(find.text(l10n.videoMetadataC2paMissingSkip));
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(videoEditorProvider).c2paSigningFailed,
+          isFalse,
+          reason: 'skipping clears the pending prompt',
+        );
+        expect(find.text(l10n.videoMetadataC2paMissingTitle), findsNothing);
+      });
 
       testWidgets(
         '"Regenerate" re-signs (isProcessing) rather than posting without '

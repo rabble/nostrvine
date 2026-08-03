@@ -181,7 +181,19 @@ class VideoEditorProviderState {
   /// - Metadata is within the 64KB limit
   /// - Final rendered clip is available
   bool get isValidToPost =>
-      !metadataLimitReached && !isProcessing && finalRenderedClip != null;
+      !metadataLimitReached &&
+      !isProcessing &&
+      finalRenderedClip != null &&
+      hasValidPublicAudioAttribution;
+
+  bool get requiresPublicAudioAttribution =>
+      allowAudioReuse &&
+      !reusesExternalAudio &&
+      audioForAttribution?.externalSource == null;
+
+  bool get hasValidPublicAudioAttribution =>
+      !requiresPublicAudioAttribution ||
+      (audioShareAttribution?.isValid ?? false);
 
   /// Whether the video's audio is reused from *another creator* — a sound the
   /// user is not entitled to re-offer for reuse.

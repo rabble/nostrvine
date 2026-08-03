@@ -35,6 +35,7 @@ SavedSound _richSound() => const SavedSound(
 
 Widget _app(
   SavedSound sound, {
+  VoidCallback? onTap,
   VoidCallback? onPreview,
   VoidCallback? onEdit,
   VoidCallback? onRemove,
@@ -47,6 +48,7 @@ Widget _app(
     body: SingleChildScrollView(
       child: SavedSoundCard(
         sound: sound,
+        onTap: onTap ?? () {},
         onPreview: onPreview ?? () {},
         onEdit: onEdit ?? () {},
         onRemove: onRemove ?? () {},
@@ -74,6 +76,15 @@ void main() {
     expect(find.text('birds'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('opens details when the card body is tapped', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(_app(_richSound(), onTap: () => tapped = true));
+
+    await tester.tap(find.text('Morning inspiration'));
+
+    expect(tapped, isTrue);
   });
 
   testWidgets(

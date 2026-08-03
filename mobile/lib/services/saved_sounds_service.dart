@@ -116,25 +116,6 @@ class SavedSoundsService {
     await _writeSavedSounds(sounds);
   }
 
-  /// Overwrites the persisted list. Used by the notifier after backfilling
-  /// missing fields (e.g. duration) on legacy entries.
-  Future<void> replaceAll(List<AudioEvent> sounds) {
-    final existing = {
-      for (final record in loadSavedSounds()) record.id: record,
-    };
-    return _writeSavedSounds(
-      sounds
-          .map(
-            (sound) => (existing[sound.id] ?? SavedSound.fromLegacy(sound))
-                .copyWith(audio: _persistableSound(sound)),
-          )
-          .toList(growable: false),
-    );
-  }
-
-  Future<void> replaceAllSavedSounds(List<SavedSound> sounds) =>
-      _writeSavedSounds(sounds);
-
   List<SavedSound> _readLegacySounds(List<dynamic> decoded) {
     final sounds = <SavedSound>[];
     for (final entry in decoded.whereType<Map>()) {

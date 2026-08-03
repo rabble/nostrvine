@@ -24,7 +24,7 @@ import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';

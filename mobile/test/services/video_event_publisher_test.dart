@@ -11,7 +11,12 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart'
-    show AudioEvent, AudioExternalSource, AudioLicenseMetadata, audioEventKind;
+    show
+        AudioEvent,
+        AudioExternalSource,
+        AudioLicenseMetadata,
+        UserProfile,
+        audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -21,7 +26,7 @@ import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
@@ -896,6 +901,25 @@ void main() {
           final audioEvent = signedEvents.singleWhere(
             (event) => event.kind == audioEventKind,
           );
+          final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
+          expect(
+            _containsTag(audioEvent.tags, [
+              'title',
+              'Original sound - @$fallbackName',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioEvent.tags, ['creator', fallbackName]),
+            isTrue,
+          );
+          final publicCreditTags = audioEvent.tags
+              .where(
+                (tag) =>
+                    tag.firstOrNull == 'title' || tag.firstOrNull == 'creator',
+              )
+              .expand((tag) => tag);
+          expect(publicCreditTags.join(' '), isNot(contains(testPubkey)));
           final videoEvent = signedEvents.singleWhere(
             (event) => event.kind != audioEventKind,
           );

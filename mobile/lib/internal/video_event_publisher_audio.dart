@@ -310,7 +310,7 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       );
 
       // Step 3: Create public title and creator credit.
-      var creatorName = pubkey;
+      var creatorName = UserProfile.defaultDisplayNameFor(pubkey);
       if (_profileRepository != null) {
         try {
           final profile = await _profileRepository.fetchFreshProfile(

@@ -13,6 +13,7 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 class SavedSoundCard extends StatelessWidget {
   const SavedSoundCard({
     required this.sound,
+    required this.onTap,
     required this.onPreview,
     required this.onEdit,
     required this.onRemove,
@@ -20,6 +21,7 @@ class SavedSoundCard extends StatelessWidget {
   });
 
   final SavedSound sound;
+  final VoidCallback onTap;
   final VoidCallback onPreview;
   final VoidCallback onEdit;
   final VoidCallback onRemove;
@@ -37,72 +39,81 @@ class SavedSoundCard extends StatelessWidget {
     final displayTitle = _displayTitle(context);
     return Semantics(
       label: duration.isEmpty ? displayTitle : '$displayTitle, $duration',
+      button: true,
       container: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: VineTheme.cardBackground,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SavedSoundThumbnail(url: source?.thumbnailUrl),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SavedSoundText(
-                      displayTitle: displayTitle,
-                      sound: sound,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SavedSoundThumbnail(url: source?.thumbnailUrl),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SavedSoundText(
+                          displayTitle: displayTitle,
+                          sound: sound,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (sound.waveformSamples.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _SavedSoundWaveform(sound: sound),
+                  ],
+                  if (sound.personalHashtags.isNotEmpty ||
+                      sound.catalogTags.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _SavedSoundTags(sound: sound),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      DivineIconButton(
+                        key: const Key('saved_sound_preview'),
+                        icon: DivineIconName.play,
+                        semanticLabel: context.l10n.savedSoundPreviewAction,
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.secondary,
+                        onPressed: onPreview,
+                      ),
+                      const SizedBox(width: 8),
+                      DivineIconButton(
+                        key: const Key('saved_sound_edit'),
+                        icon: DivineIconName.pencilSimple,
+                        semanticLabel: context.l10n.savedSoundEditAction,
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.secondary,
+                        onPressed: onEdit,
+                      ),
+                      const SizedBox(width: 8),
+                      DivineIconButton(
+                        key: const Key('saved_sound_remove'),
+                        icon: DivineIconName.trash,
+                        semanticLabel: context.l10n.savedSoundRemoveAction,
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.error,
+                        onPressed: onRemove,
+                      ),
+                    ],
                   ),
                 ],
               ),
-              if (sound.waveformSamples.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _SavedSoundWaveform(sound: sound),
-              ],
-              if (sound.personalHashtags.isNotEmpty ||
-                  sound.catalogTags.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _SavedSoundTags(sound: sound),
-              ],
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  DivineIconButton(
-                    key: const Key('saved_sound_preview'),
-                    icon: DivineIconName.play,
-                    semanticLabel: context.l10n.savedSoundPreviewAction,
-                    size: DivineIconButtonSize.small,
-                    type: DivineIconButtonType.secondary,
-                    onPressed: onPreview,
-                  ),
-                  const SizedBox(width: 8),
-                  DivineIconButton(
-                    key: const Key('saved_sound_edit'),
-                    icon: DivineIconName.pencilSimple,
-                    semanticLabel: context.l10n.savedSoundEditAction,
-                    size: DivineIconButtonSize.small,
-                    type: DivineIconButtonType.secondary,
-                    onPressed: onEdit,
-                  ),
-                  const SizedBox(width: 8),
-                  DivineIconButton(
-                    key: const Key('saved_sound_remove'),
-                    icon: DivineIconName.trash,
-                    semanticLabel: context.l10n.savedSoundRemoveAction,
-                    size: DivineIconButtonSize.small,
-                    type: DivineIconButtonType.error,
-                    onPressed: onRemove,
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -184,9 +195,7 @@ class _SavedSoundText extends StatelessWidget {
             secondaryTitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
           ),
         if (source?.creatorName case final creator?)
           Text(
@@ -198,9 +207,7 @@ class _SavedSoundText extends StatelessWidget {
             description,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodySmallFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
         if (source?.transcript case final transcript?) ...[
           const SizedBox(height: 4),
@@ -209,9 +216,7 @@ class _SavedSoundText extends StatelessWidget {
             key: const Key('saved_sound_transcript'),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodySmallFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
         ],
       ],

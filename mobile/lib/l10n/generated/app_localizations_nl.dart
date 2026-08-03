@@ -10898,7 +10898,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundAllowRemix => 'Allow others to remix this sound';
 
   @override
+  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+
+  @override
   String get soundPublicCredit => 'Public sound credit';
+
+  @override
+  String get soundCreditRequired => 'Add public sound credit before posting.';
 
   @override
   String get soundSharedAs => 'Shared as';
