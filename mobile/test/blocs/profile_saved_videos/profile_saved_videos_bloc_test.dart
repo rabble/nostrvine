@@ -177,6 +177,51 @@ void main() {
       );
 
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'grows a persisted window shorter than a page even when the bookmark '
+        'list is unchanged',
+        setUp: () async {
+          final ids = List.generate(50, (i) => 'video-$i');
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: ids.take(6).map(createTestVideo).toList(),
+              itemIds: ids,
+              nextPageOffset: 6,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+          when(() => mockBookmarkService.globalBookmarks).thenReturn([
+            for (final id in ids) BookmarkItem(type: 'e', id: id),
+          ]);
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments[0] as List<String>)
+                    .map(createTestVideo)
+                    .toList(),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>().having(
+            (s) => s.videos.length,
+            'short cached window served first',
+            6,
+          ),
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.length, 'grown to a full page', 18)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 18)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
         'filters non-event bookmarks (hashtags, urls) and loads videos for '
         'event bookmarks',
         setUp: () {

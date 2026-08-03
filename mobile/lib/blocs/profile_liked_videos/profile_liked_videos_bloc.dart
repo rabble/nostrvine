@@ -253,7 +253,9 @@ class ProfileLikedVideosBloc
   /// window: when the ID list is unchanged (the common reopen) this is just a
   /// flag flip; when it changed, [_reconcile] drops unliked videos and fetches
   /// only the newly-liked IDs in the window, so the UI thread never does bulk
-  /// video work here.
+  /// video work here. The one exception is an underfilled window
+  /// ([_isWindowUnderfilled]), which reconciles even on an unchanged ID list
+  /// because it can never recover otherwise.
   Future<void> _warmRevalidate(Emitter<ProfileLikedVideosState> emit) async {
     final List<String> freshIds;
     if (_isOtherUserProfile) {
@@ -263,7 +265,8 @@ class ProfileLikedVideosBloc
     }
     if (isClosed) return;
 
-    if (listEquals(freshIds, state.likedEventIds)) {
+    if (listEquals(freshIds, state.likedEventIds) &&
+        !_isWindowUnderfilled(freshIds)) {
       // Nothing changed — just hide the bar. No re-fetch, no re-serialize.
       emit(state.copyWith(isRefreshing: false));
       return;
@@ -297,7 +300,8 @@ class ProfileLikedVideosBloc
   /// Keeps videos still liked (in fresh order), drops unliked ones, and
   /// fetches only the liked IDs in the loaded window that have no video yet —
   /// typically just the clip the user (or another device) liked at the top.
-  /// Bounded to the loaded window so it never bulk-fetches.
+  /// Bounded to the loaded window (but never below one page) so it never
+  /// bulk-fetches.
   Future<({List<VideoEvent> videos, int nextPageOffset, bool hasMoreContent})>
   _reconcile(List<String> freshIds) async {
     final byId = {for (final video in state.videos) video.id: video};
@@ -307,11 +311,15 @@ class ProfileLikedVideosBloc
     // previous total), which would otherwise balloon the window to a full
     // re-fetch on reopen. Falls back to 0 (no growth) if the old top is gone.
     final newAtTop = _newItemsAtTop(freshIds);
-    final windowSize =
-        (max(state.nextPageOffset, state.videos.length) + newAtTop).clamp(
-          0,
-          freshIds.length,
-        );
+    // Floored at one page. The window is otherwise bounded by what is already
+    // loaded, so a first load that resolved fewer than a page — e.g. the cold
+    // path ran against a local liked-ID list that had not finished syncing —
+    // stays that size permanently: every reconcile re-derives the same short
+    // window and persists it, and a grid shorter than the viewport never
+    // scrolls, so scroll-driven pagination can never grow it either.
+    final loadedWindow =
+        max(state.nextPageOffset, state.videos.length) + newAtTop;
+    final windowSize = max(loadedWindow, _pageSize).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
@@ -341,6 +349,16 @@ class ProfileLikedVideosBloc
     final index = freshIds.indexOf(state.likedEventIds.first);
     return index < 0 ? 0 : index;
   }
+
+  /// Whether the loaded window holds less than a page while [ids] still has
+  /// unconsumed entries.
+  ///
+  /// This is the state a short first load leaves behind, and it must be
+  /// topped up even when the ID list itself is unchanged — otherwise the
+  /// unchanged-IDs fast path in [_warmRevalidate] would keep the short window
+  /// alive on every reopen for anyone whose ID list has settled.
+  bool _isWindowUnderfilled(List<String> ids) =>
+      state.nextPageOffset < _pageSize && state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
       ProfileVideoListSnapshot(
