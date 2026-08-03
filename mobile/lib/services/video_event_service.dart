@@ -1220,6 +1220,27 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     required String stableId,
   }) => '${pubkey.toLowerCase()}:$stableId';
 
+  /// Whether a raw relay event is already tombstoned, by id or — for
+  /// addressable videos, where an edit mints a new id for the same clip — by
+  /// its `pubkey:d-tag` coordinate.
+  bool _isKnownDeletedRawEvent(Event event) {
+    if (_knownDeletedVideoIds.contains(event.id)) return true;
+    if (!NIP71VideoKinds.isVideoKind(event.kind)) return false;
+
+    for (final tag in event.tags) {
+      if (tag.length < 2 || tag[0] != 'd') continue;
+      final dTag = tag[1];
+      if (dTag.isEmpty) return false;
+      return _knownDeletedVideoCoordinateKeys.contains(
+        _knownDeletionCoordinateKeyFromParts(
+          pubkey: event.pubkey,
+          stableId: dTag,
+        ),
+      );
+    }
+    return false;
+  }
+
   void _handleObservedDeletionEvent(Event deletionEvent) {
     if (deletionEvent.kind != _eventDeletionKind) return;
 
@@ -1373,9 +1394,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (router == null || eventIds.isEmpty) return;
 
     unawaited(
-      Future.wait(eventIds.map(router.db.nostrEventsDao.deleteEventById))
-          .then((results) {
-            final purged = results.where((deleted) => deleted).length;
+      router.db.nostrEventsDao
+          .deleteEventsByIds(eventIds.toList())
+          .then((purged) {
             if (purged == 0) return;
             Log.debug(
               'Purged $purged deleted event(s) from the local cache',
@@ -2124,9 +2145,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           }
         }
 
-        // Process cached events immediately (same flow as relay events)
+        // Process cached events immediately (same flow as relay events, minus
+        // the write-back — they were just read out of the store).
         for (final event in cachedEvents) {
-          _handleNewVideoEvent(event, subscriptionType);
+          _handleNewVideoEvent(event, subscriptionType, persist: false);
         }
 
         // Notify UI with cached results for instant display
@@ -2479,11 +2501,18 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
   }
 
-  /// Handle new video event from subscription
+  /// Handle new video event from subscription.
+  ///
+  /// [persist] must be false for events that were just read back out of the
+  /// local store. They are already persisted, and re-queueing them is not
+  /// merely redundant: the router drains the background queue last, so under
+  /// the startup relay burst those writes land *after* an observed deletion
+  /// has purged the same rows — resurrecting deleted videos on every launch.
   void _handleNewVideoEvent(
     dynamic eventData,
-    SubscriptionType subscriptionType,
-  ) {
+    SubscriptionType subscriptionType, {
+    bool persist = true,
+  }) {
     try {
       // The event should already be an Event object from NostrService
       if (eventData is! Event) {
@@ -2499,10 +2528,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
       // Route ALL events to database first (single source of truth)
       // Fire-and-forget: database writes shouldn't block event processing.
-      _eventRouter?.handleEvent(
-        event,
-        priority: EventIngestionPriority.background,
-      );
+      // Tombstoned events are never re-persisted — a queued write that lands
+      // after the purge would put the row straight back.
+      if (persist && !_isKnownDeletedRawEvent(event)) {
+        _eventRouter?.handleEvent(
+          event,
+          priority: EventIngestionPriority.background,
+        );
+      }
 
       // Fast-path de-duplication before logging and processing
       // Use case-insensitive ID comparison for consistent deduplication

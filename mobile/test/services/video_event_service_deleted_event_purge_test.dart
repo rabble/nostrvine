@@ -151,6 +151,27 @@ void main() {
       expect(await cachedVideoRowCount(), 0);
     });
 
+    test('the cache-first read does not write the row back', () async {
+      // A row already in the store, as after a restart.
+      await db.nostrEventsDao.upsertEvent(_videoEvent());
+      expect(await cachedVideoRowCount(), 1);
+
+      // Cache-first picks it up and hands it to the same handler the relay
+      // path uses. Deliberately no drain here: that write-back is what used to
+      // land after the purge and resurrect the row on every single launch.
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+        authors: const [_authorPubkey],
+      );
+
+      nostrService.emit(_deletionEvent());
+      await pumpEventQueue();
+      await pumpEventQueue();
+      await eventRouter.drainForTesting();
+
+      expect(await cachedVideoRowCount(), 0);
+    });
+
     test('deletes the row on a locally initiated delete too', () async {
       await service.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
