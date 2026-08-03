@@ -177,6 +177,110 @@ void main() {
       );
 
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'grows a persisted window shorter than a page even when the bookmark '
+        'list is unchanged',
+        setUp: () async {
+          final ids = List.generate(50, (i) => 'video-$i');
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: ids.take(6).map(createTestVideo).toList(),
+              itemIds: ids,
+              nextPageOffset: 6,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+          when(() => mockBookmarkService.globalBookmarks).thenReturn([
+            for (final id in ids) BookmarkItem(type: 'e', id: id),
+          ]);
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments[0] as List<String>)
+                    .map(createTestVideo)
+                    .toList(),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>().having(
+            (s) => s.videos.length,
+            'short cached window served first',
+            6,
+          ),
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.length, 'grown to a full page', 18)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 18)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
+        'stays on the fast path for a sub-page window whose IDs are all '
+        'consumed',
+        setUp: () async {
+          // 6 bookmark IDs consumed, only 5 resolved to a video. The window
+          // is under a page with nothing left to top it up with, so
+          // revalidation must not re-enter reconcile. See
+          // ProfileLikedVideosBloc's sibling test for the loop this pins.
+          final ids = List.generate(6, (i) => 'video-$i');
+          await cacheDao.write(
+            key: '$currentUserPubkey:profile_saved_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: ids
+                  .where((id) => id != 'video-3')
+                  .map(createTestVideo)
+                  .toList(),
+              itemIds: ids,
+              nextPageOffset: 6,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockBookmarkService.globalBookmarks).thenReturn([
+            for (final id in ids) BookmarkItem(type: 'e', id: id),
+          ]);
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments[0] as List<String>)
+                    .where((id) => id != 'video-3')
+                    .map(createTestVideo)
+                    .toList(),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileSavedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.length, 'cached videos', 5)
+              .having((s) => s.isRefreshing, 'isRefreshing', true),
+          isA<ProfileSavedVideosState>()
+              .having((s) => s.videos.length, 'unchanged videos', 5)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 6)
+              .having((s) => s.isRefreshing, 'isRefreshing', false),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
         'filters non-event bookmarks (hashtags, urls) and loads videos for '
         'event bookmarks',
         setUp: () {

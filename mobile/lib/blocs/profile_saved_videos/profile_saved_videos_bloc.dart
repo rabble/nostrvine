@@ -183,7 +183,8 @@ class ProfileSavedVideosBloc
     List<String> freshIds,
     Emitter<ProfileSavedVideosState> emit,
   ) async {
-    if (listEquals(freshIds, state.savedEventIds)) {
+    if (listEquals(freshIds, state.savedEventIds) &&
+        !_isWindowUnderfilled(freshIds)) {
       emit(state.copyWith(isRefreshing: false));
       return;
     }
@@ -221,11 +222,11 @@ class ProfileSavedVideosBloc
     // persisted ID list can't balloon the reconcile window into a full
     // re-fetch on reopen (see ProfileLikedVideosBloc for the rationale).
     final newAtTop = _newItemsAtTop(freshIds);
-    final windowSize =
-        (max(state.nextPageOffset, state.videos.length) + newAtTop).clamp(
-          0,
-          freshIds.length,
-        );
+    // Floored at one page so a window that was once shorter than a page can
+    // recover; see ProfileLikedVideosBloc for the lock-in it prevents.
+    final loadedWindow =
+        max(state.nextPageOffset, state.videos.length) + newAtTop;
+    final windowSize = max(loadedWindow, _pageSize).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
@@ -255,6 +256,13 @@ class ProfileSavedVideosBloc
     final index = freshIds.indexOf(state.savedEventIds.first);
     return index < 0 ? 0 : index;
   }
+
+  /// Whether the loaded window holds less than a page while [ids] still has
+  /// unconsumed entries — the state a short first load leaves behind, which
+  /// must be topped up even when the ID list itself is unchanged. See
+  /// ProfileLikedVideosBloc for the lock-in this prevents.
+  bool _isWindowUnderfilled(List<String> ids) =>
+      state.nextPageOffset < _pageSize && state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
       ProfileVideoListSnapshot(

@@ -344,6 +344,175 @@ void main() {
       );
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'grows a persisted window shorter than a page even when the liked-ID '
+        'list is unchanged',
+        setUp: () async {
+          final ids = List.generate(50, (i) => 'like$i');
+          // A previous run persisted a 6-item window: its cold load resolved
+          // the local liked-ID list before the relay sync had filled it in.
+          await cacheDao.write(
+            key: '$currentUserPubkey:$currentUserPubkey:profile_liked_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: ids.take(6).map(createTestVideo).toList(),
+              itemIds: ids,
+              nextPageOffset: 6,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+          // Relay agrees with the persisted ID list, so the unchanged-IDs
+          // fast path would otherwise leave the short window in place.
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => LikesSyncResult(
+              orderedEventIds: ids,
+              eventIdToReactionId: const {},
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments[0] as List<String>)
+                    .map(createTestVideo)
+                    .toList(),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.videos.length,
+            'short cached window served first',
+            6,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.length, 'grown to a full page', 18)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 18)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true)
+              .having((s) => s.isRefreshing, 'isRefreshing', false),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'reconciling a short window against a longer ID list refills it to a '
+        'page',
+        setUp: () async {
+          // The persisted ID list is capped, so it differs from the relay's —
+          // reconciliation runs, and must not inherit the 6-item window.
+          final cachedIds = List.generate(30, (i) => 'like$i');
+          final freshIds = List.generate(40, (i) => 'like$i');
+          await cacheDao.write(
+            key: '$currentUserPubkey:$currentUserPubkey:profile_liked_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: cachedIds.take(6).map(createTestVideo).toList(),
+              itemIds: cachedIds,
+              nextPageOffset: 6,
+              hasMoreContent: true,
+            ).toJson(),
+          );
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => LikesSyncResult(
+              orderedEventIds: freshIds,
+              eventIdToReactionId: const {},
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments[0] as List<String>)
+                    .map(createTestVideo)
+                    .toList(),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.videos.length,
+            'short cached window served first',
+            6,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.length, 'refilled to a page', 18)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 18)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'stays on the fast path for a sub-page window whose IDs are all '
+        'consumed',
+        setUp: () async {
+          // Sparse likes: 6 IDs consumed, only 5 resolved to a video. The
+          // window is under a page, but there is nothing left to top it up
+          // with, so revalidation must not re-enter reconcile. Counting
+          // resolved videos rather than consumed IDs would loop here — a
+          // fetch, a re-serialize and a cache write on every single reopen.
+          final ids = List.generate(6, (i) => 'like$i');
+          await cacheDao.write(
+            key: '$currentUserPubkey:$currentUserPubkey:profile_liked_videos',
+            payload: ProfileVideoListSnapshot(
+              videos: ids
+                  .where((id) => id != 'like3')
+                  .map(createTestVideo)
+                  .toList(),
+              itemIds: ids,
+              nextPageOffset: 6,
+              hasMoreContent: false,
+            ).toJson(),
+          );
+          when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
+            (_) async => LikesSyncResult(
+              orderedEventIds: ids,
+              eventIdToReactionId: const {},
+            ),
+          );
+          // `like3` stays unresolvable, so a reconcile would keep asking for
+          // it forever.
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer(
+            (invocation) async =>
+                (invocation.positionalArguments[0] as List<String>)
+                    .where((id) => id != 'like3')
+                    .map(createTestVideo)
+                    .toList(),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.length, 'cached videos', 5)
+              .having((s) => s.isRefreshing, 'isRefreshing', true),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.videos.length, 'unchanged videos', 5)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 6)
+              .having((s) => s.isRefreshing, 'isRefreshing', false),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'warm revalidation drops unliked videos without re-fetching',
         setUp: () async {
           await cacheDao.write(
