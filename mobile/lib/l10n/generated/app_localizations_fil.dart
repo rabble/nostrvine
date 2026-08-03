@@ -838,10 +838,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Display Name';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Anumang pangalan o label na gusto mo. Hindi kailangang unique.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Maglagay ng display name';
 
   @override
@@ -5269,9 +5265,6 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Nakopya ang public key';
-
-  @override
-  String get profileEditPublicKeyLink => 'Tingnan ang public key mo';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Na-save sa Camera Roll';

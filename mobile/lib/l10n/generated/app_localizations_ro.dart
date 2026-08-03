@@ -860,10 +860,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nume afișat';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Orice nume sau etichetă vrei. Nu trebuie să fie unic.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Introdu un nume afișat';
 
   @override
@@ -5344,9 +5340,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Cheia publică a fost copiată';
-
-  @override
-  String get profileEditPublicKeyLink => 'Vezi cheia ta publică';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Salvat în galerie';

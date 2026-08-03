@@ -796,10 +796,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Görünen Ad';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'İstediğin herhangi bir ad veya etiket. Benzersiz olması gerekmez.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Lütfen bir görünen ad gir';
 
   @override
@@ -5172,9 +5168,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Açık anahtar kopyalandı';
-
-  @override
-  String get profileEditPublicKeyLink => 'Açık anahtarını görüntüle';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Kamera Rulosuna Kaydedildi';

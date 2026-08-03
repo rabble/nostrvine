@@ -56,16 +56,21 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
   String? _seededBio;
   String? _seededWebsite;
   String? _seededUsername;
+  String? _seededExternalNip05;
+  String? _seededBanner;
 
   /// Whether a profile has reached the form yet.
   bool _hasSeeded = false;
 
-  /// Whether each NIP-05 one-shot has run.
+  /// Whether a persisted divine handle or external NIP-05 has been seen.
   ///
-  /// Tracked apart from [_hasSeeded], and keyed on the value rather than on
-  /// the first snapshot: the cached profile that fills the form can predate a
-  /// NIP-05 the relay's fresher copy carries — set on another device, say — and
-  /// gating these on the first snapshot left the editor never learning it.
+  /// Tracked apart from [_hasSeeded], and keyed on the value rather than on the
+  /// first snapshot: the cached profile that fills the form can predate a NIP-05
+  /// the relay's fresher copy carries — set on another device, say — and gating
+  /// these on the first snapshot left the editor never learning it. The mode is
+  /// still allowed to change while the handle field is untouched, so a stale
+  /// cached external address cannot keep Save in external mode after the relay
+  /// reports a Divine handle.
   bool _hasSeededUsername = false;
   bool _hasSeededExternalNip05 = false;
 
@@ -118,7 +123,9 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
       profile.website ?? '',
       _seededWebsite,
     );
-    if (extractedUsername != null) {
+    final usernameUntouched = _usernameFieldIsUntouched;
+    final previousSeededUsername = _seededUsername;
+    if (extractedUsername != null && usernameUntouched) {
       _seededUsername = _seedText(
         widget.nip05Controller,
         extractedUsername,
@@ -145,35 +152,75 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
         ..add(InitialPersistedBannerSet(profile.banner));
     } else {
       // A fresher picture or banner may replace the seeded one, but only while
-      // the user has staged nothing of their own — InitialPersistedBannerSet
-      // also rewrites the pending colour, which would undo a swatch they just
-      // picked.
+      // the user has staged nothing of their own.
       final editorState = editorBloc.state;
       if (editorState.pendingPictureUrl == null &&
           !editorState.pictureCleared) {
         editorBloc.add(InitialPersistedPictureSet(profile.picture));
       }
-      if (editorState.pendingBannerUrl == null &&
-          editorState.pendingBannerColor == null &&
-          !editorState.bannerCleared) {
+      if (_bannerStillMatchesSeed(editorState)) {
         editorBloc.add(InitialPersistedBannerSet(profile.banner));
       }
     }
+    _seededBanner = profile.banner;
 
-    if (!_hasSeededUsername && extractedUsername != null) {
-      _hasSeededUsername = true;
-      editorBloc.add(InitialUsernameSet(extractedUsername));
+    if (extractedUsername != null && usernameUntouched) {
+      if (!_hasSeededUsername || previousSeededUsername != extractedUsername) {
+        _hasSeededUsername = true;
+        editorBloc
+          ..add(InitialUsernameSet(extractedUsername))
+          ..add(const Nip05ModeChanged(Nip05Mode.divine));
+      }
+      _seededExternalNip05 = null;
     }
-    if (!_hasSeededExternalNip05 && externalNip05 != null) {
-      _hasSeededExternalNip05 = true;
-      // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
-      // Seed editor state here so Save from Edit Profile preserves it.
-      editorBloc
-        ..add(InitialExternalNip05Set(externalNip05))
-        ..add(const Nip05ModeChanged(Nip05Mode.external_))
-        ..add(ExternalNip05Changed(externalNip05));
+    if (externalNip05 != null &&
+        extractedUsername == null &&
+        usernameUntouched) {
+      if (!_hasSeededExternalNip05 || _seededExternalNip05 != externalNip05) {
+        _hasSeededExternalNip05 = true;
+        _seededExternalNip05 = externalNip05;
+        // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
+        // Seed editor state here so Save from Edit Profile preserves it.
+        editorBloc
+          ..add(InitialExternalNip05Set(externalNip05))
+          ..add(const Nip05ModeChanged(Nip05Mode.external_))
+          ..add(ExternalNip05Changed(externalNip05));
+      }
     }
   }
+
+  bool get _usernameFieldIsUntouched {
+    final seeded = _seededUsername;
+    if (seeded == null) return widget.nip05Controller.text.isEmpty;
+    return widget.nip05Controller.text == seeded;
+  }
+
+  bool _bannerStillMatchesSeed(ProfileEditorState state) {
+    if (state.bannerCleared || state.pendingBannerUrl != null) return false;
+    final stagedColor = state.pendingBannerColor;
+    if (stagedColor == null) return true;
+    return _bannerColorString(stagedColor) ==
+        _normalizedBannerColor(_seededBanner);
+  }
+
+  static String? _normalizedBannerColor(String? banner) {
+    if (banner == null || banner.isEmpty || banner.startsWith('http')) {
+      return null;
+    }
+    var hex = banner;
+    if (hex.startsWith('0x')) {
+      hex = hex.substring(2);
+    } else if (hex.startsWith('#')) {
+      hex = hex.substring(1);
+    }
+    if (hex.length != 6 || int.tryParse(hex, radix: 16) == null) {
+      return null;
+    }
+    return '0x${hex.toLowerCase()}';
+  }
+
+  static String _bannerColorString(Color color) =>
+      '0x${color.toARGB32().toRadixString(16).substring(2)}';
 
   /// Writes [value] into [controller] unless the user has edited it since the
   /// last seed. Returns the value to remember for the next comparison.

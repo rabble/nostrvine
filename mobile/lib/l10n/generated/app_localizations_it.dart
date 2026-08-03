@@ -835,10 +835,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nome visualizzato';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Qualsiasi nome o etichetta. Non deve essere univoco.';
-
-  @override
   String get profileSetupDisplayNameRequired =>
       'Inserisci un nome visualizzato';
 
@@ -5253,9 +5249,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Chiave pubblica copiata';
-
-  @override
-  String get profileEditPublicKeyLink => 'Vedi la tua chiave pubblica';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Salvato nel rullino';

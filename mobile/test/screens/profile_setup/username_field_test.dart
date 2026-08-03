@@ -74,14 +74,12 @@ void main() {
       expect(changes.last.username, 'bob');
     });
 
-    testWidgets('pins the divine.video suffix after the handle', (
-      tester,
-    ) async {
+    testWidgets('pins the public handle shape to at-name', (tester) async {
       await pump(tester);
 
       final field = tester.widget<TextField>(find.byType(TextField));
-      expect(field.decoration?.suffixText, '@divine.video');
-      expect(field.decoration?.prefixText, isNull);
+      expect(field.decoration?.prefixText, '@');
+      expect(field.decoration?.suffixText, isNull);
     });
 
     testWidgets('the keyboard next key skips the select row for the bio', (

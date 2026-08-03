@@ -809,10 +809,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'الاسم المعروض';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'أي اسم أو لقب تريد. لا يلزم أن يكون فريدًا.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'يرجى إدخال اسم معروض';
 
   @override
@@ -5160,9 +5156,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'تم نسخ المفتاح العام';
-
-  @override
-  String get profileEditPublicKeyLink => 'عرض مفتاحك العام';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'تم الحفظ في ألبوم الكاميرا';

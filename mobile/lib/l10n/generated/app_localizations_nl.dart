@@ -829,10 +829,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Weergavenaam';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Elke naam of label die je wilt. Hoeft niet uniek te zijn.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Voer een weergavenaam in';
 
   @override
@@ -5223,9 +5219,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Publieke sleutel gekopieerd';
-
-  @override
-  String get profileEditPublicKeyLink => 'Bekijk je publieke sleutel';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Opgeslagen in camerarol';

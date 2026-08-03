@@ -842,10 +842,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nom affiché';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'N\'importe quel nom ou pseudo. Pas besoin qu\'il soit unique.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Entre un nom affiché';
 
   @override
@@ -5270,9 +5266,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Clé publique copiée';
-
-  @override
-  String get profileEditPublicKeyLink => 'Voir ta clé publique';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Enregistré dans la pellicule';

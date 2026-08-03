@@ -757,9 +757,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '표시 이름';
 
   @override
-  String get profileSetupDisplayNameHelper => '원하는 아무 이름이나 라벨이요. 고유하지 않아도 돼요.';
-
-  @override
   String get profileSetupDisplayNameRequired => '표시 이름을 입력해주세요';
 
   @override
@@ -4965,9 +4962,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => '공개 키를 복사했어요';
-
-  @override
-  String get profileEditPublicKeyLink => '공개 키 보기';
 
   @override
   String get saveOriginalSavedToCameraRoll => '카메라 롤에 저장했어요';

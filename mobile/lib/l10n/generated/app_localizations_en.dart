@@ -825,10 +825,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Display Name';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Any name or label you want. Doesn\'t have to be unique.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Please enter a display name';
 
   @override
@@ -5199,9 +5195,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Public key copied';
-
-  @override
-  String get profileEditPublicKeyLink => 'View your public key';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Saved to Camera Roll';

@@ -798,10 +798,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nama Tampilan';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Nama atau label apa pun yang kamu mau. Tidak harus unik.';
-
-  @override
   String get profileSetupDisplayNameRequired =>
       'Silakan masukkan nama tampilan';
 
@@ -5164,9 +5160,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Kunci publik tersalin';
-
-  @override
-  String get profileEditPublicKeyLink => 'Lihat kunci publikmu';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Disimpan ke Camera Roll';

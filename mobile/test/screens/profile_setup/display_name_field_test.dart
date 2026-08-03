@@ -1,5 +1,5 @@
 // ABOUTME: Widget tests for DisplayNameField in the profile-setup form.
-// ABOUTME: Covers label rendering, supporting copy, and controller binding.
+// ABOUTME: Covers label rendering, card shape, and controller binding.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -47,8 +47,6 @@ void main() {
       await pump(tester);
 
       expect(find.text(l10n.profileSetupDisplayNameLabel), findsOneWidget);
-      // The card is the plain 76px height in the design — no supporting text.
-      expect(find.text(l10n.profileSetupDisplayNameHelper), findsNothing);
     });
 
     testWidgets('typing updates the bound controller', (tester) async {

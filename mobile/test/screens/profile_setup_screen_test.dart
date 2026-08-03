@@ -890,7 +890,6 @@ void main() {
           MyProfileLoaded(
             profile: cachedProfile(eventId: freshEventId),
             isFresh: true,
-            extractedUsername: 'alice',
             externalNip05: 'alice@example.com',
           ),
         );
@@ -899,10 +898,7 @@ void main() {
         final captured = verify(
           () => mockEditorBloc.add(captureAny()),
         ).captured;
-        expect(
-          captured.whereType<InitialUsernameSet>().single.username,
-          'alice',
-        );
+        expect(captured.whereType<InitialUsernameSet>(), isEmpty);
         expect(
           captured.whereType<InitialExternalNip05Set>().single.nip05,
           'alice@example.com',
@@ -914,6 +910,139 @@ void main() {
           hasLength(1),
         );
       });
+
+      testWidgets(
+        'a fresher Divine handle replaces a stale cached external NIP-05',
+        (tester) async {
+          final controller = StreamController<MyProfileState>();
+          addTearDown(controller.close);
+          whenListen(
+            mockMyProfileBloc,
+            controller.stream,
+            initialState: const MyProfileInitial(),
+          );
+
+          await pumpScreen(tester);
+          controller.add(
+            MyProfileLoading(
+              profile: cachedProfile(),
+              externalNip05: 'alice@example.com',
+            ),
+          );
+          await tester.pump();
+
+          controller.add(
+            MyProfileLoaded(
+              profile: cachedProfile(eventId: freshEventId),
+              isFresh: true,
+              extractedUsername: 'bob',
+            ),
+          );
+          await tester.pump();
+
+          final captured = verify(
+            () => mockEditorBloc.add(captureAny()),
+          ).captured;
+          expect(
+            captured.whereType<InitialExternalNip05Set>().single.nip05,
+            'alice@example.com',
+          );
+          expect(
+            captured.whereType<InitialUsernameSet>().single.username,
+            'bob',
+          );
+          expect(
+            captured.whereType<Nip05ModeChanged>().map((e) => e.mode),
+            containsAllInOrder([Nip05Mode.external_, Nip05Mode.divine]),
+          );
+        },
+      );
+
+      testWidgets(
+        'a fresher Divine handle refreshes an untouched cached handle',
+        (
+          tester,
+        ) async {
+          final controller = StreamController<MyProfileState>();
+          addTearDown(controller.close);
+          whenListen(
+            mockMyProfileBloc,
+            controller.stream,
+            initialState: const MyProfileInitial(),
+          );
+
+          await pumpScreen(tester);
+          controller.add(
+            MyProfileLoading(
+              profile: cachedProfile(),
+              extractedUsername: 'alice',
+            ),
+          );
+          await tester.pump();
+
+          controller.add(
+            MyProfileLoaded(
+              profile: cachedProfile(eventId: freshEventId),
+              isFresh: true,
+              extractedUsername: 'bob',
+            ),
+          );
+          await tester.pump();
+
+          final usernames = verify(
+            () => mockEditorBloc.add(captureAny()),
+          ).captured.whereType<InitialUsernameSet>().map((e) => e.username);
+          expect(usernames, containsAllInOrder(['alice', 'bob']));
+        },
+      );
+
+      testWidgets(
+        'a fresher banner replaces an untouched cached colour banner',
+        (tester) async {
+          final controller = StreamController<MyProfileState>();
+          addTearDown(controller.close);
+          whenListen(
+            mockMyProfileBloc,
+            controller.stream,
+            initialState: const MyProfileInitial(),
+          );
+
+          await pumpScreen(tester);
+          controller.add(
+            MyProfileLoading(
+              profile: cachedProfile(banner: '0x33ccbf'),
+            ),
+          );
+          await tester.pump();
+
+          when(() => mockEditorBloc.state).thenReturn(
+            const ProfileEditorState(
+              persistedBanner: '0x33ccbf',
+              pendingBannerColor: Color(0xFF33CCBF),
+            ),
+          );
+          controller.add(
+            MyProfileLoaded(
+              profile: cachedProfile(
+                banner: 'https://cdn.example.com/fresh-banner.jpg',
+                eventId: freshEventId,
+              ),
+              isFresh: true,
+            ),
+          );
+          await tester.pump();
+
+          final seeded = verify(
+            () => mockEditorBloc.add(captureAny()),
+          ).captured.whereType<InitialPersistedBannerSet>().toList();
+          expect(seeded, hasLength(2));
+          expect(seeded.first.banner, '0x33ccbf');
+          expect(
+            seeded.last.banner,
+            'https://cdn.example.com/fresh-banner.jpg',
+          );
+        },
+      );
 
       testWidgets('seeds the NIP-05 once, not on every snapshot', (
         tester,
@@ -930,7 +1059,6 @@ void main() {
         controller.add(
           MyProfileLoading(
             profile: cachedProfile(),
-            extractedUsername: 'alice',
             externalNip05: 'alice@example.com',
           ),
         );
@@ -940,7 +1068,6 @@ void main() {
           MyProfileLoaded(
             profile: cachedProfile(eventId: freshEventId),
             isFresh: true,
-            extractedUsername: 'alice',
             externalNip05: 'alice@example.com',
           ),
         );
@@ -949,7 +1076,7 @@ void main() {
         final captured = verify(
           () => mockEditorBloc.add(captureAny()),
         ).captured;
-        expect(captured.whereType<InitialUsernameSet>(), hasLength(1));
+        expect(captured.whereType<InitialUsernameSet>(), isEmpty);
         expect(captured.whereType<InitialExternalNip05Set>(), hasLength(1));
       });
     });

@@ -410,7 +410,6 @@
     "profileSetupNoRelaysConnected": "አውታረ መረቡ ላይ መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
     "profileSetupRetryLabel": "እንደገና ይሞክሩ",
     "profileSetupDisplayNameLabel": "የማሳያ ስም",
-    "profileSetupDisplayNameHelper": "የሚፈልጉት ማንኛውም ስም ወይም መለያ። ልዩ መሆን የለበትም።",
     "profileSetupDisplayNameRequired": "እባክዎ የማሳያ ስም ያስገቡ",
     "profileSetupBioLabel": "ባዮ (አማራጭ)",
     "profileSetupPublicKeyLabel": "የህዝብ ቁልፍ (npub)",
@@ -3914,10 +3913,6 @@
     "keyManagementPublicKeyCopied": "የህዝብ ቁልፍ ተቀድቷል",
     "@keyManagementPublicKeyCopied": {
         "description": "SnackBar shown after the user taps the copy icon next to their npub."
-    },
-    "profileEditPublicKeyLink": "የህዝብ ቁልፍህን ይመልከቱ",
-    "@profileEditPublicKeyLink": {
-        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
     },
     "verifiedAccountChipSemanticLabel": "የተረጋገጠ {platform} መለያ: {identity}",
     "@verifiedAccountChipSemanticLabel": {

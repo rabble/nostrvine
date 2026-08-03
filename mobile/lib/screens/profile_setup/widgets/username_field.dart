@@ -7,15 +7,13 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
-/// The divine.video handle field.
+/// The Divine handle field.
 ///
-/// The suffix reads `@divine.video`, matching the design and the shape people
-/// recognise from the NIP-05 screen.
+/// The field renders `@name`, matching the product handle users expect.
 ///
 /// Note this is display only — the controller holds the bare handle and that
-/// is what gets claimed. It also does not spell the address the registry
-/// currently issues, which is the `_@<handle>.divine.video` subdomain form;
-/// `user_profile.dart` treats `<handle>@divine.video` as the legacy shape.
+/// is what gets claimed. The registry still issues the underlying
+/// `_@<handle>.divine.video` NIP-05 subdomain form.
 ///
 /// Disabled while the profile points at an external NIP-05: the two are
 /// alternatives, and the external address is edited on its own screen.
@@ -52,7 +50,7 @@ class UsernameField extends StatelessWidget {
               fillColor: context.vineColors.surfaceContainer,
               fillBorderRadius: profileFormCardRadius,
               primaryWhenFilled: true,
-              suffixText: '@divine.video',
+              prefixText: '@',
               textCapitalization: .none,
               textInputAction: TextInputAction.next,
               // Replaces the default next-focus walk rather than running after

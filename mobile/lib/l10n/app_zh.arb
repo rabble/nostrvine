@@ -441,7 +441,6 @@
   "profileSetupNoRelaysConnected": "无法连接网络。请检查连接后重试。",
   "profileSetupRetryLabel": "重试",
   "profileSetupDisplayNameLabel": "昵称",
-  "profileSetupDisplayNameHelper": "任何你想要的名字或称呼，不需要唯一。",
   "profileSetupDisplayNameRequired": "请输入昵称",
   "profileSetupBioLabel": "简介（可选）",
   "profileSetupWebsiteLabel": "网站（可选）",
@@ -2894,10 +2893,6 @@
   "keyManagementPublicKeyCopied": "公钥已复制",
   "@keyManagementPublicKeyCopied": {
     "description": "SnackBar shown after the user taps the copy icon next to their npub."
-  },
-  "profileEditPublicKeyLink": "查看你的公钥",
-  "@profileEditPublicKeyLink": {
-    "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
   "saveOriginalSavedToCameraRoll": "已保存到相册",
   "saveOriginalShare": "分享",

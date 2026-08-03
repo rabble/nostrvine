@@ -1470,12 +1470,6 @@ abstract class AppLocalizations {
   /// **'Display Name'**
   String get profileSetupDisplayNameLabel;
 
-  /// No description provided for @profileSetupDisplayNameHelper.
-  ///
-  /// In en, this message translates to:
-  /// **'Any name or label you want. Doesn\'t have to be unique.'**
-  String get profileSetupDisplayNameHelper;
-
   /// No description provided for @profileSetupDisplayNameRequired.
   ///
   /// In en, this message translates to:
@@ -9043,12 +9037,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Public key copied'**
   String get keyManagementPublicKeyCopied;
-
-  /// Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives.
-  ///
-  /// In en, this message translates to:
-  /// **'View your public key'**
-  String get profileEditPublicKeyLink;
 
   /// No description provided for @saveOriginalSavedToCameraRoll.
   ///

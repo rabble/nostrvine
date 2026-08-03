@@ -827,10 +827,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'ڈسپلے نام';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'کوئی بھی نام یا لیبل جو آپ چاہیں۔ منفرد ہونا ضروری نہیں۔';
-
-  @override
   String get profileSetupDisplayNameRequired => 'براہ کرم ڈسپلے نام درج کریں';
 
   @override
@@ -5207,9 +5203,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'عوامی کلید کاپی ہو گئی';
-
-  @override
-  String get profileEditPublicKeyLink => 'اپنی عوامی کلید دیکھیں';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'کیمرہ رول میں محفوظ ہو گئی';

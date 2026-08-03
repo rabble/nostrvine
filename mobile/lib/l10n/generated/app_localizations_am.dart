@@ -806,10 +806,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'የማሳያ ስም';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'የሚፈልጉት ማንኛውም ስም ወይም መለያ። ልዩ መሆን የለበትም።';
-
-  @override
   String get profileSetupDisplayNameRequired => 'እባክዎ የማሳያ ስም ያስገቡ';
 
   @override
@@ -5088,9 +5084,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'የህዝብ ቁልፍ ተቀድቷል';
-
-  @override
-  String get profileEditPublicKeyLink => 'የህዝብ ቁልፍህን ይመልከቱ';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'ወደ ካሜራ ጥቅል ተቀምጧል';

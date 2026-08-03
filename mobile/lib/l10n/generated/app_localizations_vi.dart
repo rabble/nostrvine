@@ -828,10 +828,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Tên hiển thị';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Bất kỳ tên hay biệt danh nào bạn thích. Không cần phải duy nhất.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Vui lòng nhập tên hiển thị';
 
   @override
@@ -5207,9 +5203,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Đã sao chép khóa công khai';
-
-  @override
-  String get profileEditPublicKeyLink => 'Xem khóa công khai của bạn';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Đã lưu vào thư viện ảnh';

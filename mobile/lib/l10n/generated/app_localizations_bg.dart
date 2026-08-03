@@ -833,10 +833,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Име за показване';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Каквото име или етикет искаш. Не е нужно да е уникално.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Въведи име за показване';
 
   @override
@@ -5249,9 +5245,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Публичният ключ е копиран';
-
-  @override
-  String get profileEditPublicKeyLink => 'Виж публичния си ключ';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Запазено в галерията';

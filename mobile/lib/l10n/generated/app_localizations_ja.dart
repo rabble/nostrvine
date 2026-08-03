@@ -755,9 +755,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '表示名';
 
   @override
-  String get profileSetupDisplayNameHelper => '好きな名前やラベルを使ってOK。一意じゃなくて大丈夫。';
-
-  @override
   String get profileSetupDisplayNameRequired => '表示名を入力してね';
 
   @override
@@ -4945,9 +4942,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => '公開鍵をコピーしたよ';
-
-  @override
-  String get profileEditPublicKeyLink => '公開鍵を表示';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'カメラロールに保存したよ';

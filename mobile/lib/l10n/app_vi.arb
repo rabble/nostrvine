@@ -441,7 +441,6 @@
   "profileSetupNoRelaysConnected": "Không kết nối được với mạng. Kiểm tra kết nối của bạn rồi thử lại nhé.",
   "profileSetupRetryLabel": "Thử lại",
   "profileSetupDisplayNameLabel": "Tên hiển thị",
-  "profileSetupDisplayNameHelper": "Bất kỳ tên hay biệt danh nào bạn thích. Không cần phải duy nhất.",
   "profileSetupDisplayNameRequired": "Vui lòng nhập tên hiển thị",
   "profileSetupBioLabel": "Tiểu sử (Không bắt buộc)",
   "profileSetupWebsiteLabel": "Website (Không bắt buộc)",
@@ -2894,10 +2893,6 @@
   "keyManagementPublicKeyCopied": "Đã sao chép khóa công khai",
   "@keyManagementPublicKeyCopied": {
     "description": "SnackBar shown after the user taps the copy icon next to their npub."
-  },
-  "profileEditPublicKeyLink": "Xem khóa công khai của bạn",
-  "@profileEditPublicKeyLink": {
-    "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
   "saveOriginalSavedToCameraRoll": "Đã lưu vào thư viện ảnh",
   "saveOriginalShare": "Chia sẻ",

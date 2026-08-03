@@ -828,10 +828,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nama Paparan';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Apa-apa nama atau label yang anda mahu. Tidak semestinya unik.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Sila masukkan nama paparan';
 
   @override
@@ -5242,9 +5238,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Kunci awam disalin';
-
-  @override
-  String get profileEditPublicKeyLink => 'Lihat kunci awam anda';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Disimpan ke Rol Kamera';

@@ -776,9 +776,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '昵称';
 
   @override
-  String get profileSetupDisplayNameHelper => '任何你想要的名字或称呼，不需要唯一。';
-
-  @override
   String get profileSetupDisplayNameRequired => '请输入昵称';
 
   @override
@@ -4922,9 +4919,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => '公钥已复制';
-
-  @override
-  String get profileEditPublicKeyLink => '查看你的公钥';
 
   @override
   String get saveOriginalSavedToCameraRoll => '已保存到相册';

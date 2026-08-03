@@ -811,10 +811,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Visningsnamn';
 
   @override
-  String get profileSetupDisplayNameHelper =>
-      'Vilket namn eller etikett du vill. Behöver inte vara unikt.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Ange ett visningsnamn';
 
   @override
@@ -5196,9 +5192,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Publik nyckel kopierad';
-
-  @override
-  String get profileEditPublicKeyLink => 'Visa din publika nyckel';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Sparad i kamerarullen';

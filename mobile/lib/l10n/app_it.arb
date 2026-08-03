@@ -354,7 +354,6 @@
     "profileSetupNoRelaysConnected": "Impossibile raggiungere la rete. Controlla la connessione e riprova.",
     "profileSetupRetryLabel": "Riprova",
     "profileSetupDisplayNameLabel": "Nome visualizzato",
-    "profileSetupDisplayNameHelper": "Qualsiasi nome o etichetta. Non deve essere univoco.",
     "profileSetupDisplayNameRequired": "Inserisci un nome visualizzato",
     "profileSetupBioLabel": "Bio (opzionale)",
     "profileSetupPublicKeyLabel": "Chiave pubblica (npub)",
@@ -3582,10 +3581,6 @@
     "keyManagementPublicKeyCopied": "Chiave pubblica copiata",
     "@keyManagementPublicKeyCopied": {
         "description": "SnackBar shown after the user taps the copy icon next to their npub."
-    },
-    "profileEditPublicKeyLink": "Vedi la tua chiave pubblica",
-    "@profileEditPublicKeyLink": {
-        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
     },
     "verifiedAccountChipSemanticLabel": "Account {platform} verificato: {identity}",
     "@verifiedAccountChipSemanticLabel": {
