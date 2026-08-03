@@ -45,6 +45,10 @@ If a Divine Brain search or ask tool is available, you may use it for company me
 - During PR review, if GitHub reports no merge conflicts and the update is only addressing review feedback, do not rebase just to refresh history. Push the review fix normally; the PR is squash-merged anyway.
 - Never merge `main` into a feature branch — always rebase.
 
+## Security
+
+- Public issues, PRs, branch names, commit messages, screenshots, and descriptions must not mention corporate partners, customers, brands, campaign names, or other sensitive external identities unless a maintainer explicitly approves it. Use generic descriptors instead. The same applies to identifying values in code, tests, and fixtures — prefer keeping them in server-side configuration over committing them.
+
 ## PR Guardrails
 
 - Every PR title must use Conventional Commit format: `type(scope): summary` or `docs: summary` for docs-only PRs.
