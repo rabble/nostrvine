@@ -1342,6 +1342,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     _purgeDeletedVideosFromStore(
       deletionPubkey: deletionPubkey,
       deletionCreatedAt: deletionEvent.createdAt,
+      deletionEventId: deletionEvent.id,
       requestedEventIds: requestedEventIds,
       addressableIds: addressableIds,
     );
@@ -1376,11 +1377,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     }
   }
 
+  /// Drops tombstoned videos from every in-memory surface.
+  ///
+  /// Pass `purgeStore: false` when the caller has already deleted these rows;
+  /// without it the store purge runs a second time for the same ids.
   void _removeKnownDeletedVideos({
     required Set<String> eventIds,
     required Set<String> coordinateKeys,
     required int deletionCreatedAt,
     required String logIdentity,
+    bool purgeStore = true,
   }) {
     var removedCount = 0;
     final removedVideoIds = <String>{};
@@ -1428,7 +1434,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       }
     }
 
-    _purgeEventsFromLocalCache({...eventIds, ...removedVideoIds});
+    if (purgeStore) {
+      _purgeEventsFromLocalCache({...eventIds, ...removedVideoIds});
+    }
 
     Log.info(
       removedCount > 0
@@ -1501,6 +1509,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   void _purgeDeletedVideosFromStore({
     required String deletionPubkey,
     required int deletionCreatedAt,
+    required String deletionEventId,
     required Set<String> requestedEventIds,
     required Set<String> addressableIds,
   }) {
@@ -1513,6 +1522,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         router: router,
         deletionPubkey: deletionPubkey,
         deletionCreatedAt: deletionCreatedAt,
+        deletionEventId: deletionEventId,
         requestedEventIds: requestedEventIds,
         addressableIds: addressableIds,
       ).catchError((Object error) {
@@ -1529,6 +1539,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     required EventRouter router,
     required String deletionPubkey,
     required int deletionCreatedAt,
+    required String deletionEventId,
     required Set<String> requestedEventIds,
     required Set<String> addressableIds,
   }) async {
@@ -1581,6 +1592,21 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     router.dropQueuedEvents(idsToPurge);
     final purged = await dao.deleteEventsByIds(idsToPurge.toList());
+
+    // A copy can arrive between the Kind 5 and the awaits above: it cleared
+    // the ingestion guard before the tombstone existed, so a feed may be
+    // holding it even though the row is gone. Sweep those ids out of memory
+    // and announce them; the store was already purged a line ago.
+    if (_allCachedVideos().any((video) => idsToPurge.contains(video.id))) {
+      _removeKnownDeletedVideos(
+        eventIds: idsToPurge,
+        coordinateKeys: const {},
+        deletionCreatedAt: deletionCreatedAt,
+        logIdentity: deletionEventId,
+        purgeStore: false,
+      );
+    }
+
     if (purged == 0) return;
     Log.debug(
       'Purged $purged deleted event(s) from the local cache',

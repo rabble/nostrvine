@@ -286,6 +286,32 @@ void main() {
       expect(await cachedVideoRowCount(), 0);
     });
 
+    test(
+      'sweeps a copy admitted while the store purge was in flight',
+      () async {
+        await db.nostrEventsDao.upsertEvent(_videoEvent());
+
+        // A feed for a different author, so the row stays in the store and the
+        // deletion finds nothing in memory to validate against.
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.homeFeed,
+          authors: const [_otherPubkey],
+        );
+        nostrService.emit(_deletionEvent());
+        // The copy lands while the purge is still suspended on its DAO round
+        // trip, so it clears the ingestion guard and a feed takes it.
+        nostrService.emit(_videoEvent());
+        await settle();
+
+        expect(await cachedVideoRowCount(), 0);
+        expect(
+          service.homeFeedVideos.where((v) => v.id == _videoId),
+          isEmpty,
+          reason: 'the tombstone must also evict what the window let in',
+        );
+      },
+    );
+
     test('purges a stored row when the `a` tag uses uppercase hex', () async {
       await db.nostrEventsDao.upsertEvent(_videoEvent());
       expect(await cachedVideoRowCount(), 1);
