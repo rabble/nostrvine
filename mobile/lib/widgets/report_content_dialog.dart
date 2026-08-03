@@ -188,10 +188,26 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   bool _submitted = false;
   bool _moderationDmFailed = false;
 
-  /// Whether an undelivered submit already handed the report to the DM
-  /// queue. Not UI state: it exists so repeated offline taps on the
-  /// still-live Submit button don't stack duplicate rows for the sweep.
-  bool _moderationDmQueued = false;
+  /// The `outgoing_dms` row an earlier undelivered submit parked for the
+  /// retry sweep, if one is still outstanding.
+  ///
+  /// Not UI state. A later submit re-drives *this* row rather than calling
+  /// `sendMessage` again: a second call mints a fresh rumor and a second
+  /// durable row, so the sweep would deliver one copy and the retry another
+  /// (#6610). Cleared once the row is consumed.
+  String? _queuedModerationDmId;
+
+  /// Whether the moderation team has demonstrably received this report's DM.
+  ///
+  /// A resubmit deliberately re-publishes the kind-1984 and files a second
+  /// ticket, but must not send a second identical DM to a team that already
+  /// has one.
+  bool _moderationDmDelivered = false;
+
+  /// The in-flight send, so a submit that lands while an earlier one is
+  /// still awaiting a relay joins it instead of starting a second send
+  /// before the first has parked its row.
+  Future<bool>? _moderationDmInFlight;
 
   String? _errorMessage;
   bool _scrollWhenKeyboardOpens = false;
@@ -387,15 +403,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // report deliver less often than before this fix.
           //
           // Not awaited: the user already knows the submit failed, and must
-          // not sit through a doomed relay round-trip to be told. The guard
-          // keeps repeat taps on this path from stacking identical rows for
-          // the sweep — this path only: a retry that does reach a relay
-          // sends its own DM below, which can land alongside the row parked
-          // here (#6610).
-          if (!_moderationDmQueued) {
-            _moderationDmQueued = true;
-            unawaited(_sendModerationDm());
-          }
+          // not sit through a doomed relay round-trip to be told.
+          // `_sendModerationDm` coalesces onto whatever this dialog already
+          // has outstanding, so a repeat tap re-drives the parked row
+          // instead of stacking a second one for the sweep (#6610).
+          unawaited(_sendModerationDm());
           setState(() {
             _errorMessage = context.l10n.reportNotSent;
           });
@@ -439,15 +451,34 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     }
   }
 
-  /// Sends the report to the moderation team's DM inbox (TC-025/026).
+  /// Sends the report to the moderation team's DM inbox (TC-025/026),
+  /// exactly once across every submit this dialog makes.
   ///
   /// Returns whether it failed to reach them, which drives the
   /// `reportModerationDmDelayed` caveat on the confirmation screen.
   ///
+  /// Three things can already be true when a submit reaches here, and each
+  /// has to coalesce rather than send again (#6610) — the DM is the report
+  /// itself, so a second copy is a second report to triage:
+  ///
+  /// - the team already received it: nothing to do.
+  /// - a send is still in flight: join it and report its outcome.
+  /// - an earlier submit parked a queue row: re-drive that row, in
+  ///   [_dispatchModerationDm].
+  Future<bool> _sendModerationDm() {
+    if (_moderationDmDelivered) return Future.value(false);
+    return _moderationDmInFlight ??= _dispatchModerationDm().whenComplete(
+      () => _moderationDmInFlight = null,
+    );
+  }
+
+  /// Drives one moderation-DM attempt: a fresh send, or a re-drive of the
+  /// row a previous undelivered submit parked.
+  ///
   /// Every `ref` and controller read happens before the first `await`, so
   /// the undelivered path can fire this unawaited: that call outlives the
   /// dialog, and a `ref.read` after dispose would throw into nothing.
-  Future<bool> _sendModerationDm() async {
+  Future<bool> _dispatchModerationDm() async {
     final dmRepo = ref.read(dmRepositoryProvider);
     final labelService = ref.read(moderationLabelServiceProvider);
     final moderationPubkey = labelService.divineModerationPubkeyHex;
@@ -457,15 +488,46 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       details: _detailsController.text.trim(),
     );
 
+    final parked = _queuedModerationDmId;
+
     try {
-      final dmResult = await dmRepo.sendMessage(
-        recipientPubkey: moderationPubkey,
-        content: content,
-        // Moderation reports carry user identity + reported content;
-        // never let them degrade to a metadata-leaking NIP-04
-        // plaintext duplicate. NIP-17 gift wrap only.
-        skipNip04Fallback: true,
-      );
+      final NIP17SendResult dmResult;
+      if (parked == null) {
+        dmResult = await dmRepo.sendMessage(
+          recipientPubkey: moderationPubkey,
+          content: content,
+          // Moderation reports carry user identity + reported content;
+          // never let them degrade to a metadata-leaking NIP-04
+          // plaintext duplicate. NIP-17 gift wrap only.
+          skipNip04Fallback: true,
+        );
+      } else {
+        try {
+          // Re-drive the parked row instead of minting a second one. This
+          // joins an in-flight sweep replay for the same rumor rather than
+          // publishing alongside it, and `resetRetryBudget` re-arms a row
+          // the sweep may have already spent — an explicit resubmit is the
+          // signal to hand it back a fresh budget, so coalescing here can
+          // never turn a duplicated report into a dropped one.
+          dmResult = await dmRepo.recoverFullSend(
+            rumorId: parked,
+            resetRetryBudget: true,
+          );
+          // ignore: avoid_catching_errors
+        } on ArgumentError {
+          // Not a caller bug, so it can't be prevented by checking first:
+          // `recoverFullSend` raises this when the row is gone, and the
+          // sweep can delete it at any point — including between a
+          // would-be existence check and this call.
+          //
+          // The row is gone. For a row this dialog parked that means the
+          // sweep delivered it and the success path deleted it, so the
+          // team has the report and there is nothing left to re-drive.
+          _queuedModerationDmId = null;
+          _moderationDmDelivered = true;
+          return false;
+        }
+      }
       // sendMessage signals non-delivery by RETURNING a failure, not
       // by throwing, so the catch below cannot see it. Switch over the
       // sealed type rather than reading `.success` so a new variant
@@ -476,6 +538,18 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         NIP17SendSuccess() => false,
         // blocked, retryablePending, and hard failures alike.
         NIP17SendFailure() => true,
+      };
+      _moderationDmDelivered = !failed;
+      _queuedModerationDmId = switch (dmResult) {
+        // The row was consumed by the delivery.
+        NIP17SendSuccess() => null,
+        // A block is terminal: the send gate drops the row and re-driving
+        // would only re-hit the same policy.
+        NIP17SendFailure(blocked: true) => null,
+        // A hard failure and a soft-unconfirmed both leave the row for the
+        // sweep. `sendMessage` reports the row it just parked; a re-drive
+        // reports nothing new and keeps the row it was given.
+        NIP17SendFailure(:final queuedRumorId) => queuedRumorId ?? parked,
       };
       if (dmResult case final NIP17SendFailure failure) {
         Log.warning(
