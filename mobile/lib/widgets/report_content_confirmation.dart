@@ -80,9 +80,11 @@ class _SafetyPolicyLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    // No `label:` here — the Text.rich below already supplies one, and a
+    // label on the annotation is prepended to it rather than replacing it,
+    // so the URL would be announced twice.
     return Semantics(
       button: true,
-      label: l10n.reportSafetyUrl,
       child: GestureDetector(
         onTap: () async {
           final uri = Uri.parse('https://divine.video/safety');

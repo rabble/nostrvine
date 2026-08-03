@@ -564,10 +564,12 @@ class _InlineError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // `container` makes this its own node and absorbs the Text below, so the
+    // live region already reads [message]. Repeating it as a `label:` here
+    // would prepend a second copy.
     return Semantics(
       container: true,
       liveRegion: true,
-      label: message,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: VineTheme.error.withValues(alpha: 0.1),

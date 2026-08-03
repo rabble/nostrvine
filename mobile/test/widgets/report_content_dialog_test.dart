@@ -593,6 +593,37 @@ void main() {
       },
     );
 
+    testWidgets('the inline error announces its message once', (tester) async {
+      final handle = tester.ensureSemantics();
+
+      await setLargeSurface(tester);
+      await openBottomSheetReport(tester);
+
+      await tester.ensureVisible(find.text(l10n.reportReasonOther));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.reportReasonOther));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      final error = tester.getSemantics(
+        find.text(l10n.reportOtherRequiresDetails),
+      );
+
+      // `container: true` already absorbs the Text, so a `label:` on the
+      // annotation would prepend a second copy and a screen reader would
+      // read the whole error twice.
+      expect(error.label, l10n.reportOtherRequiresDetails);
+      expect(
+        error.getSemanticsData().flagsCollection.isLiveRegion,
+        isTrue,
+        reason: 'The error appears without focus moving, so it must announce',
+      );
+
+      handle.dispose();
+    });
+
     testWidgets(
       'bottom sheet path surfaces validation errors inline without snackbars',
       (tester) async {
