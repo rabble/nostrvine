@@ -323,8 +323,8 @@ void main() {
         ),
       );
 
+      // Disposed by the SupportFormScope below when the route pops.
       final fields = BugReportFields();
-      addTearDown(fields.dispose);
       fields.subject.text = 'App crashed';
       fields.description.text = 'App crashed on startup';
 
@@ -353,9 +353,6 @@ void main() {
             builder: (context, state) => Scaffold(
               body: SupportFormScope<BugReportFields>(
                 create: () => fields,
-                // Disposed by this test's tearDown instead, so the pop
-                // below cannot dispose them twice.
-                onDispose: (_) {},
                 child: BlocProvider<BugReportCubit>.value(
                   value: cubit,
                   child: const BugReportActions(),

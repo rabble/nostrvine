@@ -5,7 +5,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
 import 'package:openvine/blocs/bug_report/bug_report_state.dart';
@@ -13,8 +12,9 @@ import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
-import 'package:openvine/widgets/support_failure_banner.dart';
+import 'package:openvine/widgets/support_form_fields.dart';
 import 'package:openvine/widgets/support_form_scope.dart';
+import 'package:openvine/widgets/support_sheet_actions.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Build a log summary prioritizing errors/warnings with recent context.
@@ -84,7 +84,6 @@ Future<void> showBugReportSheet(
     maxChildSize: 1,
     contentWrapper: (_, child) => SupportFormScope<BugReportFields>(
       create: BugReportFields.new,
-      onDispose: (fields) => fields.dispose(),
       child: BlocProvider(
         create: (_) => BugReportCubit(
           bugReportService: bugReportService,
@@ -104,39 +103,19 @@ Future<void> showBugReportSheet(
 
 /// Form state shared between the sheet's scroll body and its pinned footer.
 @visibleForTesting
-class BugReportFields {
-  final subject = TextEditingController();
-  final description = TextEditingController();
+class BugReportFields extends SupportFormFields {
   final steps = TextEditingController();
   final expected = TextEditingController();
-  final attachments = ValueNotifier<List<XFile>>(const []);
 
-  /// Target of the subject field's keyboard "next" action. The remaining
-  /// fields are multiline, so their action key inserts a newline instead of
-  /// advancing.
-  final descriptionFocus = FocusNode();
+  /// Plain field rather than a notifier: only `submit` reads it, and it reads
+  /// it once, at the moment the button is tapped.
+  List<XFile> attachments = const [];
 
-  /// Notifies when a required field changes, so the footer can re-evaluate
-  /// whether the report can be sent.
-  ///
-  /// Built once: a fresh `Listenable.merge` per read would make every rebuild
-  /// re-subscribe, and a rebuild during the sheet's exit animation would then
-  /// touch controllers that are already disposed.
-  late final Listenable requiredFields = Listenable.merge([
-    subject,
-    description,
-  ]);
-
-  bool get canSubmit =>
-      subject.text.trim().isNotEmpty && description.text.trim().isNotEmpty;
-
+  @override
   void dispose() {
-    subject.dispose();
-    description.dispose();
     steps.dispose();
     expected.dispose();
-    attachments.dispose();
-    descriptionFocus.dispose();
+    super.dispose();
   }
 }
 
@@ -210,7 +189,7 @@ class BugReportForm extends StatelessWidget {
           ),
           ImageAttachmentPicker(
             enabled: !isSubmitting,
-            onChanged: (files) => fields.attachments.value = files,
+            onChanged: (files) => fields.attachments = files,
           ),
           Text(
             l10n.bugReportDiagnosticsNotice,
@@ -232,16 +211,6 @@ class BugReportActions extends StatelessWidget {
   final String? currentScreen;
   final String? userPubkey;
 
-  /// Closes the sheet and confirms on the screen behind it. Read the
-  /// messenger and the message before popping — the sheet's context is
-  /// defunct afterwards.
-  void _onSuccess(BuildContext context) {
-    final messenger = ScaffoldMessenger.of(context);
-    final message = context.l10n.bugReportSuccessMessage;
-    context.pop();
-    messenger.showSnackBar(DivineSnackbarContainer.snackBar(message));
-  }
-
   String _failureMessage(BugReportFailureKey? key, BuildContext context) {
     return switch (key) {
       BugReportFailureKey.attachmentUpload =>
@@ -256,7 +225,7 @@ class BugReportActions extends StatelessWidget {
       description: fields.description.text,
       stepsToReproduce: fields.steps.text,
       expectedBehavior: fields.expected.text,
-      attachments: fields.attachments.value,
+      attachments: fields.attachments,
       currentScreen: currentScreen,
       userPubkey: userPubkey,
     );
@@ -269,49 +238,19 @@ class BugReportActions extends StatelessWidget {
     return BlocConsumer<BugReportCubit, BugReportState>(
       listenWhen: (prev, curr) =>
           prev.status != curr.status && curr.status == BugReportStatus.success,
-      listener: (context, _) => _onSuccess(context),
-      builder: (context, state) {
-        final l10n = context.l10n;
-        final isSubmitting = state.status == BugReportStatus.submitting;
-
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 12,
-            children: [
-              if (state.status == BugReportStatus.failure)
-                SupportFailureBanner(
-                  message: _failureMessage(state.failureKey, context),
-                ),
-              ListenableBuilder(
-                listenable: fields.requiredFields,
-                builder: (context, _) => Row(
-                  spacing: 12,
-                  children: [
-                    Expanded(
-                      child: DivineButton(
-                        label: l10n.commonCancel,
-                        type: DivineButtonType.secondary,
-                        onPressed: isSubmitting ? null : context.pop,
-                      ),
-                    ),
-                    Expanded(
-                      child: DivineButton(
-                        label: l10n.bugReportSendReport,
-                        isLoading: isSubmitting,
-                        onPressed: fields.canSubmit && !isSubmitting
-                            ? () => _submit(context, fields)
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      listener: (context, _) => closeSupportSheetWithConfirmation(
+        context,
+        message: context.l10n.bugReportSuccessMessage,
+      ),
+      builder: (context, state) => SupportSheetActions(
+        fields: fields,
+        sendLabel: context.l10n.bugReportSendReport,
+        isSubmitting: state.status == BugReportStatus.submitting,
+        failureMessage: state.status == BugReportStatus.failure
+            ? _failureMessage(state.failureKey, context)
+            : null,
+        onSubmit: () => _submit(context, fields),
+      ),
     );
   }
 }

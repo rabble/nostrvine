@@ -2,6 +2,7 @@
 // ABOUTME: Shares them between the scrollable body and the pinned footer
 
 import 'package:flutter/widgets.dart';
+import 'package:openvine/widgets/support_form_fields.dart';
 
 /// Creates [T] when the sheet mounts, exposes it to every sheet slot, and
 /// disposes it once the sheet subtree is gone.
@@ -12,20 +13,18 @@ import 'package:flutter/widgets.dart';
 /// not work either: the exit animation still rebuilds the form, and a
 /// `TextField` re-subscribes to its controller on every rebuild — which
 /// throws once that controller is disposed.
-class SupportFormScope<T extends Object> extends StatefulWidget {
+class SupportFormScope<T extends SupportFormFields> extends StatefulWidget {
   const SupportFormScope({
     required this.create,
-    required this.onDispose,
     required this.child,
     super.key,
   });
 
   final T Function() create;
-  final void Function(T fields) onDispose;
   final Widget child;
 
   /// The form state held by the nearest [SupportFormScope] of type [T].
-  static T of<T extends Object>(BuildContext context) {
+  static T of<T extends SupportFormFields>(BuildContext context) {
     final scope = context
         .dependOnInheritedWidgetOfExactType<_SupportFormScopeData<T>>();
     if (scope == null) {
@@ -38,13 +37,13 @@ class SupportFormScope<T extends Object> extends StatefulWidget {
   State<SupportFormScope<T>> createState() => _SupportFormScopeState<T>();
 }
 
-class _SupportFormScopeState<T extends Object>
+class _SupportFormScopeState<T extends SupportFormFields>
     extends State<SupportFormScope<T>> {
   late final T _fields = widget.create();
 
   @override
   void dispose() {
-    widget.onDispose(_fields);
+    _fields.dispose();
     super.dispose();
   }
 
@@ -53,7 +52,8 @@ class _SupportFormScopeState<T extends Object>
       _SupportFormScopeData<T>(fields: _fields, child: widget.child);
 }
 
-class _SupportFormScopeData<T extends Object> extends InheritedWidget {
+class _SupportFormScopeData<T extends SupportFormFields>
+    extends InheritedWidget {
   const _SupportFormScopeData({required this.fields, required super.child});
 
   final T fields;
