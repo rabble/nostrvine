@@ -1,20 +1,21 @@
-// ABOUTME: Bottom sheet for submitting bug reports to Zendesk
+// ABOUTME: Full-screen flow for submitting bug reports to Zendesk
 // ABOUTME: Collects structured data (subject, description, steps, expected behavior)
 // ABOUTME: Submits directly to Zendesk REST API with custom fields
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
 import 'package:openvine/blocs/bug_report/bug_report_state.dart';
 import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/image_attachment_picker.dart';
+import 'package:openvine/widgets/support_form_actions.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
-import 'package:openvine/widgets/support_form_scope.dart';
-import 'package:openvine/widgets/support_sheet_actions.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Build a log summary prioritizing errors/warnings with recent context.
@@ -64,44 +65,57 @@ String? buildLogsSummary(List<LogEntry> logs) {
   return result.isEmpty ? null : result;
 }
 
-/// Shows the bug report form in a [VineBottomSheet].
-///
-/// The fields scroll while the actions stay pinned in the sheet footer.
-/// [VineBottomSheet] renders those as sibling slots rather than one subtree,
-/// so `contentWrapper` puts both the [BugReportCubit] and the
-/// [BugReportFields] controllers above them.
-Future<void> showBugReportSheet(
-  BuildContext context, {
-  required BugReportService bugReportService,
-  String? currentScreen,
-  String? userPubkey,
-}) {
-  return VineBottomSheet.show<void>(
-    context: context,
-    title: Text(context.l10n.supportReportBug),
-    initialChildSize: 1,
-    minChildSize: 0.75,
-    maxChildSize: 1,
-    contentWrapper: (_, child) => SupportFormScope<BugReportFields>(
-      create: BugReportFields.new,
-      child: BlocProvider(
-        create: (_) => BugReportCubit(
-          bugReportService: bugReportService,
-          buildLogsSummary: buildLogsSummary,
-        ),
-        child: child,
-      ),
-    ),
-    bottomInput: BugReportActions(
-      currentScreen: currentScreen,
-      userPubkey: userPubkey,
-    ),
-    buildScrollBody: (scrollController) =>
-        BugReportForm(scrollController: scrollController),
-  );
+/// Route for collecting and submitting bug reports.
+class BugReportScreen extends StatefulWidget {
+  const BugReportScreen({
+    required this.bugReportService,
+    super.key,
+    this.currentScreen,
+    this.userPubkey,
+    this.submitBugReport,
+  });
+
+  static const routeName = 'support-report-bug';
+  static const path = '/support-center/report-bug';
+
+  final BugReportService bugReportService;
+  final String? currentScreen;
+  final String? userPubkey;
+  final SubmitBugReportAction? submitBugReport;
+
+  @override
+  State<BugReportScreen> createState() => _BugReportScreenState();
 }
 
-/// Form state shared between the sheet's scroll body and its pinned footer.
+class _BugReportScreenState extends State<BugReportScreen> {
+  final _fields = BugReportFields();
+
+  @override
+  void dispose() {
+    _fields.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => BugReportCubit(
+        bugReportService: widget.bugReportService,
+        buildLogsSummary: buildLogsSummary,
+        submitBugReport:
+            widget.submitBugReport ??
+            ZendeskSupportService.createStructuredBugReport,
+      ),
+      child: _BugReportView(
+        fields: _fields,
+        currentScreen: widget.currentScreen,
+        userPubkey: widget.userPubkey,
+      ),
+    );
+  }
+}
+
+/// Form state for the bug report flow.
 @visibleForTesting
 class BugReportFields extends SupportFormFields {
   final steps = TextEditingController();
@@ -119,82 +133,111 @@ class BugReportFields extends SupportFormFields {
   }
 }
 
-/// Scrollable body of the bug report sheet.
-///
-/// [scrollController] comes from the sheet's `DraggableScrollableSheet`, so
-/// dragging the form down collapses and dismisses the sheet.
-@visibleForTesting
-class BugReportForm extends StatelessWidget {
-  const BugReportForm({required this.scrollController, super.key});
+class _BugReportView extends StatelessWidget {
+  const _BugReportView({
+    required this.fields,
+    this.currentScreen,
+    this.userPubkey,
+  });
 
-  final ScrollController scrollController;
+  final BugReportFields fields;
+  final String? currentScreen;
+  final String? userPubkey;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final fields = SupportFormScope.of<BugReportFields>(context);
     final isSubmitting = context.select(
       (BugReportCubit cubit) =>
           cubit.state.status == BugReportStatus.submitting,
     );
 
-    return SingleChildScrollView(
-      controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 16,
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: l10n.supportReportBug,
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: context.vineColors.background,
+      body: Column(
         children: [
-          DivineTextField(
-            controller: fields.subject,
-            labelText: l10n.supportSubjectRequiredLabel,
-            hintText: l10n.bugReportSubjectHint,
-            helperText: l10n.supportRequiredHelper,
-            enabled: !isSubmitting,
-            filled: true,
-            textInputAction: TextInputAction.next,
-            onSubmitted: (_) => fields.descriptionFocus.requestFocus(),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    spacing: 16,
+                    children: [
+                      DivineTextField(
+                        controller: fields.subject,
+                        labelText: l10n.supportSubjectRequiredLabel,
+                        hintText: l10n.bugReportSubjectHint,
+                        helperText: l10n.supportRequiredHelper,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        textInputAction: TextInputAction.next,
+                        onSubmitted: (_) =>
+                            fields.descriptionFocus.requestFocus(),
+                      ),
+                      DivineTextField(
+                        controller: fields.description,
+                        focusNode: fields.descriptionFocus,
+                        labelText: l10n.bugReportDescriptionRequiredLabel,
+                        hintText: l10n.bugReportDescriptionHint,
+                        helperText: l10n.supportRequiredHelper,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        minLines: 3,
+                        maxLines: 5,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                      DivineTextField(
+                        controller: fields.steps,
+                        labelText: l10n.bugReportStepsLabel,
+                        hintText: l10n.bugReportStepsHint,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        minLines: 3,
+                        maxLines: 5,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                      DivineTextField(
+                        controller: fields.expected,
+                        labelText: l10n.bugReportExpectedBehaviorLabel,
+                        hintText: l10n.bugReportExpectedBehaviorHint,
+                        enabled: !isSubmitting,
+                        filled: true,
+                        minLines: 2,
+                        maxLines: 4,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                      ImageAttachmentPicker(
+                        enabled: !isSubmitting,
+                        onChanged: (files) => fields.attachments = files,
+                      ),
+                      Text(
+                        l10n.bugReportDiagnosticsNotice,
+                        style: VineTheme.bodySmallFont(
+                          color: context.vineColors.mutedText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-          DivineTextField(
-            controller: fields.description,
-            focusNode: fields.descriptionFocus,
-            labelText: l10n.bugReportDescriptionRequiredLabel,
-            hintText: l10n.bugReportDescriptionHint,
-            helperText: l10n.supportRequiredHelper,
-            enabled: !isSubmitting,
-            filled: true,
-            minLines: 3,
-            maxLines: 5,
-            keyboardType: TextInputType.multiline,
-          ),
-          DivineTextField(
-            controller: fields.steps,
-            labelText: l10n.bugReportStepsLabel,
-            hintText: l10n.bugReportStepsHint,
-            enabled: !isSubmitting,
-            filled: true,
-            minLines: 3,
-            maxLines: 5,
-            keyboardType: TextInputType.multiline,
-          ),
-          DivineTextField(
-            controller: fields.expected,
-            labelText: l10n.bugReportExpectedBehaviorLabel,
-            hintText: l10n.bugReportExpectedBehaviorHint,
-            enabled: !isSubmitting,
-            filled: true,
-            minLines: 2,
-            maxLines: 4,
-            keyboardType: TextInputType.multiline,
-          ),
-          ImageAttachmentPicker(
-            enabled: !isSubmitting,
-            onChanged: (files) => fields.attachments = files,
-          ),
-          Text(
-            l10n.bugReportDiagnosticsNotice,
-            style: VineTheme.bodySmallFont(
-              color: context.vineColors.mutedText,
+          const Divider(height: 2, color: VineTheme.outlineDisabled),
+          SafeArea(
+            top: false,
+            child: BugReportActions(
+              fields: fields,
+              currentScreen: currentScreen,
+              userPubkey: userPubkey,
             ),
           ),
         ],
@@ -203,11 +246,17 @@ class BugReportForm extends StatelessWidget {
   }
 }
 
-/// Pinned footer of the bug report sheet: failure banner plus actions.
+/// Pinned footer of the bug report flow: failure banner plus actions.
 @visibleForTesting
 class BugReportActions extends StatelessWidget {
-  const BugReportActions({this.currentScreen, this.userPubkey, super.key});
+  const BugReportActions({
+    required this.fields,
+    this.currentScreen,
+    this.userPubkey,
+    super.key,
+  });
 
+  final BugReportFields fields;
   final String? currentScreen;
   final String? userPubkey;
 
@@ -233,16 +282,14 @@ class BugReportActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fields = SupportFormScope.of<BugReportFields>(context);
-
     return BlocConsumer<BugReportCubit, BugReportState>(
       listenWhen: (prev, curr) =>
           prev.status != curr.status && curr.status == BugReportStatus.success,
-      listener: (context, _) => closeSupportSheetWithConfirmation(
+      listener: (context, _) => closeSupportFlowWithConfirmation(
         context,
         message: context.l10n.bugReportSuccessMessage,
       ),
-      builder: (context, state) => SupportSheetActions(
+      builder: (context, state) => SupportFormActions(
         fields: fields,
         sendLabel: context.l10n.bugReportSendReport,
         isSubmitting: state.status == BugReportStatus.submitting,

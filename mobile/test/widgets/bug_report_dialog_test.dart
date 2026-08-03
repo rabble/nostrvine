@@ -1,9 +1,10 @@
-// ABOUTME: Widget tests for the bug report bottom sheet user interface
+// ABOUTME: Widget tests for the bug report support flow
 // ABOUTME: Tests UI rendering, user interaction, and form validation
+
+import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,14 +13,14 @@ import 'package:openvine/blocs/bug_report/bug_report_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
-import 'package:openvine/widgets/support_form_scope.dart';
 
 class _MockBugReportService extends Mock implements BugReportService {}
 
 class _FakeBugReportData extends Fake implements BugReportData {}
 
-/// Stands in for `ZendeskSupportService.createStructuredBugReport` so the
-/// success path is reachable without a configured Zendesk.
+const _pubkeyHex =
+    '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+
 Future<bool> _submitSucceeds({
   required String subject,
   required String description,
@@ -35,6 +36,21 @@ Future<bool> _submitSucceeds({
   List<String>? attachmentPaths,
 }) async => true;
 
+Future<bool> _submitFails({
+  required String subject,
+  required String description,
+  required String reportId,
+  required String appVersion,
+  required Map<String, dynamic> deviceInfo,
+  String? stepsToReproduce,
+  String? expectedBehavior,
+  String? currentScreen,
+  String? userPubkey,
+  Map<String, int>? errorCounts,
+  String? logsSummary,
+  List<String>? attachmentPaths,
+}) async => false;
+
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
@@ -42,17 +58,17 @@ void main() {
     registerFallbackValue(_FakeBugReportData());
   });
 
-  group('bug report sheet', () {
+  group('bug report flow', () {
     late _MockBugReportService mockBugReportService;
 
     setUp(() {
       mockBugReportService = _MockBugReportService();
     });
 
-    /// Opens the sheet the way production does — through
-    /// [showBugReportSheet] — so the header, the pinned footer and
-    /// `context.pop()` behave as they do in the app.
-    Future<void> openSheet(WidgetTester tester) async {
+    Future<void> openFlow(
+      WidgetTester tester, {
+      SubmitBugReportAction submitBugReport = _submitFails,
+    }) async {
       final router = GoRouter(
         routes: [
           GoRoute(
@@ -61,12 +77,18 @@ void main() {
               body: Builder(
                 builder: (context) => DivineButton(
                   label: 'Open',
-                  onPressed: () => showBugReportSheet(
-                    context,
-                    bugReportService: mockBugReportService,
-                  ),
+                  onPressed: () => context.push(BugReportScreen.path),
                 ),
               ),
+            ),
+          ),
+          GoRoute(
+            path: BugReportScreen.path,
+            builder: (context, state) => BugReportScreen(
+              bugReportService: mockBugReportService,
+              currentScreen: 'SupportCenterScreen',
+              userPubkey: _pubkeyHex,
+              submitBugReport: submitBugReport,
             ),
           ),
         ],
@@ -83,6 +105,29 @@ void main() {
 
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
+    }
+
+    BugReportData testReportData() {
+      return BugReportData(
+        reportId: 'test-123',
+        userDescription: 'App crashed on startup',
+        deviceInfo: {},
+        appVersion: '1.0.0',
+        recentLogs: [],
+        errorCounts: {},
+        timestamp: DateTime.now(),
+      );
+    }
+
+    void stubDiagnostics() {
+      when(
+        () => mockBugReportService.collectDiagnostics(
+          userDescription: any(named: 'userDescription'),
+          currentScreen: any(named: 'currentScreen'),
+          userPubkey: any(named: 'userPubkey'),
+          additionalContext: any(named: 'additionalContext'),
+        ),
+      ).thenAnswer((_) async => testReportData());
     }
 
     DivineButton buttonFor(WidgetTester tester, String label) {
@@ -103,33 +148,19 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('should display title and form fields', (tester) async {
-      await openSheet(tester);
+    testWidgets('displays title and form fields', (tester) async {
+      await openFlow(tester);
 
-      // The title lives in the bottom sheet header.
       expect(find.text(l10n.supportReportBug), findsOneWidget);
-
-      // Verify all 4 text fields exist
       expect(find.byType(TextField), findsNWidgets(4));
-
-      // Verify labels
       expect(find.text(l10n.supportSubjectRequiredLabel), findsOneWidget);
       expect(find.text(l10n.bugReportDescriptionRequiredLabel), findsOneWidget);
       expect(find.text(l10n.bugReportStepsLabel), findsOneWidget);
       expect(find.text(l10n.bugReportExpectedBehaviorLabel), findsOneWidget);
     });
 
-    testWidgets('should have Send and Cancel buttons', (tester) async {
-      await openSheet(tester);
-
-      expect(find.text(l10n.bugReportSendReport), findsOneWidget);
-      expect(find.text(l10n.commonCancel), findsOneWidget);
-    });
-
-    // The actions belong to the sheet's pinned footer, not to the scrolling
-    // form — otherwise they drift off screen while filling in the report.
-    testWidgets('keeps the actions out of the scrollable form', (tester) async {
-      await openSheet(tester);
+    testWidgets('keeps actions out of the scrollable form', (tester) async {
+      await openFlow(tester);
 
       expect(
         find.descendant(
@@ -140,12 +171,11 @@ void main() {
       );
     });
 
-    // The form has to scroll through the sheet's own controller, otherwise
-    // dragging it down no longer collapses and dismisses the sheet.
-    testWidgets('dismisses the sheet when the form is dragged down', (
+    testWidgets('does not discard typed content when the form is dragged', (
       tester,
     ) async {
-      await openSheet(tester);
+      await openFlow(tester);
+      await fillRequiredFields(tester);
 
       await tester.drag(
         find.byType(SingleChildScrollView),
@@ -153,14 +183,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.supportReportBug), findsNothing);
+      expect(find.text(l10n.supportReportBug), findsOneWidget);
+      expect(find.text('App crashed'), findsOneWidget);
+      expect(find.text('App crashed on startup'), findsOneWidget);
     });
 
-    // The subject is the only single-line field, so it is the only one whose
-    // action key can advance the form — the rest insert a newline. Widget
-    // tests cannot render an IME, so the offered action is asserted directly.
     testWidgets('advances from the subject to the description', (tester) async {
-      await openSheet(tester);
+      await openFlow(tester);
 
       final subject = tester.widget<TextField>(find.byType(TextField).first);
       expect(subject.textInputAction, TextInputAction.next);
@@ -175,44 +204,27 @@ void main() {
       expect(fields.first.focusNode.hasFocus, isFalse);
     });
 
-    testWidgets('should disable Send button when required fields are empty', (
+    testWidgets('disables Send button when required fields are empty', (
       tester,
     ) async {
-      await openSheet(tester);
+      await openFlow(tester);
 
       expect(buttonFor(tester, l10n.bugReportSendReport).onPressed, isNull);
     });
 
-    testWidgets('should enable Send button when required fields are filled', (
+    testWidgets('enables Send button when required fields are filled', (
       tester,
     ) async {
-      await openSheet(tester);
+      await openFlow(tester);
       await fillRequiredFields(tester);
 
       expect(buttonFor(tester, l10n.bugReportSendReport).onPressed, isNotNull);
     });
 
-    testWidgets('should call collectDiagnostics on submit', (tester) async {
-      final testReportData = BugReportData(
-        reportId: 'test-123',
-        userDescription: 'App crashed on startup',
-        deviceInfo: {},
-        appVersion: '1.0.0',
-        recentLogs: [],
-        errorCounts: {},
-        timestamp: DateTime.now(),
-      );
+    testWidgets('calls collectDiagnostics on submit', (tester) async {
+      stubDiagnostics();
 
-      when(
-        () => mockBugReportService.collectDiagnostics(
-          userDescription: any(named: 'userDescription'),
-          currentScreen: any(named: 'currentScreen'),
-          userPubkey: any(named: 'userPubkey'),
-          additionalContext: any(named: 'additionalContext'),
-        ),
-      ).thenAnswer((_) async => testReportData);
-
-      await openSheet(tester);
+      await openFlow(tester);
       await fillRequiredFields(tester);
 
       await tester.tap(find.text(l10n.bugReportSendReport));
@@ -228,72 +240,47 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('should show loading indicator while submitting', (
-      tester,
-    ) async {
-      final testReportData = BugReportData(
-        reportId: 'test-123',
-        userDescription: 'App crashed on startup',
-        deviceInfo: {},
-        appVersion: '1.0.0',
-        recentLogs: [],
-        errorCounts: {},
-        timestamp: DateTime.now(),
-      );
+    testWidgets('shows loading indicator while submitting', (tester) async {
+      stubDiagnostics();
+      final completer = Completer<bool>();
 
-      when(
-        () => mockBugReportService.collectDiagnostics(
-          userDescription: any(named: 'userDescription'),
-          currentScreen: any(named: 'currentScreen'),
-          userPubkey: any(named: 'userPubkey'),
-          additionalContext: any(named: 'additionalContext'),
-        ),
-      ).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-        return testReportData;
-      });
+      Future<bool> submitWaits({
+        required String subject,
+        required String description,
+        required String reportId,
+        required String appVersion,
+        required Map<String, dynamic> deviceInfo,
+        String? stepsToReproduce,
+        String? expectedBehavior,
+        String? currentScreen,
+        String? userPubkey,
+        Map<String, int>? errorCounts,
+        String? logsSummary,
+        List<String>? attachmentPaths,
+      }) {
+        return completer.future;
+      }
 
-      await openSheet(tester);
+      await openFlow(tester, submitBugReport: submitWaits);
       await fillRequiredFields(tester);
 
       await tester.tap(find.text(l10n.bugReportSendReport));
       await tester.pump();
 
-      // The send button swaps its leading slot for a spinner while in flight.
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // Complete the async operation
+      completer.complete(false);
       await tester.pumpAndSettle();
     });
 
-    // The opposite of the success path: the sheet stays open so the report
-    // can be retried, and says why it failed.
-    testWidgets('keeps the sheet open and reports why sending failed', (
+    testWidgets('keeps the flow open and reports why sending failed', (
       tester,
     ) async {
-      when(
-        () => mockBugReportService.collectDiagnostics(
-          userDescription: any(named: 'userDescription'),
-          currentScreen: any(named: 'currentScreen'),
-          userPubkey: any(named: 'userPubkey'),
-          additionalContext: any(named: 'additionalContext'),
-        ),
-      ).thenAnswer(
-        (_) async => BugReportData(
-          reportId: 'test-123',
-          userDescription: 'App crashed on startup',
-          deviceInfo: {},
-          appVersion: '1.0.0',
-          recentLogs: [],
-          errorCounts: {},
-          timestamp: DateTime.now(),
-        ),
-      );
+      stubDiagnostics();
 
-      await openSheet(tester);
+      await openFlow(tester);
       await fillRequiredFields(tester);
 
-      // Zendesk is not configured in tests, so submission fails.
       await tester.tap(find.text(l10n.bugReportSendReport));
       await tester.pumpAndSettle();
 
@@ -301,78 +288,11 @@ void main() {
       expect(find.text(l10n.supportReportBug), findsOneWidget);
     });
 
-    // Success leaves no trace in the sheet: it closes and the confirmation
-    // is handed to the screen behind it.
     testWidgets('closes and confirms via snackbar on success', (tester) async {
-      when(
-        () => mockBugReportService.collectDiagnostics(
-          userDescription: any(named: 'userDescription'),
-          currentScreen: any(named: 'currentScreen'),
-          userPubkey: any(named: 'userPubkey'),
-          additionalContext: any(named: 'additionalContext'),
-        ),
-      ).thenAnswer(
-        (_) async => BugReportData(
-          reportId: 'test-123',
-          userDescription: 'App crashed on startup',
-          deviceInfo: {},
-          appVersion: '1.0.0',
-          recentLogs: [],
-          errorCounts: {},
-          timestamp: DateTime.now(),
-        ),
-      );
+      stubDiagnostics();
 
-      // Disposed by the SupportFormScope below when the route pops.
-      final fields = BugReportFields();
-      fields.subject.text = 'App crashed';
-      fields.description.text = 'App crashed on startup';
-
-      final cubit = BugReportCubit(
-        bugReportService: mockBugReportService,
-        buildLogsSummary: buildLogsSummary,
-        submitBugReport: _submitSucceeds,
-      );
-      addTearDown(cubit.close);
-
-      final router = GoRouter(
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => Scaffold(
-              body: Builder(
-                builder: (context) => DivineButton(
-                  label: 'Open',
-                  onPressed: () => context.push('/report'),
-                ),
-              ),
-            ),
-          ),
-          GoRoute(
-            path: '/report',
-            builder: (context, state) => Scaffold(
-              body: SupportFormScope<BugReportFields>(
-                create: () => fields,
-                child: BlocProvider<BugReportCubit>.value(
-                  value: cubit,
-                  child: const BugReportActions(),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await openFlow(tester, submitBugReport: _submitSucceeds);
+      await fillRequiredFields(tester);
 
       await tester.tap(find.text(l10n.bugReportSendReport));
       await tester.pumpAndSettle();
@@ -381,8 +301,8 @@ void main() {
       expect(find.text(l10n.bugReportSuccessMessage), findsOneWidget);
     });
 
-    testWidgets('should close the sheet on Cancel', (tester) async {
-      await openSheet(tester);
+    testWidgets('closes the flow on Cancel', (tester) async {
+      await openFlow(tester);
 
       expect(find.text(l10n.supportReportBug), findsOneWidget);
 
@@ -393,13 +313,12 @@ void main() {
     });
 
     testWidgets('submits successfully with zero attachments', (tester) async {
-      await openSheet(tester);
+      await openFlow(tester);
 
       await tester.enterText(find.byType(TextField).at(0), 'Test subject');
       await tester.enterText(find.byType(TextField).at(1), 'Test description');
       await tester.pump();
 
-      // Verify Send button is enabled with zero attachments
       expect(buttonFor(tester, l10n.bugReportSendReport).onPressed, isNotNull);
     });
   });

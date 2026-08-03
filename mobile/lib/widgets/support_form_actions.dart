@@ -1,5 +1,5 @@
-// ABOUTME: Pinned footer shared by the bug report and feature request sheets
-// ABOUTME: Failure banner above a cancel/send row, plus the success dismissal
+// ABOUTME: Pinned footer shared by the bug report and feature request forms
+// ABOUTME: Failure banner above a cancel/send row, plus success confirmation
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,13 +8,13 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/support_failure_banner.dart';
 import 'package:openvine/widgets/support_form_fields.dart';
 
-/// Closes a support sheet and confirms on the screen behind it.
+/// Closes a support form route and confirms on the screen behind it.
 ///
-/// The counterpart of [SupportFailureBanner]: failure keeps the sheet open so
-/// the form can be retried, success hands the confirmation to the screen
-/// below. Resolve [message] and capture the messenger before popping — the
-/// sheet's context is defunct afterwards.
-void closeSupportSheetWithConfirmation(
+/// The counterpart of [SupportFailureBanner]: failure keeps the flow open so
+/// the form can be retried, success hands the confirmation to the screen below.
+/// Resolve [message] and capture the messenger before popping — the current
+/// route's context is defunct afterwards.
+void closeSupportFlowWithConfirmation(
   BuildContext context, {
   required String message,
 }) {
@@ -23,7 +23,7 @@ void closeSupportSheetWithConfirmation(
   messenger.showSnackBar(DivineSnackbarContainer.snackBar(message));
 }
 
-/// Footer of a support sheet: the reason the last submission failed, when
+/// Footer of a support form: the reason the last submission failed, when
 /// there is one, above a cancel/send row.
 ///
 /// Presentational — the caller maps its cubit's state onto these fields.
@@ -31,8 +31,8 @@ void closeSupportSheetWithConfirmation(
 /// the send button re-reads it inside a [ListenableBuilder] on
 /// `fields.requiredFields`; a value captured at the caller's build time would
 /// not track typing.
-class SupportSheetActions extends StatelessWidget {
-  const SupportSheetActions({
+class SupportFormActions extends StatelessWidget {
+  const SupportFormActions({
     required this.fields,
     required this.sendLabel,
     required this.isSubmitting,

@@ -1,4 +1,4 @@
-// ABOUTME: Base form state for the support sheets (bug report, feature request)
+// ABOUTME: Base form state for the support flows (bug report, feature request)
 // ABOUTME: Owns the subject/description pair and the footer's change signal
 
 import 'package:flutter/widgets.dart';

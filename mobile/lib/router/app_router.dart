@@ -43,6 +43,8 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
+import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 export 'routes/router_guards.dart'

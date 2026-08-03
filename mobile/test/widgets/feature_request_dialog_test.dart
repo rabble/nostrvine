@@ -1,18 +1,19 @@
-// ABOUTME: Widget tests for the feature request bottom sheet user interface
+// ABOUTME: Widget tests for the feature request support flow
 // ABOUTME: Tests UI rendering, user interaction, and form validation
+
+import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/feature_request/feature_request_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/feature_request_dialog.dart';
-import 'package:openvine/widgets/support_form_scope.dart';
 
-/// Stands in for `ZendeskSupportService.createFeatureRequest` so the success
-/// path is reachable without a configured Zendesk.
+const _pubkeyHex =
+    '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+
 Future<bool> _submitSucceeds({
   required String subject,
   required String description,
@@ -21,14 +22,22 @@ Future<bool> _submitSucceeds({
   String? userPubkey,
 }) async => true;
 
+Future<bool> _submitFails({
+  required String subject,
+  required String description,
+  required String usefulness,
+  required String whenToUse,
+  String? userPubkey,
+}) async => false;
+
 void main() {
   final l10n = lookupAppLocalizations(const Locale('en'));
 
-  group('feature request sheet', () {
-    /// Opens the sheet the way production does — through
-    /// [showFeatureRequestSheet] — so the header, the pinned footer and
-    /// `context.pop()` behave as they do in the app.
-    Future<void> openSheet(WidgetTester tester) async {
+  group('feature request flow', () {
+    Future<void> openFlow(
+      WidgetTester tester, {
+      SubmitFeatureRequestAction submitFeatureRequest = _submitFails,
+    }) async {
       final router = GoRouter(
         routes: [
           GoRoute(
@@ -37,9 +46,16 @@ void main() {
               body: Builder(
                 builder: (context) => DivineButton(
                   label: 'Open',
-                  onPressed: () => showFeatureRequestSheet(context),
+                  onPressed: () => context.push(FeatureRequestScreen.path),
                 ),
               ),
+            ),
+          ),
+          GoRoute(
+            path: FeatureRequestScreen.path,
+            builder: (context, state) => FeatureRequestScreen(
+              userPubkey: _pubkeyHex,
+              submitFeatureRequest: submitFeatureRequest,
             ),
           ),
         ],
@@ -76,14 +92,11 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('should display title and form fields', (tester) async {
-      await openSheet(tester);
+    testWidgets('displays title and form fields', (tester) async {
+      await openFlow(tester);
 
-      // The title lives in the bottom sheet header.
       expect(find.text(l10n.supportRequestFeature), findsOneWidget);
-
       expect(find.byType(TextField), findsNWidgets(4));
-
       expect(find.text(l10n.supportSubjectRequiredLabel), findsOneWidget);
       expect(
         find.text(l10n.featureRequestDescriptionRequiredLabel),
@@ -93,17 +106,8 @@ void main() {
       expect(find.text(l10n.featureRequestWhenLabel), findsOneWidget);
     });
 
-    testWidgets('should have Send and Cancel buttons', (tester) async {
-      await openSheet(tester);
-
-      expect(find.text(l10n.featureRequestSendRequest), findsOneWidget);
-      expect(find.text(l10n.commonCancel), findsOneWidget);
-    });
-
-    // The actions belong to the sheet's pinned footer, not to the scrolling
-    // form — otherwise they drift off screen while filling in the request.
-    testWidgets('keeps the actions out of the scrollable form', (tester) async {
-      await openSheet(tester);
+    testWidgets('keeps actions out of the scrollable form', (tester) async {
+      await openFlow(tester);
 
       expect(
         find.descendant(
@@ -114,12 +118,11 @@ void main() {
       );
     });
 
-    // The form has to scroll through the sheet's own controller, otherwise
-    // dragging it down no longer collapses and dismisses the sheet.
-    testWidgets('dismisses the sheet when the form is dragged down', (
+    testWidgets('does not discard typed content when the form is dragged', (
       tester,
     ) async {
-      await openSheet(tester);
+      await openFlow(tester);
+      await fillRequiredFields(tester);
 
       await tester.drag(
         find.byType(SingleChildScrollView),
@@ -127,14 +130,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.supportRequestFeature), findsNothing);
+      expect(find.text(l10n.supportRequestFeature), findsOneWidget);
+      expect(find.text('Dark mode toggle'), findsOneWidget);
+      expect(find.text('Let me switch themes from settings'), findsOneWidget);
     });
 
-    // The subject is the only single-line field, so it is the only one whose
-    // action key can advance the form — the rest insert a newline. Widget
-    // tests cannot render an IME, so the offered action is asserted directly.
     testWidgets('advances from the subject to the description', (tester) async {
-      await openSheet(tester);
+      await openFlow(tester);
 
       final subject = tester.widget<TextField>(find.byType(TextField).first);
       expect(subject.textInputAction, TextInputAction.next);
@@ -149,10 +151,10 @@ void main() {
       expect(fields.first.focusNode.hasFocus, isFalse);
     });
 
-    testWidgets('should disable Send button when required fields are empty', (
+    testWidgets('disables Send button when required fields are empty', (
       tester,
     ) async {
-      await openSheet(tester);
+      await openFlow(tester);
 
       expect(
         buttonFor(tester, l10n.featureRequestSendRequest).onPressed,
@@ -160,10 +162,10 @@ void main() {
       );
     });
 
-    testWidgets('should enable Send button when required fields are filled', (
+    testWidgets('enables Send button when required fields are filled', (
       tester,
     ) async {
-      await openSheet(tester);
+      await openFlow(tester);
       await fillRequiredFields(tester);
 
       expect(
@@ -172,15 +174,37 @@ void main() {
       );
     });
 
-    // The opposite of the success path: the sheet stays open so the request
-    // can be retried, and says why it failed.
-    testWidgets('keeps the sheet open and reports why sending failed', (
-      tester,
-    ) async {
-      await openSheet(tester);
+    testWidgets('shows loading indicator while submitting', (tester) async {
+      final completer = Completer<bool>();
+
+      Future<bool> submitWaits({
+        required String subject,
+        required String description,
+        required String usefulness,
+        required String whenToUse,
+        String? userPubkey,
+      }) {
+        return completer.future;
+      }
+
+      await openFlow(tester, submitFeatureRequest: submitWaits);
       await fillRequiredFields(tester);
 
-      // Zendesk is not configured in tests, so submission fails.
+      await tester.tap(find.text(l10n.featureRequestSendRequest));
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      completer.complete(false);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('keeps the flow open and reports why sending failed', (
+      tester,
+    ) async {
+      await openFlow(tester);
+      await fillRequiredFields(tester);
+
       await tester.tap(find.text(l10n.featureRequestSendRequest));
       await tester.pumpAndSettle();
 
@@ -188,57 +212,9 @@ void main() {
       expect(find.text(l10n.supportRequestFeature), findsOneWidget);
     });
 
-    // Success leaves no trace in the sheet: it closes and the confirmation
-    // is handed to the screen behind it.
     testWidgets('closes and confirms via snackbar on success', (tester) async {
-      // Disposed by the SupportFormScope below when the route pops.
-      final fields = FeatureRequestFields();
-      fields.subject.text = 'Dark mode toggle';
-      fields.description.text = 'Let me switch themes from settings';
-
-      final cubit = FeatureRequestCubit(
-        submitFeatureRequest: _submitSucceeds,
-      );
-      addTearDown(cubit.close);
-
-      final router = GoRouter(
-        routes: [
-          GoRoute(
-            path: '/',
-            builder: (context, state) => Scaffold(
-              body: Builder(
-                builder: (context) => DivineButton(
-                  label: 'Open',
-                  onPressed: () => context.push('/request'),
-                ),
-              ),
-            ),
-          ),
-          GoRoute(
-            path: '/request',
-            builder: (context, state) => Scaffold(
-              body: SupportFormScope<FeatureRequestFields>(
-                create: () => fields,
-                child: BlocProvider<FeatureRequestCubit>.value(
-                  value: cubit,
-                  child: const FeatureRequestActions(),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-        ),
-      );
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await openFlow(tester, submitFeatureRequest: _submitSucceeds);
+      await fillRequiredFields(tester);
 
       await tester.tap(find.text(l10n.featureRequestSendRequest));
       await tester.pumpAndSettle();
@@ -247,8 +223,8 @@ void main() {
       expect(find.text(l10n.featureRequestSuccessMessage), findsOneWidget);
     });
 
-    testWidgets('should close the sheet on Cancel', (tester) async {
-      await openSheet(tester);
+    testWidgets('closes the flow on Cancel', (tester) async {
+      await openFlow(tester);
 
       expect(find.text(l10n.supportRequestFeature), findsOneWidget);
 
