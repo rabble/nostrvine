@@ -21,12 +21,20 @@ enum MediaAvailability {
   /// retrievable by authenticating.
   missing,
 
-  /// HEAD returned **401** or **403** — the media exists but the request must be
-  /// authenticated.
+  /// HEAD returned **401** or **403** — the media exists but is gated on who is
+  /// asking, so an anonymous probe cannot tell whether it is retrievable.
   ///
-  /// Blossom age-gates `AgeRestricted` blobs exactly this way: `access_for`
-  /// grants access as soon as the request carries a pubkey. An authenticated
-  /// retry can therefore succeed, so this must **never** be persisted as broken.
+  /// The two statuses are gated differently, and neither may be persisted as
+  /// broken:
+  ///
+  /// * **401** is blossom's age gate. `access_for` maps `AgeRestricted` to
+  ///   `AgeGated` and grants access as soon as the request carries a pubkey, so
+  ///   an authenticated retry can succeed. The app models this elsewhere as
+  ///   `VideoErrorType.ageRestricted`.
+  /// * **403** is moderation-restricted (`VideoErrorType.forbidden`) and is
+  ///   *not* fixed by authenticating. Blossom's `access_for` never returns it —
+  ///   it comes from layers above — so it is folded in here only because it is
+  ///   likewise not evidence that the media is gone.
   authRequired,
 
   /// Any other status, or a network failure. Treat as transient.
