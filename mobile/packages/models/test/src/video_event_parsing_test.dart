@@ -985,5 +985,41 @@ void main() {
 
       expect(video.imetaVideoUrls, isEmpty);
     });
+
+    group('nostrCreatedAt', () {
+      test('keeps the event created_at when published_at overrides '
+          'createdAt', () {
+        // An edit mints a new event under the same `d` tag but re-emits the
+        // original published_at, so createdAt reports the first publication.
+        final republishedEdit = Event(
+          '0f1e20e4f53b27b62a3eb4fe7eb454c6a4d1040abfa279e7bb4a5222723541c9',
+          34236,
+          [
+            ['d', 'clip-1'],
+            ['url', 'https://cdn.divine.video/clip.mp4'],
+            ['published_at', '1000'],
+          ],
+          'an edited clip',
+          createdAt: 3000,
+        );
+
+        final video = VideoEvent.fromNostrEvent(republishedEdit);
+
+        expect(video.createdAt, 1000, reason: 'display timestamp');
+        expect(video.nostrCreatedAt, 3000, reason: 'deletion-ordering');
+      });
+
+      test('falls back to createdAt when the raw timestamp is unknown', () {
+        final video = VideoEvent(
+          id: 'id',
+          pubkey: 'pubkey',
+          createdAt: 1000,
+          content: 'no raw timestamp',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1000 * 1000),
+        );
+
+        expect(video.nostrCreatedAt, 1000);
+      });
+    });
   });
 }

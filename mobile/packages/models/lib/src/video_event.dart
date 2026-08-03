@@ -154,6 +154,7 @@ class VideoEvent {
     required this.createdAt,
     required this.content,
     required this.timestamp,
+    this.eventCreatedAt,
     this.title,
     this.videoUrl,
     this.thumbnailUrl,
@@ -245,6 +246,7 @@ class VideoEvent {
       fileSize: optInt(json['fileSize']),
       hashtags: stringList(json['hashtags']),
       categories: stringList(json['categories']),
+      eventCreatedAt: optInt(json['eventCreatedAt']),
       publishedAt: json['publishedAt'] as String?,
       rawTags:
           (json['rawTags'] as Map<String, dynamic>?)?.map(
@@ -700,6 +702,7 @@ class VideoEvent {
       sha256: sha256,
       fileSize: fileSize,
       hashtags: hashtags,
+      eventCreatedAt: createdAtTimestamp,
       publishedAt: publishedAt,
       rawTags: rawTags,
       vineId: vineId,
@@ -731,6 +734,13 @@ class VideoEvent {
   final String id;
   final String pubkey;
   final int createdAt;
+
+  /// The Nostr event's own `created_at`, in seconds.
+  ///
+  /// Null when this instance was not built from a relay event; prefer
+  /// [nostrCreatedAt], which falls back to [createdAt].
+  final int? eventCreatedAt;
+
   final String content;
   final String? title;
   final String? videoUrl;
@@ -949,6 +959,15 @@ class VideoEvent {
   /// For addressable events (Kind 34236), returns the vineId (d tag).
   /// Falls back to event id for non-addressable events.
   String get stableId => vineId ?? id;
+
+  /// The timestamp a NIP-09 deletion bound must be measured against:
+  /// [eventCreatedAt] when known, else [createdAt].
+  ///
+  /// [createdAt] prefers the `published_at` tag, and an edit re-emits the
+  /// original publication's value while minting a new event under the same
+  /// `d` tag. Comparing that against a deletion request would treat a
+  /// republished clip as older than the deletion and hide it for good.
+  int get nostrCreatedAt => eventCreatedAt ?? createdAt;
 
   /// Best-effort NIP-71 kind for citing this video.
   ///
@@ -1570,6 +1589,7 @@ class VideoEvent {
     List<String>? hashtags,
     List<String>? categories,
     DateTime? timestamp,
+    int? eventCreatedAt,
     String? publishedAt,
     Map<String, String>? rawTags,
     String? vineId,
@@ -1628,6 +1648,7 @@ class VideoEvent {
     hashtags: hashtags ?? this.hashtags,
     categories: categories ?? this.categories,
     timestamp: timestamp ?? this.timestamp,
+    eventCreatedAt: eventCreatedAt ?? this.eventCreatedAt,
     publishedAt: publishedAt ?? this.publishedAt,
     rawTags: rawTags ?? this.rawTags,
     vineId: vineId ?? this.vineId,
@@ -1718,6 +1739,7 @@ class VideoEvent {
     'hashtags': hashtags,
     'categories': categories,
     'timestamp': timestamp.toIso8601String(),
+    'eventCreatedAt': eventCreatedAt,
     'publishedAt': publishedAt,
     'rawTags': rawTags,
     'vineId': vineId,
