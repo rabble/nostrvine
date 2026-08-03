@@ -64,7 +64,11 @@ const _sig =
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd'
     'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
-Event _videoEvent({String? id, String pubkey = _authorPubkey}) =>
+Event _videoEvent({
+  String? id,
+  String pubkey = _authorPubkey,
+  int createdAt = 1000,
+}) =>
     Event(
         pubkey,
         34236,
@@ -74,7 +78,7 @@ Event _videoEvent({String? id, String pubkey = _authorPubkey}) =>
           ['title', 'Deleted clip'],
         ],
         'a video that gets deleted',
-        createdAt: 1000,
+        createdAt: createdAt,
       )
       ..id = id ?? _videoId
       ..sig = _sig;
@@ -288,6 +292,84 @@ void main() {
       await settle();
 
       expect(await cachedVideoRowCount(), 1);
+    });
+
+    test(
+      'keeps a coordinate version published after the deletion request',
+      () async {
+        // NIP-09 scopes an `a` deletion to versions up to its own created_at.
+        // Relays redeliver old Kind 5s on every launch, so an unbounded purge
+        // would wipe a clip the author has since republished.
+        await db.nostrEventsDao.upsertEvent(
+          _videoEvent(id: _editedVideoId, createdAt: 5000),
+        );
+        expect(await cachedVideoRowCount(), 1);
+
+        // Cache-first loads the row, so this covers the in-memory coordinate
+        // tombstone and the store purge together.
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+        );
+        nostrService.emit(_addressableDeletionEvent());
+        await settle();
+
+        expect(await cachedVideoRowCount(), 1);
+      },
+    );
+
+    test('keeps the republished version visible in the feed', () async {
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+      );
+      // Same coordinate, published after the deletion request below.
+      nostrService.emit(_videoEvent(id: _editedVideoId, createdAt: 5000));
+      await settle();
+
+      nostrService.emit(_addressableDeletionEvent());
+      await settle();
+
+      expect(
+        service.discoveryVideos.where((v) => v.id == _editedVideoId),
+        isNotEmpty,
+        reason: 'a version newer than the deletion is not covered by it',
+      );
+    });
+
+    test(
+      'caches a version the author republishes after the deletion',
+      () async {
+        await service.subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.discovery,
+        );
+        nostrService.emit(_addressableDeletionEvent());
+        await settle();
+
+        // The tombstone now exists, so this arrival is what the ingestion guard
+        // inspects — and a version newer than the deletion is not covered.
+        nostrService.emit(_videoEvent(id: _editedVideoId, createdAt: 5000));
+        await settle();
+
+        expect(await cachedVideoRowCount(), 1);
+      },
+    );
+
+    test('tombstones a purged row so a relay cannot write it back', () async {
+      await db.nostrEventsDao.upsertEvent(_videoEvent());
+
+      // Never loaded into memory, so only the store purge sees it.
+      await service.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.homeFeed,
+        authors: const [_otherPubkey],
+      );
+      nostrService.emit(_deletionEvent());
+      await settle();
+      expect(await cachedVideoRowCount(), 0);
+
+      // Without a recorded tombstone the ingestion guard stays false here.
+      nostrService.emit(_videoEvent());
+      await settle();
+
+      expect(await cachedVideoRowCount(), 0);
     });
   });
 }

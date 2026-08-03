@@ -176,9 +176,11 @@ VideoEventService videoEventService(Ref ref) {
   }
   service.seedKnownDeletionTombstones(
     eventIds: persistedDeletions.map((deletion) => deletion.originalEventId),
-    addressableIds: persistedDeletions
-        .map((deletion) => deletion.addressableId)
-        .whereType<String>(),
+    addressableDeletedAt: {
+      for (final deletion in persistedDeletions)
+        ?deletion.addressableId:
+            deletion.deletedAt.millisecondsSinceEpoch ~/ 1000,
+    },
   );
   service.setBlocklistRepository(blocklistRepository);
   service.setLikesRepository(likesRepository);
