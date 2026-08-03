@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/widgets/color_swatch_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Shows the full HSV color picker as a bottom sheet, resolving with the
@@ -241,75 +242,18 @@ class _ColorButton extends StatelessWidget {
           : colorName;
     }
 
-    return Semantics(
-      label: label,
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Stack(
-          fit: .expand,
-          clipBehavior: .none,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: .circular(22),
-                border: isSelected
-                    ? .all(
-                        strokeAlign: BorderSide.strokeAlignOutside,
-                        color: VineTheme.primary,
-                        width: 4,
-                      )
-                    : null,
-              ),
-              child: Padding(
-                padding: isSelected ? const .all(2) : .zero,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: .circular(20),
-                    border: isSelected
-                        ? null
-                        : .all(
-                            color: isColorPicker
-                                ? context.vineColors.outlineMuted
-                                : context.vineColors.disabled,
-                            width: isColorPicker ? 2 : 1,
-                          ),
-                  ),
-                  child: isColorPicker
-                      ? const Center(
-                          child: DivineIcon(
-                            icon: .paintBrush,
-                            color: VineTheme.primary,
-                          ),
-                        )
-                      : null,
-                ),
-              ),
-            ),
-            if (isSelected)
-              Positioned(
-                bottom: -4,
-                right: -4,
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  decoration: const ShapeDecoration(
-                    color: VineTheme.primary,
-                    shape: OvalBorder(),
-                  ),
-                  child: const Center(
-                    child: DivineIcon(
-                      icon: .check,
-                      color: VineTheme.whiteText,
-                      size: 15,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return ColorSwatchButton(
+      color: color,
+      isSelected: isSelected,
+      onTap: onTap,
+      semanticLabel: label,
+      borderColor: isColorPicker
+          ? context.vineColors.outlineMuted
+          : context.vineColors.disabled,
+      borderWidth: isColorPicker ? 2 : 1,
+      child: isColorPicker
+          ? const DivineIcon(icon: .paintBrush, color: VineTheme.primary)
+          : null,
     );
   }
 }
