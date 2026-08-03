@@ -68,6 +68,10 @@ class ColorSwatchButton extends StatelessWidget {
       label: semanticLabel,
       button: true,
       selected: isSelected,
+      // Carried here because [ExcludeSemantics] drops the gesture detector's
+      // own tap action — without it the swatch announces a button that
+      // activating does nothing to.
+      onTap: onTap,
       child: ExcludeSemantics(
         child: GestureDetector(
           onTap: onTap,
