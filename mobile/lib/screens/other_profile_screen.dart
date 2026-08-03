@@ -237,7 +237,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileShareFailed(e))),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.profileShareFailed(e),
+            error: true,
+          ),
         );
       }
     }
@@ -336,9 +339,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               profile?.bestDisplayName ??
               widget.displayNameHint ??
               fallbackName;
-          // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.profileBlockedUser(name))),
+            DivineSnackbarContainer.snackBar(l10n.profileBlockedUser(name)),
           );
           context.pop();
         }
@@ -354,9 +356,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               profile?.bestDisplayName ??
               widget.displayNameHint ??
               fallbackName;
-          // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.profileUnblockedUser(name))),
+            DivineSnackbarContainer.snackBar(l10n.profileUnblockedUser(name)),
           );
         }
     }
@@ -373,8 +374,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.profileUnfollowedUser(displayName)),
+        DivineSnackbarContainer.snackBar(
+          context.l10n.profileUnfollowedUser(displayName),
         ),
       );
     }
