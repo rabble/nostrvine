@@ -443,6 +443,89 @@ void main() {
       );
     });
 
+    test(
+      'an outstanding NIP-42 handshake survives the settle window',
+      () async {
+        final nostr = _newNostr();
+        final answering = _SilentRelay('wss://answers.example');
+        final gated = _SilentRelay('wss://gated.example');
+        expect(await nostr.relayPool.add(answering), isTrue);
+        expect(await nostr.relayPool.add(gated), isTrue);
+
+        final pending = nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: _timeout);
+
+        final subId = await answering.awaitPendingQuery();
+        await gated.awaitPendingQuery();
+
+        // The gate challenges us and parks the query for the post-AUTH replay.
+        // Signing is a network call under a NIP-46 remote signer, so the `OK`
+        // can easily land after the settle window a sibling arms.
+        await gated.deliver(['AUTH', 'test-challenge']);
+        await gated.deliver(['CLOSED', subId, 'auth-required: sign in']);
+        expect(gated.capturedAuthEventId, isNotNull);
+
+        await answering.deliver(['EOSE', subId]);
+        await Future<void>.delayed(RelayPool.querySettleWindow * 1.5);
+
+        // Closing the REQ here would leave the replay loop in the AUTH `OK`
+        // handler nothing to re-issue, so a read-gated relay would contribute
+        // nothing to any query a sibling answers first.
+        expect(
+          gated.getQueries(),
+          isNotEmpty,
+          reason: 'a relay mid-handshake is being served, not silent',
+        );
+        expect(gated.closedSubIds, isNot(contains(subId)));
+
+        await gated.deliver(['OK', gated.capturedAuthEventId, true, '']);
+        expect(
+          gated.sentMessages.where((m) => m.isNotEmpty && m[0] == 'REQ'),
+          hasLength(2),
+          reason: 'the post-AUTH replay still reaches the original caller',
+        );
+
+        await pending;
+      },
+    );
+
+    test('a handshake that is never answered still gets bounded', () async {
+      final nostr = _newNostr();
+      final answering = _SilentRelay('wss://answers.example');
+      final gated = _SilentRelay('wss://swallows-auth.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+      expect(await nostr.relayPool.add(gated), isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: RelayPool.authHandshakeWindow * 3);
+
+      final subId = await answering.awaitPendingQuery();
+      await gated.awaitPendingQuery();
+      // Our AUTH event goes out and the relay never answers it. Nothing about
+      // that relay distinguishes it from one still working, so only the
+      // handshake window can end the wait.
+      await gated.deliver(['AUTH', 'test-challenge']);
+      await gated.deliver(['CLOSED', subId, 'auth-required: sign in']);
+      await answering.deliver(['EOSE', subId]);
+
+      final result = await pending;
+      stopwatch.stop();
+
+      expect(result.timedOut, isFalse);
+      expect(
+        stopwatch.elapsed,
+        lessThan(RelayPool.authHandshakeWindow * 3),
+        reason: 'a swallowed AUTH must not cost the caller its whole budget',
+      );
+    });
+
     test('a healthy relay still holds the query until its EOSE', () async {
       final nostr = _newNostr();
       final fast = _SilentRelay('wss://fast.example');

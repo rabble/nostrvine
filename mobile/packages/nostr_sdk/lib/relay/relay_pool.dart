@@ -108,7 +108,7 @@ class RelayPool {
   // Track pending AUTH events to match with OK responses
   final Map<String, String> _pendingAuthEvents = {};
 
-  /// Relay urls with a NIP-42 handshake outstanding.
+  /// When each relay's outstanding NIP-42 handshake started.
   ///
   /// Entered when the relay's AUTH challenge starts being answered and left
   /// when the relay resolves it (`OK`) or answering it fails. A one-shot query
@@ -122,7 +122,18 @@ class RelayPool {
   /// Cleared on every connection-state transition: a handshake belongs to the
   /// socket it started on, and a relay that takes our AUTH event and never
   /// answers it would otherwise stay marked outstanding forever.
-  final Set<String> _authHandshakeRelays = {};
+  final Map<String, DateTime> _authHandshakeStartedAt = {};
+
+  /// How long an outstanding NIP-42 handshake may hold a one-shot query open
+  /// past [querySettleWindow].
+  ///
+  /// A relay mid-handshake is not silent — it challenged us, and its `OK` is
+  /// the thing that runs the post-AUTH replay — so the silence bound does not
+  /// apply to it. But the handshake still has to be bounded on its own: a
+  /// relay that takes our AUTH event and never answers it looks identical to
+  /// one that is about to. Wide enough for a NIP-46 remote signer round trip,
+  /// which is a network call rather than a local signature.
+  static const authHandshakeWindow = Duration(seconds: 3);
 
   /// Relays whose NIP-42 gate is demonstrably shut on the current connection.
   ///
@@ -466,7 +477,7 @@ class RelayPool {
   /// not judged on the previous instance's connection.
   void _forgetRelayBookkeeping(String url) {
     _lastSilentRepairAt.remove(url);
-    _authHandshakeRelays.remove(url);
+    _authHandshakeStartedAt.remove(url);
     _authGateClosed.remove(url);
   }
 
@@ -780,6 +791,15 @@ class RelayPool {
       _querySettleTimers.remove(subId);
       final callback = _queryCompleteCallbacks[subId];
       if (callback == null) return;
+      // A relay mid-NIP-42 is not silent, so the silence bound does not apply
+      // to it: it challenged us, and its `OK` is what runs the post-AUTH
+      // replay that this query is parked for. Completing here would send
+      // `CLOSE` and drop the parked query, and the replay would find nothing.
+      // [authHandshakeWindow] is what keeps the re-arming finite.
+      if (_queryHasRelayMidHandshake(subId)) {
+        _armQuerySettleWindow(subId);
+        return;
+      }
       log(
         'Query $subId settled without ${_queryStragglers(subId)} — '
         'completing on the relays that answered',
@@ -787,6 +807,13 @@ class RelayPool {
       _completeQuery(subId, callback);
     });
   }
+
+  /// Whether any relay still holding [subId] is inside its NIP-42 handshake.
+  bool _queryHasRelayMidHandshake(String subId) => [
+    ..._relaysSnapshot(),
+    ..._tempRelaysSnapshot(),
+    ..._cacheRelaysSnapshot(),
+  ].any((r) => r.checkQuery(subId) && _hasLiveAuthHandshake(r));
 
   /// Restarts an armed settle window for [subId] because a relay is still
   /// streaming its result set.
@@ -892,17 +919,29 @@ class RelayPool {
     // settled would silently drop the results of every read-gated relay on
     // cold start.
     if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
-      if (_authHandshakeRelays.contains(relay.url)) return true;
+      if (_hasLiveAuthHandshake(relay)) return true;
       return !_authGateClosed.contains(relay.url);
     }
 
     return true;
   }
 
+  /// Whether [relay]'s NIP-42 handshake is outstanding and still inside
+  /// [authHandshakeWindow].
+  ///
+  /// The age check is what stops a relay that accepts our AUTH event and never
+  /// answers it from holding queries open for the life of the connection —
+  /// nothing else about that relay distinguishes it from one still working.
+  bool _hasLiveAuthHandshake(Relay relay) {
+    final startedAt = _authHandshakeStartedAt[relay.url];
+    if (startedAt == null) return false;
+    return DateTime.now().difference(startedAt) < authHandshakeWindow;
+  }
+
   /// Records that [relay]'s NIP-42 gate is shut and releases whatever was
   /// parked behind it.
   void _closeAuthGate(Relay relay) {
-    _authHandshakeRelays.remove(relay.url);
+    _authHandshakeStartedAt.remove(relay.url);
     _authGateClosed.add(relay.url);
     _settleQueriesBlockedBy(relay);
   }
@@ -925,7 +964,7 @@ class RelayPool {
       // fresh connection re-challenges from scratch. Carrying either marker
       // across a transition would let a relay that swallowed our AUTH event
       // read as "handshake outstanding" for the rest of the session.
-      _authHandshakeRelays.remove(relay.url);
+      _authHandshakeStartedAt.remove(relay.url);
       _authGateClosed.remove(relay.url);
       _settleQueriesBlockedBy(relay);
     };
@@ -1257,7 +1296,7 @@ class RelayPool {
       // Check if this is responding to our AUTH event
       if (_pendingAuthEvents.containsKey(eventId)) {
         _pendingAuthEvents.remove(eventId);
-        _authHandshakeRelays.remove(relay.url);
+        _authHandshakeStartedAt.remove(relay.url);
 
         if (success) {
           relay.relayStatus.authed = true;
@@ -1326,7 +1365,7 @@ class RelayPool {
         // Marks the handshake outstanding before the async signing below, so
         // queries parked behind this gate keep waiting instead of reading the
         // signing gap as "nothing is coming". See [_canStillSettleQuery].
-        _authHandshakeRelays.add(relay.url);
+        _authHandshakeStartedAt[relay.url] = DateTime.now();
         // A new challenge supersedes whatever the last one concluded.
         _authGateClosed.remove(relay.url);
         final challengePreview = challenge.length > 16
@@ -1421,7 +1460,9 @@ class RelayPool {
         // The relay named the gate itself. With no handshake outstanding
         // nothing is going to run that replay, and this refusal is the
         // evidence [_canStillSettleQuery] waits for before giving up on it.
-        if (!_authHandshakeRelays.contains(relay.url)) _closeAuthGate(relay);
+        if (!_authHandshakeStartedAt.containsKey(relay.url)) {
+          _closeAuthGate(relay);
+        }
       } else if (relay.discardQuery(subscriptionId)) {
         _fireQueryCompleteIfSettled(subscriptionId, afterTerminalFrame: true);
       }
@@ -2271,6 +2312,9 @@ class RelayPool {
       _tempRelays.remove(addr);
       unawaited(tempRelay.disconnect());
       tempRelay.dispose();
+      // The replacement is a different socket, so nothing the pool concluded
+      // about the old one carries over.
+      _forgetRelayBookkeeping(addr);
       tempRelay = null;
     }
     if (tempRelay == null) {
@@ -2331,7 +2375,7 @@ class RelayPool {
     if (relay != null) {
       relay.disconnect();
     }
-    _lastSilentRepairAt.remove(addr);
+    _forgetRelayBookkeeping(addr);
   }
 
   Relay? getTempRelay(String url) {
