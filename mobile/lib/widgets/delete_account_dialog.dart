@@ -458,6 +458,12 @@ Future<void> executeAccountDeletion({
       isDismissible: false,
       enableDrag: false,
       tapOutsideToDismiss: false,
+      // Pinned rather than left at VineBottomSheet's local-navigator default:
+      // this blocks the UI through an irreversible delete, so it has to cover
+      // shell chrome too. Both callers are root-level routes today, so it
+      // changes nothing now — it keeps a future shell-nested caller from
+      // leaving the bottom nav tappable mid-deletion.
+      useRootNavigator: true,
       body: const _DeletionProgressSheetContent(),
       contentWrapper: (_, child) =>
           BlocProvider.value(value: cubit, child: child),
@@ -470,7 +476,10 @@ Future<void> executeAccountDeletion({
   void dismissProgressSheet() {
     if (!progressSheetDismissed && context.mounted) {
       progressSheetDismissed = true;
-      context.pop();
+      // Targets the navigator the sheet was pushed onto. `context.pop()` would
+      // resolve to the innermost navigator instead, which for a shell-nested
+      // caller is not the one holding this sheet.
+      Navigator.of(context, rootNavigator: true).pop();
     }
   }
 
