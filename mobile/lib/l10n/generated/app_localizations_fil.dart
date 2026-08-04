@@ -171,6 +171,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsSwitchAnyway => 'Magpalit pa rin';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Nag-expire na ang session ng account na iyon. Ang mag-sign in ulit doon ay mangangahulugang mag-sign out sa account na ginagamit mo ngayon.';
+
+  @override
   String get settingsAppVersionLabel => 'App version';
 
   @override

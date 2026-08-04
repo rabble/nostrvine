@@ -175,6 +175,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settingsSwitchAnyway => 'Przełącz mimo to';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Sesja tego konta wygasła. Ponowne zalogowanie się do niego oznacza wylogowanie z konta, na którym jesteś teraz.';
+
+  @override
   String get settingsAppVersionLabel => 'Wersja aplikacji';
 
   @override

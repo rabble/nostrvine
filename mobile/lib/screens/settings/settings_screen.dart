@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart'
+    show SessionExpiredException;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
@@ -103,10 +105,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   /// Confirmation sheet shown before an account switch that would disturb
-  /// unfinished work. Returns true when the user chose to switch anyway.
-  Future<bool> _confirmSwitchAnyway({
+  /// unfinished work, or that has to sign the current account out to recover
+  /// the target one. Returns true when the user chose to proceed.
+  Future<bool> _confirmSwitch({
     required String title,
     required String message,
+    required String confirmLabel,
+    DivineButtonType confirmType = DivineButtonType.error,
   }) async {
     final proceed = await VineBottomSheet.show<bool>(
       context: context,
@@ -137,8 +142,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               Expanded(
                 child: DivineButton(
-                  label: context.l10n.settingsSwitchAnyway,
-                  type: DivineButtonType.error,
+                  label: confirmLabel,
+                  type: confirmType,
                   expanded: true,
                   onPressed: () => Navigator.of(context).pop(true),
                 ),
@@ -149,6 +154,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ],
     );
     return proceed ?? false;
+  }
+
+  /// Offers a fresh sign-in when [account]'s stored credentials turn out to be
+  /// unusable — an OAuth session with nothing left to refresh from, or a
+  /// restore that resolved to a different identity.
+  ///
+  /// The in-place swap cannot recover on its own: it needs credentials that
+  /// already work. Recovery is the route the welcome flow takes for these same
+  /// two failures — remember the account, sign out, and let the router land on
+  /// the welcome screen with that account pre-selected. Signing the working
+  /// account out is the user's call, so it is confirmed first.
+  Future<void> _offerReauthentication(
+    KnownAccount account,
+    Object error,
+  ) async {
+    Log.warning(
+      'Account switch to ${account.pubkeyHex} has no usable session '
+      '($error) — offering re-authentication',
+      name: 'SettingsScreen',
+      category: LogCategory.auth,
+    );
+    if (!mounted) return;
+    final proceed = await _confirmSwitch(
+      title: context.l10n.settingsSessionExpired,
+      message: context.l10n.settingsSessionExpiredSwitchMessage,
+      confirmLabel: context.l10n.authSignInTitle,
+      confirmType: DivineButtonType.primary,
+    );
+    if (!proceed || !mounted) return;
+
+    final authService = ref.read(authServiceProvider);
+    authService.pendingAccountSwitchPubkey = account.pubkeyHex;
+    await authService.signOut();
   }
 
   Future<bool> _parkUploadsBeforeAccountChange(
@@ -188,17 +226,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         .where((upload) => upload.result == null)
         .length;
     if (inFlightCount > 0) {
-      final proceed = await _confirmSwitchAnyway(
+      final proceed = await _confirmSwitch(
         title: context.l10n.settingsUploadInProgressTitle,
         message: context.l10n.settingsUploadInProgressMessage(inFlightCount),
+        confirmLabel: context.l10n.settingsSwitchAnyway,
       );
       if (!proceed) return;
     } else if (accountState.hasDrafts) {
-      final proceed = await _confirmSwitchAnyway(
+      final proceed = await _confirmSwitch(
         title: context.l10n.settingsUnsavedDraftsTitle,
         message: context.l10n.settingsUnsavedDraftsMessage(
           accountState.draftCount,
         ),
+        confirmLabel: context.l10n.settingsSwitchAnyway,
       );
       if (!proceed) return;
     }
@@ -232,8 +272,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 await swapAccount(
                   deviceScope: deviceScope,
                   controller: deviceScope.switchController,
+                  currentAuthService: ref.read(authServiceProvider),
                   account: account,
                 );
+              } on SessionExpiredException catch (e) {
+                await _offerReauthentication(account, e);
+              } on AccountRestoreFailedException catch (e) {
+                await _offerReauthentication(account, e);
               } catch (e, stackTrace) {
                 Log.error(
                   'Account switch failed',

@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Annuleren",
     "settingsSwitchAnyway": "Toch wisselen",
+    "settingsSessionExpiredSwitchMessage": "De sessie van dat account is verlopen. Er opnieuw op inloggen betekent uitloggen bij het account waar je nu op zit.",
     "settingsAppVersionLabel": "App-versie",
     "settingsAppLanguage": "App-taal",
     "settingsAppLanguageDeviceDefault": "{language} (standaard op apparaat)",

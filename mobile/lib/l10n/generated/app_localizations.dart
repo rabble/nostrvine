@@ -372,6 +372,12 @@ abstract class AppLocalizations {
   /// **'Switch Anyway'**
   String get settingsSwitchAnyway;
 
+  /// Body of the confirmation sheet shown when the account the user picked in the switcher has an unusable session. Confirming signs the current, working account out to reach the sign-in flow, so the copy has to say so.
+  ///
+  /// In en, this message translates to:
+  /// **'That account\'s session ran out. Signing back into it means signing out of the one you\'re on now.'**
+  String get settingsSessionExpiredSwitchMessage;
+
   /// No description provided for @settingsAppVersionLabel.
   ///
   /// In en, this message translates to:

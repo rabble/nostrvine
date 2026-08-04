@@ -71,6 +71,7 @@
     "settingsUnsavedDraftsMessage": "저장되지 않은 초안이 {count}개 있어요. 계정을 바꿔도 초안은 유지되지만, 먼저 게시하거나 검토하는 게 좋아요.",
     "settingsCancel": "취소",
     "settingsSwitchAnyway": "그래도 전환",
+    "settingsSessionExpiredSwitchMessage": "그 계정의 세션이 만료됐어요. 다시 로그인하려면 지금 쓰고 있는 계정에서 로그아웃해야 해요.",
     "settingsAppVersionLabel": "앱 버전",
     "settingsAppLanguage": "앱 언어",
     "settingsAppLanguageDeviceDefault": "{language} (기기 기본값)",

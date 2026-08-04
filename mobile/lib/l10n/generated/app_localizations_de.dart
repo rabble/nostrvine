@@ -171,6 +171,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsSwitchAnyway => 'Trotzdem wechseln';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Die Sitzung dieses Kontos ist abgelaufen. Dich dort neu anzumelden heißt, dich aus dem Konto abzumelden, in dem du gerade bist.';
+
+  @override
   String get settingsAppVersionLabel => 'App-Version';
 
   @override

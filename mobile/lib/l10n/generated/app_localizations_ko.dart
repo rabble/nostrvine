@@ -135,6 +135,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsSwitchAnyway => '그래도 전환';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      '그 계정의 세션이 만료됐어요. 다시 로그인하려면 지금 쓰고 있는 계정에서 로그아웃해야 해요.';
+
+  @override
   String get settingsAppVersionLabel => '앱 버전';
 
   @override

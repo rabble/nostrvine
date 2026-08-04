@@ -171,6 +171,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsSwitchAnyway => 'پھر بھی تبدیل کریں';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'اس اکاؤنٹ کا سیشن ختم ہو چکا ہے۔ اس میں دوبارہ سائن ان کرنے کا مطلب ہے کہ آپ اس اکاؤنٹ سے سائن آؤٹ ہو جائیں گے جو ابھی استعمال کر رہے ہیں۔';
+
+  @override
   String get settingsAppVersionLabel => 'ایپ ورژن';
 
   @override

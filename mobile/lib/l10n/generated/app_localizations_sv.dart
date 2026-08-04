@@ -159,6 +159,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsSwitchAnyway => 'Byt ändå';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Sessionen för det kontot har gått ut. Att logga in där igen betyder att du loggas ut från det du använder nu.';
+
+  @override
   String get settingsAppVersionLabel => 'Appversion';
 
   @override

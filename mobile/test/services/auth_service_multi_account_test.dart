@@ -780,6 +780,88 @@ void main() {
     });
   });
 
+  group('archiveCurrentSignerInfo', () {
+    setUp(() async {
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
+    });
+
+    test('archives the OAuth session while staying signed in', () async {
+      // The in-place account switch never signs out, so the archival that
+      // sign-out used to do has to happen here — otherwise the incoming
+      // account's sign-in overwrites the global slot and this account is left
+      // with nothing to refresh from.
+      final pubkeyHex = testKeyContainer.publicKeyHex;
+      when(() => mockSecureStorage.read(key: 'keycast_session')).thenAnswer(
+        (_) async => jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'test_token',
+          'scope': 'policy:full',
+          'user_pubkey': pubkeyHex,
+        }),
+      );
+
+      await authService.archiveCurrentSignerInfo();
+
+      verify(
+        () => mockSecureStorage.write(
+          key: 'keycast_session_$pubkeyHex',
+          value: any(named: 'value'),
+        ),
+      ).called(1);
+      expect(authService.isAuthenticated, isTrue);
+    });
+
+    test('surfaces a failed archive write rather than swallowing it', () async {
+      // The swap depends on this having landed: it runs before anything is
+      // mutated, and carrying on past a failed write hands the incoming
+      // sign-in a shared slot it then wipes, destroying the leaving account's
+      // session for a log line. Sign-out's own archive keeps swallowing.
+      final pubkeyHex = testKeyContainer.publicKeyHex;
+      when(() => mockSecureStorage.read(key: 'keycast_session')).thenAnswer(
+        (_) async => jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'test_token',
+          'scope': 'policy:full',
+          'user_pubkey': pubkeyHex,
+        }),
+      );
+      when(
+        () => mockSecureStorage.write(
+          key: 'keycast_session_$pubkeyHex',
+          value: any(named: 'value'),
+        ),
+      ).thenThrow(Exception('keychain unavailable'));
+
+      await expectLater(
+        authService.archiveCurrentSignerInfo(),
+        throwsA(isA<Exception>()),
+      );
+    });
+  });
+
+  group('restoreSignerInfoForCurrentAccount', () {
+    setUp(() async {
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
+    });
+
+    test('puts this account back as the persisted auth source', () async {
+      // Stands in for a failed in-place switch: the target account's sign-in
+      // got as far as restoring its own signer info, which persisted its auth
+      // source. Disposing its container leaves that behind, so the next launch
+      // would look for a bunker this local-key account never had.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('authentication_source', 'bunker');
+
+      await authService.restoreSignerInfoForCurrentAccount();
+
+      expect(prefs.getString('authentication_source'), equals('automatic'));
+      verify(
+        () => mockSecureStorage.delete(key: 'bunker_info'),
+      ).called(greaterThanOrEqualTo(1));
+      expect(authService.isAuthenticated, isTrue);
+    });
+  });
+
   group('_restoreSignerInfo (via signInForAccount)', () {
     test('restores Amber info for amber auth source', () async {
       final pubkeyHex = testKeyContainer.publicKeyHex;

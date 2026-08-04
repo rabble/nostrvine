@@ -164,6 +164,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsSwitchAnyway => '仍然切换';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      '该账号的登录状态已过期。重新登录它意味着要退出你现在使用的账号。';
+
+  @override
   String get settingsAppVersionLabel => '应用版本';
 
   @override

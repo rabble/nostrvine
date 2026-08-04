@@ -128,9 +128,10 @@ void main() {
 
   group('AuthService bunker signer lifecycle', () {
     late _MockNostrRemoteSigner mockBunkerSigner;
+    late AuthServiceChannelMocks channelMocks;
 
     setUp(() {
-      AuthServiceChannelMocks.install();
+      channelMocks = AuthServiceChannelMocks.install();
       SharedPreferences.setMockInitialValues({kKnownAccountsKey: '[]'});
       stubUserDataCleanupSuccess(mockCleanupService);
       mockBunkerSigner = _MockNostrRemoteSigner();
@@ -167,6 +168,34 @@ void main() {
       expect(result.success, isTrue);
       return service;
     }
+
+    // The account-switch round trip, on the one auth source where the archive
+    // is addressed by pubkey. The local-key sources clear the shared slots
+    // without reading the account's own, so they cannot tell a correct pubkey
+    // from a wrong one.
+    test('archives and restores this account, addressed by its pubkey', () async {
+      final service = await connectedService();
+      addTearDown(service.dispose);
+      final pubkeyHex = service.currentPublicKeyHex!;
+      final ownBunkerUrl = channelMocks.secureStorage['bunker_info'];
+      expect(ownBunkerUrl, isNotNull);
+
+      await service.archiveCurrentSignerInfo();
+      expect(
+        channelMocks.secureStorage['bunker_info_$pubkeyHex'],
+        equals(ownBunkerUrl),
+      );
+
+      // Stands in for the switch: the target account's sign-in restored its own
+      // credentials over the shared slot before it failed.
+      channelMocks.secureStorage['bunker_info'] = 'bunker://someone-else';
+
+      await service.restoreSignerInfoForCurrentAccount();
+
+      // Restored from this account's archive — a wrong pubkey would read a slot
+      // that does not exist and leave the other account's URL in place.
+      expect(channelMocks.secureStorage['bunker_info'], equals(ownBunkerUrl));
+    });
 
     test('onAppBackgrounded pauses the active bunker signer', () async {
       final service = await connectedService();

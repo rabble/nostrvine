@@ -171,6 +171,10 @@ class AppLocalizationsMs extends AppLocalizations {
   String get settingsSwitchAnyway => 'Tukar Juga';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Sesi akaun itu telah tamat. Log masuk semula ke sana bermakna anda log keluar daripada akaun yang anda guna sekarang.';
+
+  @override
   String get settingsAppVersionLabel => 'Versi apl';
 
   @override

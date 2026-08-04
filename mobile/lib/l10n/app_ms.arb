@@ -85,6 +85,7 @@
   },
   "settingsCancel": "Batal",
   "settingsSwitchAnyway": "Tukar Juga",
+  "settingsSessionExpiredSwitchMessage": "Sesi akaun itu telah tamat. Log masuk semula ke sana bermakna anda log keluar daripada akaun yang anda guna sekarang.",
   "settingsAppVersionLabel": "Versi apl",
   "settingsAppLanguage": "Bahasa Aplikasi",
   "settingsAppLanguageDeviceDefault": "{language} (lalai peranti)",

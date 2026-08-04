@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Avbryt",
     "settingsSwitchAnyway": "Byt ändå",
+    "settingsSessionExpiredSwitchMessage": "Sessionen för det kontot har gått ut. Att logga in där igen betyder att du loggas ut från det du använder nu.",
     "settingsAppVersionLabel": "Appversion",
     "settingsAppLanguage": "Appspråk",
     "settingsAppLanguageDeviceDefault": "{language} (enhetens standard)",

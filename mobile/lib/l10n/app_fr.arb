@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Annuler",
     "settingsSwitchAnyway": "Changer quand même",
+    "settingsSessionExpiredSwitchMessage": "La session de ce compte a expiré. Y revenir signifie te déconnecter de celui que tu utilises maintenant.",
     "settingsAppVersionLabel": "Version de l'app",
     "settingsAppLanguage": "Langue de l'app",
     "settingsAppLanguageDeviceDefault": "{language} (par défaut)",

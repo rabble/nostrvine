@@ -7,13 +7,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 bool _isDisposed(ProviderContainer c) {
@@ -35,6 +35,7 @@ void main() {
   late DeviceScope deviceScope;
   late AccountSwitchController controller;
   late _FakeSecureKeyStorage keyStorage;
+  late _FakeAuthService currentAuthService;
 
   final account = KnownAccount(
     pubkeyHex:
@@ -50,6 +51,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     controller = AccountSwitchController();
     keyStorage = _FakeSecureKeyStorage();
+    currentAuthService = _FakeAuthService();
     deviceScope = DeviceScope(
       database: database,
       sharedPreferences: prefs,
@@ -81,6 +83,7 @@ void main() {
     await swapAccount(
       deviceScope: deviceScope,
       controller: controller,
+      currentAuthService: currentAuthService,
       account: account,
       signIn: (container, acct) async {
         signedInto = container;
@@ -110,6 +113,7 @@ void main() {
       swapAccount(
         deviceScope: deviceScope,
         controller: controller,
+        currentAuthService: currentAuthService,
         account: account,
         signIn: (container, acct) async {
           attempted = container;
@@ -125,12 +129,119 @@ void main() {
     expect(_isDisposed(attempted!), isTrue);
     expect(_isDisposed(initial), isFalse);
     expect(keyStorage.restoredPrimary, same(keyStorage.primary));
+    // A sign-in that got far enough to fail already restored the target
+    // account's signer keys and auth source over the shared slots. Disposing
+    // its container does not undo that — the leaving account's own keys have
+    // to go back, or it reads the wrong signer at the next launch.
+    expect(currentAuthService.calls, equals(['archive', 'restore']));
   });
+
+  testWidgets('archives the leaving account before signing the new one in', (
+    tester,
+  ) async {
+    await pumpHost(tester);
+
+    await swapAccount(
+      deviceScope: deviceScope,
+      controller: controller,
+      currentAuthService: currentAuthService,
+      account: account,
+      signIn: (_, _) async => currentAuthService.calls.add('signIn'),
+    );
+    await tester.pump();
+
+    // Signing the incoming account in overwrites the shared signer slots, so
+    // the leaving account's credentials must already be in its own archive.
+    expect(currentAuthService.calls, equals(['archive', 'signIn']));
+  });
+
+  testWidgets('aborts before building anything when the archive fails', (
+    tester,
+  ) async {
+    final initial = await pumpHost(tester);
+    currentAuthService.archiveError = Exception('keychain unavailable');
+    var signInAttempted = false;
+
+    await expectLater(
+      swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => signInAttempted = true,
+      ),
+      throwsException,
+    );
+    await tester.pump();
+
+    // Carrying on past a failed archive would let the incoming sign-in wipe
+    // the shared slots the archive was meant to copy, destroying the leaving
+    // account's session for a log line.
+    expect(signInAttempted, isFalse);
+    expect(_isDisposed(initial), isFalse);
+  });
+
+  testWidgets('surfaces the sign-in failure even when the rollback throws', (
+    tester,
+  ) async {
+    await pumpHost(tester);
+    keyStorage.primary = _FakeSecureKeyContainer(
+      npub: 'npub_previous',
+      publicKeyHex:
+          '2222222222222222222222222222222222222222222222222222222222222222',
+    );
+    keyStorage.restoreError = Exception('primary restore failed');
+
+    // The caller dispatches on this type to offer a fresh sign-in, so a
+    // rollback failure must not replace it with its own.
+    await expectLater(
+      swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => throw _FakeSignInException(),
+      ),
+      throwsA(isA<_FakeSignInException>()),
+    );
+    await tester.pump();
+
+    // The signer restore is ordered ahead of the throwing primary restore, so
+    // it still ran.
+    expect(currentAuthService.calls, equals(['archive', 'restore']));
+  });
+}
+
+class _FakeSignInException implements Exception {}
+
+class _FakeAuthService implements AuthService {
+  final calls = <String>[];
+
+  /// Set to make the pre-swap archive fail, as a keychain write would.
+  Object? archiveError;
+
+  @override
+  Future<void> archiveCurrentSignerInfo() async {
+    calls.add('archive');
+    final error = archiveError;
+    if (error != null) throw error;
+  }
+
+  @override
+  Future<void> restoreSignerInfoForCurrentAccount() async =>
+      calls.add('restore');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeSecureKeyStorage extends SecureKeyStorage {
   SecureKeyContainer? primary;
   SecureKeyContainer? restoredPrimary;
+
+  /// Set to make the rollback's primary restore fail. The real one can: it
+  /// hands the snapshot to `storeKey`, which reaches into the private key.
+  Object? restoreError;
 
   @override
   Future<SecureKeyContainer?> getKeyContainer({String? biometricPrompt}) async {
@@ -142,6 +253,8 @@ class _FakeSecureKeyStorage extends SecureKeyStorage {
     SecureKeyContainer? keyContainer, {
     String? biometricPrompt,
   }) async {
+    final error = restoreError;
+    if (error != null) throw error;
     restoredPrimary = keyContainer;
     primary = keyContainer;
   }

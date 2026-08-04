@@ -117,6 +117,7 @@ void main() {
       () => swapAccount(
         deviceScope: deviceScope,
         controller: controller,
+        currentAuthService: bContainer.read(authServiceProvider),
         account: KnownAccount(
           pubkeyHex: pubkeyA!,
           authSource: AuthenticationSource.automatic,

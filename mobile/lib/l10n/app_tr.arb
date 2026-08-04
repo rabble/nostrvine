@@ -102,6 +102,7 @@
     },
     "settingsCancel": "İptal",
     "settingsSwitchAnyway": "Yine de Değiştir",
+    "settingsSessionExpiredSwitchMessage": "O hesabın oturumu doldu. Yeniden giriş yapmak, şu an kullandığın hesaptan çıkmak demek.",
     "settingsAppVersionLabel": "Uygulama sürümü",
     "settingsAppLanguage": "Uygulama Dili",
     "settingsAppLanguageDeviceDefault": "{language} (cihaz varsayılanı)",

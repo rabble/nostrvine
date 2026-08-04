@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Batal",
     "settingsSwitchAnyway": "Tetap Ganti",
+    "settingsSessionExpiredSwitchMessage": "Sesi akun itu sudah habis. Masuk lagi ke sana berarti keluar dari akun yang kamu pakai sekarang.",
     "settingsAppVersionLabel": "Versi aplikasi",
     "settingsAppLanguage": "Bahasa Aplikasi",
     "settingsAppLanguageDeviceDefault": "{language} (bawaan perangkat)",

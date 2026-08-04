@@ -141,6 +141,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsSwitchAnyway => 'Tetap Ganti';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Sesi akun itu sudah habis. Masuk lagi ke sana berarti keluar dari akun yang kamu pakai sekarang.';
+
+  @override
   String get settingsAppVersionLabel => 'Versi aplikasi';
 
   @override

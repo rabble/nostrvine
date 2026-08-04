@@ -171,6 +171,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsSwitchAnyway => 'Toch wisselen';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'De sessie van dat account is verlopen. Er opnieuw op inloggen betekent uitloggen bij het account waar je nu op zit.';
+
+  @override
   String get settingsAppVersionLabel => 'App-versie';
 
   @override
