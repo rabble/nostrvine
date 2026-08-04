@@ -274,7 +274,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         if (bloc == null) return;
         bloc.add(const ProfileRepostedVideosSyncRequested());
       case ProfileTabKind.lists:
-        return;
+        // Lists render from [CuratedListService], which already synced during
+        // its own initialization. Nothing to dispatch on first view, but the
+        // tab still counts as synced so pull-to-refresh reaches it below.
+        break;
       case ProfileTabKind.comments:
         final bloc = _commentsBloc;
         if (bloc == null) return;
@@ -330,7 +333,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           bloc.add(ProfileSavedVideosSyncRequested(completer: completer));
           refreshes.add(completer.future);
         case ProfileTabKind.lists:
-          break;
+          final service = ref.read(curatedListsStateProvider.notifier).service;
+          if (service == null) break;
+          // Forced: the service syncs once per session, so an unforced call
+          // returns without querying and a list made on another device would
+          // stay invisible until the next cold start.
+          refreshes.add(service.fetchUserListsFromRelays(force: true));
         case ProfileTabKind.comments:
           final bloc = _commentsBloc;
           if (bloc == null) break;

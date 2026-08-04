@@ -19,6 +19,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_tab_kind.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid_skeleton.dart';
@@ -80,6 +81,21 @@ class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
 
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
+
+class _MockCuratedListService extends Mock implements CuratedListService {}
+
+/// Serves a mock service without running the real relay-backed build.
+class _FakeCuratedListsState extends CuratedListsState {
+  _FakeCuratedListsState(this._service);
+
+  final CuratedListService _service;
+
+  @override
+  CuratedListService? get service => _service;
+
+  @override
+  Future<List<CuratedList>> build() async => _service.lists;
+}
 
 void main() {
   const userIdHex =
@@ -171,6 +187,7 @@ void main() {
       required bool isOwnProfile,
       bool isLoadingVideos = false,
       MockAuthService? mockAuthService,
+      CuratedListService? curatedListService,
     }) {
       return testMaterialApp(
         theme: VineTheme.theme,
@@ -205,6 +222,10 @@ void main() {
           isFeatureEnabledProvider(
             FeatureFlag.curatedLists,
           ).overrideWith((_) => false),
+          if (curatedListService != null)
+            curatedListsStateProvider.overrideWith(
+              () => _FakeCuratedListsState(curatedListService),
+            ),
         ],
       );
     }
@@ -420,6 +441,42 @@ void main() {
       ).called(1);
       verify(
         () => profileFeedCubit.add(const ProfileFeedRefreshRequested()),
+      ).called(1);
+    });
+
+    testWidgets('pull-to-refresh re-queries relays for the lists tab', (
+      tester,
+    ) async {
+      final curatedListService = _MockCuratedListService();
+      when(() => curatedListService.lists).thenReturn(const []);
+      when(() => curatedListService.myLists).thenReturn(const []);
+      when(
+        () => curatedListService.fetchUserListsFromRelays(
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        buildSubject(
+          isOwnProfile: true,
+          curatedListService: curatedListService,
+        ),
+      );
+      await tester.pump();
+
+      // The tab is lazy: it only participates in refresh once viewed.
+      await tester.tap(find.bySemanticsLabel('lists_tab'));
+      await tester.pumpAndSettle();
+
+      final refreshIndicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      await refreshIndicator.onRefresh();
+
+      // Forced, or the service returns without querying because it already
+      // synced once this session.
+      verify(
+        () => curatedListService.fetchUserListsFromRelays(force: true),
       ).called(1);
     });
 
