@@ -35,6 +35,25 @@ void main() {
       expect(cues.first.text, equals('hello'));
     });
 
+    test('can prefer refs before embedded textTrackContent', () async {
+      final cues = await fetchSubtitleCues(
+        httpClient: _FakeClient(
+          (_) async => http.Response(
+            'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nedited\n',
+            200,
+          ),
+        ),
+        nostrClient: null,
+        delay: (_) async {},
+        textTrackContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nstale\n',
+        textTrackRefs: const ['https://media.divine.video/edited.vtt'],
+        sourcePreference: SubtitleSourcePreference.refsFirst,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues.first.text, equals('edited'));
+    });
+
     test(
       'falls back to second ref when first http ref is unavailable',
       () async {

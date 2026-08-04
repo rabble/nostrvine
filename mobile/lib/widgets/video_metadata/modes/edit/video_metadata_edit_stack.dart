@@ -33,10 +33,12 @@ class VideoMetadataEditStack extends StatefulWidget {
 
 class _VideoMetadataEditStackState extends State<VideoMetadataEditStack> {
   late final Set<String> _initialCollaboratorPubkeys;
+  late VideoEvent _video;
 
   @override
   void initState() {
     super.initState();
+    _video = widget.video;
     _initialCollaboratorPubkeys = widget.video.collaboratorPubkeys.toSet();
   }
 
@@ -45,8 +47,9 @@ class _VideoMetadataEditStackState extends State<VideoMetadataEditStack> {
     return ProviderScope(
       overrides: [videoEditorProvider.overrideWith(VideoEditorNotifier.new)],
       child: _VideoMetadataEditStackContent(
-        video: widget.video,
+        video: _video,
         initialCollaboratorPubkeys: _initialCollaboratorPubkeys,
+        onVideoUpdated: (video) => setState(() => _video = video),
       ),
     );
   }
@@ -58,10 +61,12 @@ class _VideoMetadataEditStackContent extends ConsumerStatefulWidget {
   const _VideoMetadataEditStackContent({
     required this.video,
     required this.initialCollaboratorPubkeys,
+    required this.onVideoUpdated,
   });
 
   final VideoEvent video;
   final Set<String> initialCollaboratorPubkeys;
+  final ValueChanged<VideoEvent> onVideoUpdated;
 
   @override
   ConsumerState<_VideoMetadataEditStackContent> createState() =>
@@ -168,6 +173,7 @@ class _VideoMetadataEditStackContentState
               video: widget.video,
               initialCollaboratorPubkeys: widget.initialCollaboratorPubkeys,
               pendingThumbnailPath: _pendingThumbnailPath,
+              onVideoUpdated: widget.onVideoUpdated,
             ),
           ),
         ],

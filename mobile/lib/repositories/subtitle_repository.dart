@@ -70,6 +70,7 @@ class SubtitleRepository {
                 video.textTrackRef!,
             ],
       sha256: video.sha256,
+      sourcePreference: SubtitleSourcePreference.refsFirst,
     );
   }
 
@@ -83,7 +84,7 @@ class SubtitleRepository {
   /// * [SubtitleEditException] when the Blossom upload fails.
   /// * [SubtitleEditException] when the subtitle event publish fails.
   /// * [SubtitleEditException] when the video republish fails.
-  Future<void> publishEditedSubtitles({
+  Future<VideoEvent> publishEditedSubtitles({
     required VideoEvent video,
     required List<SubtitleCue> cues,
     String lang = 'en',
@@ -115,14 +116,15 @@ class SubtitleRepository {
       throw SubtitleEditException('Subtitle event publish failed');
     }
 
-    final ok = await _publisher.republishWithSubtitles(
+    final updatedVideo = await _publisher.republishWithSubtitles(
       existingEvent: video,
       textTrackRef: blossomUrl,
       extraTextTrackRefs: [coordsRef],
       textTrackLang: lang,
     );
-    if (!ok) {
+    if (updatedVideo == null) {
       throw SubtitleEditException('Video republish failed');
     }
+    return updatedVideo;
   }
 }

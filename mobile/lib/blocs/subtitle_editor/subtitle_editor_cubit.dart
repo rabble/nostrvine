@@ -73,7 +73,7 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
     if (isClosed) return;
     emit(state.copyWith(status: SubtitleEditorStatus.saving));
     try {
-      await _repository.publishEditedSubtitles(
+      final updatedVideo = await _repository.publishEditedSubtitles(
         video: _video,
         cues: state.cues.map((c) => c.toCue()).toList(),
       );
@@ -82,6 +82,7 @@ class SubtitleEditorCubit extends Cubit<SubtitleEditorState> {
         state.copyWith(
           status: SubtitleEditorStatus.success,
           isDirty: false,
+          updatedVideo: updatedVideo,
         ),
       );
     } catch (e, st) {

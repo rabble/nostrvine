@@ -71,6 +71,7 @@ class SubtitleEditorState extends Equatable {
     this.status = SubtitleEditorStatus.loading,
     this.cues = const [],
     this.isDirty = false,
+    this.updatedVideo,
   });
 
   /// Current editor status.
@@ -82,19 +83,24 @@ class SubtitleEditorState extends Equatable {
   /// Whether [cues] have been modified since the last save or load.
   final bool isDirty;
 
+  /// Updated video event returned after a successful subtitle republish.
+  final VideoEvent? updatedVideo;
+
   /// Returns a copy with selected fields replaced.
   SubtitleEditorState copyWith({
     SubtitleEditorStatus? status,
     List<EditableCue>? cues,
     bool? isDirty,
+    VideoEvent? updatedVideo,
   }) {
     return SubtitleEditorState(
       status: status ?? this.status,
       cues: cues ?? this.cues,
       isDirty: isDirty ?? this.isDirty,
+      updatedVideo: updatedVideo ?? this.updatedVideo,
     );
   }
 
   @override
-  List<Object?> get props => [status, cues, isDirty];
+  List<Object?> get props => [status, cues, isDirty, updatedVideo];
 }

@@ -98,7 +98,12 @@ VideoEvent mergeProfileFeedVideos(VideoEvent existing, VideoEvent incoming) {
     textTrackRefs: primary.textTrackRefs.isNotEmpty
         ? primary.textTrackRefs
         : secondary.textTrackRefs,
-    textTrackContent: primary.textTrackContent ?? secondary.textTrackContent,
+    textTrackContent:
+        primary.textTrackContent ??
+        ((primary.textTrackRef?.isNotEmpty ?? false) ||
+                primary.textTrackRefs.isNotEmpty
+            ? null
+            : secondary.textTrackContent),
     nostrEventTags: primary.nostrEventTags.isNotEmpty
         ? primary.nostrEventTags
         : secondary.nostrEventTags,

@@ -132,7 +132,7 @@ class SubtitleEditorView extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(l10n.subtitleEditorSaveSuccess)),
             );
-            context.pop();
+            context.pop(state.updatedVideo);
           } else if (state.status == SubtitleEditorStatus.failure) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

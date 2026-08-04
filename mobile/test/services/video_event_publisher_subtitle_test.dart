@@ -10,6 +10,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -21,6 +22,9 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockPersonalEventCacheService extends Mock
+    implements PersonalEventCacheService {}
 
 // Fake fallback values for mocktail any() matchers
 class _FakeEvent extends Fake implements Event {}
@@ -39,6 +43,7 @@ void main() {
   late _MockNostrClient mockNostrClient;
   late _MockAuthService mockAuthService;
   late _MockVideoEventService mockVideoEventService;
+  late _MockPersonalEventCacheService mockPersonalEventCache;
   late VideoEventPublisher publisher;
 
   setUpAll(() {
@@ -52,11 +57,13 @@ void main() {
     mockNostrClient = _MockNostrClient();
     mockAuthService = _MockAuthService();
     mockVideoEventService = _MockVideoEventService();
+    mockPersonalEventCache = _MockPersonalEventCacheService();
 
     publisher = VideoEventPublisher(
       uploadManager: mockUploadManager,
       nostrService: mockNostrClient,
       authService: mockAuthService,
+      personalEventCache: mockPersonalEventCache,
       videoEventService: mockVideoEventService,
     );
 
@@ -70,6 +77,9 @@ void main() {
     when(
       () => mockNostrClient.connectedRelays,
     ).thenReturn(['wss://relay.divine.video']);
+    when(() => mockPersonalEventCache.getEventById(any())).thenReturn(null);
+    when(() => mockPersonalEventCache.cacheUserEvent(any())).thenReturn(null);
+    when(() => mockVideoEventService.updateVideoEvent(any())).thenReturn(null);
   });
 
   group('republishWithSubtitles', () {
@@ -115,6 +125,7 @@ void main() {
             kind: any(named: 'kind'),
             content: any(named: 'content'),
             tags: any(named: 'tags'),
+            createdAt: any(named: 'createdAt'),
           ),
         ).thenAnswer((invocation) async {
           capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
@@ -135,14 +146,16 @@ void main() {
           ),
         );
 
-        when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+        when(
+          () => mockVideoEventService.updateVideoEvent(any()),
+        ).thenReturn(null);
 
         final result = await publisher.republishWithSubtitles(
           existingEvent: existingEvent,
           textTrackRef: textTrackRef,
         );
 
-        expect(result, isTrue);
+        expect(result, isA<VideoEvent>());
 
         // Verify createAndSignEvent was called with correct kind
         verify(
@@ -150,6 +163,7 @@ void main() {
             kind: NIP71VideoKinds.getPreferredAddressableKind(),
             content: existingEvent.content,
             tags: any(named: 'tags'),
+            createdAt: existingEvent.createdAt + 1,
           ),
         ).called(1);
 
@@ -185,6 +199,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((invocation) async {
         capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
@@ -205,7 +220,9 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: existingEvent,
@@ -228,6 +245,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((_) async => createSignedEvent(existingTags));
 
@@ -245,7 +263,9 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: existingEvent,
@@ -257,6 +277,7 @@ void main() {
           kind: 34236,
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: existingEvent.createdAt + 1,
         ),
       ).called(1);
     });
@@ -269,6 +290,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((_) async => signedEvent);
 
@@ -286,7 +308,9 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: existingEvent,
@@ -301,12 +325,13 @@ void main() {
       ).called(1);
     });
 
-    test('returns false when signing fails', () async {
+    test('returns null when signing fails', () async {
       when(
         () => mockAuthService.createAndSignEvent(
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -315,7 +340,7 @@ void main() {
         textTrackRef: textTrackRef,
       );
 
-      expect(result, isFalse);
+      expect(result, isNull);
       verifyNever(
         () => mockNostrClient.publishEventAwaitOk(
           any(),
@@ -356,6 +381,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((invocation) async {
         capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
@@ -376,7 +402,9 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: eventWithTextTrack,
@@ -405,6 +433,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((invocation) async {
         capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
@@ -425,7 +454,9 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: existingEvent,
@@ -452,6 +483,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((_) async => createSignedEvent(existingTags));
 
@@ -469,15 +501,105 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: existingEvent,
         textTrackRef: textTrackRef,
       );
 
-      verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
+      verify(() => mockVideoEventService.updateVideoEvent(any())).called(1);
+      verify(() => mockPersonalEventCache.cacheUserEvent(any())).called(1);
     });
+
+    test(
+      'recovers original tags from personal cache when event tags are empty',
+      () async {
+        final taglessEvent = existingEvent.copyWith(nostrEventTags: const []);
+        final cachedEvent = Event(
+          testPubkey,
+          NIP71VideoKinds.getPreferredAddressableKind(),
+          existingTags,
+          existingEvent.content,
+          createdAt: existingEvent.createdAt,
+        );
+        late List<List<String>> capturedTags;
+
+        when(
+          () => mockPersonalEventCache.getEventById(taglessEvent.id),
+        ).thenReturn(cachedEvent);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
+          return createSignedEvent(capturedTags);
+        });
+        when(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments.first as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+
+        final result = await publisher.republishWithSubtitles(
+          existingEvent: taglessEvent,
+          textTrackRef: textTrackRef,
+        );
+
+        expect(result, isA<VideoEvent>());
+        expect(_containsTag(capturedTags, ['d', 'test-vine-id']), isTrue);
+        expect(
+          _containsTag(capturedTags, [
+            'imeta',
+            'url https://cdn.example.com/video.mp4',
+            'm video/mp4',
+          ]),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'returns null without publishing when original d tag cannot be recovered',
+      () async {
+        final taglessEvent = existingEvent.copyWith(nostrEventTags: const []);
+
+        final result = await publisher.republishWithSubtitles(
+          existingEvent: taglessEvent,
+          textTrackRef: textTrackRef,
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+            createdAt: any(named: 'createdAt'),
+          ),
+        );
+        verifyNever(
+          () => mockNostrClient.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        );
+      },
+    );
 
     test('does not update local cache when relay rejects republish', () async {
       when(
@@ -485,6 +607,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((_) async => createSignedEvent(existingTags));
 
@@ -509,16 +632,14 @@ void main() {
         textTrackRef: textTrackRef,
       );
 
-      expect(result, isFalse);
-      verifyNever(() => mockVideoEventService.addVideoEvent(any()));
+      expect(result, isNull);
+      verifyNever(() => mockVideoEventService.updateVideoEvent(any()));
     });
 
     test(
       'publishSubtitleEvent signs a 39307 with d=subtitles:<vineId>',
       () async {
-        when(
-          () => mockAuthService.currentPublicKeyHex,
-        ).thenReturn(testPubkey);
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
 
         when(
           () => mockAuthService.createAndSignEvent(
@@ -593,6 +714,7 @@ void main() {
           kind: any(named: 'kind'),
           content: any(named: 'content'),
           tags: any(named: 'tags'),
+          createdAt: any(named: 'createdAt'),
         ),
       ).thenAnswer((invocation) async {
         capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
@@ -613,7 +735,9 @@ void main() {
         ),
       );
 
-      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.updateVideoEvent(any()),
+      ).thenReturn(null);
 
       await publisher.republishWithSubtitles(
         existingEvent: existingEvent,
@@ -627,6 +751,7 @@ void main() {
                   kind: any(named: 'kind'),
                   content: any(named: 'content'),
                   tags: captureAny(named: 'tags'),
+                  createdAt: any(named: 'createdAt'),
                 ),
               ).captured.single
               as List;

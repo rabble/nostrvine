@@ -34,6 +34,15 @@ final _video = VideoEvent(
   vineId: 'my-vine-id',
 );
 
+final VideoEvent _updatedVideo = _video.copyWith(
+  id: 'vid2',
+  textTrackRef: 'https://media.divine.video/hash',
+  textTrackRefs: const [
+    'https://media.divine.video/hash',
+    '39307:pk1:subtitles:my-vine-id',
+  ],
+);
+
 const _cues = [SubtitleCue(start: 0, end: 1000, text: 'hi')];
 
 void main() {
@@ -90,6 +99,34 @@ void main() {
       expect(cues.single.text, equals('corrected'));
     });
 
+    test(
+      'loadCues prefers refs over stale embedded textTrackContent',
+      () async {
+        when(() => httpClient.get(any())).thenAnswer(
+          (_) async => http.Response(
+            'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nedited\n',
+            200,
+          ),
+        );
+
+        final cues = await repo.loadCues(
+          VideoEvent(
+            id: 'vid1',
+            pubkey: 'pk1',
+            createdAt: 1,
+            content: '',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(0),
+            textTrackRef: 'https://media.divine.video/edited.vtt',
+            textTrackContent:
+                'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nstale\n',
+          ),
+        );
+
+        expect(cues, hasLength(1));
+        expect(cues.single.text, equals('edited'));
+      },
+    );
+
     test('uploads VTT, publishes 39307, republishes with both refs', () async {
       when(
         () => blossom.uploadSubtitleVtt(bytes: any(named: 'bytes')),
@@ -115,9 +152,14 @@ void main() {
           extraTextTrackRefs: any(named: 'extraTextTrackRefs'),
           textTrackLang: any(named: 'textTrackLang'),
         ),
-      ).thenAnswer((_) async => true);
+      ).thenAnswer((_) async => _updatedVideo);
 
-      await repo.publishEditedSubtitles(video: _video, cues: _cues);
+      final updated = await repo.publishEditedSubtitles(
+        video: _video,
+        cues: _cues,
+      );
+
+      expect(updated, _updatedVideo);
 
       verify(
         () => publisher.republishWithSubtitles(
