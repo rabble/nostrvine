@@ -521,6 +521,121 @@ void main() {
       });
     });
 
+    group('private items', () {
+      final now = DateTime(2025, 6, 15);
+
+      CuratedList listWith(List<String> videoEventIds) => CuratedList(
+        id: 'my-list',
+        name: 'My List',
+        description: 'A description',
+        videoEventIds: videoEventIds,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      test('toItemTags returns only the video references', () {
+        final tags = CuratedListConverter.toItemTags(
+          listWith(const ['abc123', '34236:pubkey456:clip']),
+        );
+
+        expect(tags, [
+          ['e', 'abc123'],
+          ['a', '34236:pubkey456:clip'],
+        ]);
+      });
+
+      test('toPublicMetadataTags omits the video references', () {
+        final tags = CuratedListConverter.toPublicMetadataTags(
+          listWith(const ['abc123', '34236:pubkey456:clip']),
+        );
+
+        expect(tags, contains(equals(['d', 'my-list'])));
+        expect(tags, contains(equals(['title', 'My List'])));
+        expect(
+          tags.any((tag) => tag.first == 'e' || tag.first == 'a'),
+          isFalse,
+        );
+      });
+
+      test('toEventTags is the metadata tags followed by the item tags', () {
+        final list = listWith(const ['abc123', '34236:pubkey456:clip']);
+
+        expect(CuratedListConverter.toEventTags(list), [
+          ...CuratedListConverter.toPublicMetadataTags(list),
+          ...CuratedListConverter.toItemTags(list),
+        ]);
+      });
+
+      test(
+        'fromEvent merges decrypted item tags and marks the list private',
+        () {
+          // What a private list looks like on a relay: metadata in public tags,
+          // items only in the encrypted content.
+          final event = _makeEvent(
+            tags: [
+              ['d', 'my-list'],
+              ['title', 'My List'],
+            ],
+            content: 'ArbitraryNip44Ciphertext==',
+          );
+
+          final list = CuratedListConverter.fromEvent(
+            event,
+            privateTags: const [
+              ['e', 'abc123'],
+              ['a', '34236:pubkey456:clip'],
+            ],
+          );
+
+          expect(list, isNotNull);
+          expect(list!.isPublic, isFalse);
+          expect(list.videoEventIds, ['abc123', '34236:pubkey456:clip']);
+        },
+      );
+
+      test('fromEvent does not name a list after undecrypted content', () {
+        // Without a title the parser falls back to the first line of content.
+        // For a private list that content is ciphertext, and naming the list
+        // after it would put base64 in the app bar.
+        final event = _makeEvent(
+          tags: [
+            ['d', 'my-list'],
+          ],
+          content: 'ArbitraryNip44Ciphertext==',
+        );
+
+        final list = CuratedListConverter.fromEvent(
+          event,
+          privateTags: const [
+            ['e', 'abc123'],
+          ],
+        );
+
+        expect(list!.name, 'Untitled List');
+        expect(list.description, isNull);
+      });
+
+      test(
+        'fromEvent still reads content as a description for public lists',
+        () {
+          final event = _makeEvent(
+            tags: [
+              ['d', 'my-list'],
+              ['title', 'My List'],
+              ['e', 'abc123'],
+            ],
+            content: 'A description',
+          );
+
+          final list = CuratedListConverter.fromEvent(event);
+
+          expect(list!.isPublic, isTrue);
+          expect(list.description, 'A description');
+          expect(list.videoEventIds, ['abc123']);
+        },
+      );
+    });
+
     group('extractDTag', () {
       test('returns null when no d-tag is present', () {
         final event = _makeEvent(

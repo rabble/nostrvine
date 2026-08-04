@@ -22,7 +22,16 @@ abstract final class CuratedListConverter {
   /// Parses a Nostr [Event] into a [CuratedList].
   ///
   /// Returns `null` if the event cannot be parsed (e.g. missing d-tag).
-  static CuratedList? fromEvent(Event event) {
+  ///
+  /// [privateTags] carries the item tags a caller decrypted out of
+  /// [Event.content] for a NIP-51 private list. Passing them marks the result
+  /// private and appends their references to [CuratedList.videoEventIds];
+  /// their presence also means [Event.content] is ciphertext, so it is not
+  /// read as a description or borrowed as a name.
+  static CuratedList? fromEvent(
+    Event event, {
+    List<List<String>>? privateTags,
+  }) {
     try {
       final dTag = extractDTag(event);
       if (dTag == null) return null;
@@ -37,8 +46,15 @@ abstract final class CuratedListConverter {
       var isCollaborative = false;
       final allowedCollaborators = <String>[];
 
-      for (final dynamic rawTag in event.tags) {
-        final tag = (rawTag as List<dynamic>).cast<String>();
+      final isPrivate = privateTags != null;
+      final rawTags = [
+        ...event.tags.map(
+          (dynamic tag) => (tag as List<dynamic>).cast<String>(),
+        ),
+        if (privateTags != null) ...privateTags,
+      ];
+
+      for (final tag in rawTags) {
         if (tag.isEmpty) continue;
 
         switch (tag[0]) {
@@ -69,8 +85,9 @@ abstract final class CuratedListConverter {
         }
       }
 
-      // Use title, fall back to first line of content, then default.
-      final contentFirstLine = event.content.split('\n').first;
+      // Use title, fall back to first line of content, then default. A
+      // private list's content is ciphertext, so it is never borrowed.
+      final contentFirstLine = isPrivate ? '' : event.content.split('\n').first;
       final name =
           title ??
           (contentFirstLine.isNotEmpty ? contentFirstLine : 'Untitled List');
@@ -84,7 +101,8 @@ abstract final class CuratedListConverter {
         id: dTag,
         name: name,
         pubkey: event.pubkey,
-        description: description ?? event.content,
+        description: description ?? (isPrivate ? null : event.content),
+        isPublic: !isPrivate,
         imageUrl: imageUrl,
         videoEventIds: videoEventIds,
         createdAt: timestamp,
@@ -106,8 +124,19 @@ abstract final class CuratedListConverter {
   /// Converts a [CuratedList] to Nostr event tags for publishing.
   ///
   /// Returns a list of tag arrays suitable for creating a kind 30005
-  /// event.
-  static List<List<String>> toEventTags(CuratedList list) {
+  /// event, with every video reference in the public tags. A private list
+  /// publishes [toPublicMetadataTags] instead and carries [toItemTags]
+  /// encrypted in the event content.
+  static List<List<String>> toEventTags(CuratedList list) => [
+    ...toPublicMetadataTags(list),
+    ...toItemTags(list),
+  ];
+
+  /// The tags describing [list] itself, without any video reference.
+  ///
+  /// These stay readable on a relay even for a private list: NIP-51 hides a
+  /// list's items, not the fact that the list exists or what it is called.
+  static List<List<String>> toPublicMetadataTags(CuratedList list) {
     final tags = <List<String>>[
       ['d', list.id],
       ['title', list.name],
@@ -138,16 +167,20 @@ abstract final class CuratedListConverter {
 
     tags.add(['playorder', list.playOrder.value]);
 
-    for (final videoReference in list.videoEventIds) {
-      if (_isAddressableVideoReference(videoReference)) {
-        tags.add(['a', videoReference]);
-      } else {
-        tags.add(['e', videoReference]);
-      }
-    }
-
     return tags;
   }
+
+  /// The video-reference tags for [list].
+  ///
+  /// For a private list these are JSON-encoded and NIP-44 encrypted into the
+  /// event content instead of being published as tags.
+  static List<List<String>> toItemTags(CuratedList list) => [
+    for (final videoReference in list.videoEventIds)
+      if (_isAddressableVideoReference(videoReference))
+        ['a', videoReference]
+      else
+        ['e', videoReference],
+  ];
 
   /// Extracts the `d` tag value from an [event].
   ///
