@@ -400,100 +400,118 @@ final class ProfileRepositoryProvider
 
 String _$profileRepositoryHash() => r'92a8519f8d195b5c33727803820aa82e94a8b0b2';
 
-/// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+/// Read-only profile access gated on **identity-known** (a pubkey is
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
-/// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
-/// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
-/// no relay) and read back from Drift via `watchProfileStats`. None of that
-/// needs the relay-ready client, so gating those counts behind `nostrReady`
-/// is what left them stuck on "—" for the ~4s relay-connect window at cold
-/// start (#5863). This provider hands over the same repository as soon as the
-/// user's identity is known, so the counts render as soon as REST returns.
+/// Everything reachable through [ProfileReader] is signer-free: it either
+/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
+/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
+/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// the follower/following/video counts stuck on "—" for the ~4s relay-connect
+/// window at cold start (#5863), and what replaced the signed-in user's own
+/// name and avatar with a generated placeholder for that same window (#6423).
+/// This provider hands over the repository as soon as the identity is known.
+///
+/// **The return type is the security boundary.** The identity-known phase
+/// carries a pubkey but no client, so signing there is unsafe even though
+/// Drift reads are not. [ProfileReader] cannot express `saveProfileEvent`,
+/// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
+/// this provider cannot publish by accident. Everything that signs must keep
+/// using [profileRepository] — today that is
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
+/// action and `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
-/// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
-/// consumes this; everything relay-dependent must keep using
-/// [profileRepository].
+/// relay-backed [profileRepository].
 
-@ProviderFor(profileStatsRepository)
-final profileStatsRepositoryProvider = ProfileStatsRepositoryProvider._();
+@ProviderFor(profileReadRepository)
+final profileReadRepositoryProvider = ProfileReadRepositoryProvider._();
 
-/// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+/// Read-only profile access gated on **identity-known** (a pubkey is
 /// available) rather than the full `nostrReady` relay-connect settle.
 ///
-/// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
-/// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
-/// no relay) and read back from Drift via `watchProfileStats`. None of that
-/// needs the relay-ready client, so gating those counts behind `nostrReady`
-/// is what left them stuck on "—" for the ~4s relay-connect window at cold
-/// start (#5863). This provider hands over the same repository as soon as the
-/// user's identity is known, so the counts render as soon as REST returns.
+/// Everything reachable through [ProfileReader] is signer-free: it either
+/// reads Drift directly or falls back to a PUBLIC funnelcake REST call
+/// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
+/// relay-ready client, so gating these reads behind `nostrReady` is what left
+/// the follower/following/video counts stuck on "—" for the ~4s relay-connect
+/// window at cold start (#5863), and what replaced the signed-in user's own
+/// name and avatar with a generated placeholder for that same window (#6423).
+/// This provider hands over the repository as soon as the identity is known.
+///
+/// **The return type is the security boundary.** The identity-known phase
+/// carries a pubkey but no client, so signing there is unsafe even though
+/// Drift reads are not. [ProfileReader] cannot express `saveProfileEvent`,
+/// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
+/// this provider cannot publish by accident. Everything that signs must keep
+/// using [profileRepository] — today that is
+/// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
+/// action and `profileSaveRetryService`.
 ///
 /// It does NOT warm the Kind-0 cache — that side effect belongs to the
-/// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
-/// consumes this; everything relay-dependent must keep using
-/// [profileRepository].
+/// relay-backed [profileRepository].
 
-final class ProfileStatsRepositoryProvider
-    extends
-        $FunctionalProvider<
-          ProfileRepository?,
-          ProfileRepository?,
-          ProfileRepository?
-        >
-    with $Provider<ProfileRepository?> {
-  /// Lightweight ProfileRepository gated on **identity-known** (a pubkey is
+final class ProfileReadRepositoryProvider
+    extends $FunctionalProvider<ProfileReader?, ProfileReader?, ProfileReader?>
+    with $Provider<ProfileReader?> {
+  /// Read-only profile access gated on **identity-known** (a pubkey is
   /// available) rather than the full `nostrReady` relay-connect settle.
   ///
-  /// The follower/following/video COUNTS are populated by a PUBLIC funnelcake
-  /// REST call (`getUserProfile` → `_cacheProfileStatsFromResult`, no signer,
-  /// no relay) and read back from Drift via `watchProfileStats`. None of that
-  /// needs the relay-ready client, so gating those counts behind `nostrReady`
-  /// is what left them stuck on "—" for the ~4s relay-connect window at cold
-  /// start (#5863). This provider hands over the same repository as soon as the
-  /// user's identity is known, so the counts render as soon as REST returns.
+  /// Everything reachable through [ProfileReader] is signer-free: it either
+  /// reads Drift directly or falls back to a PUBLIC funnelcake REST call
+  /// (`getUserProfile` → `_cacheProfileStatsFromResult`). None of it needs the
+  /// relay-ready client, so gating these reads behind `nostrReady` is what left
+  /// the follower/following/video counts stuck on "—" for the ~4s relay-connect
+  /// window at cold start (#5863), and what replaced the signed-in user's own
+  /// name and avatar with a generated placeholder for that same window (#6423).
+  /// This provider hands over the repository as soon as the identity is known.
+  ///
+  /// **The return type is the security boundary.** The identity-known phase
+  /// carries a pubkey but no client, so signing there is unsafe even though
+  /// Drift reads are not. [ProfileReader] cannot express `saveProfileEvent`,
+  /// `claimUsername`, `releaseUsername` or `drivePendingSave`, so a consumer of
+  /// this provider cannot publish by accident. Everything that signs must keep
+  /// using [profileRepository] — today that is
+  /// `MonetizationLinksSettingsCubit`, `ProfileEditorBloc`, the account-deletion
+  /// action and `profileSaveRetryService`.
   ///
   /// It does NOT warm the Kind-0 cache — that side effect belongs to the
-  /// relay-backed [profileRepository]. Only [userProfileStatsReactiveProvider]
-  /// consumes this; everything relay-dependent must keep using
-  /// [profileRepository].
-  ProfileStatsRepositoryProvider._()
+  /// relay-backed [profileRepository].
+  ProfileReadRepositoryProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'profileStatsRepositoryProvider',
+        name: r'profileReadRepositoryProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$profileStatsRepositoryHash();
+  String debugGetCreateSourceHash() => _$profileReadRepositoryHash();
 
   @$internal
   @override
-  $ProviderElement<ProfileRepository?> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<ProfileReader?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  ProfileRepository? create(Ref ref) {
-    return profileStatsRepository(ref);
+  ProfileReader? create(Ref ref) {
+    return profileReadRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ProfileRepository? value) {
+  Override overrideWithValue(ProfileReader? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<ProfileRepository?>(value),
+      providerOverride: $SyncValueProvider<ProfileReader?>(value),
     );
   }
 }
 
-String _$profileStatsRepositoryHash() =>
-    r'80251b83ada9ba843c40f64b98a0e7d02ae46fc6';
+String _$profileReadRepositoryHash() =>
+    r'6a1e6da7d10b16ef607eaf7c1b771201ebb753a4';
 
 /// Curation Service - manages NIP-51 video curation sets
 

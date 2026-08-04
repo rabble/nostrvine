@@ -131,7 +131,7 @@ class _AppReviewCoordinatorState extends ConsumerState<AppReviewCoordinator> {
   }
 
   Future<ProfileStats?> _loadProfileStats(String pubkey) async {
-    final repository = ref.read(profileStatsRepositoryProvider);
+    final repository = ref.read(profileReadRepositoryProvider);
     if (repository == null) return null;
     return _profileStatsLoader.load(
       refresh: () async {

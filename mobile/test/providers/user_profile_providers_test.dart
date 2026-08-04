@@ -58,7 +58,7 @@ void main() {
       profileRepository = _MockProfileRepository();
       container = ProviderContainer(
         overrides: [
-          profileRepositoryProvider.overrideWithValue(profileRepository),
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
         ],
       );
       addTearDown(container.dispose);
@@ -188,27 +188,35 @@ void main() {
       expect(wasCancelled, isTrue);
     });
 
-    test('completes safely when profile repository is unavailable', () async {
-      final emptyContainer = ProviderContainer(
-        overrides: [
-          profileRepositoryProvider.overrideWithValue(null),
-        ],
-      );
-      addTearDown(emptyContainer.dispose);
+    test(
+      'resolves to AsyncData(null) when no repository is available',
+      () async {
+        final emptyContainer = ProviderContainer(
+          overrides: [
+            profileReadRepositoryProvider.overrideWithValue(null),
+          ],
+        );
+        addTearDown(emptyContainer.dispose);
 
-      final emitted = <AsyncValue<UserProfile?>>[];
-      final sub = emptyContainer.listen(
-        userProfileReactiveProvider(pubkey),
-        (_, next) => emitted.add(next),
-        fireImmediately: true,
-      );
-      addTearDown(sub.close);
+        final emitted = <AsyncValue<UserProfile?>>[];
+        final sub = emptyContainer.listen(
+          userProfileReactiveProvider(pubkey),
+          (_, next) => emitted.add(next),
+          fireImmediately: true,
+        );
+        addTearDown(sub.close);
 
-      await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(emitted, isNotEmpty);
-      expect(emitted.last, isA<AsyncLoading<UserProfile?>>());
-    });
+        expect(emitted, isNotEmpty);
+        // Not AsyncLoading: a stream that closes without ever emitting
+        // strands the provider in AsyncLoading forever, which callers cannot
+        // tell apart from "still fetching" — so UserName fell through to a
+        // generated name and never revisited it (#6423).
+        expect(emitted.last, isA<AsyncData<UserProfile?>>());
+        expect(emitted.last.value, isNull);
+      },
+    );
   });
 
   group('fetchUserProfileProvider', () {
@@ -219,7 +227,7 @@ void main() {
       profileRepository = _MockProfileRepository();
       container = ProviderContainer(
         overrides: [
-          profileRepositoryProvider.overrideWithValue(profileRepository),
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
         ],
       );
       addTearDown(container.dispose);
@@ -268,7 +276,7 @@ void main() {
         final profileRepository = _MockProfileRepository();
         final container = ProviderContainer(
           overrides: [
-            profileStatsRepositoryProvider.overrideWithValue(profileRepository),
+            profileReadRepositoryProvider.overrideWithValue(profileRepository),
           ],
         );
         addTearDown(container.dispose);
@@ -308,7 +316,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           // #5863: counts now source from the identity-known-gated stats repo.
-          profileStatsRepositoryProvider.overrideWithValue(profileRepository),
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
         ],
       );
       addTearDown(container.dispose);
@@ -375,7 +383,7 @@ void main() {
                 const NostrSessionReadiness.identityKnown(pubkey: pubkey),
               ),
             ),
-            profileStatsRepositoryProvider.overrideWith((ref) {
+            profileReadRepositoryProvider.overrideWith((ref) {
               final identityPubkey = ref.watch(
                 nostrSessionProvider.select((readiness) {
                   if (readiness.phase == NostrSessionPhase.identityKnown ||
@@ -419,6 +427,52 @@ void main() {
     );
   });
 
+  group('read/write split (#6423)', () {
+    test(
+      'the reactive profile resolves from cache while the signing gate is '
+      'still shut',
+      () async {
+        final repository = _MockProfileRepository();
+        final cached = UserProfile(
+          pubkey: pubkey,
+          name: 'real-name',
+          rawData: const {},
+          createdAt: DateTime.utc(2026),
+          eventId: 'event-id',
+        );
+        when(
+          () => repository.getCachedProfile(pubkey: pubkey),
+        ).thenAnswer((_) async => cached);
+        when(
+          () => repository.watchProfile(pubkey: pubkey),
+        ).thenAnswer((_) => Stream<UserProfile?>.value(cached));
+
+        final container = ProviderContainer(
+          overrides: [
+            // The state the reporter was stuck in: identity known, relays not
+            // yet connected, so the signing-gated repository is null.
+            profileRepositoryProvider.overrideWithValue(null),
+            profileReadRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final emitted = <AsyncValue<UserProfile?>>[];
+        final sub = container.listen(
+          userProfileReactiveProvider(pubkey),
+          (_, next) => emitted.add(next),
+          fireImmediately: true,
+        );
+        addTearDown(sub.close);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(emitted.last.value?.name, 'real-name');
+      },
+    );
+  });
+
   group('profileStatsRepository gating (#5863)', () {
     ProviderContainer containerWith(NostrSessionReadiness readiness) {
       final container = ProviderContainer(
@@ -434,7 +488,7 @@ void main() {
       final container = containerWith(
         const NostrSessionReadiness.signedOut(),
       );
-      expect(container.read(profileStatsRepositoryProvider), isNull);
+      expect(container.read(profileReadRepositoryProvider), isNull);
     });
 
     test(
@@ -500,7 +554,7 @@ void main() {
         addTearDown(container.dispose);
 
         final identityKnownRepo = container.read(
-          profileStatsRepositoryProvider,
+          profileReadRepositoryProvider,
         );
         expect(identityKnownRepo, isNotNull);
 
@@ -513,7 +567,7 @@ void main() {
               ),
             );
 
-        final nostrReadyRepo = container.read(profileStatsRepositoryProvider);
+        final nostrReadyRepo = container.read(profileReadRepositoryProvider);
         expect(identical(identityKnownRepo, nostrReadyRepo), isTrue);
       },
     );

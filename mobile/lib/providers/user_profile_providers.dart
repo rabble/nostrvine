@@ -25,9 +25,9 @@ final userProfileStatsReactiveProvider =
     StreamProvider.family<ProfileStats?, String>((ref, pubkey) {
       // Counts come from a public funnelcake REST call + Drift; they need only
       // an identity-known session, not the full nostrReady relay-connect settle.
-      // Using the identity-known-gated stats repo lets counts render as soon as
+      // Using the identity-known-gated read repo lets counts render as soon as
       // REST returns instead of stalling on "—" until relays connect (#5863).
-      final repo = ref.watch(profileStatsRepositoryProvider);
+      final repo = ref.watch(profileReadRepositoryProvider);
       if (repo == null) {
         return const Stream<ProfileStats?>.empty();
       }
@@ -36,7 +36,7 @@ final userProfileStatsReactiveProvider =
     });
 
 Stream<ProfileStats?> _watchProfileStats(
-  ProfileRepository repo,
+  ProfileReader repo,
   String pubkey,
 ) async* {
   unawaited(
@@ -57,18 +57,26 @@ Stream<ProfileStats?> _watchProfileStats(
 ///
 /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
 /// FutureProvider, so widget code changes are minimal.
+///
+/// Reads through [profileReadRepositoryProvider], which is available at the
+/// identity-known phase. Waiting for the relay-connect settle here is what
+/// made the signed-in user's own header render a generated fallback name for
+/// the whole cold-start window (#6423); nothing on this path signs.
 @riverpod
 Stream<UserProfile?> userProfileReactive(Ref ref, String pubkey) {
-  final repo = ref.watch(profileRepositoryProvider);
+  final repo = ref.watch(profileReadRepositoryProvider);
   if (repo == null) {
-    return const Stream<UserProfile?>.empty();
+    // Resolve to AsyncData(null) rather than an empty stream: a stream that
+    // closes without emitting leaves the StreamProvider in AsyncLoading
+    // forever, which callers cannot tell apart from "still fetching".
+    return Stream<UserProfile?>.value(null);
   }
 
   return _watchUserProfile(repo, pubkey);
 }
 
 Stream<UserProfile?> _watchUserProfile(
-  ProfileRepository repo,
+  ProfileReader repo,
   String pubkey,
 ) async* {
   // Kick off a background fetch if nothing is cached yet.
@@ -84,9 +92,11 @@ Stream<UserProfile?> _watchUserProfile(
 ///
 /// Use this when you need a single read (e.g., building a share sheet)
 /// rather than a reactive stream.
+///
+/// Same read gate as [userProfileReactive] — both paths are signer-free.
 @riverpod
 Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
-  final repo = ref.watch(profileRepositoryProvider);
+  final repo = ref.watch(profileReadRepositoryProvider);
   if (repo == null) return null;
 
   final cached = await repo.getCachedProfile(pubkey: pubkey);

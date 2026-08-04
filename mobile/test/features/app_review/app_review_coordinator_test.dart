@@ -109,7 +109,7 @@ void main() {
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           installSourceProvider.overrideWithValue(InstallSource.playStore),
-          profileStatsRepositoryProvider.overrideWithValue(profileRepository),
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
         child: const MaterialApp(home: AppReviewCoordinator()),

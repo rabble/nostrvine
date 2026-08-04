@@ -71,7 +71,7 @@ class VideoSharingService {
   VideoSharingService({
     required NostrClient nostrService,
     required AuthService authService,
-    required ProfileRepository profileRepository,
+    required ProfileReader profileRepository,
     DmRepository? dmRepository,
   }) : _nostrService = nostrService,
        _authService = authService,
@@ -79,7 +79,7 @@ class VideoSharingService {
        _dmRepository = dmRepository;
   final NostrClient _nostrService;
   final AuthService _authService;
-  final ProfileRepository _profileRepository;
+  final ProfileReader _profileRepository;
   final DmRepository? _dmRepository;
 
   final List<ShareableUser> _recentlySharedWith = [];
@@ -108,6 +108,16 @@ class VideoSharingService {
 
       if (!_authService.isAuthenticated) {
         return ShareResult.failure('User not authenticated');
+      }
+
+      // Explicit publish-readiness gate. This service used to inherit one by
+      // accident: it was built from the relay-gated profile repository, so a
+      // not-yet-ready session made the whole service — and therefore the
+      // share sheet — null. That turned Share into a silent dead tap for the
+      // entire cold-start window. The sheet now opens on the read-only
+      // handle, so the send path has to state the requirement itself (#6423).
+      if (!_authService.canPublishNostrWritesNow) {
+        return ShareResult.failure('Signing is not available yet');
       }
 
       final dmContent = _createShareMessage(video, personalMessage);

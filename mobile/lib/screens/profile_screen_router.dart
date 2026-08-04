@@ -67,8 +67,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
 
-    // Trigger a background fetch via ProfileRepository
-    ref.read(profileRepositoryProvider)?.fetchFreshProfile(pubkey: userIdHex);
+    // Trigger a background fetch via the read-only handle.
+    ref
+        .read(profileReadRepositoryProvider)
+        ?.fetchFreshProfile(
+          pubkey: userIdHex,
+        );
   }
 
   @override
@@ -113,18 +117,20 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (isOwnProfileGrid) {
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
-      final profileRepository = ref.watch(profileRepositoryProvider);
+      // Read-only handle: available at identity-known, so the own-profile
+      // header renders the user's real cached name and avatar instead of a
+      // generated placeholder while relays connect (#6423). MyProfileBloc
+      // only reads.
+      final profileRepository = ref.watch(profileReadRepositoryProvider);
       final identityClaimsRepository = ref.watch(
         identityClaimsRepositoryProvider,
       );
 
       if (userIdHex == null || profileRepository == null) {
-        // profileRepository isn't ready yet (cold start before the
-        // signer-backed client is up). Render the real profile layout — its
-        // header, stats, and video grid degrade to skeletons while
-        // MyProfileBloc is absent — instead of a separate loading view. Once
-        // the repository resolves, the BlocProvider below mounts and the
-        // layout fills in with real data.
+        // No identity at all yet. Render the real profile layout — its header,
+        // stats, and video grid degrade to skeletons while MyProfileBloc is
+        // absent — instead of a separate loading view. Once the identity
+        // resolves, the BlocProvider below mounts and the layout fills in.
         return _ProfileScaffold(body: content);
       }
 
@@ -168,7 +174,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     try {
       // Get profile info for better share text
       final profile = await ref
-          .read(profileRepositoryProvider)
+          .read(profileReadRepositoryProvider)
           ?.getCachedProfile(pubkey: userIdHex);
       final displayName = profile?.bestDisplayName ?? 'User';
 
