@@ -703,10 +703,13 @@ class RelayPool {
           messageType == 'CLOSED' ||
           messageType == 'NOTICE') {
         log('📡 Raw message from ${relay.url}: $json');
-      } else {
-        // Debug-only: this branch fires for every EVENT/EOSE frame and the
-        // unconditional log cost ~6% of main-isolate CPU in on-device
-        // profiling. The assert closure never runs in profile/release.
+      } else if (messageType != 'EVENT') {
+        // EVENT is excluded: it is the highest-volume frame, and a reconnect
+        // replays a whole subscription window at once. OK and COUNT log
+        // themselves below, so this mainly covers EOSE and unknown types.
+        // Debug-only — the assert closure never runs in profile/release, and
+        // logging here unconditionally cost ~6% of main-isolate CPU in
+        // on-device profiling (#5957).
         assert(() {
           log('📡 ${relay.url}: $messageType $msgSubId');
           return true;
