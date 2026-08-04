@@ -139,7 +139,7 @@ class ProfileCollabVideosBloc
 
     final videos = await _videosRepository.getCollabVideos(
       taggedPubkey: _targetUserPubkey,
-      limit: profileTabPageSize,
+      limit: ProfileTabPagination.pageSize,
     );
     if (isClosed) return;
 
@@ -147,7 +147,7 @@ class ProfileCollabVideosBloc
         .where((v) => v.isSupportedOnCurrentPlatform)
         .toList();
     final cursor = collabVideos.isNotEmpty ? collabVideos.last.createdAt : null;
-    final hasMore = videos.length >= profileTabPageSize;
+    final hasMore = videos.length >= ProfileTabPagination.pageSize;
 
     emit(
       state.copyWith(
@@ -173,7 +173,7 @@ class ProfileCollabVideosBloc
   Future<void> _warmRevalidate(Emitter<ProfileCollabVideosState> emit) async {
     final firstPage = await _videosRepository.getCollabVideos(
       taggedPubkey: _targetUserPubkey,
-      limit: profileTabPageSize,
+      limit: ProfileTabPagination.pageSize,
     );
     if (isClosed) return;
 
@@ -185,7 +185,7 @@ class ProfileCollabVideosBloc
         .where((v) => v.isSupportedOnCurrentPlatform)
         .toList();
     final freshIds = fresh.map((v) => v.id).toSet();
-    final tail = firstPage.length >= profileTabPageSize
+    final tail = firstPage.length >= ProfileTabPagination.pageSize
         ? state.videos
               .skip(_tailStartAfterFreshOverlap(fresh))
               .where((v) => !freshIds.contains(v.id))
@@ -195,7 +195,8 @@ class ProfileCollabVideosBloc
     // A short fresh page means the feed ends there; the cached tail (if any)
     // is no longer confirmed.
     final hasMore =
-        firstPage.length >= profileTabPageSize && state.hasMoreContent;
+        firstPage.length >= ProfileTabPagination.pageSize &&
+        state.hasMoreContent;
 
     final unchanged = listEquals(
       allVideos.map((v) => v.id).toList(),
@@ -296,7 +297,7 @@ class ProfileCollabVideosBloc
     try {
       final videos = await _videosRepository.getCollabVideos(
         taggedPubkey: _targetUserPubkey,
-        limit: profileTabPageSize,
+        limit: ProfileTabPagination.pageSize,
         until: state.paginationCursor,
       );
 
@@ -324,7 +325,7 @@ class ProfileCollabVideosBloc
         category: LogCategory.video,
       );
 
-      final hasMore = videos.length >= profileTabPageSize;
+      final hasMore = videos.length >= ProfileTabPagination.pageSize;
       emit(
         state.copyWith(
           videos: allVideos,

@@ -36,7 +36,7 @@ part 'profile_liked_videos_state.dart';
 /// - Loading video data with cache-first pattern (SQLite → relay fallback)
 /// - Filtering: excludes unsupported video formats
 /// - Listening for like changes to update the list
-/// - Pagination: loads videos in batches of [profileTabPageSize]
+/// - Pagination: loads videos in batches of [ProfileTabPagination.pageSize]
 class ProfileLikedVideosBloc
     extends Bloc<ProfileLikedVideosEvent, ProfileLikedVideosState> {
   ProfileLikedVideosBloc({
@@ -339,7 +339,7 @@ class ProfileLikedVideosBloc
         max(state.nextPageOffset, state.videos.length) + newAtTop;
     final windowSize = max(
       loadedWindow,
-      profileTabPageSize,
+      ProfileTabPagination.pageSize,
     ).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
@@ -379,7 +379,7 @@ class ProfileLikedVideosBloc
   /// unchanged-IDs fast path in [_warmRevalidate] would keep the short window
   /// alive on every reopen for anyone whose ID list has settled.
   bool _isWindowUnderfilled(List<String> ids) =>
-      state.nextPageOffset < profileTabPageSize &&
+      state.nextPageOffset < ProfileTabPagination.pageSize &&
       state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
@@ -542,10 +542,10 @@ class ProfileLikedVideosBloc
   /// Handle load more request - fetches the next page of videos.
   ///
   /// Uses [state.nextPageOffset] to track the position in [state.likedEventIds]
-  /// and fetches the next [profileTabPageSize] IDs. The offset advances by
-  /// the number of IDs consumed, not the number of videos loaded (some IDs
-  /// may not resolve to videos due to relay unavailability or format
-  /// filtering).
+  /// and fetches the next [ProfileTabPagination.pageSize] IDs. The offset
+  /// advances by the number of IDs consumed, not the number of videos loaded
+  /// (some IDs may not resolve to videos due to relay unavailability or
+  /// format filtering).
   Future<void> _onLoadMoreRequested(
     ProfileLikedVideosLoadMoreRequested event,
     Emitter<ProfileLikedVideosState> emit,
@@ -730,10 +730,10 @@ class ProfileLikedVideosBloc
     );
   }
 
-  /// Fetches videos until a full [profileTabPageSize] page is filled or the
-  /// IDs run out, skipping over IDs that don't resolve (sparse likes) and
-  /// deduping against [excludeVideoIds]. Returns the consumed-ID offset so
-  /// pagination advances past dead IDs.
+  /// Fetches videos until a full [ProfileTabPagination.pageSize] page is
+  /// filled or the IDs run out, skipping over IDs that don't resolve (sparse
+  /// likes) and deduping against [excludeVideoIds]. Returns the consumed-ID
+  /// offset so pagination advances past dead IDs.
   Future<_LikedVideosPage> _fetchVideoPage(
     List<String> likedEventIds, {
     required int startOffset,
@@ -746,10 +746,11 @@ class ProfileLikedVideosBloc
     final pageVideos = <VideoEvent>[];
     final seenIds = {...excludeVideoIds};
 
-    while (offset < totalCount && pageVideos.length < profileTabPageSize) {
+    while (offset < totalCount &&
+        pageVideos.length < ProfileTabPagination.pageSize) {
       final batchIds = likedEventIds
           .skip(offset)
-          .take(profileTabPageSize)
+          .take(ProfileTabPagination.pageSize)
           .toList();
       if (batchIds.isEmpty) break;
 
@@ -757,15 +758,28 @@ class ProfileLikedVideosBloc
         batchIds,
         cacheResults: cacheFirstBatch && isFirstBatch,
       );
+      final batchIndexById = {
+        for (var index = 0; index < batchIds.length; index++)
+          batchIds[index]: index,
+      };
+      var consumedIds = batchIds.length;
 
       for (final video in videos) {
-        if (pageVideos.length >= profileTabPageSize) break;
+        final batchIndex = batchIndexById[video.id];
+        if (pageVideos.length >= ProfileTabPagination.pageSize) {
+          if (batchIndex != null) consumedIds = batchIndex;
+          break;
+        }
         if (seenIds.add(video.id)) {
           pageVideos.add(video);
+          if (pageVideos.length >= ProfileTabPagination.pageSize) {
+            if (batchIndex != null) consumedIds = batchIndex + 1;
+            break;
+          }
         }
       }
 
-      offset += batchIds.length;
+      offset += consumedIds;
       isFirstBatch = false;
     }
 

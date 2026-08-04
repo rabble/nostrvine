@@ -489,7 +489,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              for (var i = 1; i < profileTabPageSize; i++)
+              for (var i = 1; i < ProfileTabPagination.pageSize; i++)
                 createTestVideo(id: 'cached-$i', pubkey: authorPubkey),
               createTestVideo(id: 'new-confirmed', pubkey: authorPubkey),
             ],
@@ -501,7 +501,7 @@ void main() {
             key: '$targetPubkey:profile_collab_videos',
             payload: ProfileVideoCursorSnapshot(
               videos: [
-                for (var i = 1; i < profileTabPageSize; i++)
+                for (var i = 1; i < ProfileTabPagination.pageSize; i++)
                   createTestVideo(id: 'cached-$i', pubkey: authorPubkey),
                 createTestVideo(id: 'tail-1', pubkey: authorPubkey),
               ],
@@ -519,7 +519,8 @@ void main() {
           isA<ProfileCollabVideosState>()
               .having((s) => s.isRefreshing, 'isRefreshing', false)
               .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
-                for (var i = 1; i < profileTabPageSize; i++) 'cached-$i',
+                for (var i = 1; i < ProfileTabPagination.pageSize; i++)
+                  'cached-$i',
                 'new-confirmed',
                 'tail-1',
               ])

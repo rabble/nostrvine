@@ -22,8 +22,9 @@ EventTransformer<E> _debounceRestartable<E>() {
   };
 }
 
-/// Number of results per page for hashtag search pagination.
-const _pageSize = 20;
+/// Hashtag chips are visually short, so each page needs to add enough rows to
+/// stay ahead of `ScrollPaginationMixin`'s viewport-relative prefetch.
+const _pageSize = 50;
 
 /// BLoC for searching hashtags via the Funnelcake API.
 ///
@@ -100,7 +101,10 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     _feedTracker?.startFeedLoad('hashtag_search');
 
     try {
-      final results = await _hashtagRepository.searchHashtags(query: query);
+      final results = await _hashtagRepository.searchHashtags(
+        query: query,
+        limit: _pageSize,
+      );
 
       _feedTracker?.markFirstVideosReceived('hashtag_search', results.length);
 
@@ -140,6 +144,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     try {
       final moreResults = await _hashtagRepository.searchHashtags(
         query: state.query,
+        limit: _pageSize,
         offset: state.offset,
       );
 

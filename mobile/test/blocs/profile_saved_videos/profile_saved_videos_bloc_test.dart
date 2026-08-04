@@ -261,7 +261,10 @@ void main() {
         'grows a persisted window shorter than a page even when the bookmark '
         'list is unchanged',
         setUp: () async {
-          final ids = List.generate(profileTabPageSize + 14, (i) => 'video-$i');
+          final ids = List.generate(
+            ProfileTabPagination.pageSize + 14,
+            (i) => 'video-$i',
+          );
           await cacheDao.write(
             key: '$currentUserPubkey:profile_saved_videos',
             payload: ProfileVideoListSnapshot(
@@ -299,12 +302,12 @@ void main() {
               .having(
                 (s) => s.videos.length,
                 'grown to a full page',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having(
                 (s) => s.nextPageOffset,
                 'nextPageOffset',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],
@@ -433,7 +436,7 @@ void main() {
     group('ProfileSavedVideosLoadMoreRequested', () {
       // Build a list that exceeds one page so hasMoreContent starts true and
       // a second fetch is required.
-      const bookmarkCount = profileTabPageSize + 7;
+      const bookmarkCount = ProfileTabPagination.pageSize + 7;
       final manyBookmarks = List.generate(
         bookmarkCount,
         (i) => BookmarkItem(type: 'e', id: 'video-$i'),

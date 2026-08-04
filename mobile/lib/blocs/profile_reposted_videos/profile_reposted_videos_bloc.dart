@@ -37,7 +37,7 @@ part 'profile_reposted_videos_state.dart';
 /// - Resolving addressable IDs to VideoEvents with cache-first pattern
 /// - Filtering: excludes unsupported video formats
 /// - Listening for repost changes to update the list
-/// - Pagination: loads videos in batches of [profileTabPageSize]
+/// - Pagination: loads videos in batches of [ProfileTabPagination.pageSize]
 class ProfileRepostedVideosBloc
     extends Bloc<ProfileRepostedVideosEvent, ProfileRepostedVideosState> {
   ProfileRepostedVideosBloc({
@@ -203,7 +203,9 @@ class ProfileRepostedVideosBloc
       return;
     }
 
-    final firstPageIds = addressableIds.take(profileTabPageSize).toList();
+    final firstPageIds = addressableIds
+        .take(ProfileTabPagination.pageSize)
+        .toList();
     final videos = await _fetchVideos(firstPageIds, cacheResults: true);
     if (isClosed) return;
 
@@ -288,7 +290,7 @@ class ProfileRepostedVideosBloc
         max(state.nextPageOffset, state.videos.length) + newAtTop;
     final windowSize = max(
       loadedWindow,
-      profileTabPageSize,
+      ProfileTabPagination.pageSize,
     ).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
@@ -326,7 +328,7 @@ class ProfileRepostedVideosBloc
   /// must be topped up even when the ID list itself is unchanged. See
   /// ProfileLikedVideosBloc for the lock-in this prevents.
   bool _isWindowUnderfilled(List<String> ids) =>
-      state.nextPageOffset < profileTabPageSize &&
+      state.nextPageOffset < ProfileTabPagination.pageSize &&
       state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
@@ -500,7 +502,7 @@ class ProfileRepostedVideosBloc
     try {
       final nextPageIds = state.repostedAddressableIds
           .skip(offset)
-          .take(profileTabPageSize)
+          .take(ProfileTabPagination.pageSize)
           .toList();
       final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
 

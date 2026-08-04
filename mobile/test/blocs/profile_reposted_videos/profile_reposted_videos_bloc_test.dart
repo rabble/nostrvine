@@ -16,7 +16,7 @@ import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 /// A window the user scrolled two pages deep into before leaving the tab.
-const int _scrolledWindow = profileTabPageSize * 2;
+const int _scrolledWindow = ProfileTabPagination.pageSize * 2;
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
@@ -451,7 +451,7 @@ void main() {
         'ID list is unchanged',
         setUp: () async {
           final ids = List.generate(
-            profileTabPageSize + 14,
+            ProfileTabPagination.pageSize + 14,
             (i) => createAddressableId(currentUserPubkey, 'd$i'),
           );
           await cacheDao.write(
@@ -506,12 +506,12 @@ void main() {
               .having(
                 (s) => s.videos.length,
                 'grown to a full page',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having(
                 (s) => s.nextPageOffset,
                 'nextPageOffset',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],

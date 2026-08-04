@@ -173,7 +173,9 @@ class ProfileSavedVideosBloc
       return;
     }
 
-    final firstPageIds = savedEventIds.take(profileTabPageSize).toList();
+    final firstPageIds = savedEventIds
+        .take(ProfileTabPagination.pageSize)
+        .toList();
     final videos = await _fetchVideos(firstPageIds, cacheResults: true);
     if (isClosed) return;
 
@@ -248,7 +250,7 @@ class ProfileSavedVideosBloc
         max(state.nextPageOffset, state.videos.length) + newAtTop;
     final windowSize = max(
       loadedWindow,
-      profileTabPageSize,
+      ProfileTabPagination.pageSize,
     ).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
@@ -285,7 +287,7 @@ class ProfileSavedVideosBloc
   /// must be topped up even when the ID list itself is unchanged. See
   /// ProfileLikedVideosBloc for the lock-in this prevents.
   bool _isWindowUnderfilled(List<String> ids) =>
-      state.nextPageOffset < profileTabPageSize &&
+      state.nextPageOffset < ProfileTabPagination.pageSize &&
       state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
@@ -336,7 +338,7 @@ class ProfileSavedVideosBloc
   /// Handle load more request — fetches the next page of videos.
   ///
   /// Uses [state.nextPageOffset] to track the position in
-  /// [state.savedEventIds] and fetches the next [profileTabPageSize] IDs. The
+  /// [state.savedEventIds] and fetches the next [ProfileTabPagination.pageSize] IDs. The
   /// offset advances by the number of IDs consumed, not the number of videos
   /// loaded (some IDs may not resolve to videos due to relay unavailability
   /// or format filtering).
@@ -370,7 +372,7 @@ class ProfileSavedVideosBloc
     try {
       final nextPageIds = state.savedEventIds
           .skip(offset)
-          .take(profileTabPageSize)
+          .take(ProfileTabPagination.pageSize)
           .toList();
       final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
 

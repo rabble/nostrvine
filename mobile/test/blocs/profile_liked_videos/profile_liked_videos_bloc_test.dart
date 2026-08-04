@@ -17,14 +17,15 @@ import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 /// A window the user scrolled two pages deep into before leaving the tab.
-const int _scrolledWindow = profileTabPageSize * 2;
+const int _scrolledWindow = ProfileTabPagination.pageSize * 2;
 
 /// Videos already loaded when the sparse load-more test seeds its state.
 const _seededOffset = 2;
 
 /// 1-based ID of the first entry in the second batch a load-more from
 /// [_seededOffset] consumes — the batch that actually resolves to videos.
-const int _secondSparseBatchFirstId = _seededOffset + profileTabPageSize + 1;
+const int _secondSparseBatchFirstId =
+    _seededOffset + ProfileTabPagination.pageSize + 1;
 
 class _MockLikesRepository extends Mock implements LikesRepository {}
 
@@ -440,7 +441,10 @@ void main() {
         'grows a persisted window shorter than a page even when the liked-ID '
         'list is unchanged',
         setUp: () async {
-          final ids = List.generate(profileTabPageSize + 14, (i) => 'like$i');
+          final ids = List.generate(
+            ProfileTabPagination.pageSize + 14,
+            (i) => 'like$i',
+          );
           // A previous run persisted a 6-item window: its cold load resolved
           // the local liked-ID list before the relay sync had filled it in.
           await cacheDao.write(
@@ -485,12 +489,12 @@ void main() {
               .having(
                 (s) => s.videos.length,
                 'grown to a full page',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having(
                 (s) => s.nextPageOffset,
                 'nextPageOffset',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true)
               .having((s) => s.isRefreshing, 'isRefreshing', false),
@@ -504,11 +508,11 @@ void main() {
           // The persisted ID list is capped, so it differs from the relay's —
           // reconciliation runs, and must not inherit the 6-item window.
           final cachedIds = List.generate(
-            profileTabPageSize - 6,
+            ProfileTabPagination.pageSize - 6,
             (i) => 'like$i',
           );
           final freshIds = List.generate(
-            profileTabPageSize + 4,
+            ProfileTabPagination.pageSize + 4,
             (i) => 'like$i',
           );
           await cacheDao.write(
@@ -551,12 +555,12 @@ void main() {
               .having(
                 (s) => s.videos.length,
                 'refilled to a page',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having(
                 (s) => s.nextPageOffset,
                 'nextPageOffset',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],
@@ -843,13 +847,14 @@ void main() {
         'continues initial load through sparse liked IDs until videos render',
         setUp: () {
           final likedIds = List.generate(
-            profileTabPageSize * 2 + 4,
+            ProfileTabPagination.pageSize * 2 + 4,
             (index) => 'event${index + 1}',
           );
           final secondBatchVideos = List.generate(
-            profileTabPageSize,
-            (index) =>
-                createTestVideo('event${index + profileTabPageSize + 1}'),
+            ProfileTabPagination.pageSize,
+            (index) => createTestVideo(
+              'event${index + ProfileTabPagination.pageSize + 1}',
+            ),
           );
 
           when(() => mockLikesRepository.syncUserReactions()).thenAnswer(
@@ -865,7 +870,7 @@ void main() {
             ),
           ).thenAnswer((invocation) async {
             final ids = invocation.positionalArguments[0] as List<String>;
-            if (ids.first == 'event${profileTabPageSize + 1}') {
+            if (ids.first == 'event${ProfileTabPagination.pageSize + 1}') {
               return secondBatchVideos;
             }
             return <VideoEvent>[];
@@ -885,12 +890,12 @@ void main() {
               .having(
                 (s) => s.videos.length,
                 'videos count',
-                profileTabPageSize,
+                ProfileTabPagination.pageSize,
               )
               .having(
                 (s) => s.nextPageOffset,
                 'nextPageOffset',
-                profileTabPageSize * 2,
+                ProfileTabPagination.pageSize * 2,
               )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],
@@ -900,7 +905,7 @@ void main() {
               any(
                 that: equals(
                   List.generate(
-                    profileTabPageSize,
+                    ProfileTabPagination.pageSize,
                     (index) => 'event${index + 1}',
                   ),
                 ),
@@ -913,8 +918,9 @@ void main() {
               any(
                 that: equals(
                   List.generate(
-                    profileTabPageSize,
-                    (index) => 'event${index + profileTabPageSize + 1}',
+                    ProfileTabPagination.pageSize,
+                    (index) =>
+                        'event${index + ProfileTabPagination.pageSize + 1}',
                   ),
                 ),
               ),
@@ -1201,7 +1207,7 @@ void main() {
           // The first batch after the seeded offset resolves to nothing, so
           // the bloc must keep consuming IDs into the batch that does.
           final nextVisibleVideos = List.generate(
-            profileTabPageSize,
+            ProfileTabPagination.pageSize,
             (index) =>
                 createTestVideo('event${index + _secondSparseBatchFirstId}'),
           );
@@ -1222,7 +1228,7 @@ void main() {
         seed: () => ProfileLikedVideosState(
           status: ProfileLikedVideosStatus.success,
           likedEventIds: List.generate(
-            _seededOffset + profileTabPageSize * 2 + 4,
+            _seededOffset + ProfileTabPagination.pageSize * 2 + 4,
             (index) => 'event${index + 1}',
           ),
           videos: [createTestVideo('event1'), createTestVideo('event2')],
@@ -1240,12 +1246,70 @@ void main() {
               .having(
                 (s) => s.videos.length,
                 'videos count',
-                _seededOffset + profileTabPageSize,
+                _seededOffset + ProfileTabPagination.pageSize,
               )
               .having(
                 (s) => s.nextPageOffset,
                 'nextPageOffset',
-                _seededOffset + profileTabPageSize * 2,
+                _seededOffset + ProfileTabPagination.pageSize * 2,
+              )
+              .having((s) => s.hasMoreContent, 'hasMoreContent', true),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'does not advance past resolved videos left after a page fills',
+        setUp: () {
+          final firstBatchVideos = List.generate(
+            5,
+            (index) => createTestVideo('event${index + 1}'),
+          );
+          final secondBatchVideos = List.generate(
+            ProfileTabPagination.pageSize,
+            (index) => createTestVideo(
+              'event${index + ProfileTabPagination.pageSize + 1}',
+            ),
+          );
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((invocation) async {
+            final ids = invocation.positionalArguments[0] as List<String>;
+            if (ids.first == 'event1') return firstBatchVideos;
+            if (ids.first == 'event${ProfileTabPagination.pageSize + 1}') {
+              return secondBatchVideos;
+            }
+            return <VideoEvent>[];
+          });
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: List.generate(
+            ProfileTabPagination.pageSize * 2,
+            (index) => 'event${index + 1}',
+          ),
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having(
+                (s) => s.videos.length,
+                'videos count',
+                ProfileTabPagination.pageSize,
+              )
+              .having(
+                (s) => s.nextPageOffset,
+                'nextPageOffset',
+                ProfileTabPagination.pageSize * 2 - 5,
               )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],
