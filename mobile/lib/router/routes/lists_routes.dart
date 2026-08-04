@@ -14,11 +14,19 @@ import 'package:openvine/screens/curated_list_by_author_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 List<RouteBase> listsRoutes(Ref ref) {
   return [
+    // BOOKMARKS route (NIP-51 kind 10003 global bookmarks)
+    // Outside shell so the screen's own AppBar is shown without the shell one
+    GoRoute(
+      path: SavedVideosScreen.path,
+      name: SavedVideosScreen.routeName,
+      builder: (_, _) => const SavedVideosScreen(),
+    ),
     // CURATED LIST route (NIP-51 kind 30005 video lists)
     // Outside shell so the screen's own AppBar is shown without the shell AppBar
     GoRoute(

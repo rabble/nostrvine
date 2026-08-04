@@ -10,6 +10,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/routes/route_extras.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/saved_videos_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -66,6 +67,7 @@ class _ProfileListsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        const _BookmarksEntry(),
         if (lists.isEmpty)
           Padding(
             padding: const EdgeInsets.all(32),
@@ -88,6 +90,46 @@ class _ProfileListsContent extends StatelessWidget {
               ),
             ),
       ],
+    );
+  }
+}
+
+/// Entry point to the viewer's bookmarks.
+///
+/// Bookmarks are a NIP-51 kind 10003 list rather than a kind 30005 one, so
+/// they can't come through [CuratedListCard] — but they are still one of the
+/// viewer's lists, which is why they sit here rather than in a tab of their
+/// own. Without this the share sheet's Save action would be write-only.
+class _BookmarksEntry extends StatelessWidget {
+  const _BookmarksEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: context.l10n.shareMenuBookmarks,
+      child: InkWell(
+        onTap: () => context.push(SavedVideosScreen.path),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            spacing: 12,
+            children: [
+              const DivineIcon(icon: .bookmarkSimple),
+              Expanded(
+                child: Text(
+                  context.l10n.shareMenuBookmarks,
+                  style: VineTheme.titleSmallFont(),
+                ),
+              ),
+              DivineIcon(
+                icon: .caretRight,
+                color: context.vineColors.secondaryText,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
