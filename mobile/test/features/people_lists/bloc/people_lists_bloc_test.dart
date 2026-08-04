@@ -1307,10 +1307,7 @@ void main() {
         addTearDown(bloc.close);
 
         bloc.add(
-          const PeopleListsPubkeyAddRequested(
-            listId: 'l1',
-            pubkey: _memberBob,
-          ),
+          const PeopleListsPubkeyAddRequested(listId: 'l1', pubkey: _memberBob),
         );
         await _flush();
         expect(bloc.state.lists.single.pubkeys, contains(_memberBob));
@@ -1474,10 +1471,7 @@ void main() {
         addTearDown(bloc.close);
 
         bloc.add(
-          const PeopleListsPubkeyAddRequested(
-            listId: 'l1',
-            pubkey: _memberBob,
-          ),
+          const PeopleListsPubkeyAddRequested(listId: 'l1', pubkey: _memberBob),
         );
         await _flush();
         expect(bloc.state.lists.single.pubkeys, contains(_memberBob));
@@ -1487,6 +1481,41 @@ void main() {
         await _flush();
 
         publish.completeError(StateError('no public key available'));
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.enabled, isFalse);
+        expect(bloc.state.status, equals(PeopleListsStatus.initial));
+        expect(bloc.state.lists, isEmpty);
+      });
+
+      test('a remove that throws after a teardown restores nothing', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'l1',
+            pubkey: _memberAlice,
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerAList();
+        addTearDown(bloc.close);
+
+        bloc.add(
+          const PeopleListsPubkeyRemoveRequested(
+            listId: 'l1',
+            pubkey: _memberAlice,
+          ),
+        );
+        await _flush();
+        expect(bloc.state.lists.single.pubkeys, isEmpty);
+
+        enabledController.add(false);
+        await _flush();
+        await _flush();
+
+        publish.completeError(StateError('relay rejected removal'));
         await _flush();
         await _flush();
 

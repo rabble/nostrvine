@@ -92,10 +92,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
        _clock = clock ?? _defaultClock,
        super(PeopleListsState(ownerPubkey: initialOwnerPubkey)) {
     on<PeopleListsStarted>(_onStarted);
-    on<PeopleListsEnabledChanged>(
-      _onEnabledChanged,
-      transformer: sequential(),
-    );
+    on<PeopleListsEnabledChanged>(_onEnabledChanged, transformer: sequential());
     on<PeopleListsRepositoryChanged>(
       _onRepositoryChanged,
       transformer: sequential(),
@@ -213,7 +210,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       // can learn who is signed in.
       //
       // Dropping `pendingMutations` is also what stops a mutation still in
-      // flight from putting the snapshot back once it resolves — see
+      // flight from applying any result to state that has been torn down — see
       // [_resultStillApplies].
       emit(PeopleListsState(ownerPubkey: state.ownerPubkey, enabled: false));
       return;
@@ -637,13 +634,12 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// Whether a mutation result that arrived after an `await` may still be
   /// written to state.
   ///
-  /// Rollbacks are computed from a snapshot captured before the round-trip and
-  /// were only ever valid for the state that produced it. In between, the bloc
-  /// may have torn that state down — an account switch, a sign-out, or
-  /// `FeatureFlag.curatedLists` going off each emit a fresh state with an empty
-  /// `pendingMutations`. Restoring the captured snapshot there hands one
-  /// owner's lists to whoever is signed in by then, and even a status-only
-  /// write reports an outcome the new state never asked for (#6504).
+  /// Mutation outcomes and rollbacks are only valid for the state that issued
+  /// them. In between, the bloc may have torn that state down — an account
+  /// switch, a sign-out, or `FeatureFlag.curatedLists` going off each emit a
+  /// fresh state with an empty `pendingMutations`. Applying a result there can
+  /// write one owner's lists or mutation status onto whoever is signed in by
+  /// then (#6504).
   ///
   /// The mutation lookup is what actually detects a teardown; the owner check
   /// keeps the guard honest if a future teardown ever preserves the map.
