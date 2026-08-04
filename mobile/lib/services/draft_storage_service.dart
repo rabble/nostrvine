@@ -464,12 +464,6 @@ class DraftStorageService {
     return getValidatedDraftById(VideoEditorConstants.autoSaveId);
   }
 
-  /// Check if a valid autosave draft exists (with at least one valid clip).
-  Future<bool> hasValidAutosave() async {
-    final draft = await getAutosaveDraft();
-    return draft != null && draft.clips.isNotEmpty;
-  }
-
   DivineVideoDraft? _validatedDraft(DivineVideoDraft draft) {
     final validClips = _filterValidClips(draft.clips);
     if (validClips.isEmpty) {

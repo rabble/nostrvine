@@ -98,6 +98,15 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     // Notify background activity manager first
     _backgroundManager.onAppLifecycleStateChanged(state);
 
+    if (state != AppLifecycleState.resumed) {
+      // Inactive is routine on desktop, but this no-ops unless an editor
+      // autosave debounce is pending. Detached may be the only signal before
+      // process teardown, so flush before the state-specific work below.
+      unawaited(
+        ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
+      );
+    }
+
     switch (state) {
       case AppLifecycleState.resumed:
         Log.info(
@@ -150,9 +159,6 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         );
 
       case AppLifecycleState.inactive:
-        unawaited(
-          ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
-        );
         // On desktop, inactive happens during normal UI operations (clicking, menu interactions, etc.)
         // Don't treat this as backgrounded - videos should continue playing
         Log.debug(
@@ -163,9 +169,6 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
-        unawaited(
-          ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
-        );
         Log.info(
           '📱 App backgrounded - disabling foreground playback gates',
           name: 'AppLifecycleHandler',

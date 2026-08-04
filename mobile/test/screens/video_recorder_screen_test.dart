@@ -637,9 +637,16 @@ void main() {
         await tester.pump();
 
         // Bottom sheet should be visible
-        expect(find.text('We found work in progress'), findsOneWidget);
-        expect(find.text('Yes, continue'), findsOneWidget);
-        expect(find.text('No, start a new video'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsOneWidget);
+        expect(
+          find.text(l10n.videoRecorderAutosaveContinueButton),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoRecorderAutosaveDiscardButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('shows bottom sheet when autosaved draft only has clips', (
@@ -705,8 +712,12 @@ void main() {
         await tester.pump();
 
         // Clips-only sessions still represent user work and must be reachable.
-        expect(find.text('We found work in progress'), findsOneWidget);
-        expect(find.text('Yes, continue'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsOneWidget);
+        expect(
+          find.text(l10n.videoRecorderAutosaveContinueButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('does not show bottom sheet when no draft exists', (
@@ -750,7 +761,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pump();
 
-        expect(find.text('We found work in progress'), findsNothing);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsNothing);
       });
     });
   });

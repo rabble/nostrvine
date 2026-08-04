@@ -833,7 +833,6 @@ void main() {
         expect(autosave, isNotNull);
         expect(autosave!.clips, hasLength(1));
         expect(autosave.clips.single.isStopMotion, isTrue);
-        expect(await service.hasValidAutosave(), isTrue);
       });
 
       test(
