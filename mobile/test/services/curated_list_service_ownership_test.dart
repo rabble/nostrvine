@@ -9,6 +9,8 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helpers/curated_list_publish_stubs.dart';
+
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -31,6 +33,11 @@ void main() {
 
       when(() => mockAuth.isAuthenticated).thenReturn(false);
       when(() => mockAuth.currentPublicKeyHex).thenReturn(currentPubkey);
+      stubListPublishing(
+        client: mockNostr,
+        auth: mockAuth,
+        pubkey: currentPubkey,
+      );
 
       service = CuratedListService(
         nostrService: mockNostr,
@@ -168,6 +175,11 @@ void main() {
 
       when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(() => mockAuth.currentPublicKeyHex).thenReturn(currentPubkey);
+      stubListPublishing(
+        client: mockNostr,
+        auth: mockAuth,
+        pubkey: currentPubkey,
+      );
 
       service = CuratedListService(
         nostrService: mockNostr,
@@ -189,7 +201,7 @@ void main() {
       );
     }
 
-    test('includes local-only list that has not published', () async {
+    test('includes a list the current user created', () async {
       final list = await service.createList(
         name: 'Local List',
         isPublic: false,

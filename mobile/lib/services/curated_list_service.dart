@@ -1,15 +1,11 @@
 // ABOUTME: Service for managing NIP-51 curated lists (kind 30005) for video collections
 // ABOUTME: Handles creation, updates, and management of user's video lists
 //
-// WARNING: "Private" lists (isPublic: false) are stored in SharedPreferences only.
-// They are EPHEMERAL - lost if user clears app data, uninstalls, or switches phones.
-// There is NO backup mechanism for private lists.
-//
-// TODO: Implement encrypted private lists using NIP-44 to encrypt list content
-// before publishing to Nostr. This would allow private lists to be backed up
-// on relays while remaining unreadable to others. Until then, "private" lists
-// are effectively broken - they provide no real privacy (just local-only) and
-// no durability (no backup).
+// Every owned list is published, whatever its visibility. A public list carries
+// its video references in plain `e`/`a` tags. A private one publishes the same
+// metadata tags but seals those references into the event content with NIP-44,
+// encrypted to the owner, so relays and other users can see that the list
+// exists and what it is called but not what is in it.
 
 import 'dart:async';
 import 'dart:convert';
@@ -270,8 +266,9 @@ class CuratedListService extends ChangeNotifier {
       _lists.add(newList);
       await _saveLists();
 
-      // Publish to Nostr if user is authenticated and list is public
-      if (_authService.isAuthenticated && isPublic) {
+      // Private lists publish too, with their items sealed. A list that only
+      // ever lived in SharedPreferences died with the device.
+      if (_authService.isAuthenticated) {
         if (!await _publishListToNostr(newList, confirmed: true)) {
           _lists.removeWhere((list) => list.id == listId);
           await _saveLists();
@@ -331,8 +328,9 @@ class CuratedListService extends ChangeNotifier {
       _lists[listIndex] = updatedList;
       await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
+      // Republish whatever the visibility: a private list's items live in
+      // the event's encrypted content, so they go stale on the relay too.
+      if (_authService.isAuthenticated) {
         await _publishListToNostr(updatedList);
       }
 
@@ -379,8 +377,9 @@ class CuratedListService extends ChangeNotifier {
       _lists[listIndex] = updatedList;
       await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
+      // Republish whatever the visibility: a private list's items live in
+      // the event's encrypted content, so they go stale on the relay too.
+      if (_authService.isAuthenticated) {
         await _publishListToNostr(updatedList);
       }
 
@@ -459,8 +458,6 @@ class CuratedListService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      final becamePrivate = list.isPublic && !updatedList.isPublic;
-
       // Name, description and the rest of the edit are local-first: they are
       // stored on this device and the relay copy is a projection of them, so
       // an unreachable relay must not cost the user a rename. Visibility is
@@ -470,36 +467,28 @@ class CuratedListService extends ChangeNotifier {
       _lists[listIndex] = updatedList.copyWith(isPublic: list.isPublic);
       await _saveLists();
 
-      if (becamePrivate && !await _publishListDeletion(updatedList.id)) {
+      // Kind 30005 is addressable, so publishing under the same d-tag
+      // replaces whatever the relays hold — including a public copy whose
+      // items were in plain tags. That is what makes a list private, and it
+      // is why this is a republish rather than a NIP-09 deletion: a kind 5
+      // targets the coordinate, so it would ask relays to drop the private
+      // replacement along with the public original.
+      if (_authService.isAuthenticated &&
+          !await _publishListToNostr(updatedList, confirmed: true)) {
         return false;
       }
 
-      if (updatedList.isPublic) {
-        if (!_authService.isAuthenticated ||
-            !await _publishListToNostr(updatedList, confirmed: true)) {
-          return false;
-        }
-      }
-
-      // Only the public→private transition still needs a write. The public
-      // branch is already persisted by _publishListToNostr, and a list that
-      // was already private was fully written by the local-first save above —
-      // repeating it there costs a second notifyListeners and prefs write per
-      // edit for an identical value.
-      //
-      // A list that is no longer published must not keep the event ID of the
-      // event we just asked relays to delete: [myLists] treats a non-null
-      // nostrEventId as "published", so a stale one drops the list from My
-      // Lists as soon as the owner signs out.
-      //
-      // The index is re-resolved because [listIndex] was captured before the
-      // deletion publish awaited above.
-      if (becamePrivate) {
+      // A successful publish already persisted the edit: _publishListToNostr
+      // writes the updated list plus its accepted event ID back by ID and
+      // saves, so writing [updatedList] over it here would drop that ID. Only
+      // the signed-out case still owes a write, and it must re-resolve the
+      // index — [listIndex] was captured before the publish awaits above.
+      if (!_authService.isAuthenticated) {
         final currentIndex = _lists.indexWhere((list) => list.id == listId);
         if (currentIndex == -1) {
           return false;
         }
-        _lists[currentIndex] = updatedList.copyWith(clearNostrEventId: true);
+        _lists[currentIndex] = updatedList;
         await _saveLists();
       }
 
@@ -594,7 +583,10 @@ class CuratedListService extends ChangeNotifier {
         return false;
       }
 
-      if (list.isPublic) {
+      // Private lists are on relays too, sealed rather than absent, so both
+      // kinds need the NIP-09 request. A list that never published has no
+      // event to delete — [nostrEventId] is how we know.
+      if (list.nostrEventId != null) {
         if (!await _publishListDeletion(listId)) {
           return false;
         }
@@ -706,8 +698,9 @@ class CuratedListService extends ChangeNotifier {
       _lists[listIndex] = updatedList;
       await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
+      // Republish whatever the visibility: a private list's items live in
+      // the event's encrypted content, so they go stale on the relay too.
+      if (_authService.isAuthenticated) {
         await _publishListToNostr(updatedList);
       }
 
@@ -783,8 +776,9 @@ class CuratedListService extends ChangeNotifier {
       _lists[listIndex] = updatedList;
       await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
+      // Republish whatever the visibility: a private list's items live in
+      // the event's encrypted content, so they go stale on the relay too.
+      if (_authService.isAuthenticated) {
         await _publishListToNostr(updatedList);
       }
 
@@ -826,8 +820,9 @@ class CuratedListService extends ChangeNotifier {
       _lists[listIndex] = updatedList;
       await _saveLists();
 
-      // Update on Nostr if public
-      if (updatedList.isPublic && _authService.isAuthenticated) {
+      // Republish whatever the visibility: a private list's items live in
+      // the event's encrypted content, so they go stale on the relay too.
+      if (_authService.isAuthenticated) {
         await _publishListToNostr(updatedList);
       }
 
@@ -1085,6 +1080,38 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
+  /// NIP-44 encrypts [list]'s item tags to their owner.
+  ///
+  /// Encrypting to our own pubkey is what makes a list readable on our other
+  /// devices and opaque to everyone else, including the relay storing it.
+  /// Returns `null` when there is nobody to encrypt to or the signer refuses,
+  /// which callers must treat as "do not publish": a private list published
+  /// without this would expose exactly what it is meant to hide.
+  Future<String?> _sealItemTags(CuratedList list) async {
+    final ownerPubkey = _currentAuthenticatedPubkey();
+    if (ownerPubkey == null || ownerPubkey.isEmpty) {
+      Log.warning(
+        'Cannot seal private list ${list.id} - no authenticated pubkey',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+
+    final sealed = await _nostrService.signer.nip44Encrypt(
+      ownerPubkey,
+      jsonEncode(CuratedListConverter.toItemTags(list)),
+    );
+    if (sealed == null) {
+      Log.error(
+        'NIP-44 encryption failed for private list ${list.id}',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+    }
+    return sealed;
+  }
+
   /// Publishes [list] as a NIP-51 kind 30005 event.
   ///
   /// Empty lists are published too — a freshly created public list must
@@ -1114,8 +1141,22 @@ class CuratedListService extends ChangeNotifier {
         return false;
       }
 
-      final content = list.description ?? 'Curated video list: ${list.name}';
-      final tags = CuratedListConverter.toEventTags(list);
+      // NIP-51 splits a list across the two halves of the event: what the
+      // list is goes in public tags, what is in it can go in encrypted
+      // content. A public list puts everything in tags and keeps using
+      // content for its description, which is where this client has always
+      // written it.
+      final String content;
+      final List<List<String>> tags;
+      if (list.isPublic) {
+        content = list.description ?? 'Curated video list: ${list.name}';
+        tags = CuratedListConverter.toEventTags(list);
+      } else {
+        final sealed = await _sealItemTags(list);
+        if (sealed == null) return false;
+        content = sealed;
+        tags = CuratedListConverter.toPublicMetadataTags(list);
+      }
 
       final event = await _authService.createAndSignEvent(
         kind: 30005, // NIP-51 curated list
@@ -1393,6 +1434,10 @@ class CuratedListService extends ChangeNotifier {
         name: 'CuratedListService',
         category: LogCategory.system,
       );
+
+      // After the merge, so a list the relay already holds is not republished
+      // from a stale local copy.
+      await _backfillUnpublishedLists();
     } catch (e) {
       Log.error(
         'Failed to fetch lists from relays: $e',
@@ -1789,10 +1834,77 @@ class CuratedListService extends ChangeNotifier {
     await _saveLists();
   }
 
+  /// Publishes owned lists that have never reached a relay.
+  ///
+  /// Before private lists were published, they existed only in
+  /// SharedPreferences and died with the device; the same is true of any list
+  /// created while the app could not reach a relay. A null
+  /// [CuratedList.nostrEventId] is how both look, and this is the only thing
+  /// that ever backs them up. Failures are left alone — the list keeps its
+  /// null id and is retried on the next sync.
+  Future<void> _backfillUnpublishedLists() async {
+    if (!_authService.isAuthenticated) return;
+
+    final stranded = _lists
+        .where((list) => list.nostrEventId == null)
+        .toList(growable: false);
+    if (stranded.isEmpty) return;
+
+    Log.info(
+      'Backing up ${stranded.length} list(s) that never reached a relay',
+      name: 'CuratedListService',
+      category: LogCategory.system,
+    );
+
+    for (final list in stranded) {
+      await _publishListToNostr(list, confirmed: true);
+    }
+  }
+
+  /// Recovers the item tags a private list sealed into [event]'s content.
+  ///
+  /// Returns `null` whenever the event is not one of ours to unseal — a
+  /// public list, someone else's list, or a list published before items
+  /// moved into the content, whose content is a plain description. All three
+  /// are ordinary, so none of them is an error.
+  Future<List<List<String>>?> _unsealItemTags(Event event) async {
+    if (event.content.isEmpty) return null;
+
+    final ownerPubkey = _currentAuthenticatedPubkey();
+    // Only our own lists are encrypted to us. Asking the signer about
+    // everyone else's costs a round trip per list to be told no.
+    if (ownerPubkey == null || event.pubkey != ownerPubkey) return null;
+
+    try {
+      final plaintext = await _nostrService.signer.nip44Decrypt(
+        ownerPubkey,
+        event.content,
+      );
+      if (plaintext == null) return null;
+
+      final decoded = jsonDecode(plaintext);
+      if (decoded is! List) return null;
+      return [
+        for (final dynamic tag in decoded)
+          if (tag is List) tag.map((dynamic value) => '$value').toList(),
+      ];
+    } on Object catch (e) {
+      Log.debug(
+        'Content of list event ${event.id} is not sealed item tags: $e',
+        name: 'CuratedListService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   /// Process a single list event from Nostr
   Future<void> _processListEvent(Event event) async {
     try {
-      final curatedList = CuratedListConverter.fromEvent(event);
+      final curatedList = CuratedListConverter.fromEvent(
+        event,
+        privateTags: await _unsealItemTags(event),
+      );
       if (curatedList == null) {
         Log.warning(
           'Failed to parse list event: ${event.id}',

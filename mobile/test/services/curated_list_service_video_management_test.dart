@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for CuratedListService video management operations
 // ABOUTME: Tests adding, removing, and querying videos in lists
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -10,6 +12,8 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/curated_list_publish_stubs.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -64,6 +68,7 @@ void main() {
 
     setUp(() async {
       mockNostr = _MockNostrClient();
+      stubListSigner(mockNostr);
       mockAuth = _MockAuthService();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
@@ -105,13 +110,15 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer(
-        (_) async => Event.fromJson({
+        // Echoes what it was asked to sign, so a test can assert on the tags
+        // and content the service actually built.
+        (invocation) async => Event.fromJson({
           'id': 'test_event_id',
           'pubkey': 'test_pubkey_123456789abcdef',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          'kind': 30005,
-          'tags': [],
-          'content': 'test content',
+          'kind': invocation.namedArguments[#kind],
+          'tags': invocation.namedArguments[#tags],
+          'content': invocation.namedArguments[#content],
           'sig': 'test_signature',
         }),
       );
@@ -201,17 +208,30 @@ void main() {
         verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
-      test('does not publish update for private list', () async {
+      test('publishes a private list update with the item sealed', () async {
         final list = await service.createList(
           name: 'Test List',
           isPublic: false,
         );
         reset(mockNostr);
         stubMocks();
+        stubListSigner(mockNostr);
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
-        verifyNever(() => mockNostr.publishEvent(any()));
+        final published =
+            verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                as Event;
+        expect(
+          published.tags.any(
+            (dynamic tag) =>
+                (tag as List<dynamic>).isNotEmpty && tag.first == 'e',
+          ),
+          isFalse,
+        );
+        expect(jsonDecode(unsealForTest(published.content)!), [
+          ['e', 'video_event_123'],
+        ]);
       });
 
       test('saves to SharedPreferences after adding', () async {
@@ -309,7 +329,7 @@ void main() {
         verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
-      test('does not publish update for private list', () async {
+      test('publishes a private list update with the item removed', () async {
         final list = await service.createList(
           name: 'Test List',
           isPublic: false,
@@ -317,10 +337,14 @@ void main() {
         await service.addVideoToList(list!.id, 'video_event_123');
         reset(mockNostr);
         stubMocks();
+        stubListSigner(mockNostr);
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 
-        verifyNever(() => mockNostr.publishEvent(any()));
+        final published =
+            verify(() => mockNostr.publishEvent(captureAny())).captured.single
+                as Event;
+        expect(jsonDecode(unsealForTest(published.content)!), isEmpty);
       });
 
       test('saves to SharedPreferences after removing', () async {

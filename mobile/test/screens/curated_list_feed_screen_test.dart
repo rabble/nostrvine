@@ -244,7 +244,7 @@ void main() {
 
         expect(
           find.text(
-            '${l10n.listVideoCount(3)} • ${l10n.listVisibilityPrivateDevice}',
+            '${l10n.listVideoCount(3)} • ${l10n.listVisibilityPrivate}',
           ),
           findsOneWidget,
         );

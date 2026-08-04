@@ -77,7 +77,7 @@ class SelectListDialog extends StatelessWidget {
                     ),
                     subtitle: Text(
                       '${l10n.listVideoCount(list.videoEventIds.length)} • '
-                      '${list.isPublic ? l10n.listVisibilityPublic : l10n.listVisibilityPrivateDevice}',
+                      '${list.isPublic ? l10n.listVisibilityPublic : l10n.listVisibilityPrivate}',
                       style: TextStyle(color: context.vineColors.secondaryText),
                     ),
                     onTap: () => _toggleVideoInList(
