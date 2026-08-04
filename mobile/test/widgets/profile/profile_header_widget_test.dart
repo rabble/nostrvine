@@ -227,6 +227,28 @@ Event _badgeAwardEvent() {
   });
 }
 
+ProfileBadgeViewData _acceptedBadge(String name, String dTag) {
+  final coordinate = '30009:$issuerUserHex:$dTag';
+  return ProfileBadgeViewData(
+    badge: Nip58ProfileBadgeRef(
+      definitionCoordinate: coordinate,
+      awardEventId:
+          '00000000000000000000000000000000000000000000000000000000000000aa',
+    ),
+    award: Nip58BadgeAward(
+      event: _badgeAwardEvent(),
+      definitionCoordinate: coordinate,
+      recipientPubkeys: const [testUserHex],
+    ),
+    definition: Nip58BadgeDefinition(
+      event: _badgeDefinitionEvent(),
+      coordinate: coordinate,
+      dTag: dTag,
+      name: name,
+    ),
+  );
+}
+
 void main() {
   group('ProfileHeaderWidget', () {
     late MockFollowRepository mockFollowRepository;
@@ -465,8 +487,7 @@ void main() {
           ],
         ),
       );
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Diviner of the Day'), findsOneWidget);
       expect(
@@ -535,8 +556,7 @@ void main() {
           ],
         ),
       );
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('Diviner of the Day'));
       await tester.pumpAndSettle();
@@ -549,27 +569,6 @@ void main() {
       tester,
     ) async {
       final testProfile = createTestProfile(displayName: 'Badged User');
-      ProfileBadgeViewData acceptedBadge(String name, String dTag) {
-        final coordinate = '30009:$issuerUserHex:$dTag';
-        return ProfileBadgeViewData(
-          badge: Nip58ProfileBadgeRef(
-            definitionCoordinate: coordinate,
-            awardEventId:
-                '00000000000000000000000000000000000000000000000000000000000000aa',
-          ),
-          award: Nip58BadgeAward(
-            event: _badgeAwardEvent(),
-            definitionCoordinate: coordinate,
-            recipientPubkeys: const [testUserHex],
-          ),
-          definition: Nip58BadgeDefinition(
-            event: _badgeDefinitionEvent(),
-            coordinate: coordinate,
-            dTag: dTag,
-            name: name,
-          ),
-        );
-      }
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -577,14 +576,13 @@ void main() {
           isOwnProfile: false,
           suppliedProfile: testProfile,
           acceptedProfileBadges: [
-            acceptedBadge('Badge One', 'badge-one'),
-            acceptedBadge('Badge Two', 'badge-two'),
-            acceptedBadge('Badge Three', 'badge-three'),
+            _acceptedBadge('Badge One', 'badge-one'),
+            _acceptedBadge('Badge Two', 'badge-two'),
+            _acceptedBadge('Badge Three', 'badge-three'),
           ],
         ),
       );
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // All badges render — they are not truncated to a single row.
       expect(find.text('Badge One'), findsOneWidget);
@@ -603,6 +601,35 @@ void main() {
       );
       expect(horizontalScrollAbove('Badge One'), findsOneWidget);
       expect(horizontalScrollAbove('Badge Three'), findsOneWidget);
+    });
+
+    testWidgets('grows the badge row in instead of snapping the layout', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(displayName: 'Badged User'),
+          acceptedProfileBadges: [_acceptedBadge('Badge One', 'badge-one')],
+        ),
+      );
+      // Two frames: the badge future resolves, then the row is built for the
+      // first time — the reveal has only just started at that point.
+      await tester.pump();
+      await tester.pump();
+
+      final block = find.ancestor(
+        of: find.text('Badge One'),
+        matching: find.byType(AnimatedSize),
+      );
+      final revealingHeight = tester.getSize(block).height;
+
+      await tester.pumpAndSettle();
+      final settledHeight = tester.getSize(block).height;
+
+      expect(settledHeight, greaterThan(0));
+      expect(revealingHeight, lessThan(settledHeight));
     });
 
     testWidgets('displays user avatar when profile is loaded', (tester) async {
@@ -1510,6 +1537,44 @@ void main() {
         // Should now show "Show less"
         expect(find.text('Show less'), findsOneWidget);
         expect(find.text('Show more'), findsNothing);
+      });
+
+      testWidgets('expanding the bio grows it instead of snapping open', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: createTestProfile(
+              displayName: 'Test User',
+              about: longBio,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        Finder bioBlock(String toggleLabel) => find.ancestor(
+          of: find.text(toggleLabel),
+          matching: find.byType(AnimatedSize),
+        );
+        final collapsedHeight = tester.getSize(bioBlock('Show more')).height;
+
+        await tester.tap(find.text('Show more'));
+        // The expanded text is laid out on this frame, but the block is still
+        // at its collapsed height — it grows from there rather than snapping.
+        await tester.pump();
+        expect(tester.getSize(bioBlock('Show less')).height, collapsedHeight);
+
+        await tester.pumpAndSettle();
+        expect(
+          tester.getSize(bioBlock('Show less')).height,
+          greaterThan(collapsedHeight),
+        );
       });
 
       testWidgets('tapping "Show less" collapses bio and shows "Show more"', (

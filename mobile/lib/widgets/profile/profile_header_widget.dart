@@ -520,19 +520,22 @@ class _ProfileSupportButton extends ConsumerWidget {
     final enabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.profileMonetizationLinks),
     );
-    if (links.isEmpty || !enabled) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Align(
-        child: DivineButton(
-          key: const Key('profile-support-button'),
-          type: .secondary,
-          size: .tiny,
-          label: _supportAffordanceLabel(context),
-          onPressed: () => _openSupportSheet(context, ref, links),
-        ),
-      ),
+    return _ProfileHeaderReveal(
+      child: links.isEmpty || !enabled
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Align(
+                child: DivineButton(
+                  key: const Key('profile-support-button'),
+                  type: .secondary,
+                  size: .tiny,
+                  label: _supportAffordanceLabel(context),
+                  onPressed: () => _openSupportSheet(context, ref, links),
+                ),
+              ),
+            ),
     );
   }
 }

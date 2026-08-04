@@ -89,17 +89,27 @@ class _ProfileNameAndBio extends StatelessWidget {
           padding: inset,
           child: Column(
             children: [
-              if (about != null && about!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Skeleton.keep(child: _AboutText(about: about!)),
-              ],
+              _ProfileHeaderReveal(
+                child: about != null && about!.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Skeleton.keep(child: _AboutText(about: about!)),
+                      )
+                    : null,
+              ),
               Skeleton.keep(
                 child: _ProfileSupportButton(links: monetizationLinks),
               ),
-              if (showWebsite) ...[
-                const SizedBox(height: 8),
-                Skeleton.keep(child: ProfileWebsiteRow(url: website!)),
-              ],
+              _ProfileHeaderReveal(
+                child: showWebsite
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Skeleton.keep(
+                          child: ProfileWebsiteRow(url: website!),
+                        ),
+                      )
+                    : null,
+              ),
               _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
             ],
           ),
@@ -113,6 +123,41 @@ class _ProfileNameAndBio extends StatelessWidget {
 /// badge row can break out of it and scroll edge-to-edge.
 const double _profileIdentityHorizontalInset = 16;
 
+/// Grows a late-arriving header block into place instead of snapping it in.
+///
+/// The profile, its verified claims, and its badges all resolve after the
+/// header has painted, each on its own timing. Revealing them over a short
+/// window keeps everything below — bio, stats row, action buttons, grid —
+/// sliding down smoothly rather than jumping.
+///
+/// A null [child] is the empty state. The wrapper stays mounted at zero
+/// height so the arrival it is waiting for has a size to animate from;
+/// dropping it from the tree instead would mount the content at full size.
+class _ProfileHeaderReveal extends StatelessWidget {
+  const _ProfileHeaderReveal({this.child});
+
+  static const _duration = Duration(milliseconds: 220);
+
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = MediaQuery.disableAnimationsOf(context)
+        ? Duration.zero
+        : _duration;
+    return AnimatedSize(
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: duration,
+        // The empty state spans the full width so only the height animates.
+        child: child ?? const SizedBox(width: double.infinity),
+      ),
+    );
+  }
+}
+
 class _ProfileBadgesBlock extends ConsumerWidget {
   const _ProfileBadgesBlock({required this.userIdHex});
 
@@ -120,42 +165,52 @@ class _ProfileBadgesBlock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final badges = ref.watch(profileAcceptedBadgesProvider(userIdHex));
-    return badges.when(
-      data: (items) {
-        if (items.isEmpty) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // The block spans the full width (its siblings carry the
-              // horizontal inset instead), so the row scrolls edge-to-edge.
-              // A resting lead keeps chips aligned with the text above while
-              // letting them peek past the screen edge once they overflow.
-              const inset = _profileIdentityHorizontalInset;
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: inset),
-                // Centered when the badges fit; scrollable once they overflow.
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: constraints.maxWidth - inset * 2,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: 8,
-                    children: [
-                      for (final item in items) _ProfileBadgeChip(badge: item),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-      error: (_, _) => const SizedBox.shrink(),
-      loading: () => const SizedBox.shrink(),
+    // Loading and error both read as "no badges": most profiles have none, so
+    // reserving a placeholder row would trade one jump for a worse one.
+    final items =
+        ref.watch(profileAcceptedBadgesProvider(userIdHex)).value ??
+        const <ProfileBadgeViewData>[];
+    return _ProfileHeaderReveal(
+      child: items.isEmpty ? null : _ProfileBadgesRow(items: items),
+    );
+  }
+}
+
+class _ProfileBadgesRow extends StatelessWidget {
+  const _ProfileBadgesRow({required this.items});
+
+  final List<ProfileBadgeViewData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // The block spans the full width (its siblings carry the horizontal
+          // inset instead), so the row scrolls edge-to-edge. A resting lead
+          // keeps chips aligned with the text above while letting them peek
+          // past the screen edge once they overflow.
+          const inset = _profileIdentityHorizontalInset;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: inset),
+            // Centered when the badges fit; scrollable once they overflow.
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: constraints.maxWidth - inset * 2,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                spacing: 8,
+                children: [
+                  for (final item in items) _ProfileBadgeChip(badge: item),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -415,10 +470,13 @@ class _VerifiedAccountsBlock extends StatelessWidget {
     final claims = isOwnProfile
         ? _readMyClaims(context)
         : _readOtherClaims(context);
-    if (claims.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: VerifiedAccountsRow(claims: claims),
+    return _ProfileHeaderReveal(
+      child: claims.isEmpty
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: VerifiedAccountsRow(claims: claims),
+            ),
     );
   }
 
