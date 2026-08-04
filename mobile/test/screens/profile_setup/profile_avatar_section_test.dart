@@ -111,11 +111,31 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
+    testWidgets('uses pendingPictureUrl for the staged avatar preview', (
+      tester,
+    ) async {
+      when(() => bloc.state).thenReturn(
+        const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: 'https://media.divine.video/staged-avatar-hash',
+          persistedPictureUrl: 'https://media.divine.video/persisted-avatar',
+        ),
+      );
+
+      await pump(tester);
+
+      final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+      final imageProvider = avatar.imageProvider;
+      expect(imageProvider, isA<NetworkImage>());
+      expect(
+        (imageProvider! as NetworkImage).url,
+        'https://media.divine.video/staged-avatar-hash',
+      );
+    });
+
     testWidgets(
       're-subscribes the avatar name when nameController is swapped',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await pump(tester);
 
         final swapped = TextEditingController(text: 'Bob');

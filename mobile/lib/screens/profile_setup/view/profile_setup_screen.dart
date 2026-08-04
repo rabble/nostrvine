@@ -31,6 +31,7 @@ class ProfileSetupScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
     final blossomUploadService = ref.watch(blossomUploadServiceProvider);
+    final stagedProfileMediaStore = ref.watch(stagedProfileMediaStoreProvider);
     final authService = ref.watch(authServiceProvider);
     final identityClaimsRepository = ref.watch(
       identityClaimsRepositoryProvider,
@@ -52,12 +53,18 @@ class ProfileSetupScreen extends ConsumerWidget {
           // captured classes do not override `==`, so equality falls
           // through to identity — exactly the semantics this needs.
           // See `state_management.md`.
-          key: ValueKey((profileRepository, blossomUploadService, pubkey)),
+          key: ValueKey((
+            profileRepository,
+            blossomUploadService,
+            stagedProfileMediaStore,
+            pubkey,
+          )),
           create: (context) => ProfileEditorBloc(
             profileRepository: profileRepository,
             blossomUploadService: blossomUploadService,
             hasExistingProfile: authService.hasExistingProfile,
             currentUserPubkey: pubkey,
+            stagedProfileMediaStore: stagedProfileMediaStore,
           ),
         ),
         BlocProvider<MyProfileBloc>(

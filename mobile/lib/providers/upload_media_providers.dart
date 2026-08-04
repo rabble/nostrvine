@@ -23,11 +23,20 @@ import 'package:openvine/services/crossposter_api_client.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/staged_profile_media_store.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sound_service/sound_service.dart';
 
 part 'upload_media_providers.g.dart';
+
+final stagedProfileMediaStoreProvider = Provider<StagedProfileMediaStore>((
+  ref,
+) {
+  return SharedPreferencesStagedProfileMediaStore(
+    preferences: ref.watch(sharedPreferencesProvider),
+  );
+});
 
 /// Adapts the app-level [AuthService] to the package-level
 /// [BlossomAuthProvider] interface.
