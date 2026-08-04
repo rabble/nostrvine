@@ -2,7 +2,6 @@
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'dart:async';
-import 'dart:math';
 import 'dart:ui';
 
 import 'package:badge_repository/badge_repository.dart';
@@ -368,6 +367,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                   child: _ProfileAvatarWithColor(
                     imageUrl: profilePictureUrl,
                     userIdHex: widget.userIdHex,
+                    showSkeleton: showIdentitySkeleton,
                     profileColor: profileColor,
                     pendingActions: pendingActions,
                     onActionTap: pendingActions.isNotEmpty

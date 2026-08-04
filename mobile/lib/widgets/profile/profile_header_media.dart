@@ -341,13 +341,20 @@ class _StatDivider extends StatelessWidget {
 /// on the label when more than one action is pending. Tapping either the
 /// avatar or the label triggers [onActionTap].
 ///
-/// The avatar shimmers when an enclosing [Skeletonizer] is enabled. The
-/// pending-action label is decorative chrome and is wrapped in
-/// [Skeleton.keep] so it stays interactive and unshimmered (#4163).
+/// While [showSkeleton] is set the avatar is swapped for an [_AvatarBone] and
+/// the pending-action label is dropped, so neither is tappable during the
+/// loading window (#4163).
+///
+/// The swap is driven by that flag rather than by [Skeleton.replace] because
+/// `Skeleton.replace` resolves against the enclosing [Skeletonizer]'s scope,
+/// which sits above the switch animation's `AnimatedSwitcher`. The outgoing
+/// half of the cross-fade would then rebuild into the real avatar too, putting
+/// two [Hero]s with the same tag in the tree for the length of the animation.
 class _ProfileAvatarWithColor extends StatelessWidget {
   const _ProfileAvatarWithColor({
     required this.imageUrl,
     required this.userIdHex,
+    required this.showSkeleton,
     this.profileColor,
     this.pendingActions = const [],
     this.onActionTap,
@@ -358,6 +365,11 @@ class _ProfileAvatarWithColor extends StatelessWidget {
   /// Hex pubkey used as the placeholder tone seed so the same user gets
   /// the same accent color here as in notifications and other surfaces.
   final String userIdHex;
+
+  /// Whether the identity is still resolving. Mirrors the `enabled` flag of
+  /// the [Skeletonizer] this widget sits under.
+  final bool showSkeleton;
+
   final Color? profileColor;
 
   /// Ordered list of pending profile actions. The first action determines
@@ -370,17 +382,17 @@ class _ProfileAvatarWithColor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const avatarSize = 144.0;
-    final hasAvatar = imageUrl != null && imageUrl!.isNotEmpty;
-    final avatarWidget = UserAvatar(
-      imageUrl: imageUrl,
-      placeholderSeed: userIdHex,
-      size: avatarSize,
-    );
-    final avatar = Skeleton.replace(
-      width: avatarSize,
-      height: avatarSize,
-      replacement: const _AvatarBone(size: avatarSize),
-      child: hasAvatar
+    final Widget avatar;
+    if (showSkeleton) {
+      avatar = const _AvatarBone(size: avatarSize);
+    } else {
+      final avatarWidget = UserAvatar(
+        imageUrl: imageUrl,
+        placeholderSeed: userIdHex,
+        size: avatarSize,
+      );
+      final hasAvatar = imageUrl != null && imageUrl!.isNotEmpty;
+      avatar = hasAvatar
           ? GestureDetector(
               onTap: () => _showAvatarLightbox(
                 context,
@@ -397,8 +409,8 @@ class _ProfileAvatarWithColor extends StatelessWidget {
                 child: avatarWidget,
               ),
             )
-          : avatarWidget,
-    );
+          : avatarWidget;
+    }
 
     if (pendingActions.isEmpty) return avatar;
 
@@ -410,10 +422,9 @@ class _ProfileAvatarWithColor extends StatelessWidget {
         // Reserve space for label overflow below the avatar.
         const SizedBox(width: avatarSize, height: avatarSize + 16),
         avatar,
-        Positioned(
-          bottom: 0,
-          child: Skeleton.replace(
-            replacement: const SizedBox.shrink(),
+        if (!showSkeleton)
+          Positioned(
+            bottom: 0,
             child: GestureDetector(
               onTap: onActionTap,
               child: _ProfileActionLabel(
@@ -422,7 +433,6 @@ class _ProfileAvatarWithColor extends StatelessWidget {
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -438,35 +448,40 @@ class _ProfileAvatarWithColor extends StatelessWidget {
 class _AvatarBone extends StatelessWidget {
   const _AvatarBone({required this.size});
 
+  /// Diameter of the brand mark centred on the tile.
+  static const double _markSize = 64;
+
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Positioned.fill because a childless DecoratedBox takes the smallest
-        // size its constraints allow, and Stack hands non-positioned children
-        // loose ones — the tile would collapse to nothing.
-        Positioned.fill(
-          child: Skeleton.leaf(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: context.vineColors.skeleton,
-                borderRadius: BorderRadius.circular(
-                  UserAvatar.cornerRadiusForSize(size),
+    return SizedBox.square(
+      dimension: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Positioned.fill because a childless DecoratedBox takes the
+          // smallest size its constraints allow, and Stack hands
+          // non-positioned children loose ones — the tile would collapse to
+          // nothing.
+          Positioned.fill(
+            child: Skeleton.leaf(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.vineColors.skeleton,
+                  borderRadius: BorderRadius.circular(
+                    UserAvatar.cornerRadiusForSize(size),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        // Skeleton.keep, not .ignore: `ignore` paints nothing while the
-        // enclosing Skeletonizer is enabled, which is the only time this
-        // widget is on screen.
-        Skeleton.keep(
-          child: BrandedLoadingIndicator(size: min(size * 0.8, 64)),
-        ),
-      ],
+          // Skeleton.keep, not .ignore: `ignore` paints nothing while the
+          // enclosing Skeletonizer is enabled, which is the only time this
+          // widget is on screen.
+          const Skeleton.keep(child: BrandedLoadingIndicator(size: _markSize)),
+        ],
+      ),
     );
   }
 }
