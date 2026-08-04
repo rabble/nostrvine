@@ -108,6 +108,76 @@ class RelayPool {
   // Track pending AUTH events to match with OK responses
   final Map<String, String> _pendingAuthEvents = {};
 
+  /// When each relay's outstanding NIP-42 handshake started.
+  ///
+  /// Entered when the relay's AUTH challenge starts being answered and left
+  /// when the relay resolves it (`OK`) or answering it fails. A one-shot query
+  /// parked behind an auth gate is only worth waiting for while this holds —
+  /// see [_canStillSettleQuery].
+  ///
+  /// Distinct from [_pendingAuthEvents], which is keyed by event id and only
+  /// populated once signing has finished; this is set first so the async
+  /// signing gap does not read as "no handshake".
+  ///
+  /// Cleared on every connection-state transition: a handshake belongs to the
+  /// socket it started on, and a relay that takes our AUTH event and never
+  /// answers it would otherwise stay marked outstanding forever.
+  final Map<String, DateTime> _authHandshakeStartedAt = {};
+
+  /// How long an outstanding NIP-42 handshake may hold a one-shot query open
+  /// past [querySettleWindow].
+  ///
+  /// A relay mid-handshake is not silent — it challenged us, and its `OK` is
+  /// the thing that runs the post-AUTH replay — so the silence bound does not
+  /// apply to it. But the handshake still has to be bounded on its own: a
+  /// relay that takes our AUTH event and never answers it looks identical to
+  /// one that is about to. Wide enough for a NIP-46 remote signer round trip,
+  /// which is a network call rather than a local signature.
+  static const authHandshakeWindow = Duration(seconds: 3);
+
+  /// Relays whose NIP-42 gate is demonstrably shut on the current connection.
+  ///
+  /// Entered only on evidence the relay produced: it refused a REQ with
+  /// `auth-required`, rejected our AUTH event, or we could not answer its
+  /// challenge at all. Absence is not evidence — a freshly connected relay
+  /// that has not sent its challenge yet still has a handshake coming, so it
+  /// keeps holding the query. Cleared on a new challenge and on every
+  /// connection-state transition.
+  final Set<String> _authGateClosed = {};
+
+  /// Relays whose status callback this pool has already chained onto. Weak, so
+  /// a removed or replaced relay is not retained by the bookkeeping.
+  final Expando<bool> _statusObserved = Expando<bool>('relayStatusObserved');
+
+  /// Grace period granted to the remaining relays after the first terminal
+  /// frame for a one-shot query.
+  ///
+  /// Mirrors [PublishTracker.settleWindow] and exists for the same reason: a
+  /// healthy relay answers a REQ within a few hundred milliseconds, so making
+  /// every caller wait the full query timeout for one silent sibling stalls
+  /// the whole app behind the slowest connection. Unlike a dropped socket or a
+  /// closed auth gate, a relay that stays connected and simply never sends
+  /// `EOSE` gives off no signal at all — the only bound available is time.
+  static const querySettleWindow = Duration(seconds: 1);
+
+  /// Armed settle windows, keyed by subscription id.
+  final Map<String, Timer> _querySettleTimers = {};
+
+  /// When each one-shot query's REQ fan-out started, so an abandoned query can
+  /// ask [Relay.isSilentSince] whether a relay that never answered had gone
+  /// quiet altogether. Dropped when the query settles or is unsubscribed.
+  final Map<String, DateTime> _querySentAt = {};
+
+  /// One-shot queries at least one relay has already answered.
+  ///
+  /// Sticky for the query's lifetime rather than a property of the call that
+  /// observed the frame: a terminal frame that lands while the REQ fan-out is
+  /// still running is swallowed by the fan-out guard in
+  /// [_fireQueryCompleteIfSettled], and the post-fan-out sweep would otherwise
+  /// have no way to know the fan-out is being served — leaving the caller to
+  /// pay its full timeout, which is the stall this whole path exists to stop.
+  final Set<String> _queryAnswered = {};
+
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
 
@@ -349,6 +419,7 @@ class RelayPool {
     }
 
     relay.onMessage = _onEvent;
+    _observeRelayStatus(relay);
 
     if (await relay.connect()) {
       if (autoSubscribe) {
@@ -397,9 +468,17 @@ class RelayPool {
     for (var url in keys) {
       _relays[url]?.disconnect();
       _relays[url]?.dispose();
-      _lastSilentRepairAt.remove(url);
+      _forgetRelayBookkeeping(url);
     }
     _relays.clear();
+  }
+
+  /// Drops the pool-side state keyed by [url] so a relay that comes back is
+  /// not judged on the previous instance's connection.
+  void _forgetRelayBookkeeping(String url) {
+    _lastSilentRepairAt.remove(url);
+    _authHandshakeStartedAt.remove(url);
+    _authGateClosed.remove(url);
   }
 
   void remove(String url, {int relayType = RelayType.normal}) {
@@ -413,7 +492,7 @@ class RelayPool {
       _cacheRelays[url]?.dispose();
       _cacheRelays.remove(url);
     }
-    _lastSilentRepairAt.remove(url);
+    _forgetRelayBookkeeping(url);
   }
 
   Relay? getRelay(String url) {
@@ -673,9 +752,16 @@ class RelayPool {
   /// stored events) and `CLOSED` (the relay ended the subscription without
   /// finishing). Either way the caller must be released rather than left to
   /// burn its whole timeout budget.
-  void _fireQueryCompleteIfSettled(String subId) {
+  /// Set [afterTerminalFrame] when the call is driven by a relay's own `EOSE`
+  /// or `CLOSED`. That is the proof at least one relay is answering, and it is
+  /// what arms [querySettleWindow] for whichever relays are still silent.
+  void _fireQueryCompleteIfSettled(
+    String subId, {
+    bool afterTerminalFrame = false,
+  }) {
     final callback = _queryCompleteCallbacks[subId];
     if (callback == null) return;
+    if (afterTerminalFrame) _queryAnswered.add(subId);
     if (_queryFanoutInProgress.contains(subId)) return;
 
     final list = [
@@ -685,11 +771,243 @@ class RelayPool {
     ];
     for (final r in list) {
       // Some relay still owes us a terminal frame for this query.
-      if (r.checkQuery(subId)) return;
+      if (r.checkQuery(subId) && _canStillSettleQuery(r)) {
+        if (_queryAnswered.contains(subId)) _armQuerySettleWindow(subId);
+        return;
+      }
     }
 
+    _completeQuery(subId, callback);
+  }
+
+  /// Bounds how long the relays that have not answered [subId] can hold the
+  /// caller, once some other relay has proven the fan-out is being served.
+  ///
+  /// Only a timer can bound this: a connected relay that never sends `EOSE`
+  /// looks identical to one that is about to.
+  void _armQuerySettleWindow(String subId) {
+    if (_querySettleTimers.containsKey(subId)) return;
+    _querySettleTimers[subId] = Timer(querySettleWindow, () {
+      _querySettleTimers.remove(subId);
+      final callback = _queryCompleteCallbacks[subId];
+      if (callback == null) return;
+      // A relay mid-NIP-42 is not silent, so the silence bound does not apply
+      // to it: it challenged us, and its `OK` is what runs the post-AUTH
+      // replay that this query is parked for. Completing here would send
+      // `CLOSE` and drop the parked query, and the replay would find nothing.
+      // [authHandshakeWindow] is what keeps the re-arming finite.
+      if (_queryHasRelayMidHandshake(subId)) {
+        _armQuerySettleWindow(subId);
+        return;
+      }
+      log(
+        'Query $subId settled without ${_queryStragglers(subId)} — '
+        'completing on the relays that answered',
+      );
+      _completeQuery(subId, callback);
+    });
+  }
+
+  /// Whether any relay still holding [subId] is inside its NIP-42 handshake.
+  bool _queryHasRelayMidHandshake(String subId) => [
+    ..._relaysSnapshot(),
+    ..._tempRelaysSnapshot(),
+    ..._cacheRelaysSnapshot(),
+  ].any((r) => r.checkQuery(subId) && _hasLiveAuthHandshake(r));
+
+  /// Restarts an armed settle window for [subId] because a relay is still
+  /// streaming its result set.
+  ///
+  /// The window bounds *silence* — a relay that never terminates a REQ gives
+  /// off no other signal. A relay part-way through answering is not that: it
+  /// is being served, just not finished. Expiring the window under it closes
+  /// the REQ mid-stream, and the caller is told the query completed normally,
+  /// so a truncated result set is indistinguishable from a complete one.
+  ///
+  /// No-op unless a window is already armed, so a query nobody has answered
+  /// yet still gets the caller's full timeout.
+  void _restartQuerySettleWindow(String subId) {
+    final armed = _querySettleTimers.remove(subId);
+    if (armed == null) return;
+    armed.cancel();
+    _armQuerySettleWindow(subId);
+  }
+
+  /// Relay urls that never answered [subId]; diagnostic only.
+  List<String> _queryStragglers(String subId) => [
+    for (final r in [
+      ..._relaysSnapshot(),
+      ..._tempRelaysSnapshot(),
+      ..._cacheRelaysSnapshot(),
+    ])
+      if (r.checkQuery(subId)) r.url,
+  ];
+
+  void _completeQuery(String subId, Function callback) {
     _queryCompleteCallbacks.remove(subId);
+    _queryAnswered.remove(subId);
+    _querySettleTimers.remove(subId)?.cancel();
+    _releaseQuery(subId);
     callback();
+  }
+
+  /// Tears down [subId] on every relay that still has it saved.
+  ///
+  /// The caller is done, so a relay that never produced its terminal frame is
+  /// holding a REQ nobody is listening to. Left alone it stays open for the
+  /// life of the socket — relays cap concurrent subscriptions, the saved
+  /// [Subscription] pins the caller's event box, and both the post-AUTH replay
+  /// and the zombie reconnect re-issue it on every future cycle. That matters
+  /// most for exactly the relay this path exists for: one that never sends a
+  /// terminal frame leaks a subscription per query for the whole session.
+  ///
+  /// A relay that never answered is also the zombie-socket candidate, so it is
+  /// offered to [_repairSilentRelays] first — while [_querySentAt] still holds
+  /// the fan-out timestamp that check needs.
+  void _releaseQuery(String subId) {
+    _repairRelaysThatNeverAnswered(subId);
+    for (final relay in [
+      ..._relaysSnapshot(),
+      ..._tempRelaysSnapshot(),
+      ..._cacheRelaysSnapshot(),
+    ]) {
+      if (!relay.checkQuery(subId)) continue;
+      if (relay.relayStatus.connected == ClientConnected.connected) {
+        unawaited(relay.checkAndCompleteQuery(subId));
+      } else {
+        // No socket to send `CLOSE` on; queueing it would only replay a
+        // subscription the caller has already abandoned.
+        relay.discardQuery(subId);
+      }
+    }
+  }
+
+  /// Whether a query saved on [relay] can still produce a terminal frame, and
+  /// therefore deserves to hold [_fireQueryCompleteIfSettled] back.
+  ///
+  /// A saved query means one of two different things, and only the first is
+  /// worth waiting for:
+  ///
+  /// * the REQ is live on the current socket and its `EOSE`/`CLOSED` is still
+  ///   coming, or
+  /// * the REQ is parked for replay — the relay refused it with
+  ///   `auth-required`, or the socket died under it.
+  ///
+  /// A parked query is replayed after NIP-42 succeeds or after a reconnect,
+  /// both of which land far outside the caller's timeout. Counting it as
+  /// outstanding makes *every* query in the app pay its full timeout for as
+  /// long as one relay sits behind a closed auth gate, even when the healthy
+  /// relays already answered.
+  bool _canStillSettleQuery(Relay relay) {
+    // A dropped socket cannot deliver the terminal frame for a REQ that was
+    // written to it; the reconnect path re-issues the REQ on a fresh socket.
+    if (relay.relayStatus.connected != ClientConnected.connected) return false;
+
+    // A connection being force-cycled as a zombie reports `connected`
+    // throughout, so it would otherwise keep charging concurrent queries the
+    // full timeout for the whole repair.
+    if (_silentRelayRepairsInFlight.contains(relay.url)) return false;
+
+    // Behind an auth gate the replay only happens if NIP-42 completes. Wait
+    // while a handshake is outstanding, and stop waiting once the relay has
+    // shown the gate is shut — it refused the REQ with auth-required, refused
+    // our AUTH event, or we could never answer its challenge.
+    //
+    // "No handshake" on its own is not that evidence: `alwaysAuth` latches for
+    // the session, so a relay that has just reconnected sits in exactly that
+    // state for the round trip before its challenge arrives. Treating that as
+    // settled would silently drop the results of every read-gated relay on
+    // cold start.
+    if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
+      if (_hasLiveAuthHandshake(relay)) return true;
+      return !_authGateClosed.contains(relay.url);
+    }
+
+    return true;
+  }
+
+  /// Whether [relay]'s NIP-42 handshake is outstanding and still inside
+  /// [authHandshakeWindow].
+  ///
+  /// The age check is what stops a relay that accepts our AUTH event and never
+  /// answers it from holding queries open for the life of the connection —
+  /// nothing else about that relay distinguishes it from one still working.
+  bool _hasLiveAuthHandshake(Relay relay) {
+    final startedAt = _authHandshakeStartedAt[relay.url];
+    if (startedAt == null) return false;
+    return DateTime.now().difference(startedAt) < authHandshakeWindow;
+  }
+
+  /// Records that [relay]'s NIP-42 gate is shut and releases whatever was
+  /// parked behind it.
+  void _closeAuthGate(Relay relay) {
+    _authHandshakeStartedAt.remove(relay.url);
+    _authGateClosed.add(relay.url);
+    _settleQueriesBlockedBy(relay);
+  }
+
+  /// Watches [relay]'s connection state so a dropped socket releases the
+  /// one-shot queries that were still riding on it.
+  ///
+  /// [Relay.relayStatusCallback] is a single slot that NIP-46 also uses on its
+  /// own (non-pool) relays, so any existing callback is chained rather than
+  /// replaced. Wiring is idempotent: `add` is public and re-entrant for relay
+  /// types it does not de-duplicate, and a chain that grew per call would
+  /// re-run the settle sweep once per `add`.
+  void _observeRelayStatus(Relay relay) {
+    if (_statusObserved[relay] ?? false) return;
+    _statusObserved[relay] = true;
+    final previous = relay.relayStatusCallback;
+    relay.relayStatusCallback = () {
+      previous?.call();
+      // NIP-42 state belongs to one socket: `authed` is reset on connect and a
+      // fresh connection re-challenges from scratch. Carrying either marker
+      // across a transition would let a relay that swallowed our AUTH event
+      // read as "handshake outstanding" for the rest of the session.
+      _authHandshakeStartedAt.remove(relay.url);
+      _authGateClosed.remove(relay.url);
+      _settleQueriesBlockedBy(relay);
+    };
+  }
+
+  /// Force-cycles the relays that never produced a terminal frame for the
+  /// abandoned query [subId].
+  ///
+  /// A caller only abandons a query by timing out, so any relay still holding
+  /// it demonstrably did not answer. When that same connection also received no
+  /// inbound frame of any kind since the REQ was written, it is the half-open
+  /// zombie [_repairSilentRelays] already remediates on the publish side — a
+  /// socket that still reports `connected` to every health gate while silently
+  /// swallowing everything written to it. Without this, queries never trigger
+  /// that repair, so a zombie keeps charging every subsequent query the full
+  /// timeout until something else happens to cycle the connection.
+  void _repairRelaysThatNeverAnswered(String subId) {
+    final sentAt = _querySentAt.remove(subId);
+    if (sentAt == null) return;
+    final silent = [
+      for (final relay in [
+        ..._relaysSnapshot(),
+        ..._tempRelaysSnapshot(),
+        ..._cacheRelaysSnapshot(),
+      ])
+        if (relay.checkQuery(subId)) relay.url,
+    ];
+    if (silent.isEmpty) return;
+    _repairSilentRelays(silent, sentAt);
+  }
+
+  /// Releases the one-shot queries [relay] is parked on once it can no longer
+  /// answer them.
+  ///
+  /// [_fireQueryCompleteIfSettled] only runs off a terminal frame or the end of
+  /// fan-out. When a relay goes quiet instead — socket dropped, AUTH refused —
+  /// nothing re-runs the check, so the callers blocked behind it have to be
+  /// released here.
+  void _settleQueriesBlockedBy(Relay relay) {
+    if (_canStillSettleQuery(relay)) return;
+    for (final query in relay.getQueries()) {
+      _fireQueryCompleteIfSettled(query.id);
+    }
   }
 
   Future<void> _onEvent(Relay relay, List<dynamic> json) async {
@@ -851,7 +1169,13 @@ class RelayPool {
           subscription.onEvent(event);
         } else {
           subscription = relay.getRequestSubscription(subId);
-          subscription?.onEvent(event);
+          if (subscription != null) {
+            // The relay is mid-answer for this one-shot query, so it has not
+            // gone silent — restart the grace period rather than cut its
+            // result set off part-way through.
+            _restartQuerySettleWindow(subId);
+            subscription.onEvent(event);
+          }
         }
       } catch (err) {
         log(err.toString());
@@ -864,7 +1188,7 @@ class RelayPool {
       }
       var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
-        _fireQueryCompleteIfSettled(subId);
+        _fireQueryCompleteIfSettled(subId, afterTerminalFrame: true);
       } else {
         // Handle EOSE for long-running subscriptions
         final subscription = _subscriptions[subId];
@@ -972,6 +1296,7 @@ class RelayPool {
       // Check if this is responding to our AUTH event
       if (_pendingAuthEvents.containsKey(eventId)) {
         _pendingAuthEvents.remove(eventId);
+        _authHandshakeStartedAt.remove(relay.url);
 
         if (success) {
           relay.relayStatus.authed = true;
@@ -1016,6 +1341,9 @@ class RelayPool {
           relay.relayStatus.authed = false;
           log('🔐 AUTH failed for ${relay.url}: $message');
           _rejectAuthRequiredPublishesForRelay(relay, message);
+          // The gate stayed shut, so the queries parked for the post-AUTH
+          // replay will never be replayed.
+          _closeAuthGate(relay);
         }
       }
     } else if (messageType == "NOTICE") {
@@ -1034,6 +1362,12 @@ class RelayPool {
         final challenge = _stringAt(relay, json, 1, 'AUTH challenge');
         if (challenge == null) return;
         relay.relayStatus.alwaysAuth = true;
+        // Marks the handshake outstanding before the async signing below, so
+        // queries parked behind this gate keep waiting instead of reading the
+        // signing gap as "nothing is coming". See [_canStillSettleQuery].
+        _authHandshakeStartedAt[relay.url] = DateTime.now();
+        // A new challenge supersedes whatever the last one concluded.
+        _authGateClosed.remove(relay.url);
         final challengePreview = challenge.length > 16
             ? challenge.substring(0, 16)
             : challenge;
@@ -1067,10 +1401,12 @@ class RelayPool {
         } else {
           log('🔐 AUTH signing returned null for ${relay.url}');
           _rejectAuthRequiredPublishesForRelay(relay, '');
+          _closeAuthGate(relay);
         }
       } catch (err, stackTrace) {
         log('🔐 AUTH handling failed for ${relay.url}: $err\n$stackTrace');
         _rejectAuthRequiredPublishesForRelay(relay, '');
+        _closeAuthGate(relay);
       }
     } else if (messageType == 'COUNT') {
       // NIP-45 COUNT response
@@ -1120,9 +1456,16 @@ class RelayPool {
 
       // A refused/abandoned REQ is terminal unless it is the pre-AUTH probe
       // that must stay saved for replay after NIP-42 succeeds.
-      if (!_shouldReplayQueryAfterAuth(relay, reason) &&
-          relay.discardQuery(subscriptionId)) {
-        _fireQueryCompleteIfSettled(subscriptionId);
+      if (_shouldReplayQueryAfterAuth(relay, reason)) {
+        // The relay named the gate itself. With no live handshake nothing is
+        // going to run that replay, and this refusal is the evidence
+        // [_canStillSettleQuery] waits for before giving up on it. Judged on
+        // the same bound as everywhere else: a handshake the relay swallowed
+        // must stop suppressing its own refusal once it goes stale, or every
+        // later query on that socket pays its full budget.
+        if (!_hasLiveAuthHandshake(relay)) _closeAuthGate(relay);
+      } else if (relay.discardQuery(subscriptionId)) {
+        _fireQueryCompleteIfSettled(subscriptionId, afterTerminalFrame: true);
       }
     }
   }
@@ -1302,22 +1645,9 @@ class RelayPool {
       // never-fired callback in [_queryCompleteCallbacks].
       _queryCompleteCallbacks.remove(id);
       _queryFanoutInProgress.remove(id);
-
-      // check query and send close
-      var it = _relaysSnapshot();
-      for (var relay in it) {
-        relay.checkAndCompleteQuery(id);
-      }
-
-      it = _tempRelaysSnapshot();
-      for (var relay in it) {
-        relay.checkAndCompleteQuery(id);
-      }
-
-      it = _cacheRelaysSnapshot();
-      for (var relay in it) {
-        relay.checkAndCompleteQuery(id);
-      }
+      _queryAnswered.remove(id);
+      _querySettleTimers.remove(id)?.cancel();
+      _releaseQuery(id);
     }
   }
 
@@ -1381,6 +1711,7 @@ class RelayPool {
     if (onComplete != null) {
       _queryCompleteCallbacks[subscription.id] = onComplete;
       _queryFanoutInProgress.add(subscription.id);
+      _querySentAt[subscription.id] = DateTime.now();
     }
 
     // Collect futures so we can await them before the early-completion
@@ -1982,11 +2313,17 @@ class RelayPool {
       _tempRelays.remove(addr);
       unawaited(tempRelay.disconnect());
       tempRelay.dispose();
+      // The replacement is a different socket, so nothing the pool concluded
+      // about the old one carries over.
+      _forgetRelayBookkeeping(addr);
       tempRelay = null;
     }
     if (tempRelay == null) {
       tempRelay = tempRelayGener(addr);
       tempRelay.onMessage = _onEvent;
+      // Temp relays serve one-shot queries like any other relay, so they need
+      // the same drop-releases-the-query sweep [add] wires up.
+      _observeRelayStatus(tempRelay);
       tempRelay.connect();
       _tempRelays[addr] = tempRelay;
     }
@@ -2039,7 +2376,7 @@ class RelayPool {
     if (relay != null) {
       relay.disconnect();
     }
-    _lastSilentRepairAt.remove(addr);
+    _forgetRelayBookkeeping(addr);
   }
 
   Relay? getTempRelay(String url) {
