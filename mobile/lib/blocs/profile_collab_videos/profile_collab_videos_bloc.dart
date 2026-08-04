@@ -9,6 +9,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_cursor_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -17,9 +18,6 @@ import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_collab_videos_event.dart';
 part 'profile_collab_videos_state.dart';
-
-/// Number of videos to load per page for pagination.
-const _pageSize = 18;
 
 /// BLoC for managing profile collab videos.
 ///
@@ -141,7 +139,7 @@ class ProfileCollabVideosBloc
 
     final videos = await _videosRepository.getCollabVideos(
       taggedPubkey: _targetUserPubkey,
-      limit: _pageSize,
+      limit: ProfileTabPagination.pageSize,
     );
     if (isClosed) return;
 
@@ -149,7 +147,7 @@ class ProfileCollabVideosBloc
         .where((v) => v.isSupportedOnCurrentPlatform)
         .toList();
     final cursor = collabVideos.isNotEmpty ? collabVideos.last.createdAt : null;
-    final hasMore = videos.length >= _pageSize;
+    final hasMore = videos.length >= ProfileTabPagination.pageSize;
 
     emit(
       state.copyWith(
@@ -175,7 +173,7 @@ class ProfileCollabVideosBloc
   Future<void> _warmRevalidate(Emitter<ProfileCollabVideosState> emit) async {
     final firstPage = await _videosRepository.getCollabVideos(
       taggedPubkey: _targetUserPubkey,
-      limit: _pageSize,
+      limit: ProfileTabPagination.pageSize,
     );
     if (isClosed) return;
 
@@ -187,7 +185,7 @@ class ProfileCollabVideosBloc
         .where((v) => v.isSupportedOnCurrentPlatform)
         .toList();
     final freshIds = fresh.map((v) => v.id).toSet();
-    final tail = firstPage.length >= _pageSize
+    final tail = firstPage.length >= ProfileTabPagination.pageSize
         ? state.videos
               .skip(_tailStartAfterFreshOverlap(fresh))
               .where((v) => !freshIds.contains(v.id))
@@ -196,7 +194,9 @@ class ProfileCollabVideosBloc
     final allVideos = [...fresh, ...tail];
     // A short fresh page means the feed ends there; the cached tail (if any)
     // is no longer confirmed.
-    final hasMore = firstPage.length >= _pageSize && state.hasMoreContent;
+    final hasMore =
+        firstPage.length >= ProfileTabPagination.pageSize &&
+        state.hasMoreContent;
 
     final unchanged = listEquals(
       allVideos.map((v) => v.id).toList(),
@@ -297,7 +297,7 @@ class ProfileCollabVideosBloc
     try {
       final videos = await _videosRepository.getCollabVideos(
         taggedPubkey: _targetUserPubkey,
-        limit: _pageSize,
+        limit: ProfileTabPagination.pageSize,
         until: state.paginationCursor,
       );
 
@@ -325,7 +325,7 @@ class ProfileCollabVideosBloc
         category: LogCategory.video,
       );
 
-      final hasMore = videos.length >= _pageSize;
+      final hasMore = videos.length >= ProfileTabPagination.pageSize;
       emit(
         state.copyWith(
           videos: allVideos,

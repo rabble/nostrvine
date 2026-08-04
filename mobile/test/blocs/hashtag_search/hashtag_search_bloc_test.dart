@@ -56,7 +56,8 @@ void main() {
         'emits [loading, success] when search succeeds',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'music'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'music', limit: 50),
           ).thenAnswer((_) async => ['music', 'musician', 'musicvideo']);
         },
         build: createBloc,
@@ -77,7 +78,8 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockHashtagRepository.searchHashtags(query: 'music'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'music', limit: 50),
           ).called(1);
         },
       );
@@ -104,7 +106,8 @@ void main() {
         'emits [loading, failure] when repository throws',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'error'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'error', limit: 50),
           ).thenThrow(const FunnelcakeException('search failed'));
         },
         build: createBloc,
@@ -126,7 +129,8 @@ void main() {
         'emits [loading, failure] when repository throws timeout',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'slow'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'slow', limit: 50),
           ).thenThrow(const FunnelcakeTimeoutException());
         },
         build: createBloc,
@@ -221,7 +225,10 @@ void main() {
         're-searches when same query is dispatched in failure state',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'flutter'),
+            () => mockHashtagRepository.searchHashtags(
+              query: 'flutter',
+              limit: 50,
+            ),
           ).thenAnswer((_) async => ['flutter', 'flutterdev']);
         },
         build: createBloc,
@@ -246,7 +253,10 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockHashtagRepository.searchHashtags(query: 'flutter'),
+            () => mockHashtagRepository.searchHashtags(
+              query: 'flutter',
+              limit: 50,
+            ),
           ).called(1);
         },
       );
@@ -255,7 +265,8 @@ void main() {
         'normalizes query by trimming and lowercasing',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'cats'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'cats', limit: 50),
           ).thenAnswer((_) async => ['cats']);
         },
         build: createBloc,
@@ -276,7 +287,8 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockHashtagRepository.searchHashtags(query: 'cats'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'cats', limit: 50),
           ).called(1);
         },
       );
@@ -285,7 +297,8 @@ void main() {
         'debounces rapid query changes and only processes final query',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'final'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'final', limit: 50),
           ).thenAnswer((_) async => ['finalize']);
         },
         build: createBloc,
@@ -314,7 +327,8 @@ void main() {
         verify: (_) {
           // Only the final query should be processed due to debounce
           verify(
-            () => mockHashtagRepository.searchHashtags(query: 'final'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'final', limit: 50),
           ).called(1);
           verifyNever(
             () => mockHashtagRepository.searchHashtags(
@@ -353,7 +367,8 @@ void main() {
         're-runs the current search, bypassing the same-query guard',
         setUp: () {
           when(
-            () => mockHashtagRepository.searchHashtags(query: 'music'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'music', limit: 50),
           ).thenAnswer((_) async => ['music']);
         },
         build: createBloc,
@@ -377,7 +392,8 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockHashtagRepository.searchHashtags(query: 'music'),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'music', limit: 50),
           ).called(1);
         },
       );
@@ -397,6 +413,7 @@ void main() {
           when(
             () => mockHashtagRepository.searchHashtags(
               query: 'music',
+              limit: 50,
               offset: 20,
             ),
           ).thenAnswer((_) async => ['extra1', 'extra2']);
@@ -434,9 +451,10 @@ void main() {
           when(
             () => mockHashtagRepository.searchHashtags(
               query: 'music',
+              limit: 50,
               offset: 20,
             ),
-          ).thenAnswer((_) async => List.generate(20, (i) => 'tag$i'));
+          ).thenAnswer((_) async => List.generate(50, (i) => 'tag$i'));
         },
         build: createBloc,
         seed: () => const HashtagSearchState(
@@ -459,8 +477,8 @@ void main() {
           HashtagSearchState(
             status: HashtagSearchStatus.success,
             query: 'music',
-            results: ['music', ...List.generate(20, (i) => 'tag$i')],
-            offset: 21,
+            results: ['music', ...List.generate(50, (i) => 'tag$i')],
+            offset: 51,
             hasMore: true,
           ),
         ],
@@ -508,6 +526,7 @@ void main() {
           when(
             () => mockHashtagRepository.searchHashtags(
               query: 'music',
+              limit: 50,
               offset: 20,
             ),
           ).thenThrow(Exception('network error'));
@@ -636,7 +655,7 @@ void main() {
         'markFeedDisplayed on success',
         setUp: () {
           when(
-            () => mockRepo.searchHashtags(query: 'music'),
+            () => mockRepo.searchHashtags(query: 'music', limit: 50),
           ).thenAnswer((_) async => ['music', 'musician', 'musicvideo']);
         },
         build: createBlocWithTracker,
@@ -657,7 +676,7 @@ void main() {
         'calls trackFeedError on failure',
         setUp: () {
           when(
-            () => mockRepo.searchHashtags(query: 'error'),
+            () => mockRepo.searchHashtags(query: 'error', limit: 50),
           ).thenThrow(const FunnelcakeException('search failed'));
         },
         build: createBlocWithTracker,

@@ -54,20 +54,37 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
   /// ignored.
   FutureOr<void> onLoadMore();
 
-  /// Default distance from the bottom edge (in logical pixels) at which
-  /// loading is triggered.
-  static const double _defaultThreshold = 200;
+  /// How many viewports ahead of the bottom edge the next page is requested.
+  ///
+  /// Callers that also choose a page size must keep it comfortably above one
+  /// viewport, or the prefetch fires again the moment the page lands and the
+  /// list never leaves the loading state. `ProfileTabPagination.pageSize` in
+  /// `lib/blocs/profile_shared/` is sized against this factor — revisit it
+  /// if this changes.
+  static const double _viewportPrefetchFactor = 1.5;
 
   /// Distance from the bottom edge (in logical pixels) at which [onLoadMore]
   /// is triggered.
   ///
-  /// Defaults to [_defaultThreshold]. Override with a larger value (for
-  /// example a multiple of the viewport height) to prefetch the next page
-  /// well before the user reaches the bottom, so it is usually ready in time
-  /// and the loading-more indicator is not seen. Called on every scroll tick,
-  /// so keep it cheap.
+  /// Defaults to [_viewportPrefetchFactor] viewports so the next page is
+  /// requested well before the user reaches the bottom and is usually merged
+  /// in by the time they scroll that far — keeping the loading-more indicator
+  /// off screen. A fixed pixel distance is not enough: on a dense grid it is
+  /// only a row or two, so the request starts when the user is already at the
+  /// bottom. Called on every scroll tick, so keep overrides cheap.
+  ///
+  /// Reads the first attached position rather than [ScrollController.position]
+  /// because one controller can drive several viewports (profile tabs share
+  /// the [PrimaryScrollController] of their [NestedScrollView]); siblings are
+  /// the same height, so any of them answers the question. Returns zero before
+  /// a position attaches; the mixin's own scroll listener also guards that
+  /// path with [ScrollController.hasClients].
   @protected
-  double get paginationLoadMoreThreshold => _defaultThreshold;
+  double get paginationLoadMoreThreshold {
+    final positions = paginationScrollController.positions;
+    if (positions.isEmpty) return 0;
+    return positions.first.viewportDimension * _viewportPrefetchFactor;
+  }
 
   Future<void>? _pendingPaginationLoad;
 

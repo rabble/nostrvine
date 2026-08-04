@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -22,9 +23,6 @@ import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_liked_videos_event.dart';
 part 'profile_liked_videos_state.dart';
-
-/// Number of videos to load per page for pagination.
-const _pageSize = 18;
 
 /// BLoC for managing profile liked videos.
 ///
@@ -38,7 +36,7 @@ const _pageSize = 18;
 /// - Loading video data with cache-first pattern (SQLite → relay fallback)
 /// - Filtering: excludes unsupported video formats
 /// - Listening for like changes to update the list
-/// - Pagination: loads videos in batches of [_pageSize]
+/// - Pagination: loads videos in batches of [ProfileTabPagination.pageSize]
 class ProfileLikedVideosBloc
     extends Bloc<ProfileLikedVideosEvent, ProfileLikedVideosState> {
   ProfileLikedVideosBloc({
@@ -137,9 +135,7 @@ class ProfileLikedVideosBloc
     }
   }
 
-  Future<void> _syncAndRevalidate(
-    Emitter<ProfileLikedVideosState> emit,
-  ) async {
+  Future<void> _syncAndRevalidate(Emitter<ProfileLikedVideosState> emit) async {
     Log.info(
       'ProfileLikedVideosBloc: Starting sync for '
       '${_isOtherUserProfile ? "other user" : "own profile"}',
@@ -341,7 +337,10 @@ class ProfileLikedVideosBloc
     // scrolls, so scroll-driven pagination can never grow it either.
     final loadedWindow =
         max(state.nextPageOffset, state.videos.length) + newAtTop;
-    final windowSize = max(loadedWindow, _pageSize).clamp(0, freshIds.length);
+    final windowSize = max(
+      loadedWindow,
+      ProfileTabPagination.pageSize,
+    ).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
@@ -380,7 +379,8 @@ class ProfileLikedVideosBloc
   /// unchanged-IDs fast path in [_warmRevalidate] would keep the short window
   /// alive on every reopen for anyone whose ID list has settled.
   bool _isWindowUnderfilled(List<String> ids) =>
-      state.nextPageOffset < _pageSize && state.nextPageOffset < ids.length;
+      state.nextPageOffset < ProfileTabPagination.pageSize &&
+      state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
       ProfileVideoListSnapshot(
@@ -542,9 +542,10 @@ class ProfileLikedVideosBloc
   /// Handle load more request - fetches the next page of videos.
   ///
   /// Uses [state.nextPageOffset] to track the position in [state.likedEventIds]
-  /// and fetches the next [_pageSize] IDs. The offset advances by the number
-  /// of IDs consumed, not the number of videos loaded (some IDs may not
-  /// resolve to videos due to relay unavailability or format filtering).
+  /// and fetches the next [ProfileTabPagination.pageSize] IDs. The offset
+  /// advances by the number of IDs consumed, not the number of videos loaded
+  /// (some IDs may not resolve to videos due to relay unavailability or
+  /// format filtering).
   Future<void> _onLoadMoreRequested(
     ProfileLikedVideosLoadMoreRequested event,
     Emitter<ProfileLikedVideosState> emit,
@@ -729,10 +730,10 @@ class ProfileLikedVideosBloc
     );
   }
 
-  /// Fetches videos until a full [_pageSize] page is filled or the IDs run
-  /// out, skipping over IDs that don't resolve (sparse likes) and deduping
-  /// against [excludeVideoIds]. Returns the consumed-ID offset so pagination
-  /// advances past dead IDs.
+  /// Fetches videos until a full [ProfileTabPagination.pageSize] page is
+  /// filled or the IDs run out, skipping over IDs that don't resolve (sparse
+  /// likes) and deduping against [excludeVideoIds]. Returns the consumed-ID
+  /// offset so pagination advances past dead IDs.
   Future<_LikedVideosPage> _fetchVideoPage(
     List<String> likedEventIds, {
     required int startOffset,
@@ -745,23 +746,40 @@ class ProfileLikedVideosBloc
     final pageVideos = <VideoEvent>[];
     final seenIds = {...excludeVideoIds};
 
-    while (offset < totalCount && pageVideos.length < _pageSize) {
-      final batchIds = likedEventIds.skip(offset).take(_pageSize).toList();
+    while (offset < totalCount &&
+        pageVideos.length < ProfileTabPagination.pageSize) {
+      final batchIds = likedEventIds
+          .skip(offset)
+          .take(ProfileTabPagination.pageSize)
+          .toList();
       if (batchIds.isEmpty) break;
 
       final videos = await _fetchVideos(
         batchIds,
         cacheResults: cacheFirstBatch && isFirstBatch,
       );
+      final batchIndexById = {
+        for (var index = 0; index < batchIds.length; index++)
+          batchIds[index]: index,
+      };
+      var consumedIds = batchIds.length;
 
       for (final video in videos) {
-        if (pageVideos.length >= _pageSize) break;
+        final batchIndex = batchIndexById[video.id];
+        if (pageVideos.length >= ProfileTabPagination.pageSize) {
+          if (batchIndex != null) consumedIds = batchIndex;
+          break;
+        }
         if (seenIds.add(video.id)) {
           pageVideos.add(video);
+          if (pageVideos.length >= ProfileTabPagination.pageSize) {
+            if (batchIndex != null) consumedIds = batchIndex + 1;
+            break;
+          }
         }
       }
 
-      offset += batchIds.length;
+      offset += consumedIds;
       isFirstBatch = false;
     }
 
