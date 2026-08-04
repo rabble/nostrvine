@@ -109,6 +109,25 @@ class NativeProofData {
       'verifiedIdentityBundleJson': verifiedIdentityBundleJson,
   };
 
+  /// Copy carrying exactly [attestation] as its device attestation.
+  ///
+  /// Takes the value verbatim, `null` included, so a caller that owns the field
+  /// can clear a stale token as well as set a fresh one — which a nullable
+  /// `copyWith` parameter cannot express.
+  NativeProofData withDeviceAttestation(String? attestation) => NativeProofData(
+    videoHash: videoHash,
+    sensorDataCsv: sensorDataCsv,
+    pgpSignature: pgpSignature,
+    publicKey: publicKey,
+    deviceAttestation: attestation,
+    timestamp: timestamp,
+    c2paManifestId: c2paManifestId,
+    creatorBindingAssertionLabel: creatorBindingAssertionLabel,
+    cawgIdentityAssertionLabel: cawgIdentityAssertionLabel,
+    creatorBindingPayloadJson: creatorBindingPayloadJson,
+    verifiedIdentityBundleJson: verifiedIdentityBundleJson,
+  );
+
   /// Check if creator identity metadata was attached to the proof payload
   bool get hasCreatorIdentityMetadata =>
       creatorBindingAssertionLabel != null ||

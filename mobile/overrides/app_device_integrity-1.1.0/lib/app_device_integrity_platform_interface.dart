@@ -24,8 +24,12 @@ abstract class AppDeviceIntegrityPlatform extends PlatformInterface {
     _instance = instance;
   }
 
+  /// [keyScope] selects which cached App Attest key answers the challenge on
+  /// iOS. Apple's guidance is against sharing one key among several users of a
+  /// device, so callers pass the identity the attestation speaks for. Ignored
+  /// on Android, which mints a throwaway key per call.
   Future<String?> getAttestationServiceSupport(
-      {required String challengeString, int? gcp}) {
+      {required String challengeString, int? gcp, String? keyScope}) {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
 }

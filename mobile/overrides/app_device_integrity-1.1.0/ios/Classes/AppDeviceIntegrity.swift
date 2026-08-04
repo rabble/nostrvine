@@ -2,18 +2,26 @@ import CryptoKit
 import DeviceCheck
 import Foundation
 
-/// App Attest wrapper that provisions one Secure Enclave key per install and
+/// App Attest wrapper that provisions one Secure Enclave key per key scope and
 /// answers every later challenge with a local assertion.
 ///
 /// `DCAppAttestService.generateKey` and `attestKey` are network round trips to
 /// Apple's attestation servers and Apple rate limits them, so both run only on
-/// first use. The key identifier and attestation object are cached in
-/// `UserDefaults` rather than the Keychain, which survives uninstall: a wiped
-/// cache cannot strand a reinstall on a key that is already gone. A restored
-/// device backup can still hand back an identifier without its Secure Enclave
-/// key, since those keys never leave the device — that is what the
-/// `DCError.invalidKey` re-provisioning path below exists for. Subsequent
+/// the first challenge for a scope. The key identifier and attestation object
+/// are cached in `UserDefaults` rather than the Keychain, which survives
+/// uninstall: a wiped cache cannot strand a reinstall on a key that is already
+/// gone. A restored device backup can still hand back an identifier without its
+/// Secure Enclave key, since those keys never leave the device — that is what
+/// the `DCError.invalidKey` re-provisioning path below exists for. Subsequent
 /// challenges go through `generateAssertion`, which stays on device.
+///
+/// The scope is the account the proof will be published under, not the install.
+/// Apple's App Attest guidance is against sharing one key among several users of
+/// a device, and a per-account key adds no public linkability the event does not
+/// already carry: it can only correlate videos that account already signed.
+/// Every piece of cached state below therefore hangs off the scope, including
+/// the queue of challenges waiting on an in-flight provisioning round — a flat
+/// queue would hand one scope's credential to another scope's waiter.
 @available(iOS 14.0, *)
 final class AppDeviceIntegrity {
     /// A provisioned App Attest key plus the attestation object Apple issued
@@ -26,45 +34,58 @@ final class AppDeviceIntegrity {
         let isFresh: Bool
     }
 
+    /// An in-flight provisioning round and the challenges queued behind it.
+    ///
+    /// `id` is unique across scopes so a watchdog can only ever end the round
+    /// it was armed for.
+    private struct ProvisioningRound {
+        let id: Int
+        var waiting: [(Credential?) -> Void]
+    }
+
     private enum StorageKey {
-        static let keyID = "AppAttestKeyIdentifier"
-        static let attestation = "AppAttestAttestationObject"
-        static let pendingKeyID = "AppAttestPendingKeyIdentifier"
-        static let pendingClientDataHash = "AppAttestPendingClientDataHash"
+        static func keyID(_ scope: String) -> String { "AppAttestKeyIdentifier.\(scope)" }
+        static func attestation(_ scope: String) -> String { "AppAttestAttestationObject.\(scope)" }
+        static func pendingKeyID(_ scope: String) -> String { "AppAttestPendingKeyIdentifier.\(scope)" }
+        static func pendingClientDataHash(_ scope: String) -> String { "AppAttestPendingClientDataHash.\(scope)" }
     }
 
     let inputString: String
+    let keyScope: String
     var attestationString: String?
     var assertionString: String?
 
     private let attestService = DCAppAttestService.shared
     private var keyID: String?
 
-    /// Guards provisioning so concurrent challenges share one key instead of
-    /// racing `generateKey` and burning Apple's rate limit. The cache is static
-    /// alongside it: the queue is shared, so the store it drains into has to be.
+    /// Guards the caches and the provisioning queues so concurrent challenges
+    /// for one scope share a key instead of racing `generateKey` and burning
+    /// Apple's rate limit. The state is static alongside it: the lock is shared,
+    /// so everything it protects has to be.
     private static let defaults = UserDefaults.standard
     private static let lock = NSLock()
-    private static var isProvisioning = false
-    private static var pendingProvisioning: [(Credential?) -> Void] = []
-
-    /// Identifies the in-flight provisioning round.
-    ///
-    /// Incremented by whichever of the real callback or the watchdog finishes
-    /// the round first, so the loser becomes a no-op instead of draining a
-    /// queue that now belongs to a later round.
-    private static var provisioningRound = 0
+    private static var rounds: [String: ProvisioningRound] = [:]
+    private static var nextRoundID = 0
 
     /// How long a provisioning round may run before it is failed.
     ///
     /// `generateKey` and `attestKey` are network calls to Apple, and nothing
     /// here can cancel them. Without this, one wedged callback strands every
-    /// later proof behind `isProvisioning` until the app restarts — turning a
-    /// single native hang into a process-wide proof stall.
+    /// later publish from that account behind its round until the app restarts
+    /// — turning a single native hang into an account-wide publish stall.
     private static let provisioningTimeout: DispatchTimeInterval = .seconds(30)
 
-    init?(challengeString: String) {
+    /// - Parameter keyScope: identifies whose key this is. An empty scope would
+    ///   silently collapse every account back onto one shared key, so it is
+    ///   rejected rather than defaulted.
+    init?(challengeString: String, keyScope: String) {
         self.inputString = challengeString
+        self.keyScope = keyScope
+
+        guard !keyScope.isEmpty else {
+            print("[!] Attest key scope missing")
+            return nil
+        }
 
         guard attestService.isSupported else {
             print("[!] Attest service not available")
@@ -73,7 +94,7 @@ final class AppDeviceIntegrity {
     }
 
     func keyIdentifier() -> String {
-        keyID ?? Self.defaults.string(forKey: StorageKey.keyID) ?? "Error in Key ID"
+        keyID ?? Self.defaults.string(forKey: StorageKey.keyID(keyScope)) ?? "Error in Key ID"
     }
 
     private var challengeHash: Data {
@@ -156,12 +177,13 @@ final class AppDeviceIntegrity {
         }
     }
 
-    /// Hands back the install's credential, provisioning one if the cache is
+    /// Hands back the scope's credential, provisioning one if its cache is
     /// empty. Pass the key that just failed as [staleKeyID] to replace it.
     private func resolveCredential(
         replacing staleKeyID: String?,
         completion: @escaping (Credential?) -> Void
     ) {
+        let scope = keyScope
         Self.lock.lock()
 
         // Clear only while the cache still points at the key that failed. Two
@@ -169,45 +191,45 @@ final class AppDeviceIntegrity {
         // replacement the first recovery already stored would spend another
         // rate-limited key generation for nothing.
         if let staleKeyID = staleKeyID,
-           Self.defaults.string(forKey: StorageKey.keyID) == staleKeyID {
-            Self.defaults.removeObject(forKey: StorageKey.keyID)
-            Self.defaults.removeObject(forKey: StorageKey.attestation)
+           Self.defaults.string(forKey: StorageKey.keyID(scope)) == staleKeyID {
+            Self.defaults.removeObject(forKey: StorageKey.keyID(scope))
+            Self.defaults.removeObject(forKey: StorageKey.attestation(scope))
         }
 
-        if let keyID = Self.defaults.string(forKey: StorageKey.keyID),
-           let attestation = Self.defaults.string(forKey: StorageKey.attestation) {
+        if let keyID = Self.defaults.string(forKey: StorageKey.keyID(scope)),
+           let attestation = Self.defaults.string(forKey: StorageKey.attestation(scope)) {
             Self.lock.unlock()
             completion(Credential(keyID: keyID, attestation: attestation, isFresh: false))
             return
         }
 
-        Self.pendingProvisioning.append(completion)
-
-        if Self.isProvisioning {
+        if Self.rounds[scope] != nil {
+            Self.rounds[scope]?.waiting.append(completion)
             Self.lock.unlock()
             return
         }
 
-        Self.isProvisioning = true
-        let round = Self.provisioningRound
+        let roundID = Self.nextRoundID
+        Self.nextRoundID &+= 1
+        Self.rounds[scope] = ProvisioningRound(id: roundID, waiting: [completion])
         Self.lock.unlock()
 
-        Self.startProvisioningWatchdog(for: round)
+        Self.startProvisioningWatchdog(scope: scope, round: roundID)
         provision { credential in
-            Self.finishProvisioning(with: credential, round: round)
+            Self.finishProvisioning(with: credential, scope: scope, round: roundID)
         }
     }
 
     /// Fails [round] if it is still running once [provisioningTimeout] elapses.
-    private static func startProvisioningWatchdog(for round: Int) {
+    private static func startProvisioningWatchdog(scope: String, round: Int) {
         DispatchQueue.global(qos: .userInitiated).asyncAfter(
             deadline: .now() + provisioningTimeout
         ) {
-            finishProvisioning(with: nil, round: round, timedOut: true)
+            finishProvisioning(with: nil, scope: scope, round: round, timedOut: true)
         }
     }
 
-    /// Provisions the install's credential, resuming a key an earlier round
+    /// Provisions the scope's credential, resuming a key an earlier round
     /// generated but could not attest.
     ///
     /// Apple rate limits `generateKey`, so the identifier is recorded before
@@ -217,7 +239,7 @@ final class AppDeviceIntegrity {
     /// proof, which is what Apple's guidance to retry attestation with the same
     /// key and client data hash amounts to here.
     private func provision(completion: @escaping (Credential?) -> Void) {
-        guard let pending = Self.pendingKey() else {
+        guard let pending = Self.pendingKey(scope: keyScope) else {
             generateAndAttest(completion: completion)
             return
         }
@@ -252,7 +274,7 @@ final class AppDeviceIntegrity {
             }
 
             let clientDataHash = self.challengeHash
-            Self.storePendingKey(keyID: keyIdentifier, clientDataHash: clientDataHash)
+            Self.storePendingKey(scope: self.keyScope, keyID: keyIdentifier, clientDataHash: clientDataHash)
 
             self.attest(keyID: keyIdentifier, clientDataHash: clientDataHash) { credential, _ in
                 completion(credential)
@@ -282,7 +304,7 @@ final class AppDeviceIntegrity {
 
                 let keyIsDead = (error as? DCError)?.code == .invalidKey
                 if keyIsDead {
-                    Self.clearPendingKey()
+                    Self.clearPendingKey(scope: self.keyScope)
                 }
                 completion(nil, keyIsDead)
                 return
@@ -305,29 +327,33 @@ final class AppDeviceIntegrity {
         }
     }
 
-    // The pending slot is only ever touched inside a provisioning round, and
-    // `isProvisioning` admits one of those at a time, so these need no lock of
-    // their own.
-    private static func pendingKey() -> (keyID: String, clientDataHash: Data)? {
-        guard let keyID = defaults.string(forKey: StorageKey.pendingKeyID),
-              let clientDataHash = defaults.data(forKey: StorageKey.pendingClientDataHash) else {
+    // A scope's pending slot is only touched inside its own provisioning round,
+    // and `rounds` admits one of those per scope at a time, so these need no
+    // lock of their own. The one overlap the watchdog opens is a timed-out
+    // round whose Apple callback lands during a later round and clears the
+    // slot that round is using. That costs one rate-limited `generateKey` on
+    // the next publish and can never surface a wrong key, so it is left
+    // unguarded rather than threading round identity through every write.
+    private static func pendingKey(scope: String) -> (keyID: String, clientDataHash: Data)? {
+        guard let keyID = defaults.string(forKey: StorageKey.pendingKeyID(scope)),
+              let clientDataHash = defaults.data(forKey: StorageKey.pendingClientDataHash(scope)) else {
             return nil
         }
         return (keyID, clientDataHash)
     }
 
-    private static func storePendingKey(keyID: String, clientDataHash: Data) {
-        defaults.set(keyID, forKey: StorageKey.pendingKeyID)
-        defaults.set(clientDataHash, forKey: StorageKey.pendingClientDataHash)
+    private static func storePendingKey(scope: String, keyID: String, clientDataHash: Data) {
+        defaults.set(keyID, forKey: StorageKey.pendingKeyID(scope))
+        defaults.set(clientDataHash, forKey: StorageKey.pendingClientDataHash(scope))
     }
 
-    private static func clearPendingKey() {
-        defaults.removeObject(forKey: StorageKey.pendingKeyID)
-        defaults.removeObject(forKey: StorageKey.pendingClientDataHash)
+    private static func clearPendingKey(scope: String) {
+        defaults.removeObject(forKey: StorageKey.pendingKeyID(scope))
+        defaults.removeObject(forKey: StorageKey.pendingClientDataHash(scope))
     }
 
-    /// Ends [round], storing [credential] and releasing everyone queued behind
-    /// it.
+    /// Ends [round] for [scope], storing [credential] and releasing everyone
+    /// queued behind it.
     ///
     /// Runs at most once per round: the real callback and the watchdog race,
     /// and the loser returns without touching the queue. A late real
@@ -336,26 +362,25 @@ final class AppDeviceIntegrity {
     /// gaining a key no waiter was told about.
     private static func finishProvisioning(
         with credential: Credential?,
+        scope: String,
         round: Int,
         timedOut: Bool = false
     ) {
         lock.lock()
 
-        guard isProvisioning, round == provisioningRound else {
+        guard let active = rounds[scope], active.id == round else {
             lock.unlock()
             return
         }
-        provisioningRound &+= 1
+        rounds[scope] = nil
 
         if let credential = credential {
-            defaults.set(credential.keyID, forKey: StorageKey.keyID)
-            defaults.set(credential.attestation, forKey: StorageKey.attestation)
-            clearPendingKey()
+            defaults.set(credential.keyID, forKey: StorageKey.keyID(scope))
+            defaults.set(credential.attestation, forKey: StorageKey.attestation(scope))
+            clearPendingKey(scope: scope)
         }
 
-        isProvisioning = false
-        let waiting = pendingProvisioning
-        pendingProvisioning = []
+        let waiting = active.waiting
         lock.unlock()
 
         if timedOut {

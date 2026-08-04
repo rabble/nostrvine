@@ -127,35 +127,51 @@ On iOS the tag value is the App Attest payload verbatim:
 }
 ```
 
-Apple rate limits `generateKey` and `attestKey`, so the Secure Enclave key is
-provisioned once per install and `keyID` plus `attestationString` are replayed
-from cache on every later proof. A verifier needs two branches:
+The payload is minted when the event is signed, not when the video is recorded.
+The account a clip goes out under is not fixed until then — a clip can be
+recorded, sit in the library, and be published from an account the user switched
+to afterwards — so only the publish step knows which identity the attestation
+should speak for.
 
-- **`assertionString` present** — verify the assertion against *this* proof's
-  hash. The attestation still proves the key came from a genuine Apple device,
-  but its embedded nonce binds the proof that provisioned the key, not this one.
-- **`assertionString` absent** — this is the provisioning proof, so the
-  attestation nonce binds the current proof hash and the plain nonce check
+**What the client signs.** The challenge is the proof hash and the event pubkey
+joined by a colon, and Apple's client data hash is `SHA-256` over its UTF-8
+bytes:
+
+```
+clientDataHash = SHA-256(UTF-8("<proofHash>:<pubkeyHex>"))
+```
+
+`proofHash` is the same string the `proofmode` tag carries as `videoHash`, and
+`pubkeyHex` is the event's own `pubkey` — so a verifier reconstructs the
+challenge from the event alone. Because the pubkey is inside it, the payload
+cannot be lifted from one event and republished under a different pubkey
+carrying the same media: the challenge no longer matches.
+
+**Two branches.** Apple rate limits `generateKey` and `attestKey`, so the Secure
+Enclave key is provisioned on an account's first publish and `keyID` plus
+`attestationString` are replayed from cache afterwards:
+
+- **`assertionString` present** — verify the assertion against *this* event's
+  client data hash. The attestation still proves the key came from a genuine
+  Apple device, but its embedded nonce binds the event that provisioned the key,
+  not this one.
+- **`assertionString` absent** — this is the provisioning event, so the
+  attestation nonce binds the current client data hash and the plain nonce check
   applies.
 
-Both branches check against the client data hash the app signs, which is not the
-proof hash itself but `SHA-256(UTF-8(proofHash))` — one more hash over the
-hex-encoded digest, where `proofHash` is the same string the `proofmode` tag
-carries as `videoHash`.
+**Assertion counter.** Apple's assertion verification requires checking the
+counter in the assertion's `authenticatorData`: it increments per assertion of
+that key and must be strictly greater than the highest value already seen for
+that `keyID`. A verifier that skips this accepts replayed assertions.
 
-**Replay boundary.** Nothing in this payload binds the event pubkey, and the
-challenge is derivable by anyone holding the video. The three fields can be
-lifted from one event and republished verbatim under a different pubkey carrying
-the same media, and both branches above still pass. A verifier following this
-contract learns that a genuine Apple device attested *this media hash* — not
-that *this publisher's* device did, and not that the publisher holds the key.
-Binding the payload to the publisher means mixing the event pubkey into the
-challenge, which changes what the client signs and is not part of this shape.
-
-Because the key lives for the life of the install, `keyID` and
-`attestationString` are a stable public identifier: every video published from
-one install carries the same pair, including videos published from different
-Nostr accounts on that device. The cache is wiped on uninstall and on a
+**Linkability.** The key is scoped to the Nostr account, not the install: every
+video published from one account carries the same `keyID` and
+`attestationString`, and the counter above is a monotonic sequence over that
+account's publishes. That correlates only videos the account already signed with
+its own pubkey, so it exposes nothing the event does not already carry. It also
+follows Apple's guidance against sharing one App Attest key among several users
+of a device — switching accounts provisions a separate key rather than reusing
+one across identities. Caches are wiped on uninstall and on a
 `DCError.invalidKey` recovery (device restore, OS reset). Nothing consumes these
 fields yet.
 

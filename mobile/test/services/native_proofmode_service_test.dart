@@ -266,6 +266,9 @@ void main() {
   });
 
   group('proofFile iOS device attestation', () {
+    // Pins the split introduced with per-account App Attest keys: generation
+    // runs before the publishing account is fixed, so it cannot mint a payload
+    // that binds one. [IosDeviceAttestationService] does that at publish time.
     late Directory directory;
     late File video;
     late Directory proofDir;
@@ -318,34 +321,14 @@ void main() {
       }
     });
 
-    test(
-      'persists the attestation token before reading proof metadata',
-      () async {
-        const token = '{"keyID":"k1","attestationString":"a1"}';
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(
-              attestationChannel,
-              (call) async => token,
-            );
-
-        final proofData = await NativeProofModeService.proofFile(video);
-
-        expect(proofData, isNotNull);
-        expect(proofData!.deviceAttestation, token);
-        expect(
-          File(
-            '${proofDir.path}/$generatedProofHash.attest',
-          ).readAsStringSync(),
-          token,
-        );
-      },
-    );
-
-    test('keeps the proof when App Attest is unavailable', () async {
+    test('defers App Attest to publish time', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(attestationChannel, (call) async {
-            throw PlatformException(code: '-4', message: 'Attestation failed');
-          });
+          .setMockMethodCallHandler(
+            attestationChannel,
+            (call) async => fail(
+              'App Attest must wait for the publishing account to be known',
+            ),
+          );
 
       final proofData = await NativeProofModeService.proofFile(video);
 
@@ -353,8 +336,8 @@ void main() {
       expect(proofData!.videoHash, generatedProofHash);
       expect(proofData.deviceAttestation, isNull);
       expect(
-        _latestLogContaining('Device attestation unavailable'),
-        isNotNull,
+        File('${proofDir.path}/$generatedProofHash.attest').existsSync(),
+        isFalse,
       );
     });
   });

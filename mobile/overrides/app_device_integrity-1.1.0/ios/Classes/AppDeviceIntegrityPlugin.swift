@@ -13,7 +13,8 @@ public class AppDeviceIntegrityPlugin: NSObject, FlutterPlugin {
         switch call.method {
         case "getAttestationServiceSupport":
             guard let args = call.arguments as? [String: Any],
-                let challengeString = args["challengeString"] as? String
+                let challengeString = args["challengeString"] as? String,
+                let keyScope = args["keyScope"] as? String
             else {
                 result(FlutterError(code: "-3", message: "Invalid arguments", details: nil))
                 return
@@ -21,10 +22,10 @@ public class AppDeviceIntegrityPlugin: NSObject, FlutterPlugin {
 
             // App Attest hits the Secure Enclave and Apple's attestation
             // servers. Flutter delivers channel calls on the main thread, so
-            // doing that work here froze the UI for ~200ms after every
-            // recording. Stay off-main and only hop back to deliver the result.
+            // doing that work here froze the UI for ~200ms on every call.
+            // Stay off-main and only hop back to deliver the result.
             DispatchQueue.global(qos: .userInitiated).async {
-                guard let deviceIntegrity = AppDeviceIntegrity(challengeString: challengeString) else {
+                guard let deviceIntegrity = AppDeviceIntegrity(challengeString: challengeString, keyScope: keyScope) else {
                     DispatchQueue.main.async {
                         result(FlutterError(code: "-4", message: "Failed to initialize AppDeviceIntegrity", details: nil))
                     }

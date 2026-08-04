@@ -27,6 +27,7 @@ import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/event_api_client.dart';
+import 'package:openvine/services/ios_device_attestation_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -177,7 +178,10 @@ class VideoEventPublisher {
     SavedSoundsService? savedSoundsService,
     EventApiClient? eventApiClient,
     AudioReuseConsentChecker? audioReuseConsentChecker,
-  }) : _uploadManager = uploadManager,
+    IosDeviceAttestationService? iosDeviceAttestationService,
+  }) : _iosDeviceAttestation =
+           iosDeviceAttestationService ?? IosDeviceAttestationService(),
+       _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
        _personalEventCache = personalEventCache,
@@ -199,6 +203,7 @@ class VideoEventPublisher {
   final AudioExtractionService? _audioExtractionService;
   final ProfileStatsDao? _profileStatsDao;
   final SavedSoundsService? _savedSoundsService;
+  final IosDeviceAttestationService _iosDeviceAttestation;
 
   /// REST-first publish client. When non-null, video events are published
   /// via `POST /api/events` first and only fall back to the WebSocket relay
@@ -1610,12 +1615,16 @@ class VideoEventPublisher {
       // Add ProofMode tags if native proof exists
       if (upload.hasProofMode) {
         try {
-          final nativeProof = upload.nativeProof;
-          if (nativeProof != null) {
+          final storedProof = upload.nativeProof;
+          if (storedProof != null) {
             Log.info(
               '📜 Adding ProofMode verification tags to Nostr event',
               name: 'VideoEventPublisher',
               category: LogCategory.video,
+            );
+
+            final nativeProof = await _withPublishDeviceAttestation(
+              storedProof,
             );
 
             //check C2PA metadata
@@ -2025,6 +2034,40 @@ class VideoEventPublisher {
   static bool _isHttpUrl(String? url) {
     if (url == null || url.isEmpty) return false;
     return url.startsWith('http://') || url.startsWith('https://');
+  }
+
+  /// Returns [proof] carrying the device attestation this publish should
+  /// broadcast.
+  ///
+  /// On iOS the payload is minted here rather than at proof generation, because
+  /// only now is the publishing account fixed — the challenge binds it, and the
+  /// App Attest key is scoped to it. That makes the value computed here
+  /// authoritative: it replaces whatever the stored proof carried, so a token
+  /// left behind for a different account cannot ride along. Platforms that
+  /// attest during generation keep what they produced.
+  Future<NativeProofData> _withPublishDeviceAttestation(
+    NativeProofData proof,
+  ) async {
+    if (!IosDeviceAttestationService.handlesPublishTimeAttestation) {
+      return proof;
+    }
+
+    final pubkeyHex = _authService?.currentPublicKeyHex;
+    if (pubkeyHex == null) {
+      Log.warning(
+        'No signing pubkey available - publishing without device attestation',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return proof.withDeviceAttestation(null);
+    }
+
+    return proof.withDeviceAttestation(
+      await _iosDeviceAttestation.attestationFor(
+        proofHash: proof.videoHash,
+        pubkeyHex: pubkeyHex,
+      ),
+    );
   }
 
   void _addIdentityDiscoveryTags(

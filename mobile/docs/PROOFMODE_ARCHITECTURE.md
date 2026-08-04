@@ -90,10 +90,12 @@ final isValid = await keyService.verifySignature(
 **Platform-specific Implementation**:
 
 **iOS (App Attest)**:
-- Uses `app_device_integrity` plugin
+- Uses `app_device_integrity` plugin via `IosDeviceAttestationService`
 - Generates hardware-backed attestation tokens
-- Signs a challenge derived from the media proof hash, which binds the payload
-  to the media but not to the publisher — see the replay boundary in
+- Runs at publish time, not during proof generation: the account the proof is
+  published under is not fixed until the event is signed
+- Signs a challenge over both the media proof hash and the event pubkey, and
+  uses a key scoped to that account — see
   [NOSTR_VIDEO_EVENTS.md](NOSTR_VIDEO_EVENTS.md#device_attestation-payload-ios)
 - Always hardware-backed on iOS 14+
 
@@ -531,12 +533,15 @@ See `docs/MANUAL_TEST_VIDEO_UPLOAD.md` for manual upload verification procedures
 - Non-blocking (async)
 
 **Device Attestation**:
-- iOS App Attest: one network round trip to Apple on first use (`generateKey` +
-  `attestKey`, both rate limited), then local `generateAssertion` per proof. The
-  key id and attestation object are cached in `UserDefaults` for the lifetime of
-  the install. A key that was generated but not attested — Apple throttled or
-  offline — is recorded too, so the next proof retries `attestKey` on it instead
-  of spending a second rate-limited generation.
+- iOS App Attest: one network round trip to Apple on an account's first publish
+  (`generateKey` + `attestKey`, both rate limited), then local
+  `generateAssertion` per publish. The key id and attestation object are cached
+  in `UserDefaults` per account, so switching accounts costs one more round trip
+  rather than re-using another identity's key. A key that was generated but not
+  attested — Apple throttled or offline — is recorded too, so the next publish
+  retries `attestKey` on it instead of spending a second rate-limited
+  generation. A wedged Apple callback is abandoned after 30s so it cannot stall
+  later publishes.
 - Android Play Integrity: ~200-500ms
 - A failed attestation degrades the proof to no `device_attestation` field; it
   never discards the PGP signature or C2PA manifest.

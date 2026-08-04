@@ -200,6 +200,26 @@ void main() {
       expect(noAttestation.hasMobileAttestation, isFalse);
     });
 
+    test('NativeProofData withDeviceAttestation swaps only that field', () {
+      final replaced = testProofData.withDeviceAttestation('fresh_token');
+
+      expect(replaced.deviceAttestation, equals('fresh_token'));
+      expect(
+        replaced.toJson()..remove('deviceAttestation'),
+        equals(testProofData.toJson()..remove('deviceAttestation')),
+        reason:
+            'dropping a field here would silently weaken the published '
+            'proof',
+      );
+    });
+
+    test('NativeProofData withDeviceAttestation clears the field', () {
+      expect(
+        testProofData.withDeviceAttestation(null).deviceAttestation,
+        isNull,
+      );
+    });
+
     test('NativeProofData verificationLevel returns correct levels', () {
       // Full mobile verification
       expect(testProofData.verificationLevel, equals('verified_mobile'));

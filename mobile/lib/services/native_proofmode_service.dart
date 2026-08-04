@@ -4,7 +4,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app_device_integrity/app_device_integrity.dart';
 import 'package:c2pa_flutter/c2pa.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
@@ -231,10 +230,9 @@ class NativeProofModeService {
         category: .video,
       );
 
-      //add iOS specific device attestation
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        await _writeIosDeviceAttestation(proofHash);
-      }
+      // iOS App Attest is deliberately absent here: it runs at publish time,
+      // where the account the proof goes out under is known. See
+      // [IosDeviceAttestationService].
 
       // Read proof metadata from native library
       final metadata = await NativeProofModeService.readProofMetadata(
@@ -285,39 +283,6 @@ class NativeProofModeService {
         category: .video,
       );
       return null;
-    }
-  }
-
-  /// Writes the iOS App Attest token for [proofHash] into its proof directory.
-  ///
-  /// App Attest needs Apple's attestation servers on first use, so it fails on
-  /// the Simulator, offline, and whenever Apple throttles the app. None of that
-  /// invalidates the proof itself — the PGP signature and C2PA manifest stand on
-  /// their own — so a failure here only drops the `device_attestation` field
-  /// instead of discarding the whole proof.
-  static Future<void> _writeIosDeviceAttestation(String proofHash) async {
-    try {
-      final tokenReceived = await AppDeviceIntegrity()
-          .getAttestationServiceSupport(challengeString: proofHash);
-      if (tokenReceived == null) return;
-
-      final proofDir = await getProofDir(proofHash);
-      if (proofDir == null) {
-        Log.warning(
-          '🔐 No proof directory to store device attestation',
-          name: 'NativeProofMode',
-          category: LogCategory.system,
-        );
-        return;
-      }
-
-      await File('$proofDir/$proofHash.attest').writeAsString(tokenReceived);
-    } catch (e) {
-      Log.warning(
-        '🔐 Device attestation unavailable, continuing without it: $e',
-        name: 'NativeProofMode',
-        category: LogCategory.system,
-      );
     }
   }
 
@@ -494,7 +459,8 @@ class NativeProofModeService {
         );
       }
 
-      // Read local device attestation info
+      // Written by Android's notarization provider during generation. iOS
+      // leaves this absent and attests at publish time instead.
       final deviceAttestation = File('$proofDir/$proofHash.attest');
       if (deviceAttestation.existsSync()) {
         metadata[NativeProofData.metadataDeviceAttestationKey] =
