@@ -102,6 +102,7 @@
     },
     "settingsCancel": "キャンセル",
     "settingsSwitchAnyway": "それでも切り替える",
+    "settingsSessionExpiredSwitchMessage": "そのアカウントのセッションは切れています。もう一度サインインすると、今使っているアカウントからサインアウトされます。",
     "settingsAppVersionLabel": "アプリのバージョン",
     "settingsAppLanguage": "アプリの言語",
     "settingsAppLanguageDeviceDefault": "{language} (デバイスの既定)",

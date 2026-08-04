@@ -160,6 +160,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsSwitchAnyway => 'تبديل على أي حال';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'انتهت جلسة ذلك الحساب. تسجيل الدخول إليه مرة أخرى يعني تسجيل الخروج من الحساب الذي تستخدمه الآن.';
+
+  @override
   String get settingsAppVersionLabel => 'إصدار التطبيق';
 
   @override

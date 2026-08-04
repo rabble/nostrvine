@@ -186,6 +186,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsSwitchAnyway => 'Schimbă oricum';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Sesiunea acelui cont a expirat. Ca să intri din nou în el, ieși din contul pe care îl folosești acum.';
+
+  @override
   String get settingsAppVersionLabel => 'Versiunea aplicației';
 
   @override

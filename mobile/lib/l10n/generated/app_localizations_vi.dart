@@ -171,6 +171,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsSwitchAnyway => 'Vẫn chuyển';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Phiên của tài khoản đó đã hết hạn. Đăng nhập lại vào đó nghĩa là bạn sẽ đăng xuất khỏi tài khoản đang dùng.';
+
+  @override
   String get settingsAppVersionLabel => 'Phiên bản ứng dụng';
 
   @override

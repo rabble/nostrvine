@@ -134,6 +134,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsSwitchAnyway => 'それでも切り替える';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'そのアカウントのセッションは切れています。もう一度サインインすると、今使っているアカウントからサインアウトされます。';
+
+  @override
   String get settingsAppVersionLabel => 'アプリのバージョン';
 
   @override

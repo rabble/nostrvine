@@ -102,6 +102,7 @@
     },
     "settingsCancel": "ተወው",
     "settingsSwitchAnyway": "ለማንኛውም ቀይር",
+    "settingsSessionExpiredSwitchMessage": "የዚያ መለያ ክፍለ ጊዜ አብቅቷል። እንደገና ወደ እሱ መግባት ማለት አሁን ካሉበት መለያ መውጣት ማለት ነው።",
     "settingsAppVersionLabel": "የመተግበሪያ ስሪት",
     "settingsAppLanguage": "የመተግበሪያ ቋንቋ",
     "settingsAppLanguageDeviceDefault": "{language} (የመሣሪያ ነባሪ)",

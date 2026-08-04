@@ -172,6 +172,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get settingsSwitchAnyway => 'Смени въпреки това';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'Сесията на този акаунт изтече. Ново влизане в него означава да излезеш от този, който използваш сега.';
+
+  @override
   String get settingsAppVersionLabel => 'Версия на приложението';
 
   @override

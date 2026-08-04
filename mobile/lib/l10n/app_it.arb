@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Annulla",
     "settingsSwitchAnyway": "Cambia comunque",
+    "settingsSessionExpiredSwitchMessage": "La sessione di quell'account è scaduta. Accedere di nuovo significa uscire da quello che stai usando ora.",
     "settingsAppVersionLabel": "Versione dell'app",
     "settingsAppLanguage": "Lingua dell'app",
     "settingsAppLanguageDeviceDefault": "{language} (predefinita del dispositivo)",

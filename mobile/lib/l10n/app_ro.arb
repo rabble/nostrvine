@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Anulează",
     "settingsSwitchAnyway": "Schimbă oricum",
+    "settingsSessionExpiredSwitchMessage": "Sesiunea acelui cont a expirat. Ca să intri din nou în el, ieși din contul pe care îl folosești acum.",
     "settingsAppVersionLabel": "Versiunea aplicației",
     "settingsAppLanguage": "Limba aplicației",
     "settingsAppLanguageDeviceDefault": "{language} (implicit pe dispozitiv)",

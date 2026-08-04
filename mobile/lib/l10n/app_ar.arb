@@ -102,6 +102,7 @@
     },
     "settingsCancel": "إلغاء",
     "settingsSwitchAnyway": "تبديل على أي حال",
+    "settingsSessionExpiredSwitchMessage": "انتهت جلسة ذلك الحساب. تسجيل الدخول إليه مرة أخرى يعني تسجيل الخروج من الحساب الذي تستخدمه الآن.",
     "settingsAppVersionLabel": "إصدار التطبيق",
     "settingsAppLanguage": "لغة التطبيق",
     "settingsAppLanguageDeviceDefault": "{language} (افتراضي الجهاز)",

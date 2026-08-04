@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Anuluj",
     "settingsSwitchAnyway": "Przełącz mimo to",
+    "settingsSessionExpiredSwitchMessage": "Sesja tego konta wygasła. Ponowne zalogowanie się do niego oznacza wylogowanie z konta, na którym jesteś teraz.",
     "settingsAppVersionLabel": "Wersja aplikacji",
     "settingsAppLanguage": "Język aplikacji",
     "settingsAppLanguageDeviceDefault": "{language} (domyślny język urządzenia)",

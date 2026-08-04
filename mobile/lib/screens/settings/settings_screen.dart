@@ -178,7 +178,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!mounted) return;
     final proceed = await _confirmSwitch(
       title: context.l10n.settingsSessionExpired,
-      message: context.l10n.settingsSessionExpiredSubtitle,
+      message: context.l10n.settingsSessionExpiredSwitchMessage,
       confirmLabel: context.l10n.authSignInTitle,
       confirmType: DivineButtonType.primary,
     );

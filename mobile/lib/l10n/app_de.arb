@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Abbrechen",
     "settingsSwitchAnyway": "Trotzdem wechseln",
+    "settingsSessionExpiredSwitchMessage": "Die Sitzung dieses Kontos ist abgelaufen. Dich dort neu anzumelden heißt, dich aus dem Konto abzumelden, in dem du gerade bist.",
     "settingsAppVersionLabel": "App-Version",
     "settingsAppLanguage": "App-Sprache",
     "settingsAppLanguageDeviceDefault": "{language} (Gerätestandard)",

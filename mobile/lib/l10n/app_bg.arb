@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Отказ",
     "settingsSwitchAnyway": "Смени въпреки това",
+    "settingsSessionExpiredSwitchMessage": "Сесията на този акаунт изтече. Ново влизане в него означава да излезеш от този, който използваш сега.",
     "settingsAppVersionLabel": "Версия на приложението",
     "settingsAppLanguage": "Език на приложението",
     "settingsAppLanguageDeviceDefault": "{language} (език на устройството)",

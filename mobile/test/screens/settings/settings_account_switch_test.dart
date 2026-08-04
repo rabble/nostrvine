@@ -428,8 +428,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // A dead session is recoverable by signing in again, so the user gets that
-    // offer instead of the dead-end "couldn't switch" snackbar.
-    expect(find.text(l10n.settingsSessionExpiredSubtitle), findsOneWidget);
+    // offer instead of the dead-end "couldn't switch" snackbar — and the copy
+    // says what confirming costs, since it signs the working account out.
+    expect(
+      find.text(l10n.settingsSessionExpiredSwitchMessage),
+      findsOneWidget,
+    );
     expect(find.text(l10n.settingsAccountSwitchFailed), findsNothing);
 
     await tester.tap(find.text(l10n.authSignInTitle));
@@ -458,6 +462,9 @@ void main() {
     await tester.pumpAndSettle();
 
     verifyNever(() => authService.signOut());
+    // Nothing is remembered for the welcome screen either — backing out has to
+    // leave the session exactly as it was, not stage a switch for later.
+    verifyNever(() => authService.pendingAccountSwitchPubkey = any());
   });
 
   testWidgets('adding an account parks the in-flight uploads', (tester) async {

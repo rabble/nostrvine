@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Cancelar",
     "settingsSwitchAnyway": "Cambiar igual",
+    "settingsSessionExpiredSwitchMessage": "La sesión de esa cuenta caducó. Volver a entrar en ella significa cerrar la sesión de la que estás usando ahora.",
     "settingsAppVersionLabel": "Versión de la app",
     "settingsAppLanguage": "Idioma de la app",
     "settingsAppLanguageDeviceDefault": "{language} (predeterminado del dispositivo)",

@@ -171,6 +171,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsSwitchAnyway => 'Cambiar igual';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'La sesión de esa cuenta caducó. Volver a entrar en ella significa cerrar la sesión de la que estás usando ahora.';
+
+  @override
   String get settingsAppVersionLabel => 'Versión de la app';
 
   @override

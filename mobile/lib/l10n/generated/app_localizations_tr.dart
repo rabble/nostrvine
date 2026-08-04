@@ -142,6 +142,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsSwitchAnyway => 'Yine de Değiştir';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'O hesabın oturumu doldu. Yeniden giriş yapmak, şu an kullandığın hesaptan çıkmak demek.';
+
+  @override
   String get settingsAppVersionLabel => 'Uygulama sürümü';
 
   @override

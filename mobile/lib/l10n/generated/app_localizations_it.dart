@@ -171,6 +171,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsSwitchAnyway => 'Cambia comunque';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'La sessione di quell\'account è scaduta. Accedere di nuovo significa uscire da quello che stai usando ora.';
+
+  @override
   String get settingsAppVersionLabel => 'Versione dell\'app';
 
   @override

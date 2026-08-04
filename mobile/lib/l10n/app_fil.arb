@@ -71,6 +71,7 @@
     "settingsUnsavedDraftsMessage": "Mayroon kang {count} na hindi naka-save na {count, plural, =1{draft} other{mga draft}}. Kapag nagpalit ka ng account, mananatili ang iyong {count, plural, =1{draft} other{mga draft}}, pero baka gusto mong i-publish o tingnan muna ang {count, plural, =1{draft na ito} other{mga ito}}.",
     "settingsCancel": "Cancel",
     "settingsSwitchAnyway": "Magpalit pa rin",
+    "settingsSessionExpiredSwitchMessage": "Nag-expire na ang session ng account na iyon. Ang mag-sign in ulit doon ay mangangahulugang mag-sign out sa account na ginagamit mo ngayon.",
     "settingsAppVersionLabel": "App version",
     "settingsAppLanguage": "Wika ng App",
     "settingsAppLanguageDeviceDefault": "{language} (default ng device)",

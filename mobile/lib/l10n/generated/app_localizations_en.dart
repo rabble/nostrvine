@@ -171,6 +171,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSwitchAnyway => 'Switch Anyway';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'That account\'s session ran out. Signing back into it means signing out of the one you\'re on now.';
+
+  @override
   String get settingsAppVersionLabel => 'App version';
 
   @override

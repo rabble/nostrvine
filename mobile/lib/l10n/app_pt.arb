@@ -102,6 +102,7 @@
     },
     "settingsCancel": "Cancelar",
     "settingsSwitchAnyway": "Trocar mesmo assim",
+    "settingsSessionExpiredSwitchMessage": "A sessão dessa conta expirou. Entrar nela de novo significa sair da conta que você está usando agora.",
     "settingsAppVersionLabel": "Versão do app",
     "settingsAppLanguage": "Idioma do app",
     "settingsAppLanguageDeviceDefault": "{language} (padrão do dispositivo)",

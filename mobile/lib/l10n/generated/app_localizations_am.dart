@@ -174,6 +174,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsSwitchAnyway => 'ለማንኛውም ቀይር';
 
   @override
+  String get settingsSessionExpiredSwitchMessage =>
+      'የዚያ መለያ ክፍለ ጊዜ አብቅቷል። እንደገና ወደ እሱ መግባት ማለት አሁን ካሉበት መለያ መውጣት ማለት ነው።';
+
+  @override
   String get settingsAppVersionLabel => 'የመተግበሪያ ስሪት';
 
   @override
