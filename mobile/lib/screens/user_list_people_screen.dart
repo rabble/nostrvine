@@ -52,13 +52,14 @@ class _UserListPeopleScreenState extends State<UserListPeopleScreen> {
   /// mutations wholesale whenever it tears its state down. On the mutation map
   /// alone, an account switch or a `FeatureFlag.curatedLists` flag-off is
   /// indistinguishable from the delete settling (#6504).
+  ///
+  /// Only [_pendingDeleteResolved] and the listener read this — [build] does
+  /// not — so it is assigned without `setState`.
   ({String listId, String? ownerPubkey})? _pendingDelete;
 
   void _deleteList(String listId) {
     final bloc = context.read<PeopleListsBloc>();
-    setState(() {
-      _pendingDelete = (listId: listId, ownerPubkey: bloc.state.ownerPubkey);
-    });
+    _pendingDelete = (listId: listId, ownerPubkey: bloc.state.ownerPubkey);
     bloc.add(PeopleListsDeleteRequested(listId: listId));
   }
 
@@ -87,9 +88,7 @@ class _UserListPeopleScreenState extends State<UserListPeopleScreen> {
       listener: (context, state) {
         final pending = _pendingDelete;
         final failed = state.status == PeopleListsStatus.failure;
-        setState(() {
-          _pendingDelete = null;
-        });
+        _pendingDelete = null;
         // The bloc dropped the mutation rather than resolving it: the feature
         // was turned off, or another account took over. Nothing settled, so
         // announce nothing and stay on the route.
