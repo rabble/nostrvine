@@ -42,10 +42,14 @@ class _FakeStagedProfileMediaStore implements StagedProfileMediaStore {
     String pubkey, {
     String? pictureUrl,
     String? bannerUrl,
+    bool pictureCleared = false,
+    bool bannerCleared = false,
   }) async {
     final staged = StagedProfileMedia(
       pictureUrl: pictureUrl,
       bannerUrl: bannerUrl,
+      pictureCleared: pictureCleared,
+      bannerCleared: bannerCleared,
       stagedAt: DateTime.utc(2026, 8, 4),
     );
     if (staged.isEmpty) {
@@ -2663,6 +2667,50 @@ void main() {
         ],
       );
 
+      test('restores a staged removal when bloc is recreated', () {
+        final store = _FakeStagedProfileMediaStore()
+          ..values[testPubkey] = StagedProfileMedia(
+            pictureCleared: true,
+            bannerCleared: true,
+            stagedAt: DateTime.utc(2026, 8, 4),
+          );
+
+        final bloc = createBloc(
+          stagedProfileMediaStore: store,
+          currentUserPubkey: testPubkey,
+        );
+        addTearDown(bloc.close);
+
+        expect(bloc.state.pictureCleared, isTrue);
+        expect(bloc.state.bannerCleared, isTrue);
+      });
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'seeding the persisted profile does not undo a restored removal',
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              pictureCleared: true,
+              bannerCleared: true,
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        // What the editor dispatches off its first profile snapshot. It runs
+        // unconditionally, so it is the one thing a restored removal has to
+        // survive.
+        act: (bloc) => bloc
+          ..add(const InitialPersistedPictureSet(testPersistedUrl))
+          ..add(const InitialPersistedBannerSet('0x33ccbf')),
+        verify: (bloc) {
+          expect(bloc.state.effectivePictureUrl, isNull);
+          expect(bloc.state.effectiveBanner, isNull);
+        },
+      );
+
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'upload failure leaves pendingPictureUrl untouched and emits failed',
         setUp: () {
@@ -3692,6 +3740,43 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(const ProfileBannerUrlSet(testStagedUrl)),
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureCleared writes the removal through to the store',
+        build: () {
+          final store = _FakeStagedProfileMediaStore();
+          addTearDown(() {
+            // Dropping the staged URL is only half of it: without the flag the
+            // rebuilt editor seeds the persisted picture back and the removal
+            // is forgotten instead of merely un-staged.
+            expect(store.values[testPubkey]?.pictureCleared, isTrue);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+        ),
+        act: (bloc) => bloc.add(const ProfilePictureCleared()),
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerCleared writes the removal through to the store',
+        build: () {
+          final store = _FakeStagedProfileMediaStore();
+          addTearDown(() {
+            expect(store.values[testPubkey]?.bannerCleared, isTrue);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        seed: () => const ProfileEditorState(persistedBanner: '0x33ccbf'),
+        act: (bloc) => bloc.add(const ProfileBannerCleared()),
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(

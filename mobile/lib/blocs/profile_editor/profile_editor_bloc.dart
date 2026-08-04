@@ -130,10 +130,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           ? PendingAvatarStatus.idle
           : PendingAvatarStatus.staged,
       pendingPictureUrl: staged.pictureUrl,
+      pictureCleared: staged.pictureCleared,
       pendingBannerStatus: staged.bannerUrl == null
           ? PendingBannerStatus.idle
           : PendingBannerStatus.staged,
       pendingBannerUrl: staged.bannerUrl,
+      bannerCleared: staged.bannerCleared,
     );
   }
 
@@ -342,8 +344,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pictureCleared: true,
       ),
     );
-    // Drop the stored staging too, or the next editor build restores the very
-    // picture the user just removed.
+    // Writes through the removal *and* drops the staged URL, so the next
+    // editor build neither restores the picture the user just removed nor
+    // forgets that they removed it.
     await _persistStagedProfileMedia();
   }
 
@@ -389,6 +392,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) {
     final banner = event.banner;
+    // A removal restored from the staged store outlives this seed: the first
+    // snapshot always seeds the persisted banner, and resetting the flag here
+    // would hand it straight back to a user who had already cleared it.
+    if (state.bannerCleared) {
+      emit(state.copyWith(persistedBanner: banner));
+      return;
+    }
     final parsedColor = state.pendingBannerUrl == null
         ? _parseBannerHexColor(banner)
         : null;
@@ -1315,6 +1325,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       scopedPubkey,
       pictureUrl: state.pendingPictureUrl,
       bannerUrl: state.pendingBannerUrl,
+      pictureCleared: state.pictureCleared,
+      bannerCleared: state.bannerCleared,
     );
   }
 

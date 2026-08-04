@@ -105,5 +105,38 @@ void main() {
       expect(store.load(pubkeyA), isNull);
       expect(preferences.getKeys(), isEmpty);
     });
+
+    test('round-trips a removal that stages no URL of its own', () async {
+      final store = await createStore();
+
+      await store.save(pubkeyA, pictureCleared: true);
+
+      // A removal with no URLs is still an unsaved edit, so it must not fall
+      // through the "nothing staged" shortcut that clears the payload.
+      final restored = store.load(pubkeyA);
+      expect(restored, isNotNull);
+      expect(restored!.pictureCleared, isTrue);
+      expect(restored.bannerCleared, isFalse);
+      expect(restored.pictureUrl, isNull);
+    });
+
+    test('reads payloads written before removals were staged', () async {
+      preferences = await SharedPreferences.getInstance();
+      await preferences.setString(
+        'staged_profile_media_v1_$pubkeyA',
+        '{"version":1,"pictureUrl":"https://media.divine.video/a",'
+            '"bannerUrl":null,"stagedAt":${now.millisecondsSinceEpoch}}',
+      );
+      final store = SharedPreferencesStagedProfileMediaStore(
+        preferences: preferences,
+        now: () => now,
+      );
+
+      final restored = store.load(pubkeyA);
+      expect(restored, isNotNull);
+      expect(restored!.pictureUrl, 'https://media.divine.video/a');
+      expect(restored.pictureCleared, isFalse);
+      expect(restored.bannerCleared, isFalse);
+    });
   });
 }
