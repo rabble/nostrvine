@@ -194,6 +194,43 @@ void main() {
       );
     });
 
+    test('one relay that never answers cannot hold the caller past the settle '
+        'window once another relay has', () async {
+      final nostr = _newNostr();
+      final answering = _SilentRelay('wss://answers.example');
+      final mute = _SilentRelay('wss://never-eoses.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+      expect(await nostr.relayPool.add(mute), isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      final subId = await answering.awaitPendingQuery();
+      await mute.awaitPendingQuery();
+      // `mute` stays connected and simply never sends a terminal frame — the
+      // shape measured against relay.divine.video.
+      await answering.deliver(['EOSE', subId]);
+
+      final result = await pending;
+      stopwatch.stop();
+
+      expect(result.timedOut, isFalse);
+      expect(
+        stopwatch.elapsed,
+        lessThan(_timeout),
+        reason: 'the settle window must bound the silent relay',
+      );
+      expect(
+        stopwatch.elapsed,
+        greaterThanOrEqualTo(RelayPool.querySettleWindow),
+        reason: 'the silent relay still gets its grace period first',
+      );
+    });
+
     test('a healthy relay still holds the query until its EOSE', () async {
       final nostr = _newNostr();
       final fast = _SilentRelay('wss://fast.example');

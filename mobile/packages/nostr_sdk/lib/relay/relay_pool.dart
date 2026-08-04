@@ -124,6 +124,20 @@ class RelayPool {
   /// a removed or replaced relay is not retained by the bookkeeping.
   final Expando<bool> _statusObserved = Expando<bool>('relayStatusObserved');
 
+  /// Grace period granted to the remaining relays after the first terminal
+  /// frame for a one-shot query.
+  ///
+  /// Mirrors [PublishTracker.settleWindow] and exists for the same reason: a
+  /// healthy relay answers a REQ within a few hundred milliseconds, so making
+  /// every caller wait the full query timeout for one silent sibling stalls
+  /// the whole app behind the slowest connection. Unlike a dropped socket or a
+  /// closed auth gate, a relay that stays connected and simply never sends
+  /// `EOSE` gives off no signal at all — the only bound available is time.
+  static const querySettleWindow = Duration(seconds: 1);
+
+  /// Armed settle windows, keyed by subscription id.
+  final Map<String, Timer> _querySettleTimers = {};
+
   /// When each one-shot query's REQ fan-out started, so an abandoned query can
   /// ask [Relay.isSilentSince] whether a relay that never answered had gone
   /// quiet altogether. Dropped when the query settles or is unsubscribed.
@@ -695,7 +709,13 @@ class RelayPool {
   /// stored events) and `CLOSED` (the relay ended the subscription without
   /// finishing). Either way the caller must be released rather than left to
   /// burn its whole timeout budget.
-  void _fireQueryCompleteIfSettled(String subId) {
+  /// Set [afterTerminalFrame] when the call is driven by a relay's own `EOSE`
+  /// or `CLOSED`. That is the proof at least one relay is answering, and it is
+  /// what arms [querySettleWindow] for whichever relays are still silent.
+  void _fireQueryCompleteIfSettled(
+    String subId, {
+    bool afterTerminalFrame = false,
+  }) {
     final callback = _queryCompleteCallbacks[subId];
     if (callback == null) return;
     if (_queryFanoutInProgress.contains(subId)) return;
@@ -707,11 +727,48 @@ class RelayPool {
     ];
     for (final r in list) {
       // Some relay still owes us a terminal frame for this query.
-      if (r.checkQuery(subId) && _canStillSettleQuery(r)) return;
+      if (r.checkQuery(subId) && _canStillSettleQuery(r)) {
+        if (afterTerminalFrame) _armQuerySettleWindow(subId);
+        return;
+      }
     }
 
+    _completeQuery(subId, callback);
+  }
+
+  /// Bounds how long the relays that have not answered [subId] can hold the
+  /// caller, once some other relay has proven the fan-out is being served.
+  ///
+  /// Only a timer can bound this: a connected relay that never sends `EOSE`
+  /// looks identical to one that is about to.
+  void _armQuerySettleWindow(String subId) {
+    if (_querySettleTimers.containsKey(subId)) return;
+    _querySettleTimers[subId] = Timer(querySettleWindow, () {
+      _querySettleTimers.remove(subId);
+      final callback = _queryCompleteCallbacks[subId];
+      if (callback == null) return;
+      log(
+        'Query $subId settled without ${_queryStragglers(subId)} — '
+        'completing on the relays that answered',
+      );
+      _completeQuery(subId, callback);
+    });
+  }
+
+  /// Relay urls that never answered [subId]; diagnostic only.
+  List<String> _queryStragglers(String subId) => [
+    for (final r in [
+      ..._relaysSnapshot(),
+      ..._tempRelaysSnapshot(),
+      ..._cacheRelaysSnapshot(),
+    ])
+      if (r.checkQuery(subId)) r.url,
+  ];
+
+  void _completeQuery(String subId, Function callback) {
     _queryCompleteCallbacks.remove(subId);
     _querySentAt.remove(subId);
+    _querySettleTimers.remove(subId)?.cancel();
     callback();
   }
 
@@ -982,7 +1039,7 @@ class RelayPool {
       }
       var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
-        _fireQueryCompleteIfSettled(subId);
+        _fireQueryCompleteIfSettled(subId, afterTerminalFrame: true);
       } else {
         // Handle EOSE for long-running subscriptions
         final subscription = _subscriptions[subId];
@@ -1252,7 +1309,7 @@ class RelayPool {
       // that must stay saved for replay after NIP-42 succeeds.
       if (!_shouldReplayQueryAfterAuth(relay, reason) &&
           relay.discardQuery(subscriptionId)) {
-        _fireQueryCompleteIfSettled(subscriptionId);
+        _fireQueryCompleteIfSettled(subscriptionId, afterTerminalFrame: true);
       }
     }
   }
@@ -1432,6 +1489,7 @@ class RelayPool {
       // never-fired callback in [_queryCompleteCallbacks].
       _queryCompleteCallbacks.remove(id);
       _queryFanoutInProgress.remove(id);
+      _querySettleTimers.remove(id)?.cancel();
       _repairRelaysThatNeverAnswered(id);
 
       // check query and send close
