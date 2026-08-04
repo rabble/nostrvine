@@ -1153,6 +1153,39 @@ void main() {
     );
 
     testWidgetsWithSurfaceSize(
+      'waits for the chip names before revealing the section',
+      (tester) async {
+        final profile = Completer<UserProfile?>();
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
+            ),
+            providerOverrides: [
+              fetchUserProfileProvider(
+                _reposterPubkey,
+              ).overrideWith((ref) => profile.future),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        // A chip falls back to a generated name while its profile loads.
+        // Showing the row first would swap every label a moment later and
+        // reflow the rows around the new widths.
+        expect(find.text('Reposted by'), findsNothing);
+
+        profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Improvising'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
       'shows every reposter when they fit under the cap',
       (tester) async {
         await tester.pumpWidget(

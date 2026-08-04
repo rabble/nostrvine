@@ -21,6 +21,22 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 
+/// Whether every chip in [pubkeys] already knows the name it will render.
+///
+/// [_TappableUserChip] falls back to a generated name while its profile
+/// loads, so a row shown before the profiles settle swaps every label — and
+/// reflows itself around the new widths — a moment later. Sections that can
+/// afford to arrive late hold their reveal until this is true.
+///
+/// Every provider is watched unconditionally so the rebuild arrives for
+/// whichever profile resolves last.
+bool _namesSettled(WidgetRef ref, List<String> pubkeys) {
+  final profiles = [
+    for (final pubkey in pubkeys) ref.watch(fetchUserProfileProvider(pubkey)),
+  ];
+  return profiles.every((profile) => !profile.isLoading);
+}
+
 /// Creator section showing the video author as a tappable chip.
 class MetadataCreatorSection extends StatelessWidget {
   const MetadataCreatorSection({required this.pubkey, super.key});
@@ -114,7 +130,7 @@ class _CollaboratorsSectionStatusAware extends StatelessWidget {
 /// can exercise every render branch without standing up a Riverpod
 /// container, a `BlocProvider`, or a mock repository.
 @visibleForTesting
-class MetadataCollaboratorsSectionBody extends StatelessWidget {
+class MetadataCollaboratorsSectionBody extends ConsumerWidget {
   const MetadataCollaboratorsSectionBody({
     required this.visibility,
     super.key,
@@ -123,12 +139,12 @@ class MetadataCollaboratorsSectionBody extends StatelessWidget {
   final CollaboratorVisibility visibility;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final visible = visibility.visiblePubkeys;
     // A tagged collaborator stays hidden until their confirmation status
     // resolves, so this section arrives late on videos that have one.
     return AnimatedReveal(
-      child: visible.isEmpty
+      child: visible.isEmpty || !_namesSettled(ref, visible)
           ? null
           : MetadataSection(
               label: context.l10n.metadataCollaboratorsLabel,
@@ -211,7 +227,7 @@ class MetadataRepostedBySection extends StatelessWidget {
 /// Renders nothing while [pubkeys] is empty. The reposters resolve from a
 /// relay round-trip, so the section is revealed through an [AnimatedReveal]
 /// rather than snapping the sections below it down on arrival.
-class _RepostedByContent extends StatelessWidget {
+class _RepostedByContent extends ConsumerWidget {
   const _RepostedByContent({required this.pubkeys, required this.video});
 
   /// Roughly three rows of chips on a phone — nine came out at five.
@@ -224,12 +240,12 @@ class _RepostedByContent extends StatelessWidget {
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final visible = pubkeys.take(_maxVisibleReposters).toList();
     final hiddenCount = pubkeys.length - visible.length;
 
     return AnimatedReveal(
-      child: pubkeys.isEmpty
+      child: pubkeys.isEmpty || !_namesSettled(ref, visible)
           ? null
           : MetadataSection(
               label: context.l10n.metadataRepostedByLabel,
