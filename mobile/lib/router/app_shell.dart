@@ -11,13 +11,12 @@ import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore/explore_screen.dart';
+import 'package:openvine/screens/explore/explore_tab_labels.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -132,21 +131,8 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
       case RouteType.explore:
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
-          final tabIndex = ref.watch(exploreTabIndexProvider);
-          // Build dynamic tab names based on which optional tabs are available
-          // Order: [Classics], New Videos, Trending, [For You], Lists
-          final forYouAvailable = ref.watch(forYouAvailableProvider);
-          final classicsAvailable =
-              ref.watch(classicVinesAvailableProvider).asData?.value ?? false;
-          final tabNames = <String>[];
-          if (classicsAvailable) tabNames.add(l10n.navExploreClassics);
-          tabNames.addAll([l10n.navExploreNewVideos, l10n.navExploreTrending]);
-          if (forYouAvailable) tabNames.add(l10n.navExploreForYou);
-          tabNames.add(l10n.navExploreLists);
-          if (tabIndex >= 0 && tabIndex < tabNames.length) {
-            return tabNames[tabIndex];
-          }
-          return l10n.navExplore;
+          final tabName = ref.watch(exploreTabNameProvider);
+          return labelForExploreTabName(l10n, tabName, shellTitle: true);
         }
         return l10n.navExplore;
       case RouteType.categoryGallery:

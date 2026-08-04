@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/explore/explore_tab_labels.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 
 /// The explore screen's scrollable tab bar.
@@ -59,16 +60,8 @@ class ExploreTabBar extends StatelessWidget {
               ),
               onTap: onTap,
               tabs: [
-                if (tabsState.classicsAvailable)
-                  Tab(text: context.l10n.exploreTabClassics),
-                Tab(text: context.l10n.exploreTabNew),
-                Tab(text: context.l10n.exploreTabPopular),
-                Tab(text: context.l10n.exploreTabCategories),
-                if (tabsState.forYouAvailable)
-                  Tab(text: context.l10n.exploreTabForYou),
-                Tab(text: context.l10n.exploreTabLists),
-                if (tabsState.appsAvailable)
-                  Tab(text: context.l10n.exploreTabIntegratedApps),
+                for (final name in tabsState.tabNames)
+                  Tab(text: labelForExploreTabName(context.l10n, name)),
               ],
             ),
             // Right-edge fade gradient shim

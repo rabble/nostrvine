@@ -48,22 +48,22 @@ class _ExploreViewState extends ConsumerState<ExploreView>
   /// Build a new [TabController]. [previousTabName] is the name of the tab the
   /// user was on before a rebuild (resolved while the old availability flags
   /// were still in effect). Resolution order:
-  /// [ExploreView.initialTabName] > previous tab > default. Falls back to the
-  /// default tab by name — never by raw index, because indices shift when
+  /// [ExploreView.initialTabName] > previous tab > persisted tab > default.
+  /// Falls back by name — never by raw index, because indices shift when
   /// optional tabs appear or disappear.
   void _initTabController({String? previousTabName}) {
-    final targetTabName = widget.initialTabName ?? previousTabName;
-    final initialIndex = _tabsState.indexForName(
-      targetTabName ?? exploreDefaultTabName,
-    );
+    final targetTabName =
+        widget.initialTabName ??
+        previousTabName ??
+        ref.read(exploreTabNameProvider) ??
+        exploreDefaultTabName;
+    final initialIndex = _tabsState.indexForName(targetTabName);
 
-    if (targetTabName != null) {
-      Log.info(
-        '🎯 ExploreScreen: Using tab "$targetTabName" -> index $initialIndex',
-        name: 'ExploreScreen',
-        category: LogCategory.ui,
-      );
-    }
+    Log.info(
+      '🎯 ExploreScreen: Using tab "$targetTabName" -> index $initialIndex',
+      name: 'ExploreScreen',
+      category: LogCategory.ui,
+    );
 
     _tabController = TabController(
       length: _tabsState.tabCount,
@@ -129,8 +129,9 @@ class _ExploreViewState extends ConsumerState<ExploreView>
     final index = _tabController!.index;
     final tabName = _tabsState.nameForIndex(index);
 
-    // Always persist the current index
-    ref.read(exploreTabIndexProvider.notifier).state = index;
+    // Persist the selected tab by stable name because optional tabs can shift
+    // raw indices while Explore is alive.
+    ref.read(exploreTabNameProvider.notifier).state = tabName;
 
     // Track tab change
     _tabs.trackTabChange(tabName);
