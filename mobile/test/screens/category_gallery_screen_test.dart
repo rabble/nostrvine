@@ -3,6 +3,7 @@
 
 import 'package:categories_repository/categories_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -179,6 +180,41 @@ void main() {
       expect(find.text('Could not load videos'), findsOneWidget);
       await tester.tap(find.text('Retry'));
       expect(retries, 1);
+    });
+
+    testWidgets('provides a $Material ancestor for its own text', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      // The route mounts this view on the root navigator, so nothing above
+      // it supplies a Material — pump it the same way here. Without one,
+      // every Text inherits MaterialApp's yellow double-underline fallback.
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: CategoryGalleryView(
+            category: category,
+            state: const CategoriesState(
+              selectedCategory: category,
+              videosStatus: CategoriesVideosStatus.error,
+            ),
+            onBack: () {},
+            onRetry: () {},
+            onSortChanged: (_) {},
+            onVideoTap: (videos, index) {},
+            onLoadMore: () async {},
+            onRefresh: () async {},
+          ),
+        ),
+      );
+
+      final inheritedStyle = DefaultTextStyle.of(
+        tester.element(find.text(l10n.categoryGalleryCouldNotLoadVideos)),
+      ).style;
+      expect(inheritedStyle.decoration, isNot(TextDecoration.underline));
+      expect(find.byType(DivineButton), findsOneWidget);
     });
 
     testWidgets('shows empty state when selected category has no videos', (

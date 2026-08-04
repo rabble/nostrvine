@@ -154,7 +154,10 @@ class CategoryGalleryView extends StatelessWidget {
   Widget build(BuildContext context) {
     final visuals = CategoryVisuals.forCategory(category, 0);
 
-    return ColoredBox(
+    // This screen is a root-navigator route, so nothing above it provides a
+    // `Material`. Without one every `Text` inherits Flutter's yellow
+    // double-underline fallback style from `MaterialApp`.
+    return Material(
       color: context.vineColors.surfaceContainerHigh,
       child: Column(
         children: [
@@ -208,18 +211,17 @@ class _CategoryGalleryBody extends StatelessWidget {
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            spacing: 16,
             children: [
               Text(
                 context.l10n.categoryGalleryCouldNotLoadVideos,
-                style: TextStyle(
+                style: VineTheme.bodyLargeFont(
                   color: context.vineColors.secondaryText,
-                  fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 16),
-              ElevatedButton(
+              DivineButton(
+                label: context.l10n.commonRetry,
                 onPressed: onRetry,
-                child: Text(context.l10n.commonRetry),
               ),
             ],
           ),
@@ -229,9 +231,8 @@ class _CategoryGalleryBody extends StatelessWidget {
           return Center(
             child: Text(
               context.l10n.categoryGalleryNoVideosInCategory,
-              style: TextStyle(
+              style: VineTheme.bodyLargeFont(
                 color: context.vineColors.secondaryText,
-                fontSize: 16,
               ),
             ),
           );
@@ -297,12 +298,9 @@ class _CategoryGalleryHeader extends StatelessWidget {
                       localizedCategoryName(context.l10n, category.name),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          VineTheme.titleMediumFont(
-                            color: context.vineColors.onNav,
-                          ).copyWith(
-                            decoration: TextDecoration.none,
-                          ),
+                      style: VineTheme.titleMediumFont(
+                        color: context.vineColors.onNav,
+                      ),
                     ),
                   ),
                 ),
