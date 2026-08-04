@@ -355,14 +355,28 @@ void main() {
     testWidgets(
       'pull-to-refresh completes after a viewed tab settled empty',
       (tester) async {
-        await tester.pumpWidget(buildSubject(isOwnProfile: true));
+        final curatedListService = _MockCuratedListService();
+        when(() => curatedListService.lists).thenReturn(const []);
+        when(() => curatedListService.myLists).thenReturn(const []);
+        when(
+          () => curatedListService.fetchUserListsFromRelays(
+            force: any(named: 'force'),
+          ),
+        ).thenAnswer((_) async {});
+
+        await tester.pumpWidget(
+          buildSubject(
+            isOwnProfile: true,
+            curatedListService: curatedListService,
+          ),
+        );
         await tester.pump();
 
-        // View Saved so it joins the set of tabs a refresh re-syncs, and let
-        // it settle on the empty bookmark list.
+        // View Lists so it joins the set of tabs a refresh re-syncs, and let
+        // it settle on the empty list collection.
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
         tabBar.controller!.animateTo(
-          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.saved),
+          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.lists),
         );
         await tester.pumpAndSettle();
 
