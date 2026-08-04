@@ -42,12 +42,15 @@ typedef PeopleListsClock = DateTime Function();
 ///
 /// ## Failure recovery contract
 ///
-/// A mutation that throws transitions [PeopleListsState.status] to
-/// [PeopleListsStatus.failure] and reports the error via `addError`. The
-/// status automatically recovers to [PeopleListsStatus.ready] once all
-/// pending mutations drain without a fresh failure, so the UI does not
-/// stay stuck on `failure` when subsequent mutations succeed or the
-/// repository stream never re-emits.
+/// A mutation that throws — or comes back unsubmitted — transitions
+/// [PeopleListsState.status] to [PeopleListsStatus.failure] and reports any
+/// error via `addError`. The status automatically recovers to
+/// [PeopleListsStatus.ready] once all pending mutations drain without a fresh
+/// failure, so the UI does not stay stuck on `failure` when subsequent
+/// mutations succeed or the repository stream never re-emits.
+///
+/// A result that lands after the bloc tore down the state its mutation was
+/// issued against writes nothing at all — see [_resultStillApplies].
 class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// Creates a new bloc instance.
   ///
@@ -206,9 +209,9 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       // owner stream is not seeded, so state is the only place a later flag-on
       // can learn who is signed in.
       //
-      // A mutation still in flight resumes against the snapshot it captured
-      // before this emit and puts it back — the pre-existing account-switch
-      // race, tracked in #6504.
+      // Dropping `pendingMutations` is also what stops a mutation still in
+      // flight from putting the snapshot back once it resolves — see
+      // [_resultStillApplies].
       emit(PeopleListsState(ownerPubkey: state.ownerPubkey, enabled: false));
       return;
     }
@@ -377,9 +380,15 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         imageUrl: event.imageUrl,
         initialPubkeys: event.initialPubkeys,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
+      if (!result.submitted) {
+        emit(_withoutMutation(state, mutation.id, failed: true));
+        return;
+      }
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
+      if (!_resultStillApplies(mutation, owner)) return;
       emit(_withoutMutation(state, mutation.id, failed: true));
     }
   }
@@ -420,6 +429,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         ownerPubkey: owner,
         listId: event.listId,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
       if (!result.submitted) {
         emit(
           _withoutMutation(
@@ -433,6 +443,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
+      if (!_resultStillApplies(mutation, owner)) return;
       emit(
         _withoutMutation(
           state,
@@ -535,6 +546,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         listId: listId,
         pubkey: pubkey,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
       if (!result.submitted) {
         emit(
           _withoutMutation(
@@ -548,6 +560,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
+      if (!_resultStillApplies(mutation, owner)) return;
       emit(
         _withoutMutation(
           state,
@@ -605,6 +618,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         listId: listId,
         pubkey: pubkey,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
       if (!result.submitted) {
         emit(
           _withoutMutation(
@@ -618,6 +632,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
+      if (!_resultStillApplies(mutation, owner)) return;
       emit(
         _withoutMutation(
           state,
@@ -631,6 +646,24 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   // --------------------------------------------------------------------------
   // Helpers
   // --------------------------------------------------------------------------
+
+  /// Whether a mutation result that arrived after an `await` may still be
+  /// written to state.
+  ///
+  /// Rollbacks are computed from a snapshot captured before the round-trip and
+  /// were only ever valid for the state that produced it. In between, the bloc
+  /// may have torn that state down — an account switch, a sign-out, or
+  /// `FeatureFlag.curatedLists` going off each emit a fresh state with an empty
+  /// `pendingMutations`. Restoring the captured snapshot there hands one
+  /// owner's lists to whoever is signed in by then, and even a status-only
+  /// write reports an outcome the new state never asked for (#6504).
+  ///
+  /// The mutation lookup is what actually detects a teardown; the owner check
+  /// keeps the guard honest if a future teardown ever preserves the map.
+  bool _resultStillApplies(PeopleListsMutation mutation, String owner) {
+    return state.activeOwnerPubkey == owner &&
+        state.pendingMutations.containsKey(mutation.id);
+  }
 
   /// Builds a mutation record with a unique id.
   ///

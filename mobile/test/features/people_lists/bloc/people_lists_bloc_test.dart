@@ -586,6 +586,27 @@ void main() {
     );
 
     blocTest<PeopleListsBloc, PeopleListsState>(
+      'reports failure when a create is not submitted',
+      build: buildBloc,
+      setUp: () {
+        when(
+          () => repository.createList(ownerPubkey: _ownerA, name: 'New List'),
+        ).thenAnswer((_) async => const PeopleListPublishResult.failed());
+      },
+      seed: () => const PeopleListsState(
+        status: PeopleListsStatus.ready,
+        ownerPubkey: _ownerA,
+      ),
+      act: (bloc) =>
+          bloc.add(const PeopleListsCreateRequested(name: 'New List')),
+      verify: (bloc) {
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(bloc.state.pendingMutations, isEmpty);
+        expect(bloc.state.lastSubmittedEventId, isNull);
+      },
+    );
+
+    blocTest<PeopleListsBloc, PeopleListsState>(
       'emits optimistic state for delete list before repository returns',
       build: buildBloc,
       setUp: () {
@@ -1211,6 +1232,158 @@ void main() {
         expect(ownerBListsController.hasListener, isTrue);
         expect(ownerAListsController.hasListener, isFalse);
       });
+    });
+
+    // #6504: rollbacks are computed from a snapshot captured before the
+    // repository round-trip. A teardown in between — flag-off or account
+    // switch — drops that snapshot on purpose, so applying it afterwards puts
+    // one owner's lists back under whoever is signed in by then.
+    group('mutation results that outlive the state they were issued for', () {
+      Future<PeopleListsBloc> startedWithOwnerAList() async {
+        final bloc = buildBloc()..add(const PeopleListsStarted());
+        await _flush();
+        ownerPubkeyController.add(_ownerA);
+        await _flush();
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        await _flush();
+        return bloc;
+      }
+
+      test('a delete rollback discards a flag-off teardown snapshot', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.deleteList(ownerPubkey: _ownerA, listId: 'l1'),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerAList();
+        addTearDown(bloc.close);
+
+        bloc.add(const PeopleListsDeleteRequested(listId: 'l1'));
+        await _flush();
+        expect(bloc.state.pendingMutations, hasLength(1));
+
+        enabledController.add(false);
+        await _flush();
+        await _flush();
+
+        publish.complete(const PeopleListPublishResult.failed());
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.enabled, isFalse);
+        expect(bloc.state.status, equals(PeopleListsStatus.initial));
+        expect(bloc.state.lists, isEmpty);
+        expect(bloc.state.listIdsByPubkey, isEmpty);
+        expect(bloc.state.pendingMutations, isEmpty);
+      });
+
+      test(
+        'a delete rollback leaves the account that took over alone',
+        () async {
+          final publish = Completer<PeopleListPublishResult>();
+          when(
+            () => repository.deleteList(ownerPubkey: _ownerA, listId: 'l1'),
+          ).thenAnswer((_) => publish.future);
+
+          final bloc = await startedWithOwnerAList();
+          addTearDown(bloc.close);
+
+          bloc.add(const PeopleListsDeleteRequested(listId: 'l1'));
+          await _flush();
+
+          ownerPubkeyController.add(_ownerB);
+          await _flush();
+          await _flush();
+          ownerBListsController.add([
+            _buildList(id: 'l2', name: 'Crew', pubkeys: const [_memberBob]),
+          ]);
+          await _flush();
+
+          publish.complete(const PeopleListPublishResult.failed());
+          await _flush();
+          await _flush();
+
+          expect(bloc.state.ownerPubkey, equals(_ownerB));
+          expect(bloc.state.status, equals(PeopleListsStatus.ready));
+          expect(bloc.state.lists.single.id, equals('l2'));
+          expect(
+            bloc.state.listIdsByPubkey,
+            equals({
+              _memberBob: {'l2'},
+            }),
+          );
+          expect(bloc.state.pendingMutations, isEmpty);
+        },
+      );
+
+      test('an add that throws after a teardown restores nothing', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'l1',
+            pubkey: _memberBob,
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerAList();
+        addTearDown(bloc.close);
+
+        bloc.add(
+          const PeopleListsPubkeyAddRequested(
+            listId: 'l1',
+            pubkey: _memberBob,
+          ),
+        );
+        await _flush();
+        expect(bloc.state.lists.single.pubkeys, contains(_memberBob));
+
+        enabledController.add(false);
+        await _flush();
+        await _flush();
+
+        publish.completeError(StateError('no public key available'));
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.enabled, isFalse);
+        expect(bloc.state.status, equals(PeopleListsStatus.initial));
+        expect(bloc.state.lists, isEmpty);
+      });
+
+      // Create captures no snapshot, so all it can leak is a status — but a
+      // `failure` (or `ready`) written onto a torn-down state still reports an
+      // outcome the account now in state never asked for.
+      test(
+        'a create that resolves after a teardown writes no status',
+        () async {
+          final publish = Completer<PeopleListPublishResult>();
+          when(
+            () => repository.createList(ownerPubkey: _ownerA, name: 'Crew'),
+          ).thenAnswer((_) => publish.future);
+
+          final bloc = await startedWithOwnerAList();
+          addTearDown(bloc.close);
+
+          bloc.add(const PeopleListsCreateRequested(name: 'Crew'));
+          await _flush();
+          expect(bloc.state.pendingMutations, hasLength(1));
+
+          enabledController.add(false);
+          await _flush();
+          await _flush();
+
+          publish.complete(const PeopleListPublishResult.failed());
+          await _flush();
+          await _flush();
+
+          expect(bloc.state.enabled, isFalse);
+          expect(bloc.state.status, equals(PeopleListsStatus.initial));
+          expect(bloc.state.pendingMutations, isEmpty);
+        },
+      );
     });
 
     // #6480: peopleListsRepositoryProvider is keepAlive but not
