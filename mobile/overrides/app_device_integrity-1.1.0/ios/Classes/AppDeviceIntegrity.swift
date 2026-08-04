@@ -48,6 +48,21 @@ final class AppDeviceIntegrity {
     private static var isProvisioning = false
     private static var pendingProvisioning: [(Credential?) -> Void] = []
 
+    /// Identifies the in-flight provisioning round.
+    ///
+    /// Incremented by whichever of the real callback or the watchdog finishes
+    /// the round first, so the loser becomes a no-op instead of draining a
+    /// queue that now belongs to a later round.
+    private static var provisioningRound = 0
+
+    /// How long a provisioning round may run before it is failed.
+    ///
+    /// `generateKey` and `attestKey` are network calls to Apple, and nothing
+    /// here can cancel them. Without this, one wedged callback strands every
+    /// later proof behind `isProvisioning` until the app restarts — turning a
+    /// single native hang into a process-wide proof stall.
+    private static let provisioningTimeout: DispatchTimeInterval = .seconds(30)
+
     init?(challengeString: String) {
         self.inputString = challengeString
 
@@ -174,10 +189,21 @@ final class AppDeviceIntegrity {
         }
 
         Self.isProvisioning = true
+        let round = Self.provisioningRound
         Self.lock.unlock()
 
+        Self.startProvisioningWatchdog(for: round)
         provision { credential in
-            self.finishProvisioning(with: credential)
+            Self.finishProvisioning(with: credential, round: round)
+        }
+    }
+
+    /// Fails [round] if it is still running once [provisioningTimeout] elapses.
+    private static func startProvisioningWatchdog(for round: Int) {
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(
+            deadline: .now() + provisioningTimeout
+        ) {
+            finishProvisioning(with: nil, round: round, timedOut: true)
         }
     }
 
@@ -300,19 +326,41 @@ final class AppDeviceIntegrity {
         defaults.removeObject(forKey: StorageKey.pendingClientDataHash)
     }
 
-    private func finishProvisioning(with credential: Credential?) {
-        Self.lock.lock()
+    /// Ends [round], storing [credential] and releasing everyone queued behind
+    /// it.
+    ///
+    /// Runs at most once per round: the real callback and the watchdog race,
+    /// and the loser returns without touching the queue. A late real
+    /// credential is therefore dropped rather than stored, which costs one
+    /// rate-limited generation on the next proof but keeps the cache from
+    /// gaining a key no waiter was told about.
+    private static func finishProvisioning(
+        with credential: Credential?,
+        round: Int,
+        timedOut: Bool = false
+    ) {
+        lock.lock()
+
+        guard isProvisioning, round == provisioningRound else {
+            lock.unlock()
+            return
+        }
+        provisioningRound &+= 1
 
         if let credential = credential {
-            Self.defaults.set(credential.keyID, forKey: StorageKey.keyID)
-            Self.defaults.set(credential.attestation, forKey: StorageKey.attestation)
-            Self.clearPendingKey()
+            defaults.set(credential.keyID, forKey: StorageKey.keyID)
+            defaults.set(credential.attestation, forKey: StorageKey.attestation)
+            clearPendingKey()
         }
 
-        Self.isProvisioning = false
-        let waiting = Self.pendingProvisioning
-        Self.pendingProvisioning = []
-        Self.lock.unlock()
+        isProvisioning = false
+        let waiting = pendingProvisioning
+        pendingProvisioning = []
+        lock.unlock()
+
+        if timedOut {
+            print("App Attest provisioning timed out, failing \(waiting.count) queued challenge(s)")
+        }
 
         // Only the caller that triggered provisioning gets the fresh-attestation
         // shortcut, and only when Apple bound the attestation to that caller's
