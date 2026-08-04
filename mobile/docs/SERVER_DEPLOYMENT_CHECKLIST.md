@@ -2,19 +2,16 @@
 
 ## Files Ready to Deploy
 
-The iOS Apple App Site Association payload for `divine.video` and
-`www.divine.video` is owned by `divine-web`:
-`public/.well-known/apple-app-site-association`. The login-domain payload is
-owned by `keycast` and served from its web build
-`.well-known/apple-app-site-association`. The mobile repo keeps offline test
-fixtures under `mobile/test/fixtures/deep_links/` to guard mobile routing
+The iOS Apple App Site Association payload is owned by `divine-web`:
+`public/.well-known/apple-app-site-association`. The mobile repo keeps offline
+test fixtures under `mobile/test/fixtures/deep_links/` to guard mobile routing
 coverage, but those fixtures are not deployment artifacts.
 
 Android verification files remain in the `mobile/docs/` directory:
 
 ### iOS Universal Links
-- **Source repo**: `divine-web` for `divine.video` / `www.divine.video`; `keycast` for `login.divine.video`
-- **File**: `public/.well-known/apple-app-site-association` or the `keycast` web build `.well-known/apple-app-site-association`
+- **Source repo**: `divine-web`
+- **File**: `public/.well-known/apple-app-site-association`
 - **Team ID**: GZCZBKH7MY
 - **App ID**: co.openvine.app
 
@@ -143,9 +140,8 @@ curl https://www.divine.video/.well-known/apple-app-site-association
 curl https://login.divine.video/.well-known/apple-app-site-association
 ```
 
-`divine.video` and `www.divine.video` should return the current path claims from
-`divine-web`. `login.divine.video` should return the current login-domain claims
-from `keycast`.
+Should return the JSON with Team ID GZCZBKH7MY and the current path claims from
+`divine-web`.
 
 ### Test Android file is accessible
 

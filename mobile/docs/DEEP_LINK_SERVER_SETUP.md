@@ -10,9 +10,7 @@ Android App Links, plus the Apple-associated hosts for universal links.
 ### 1. iOS Universal Links Verification
 
 **File**: `apple-app-site-association` (no file extension)
-**Source of truth**:
-- `divine.video` and `www.divine.video`: `divine-web/public/.well-known/apple-app-site-association`
-- `login.divine.video`: `keycast` web build `.well-known/apple-app-site-association`
+**Source of truth**: `divine-web/public/.well-known/apple-app-site-association`
 **Primary Location**: `https://divine.video/.well-known/apple-app-site-association`
 **Alternative Location**: `https://divine.video/apple-app-site-association`
 **Also serve on every associated domain**:
@@ -23,16 +21,6 @@ The mobile repo does not own or deploy this payload. It keeps mirrored AASA
 fixtures in `test/fixtures/deep_links/` only so parser and router tests fail
 when a served claim no longer has matching mobile coverage or an explicit
 allowlist reason.
-
-When intentionally refreshing the offline fixtures, compare the served payloads
-first, then update:
-
-```bash
-curl https://divine.video/.well-known/apple-app-site-association \
-  > test/fixtures/deep_links/aasa_divine_video.json
-curl https://login.divine.video/.well-known/apple-app-site-association \
-  > test/fixtures/deep_links/aasa_login_divine_video.json
-```
 
 **Important**:
 - The file must be served with `Content-Type: application/json` or `application/pkcs7-mime`
@@ -203,5 +191,5 @@ co.openvine.app:
 ## Example Files
 
 See `divine-web/public/.well-known/apple-app-site-association` for the current
-apex/www iOS payload, the `keycast` web build for the login-domain iOS payload,
-and `assetlinks.json.template` in this directory for the Android example.
+iOS payload and `assetlinks.json.template` in this directory for the Android
+example.

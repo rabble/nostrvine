@@ -368,9 +368,8 @@ For deep links to work, these files must be accessible:
 ### iOS Universal Links
 **File**: `/.well-known/apple-app-site-association`
 **Content-Type**: `application/json`
-**Paths**: The apex/www AASA claim set is owned by `divine-web`; the
-`login.divine.video` AASA claim set is owned by `keycast`. Mobile mirrors both
-payloads in `test/fixtures/deep_links/` for offline routing coverage tests.
+**Paths**: The AASA claim set is owned by `divine-web`; mobile mirrors it in
+`test/fixtures/deep_links/` for offline routing coverage tests.
 
 ### Android App Links
 **File**: `/.well-known/assetlinks.json`
