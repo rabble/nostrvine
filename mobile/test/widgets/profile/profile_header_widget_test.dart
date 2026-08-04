@@ -31,6 +31,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -2370,6 +2371,50 @@ void main() {
               'tappable during the loading window (#4183 review).',
         );
       });
+
+      testWidgets('avatar is swapped for a flat bone while the identity '
+          'skeleton is enabled', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: const MyProfileInitial(),
+          ),
+        );
+        await tester.pump();
+
+        expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+        expect(
+          find.byType(UserAvatar),
+          findsNothing,
+          reason:
+              'Skeletonizer keeps the decoration of containers that have '
+              'children, so leaving the real UserAvatar in the tree shimmers '
+              'its generated placeholder art (gradient tile + person '
+              'silhouette) instead of a plain bone.',
+        );
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+      });
+
+      testWidgets(
+        'avatar comes back once the identity skeleton is disabled',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoaded(
+                profile: createTestProfile(displayName: 'Loaded'),
+                isFresh: true,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+          expect(find.byType(UserAvatar), findsOneWidget);
+        },
+      );
     });
   });
 

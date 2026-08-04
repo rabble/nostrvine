@@ -376,23 +376,29 @@ class _ProfileAvatarWithColor extends StatelessWidget {
       placeholderSeed: userIdHex,
       size: avatarSize,
     );
-    final avatar = hasAvatar
-        ? GestureDetector(
-            onTap: () => _showAvatarLightbox(
-              context,
-              imageUrl: imageUrl,
-              userIdHex: userIdHex,
-            ),
-            child: Hero(
-              tag: _avatarHeroTag(userIdHex),
-              flightShuttleBuilder: (_, _, _, _, _) => _AvatarHeroFlightShuttle(
+    final avatar = Skeleton.replace(
+      width: avatarSize,
+      height: avatarSize,
+      replacement: const _AvatarBone(size: avatarSize),
+      child: hasAvatar
+          ? GestureDetector(
+              onTap: () => _showAvatarLightbox(
+                context,
                 imageUrl: imageUrl,
                 userIdHex: userIdHex,
               ),
-              child: avatarWidget,
-            ),
-          )
-        : avatarWidget;
+              child: Hero(
+                tag: _avatarHeroTag(userIdHex),
+                flightShuttleBuilder: (_, _, _, _, _) =>
+                    _AvatarHeroFlightShuttle(
+                      imageUrl: imageUrl,
+                      userIdHex: userIdHex,
+                    ),
+                child: avatarWidget,
+              ),
+            )
+          : avatarWidget,
+    );
 
     if (pendingActions.isEmpty) return avatar;
 
@@ -416,6 +422,49 @@ class _ProfileAvatarWithColor extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Stand-in painted in place of the avatar while the identity loads: a flat
+/// tile in the avatar's own geometry with the brand mark animating on top.
+///
+/// [Skeletonizer] repaints leaf shapes with the shimmer but keeps the
+/// decoration of every container that has children, so shimmering the real
+/// [UserAvatar] leaves its generated placeholder — a gradient tile with a
+/// person silhouette cut into it — showing through the sweep.
+class _AvatarBone extends StatelessWidget {
+  const _AvatarBone({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Positioned.fill because a childless DecoratedBox takes the smallest
+        // size its constraints allow, and Stack hands non-positioned children
+        // loose ones — the tile would collapse to nothing.
+        Positioned.fill(
+          child: Skeleton.leaf(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: context.vineColors.skeleton,
+                borderRadius: BorderRadius.circular(
+                  UserAvatar.cornerRadiusForSize(size),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Skeleton.keep, not .ignore: `ignore` paints nothing while the
+        // enclosing Skeletonizer is enabled, which is the only time this
+        // widget is on screen.
+        Skeleton.keep(
+          child: BrandedLoadingIndicator(size: min(size * 0.8, 64)),
         ),
       ],
     );
