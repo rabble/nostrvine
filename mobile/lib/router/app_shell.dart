@@ -225,7 +225,10 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
         ctx.videoIndex != 0;
     final isOtherUserProfile =
         ctx.type == RouteType.profile &&
-        ctx.npub != ref.read(authServiceProvider).currentNpub;
+        !routeIdentifiesUser(
+          ctx.npub,
+          ref.read(authServiceProvider).currentPublicKeyHex,
+        );
     final isProfileVideo =
         ctx.type == RouteType.profile && ctx.videoIndex != null;
 
@@ -346,8 +349,10 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
         chromeCtx != null &&
         chromeCtx.type == RouteType.profile &&
         chromeCtx.videoIndex == null && // Video mode uses the app bar
-        (chromeCtx.npub == 'me' ||
-            chromeCtx.npub == ref.read(authServiceProvider).currentNpub);
+        routeIdentifiesUser(
+          chromeCtx.npub,
+          ref.read(authServiceProvider).currentPublicKeyHex,
+        );
 
     // Inbox manages its own header (segmented toggle replaces app bar)
     final isInbox =
