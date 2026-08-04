@@ -70,13 +70,30 @@ void main() {
         '2222222222222222222222222222222222222222222222222222222222222222';
     const targetHex =
         '1111111111111111111111111111111111111111111111111111111111111111';
+    // A third identity, belonging to neither account. A preserve case built on
+    // the target's own npub cannot fail: both the retarget branch and the
+    // preserve branch emit the same string.
+    const strangerHex =
+        '3333333333333333333333333333333333333333333333333333333333333333';
     final leavingNpub = NostrKeyUtils.encodePubKey(leavingHex);
     final targetNpub = NostrKeyUtils.encodePubKey(targetHex);
+    final strangerNpub = NostrKeyUtils.encodePubKey(strangerHex);
 
     test('retargets the leaving account own-profile route', () {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile/$leavingNpub',
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub',
+      );
+    });
+
+    test('retargets the relative own-profile route', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/me',
           currentNpub: leavingNpub,
           targetPubkeyHex: targetHex,
         ),
@@ -95,15 +112,42 @@ void main() {
       );
     });
 
-    test('preserves another user profile and non-profile routes', () {
+    test('preserves another user profile', () {
       expect(
         accountSwitchInitialLocation(
-          currentLocation: '/profile/$targetNpub',
+          currentLocation: '/profile/$strangerNpub',
           currentNpub: leavingNpub,
           targetPubkeyHex: targetHex,
         ),
-        '/profile/$targetNpub',
+        '/profile/$strangerNpub',
       );
+    });
+
+    test('preserves a profile route when the leaving identity is unknown', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$leavingNpub',
+          currentNpub: null,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$leavingNpub',
+      );
+    });
+
+    test('preserves a non-profile route that carries the leaving npub', () {
+      // Two segments, so this reaches the identity clause that `/settings`
+      // exits before — it pins the first-segment guard, not the length guard.
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile-view/$leavingNpub',
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile-view/$leavingNpub',
+      );
+    });
+
+    test('preserves a single-segment route', () {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/settings',
@@ -111,6 +155,17 @@ void main() {
           targetPubkeyHex: targetHex,
         ),
         '/settings',
+      );
+    });
+
+    test('returns null when there is no current location', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: null,
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        isNull,
       );
     });
   });
