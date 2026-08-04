@@ -2,6 +2,7 @@
 // ABOUTME: Shared source of truth used by the router redirect and tests
 
 import 'package:openvine/screens/curated_list_by_author_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
@@ -19,6 +20,10 @@ String? divineUrlToPushRoute(Uri uri) {
   if (host != 'divine.video' && host != 'www.divine.video') return null;
 
   final deepLink = DeepLinkService.parseDeepLink(uri.toString());
+  return _pushRouteForDeepLink(deepLink);
+}
+
+String? _pushRouteForDeepLink(DeepLink deepLink) {
   switch (deepLink.type) {
     case DeepLinkType.video:
       final videoRef = deepLink.videoRef;
@@ -39,18 +44,13 @@ String? divineUrlToPushRoute(Uri uri) {
     case DeepLinkType.search:
       final term = deepLink.searchTerm;
       if (term == null || term.isEmpty) return null;
-      return SearchResultsPage.pathForQuery(
-        term,
-        requestFocusOnMount: false,
-      );
+      return SearchResultsPage.pathForQuery(term, requestFocusOnMount: false);
     case DeepLinkType.list:
       final listPubkey = deepLink.listPubkey;
       final listId = deepLink.listId;
-      if (listPubkey == null ||
-          listPubkey.isEmpty ||
-          listId == null ||
-          listId.isEmpty) {
-        return null;
+      if (listId == null || listId.isEmpty) return null;
+      if (listPubkey == null || listPubkey.isEmpty) {
+        return CuratedListFeedScreen.pathForId(listId);
       }
       return CuratedListByAuthorScreen.pathFor(
         pubkey: listPubkey,
@@ -81,8 +81,12 @@ String? divineUrlToPushRoute(Uri uri) {
 /// (OAuth callbacks) already match internal GoRoutes by coincidence of path
 /// (e.g. `/reset-password`, `/verify-email`) so no rewrite is needed for them.
 String? universalLinkToRouterPath(Uri uri) {
-  final route = divineUrlToPushRoute(uri);
+  if (!uri.scheme.startsWith('http')) return null;
+  final host = uri.host.toLowerCase();
+  if (host != 'divine.video' && host != 'www.divine.video') return null;
+
   final deepLink = DeepLinkService.parseDeepLink(uri.toString());
+  final route = _pushRouteForDeepLink(deepLink);
   switch (deepLink.type) {
     case DeepLinkType.video:
     case DeepLinkType.invite:

@@ -47,6 +47,19 @@ void main() {
       );
     });
 
+    test('skips divine list universal links', () {
+      expect(
+        shouldSkipRouteNormalization('https://divine.video/list/my-vines'),
+        isTrue,
+      );
+      expect(
+        shouldSkipRouteNormalization(
+          'https://www.divine.video/list/my-vines',
+        ),
+        isTrue,
+      );
+    });
+
     test('skips NIP-46 signer callbacks from native signer apps', () {
       expect(
         shouldSkipRouteNormalization(
