@@ -1612,6 +1612,9 @@ class VideoEventPublisher {
         }
       }
 
+      NativeProofData? proofUsedForTags;
+      String? publishDeviceAttestationPubkeyHex;
+
       // Add ProofMode tags if native proof exists
       if (upload.hasProofMode) {
         try {
@@ -1623,9 +1626,13 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
 
-            final nativeProof = await _withPublishDeviceAttestation(
+            final attestationResult = await _withPublishDeviceAttestation(
               storedProof,
             );
+            final nativeProof = attestationResult.proof;
+            proofUsedForTags = nativeProof;
+            publishDeviceAttestationPubkeyHex =
+                attestationResult.attestedPubkeyHex;
 
             //check C2PA metadata
             final C2paSigningService c2paSigningService = C2paSigningService();
@@ -1743,16 +1750,27 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      final reusedEvent = _loadRetryableSignedEvent(upload);
       final signWatch = Stopwatch()..start();
-      final event =
-          reusedEvent ??
-          await _authService.createAndSignEvent(
-            kind:
-                NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
-            content: content,
-            tags: tags,
-          );
+      final reusedEvent = _loadRetryableSignedEvent(upload);
+      final Event? event;
+      if (reusedEvent != null) {
+        event = reusedEvent;
+      } else {
+        final expectedPubkeyHex = publishDeviceAttestationPubkeyHex;
+        final proof = proofUsedForTags;
+        if (expectedPubkeyHex != null &&
+            proof != null &&
+            _authService.currentPublicKeyHex != expectedPubkeyHex) {
+          _clearPublishDeviceAttestationTags(tags: tags, proof: proof);
+        }
+
+        event = await _authService.createAndSignEvent(
+          kind:
+              NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
+          content: content,
+          tags: tags,
+        );
+      }
       signWatch.stop();
       logPublishPhase(
         'nostr.sign',
@@ -2045,11 +2063,11 @@ class VideoEventPublisher {
   /// authoritative: it replaces whatever the stored proof carried, so a token
   /// left behind for a different account cannot ride along. Platforms that
   /// attest during generation keep what they produced.
-  Future<NativeProofData> _withPublishDeviceAttestation(
+  Future<_PublishDeviceAttestationResult> _withPublishDeviceAttestation(
     NativeProofData proof,
   ) async {
     if (!IosDeviceAttestationService.handlesPublishTimeAttestation) {
-      return proof;
+      return _PublishDeviceAttestationResult(proof: proof);
     }
 
     final pubkeyHex = _authService?.currentPublicKeyHex;
@@ -2059,14 +2077,64 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return proof.withDeviceAttestation(null);
+      return _PublishDeviceAttestationResult(
+        proof: proof.withDeviceAttestation(null),
+      );
     }
 
-    return proof.withDeviceAttestation(
-      await _iosDeviceAttestation.attestationFor(
-        proofHash: proof.videoHash,
-        pubkeyHex: pubkeyHex,
-      ),
+    final attestation = await _iosDeviceAttestation.attestationFor(
+      proofHash: proof.videoHash,
+      pubkeyHex: pubkeyHex,
+    );
+
+    if (attestation == null) {
+      return _PublishDeviceAttestationResult(
+        proof: proof.withDeviceAttestation(null),
+      );
+    }
+
+    if (_authService?.currentPublicKeyHex != pubkeyHex) {
+      Log.warning(
+        'Signing account changed while minting device attestation - '
+        'publishing without device attestation',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return _PublishDeviceAttestationResult(
+        proof: proof.withDeviceAttestation(null),
+      );
+    }
+
+    return _PublishDeviceAttestationResult(
+      proof: proof.withDeviceAttestation(attestation),
+      attestedPubkeyHex: pubkeyHex,
+    );
+  }
+
+  void _clearPublishDeviceAttestationTags({
+    required List<List<String>> tags,
+    required NativeProofData proof,
+  }) {
+    final clearedProof = proof.withDeviceAttestation(null);
+
+    for (var i = 0; i < tags.length; i++) {
+      final tag = tags[i];
+      if (tag.isEmpty) continue;
+
+      switch (tag[0]) {
+        case 'proofmode':
+          tags[i] = ['proofmode', createProofManifestTag(clearedProof)];
+        case 'verification':
+          tags[i] = ['verification', getVerificationLevel(clearedProof)];
+      }
+    }
+
+    tags.removeWhere((tag) => tag.isNotEmpty && tag[0] == 'device_attestation');
+    Log.warning(
+      'Signing account changed before event signing - publishing without '
+      'device attestation',
+      name: 'VideoEventPublisher',
+      category: LogCategory.video,
     );
   }
 
@@ -2129,4 +2197,14 @@ class VideoEventPublisher {
       category: LogCategory.video,
     );
   }
+}
+
+class _PublishDeviceAttestationResult {
+  const _PublishDeviceAttestationResult({
+    required this.proof,
+    this.attestedPubkeyHex,
+  });
+
+  final NativeProofData proof;
+  final String? attestedPubkeyHex;
 }

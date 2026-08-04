@@ -25,6 +25,11 @@ void main() {
             '-----BEGIN PGP PUBLIC KEY BLOCK-----\ntest_public_key\n-----END PGP PUBLIC KEY BLOCK-----',
         deviceAttestation: 'attestation_token_xyz',
         timestamp: '2025-01-01T10:00:06Z',
+        c2paManifestId: 'urn:c2pa:test-manifest',
+        creatorBindingAssertionLabel: 'nostr.creator',
+        cawgIdentityAssertionLabel: 'cawg.identity',
+        creatorBindingPayloadJson: '{"pubkey":"pubkey123"}',
+        verifiedIdentityBundleJson: '{"issuer":"identity.example"}',
       );
 
       testProofJson = jsonEncode(testProofData.toJson());

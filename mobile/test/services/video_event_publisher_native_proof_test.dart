@@ -492,6 +492,97 @@ void main() {
       },
     );
 
+    test(
+      'drops publish-time attestation when the account changes before signing',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        var currentPubkey = 'account-a-pubkey';
+        final attestation = _RecordingAttestationService(
+          payload: 'attestation-for-account-a',
+          onAfterAttestation: () => currentPubkey = 'account-b-pubkey',
+        );
+        publisher = VideoEventPublisher(
+          uploadManager: mockUploadManager,
+          nostrService: mockNostrService,
+          authService: mockAuthService,
+          iosDeviceAttestationService: attestation,
+        );
+        when(
+          () => mockAuthService.currentPublicKeyHex,
+        ).thenAnswer((_) => currentPubkey);
+
+        const nativeProof = NativeProofData(
+          videoHash: 'abc123def456',
+          pgpSignature: 'signature',
+          publicKey: 'public_key',
+          deviceAttestation: 'attestation-for-the-previous-account',
+        );
+
+        final upload =
+            PendingUpload.create(
+              localVideoPath: '/tmp/test.mp4',
+              nostrPubkey: 'account-a-pubkey',
+              proofManifestJson: jsonEncode(nativeProof.toJson()),
+            ).copyWith(
+              status: UploadStatus.readyToPublish,
+              videoId: 'video123',
+              cdnUrl: 'https://cdn.example.com/video.mp4',
+            );
+
+        Event? capturedEvent;
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedEvent = Event.fromJson({
+            'id': 'event996',
+            'pubkey': currentPubkey,
+            'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            'kind': 34236,
+            'tags': invocation.namedArguments[#tags],
+            'content': invocation.namedArguments[#content],
+            'sig': 'signature996',
+          });
+          return Future.value(capturedEvent);
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments[0] as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+
+        await publisher.publishDirectUpload(upload);
+
+        expect(attestation.pubkeyHex, 'account-a-pubkey');
+        expect(capturedEvent, isNotNull);
+        expect(capturedEvent!.pubkey, 'account-b-pubkey');
+        expect(
+          capturedEvent!.tags.where(
+            (tag) => tag.isNotEmpty && tag[0] == 'device_attestation',
+          ),
+          isEmpty,
+          reason: 'account B must not publish account A device material',
+        );
+        final proofTag = capturedEvent!.tags.firstWhere(
+          (tag) => tag.isNotEmpty && tag[0] == 'proofmode',
+        );
+        expect(jsonDecode(proofTag[1])['deviceAttestation'], isNull);
+      },
+    );
+
     test('publishes without attestation when App Attest fails', () async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
@@ -664,11 +755,15 @@ void main() {
 
 /// Stands in for App Attest, recording what the publisher asked it to bind.
 class _RecordingAttestationService extends IosDeviceAttestationService {
-  _RecordingAttestationService({this.payload = _boundPayload});
+  _RecordingAttestationService({
+    this.payload = _boundPayload,
+    this.onAfterAttestation,
+  });
 
   static const _boundPayload = 'attestation-for-signer-pubkey';
 
   final String? payload;
+  final VoidCallback? onAfterAttestation;
   String? proofHash;
   String? pubkeyHex;
 
@@ -679,6 +774,7 @@ class _RecordingAttestationService extends IosDeviceAttestationService {
   }) async {
     this.proofHash = proofHash;
     this.pubkeyHex = pubkeyHex;
+    onAfterAttestation?.call();
     return payload;
   }
 }
