@@ -5310,7 +5310,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get listVisibilityPublic => 'Publică';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privată · Pe acest dispozitiv';
+  String get listVisibilityPrivate => 'Privată';
 
   @override
   String get profileListsEmpty =>
@@ -5342,7 +5342,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Vom cere releelor să elimine copia publică, dar copiile deja distribuite pot rămâne online. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.';
+      'Videoclipurile sunt criptate, așa că doar tu le poți vedea. Numele listei rămâne vizibil, iar copiile deja distribuite pot rămâne.';
 
   @override
   String get listMakePublicTitle => 'Faci lista publică?';

@@ -5219,7 +5219,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get listVisibilityPublic => 'Публичен';
 
   @override
-  String get listVisibilityPrivateDevice => 'Частен · На това устройство';
+  String get listVisibilityPrivate => 'Частен';
 
   @override
   String get profileListsEmpty =>
@@ -5253,7 +5253,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Ще помолим релетата да премахнат публичното копие, но вече споделени копия може да останат онлайн. Списъкът ще остане само на това устройство и няма да се архивира.';
+      'Видеата се криптират, така че само ти да ги виждаш. Името на списъка остава видимо, а вече споделени копия може да останат.';
 
   @override
   String get listMakePublicTitle => 'Да направим ли този списък публичен?';

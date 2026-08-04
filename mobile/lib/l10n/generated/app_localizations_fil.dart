@@ -5235,7 +5235,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get listVisibilityPublic => 'Public';
 
   @override
-  String get listVisibilityPrivateDevice => 'Private · Sa device na ito';
+  String get listVisibilityPrivate => 'Pribado';
 
   @override
   String get profileListsEmpty =>
@@ -5268,7 +5268,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Hihilingin namin sa mga relay na alisin ang public na kopya, pero puwedeng manatiling online ang mga kopyang naipamahagi na. Sa device na lang na ito mananatili ang list at hindi ito naba-back up.';
+      'Ie-encrypt ang mga video kaya ikaw lang ang makakakita. Nananatiling nakikita ang pangalan ng list, at puwedeng manatili ang mga kopyang naipamahagi na.';
 
   @override
   String get listMakePublicTitle => 'Gawing public ang list na ito?';

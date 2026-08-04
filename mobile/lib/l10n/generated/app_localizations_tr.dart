@@ -5139,7 +5139,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get listVisibilityPublic => 'Herkese açık';
 
   @override
-  String get listVisibilityPrivateDevice => 'Özel · Bu cihazda';
+  String get listVisibilityPrivate => 'Özel';
 
   @override
   String get profileListsEmpty =>
@@ -5171,7 +5171,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Herkese açık kopyanın kaldırılmasını relay\'lerden isteyeceğiz ama daha önce paylaşılan kopyalar çevrimiçi kalabilir. Bu liste yalnızca bu cihazda kalacak ve yedeklenmeyecek.';
+      'Videolar şifrelenir, böylece onları yalnızca sen görürsün. Listenin adı görünür kalır ve daha önce paylaşılan kopyalar kalabilir.';
 
   @override
   String get listMakePublicTitle => 'Bu liste herkese açık yapılsın mı?';

@@ -5219,7 +5219,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get listVisibilityPublic => 'Pubblica';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privata · Su questo dispositivo';
+  String get listVisibilityPrivate => 'Privata';
 
   @override
   String get profileListsEmpty =>
@@ -5253,7 +5253,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Chiederemo ai relay di rimuovere la copia pubblica, ma le copie già condivise potrebbero restare online. Questa lista resterà solo su questo dispositivo e non finirà nel backup.';
+      'I video vengono cifrati, così puoi vederli solo tu. Il nome della lista resta visibile e le copie già condivise possono rimanere.';
 
   @override
   String get listMakePublicTitle => 'Rendere pubblica questa lista?';

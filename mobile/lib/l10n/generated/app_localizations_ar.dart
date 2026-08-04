@@ -5128,7 +5128,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get listVisibilityPublic => 'عامة';
 
   @override
-  String get listVisibilityPrivateDevice => 'خاصة · على هذا الجهاز';
+  String get listVisibilityPrivate => 'خاصة';
 
   @override
   String get profileListsEmpty =>
@@ -5160,7 +5160,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'سنطلب من المرحّلات إزالة النسخة العامة، لكن النسخ التي تمت مشاركتها قد تبقى متاحة على الإنترنت. ستبقى هذه القائمة على هذا الجهاز فقط ولن يتم نسخها احتياطيًا.';
+      'سيتم تشفير مقاطع الفيديو بحيث لا يراها سواك. اسم القائمة يبقى ظاهرًا، وقد تبقى النسخ التي شاركتها سابقًا.';
 
   @override
   String get listMakePublicTitle => 'هل تريد جعل هذه القائمة عامة؟';

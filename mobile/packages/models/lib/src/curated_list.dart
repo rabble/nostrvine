@@ -62,9 +62,9 @@ extension PlayOrderExtension on PlayOrder {
 /// - **Addressable coordinates**: `kind:pubkey:d-tag` format
 ///   (NIP-71 kinds 34235 and 34236)
 ///
-/// WARNING: Lists with [isPublic] set to `false` are stored locally only
-/// (SharedPreferences). They are ephemeral and will be lost if the user
-/// clears app data, uninstalls, or switches devices.
+/// [isPublic] decides which half of the event carries the references: a
+/// public list puts them in `e`/`a` tags, a private one seals them into the
+/// event content with NIP-44. Both are published, so both survive a device.
 class CuratedList extends Equatable {
   /// Creates a curated list.
   const CuratedList({
@@ -135,10 +135,10 @@ class CuratedList extends Equatable {
   /// When the list was last updated.
   final DateTime updatedAt;
 
-  /// Whether to publish this list to Nostr relays.
+  /// Whether this list's video references are readable by anyone.
   ///
-  /// WARNING: `isPublic = false` means local-only storage. Private lists
-  /// have no backup and are lost on app uninstall or device change.
+  /// `false` publishes them NIP-44 encrypted to the owner instead of as plain
+  /// tags. The list's existence, name and description stay public either way.
   final bool isPublic;
 
   /// The Nostr event ID when published to relays.

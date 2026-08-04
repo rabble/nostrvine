@@ -5188,7 +5188,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get listVisibilityPublic => 'Openbaar';
 
   @override
-  String get listVisibilityPrivateDevice => 'Privé · Op dit apparaat';
+  String get listVisibilityPrivate => 'Privé';
 
   @override
   String get profileListsEmpty =>
@@ -5222,7 +5222,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'We vragen de relays om de openbare kopie te verwijderen, maar al gedeelde kopieën kunnen online blijven. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.';
+      'De video\'s worden versleuteld, zodat alleen jij ze kunt zien. De naam van de lijst blijft zichtbaar en al gedeelde kopieën kunnen blijven bestaan.';
 
   @override
   String get listMakePublicTitle => 'Deze lijst openbaar maken?';

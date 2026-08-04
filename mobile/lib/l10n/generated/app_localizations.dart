@@ -8990,11 +8990,11 @@ abstract class AppLocalizations {
   /// **'Public'**
   String get listVisibilityPublic;
 
-  /// No description provided for @listVisibilityPrivateDevice.
+  /// No description provided for @listVisibilityPrivate.
   ///
   /// In en, this message translates to:
-  /// **'Private · On this device'**
-  String get listVisibilityPrivateDevice;
+  /// **'Private'**
+  String get listVisibilityPrivate;
 
   /// No description provided for @profileListsEmpty.
   ///
@@ -9053,7 +9053,7 @@ abstract class AppLocalizations {
   /// No description provided for @listMakePrivateWarning.
   ///
   /// In en, this message translates to:
-  /// **'We\'ll ask relays to remove the public copy, but copies already shared may stay online. This list will live only on this device and won\'t be backed up.'**
+  /// **'Its videos get encrypted so only you can see them. The list\'s name stays visible, and copies shared before now may persist.'**
   String get listMakePrivateWarning;
 
   /// No description provided for @listMakePublicTitle.

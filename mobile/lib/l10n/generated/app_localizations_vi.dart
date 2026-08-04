@@ -5173,7 +5173,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get listVisibilityPublic => 'Công khai';
 
   @override
-  String get listVisibilityPrivateDevice => 'Riêng tư · Trên thiết bị này';
+  String get listVisibilityPrivate => 'Riêng tư';
 
   @override
   String get profileListsEmpty =>
@@ -5207,7 +5207,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Chúng tôi sẽ yêu cầu các relay gỡ bản sao công khai, nhưng những bản đã chia sẻ vẫn có thể còn trên mạng. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.';
+      'Video sẽ được mã hóa nên chỉ mình bạn xem được. Tên danh sách vẫn hiển thị, và những bản đã chia sẻ trước đó vẫn có thể còn.';
 
   @override
   String get listMakePublicTitle => 'Chuyển danh sách này thành công khai?';

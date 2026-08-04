@@ -4903,7 +4903,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listVisibilityPublic => '公开';
 
   @override
-  String get listVisibilityPrivateDevice => '私密 · 仅本设备';
+  String get listVisibilityPrivate => '私密';
 
   @override
   String get profileListsEmpty => '还没有列表。为想放在一起的循环建一个吧。';
@@ -4934,7 +4934,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '我们会请求中继移除公开副本，但已经分享出去的副本可能仍会留存。此列表只会保存在本设备，且不会备份。';
+      '视频会被加密，只有你能看到。列表名称仍然可见，之前分享出去的副本可能仍会留存。';
 
   @override
   String get listMakePublicTitle => '将此列表设为公开？';
