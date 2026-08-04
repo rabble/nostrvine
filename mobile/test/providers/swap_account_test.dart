@@ -129,35 +129,42 @@ void main() {
     expect(_isDisposed(attempted!), isTrue);
     expect(_isDisposed(initial), isFalse);
     expect(keyStorage.restoredPrimary, same(keyStorage.primary));
+    // A sign-in that got far enough to fail already restored the target
+    // account's signer keys and auth source over the shared slots. Disposing
+    // its container does not undo that — the leaving account's own keys have
+    // to go back, or it reads the wrong signer at the next launch.
+    expect(currentAuthService.calls, equals(['archive', 'restore']));
   });
 
   testWidgets('archives the leaving account before signing the new one in', (
     tester,
   ) async {
     await pumpHost(tester);
-    final order = <String>[];
-    currentAuthService.onArchive = () => order.add('archive');
 
     await swapAccount(
       deviceScope: deviceScope,
       controller: controller,
       currentAuthService: currentAuthService,
       account: account,
-      signIn: (_, _) async => order.add('signIn'),
+      signIn: (_, _) async => currentAuthService.calls.add('signIn'),
     );
     await tester.pump();
 
     // Signing the incoming account in overwrites the shared signer slots, so
     // the leaving account's credentials must already be in its own archive.
-    expect(order, equals(['archive', 'signIn']));
+    expect(currentAuthService.calls, equals(['archive', 'signIn']));
   });
 }
 
 class _FakeAuthService implements AuthService {
-  void Function()? onArchive;
+  final calls = <String>[];
 
   @override
-  Future<void> archiveCurrentSignerInfo() async => onArchive?.call();
+  Future<void> archiveCurrentSignerInfo() async => calls.add('archive');
+
+  @override
+  Future<void> restoreSignerInfoForCurrentAccount() async =>
+      calls.add('restore');
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

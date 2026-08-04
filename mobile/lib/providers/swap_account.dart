@@ -75,6 +75,12 @@ String? _currentRouterLocation(AccountSwitchController controller) {
 /// intentionally: it only ever copies the leaving account's own credentials
 /// into its own slot.
 ///
+/// Rolling the container back is not enough on its own: a sign-in that got far
+/// enough to fail has already restored the *target* account's signer keys over
+/// the shared slots and persisted its auth source, which the live container
+/// never re-reads but the next cold launch does. The rollback restores the
+/// leaving account's keys from the archive written above.
+///
 /// [signIn] is injectable for testing; production uses [signInForAccount].
 Future<void> swapAccount({
   required DeviceScope deviceScope,
@@ -102,6 +108,10 @@ Future<void> swapAccount({
       await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
     } catch (_) {
       try {
+        // Ordered first because it cannot throw: a failing primary-key
+        // restore must not skip it and strand this account on the target's
+        // signer.
+        await currentAuthService.restoreSignerInfoForCurrentAccount();
         await keyStorage.restorePrimaryKeyContainer(previousPrimary);
       } finally {
         container.dispose();

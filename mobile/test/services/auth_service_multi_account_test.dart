@@ -812,6 +812,29 @@ void main() {
     });
   });
 
+  group('restoreSignerInfoForCurrentAccount', () {
+    setUp(() async {
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
+    });
+
+    test('puts this account back as the persisted auth source', () async {
+      // Stands in for a failed in-place switch: the target account's sign-in
+      // got as far as restoring its own signer info, which persisted its auth
+      // source. Disposing its container leaves that behind, so the next launch
+      // would look for a bunker this local-key account never had.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('authentication_source', 'bunker');
+
+      await authService.restoreSignerInfoForCurrentAccount();
+
+      expect(prefs.getString('authentication_source'), equals('automatic'));
+      verify(
+        () => mockSecureStorage.delete(key: 'bunker_info'),
+      ).called(greaterThanOrEqualTo(1));
+      expect(authService.isAuthenticated, isTrue);
+    });
+  });
+
   group('_restoreSignerInfo (via signInForAccount)', () {
     test('restores Amber info for amber auth source', () async {
       final pubkeyHex = testKeyContainer.publicKeyHex;

@@ -1589,6 +1589,28 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     await _archiveSignerInfo(pubkeyHex);
   }
 
+  /// Restores the currently signed-in account's archived signer keys back into
+  /// the shared slots, undoing a different account's restore.
+  ///
+  /// The counterpart to [archiveCurrentSignerInfo]: a failed in-place switch
+  /// has already run the target account's [_restoreSignerInfo], which
+  /// overwrote the shared signer slots and the persisted auth source. Rolling
+  /// the container back does not undo either — this account keeps working from
+  /// memory but reads the wrong signer at the next launch. Call this on the
+  /// swap's rollback path.
+  Future<void> restoreSignerInfoForCurrentAccount() async {
+    final pubkeyHex = currentPublicKeyHex;
+    if (pubkeyHex == null) {
+      Log.warning(
+        'restoreSignerInfoForCurrentAccount: no signed-in account to restore',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+    await _restoreSignerInfo(pubkeyHex, _authSource);
+  }
+
   /// Restores per-account signer keys to the active-session keys.
   ///
   /// Called before sign-in when switching to a previously used account.
