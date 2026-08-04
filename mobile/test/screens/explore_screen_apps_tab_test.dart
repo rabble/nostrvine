@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/explore_tabs/explore_tabs_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -131,6 +132,44 @@ void main() {
       expect(find.text('Integrated Apps'), findsNothing);
     },
   );
+
+  testWidgets('ExploreScreen restores the selected tab by stable name', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      testProviderScope(
+        additionalOverrides: [
+          appForegroundProvider.overrideWith(_FakeAppForeground.new),
+          videoEventServiceProvider.overrideWithValue(videoEventService),
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value(ExploreScreen.path),
+          ),
+          exploreTabVideosProvider.overrideWith((ref) => null),
+          exploreTabNameProvider.overrideWith((ref) => explorePopularTabName),
+          classicVinesAvailableProvider.overrideWith((ref) async => false),
+          forYouAvailableProvider.overrideWithValue(false),
+          allListsProvider.overrideWith(
+            (ref) async =>
+                (userLists: <UserList>[], curatedLists: <CuratedList>[]),
+          ),
+          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+          isFeatureEnabledProvider(
+            FeatureFlag.integratedApps,
+          ).overrideWithValue(false),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: ExploreScreen()),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabBar.controller?.index, 1);
+  });
 
   group('People list navigation path', () {
     test('UserListPeopleScreen exposes routable path constants', () {
