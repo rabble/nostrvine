@@ -494,13 +494,21 @@ class SecureKeyStorage {
   /// Account switching snapshots PRIMARY before probing the target account. If
   /// the probe fails after `switchToIdentity` has already committed, callers
   /// use this method to put cold-launch identity back where it was.
+  ///
+  /// The snapshot is usually the cached container itself — [getKeyContainer]
+  /// returns the cache on a hit and caches what it retrieves on a miss — so the
+  /// outgoing container is only disposed when it is a *different* object.
+  /// Disposing it unconditionally killed the very container being restored, and
+  /// `storeKey` then threw on the disposed private key.
   Future<void> restorePrimaryKeyContainer(
     SecureKeyContainer? keyContainer, {
     String? biometricPrompt,
   }) async {
     await _ensureInitialized();
 
-    _cachedKeyContainer?.dispose();
+    if (!identical(_cachedKeyContainer, keyContainer)) {
+      _cachedKeyContainer?.dispose();
+    }
     _clearCache();
 
     if (keyContainer == null) {
