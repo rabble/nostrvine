@@ -1014,18 +1014,18 @@ class RelayPool {
     final messageType = _stringAt(relay, json, 0, 'message type');
     if (messageType == null) return;
 
-    // Log message type + sub ID (full json is too verbose for non-DM events)
+    // Log message type + sub ID (full json is too verbose for data frames)
     if (json.length >= 2) {
       final msgSubId = json[1];
-      if (msgSubId == 'dm_inbox' ||
-          messageType == 'AUTH' ||
-          messageType == 'CLOSED' ||
-          messageType == 'NOTICE') {
+      if (messageType == 'CLOSED' || messageType == 'NOTICE') {
         log('📡 Raw message from ${relay.url}: $json');
-      } else {
-        // Debug-only: this branch fires for every EVENT/EOSE frame and the
-        // unconditional log cost ~6% of main-isolate CPU in on-device
-        // profiling. The assert closure never runs in profile/release.
+      } else if (messageType != 'EVENT') {
+        // EVENT is excluded: it is the highest-volume frame, and a reconnect
+        // replays a whole subscription window at once. OK and COUNT log
+        // themselves below, so this mainly covers EOSE and unknown types.
+        // Debug-only — the assert closure never runs in profile/release, and
+        // logging here unconditionally cost ~6% of main-isolate CPU in
+        // on-device profiling (#5957).
         assert(() {
           log('📡 ${relay.url}: $messageType $msgSubId');
           return true;
@@ -1127,25 +1127,12 @@ class RelayPool {
           }
         }
 
-        if (event.kind == EventKind.giftWrap) {
-          log(
-            '🎁 Kind 1059 gift wrap received! subId=$subId '
-            'from ${relay.url}, eventId=${event.id}',
-          );
-        }
-
         // add some statistics
         relay.relayStatus.noteReceive();
 
         // check block pubkey
         for (var eventFilter in eventFilters) {
           if (eventFilter.check(event)) {
-            if (event.kind == EventKind.giftWrap) {
-              log(
-                '🎁 Kind 1059 BLOCKED by eventFilter! '
-                'eventId=${event.id}',
-              );
-            }
             return;
           }
         }
@@ -1183,9 +1170,6 @@ class RelayPool {
     } else if (messageType == 'EOSE') {
       final subId = _stringAt(relay, json, 1, 'EOSE subscription id');
       if (subId == null) return;
-      if (subId == 'dm_inbox') {
-        log('📬 EOSE received for dm_inbox from ${relay.url}');
-      }
       var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
         _fireQueryCompleteIfSettled(subId, afterTerminalFrame: true);
