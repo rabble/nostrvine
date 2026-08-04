@@ -165,8 +165,9 @@ class _ProfileBadgesBlock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Loading and error both read as "no badges": most profiles have none, so
-    // reserving a placeholder row would trade one jump for a worse one.
+    // A refresh keeps the badges it already had; a first load and an outright
+    // error read as "no badges". Most profiles have none, so reserving a
+    // placeholder row would trade one jump for a worse one.
     final items =
         ref.watch(profileAcceptedBadgesProvider(userIdHex)).value ??
         const <ProfileBadgeViewData>[];
