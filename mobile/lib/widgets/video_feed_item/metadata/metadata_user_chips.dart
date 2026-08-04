@@ -225,10 +225,11 @@ class MetadataRepostedBySection extends StatelessWidget {
 /// times, and every chip resolves its own profile — rendering the full set
 /// would fire a profile fetch per reposter and lay them all out at once.
 ///
-/// Renders nothing while [pubkeys] is empty. The reposters resolve from a
-/// relay round-trip, so the section is revealed through an [AnimatedReveal]
-/// rather than snapping the sections below it down on arrival.
-class _RepostedByContent extends ConsumerWidget {
+/// Renders nothing until the first capped set of chip names has resolved,
+/// and while [pubkeys] is empty. The reposters resolve from a relay
+/// round-trip, so the section is revealed through an [AnimatedReveal] rather
+/// than snapping the sections below it down on arrival.
+class _RepostedByContent extends ConsumerStatefulWidget {
   const _RepostedByContent({required this.pubkeys, required this.video});
 
   /// Roughly three rows of chips on a phone — nine came out at five.
@@ -241,12 +242,35 @@ class _RepostedByContent extends ConsumerWidget {
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final visible = pubkeys.take(_maxVisibleReposters).toList();
-    final hiddenCount = pubkeys.length - visible.length;
+  ConsumerState<_RepostedByContent> createState() => _RepostedByContentState();
+}
+
+class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
+  /// The last capped set whose chip names had all resolved.
+  ///
+  /// Feed consolidation can pre-populate fewer reposters than the cap, so a
+  /// relay answer widens a row that is already on screen. Re-gating the whole
+  /// section on the widened set would pull it back down to nothing while the
+  /// new profiles load — a bigger jump than the one the gate exists to
+  /// prevent. The row keeps rendering what it already revealed until the
+  /// wider set has settled too.
+  List<String> _revealed = const [];
+
+  @override
+  Widget build(BuildContext context) {
+    final candidate = widget.pubkeys
+        .take(_RepostedByContent._maxVisibleReposters)
+        .toList();
+    // A derived cache, not a rebuild trigger — this build already carries the
+    // resolved names, so there is nothing to schedule.
+    if (_namesSettled(ref, candidate)) {
+      _revealed = candidate;
+    }
+    final visible = _revealed;
+    final hiddenCount = widget.pubkeys.length - visible.length;
 
     return AnimatedReveal(
-      child: pubkeys.isEmpty || !_namesSettled(ref, visible)
+      child: visible.isEmpty
           ? null
           : MetadataSection(
               label: context.l10n.metadataRepostedByLabel,
@@ -258,7 +282,10 @@ class _RepostedByContent extends ConsumerWidget {
                   for (final pubkey in visible)
                     _TappableUserChip(pubkey: pubkey),
                   if (hiddenCount > 0)
-                    _MoreRepostersChip(count: hiddenCount, video: video),
+                    _MoreRepostersChip(
+                      count: hiddenCount,
+                      video: widget.video,
+                    ),
                 ],
               ),
             ),

@@ -1257,6 +1257,68 @@ void main() {
       expect(find.text('Reposted by'), findsOneWidget);
       expect(revealingHeight, lessThan(tester.getSize(section).height));
     });
+
+    testWidgetsWithSurfaceSize(
+      'stays revealed while a late relay answer widens the row',
+      (tester) async {
+        final relayPubkeys = List<String>.generate(
+          4,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+        final relayProfiles = {
+          for (final pubkey in relayPubkeys) pubkey: Completer<UserProfile?>(),
+        };
+
+        final reposters = StreamController<VideoRepostersState>.broadcast();
+        addTearDown(reposters.close);
+        when(
+          () => mockRepostersCubit.stream,
+        ).thenAnswer((_) => reposters.stream);
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            providerOverrides: [
+              fetchUserProfileProvider(_reposterPubkey).overrideWith(
+                (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+              ),
+              for (final entry in relayProfiles.entries)
+                fetchUserProfileProvider(
+                  entry.key,
+                ).overrideWith((ref) => entry.value.future),
+            ],
+            // Feed consolidation pre-populated a single reposter, so the row
+            // is already on screen when the relay answers.
+            child: MetadataRepostedBySection(
+              video: _makeVideo(reposterPubkeys: const [_reposterPubkey]),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final section = find.byType(AnimatedReveal);
+        final revealedHeight = tester.getSize(section).height;
+        expect(revealedHeight, greaterThan(0));
+
+        reposters.add(
+          VideoRepostersState(pubkeys: [_reposterPubkey, ...relayPubkeys]),
+        );
+        await tester.pumpAndSettle();
+
+        // Re-gating on the widened set would drop the section to nothing
+        // while the four new profiles load — a bigger jump than the one the
+        // gate prevents. The already-named chip keeps its place.
+        expect(find.text('Improvising'), findsOneWidget);
+        expect(tester.getSize(section).height, revealedHeight);
+
+        for (final completer in relayProfiles.values) {
+          completer.complete(null);
+        }
+        await tester.pumpAndSettle();
+
+        expect(find.byType(UserAvatar), findsNWidgets(5));
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
