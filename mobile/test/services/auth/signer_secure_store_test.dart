@@ -263,6 +263,42 @@ void main() {
         await SignerSecureStore(null).archive(_pubkeyA);
         expect(mocks.secureStorage, isEmpty);
       });
+
+      group('when the archive write fails', () {
+        late SignerSecureStore throwingStore;
+
+        setUp(() {
+          final throwingStorage = _MockSecureStorage();
+          when(
+            () => throwingStorage.read(key: any(named: 'key')),
+          ).thenAnswer((_) async => null);
+          when(
+            () => throwingStorage.read(key: 'bunker_info'),
+          ).thenAnswer((_) async => 'bunker://a');
+          when(
+            () => throwingStorage.write(
+              key: any(named: 'key'),
+              value: any(named: 'value'),
+            ),
+          ).thenThrow(Exception('keychain unavailable'));
+          throwingStore = SignerSecureStore(throwingStorage);
+        });
+
+        test('rethrows for a caller that depends on it landing', () async {
+          // The in-place account switch does: the incoming sign-in overwrites
+          // the shared slots this copies from, so carrying on past a failed
+          // write destroys the leaving account's session for a log line.
+          await expectLater(
+            throwingStore.archive(_pubkeyA, throwOnFailure: true),
+            throwsA(isA<Exception>()),
+          );
+        });
+
+        test('still swallows it on the sign-out path', () async {
+          // Sign-out keeps the default: that session is going away either way.
+          await expectLater(throwingStore.archive(_pubkeyA), completes);
+        });
+      });
     });
 
     group('restoreActiveKeys', () {

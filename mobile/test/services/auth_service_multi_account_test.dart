@@ -810,6 +810,33 @@ void main() {
       ).called(1);
       expect(authService.isAuthenticated, isTrue);
     });
+
+    test('surfaces a failed archive write rather than swallowing it', () async {
+      // The swap depends on this having landed: it runs before anything is
+      // mutated, and carrying on past a failed write hands the incoming
+      // sign-in a shared slot it then wipes, destroying the leaving account's
+      // session for a log line. Sign-out's own archive keeps swallowing.
+      final pubkeyHex = testKeyContainer.publicKeyHex;
+      when(() => mockSecureStorage.read(key: 'keycast_session')).thenAnswer(
+        (_) async => jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'test_token',
+          'scope': 'policy:full',
+          'user_pubkey': pubkeyHex,
+        }),
+      );
+      when(
+        () => mockSecureStorage.write(
+          key: 'keycast_session_$pubkeyHex',
+          value: any(named: 'value'),
+        ),
+      ).thenThrow(Exception('keychain unavailable'));
+
+      await expectLater(
+        authService.archiveCurrentSignerInfo(),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 
   group('restoreSignerInfoForCurrentAccount', () {
