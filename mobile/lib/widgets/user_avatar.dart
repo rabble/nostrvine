@@ -5,7 +5,10 @@ import 'dart:math' as math;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/blocs/avatar_svg/avatar_svg_cubit.dart';
+import 'package:openvine/repositories/avatar_svg_repository.dart';
 import 'package:openvine/widgets/avatar_failure_cache.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -34,6 +37,7 @@ class UserAvatar extends StatelessWidget {
     this.placeholderSeed,
     this.cornerRadius,
     this.contentOverride,
+    this.avatarSvgRepository,
   });
 
   final String? imageUrl;
@@ -63,6 +67,9 @@ class UserAvatar extends StatelessWidget {
   /// For rows whose identity is known ahead of the network and whose remote
   /// picture cannot be trusted to render.
   final Widget? contentOverride;
+
+  @visibleForTesting
+  final AvatarSvgRepository? avatarSvgRepository;
 
   @visibleForTesting
   static bool isSvgImageUrl(String? url) {
@@ -147,18 +154,10 @@ class UserAvatar extends StatelessWidget {
         return _buildPlaceholder();
       }
 
-      return SvgPicture.network(
-        imageUrl!,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) => _buildPlaceholder(),
-        errorBuilder: (context, error, stackTrace) {
-          UnifiedLogger.debug(
-            'Avatar SVG failed to load URL: $imageUrl - Error: $error',
-            name: 'UserAvatar',
-          );
-          AvatarFailureCache.instance.recordFailureForError(imageUrl!, error);
-          return _buildPlaceholder();
-        },
+      return _AvatarSvgContent(
+        imageUrl: imageUrl!,
+        repository: avatarSvgRepository ?? defaultAvatarSvgRepository,
+        placeholderBuilder: _buildPlaceholder,
       );
     }
 
@@ -193,6 +192,51 @@ class UserAvatar extends StatelessWidget {
     }
 
     return _buildPlaceholder();
+  }
+}
+
+class _AvatarSvgContent extends StatelessWidget {
+  const _AvatarSvgContent({
+    required this.imageUrl,
+    required this.repository,
+    required this.placeholderBuilder,
+  });
+
+  final String imageUrl;
+  final AvatarSvgRepository repository;
+  final Widget Function() placeholderBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<AvatarSvgCubit>(
+      key: ValueKey((imageUrl, repository)),
+      create: (_) =>
+          AvatarSvgCubit(repository: repository, url: imageUrl)..load(),
+      child: BlocBuilder<AvatarSvgCubit, AvatarSvgState>(
+        builder: (context, state) {
+          final bytes = state.bytes;
+          if (state.status != AvatarSvgStatus.ready || bytes == null) {
+            return placeholderBuilder();
+          }
+
+          return SvgPicture.memory(
+            bytes,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              UnifiedLogger.debug(
+                'Avatar SVG failed to render URL: $imageUrl - Error: $error',
+                name: 'UserAvatar',
+              );
+              AvatarFailureCache.instance.recordFailureForError(
+                imageUrl,
+                error,
+              );
+              return placeholderBuilder();
+            },
+          );
+        },
+      ),
+    );
   }
 }
 

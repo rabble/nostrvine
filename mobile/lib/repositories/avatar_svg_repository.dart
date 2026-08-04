@@ -1,0 +1,190 @@
+// ABOUTME: Validates remote avatar SVG payloads before flutter_svg sees them.
+// ABOUTME: Prevents malformed profile-picture markup from surfacing as zone errors.
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:unified_logger/unified_logger.dart';
+import 'package:xml/xml.dart';
+
+abstract class AvatarSvgRepository {
+  /// Loads and validates a remote avatar SVG.
+  ///
+  /// Returns `null` for expected remote-data failures: malformed URLs,
+  /// non-200 responses, oversized responses, non-SVG payloads, malformed XML,
+  /// or network failures. Callers should render the normal avatar placeholder
+  /// for `null`.
+  Future<Uint8List?> load(String url);
+}
+
+class AvatarSvgRepositoryConfig {
+  const AvatarSvgRepositoryConfig._();
+
+  static const int maxBytes = 256 * 1024;
+  static const int maxCacheEntries = 128;
+  static const Duration requestTimeout = Duration(seconds: 5);
+  static const Duration positiveTtl = Duration(hours: 1);
+  static const Duration negativeTtl = Duration(minutes: 10);
+}
+
+typedef AvatarSvgClock = DateTime Function();
+
+class HttpAvatarSvgRepository implements AvatarSvgRepository {
+  HttpAvatarSvgRepository({
+    http.Client? client,
+    AvatarSvgClock clock = DateTime.now,
+  }) : _client = client ?? http.Client(),
+       _clock = clock;
+
+  final http.Client _client;
+  final AvatarSvgClock _clock;
+  final _cache = <String, _AvatarSvgCacheEntry>{};
+
+  @override
+  Future<Uint8List?> load(String url) async {
+    final cached = _readCache(url);
+    if (cached != null) return cached.bytes;
+
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      _writeCache(url, null, AvatarSvgRepositoryConfig.negativeTtl);
+      return null;
+    }
+
+    try {
+      final bytes = await _fetch(uri);
+      _writeCache(
+        url,
+        bytes,
+        bytes == null
+            ? AvatarSvgRepositoryConfig.negativeTtl
+            : AvatarSvgRepositoryConfig.positiveTtl,
+      );
+      return bytes;
+    } on Object catch (error) {
+      UnifiedLogger.warning(
+        'Avatar SVG validation failed for URL: $url - Error: $error',
+        name: 'AvatarSvgRepository',
+      );
+      _writeCache(url, null, AvatarSvgRepositoryConfig.negativeTtl);
+      return null;
+    }
+  }
+
+  Future<Uint8List?> _fetch(Uri uri) async {
+    final request = http.Request('GET', uri)
+      ..headers['accept'] = 'image/svg+xml,image/*;q=0.8,*/*;q=0.1';
+    final response = await _client
+        .send(request)
+        .timeout(AvatarSvgRepositoryConfig.requestTimeout);
+
+    if (response.statusCode != 200) {
+      unawaited(response.stream.drain<void>());
+      _logRejected(uri, response.headers['content-type'], 'status');
+      return null;
+    }
+
+    final bytes = await _readBounded(response.stream);
+    if (bytes == null) {
+      _logRejected(uri, response.headers['content-type'], 'oversized');
+      return null;
+    }
+
+    final contentType = response.headers['content-type'];
+    if (!_hasSvgContentType(contentType) && !_startsLikeSvg(bytes)) {
+      _logRejected(uri, contentType, 'non-svg-payload');
+      return null;
+    }
+
+    if (!_isWellFormedSvg(bytes)) {
+      _logRejected(uri, contentType, 'malformed-svg');
+      return null;
+    }
+
+    return bytes;
+  }
+
+  Future<Uint8List?> _readBounded(Stream<List<int>> stream) async {
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in stream) {
+      builder.add(chunk);
+      if (builder.length > AvatarSvgRepositoryConfig.maxBytes) {
+        return null;
+      }
+    }
+    return builder.takeBytes();
+  }
+
+  bool _hasSvgContentType(String? contentType) =>
+      contentType?.toLowerCase().trim().startsWith('image/svg+xml') ?? false;
+
+  bool _startsLikeSvg(Uint8List bytes) {
+    var index = 0;
+    if (bytes.length >= 3 &&
+        bytes[0] == 0xEF &&
+        bytes[1] == 0xBB &&
+        bytes[2] == 0xBF) {
+      index = 3;
+    }
+    while (index < bytes.length && _isAsciiWhitespace(bytes[index])) {
+      index++;
+    }
+    final remaining = utf8.decode(bytes.skip(index).take(16).toList());
+    return remaining.startsWith('<svg') || remaining.startsWith('<?xml');
+  }
+
+  bool _isAsciiWhitespace(int byte) =>
+      byte == 0x09 || byte == 0x0A || byte == 0x0D || byte == 0x20;
+
+  bool _isWellFormedSvg(Uint8List bytes) {
+    final source = utf8.decode(bytes, allowMalformed: false);
+    final document = XmlDocument.parse(source);
+    return document.rootElement.name.local.toLowerCase() == 'svg';
+  }
+
+  _AvatarSvgCacheEntry? _readCache(String url) {
+    final cached = _cache.remove(url);
+    if (cached == null) return null;
+    if (!_clock().isBefore(cached.expiresAt)) return null;
+    _cache[url] = cached;
+    return cached;
+  }
+
+  void _writeCache(String url, Uint8List? bytes, Duration ttl) {
+    if (url.isEmpty || ttl <= Duration.zero) return;
+    _cache.remove(url);
+    _cache[url] = _AvatarSvgCacheEntry(
+      bytes: bytes,
+      expiresAt: _clock().add(ttl),
+    );
+
+    while (_cache.length > AvatarSvgRepositoryConfig.maxCacheEntries) {
+      _cache.remove(_cache.keys.first);
+    }
+  }
+
+  void _logRejected(Uri uri, String? contentType, String reason) {
+    UnifiedLogger.warning(
+      'Avatar SVG rejected: url=$uri contentType=${contentType ?? '<none>'} reason=$reason',
+      name: 'AvatarSvgRepository',
+    );
+  }
+
+  @visibleForTesting
+  void clearCache() {
+    _cache.clear();
+  }
+}
+
+class _AvatarSvgCacheEntry {
+  const _AvatarSvgCacheEntry({required this.bytes, required this.expiresAt});
+
+  final Uint8List? bytes;
+  final DateTime expiresAt;
+}
+
+final AvatarSvgRepository defaultAvatarSvgRepository =
+    HttpAvatarSvgRepository();
