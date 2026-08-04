@@ -1975,7 +1975,10 @@ class UploadManager implements BackgroundAwareService {
             VideoEditorConstants.defaultThumbnailExtractTime,
       );
       extractWatch.stop();
-      logPublishPhase('upload.thumbnail.extract', extractWatch.elapsed);
+      logPublishPhase(
+        PublishPhases.uploadThumbnailExtract,
+        extractWatch.elapsed,
+      );
 
       if (thumbnailExtraction == null) {
         Log.warning(
@@ -2009,7 +2012,10 @@ class UploadManager implements BackgroundAwareService {
         thumbnailFile.readAsBytesSync(),
       );
       blurhashWatch.stop();
-      logPublishPhase('upload.thumbnail.blurhash', blurhashWatch.elapsed);
+      logPublishPhase(
+        PublishPhases.uploadThumbnailBlurhash,
+        blurhashWatch.elapsed,
+      );
 
       // Upload thumbnail to Blossom server. Divine relay publishing requires
       // a CDN thumbnail, so keep the image upload's own retry enabled here.
@@ -2027,7 +2033,7 @@ class UploadManager implements BackgroundAwareService {
       );
       putWatch.stop();
       logPublishPhase(
-        'upload.thumbnail.put',
+        PublishPhases.uploadThumbnailPut,
         putWatch.elapsed,
         bytes: thumbnailBytes,
       );
