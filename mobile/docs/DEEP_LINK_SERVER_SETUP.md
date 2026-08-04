@@ -5,38 +5,34 @@ verification files on every claimed Divine hostname. For the current mobile app
 that means `divine.video`, `www.divine.video`, and `login.divine.video` for
 Android App Links, plus the Apple-associated hosts for universal links.
 
-## Files to Create
+## Files to Serve
 
 ### 1. iOS Universal Links Verification
 
 **File**: `apple-app-site-association` (no file extension)
+**Source of truth**:
+- `divine.video` and `www.divine.video`: `divine-web/public/.well-known/apple-app-site-association`
+- `login.divine.video`: `keycast` web build `.well-known/apple-app-site-association`
 **Primary Location**: `https://divine.video/.well-known/apple-app-site-association`
 **Alternative Location**: `https://divine.video/apple-app-site-association`
-**Also serve on `www` if claimed**:
-`https://www.divine.video/.well-known/apple-app-site-association`
+**Also serve on every associated domain**:
+- `https://www.divine.video/.well-known/apple-app-site-association`
+- `https://login.divine.video/.well-known/apple-app-site-association`
 
-```json
-{
-  "applinks": {
-    "apps": [],
-    "details": [
-      {
-        "appID": "TEAM_ID.co.openvine.app",
-        "paths": [
-          "/video/*",
-          "/profile/*"
-        ]
-      }
-    ]
-  }
-}
+The mobile repo does not own or deploy this payload. It keeps mirrored AASA
+fixtures in `test/fixtures/deep_links/` only so parser and router tests fail
+when a served claim no longer has matching mobile coverage or an explicit
+allowlist reason.
+
+When intentionally refreshing the offline fixtures, compare the served payloads
+first, then update:
+
+```bash
+curl https://divine.video/.well-known/apple-app-site-association \
+  > test/fixtures/deep_links/aasa_divine_video.json
+curl https://login.divine.video/.well-known/apple-app-site-association \
+  > test/fixtures/deep_links/aasa_login_divine_video.json
 ```
-
-**How to get your TEAM_ID**:
-1. Go to https://developer.apple.com/account
-2. Click on "Membership" in the sidebar
-3. Your Team ID is shown under "Team ID"
-4. Replace `TEAM_ID` in the file above with your actual Team ID
 
 **Important**:
 - The file must be served with `Content-Type: application/json` or `application/pkcs7-mime`
@@ -112,6 +108,7 @@ https://www.divine.video/.well-known/
 
 ```text
 https://login.divine.video/.well-known/
+├── apple-app-site-association
 └── assetlinks.json
 ```
 
@@ -183,7 +180,7 @@ co.openvine.app:
 
 - **Links open in Safari instead of app**:
   - Verify the `apple-app-site-association` file is accessible
-  - Verify the `www.divine.video` AASA file too if the failing link used `www`
+  - Verify the host-specific AASA file too if the failing link used `www` or `login`
   - Check that Team ID matches your Apple Developer account
   - Reinstall the app (iOS caches the association file)
 
@@ -205,4 +202,6 @@ co.openvine.app:
 
 ## Example Files
 
-See `apple-app-site-association.template` and `assetlinks.json.template` in this directory for complete examples.
+See `divine-web/public/.well-known/apple-app-site-association` for the current
+apex/www iOS payload, the `keycast` web build for the login-domain iOS payload,
+and `assetlinks.json.template` in this directory for the Android example.
