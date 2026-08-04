@@ -11,6 +11,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Signs [container]'s fresh [AuthService] in as [account].
@@ -58,6 +59,38 @@ String? _currentRouterLocation(AccountSwitchController controller) {
       .toString();
 }
 
+/// Retargets an own-profile route from the leaving account to the account that
+/// is about to become active.
+///
+/// Most routes are safe to preserve across an account-container swap. An own
+/// profile URL is identity-bearing, though: carrying `/profile/<old npub>` into
+/// the new container renders the leaving account's profile while the rest of
+/// the app already reflects the target account.
+String? accountSwitchInitialLocation({
+  required String? currentLocation,
+  required String? currentNpub,
+  required String targetPubkeyHex,
+}) {
+  if (currentLocation == null) return null;
+
+  final uri = Uri.tryParse(currentLocation);
+  if (uri == null) return currentLocation;
+  final segments = uri.pathSegments;
+  if (segments.length < 2 || segments.first != 'profile') {
+    return currentLocation;
+  }
+
+  final routedNpub = segments[1];
+  if (routedNpub != 'me' && routedNpub != currentNpub) {
+    return currentLocation;
+  }
+
+  final targetNpub = NostrKeyUtils.encodePubKey(targetPubkeyHex);
+  final targetPath =
+      '/profile/$targetNpub${segments.length >= 3 ? '/${segments.skip(2).join('/')}' : ''}';
+  return uri.replace(path: targetPath).toString();
+}
+
 /// Switches the live app to [account] in place: builds a new container on the
 /// shared [deviceScope], signs it in, and swaps it in via [controller].
 ///
@@ -98,7 +131,12 @@ Future<void> swapAccount({
 }) async {
   await controller.runExclusive(() async {
     await currentAuthService.archiveCurrentSignerInfo();
-    final currentLocation = _currentRouterLocation(controller);
+    final current = controller.currentContainer;
+    final currentLocation = accountSwitchInitialLocation(
+      currentLocation: _currentRouterLocation(controller),
+      currentNpub: current?.read(authServiceProvider).currentNpub,
+      targetPubkeyHex: account.pubkeyHex,
+    );
     final container = buildAccountContainer(
       deviceScope,
       accountOverrides: [

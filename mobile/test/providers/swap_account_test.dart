@@ -14,6 +14,7 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 bool _isDisposed(ProviderContainer c) {
@@ -63,6 +64,56 @@ void main() {
   });
 
   tearDown(() => database.close());
+
+  group('accountSwitchInitialLocation', () {
+    const leavingHex =
+        '2222222222222222222222222222222222222222222222222222222222222222';
+    const targetHex =
+        '1111111111111111111111111111111111111111111111111111111111111111';
+    final leavingNpub = NostrKeyUtils.encodePubKey(leavingHex);
+    final targetNpub = NostrKeyUtils.encodePubKey(targetHex);
+
+    test('retargets the leaving account own-profile route', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$leavingNpub',
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub',
+      );
+    });
+
+    test('retargets own-profile video routes and preserves URI metadata', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$leavingNpub/7?source=notification#clip',
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub/7?source=notification#clip',
+      );
+    });
+
+    test('preserves another user profile and non-profile routes', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$targetNpub',
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub',
+      );
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/settings',
+          currentNpub: leavingNpub,
+          targetPubkeyHex: targetHex,
+        ),
+        '/settings',
+      );
+    });
+  });
 
   Future<ProviderContainer> pumpHost(WidgetTester tester) async {
     final initial = buildAccountContainer(deviceScope);
