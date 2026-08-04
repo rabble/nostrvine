@@ -59,6 +59,16 @@ void main() {
 
       // Mock auth service to return authenticated and create events
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.configuredRelayCount).thenReturn(1);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrService.configuredRelays,
+      ).thenReturn(const ['wss://relay.divine.video']);
+      when(
+        () => mockNostrService.connectedRelays,
+      ).thenReturn(const ['wss://relay.divine.video']);
+      when(() => mockNostrService.publicKey).thenReturn('');
 
       // Mock upload manager updateUploadStatus
       when(
@@ -77,6 +87,9 @@ void main() {
     });
 
     test('MUST publish native ProofMode data to Nostr tags', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
       // Create native proof data (from Guardian Project library)
       const nativeProof = NativeProofData(
         videoHash: 'abc123def456',
@@ -386,8 +399,7 @@ void main() {
         isEmpty,
         reason: 'Should not have ProofMode tags when no proof data',
       );
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     test(
       'replaces a stale attestation with one bound to the publisher',
@@ -565,6 +577,88 @@ void main() {
         reason: 'the rest of the proof still publishes',
       );
     });
+
+    test(
+      'publishes without stale attestation when the signing pubkey is absent',
+      () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        publisher = VideoEventPublisher(
+          uploadManager: mockUploadManager,
+          nostrService: mockNostrService,
+          authService: mockAuthService,
+          iosDeviceAttestationService: _ThrowingAttestationService(),
+        );
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
+
+        const nativeProof = NativeProofData(
+          videoHash: 'abc123def456',
+          pgpSignature: 'signature',
+          publicKey: 'public_key',
+          deviceAttestation: 'attestation-for-the-previous-account',
+        );
+
+        final upload =
+            PendingUpload.create(
+              localVideoPath: '/tmp/test.mp4',
+              nostrPubkey: 'signer-pubkey',
+              proofManifestJson: jsonEncode(nativeProof.toJson()),
+            ).copyWith(
+              status: UploadStatus.readyToPublish,
+              videoId: 'video123',
+              cdnUrl: 'https://cdn.example.com/video.mp4',
+            );
+
+        Event? capturedEvent;
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedEvent = Event.fromJson({
+            'id': 'event997',
+            'pubkey': 'signer-pubkey',
+            'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            'kind': 34236,
+            'tags': invocation.namedArguments[#tags],
+            'content': invocation.namedArguments[#content],
+            'sig': 'signature997',
+          });
+          return Future.value(capturedEvent);
+        });
+        when(
+          () => mockNostrService.publishEventAwaitOk(
+            any(),
+            timeout: any(named: 'timeout'),
+          ),
+        ).thenAnswer(
+          (invocation) async => PublishOutcome(
+            eventId: (invocation.positionalArguments[0] as Event).id,
+            acceptedBy: const ['wss://relay.divine.video'],
+            rejectedBy: const {},
+            noResponseFrom: const [],
+          ),
+        );
+
+        await publisher.publishDirectUpload(upload);
+
+        expect(capturedEvent, isNotNull, reason: 'the event still gets signed');
+        expect(
+          capturedEvent!.tags.where(
+            (tag) => tag.isNotEmpty && tag[0] == 'device_attestation',
+          ),
+          isEmpty,
+          reason: 'a stale payload must not publish without a scoped signer',
+        );
+        final proofTag = capturedEvent!.tags.firstWhere(
+          (tag) => tag.isNotEmpty && tag[0] == 'proofmode',
+        );
+        expect(jsonDecode(proofTag[1])['deviceAttestation'], isNull);
+      },
+    );
   });
 }
 
@@ -586,5 +680,15 @@ class _RecordingAttestationService extends IosDeviceAttestationService {
     this.proofHash = proofHash;
     this.pubkeyHex = pubkeyHex;
     return payload;
+  }
+}
+
+class _ThrowingAttestationService extends IosDeviceAttestationService {
+  @override
+  Future<String?> attestationFor({
+    required String proofHash,
+    required String pubkeyHex,
+  }) {
+    throw StateError('attestation service should not be called');
   }
 }

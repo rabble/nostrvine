@@ -48,6 +48,7 @@ final class AppDeviceIntegrity {
         static func attestation(_ scope: String) -> String { "AppAttestAttestationObject.\(scope)" }
         static func pendingKeyID(_ scope: String) -> String { "AppAttestPendingKeyIdentifier.\(scope)" }
         static func pendingClientDataHash(_ scope: String) -> String { "AppAttestPendingClientDataHash.\(scope)" }
+        static func pendingAttestAttempts(_ scope: String) -> String { "AppAttestPendingAttestAttempts.\(scope)" }
     }
 
     let inputString: String
@@ -66,6 +67,12 @@ final class AppDeviceIntegrity {
     private static let lock = NSLock()
     private static var rounds: [String: ProvisioningRound] = [:]
     private static var nextRoundID = 0
+
+    /// A generated-but-unattested key is retried once with its original client
+    /// data hash, per Apple's guidance. If that retry still cannot produce an
+    /// attestation, the slot is abandoned so one bad pending key cannot strand
+    /// a scope permanently.
+    private static let maxPendingAttestAttempts = 1
 
     /// How long a provisioning round may run before it is failed.
     ///
@@ -244,6 +251,13 @@ final class AppDeviceIntegrity {
             return
         }
 
+        guard pending.attestAttempts < Self.maxPendingAttestAttempts else {
+            Self.clearPendingKey(scope: keyScope)
+            generateAndAttest(completion: completion)
+            return
+        }
+
+        Self.incrementPendingAttestAttempts(scope: keyScope)
         attest(keyID: pending.keyID, clientDataHash: pending.clientDataHash) { credential, keyIsDead in
             // A resumed key Apple no longer recognises — a device restore
             // between the two calls — can never be attested. Start over
@@ -329,27 +343,37 @@ final class AppDeviceIntegrity {
 
     // A scope's pending slot is only touched inside its own provisioning round,
     // and `rounds` admits one of those per scope at a time, so these need no
-    // lock of their own. The one overlap the watchdog opens is a timed-out
-    // round whose Apple callback lands during a later round and clears the
-    // slot that round is using. That costs one rate-limited `generateKey` on
-    // the next publish and can never surface a wrong key, so it is left
-    // unguarded rather than threading round identity through every write.
-    private static func pendingKey(scope: String) -> (keyID: String, clientDataHash: Data)? {
+    // lock of their own. The watchdog can still make a pending key stale: a
+    // timed-out `attestKey` may later succeed, leaving behind a key that Apple
+    // has already attested but the app deliberately did not cache. Bounded
+    // retries below keep that stale slot from surviving forever.
+    private static func pendingKey(scope: String) -> (keyID: String, clientDataHash: Data, attestAttempts: Int)? {
         guard let keyID = defaults.string(forKey: StorageKey.pendingKeyID(scope)),
               let clientDataHash = defaults.data(forKey: StorageKey.pendingClientDataHash(scope)) else {
             return nil
         }
-        return (keyID, clientDataHash)
+        return (
+            keyID,
+            clientDataHash,
+            defaults.integer(forKey: StorageKey.pendingAttestAttempts(scope))
+        )
     }
 
     private static func storePendingKey(scope: String, keyID: String, clientDataHash: Data) {
         defaults.set(keyID, forKey: StorageKey.pendingKeyID(scope))
         defaults.set(clientDataHash, forKey: StorageKey.pendingClientDataHash(scope))
+        defaults.set(0, forKey: StorageKey.pendingAttestAttempts(scope))
+    }
+
+    private static func incrementPendingAttestAttempts(scope: String) {
+        let attemptsKey = StorageKey.pendingAttestAttempts(scope)
+        defaults.set(defaults.integer(forKey: attemptsKey) + 1, forKey: attemptsKey)
     }
 
     private static func clearPendingKey(scope: String) {
         defaults.removeObject(forKey: StorageKey.pendingKeyID(scope))
         defaults.removeObject(forKey: StorageKey.pendingClientDataHash(scope))
+        defaults.removeObject(forKey: StorageKey.pendingAttestAttempts(scope))
     }
 
     /// Ends [round] for [scope], storing [credential] and releasing everyone
@@ -357,9 +381,9 @@ final class AppDeviceIntegrity {
     ///
     /// Runs at most once per round: the real callback and the watchdog race,
     /// and the loser returns without touching the queue. A late real
-    /// credential is therefore dropped rather than stored, which costs one
-    /// rate-limited generation on the next proof but keeps the cache from
-    /// gaining a key no waiter was told about.
+    /// credential is therefore dropped rather than stored. A generated key may
+    /// remain in the pending slot for one later retry, but that retry is bounded
+    /// so a late callback cannot make a scope reuse a doomed pending key forever.
     private static func finishProvisioning(
         with credential: Credential?,
         scope: String,

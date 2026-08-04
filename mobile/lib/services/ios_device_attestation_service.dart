@@ -1,6 +1,8 @@
 // ABOUTME: Mints the iOS App Attest payload that a published video event carries
 // ABOUTME: Binds the media proof hash and the publishing pubkey into the challenge
 
+import 'dart:async';
+
 import 'package:app_device_integrity/app_device_integrity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -14,10 +16,16 @@ import 'package:unified_logger/unified_logger.dart';
 /// so generation time can neither pick the right key nor bind the challenge to
 /// the identity that ends up on the event.
 class IosDeviceAttestationService {
-  IosDeviceAttestationService({AppDeviceIntegrity? deviceIntegrity})
-    : _deviceIntegrity = deviceIntegrity ?? AppDeviceIntegrity();
+  IosDeviceAttestationService({
+    AppDeviceIntegrity? deviceIntegrity,
+    Duration attestationTimeout = _defaultAttestationTimeout,
+  }) : _deviceIntegrity = deviceIntegrity ?? AppDeviceIntegrity(),
+       _attestationTimeout = attestationTimeout;
 
   final AppDeviceIntegrity _deviceIntegrity;
+  final Duration _attestationTimeout;
+
+  static const _defaultAttestationTimeout = Duration(seconds: 10);
 
   /// Whether this platform mints its device attestation at publish time.
   ///
@@ -63,13 +71,25 @@ class IosDeviceAttestationService {
     }
 
     try {
-      return await _deviceIntegrity.getAttestationServiceSupport(
-        challengeString: challengeFor(
-          proofHash: proofHash,
-          pubkeyHex: pubkeyHex,
-        ),
-        keyScope: pubkeyHex,
-      );
+      return await _deviceIntegrity
+          .getAttestationServiceSupport(
+            challengeString: challengeFor(
+              proofHash: proofHash,
+              pubkeyHex: pubkeyHex,
+            ),
+            keyScope: pubkeyHex,
+          )
+          .timeout(
+            _attestationTimeout,
+            onTimeout: () {
+              Log.warning(
+                '🔐 Device attestation timed out, continuing without it',
+                name: 'IosDeviceAttestation',
+                category: LogCategory.system,
+              );
+              return null;
+            },
+          );
     } catch (e) {
       Log.warning(
         '🔐 Device attestation unavailable, continuing without it: $e',

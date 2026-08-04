@@ -147,6 +147,13 @@ challenge from the event alone. Because the pubkey is inside it, the payload
 cannot be lifted from one event and republished under a different pubkey
 carrying the same media: the challenge no longer matches.
 
+Legacy iOS payloads published before PR #6490 used
+`SHA-256(UTF-8("<proofHash>"))` and minted a fresh key during proof generation.
+Those payloads have no `assertionString` and are not bound to the event pubkey.
+Verifiers that need to evaluate historical events must branch on publication
+date or another release cutover signal instead of applying the publish-time
+challenge above to every existing iOS event.
+
 **Two branches.** Apple rate limits `generateKey` and `attestKey`, so the Secure
 Enclave key is provisioned on an account's first publish and `keyID` plus
 `attestationString` are replayed from cache afterwards:

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:app_device_integrity/app_device_integrity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +75,26 @@ void main() {
       );
     });
 
+    test('times out when App Attest never answers', () async {
+      service = IosDeviceAttestationService(
+        deviceIntegrity: _NeverCompletingAppDeviceIntegrity(),
+        attestationTimeout: const Duration(milliseconds: 1),
+      );
+
+      final payload = await service.attestationFor(
+        proofHash: proofHash,
+        pubkeyHex: pubkeyHex,
+      );
+
+      expect(payload, isNull);
+      expect(
+        LogCaptureService().getRecentLogs().where(
+          (log) => log.message.contains('Device attestation timed out'),
+        ),
+        isNotEmpty,
+      );
+    });
+
     test('does not attest without an account to scope the key to', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
@@ -108,4 +131,13 @@ void main() {
       );
     });
   });
+}
+
+class _NeverCompletingAppDeviceIntegrity extends AppDeviceIntegrity {
+  @override
+  Future<String?> getAttestationServiceSupport({
+    required String challengeString,
+    int? gcp,
+    String? keyScope,
+  }) => Completer<String?>().future;
 }

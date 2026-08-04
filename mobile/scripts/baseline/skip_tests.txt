@@ -52,7 +52,6 @@ test/services/nostr_key_manager_contacts_fetch_test.dart
 test/services/profile_editing_test.dart
 test/services/reactive_pagination_test.dart
 test/services/upload_manager_thumbnail_test.dart
-test/services/video_event_publisher_native_proof_test.dart
 test/services/video_event_service_deduplication_test.dart
 test/services/video_event_service_replaceable_test.dart
 test/services/video_event_service_repost_test.dart
