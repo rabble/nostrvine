@@ -208,6 +208,26 @@ void main() {
         );
       });
 
+      test('still reports a publish that threw its way out', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        when(
+          () => mockDraftService.isDraftOwnedByAnotherAccount(any()),
+        ).thenThrow(StateError('storage gone'));
+
+        await expectLater(
+          service.publishVideo(draft: _createTestDraft()),
+          throwsStateError,
+        );
+
+        // A publish that escapes by exception is the one most worth seeing in
+        // the console, and it must not land in the success distribution.
+        expect(
+          fakePerformanceMonitor.trace.attributes['outcome'],
+          equals('threw'),
+        );
+        expect(fakePerformanceMonitor.trace.stopCount, equals(1));
+      });
+
       test(
         'returns success and leaves the draft for the bloc to reclaim',
         () async {
