@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -20,6 +21,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
@@ -1149,6 +1151,100 @@ void main() {
           find.text(_l10n(tester).metadataMoreReposters(7)),
           findsOneWidget,
         );
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'the more-reposters button dismisses the sheet before navigating',
+      (tester) async {
+        final pubkeys = List<String>.generate(
+          12,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+        when(() => mockRepostersCubit.state).thenReturn(
+          VideoRepostersState(pubkeys: pubkeys, isLoading: false),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(
+              createMockSharedPreferences(),
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            for (final pubkey in pubkeys)
+              fetchUserProfileProvider(
+                pubkey,
+              ).overrideWith((ref) async => null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) => TextButton(
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider<VideoInteractionsBloc>.value(
+                            value: mockInteractionsBloc,
+                          ),
+                          BlocProvider<VideoRepostersCubit>.value(
+                            value: mockRepostersCubit,
+                          ),
+                        ],
+                        child: MetadataRepostedBySection(video: _makeVideo()),
+                      ),
+                    ),
+                    child: const Text('open sheet'),
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: '/video/:eventId/reposters',
+              name: VideoEngagementListScreen.repostersRouteName,
+              builder: (context, state) =>
+                  const Scaffold(body: Text('reposters list')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.tap(find.text('open sheet'));
+        await tester.pumpAndSettle();
+
+        final moreLabel = _l10n(tester).metadataMoreReposters(7);
+        expect(find.text('Reposted by'), findsOneWidget);
+
+        await tester.tap(find.text(moreLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text('reposters list'), findsOneWidget);
+
+        // Every other destination in this sheet hands off the same way:
+        // dismiss, then push from the root navigator. Pushing with the sheet
+        // still mounted leaves it stacked over the list, so backing out of
+        // the list drops the user onto the sheet again instead of the video.
+        router.pop();
+        await tester.pumpAndSettle();
+
+        expect(find.text('open sheet'), findsOneWidget);
+        expect(find.text('Reposted by'), findsNothing);
       },
     );
 

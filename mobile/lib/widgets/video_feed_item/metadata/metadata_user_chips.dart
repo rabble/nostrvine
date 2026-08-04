@@ -318,12 +318,23 @@ class _MoreRepostersChip extends StatelessWidget {
 
   void _openRepostersList(BuildContext context) {
     final addressableId = video.addressableId;
-    final location = GoRouter.of(context).namedLocation(
+    // Dismiss the sheet first, then navigate from the root navigator context
+    // — the same handoff every other destination in this sheet uses. Both the
+    // router lookup and the push run against the host context, which is
+    // outside the modal's widget tree.
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    final location = GoRouter.of(hostContext).namedLocation(
       VideoEngagementListScreen.repostersRouteName,
       pathParameters: {'eventId': video.id},
       queryParameters: addressableId == null ? const {} : {'a': addressableId},
     );
-    context.pushWithVideoPause<void>(location);
+    Navigator.of(context).pop();
+    // Defer to the next frame so the modal route's pop has settled in the
+    // route stack before we push the destination route.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!hostContext.mounted) return;
+      hostContext.pushWithVideoPause<void>(location);
+    });
   }
 }
 
