@@ -48,6 +48,7 @@ enum FeatureFlag {
     'Swipe left/right on the fullscreen feed to send "less/more like this" '
         'signals that personalize recommendations. Off by default until the '
         'relay and recommendation backend are ready.',
+    audience: FeatureFlagAudience.internal,
   ),
   profileMonetizationLinks(
     'Profile Monetization Links',

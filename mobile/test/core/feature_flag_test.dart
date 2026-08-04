@@ -63,6 +63,7 @@ void main() {
         FeatureFlag.publishDmRelayList.audience,
         FeatureFlagAudience.internal,
       );
+      expect(FeatureFlag.feedTuning.audience, FeatureFlagAudience.internal);
       expect(
         FeatureFlag.communityContentWarnings.audience,
         FeatureFlagAudience.internal,
@@ -77,7 +78,6 @@ void main() {
       expect(FeatureFlag.curatedLists.audience, FeatureFlagAudience.user);
       expect(FeatureFlag.blueskyPublishing.audience, FeatureFlagAudience.user);
       expect(FeatureFlag.videoReplies.audience, FeatureFlagAudience.user);
-      expect(FeatureFlag.feedTuning.audience, FeatureFlagAudience.user);
     });
   });
 }
