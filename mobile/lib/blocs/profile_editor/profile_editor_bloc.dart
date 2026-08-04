@@ -200,6 +200,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         externalNip05: state.initialExternalNip05 ?? '',
         pendingAvatarStatus: PendingAvatarStatus.idle,
         pendingPictureUrl: null,
+        pictureCleared: false,
         pendingBannerStatus: PendingBannerStatus.idle,
         pendingBannerUrl: null,
         pendingBannerColor: _parseBannerHexColor(state.persistedBanner),
@@ -330,10 +331,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
   }
 
-  void _onProfilePictureCleared(
+  Future<void> _onProfilePictureCleared(
     ProfilePictureCleared event,
     Emitter<ProfileEditorState> emit,
-  ) {
+  ) async {
     if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
       Log.info(
         'Ignoring ProfilePictureCleared received while an upload is in flight',
@@ -341,6 +342,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
       return;
     }
+    // Drop the stored staging too, or the next editor build restores the very
+    // picture the user just removed.
+    await _persistStagedProfileMedia(
+      pictureUrl: null,
+      bannerUrl: state.pendingBannerUrl,
+    );
     emit(
       state.copyWith(
         pendingAvatarStatus: PendingAvatarStatus.idle,
@@ -542,10 +549,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
   }
 
-  void _onProfileBannerUrlSet(
+  Future<void> _onProfileBannerUrlSet(
     ProfileBannerUrlSet event,
     Emitter<ProfileEditorState> emit,
-  ) {
+  ) async {
     if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
       Log.info(
         'Ignoring ProfileBannerUrlSet received while banner upload is in '
@@ -557,6 +564,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     final trimmed = event.url.trim();
     if (trimmed.isEmpty) {
+      await _persistStagedProfileMedia(
+        pictureUrl: state.pendingPictureUrl,
+        bannerUrl: null,
+      );
       emit(
         state.copyWith(
           pendingBannerUrl: null,
@@ -566,6 +577,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
+    // Mirrors the pasted-picture branch: a link the user pasted is staged the
+    // same as an upload, so it has to survive the editor being rebuilt too.
+    await _persistStagedProfileMedia(
+      pictureUrl: state.pendingPictureUrl,
+      bannerUrl: trimmed,
+    );
     emit(
       state.copyWith(
         pendingBannerUrl: trimmed,
@@ -1278,6 +1295,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pendingAvatarStatus: PendingAvatarStatus.idle,
         pendingPictureUrl: null,
         persistedPictureUrl: picture,
+        pictureCleared: false,
         pendingBannerStatus: PendingBannerStatus.idle,
         pendingBannerUrl: null,
         pendingBannerColor: _parseBannerHexColor(banner),

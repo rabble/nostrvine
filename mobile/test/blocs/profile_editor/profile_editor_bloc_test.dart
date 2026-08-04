@@ -3176,6 +3176,26 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileEditDiscarded puts a cleared avatar back',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+          pictureCleared: true,
+        ),
+        act: (bloc) => bloc.add(const ProfileEditDiscarded()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.pictureCleared, 'pictureCleared', isFalse)
+              .having(
+                (s) => s.effectivePictureUrl,
+                'effectivePictureUrl',
+                'https://cdn.example.com/old-avatar.jpg',
+              )
+              .having((s) => s.hasUnsavedChanges, 'hasUnsavedChanges', isFalse),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfileSaved with no staged change publishes the persisted picture',
         setUp: () {
           when(
@@ -3264,7 +3284,7 @@ void main() {
             picture: testPersistedUrl,
           ),
         ),
-        verify: (_) {
+        verify: (bloc) {
           final captured = verify(
             () => mockProfileRepository.enqueuePendingSave(
               captureAny(),
@@ -3273,6 +3293,9 @@ void main() {
           ).captured;
           final payload = captured[0] as PendingProfileSave;
           expect(payload.picture, isNull);
+          // The removal is spent once it is published. Left standing, it keeps
+          // vetoing every later persisted-picture seed for the session.
+          expect(bloc.state.pictureCleared, isFalse);
         },
       );
 
@@ -3628,6 +3651,47 @@ void main() {
                 isNull,
               ),
         ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureCleared drops the staged picture from the store',
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              pictureUrl: testStagedUrl,
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          addTearDown(() {
+            // Left behind, `_initialState` restores it on the next editor
+            // build and the removed avatar comes back.
+            expect(store.values[testPubkey]?.pictureUrl, isNull);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        seed: () => const ProfileEditorState(
+          persistedPictureUrl: 'https://cdn.example.com/old-avatar.jpg',
+          pendingPictureUrl: testStagedUrl,
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+        ),
+        act: (bloc) => bloc.add(const ProfilePictureCleared()),
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUrlSet persists the pasted banner link',
+        build: () {
+          final store = _FakeStagedProfileMediaStore();
+          addTearDown(() {
+            expect(store.values[testPubkey]?.bannerUrl, testStagedUrl);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) => bloc.add(const ProfileBannerUrlSet(testStagedUrl)),
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
