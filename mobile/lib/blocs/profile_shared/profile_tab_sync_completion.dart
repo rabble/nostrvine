@@ -5,7 +5,8 @@ import 'dart:async';
 
 /// Releases the refresh waiter attached to a profile tab sync event.
 ///
-/// Every profile tab sync event carries an optional `Completer<void>`, and
+/// Every profile tab sync event — the five cached tabs plus the Videos tab's
+/// `ProfileFeedRefreshRequested` — carries an optional `Completer<void>`, and
 /// `ProfileGridView` awaits those completers to hold the pull-to-refresh
 /// indicator. Call this exactly once per handled event, from a `finally`, so
 /// the waiter is released on the error path too.

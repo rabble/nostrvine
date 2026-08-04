@@ -161,6 +161,14 @@ void main() {
           event.completer?.complete();
         }
       });
+      // A MockBloc never runs a handler, so stand in for the one thing the
+      // refresh waits on: the completer the real handler fires in its finally.
+      when(() => profileFeedCubit.add(any())).thenAnswer((invocation) {
+        final event = invocation.positionalArguments.first;
+        if (event is ProfileFeedRefreshRequested) {
+          event.completer?.complete();
+        }
+      });
     });
 
     Widget buildSubject({

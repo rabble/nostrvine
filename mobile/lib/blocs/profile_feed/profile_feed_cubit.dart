@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_feed/profile_feed_enrichment_merge.dart';
 import 'package:openvine/blocs/profile_feed/profile_video_metadata_cache.dart';
 import 'package:openvine/blocs/profile_feed/profile_video_snapshot_cache.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_offset_snapshot.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -308,10 +309,23 @@ class ProfileFeedCubit extends Bloc<ProfileFeedEvent, ProfileFeedState> {
     }
   }
 
+  /// Refreshes the feed, completing
+  /// [ProfileFeedRefreshRequested.completer] once the load has settled so the
+  /// profile pull-to-refresh can release its indicator.
+  ///
+  /// Safe under `restartable()`: unlike `droppable()`, it invokes the handler
+  /// for every event and only cancels the superseded one's emitter, so a
+  /// refresh that loses the race still reaches this `finally`.
   Future<void> _onRefresh(
     ProfileFeedRefreshRequested event,
     Emitter<ProfileFeedState> emit,
-  ) => _doRefresh(emit);
+  ) async {
+    try {
+      await _doRefresh(emit);
+    } finally {
+      completeProfileTabSync(event.completer);
+    }
+  }
 
   Future<void> _onVideoUpdated(
     ProfileFeedVideoUpdated event,

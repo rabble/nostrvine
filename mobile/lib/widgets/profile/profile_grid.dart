@@ -361,15 +361,21 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       profileRefresh.complete();
     }
 
-    final profileFeedCubit = context.read<ProfileFeedCubit>();
-    profileFeedCubit.add(const ProfileFeedRefreshRequested());
-    final feedRefresh = profileFeedCubit.stream.firstWhere(
-      (state) => !state.isRefreshing && !state.isFetchingTotalCount,
-      orElse: () => profileFeedCubit.state,
+    // The Videos tab uses the same completer handshake as the other tabs, for
+    // the same reason: its terminal emit is not the end of the handler, and a
+    // refresh that changes nothing would emit a suppressed state.
+    final feedRefresh = Completer<void>();
+    context.read<ProfileFeedCubit>().add(
+      ProfileFeedRefreshRequested(completer: feedRefresh),
     );
+
     final tabRefresh = _refreshSyncedTabs();
 
-    await Future.wait([profileRefresh.future, feedRefresh, tabRefresh]);
+    await Future.wait([
+      profileRefresh.future,
+      feedRefresh.future,
+      tabRefresh,
+    ]);
   }
 
   @override
