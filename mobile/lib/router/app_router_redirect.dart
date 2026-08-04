@@ -110,6 +110,21 @@ bool _isAuthEntryLocation(String location) {
 bool _isPublicRecorderLocation(String location) =>
     location == VideoRecorderScreen.path;
 
+@visibleForTesting
+String? emptyFollowingRedirectForLocation({
+  required String location,
+  required bool hasFollowingInCache,
+}) {
+  // Only redirect to explore when coming from WelcomeScreen if user follows
+  // nobody. After that, let users navigate to home freely (they'll see a
+  // message to follow people).
+  if (!location.startsWith(WelcomeScreen.path) || hasFollowingInCache) {
+    return null;
+  }
+
+  return ExploreScreen.pathForTab('popular');
+}
+
 /// The slice of [MinorAccountReviewStatus] (plus its async loading shape)
 /// that [appRouterRedirect] actually branches on. Two emissions with an
 /// equal signature always produce the same redirect decision.
@@ -174,7 +189,11 @@ bool minorAccountReviewStatusAffectsRouting(
 /// The order of these checks is load-bearing; reordering risks the
 /// loading-screen ↔ review-screen loop (issue #5195) or feeding an
 /// un-rewritten universal-link URL into the matcher (Page Not Found).
-String? appRouterRedirect(Ref ref, GoRouterState state) {
+String? appRouterRedirect(
+  Ref ref,
+  GoRouterState state, {
+  bool? hasFollowingInCache,
+}) {
   final authService = ref.read(authServiceProvider);
   final signerCallbackRedirect = signerCallbackRedirectTarget(
     state.uri,
@@ -355,8 +374,10 @@ String? appRouterRedirect(Ref ref, GoRouterState state) {
     // On first navigation, redirect to explore if user has no following
     if (!_hasNavigated) {
       _hasNavigated = true;
-      final emptyFollowingRedirect = ref.read(
-        checkEmptyFollowingRedirectProvider(location),
+      final emptyFollowingRedirect = emptyFollowingRedirectForLocation(
+        location: location,
+        hasFollowingInCache:
+            hasFollowingInCache ?? ref.read(hasFollowingInCacheProvider),
       );
       if (emptyFollowingRedirect != null) {
         Log.info(

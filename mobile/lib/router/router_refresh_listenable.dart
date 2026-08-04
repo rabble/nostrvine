@@ -10,6 +10,8 @@ class RouterRefreshListenable implements Listenable {
 
   final Set<VoidCallback> _listeners = <VoidCallback>{};
   late final StreamSubscription<dynamic> _subscription;
+  bool _notificationScheduled = false;
+  bool _disposed = false;
 
   @override
   void addListener(VoidCallback listener) {
@@ -22,12 +24,23 @@ class RouterRefreshListenable implements Listenable {
   }
 
   void refresh() {
-    for (final listener in List<VoidCallback>.of(_listeners)) {
-      listener();
-    }
+    if (_disposed || _notificationScheduled) return;
+
+    _notificationScheduled = true;
+    scheduleMicrotask(() {
+      _notificationScheduled = false;
+      if (_disposed) return;
+
+      for (final listener in List<VoidCallback>.of(_listeners)) {
+        listener();
+      }
+    });
   }
 
   void dispose() {
+    if (_disposed) return;
+
+    _disposed = true;
     _subscription.cancel();
     _listeners.clear();
   }

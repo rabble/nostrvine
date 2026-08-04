@@ -147,6 +147,38 @@ void main() {
       });
     });
 
+    group('emptyFollowingRedirectForLocation', () {
+      test('returns popular explore for empty-following users on /welcome', () {
+        expect(
+          emptyFollowingRedirectForLocation(
+            location: WelcomeScreen.path,
+            hasFollowingInCache: false,
+          ),
+          ExploreScreen.pathForTab('popular'),
+        );
+      });
+
+      test('returns null when the user follows someone', () {
+        expect(
+          emptyFollowingRedirectForLocation(
+            location: WelcomeScreen.path,
+            hasFollowingInCache: true,
+          ),
+          isNull,
+        );
+      });
+
+      test('returns null away from /welcome', () {
+        expect(
+          emptyFollowingRedirectForLocation(
+            location: '/some-other-route',
+            hasFollowingInCache: false,
+          ),
+          isNull,
+        );
+      });
+    });
+
     group('checkEmptyFollowingRedirectProvider', () {
       test(
         'returns /explore/tab/popular for empty-following users on /welcome',
