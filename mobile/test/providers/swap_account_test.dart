@@ -3,9 +3,11 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -13,9 +15,16 @@ import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+// Override lives in riverpod's misc barrel; flutter_riverpod does not
+// re-export the type name even though it accepts List<Override>.
+import 'package:riverpod/misc.dart' show Override;
 import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockAuthService extends Mock implements AuthService {}
 
 bool _isDisposed(ProviderContainer c) {
   try {
@@ -38,9 +47,21 @@ void main() {
   late _FakeSecureKeyStorage keyStorage;
   late _FakeAuthService currentAuthService;
 
+  const leavingHex =
+      '2222222222222222222222222222222222222222222222222222222222222222';
+  const targetHex =
+      '1111111111111111111111111111111111111111111111111111111111111111';
+  // A third identity, belonging to neither account. A preserve case built on
+  // the target's own npub cannot fail: both the retarget branch and the
+  // preserve branch emit the same string.
+  const strangerHex =
+      '3333333333333333333333333333333333333333333333333333333333333333';
+  final leavingNpub = NostrKeyUtils.encodePubKey(leavingHex);
+  final targetNpub = NostrKeyUtils.encodePubKey(targetHex);
+  final strangerNpub = NostrKeyUtils.encodePubKey(strangerHex);
+
   final account = KnownAccount(
-    pubkeyHex:
-        '1111111111111111111111111111111111111111111111111111111111111111',
+    pubkeyHex: targetHex,
     authSource: AuthenticationSource.automatic,
     addedAt: DateTime(2026),
     lastUsedAt: DateTime(2026),
@@ -66,19 +87,6 @@ void main() {
   tearDown(() => database.close());
 
   group('accountSwitchInitialLocation', () {
-    const leavingHex =
-        '2222222222222222222222222222222222222222222222222222222222222222';
-    const targetHex =
-        '1111111111111111111111111111111111111111111111111111111111111111';
-    // A third identity, belonging to neither account. A preserve case built on
-    // the target's own npub cannot fail: both the retarget branch and the
-    // preserve branch emit the same string.
-    const strangerHex =
-        '3333333333333333333333333333333333333333333333333333333333333333';
-    final leavingNpub = NostrKeyUtils.encodePubKey(leavingHex);
-    final targetNpub = NostrKeyUtils.encodePubKey(targetHex);
-    final strangerNpub = NostrKeyUtils.encodePubKey(strangerHex);
-
     test('retargets the leaving account own-profile route', () {
       expect(
         accountSwitchInitialLocation(
@@ -170,17 +178,100 @@ void main() {
     });
   });
 
-  Future<ProviderContainer> pumpHost(WidgetTester tester) async {
-    final initial = buildAccountContainer(deviceScope);
+  Future<ProviderContainer> pumpHost(
+    WidgetTester tester, {
+    List<Override> accountOverrides = const [],
+    Widget Function(ProviderContainer container)? childBuilder,
+  }) async {
+    final initial = buildAccountContainer(
+      deviceScope,
+      accountOverrides: accountOverrides,
+    );
     await tester.pumpWidget(
       ContainerSwapHost(
         initialContainer: initial,
         controller: controller,
-        child: const SizedBox(),
+        child: childBuilder?.call(initial) ?? const SizedBox(),
       ),
     );
     return initial;
   }
+
+  /// Switches away from [from] and reports the location [swapAccount] seeded
+  /// into the container it built for the target account.
+  ///
+  /// The router has to be both created in the container and mounted in a
+  /// `Router` widget. `_currentRouterLocation` gates on
+  /// `container.exists(goRouterProvider)`, and `currentConfiguration` stays
+  /// `RouteMatchList.empty` until a `Router` attaches and parses the initial
+  /// location — without either, it returns null and the whole retarget path
+  /// goes inert.
+  Future<String?> seededLocationSwitchingFrom(
+    WidgetTester tester,
+    String from,
+  ) async {
+    final auth = _MockAuthService();
+    when(() => auth.currentNpub).thenReturn(leavingNpub);
+    final router = GoRouter(
+      initialLocation: from,
+      routes: [
+        GoRoute(
+          path: ProfileScreenRouter.pathWithNpub,
+          builder: (_, _) => const SizedBox(),
+        ),
+        GoRoute(
+          path: ProfileScreenRouter.pathWithIndex,
+          builder: (_, _) => const SizedBox(),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await pumpHost(
+      tester,
+      accountOverrides: [
+        goRouterProvider.overrideWithValue(router),
+        authServiceProvider.overrideWithValue(auth),
+      ],
+      childBuilder: (container) =>
+          MaterialApp.router(routerConfig: container.read(goRouterProvider)),
+    );
+
+    String? seeded;
+    await swapAccount(
+      deviceScope: deviceScope,
+      controller: controller,
+      currentAuthService: currentAuthService,
+      account: account,
+      signIn: (container, _) async {
+        seeded = container.read(routerInitialLocationProvider);
+      },
+    );
+    await tester.pump();
+    return seeded;
+  }
+
+  testWidgets('seeds the swapped-in container with the retargeted route', (
+    tester,
+  ) async {
+    expect(
+      await seededLocationSwitchingFrom(
+        tester,
+        ProfileScreenRouter.pathForNpub(leavingNpub),
+      ),
+      ProfileScreenRouter.pathForNpub(targetNpub),
+    );
+  });
+
+  testWidgets('seeds another user profile route unchanged', (tester) async {
+    expect(
+      await seededLocationSwitchingFrom(
+        tester,
+        ProfileScreenRouter.pathForNpub(strangerNpub),
+      ),
+      ProfileScreenRouter.pathForNpub(strangerNpub),
+    );
+  });
 
   testWidgets('signs in a fresh container and swaps it in', (tester) async {
     final initial = await pumpHost(tester);
