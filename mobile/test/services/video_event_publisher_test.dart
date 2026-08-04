@@ -1009,7 +1009,8 @@ void main() {
       });
 
       test(
-        'requested reusable original audio blocks on publish failure',
+        'a failed reusable original audio still publishes the video, without '
+        'claiming reuse',
         () async {
           stubSignAndPublish();
 
@@ -1018,13 +1019,30 @@ void main() {
             allowAudioReuse: true,
           );
 
-          expect(result, isFalse);
-          verifyNever(
-            () => authService.createAndSignEvent(
-              kind: NIP71VideoKinds.getPreferredAddressableKind(),
-              content: any(named: 'content'),
-              tags: any(named: 'tags'),
-            ),
+          // Extracting the rendered audio is the last step and nothing
+          // downstream needs it, so a transient failure must not discard an
+          // already-uploaded video.
+          expect(result, isTrue);
+
+          final tags =
+              verify(
+                    () => authService.createAndSignEvent(
+                      kind: NIP71VideoKinds.getPreferredAddressableKind(),
+                      content: any(named: 'content'),
+                      tags: captureAny(named: 'tags'),
+                    ),
+                  ).captured.single
+                  as List<List<String>>;
+
+          // The event must never advertise reusable audio that was never
+          // published — no allow_audio_reuse, and no audio `e` reference.
+          expect(
+            tags.where((tag) => tag.first == 'allow_audio_reuse'),
+            isEmpty,
+          );
+          expect(
+            tags.where((tag) => tag.first == 'e' && tag.last == 'audio'),
+            isEmpty,
           );
         },
       );

@@ -1615,7 +1615,6 @@ class VideoEventPublisher {
           reusableSelectedAudioEventId == null &&
           selectedAudio?.isExternalProviderSound != true &&
           upload.localVideoPath.isNotEmpty) {
-        tags.add(['allow_audio_reuse', 'true']);
         Log.info(
           'Audio reuse enabled - starting audio publishing flow',
           name: 'VideoEventPublisher',
@@ -1642,7 +1641,9 @@ class VideoEventPublisher {
           );
 
           if (audioEventId != null) {
-            // Add e tag referencing the audio event
+            // Both tags are added only once the Kind 1063 exists, so the video
+            // can never advertise reusable audio that was never published.
+            tags.add(['allow_audio_reuse', 'true']);
             // Format: ["e", <audio-event-id>, <relay-hint>, "audio"]
             tags.add(['e', audioEventId, relayHint, 'audio']);
             Log.info(
@@ -1651,20 +1652,26 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
           } else {
-            Log.error(
-              'Requested reusable audio failed to publish',
+            // Extracting and publishing the rendered audio is the last step of
+            // the flow and nothing downstream depends on it, so a transient
+            // extraction/upload failure degrades to a video-only publish. The
+            // alternative discards an already-uploaded video over a glitch the
+            // creator can neither see nor clear — the same reasoning the
+            // provider-credit bridge above already applies.
+            Log.warning(
+              'Reusable audio failed to publish; publishing the video without '
+              'it',
               name: 'VideoEventPublisher',
               category: LogCategory.video,
             );
-            return false;
           }
         } else {
-          Log.error(
-            'No user pubkey available for requested reusable audio',
+          Log.warning(
+            'No user pubkey available for requested reusable audio; '
+            'publishing the video without it',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
-          return false;
         }
       }
 

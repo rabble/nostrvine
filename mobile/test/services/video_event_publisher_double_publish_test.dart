@@ -114,95 +114,101 @@ void main() {
       );
     }
 
-    test(
-      'second call during a slow failing audio-reuse step reuses the '
-      'in-flight publish instead of signing a duplicate event',
-      () async {
-        // Gate the audio extraction so the first publish is stuck in the
-        // audio-reuse step - the window where production duplicates were
-        // minted. The extraction then fails, matching the observed
-        // signature (allow_audio_reuse=true, no audio e-tag).
-        final audioGate = Completer<void>();
-        var extractionCount = 0;
-        when(
-          () => mockAudioExtractionService.extractAudio(
-            videoPath: any(named: 'videoPath'),
-          ),
-        ).thenAnswer((_) async {
-          extractionCount++;
-          await audioGate.future;
-          throw const AudioExtractionException('extraction failed');
-        });
+    test('second call during a slow failing audio-reuse step reuses the '
+        'in-flight publish instead of signing a duplicate event', () async {
+      // Gate the audio extraction so the first publish is stuck in the
+      // audio-reuse step - the window where production duplicates were
+      // minted. The extraction then fails, which degrades to a video-only
+      // publish rather than discarding the already-uploaded video.
+      final audioGate = Completer<void>();
+      var extractionCount = 0;
+      when(
+        () => mockAudioExtractionService.extractAudio(
+          videoPath: any(named: 'videoPath'),
+        ),
+      ).thenAnswer((_) async {
+        extractionCount++;
+        await audioGate.future;
+        throw const AudioExtractionException('extraction failed');
+      });
 
-        var videoSignCount = 0;
-        final broadcastVideoEvents = <Event>[];
-        when(
-          () => mockAuthService.createAndSignEvent(
-            kind: any(named: 'kind'),
-            content: any(named: 'content'),
-            tags: any(named: 'tags'),
-          ),
-        ).thenAnswer((invocation) async {
-          videoSignCount++;
-          return Event(
-            testPubkey,
-            invocation.namedArguments[#kind] as int,
-            invocation.namedArguments[#tags] as List<List<String>>,
-            'video content',
-            createdAt: 1700000000 + videoSignCount,
-          );
-        });
-        when(
-          () => mockNostrClient.publishEventAwaitOk(
-            any(),
-            timeout: any(named: 'timeout'),
-          ),
-        ).thenAnswer((invocation) async {
-          final event = invocation.positionalArguments.first as Event;
-          broadcastVideoEvents.add(event);
-          return PublishOutcome(
-            eventId: event.id,
-            acceptedBy: const ['wss://relay.divine.video'],
-            rejectedBy: const {},
-            noResponseFrom: const [],
-          );
-        });
+      var videoSignCount = 0;
+      final broadcastVideoEvents = <Event>[];
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        videoSignCount++;
+        return Event(
+          testPubkey,
+          invocation.namedArguments[#kind] as int,
+          invocation.namedArguments[#tags] as List<List<String>>,
+          'video content',
+          createdAt: 1700000000 + videoSignCount,
+        );
+      });
+      when(
+        () => mockNostrClient.publishEventAwaitOk(
+          any(),
+          timeout: any(named: 'timeout'),
+        ),
+      ).thenAnswer((invocation) async {
+        final event = invocation.positionalArguments.first as Event;
+        broadcastVideoEvents.add(event);
+        return PublishOutcome(
+          eventId: event.id,
+          acceptedBy: const ['wss://relay.divine.video'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
+        );
+      });
 
-        final upload = createUpload(localVideoPath: '/tmp/test.mp4');
-        final firstPublish = publisher.publishDirectUpload(
-          upload,
-          allowAudioReuse: true,
-        );
-        // Let the first call run into the gated audio extraction.
-        await pumpEventQueue();
+      final upload = createUpload(localVideoPath: '/tmp/test.mp4');
+      final firstPublish = publisher.publishDirectUpload(
+        upload,
+        allowAudioReuse: true,
+      );
+      // Let the first call run into the gated audio extraction.
+      await pumpEventQueue();
 
-        final secondPublish = publisher.publishDirectUpload(
-          upload,
-          allowAudioReuse: true,
-        );
-        await pumpEventQueue();
+      final secondPublish = publisher.publishDirectUpload(
+        upload,
+        allowAudioReuse: true,
+      );
+      await pumpEventQueue();
 
-        audioGate.complete();
-        final results = await Future.wait([firstPublish, secondPublish]);
+      audioGate.complete();
+      final results = await Future.wait([firstPublish, secondPublish]);
 
-        expect(results, everyElement(isFalse));
-        expect(
-          extractionCount,
-          equals(1),
-          reason: 'the concurrent second publish must await the in-flight one',
-        );
-        expect(
-          videoSignCount,
-          equals(0),
-          reason: 'a failed audio-reuse publish must not sign a video event',
-        );
-        expect(
-          broadcastVideoEvents,
-          isEmpty,
-          reason: 'a failed audio-reuse publish must not reach the relays',
-        );
-      },
-    );
+      // The video still publishes — a failed extraction must not discard an
+      // already-uploaded video.
+      expect(results, everyElement(isTrue));
+      expect(
+        extractionCount,
+        equals(1),
+        reason: 'the concurrent second publish must await the in-flight one',
+      );
+      expect(
+        videoSignCount,
+        equals(1),
+        reason: 'two concurrent calls must yield exactly one signed event',
+      );
+      expect(
+        broadcastVideoEvents,
+        hasLength(1),
+        reason: 'the de-duplicated publish reaches the relays once',
+      );
+      expect(
+        broadcastVideoEvents.single.tags.where(
+          (tag) => tag.first == 'allow_audio_reuse',
+        ),
+        isEmpty,
+        reason: 'the event must not claim audio reuse that never published',
+      );
+    });
 
     test('publishes again for the same upload once the first publish '
         'has completed', () async {
