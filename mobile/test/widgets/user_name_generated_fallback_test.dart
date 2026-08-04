@@ -126,5 +126,44 @@ void main() {
       expect(find.text(generatedName), findsNothing);
       expect(find.text(''), findsOneWidget);
     });
+
+    testWidgets(
+      'suppresses the generated name for a resolved but nameless profile',
+      (tester) async {
+        // A kind-0 that exists but carries neither name nor display_name is a
+        // state users reach: publishing from divine-web with an empty name
+        // strips both fields. Without the opt-in this resolved-profile path
+        // falls through to the generated handle just like the unresolved one.
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final nameless = UserProfile(
+          pubkey: pubkey,
+          rawData: const {},
+          createdAt: DateTime.utc(2026),
+          eventId: 'kind0_event_id',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Center(
+                  child: UserName.fromUserProfile(
+                    nameless,
+                    neverGenerateName: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(generatedName), findsNothing);
+      },
+    );
   });
 }

@@ -64,6 +64,9 @@ class _ProfileNameAndBio extends StatelessWidget {
                   style: VineTheme.titleLargeFont(
                     color: context.vineColors.primaryText,
                   ),
+                  // A kind-0 with empty name and display_name still falls
+                  // through to the generated handle without this (#6423).
+                  neverGenerateName: isOwnProfile,
                 )
               else
                 UserName.fromPubKey(
