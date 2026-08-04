@@ -6,17 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('DivineIconName', () {
     test('assetPath returns correct path', () {
-      expect(
-        DivineIconName.arrowLeft.assetPath,
-        'assets/icon/arrow_left.svg',
-      );
+      expect(DivineIconName.arrowLeft.assetPath, 'assets/icon/arrow_left.svg');
     });
 
     test('assetPath handles mixed case file names', () {
-      expect(
-        DivineIconName.caretDown.assetPath,
-        'assets/icon/CaretDown.svg',
-      );
+      expect(DivineIconName.caretDown.assetPath, 'assets/icon/CaretDown.svg');
     });
 
     test('fileName returns the raw file name', () {
@@ -38,10 +32,7 @@ void main() {
 
     test('microphone maps to the voice-over capture glyph', () {
       expect(DivineIconName.microphone.fileName, 'microphone');
-      expect(
-        DivineIconName.microphone.assetPath,
-        'assets/icon/microphone.svg',
-      );
+      expect(DivineIconName.microphone.assetPath, 'assets/icon/microphone.svg');
     });
 
     test('flipHorizontal maps to the mirror glyph', () {
@@ -50,6 +41,13 @@ void main() {
         DivineIconName.flipHorizontal.assetPath,
         'assets/icon/flip_horizontal.svg',
       );
+    });
+
+    test('bug maps to the diagnostics glyph pair', () {
+      expect(DivineIconName.bug.fileName, 'bug');
+      expect(DivineIconName.bug.assetPath, 'assets/icon/bug.svg');
+      expect(DivineIconName.bugFill.fileName, 'bug_fill');
+      expect(DivineIconName.bugFill.assetPath, 'assets/icon/bug_fill.svg');
     });
 
     test('all enum values have non-empty file names', () {
@@ -67,9 +65,7 @@ void main() {
     testWidgets('renders an SvgPicture', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: DivineIcon(icon: DivineIconName.arrowLeft),
-          ),
+          home: Scaffold(body: DivineIcon(icon: DivineIconName.arrowLeft)),
         ),
       );
 
@@ -79,9 +75,7 @@ void main() {
     testWidgets('uses default size of 24', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: DivineIcon(icon: DivineIconName.arrowLeft),
-          ),
+          home: Scaffold(body: DivineIcon(icon: DivineIconName.arrowLeft)),
         ),
       );
 
@@ -107,9 +101,7 @@ void main() {
     testWidgets('letterboxes the artwork by default', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: DivineIcon(icon: DivineIconName.arrowLeft),
-          ),
+          home: Scaffold(body: DivineIcon(icon: DivineIconName.arrowLeft)),
         ),
       );
 
@@ -160,9 +152,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: DivineIcon(icon: DivineIconName.arrowLeft),
-          ),
+          home: Scaffold(body: DivineIcon(icon: DivineIconName.arrowLeft)),
         ),
       );
 
