@@ -46,43 +46,57 @@ class UserListPeopleScreen extends StatefulWidget {
 }
 
 class _UserListPeopleScreenState extends State<UserListPeopleScreen> {
-  String? _pendingDeleteListId;
+  /// The delete this screen is waiting on, with the owner it was issued for.
+  ///
+  /// The owner is part of the record because the bloc clears its pending
+  /// mutations wholesale whenever it tears its state down. On the mutation map
+  /// alone, an account switch or a `FeatureFlag.curatedLists` flag-off is
+  /// indistinguishable from the delete settling (#6504).
+  ///
+  /// Only [_pendingDeleteResolved] and the listener read this — [build] does
+  /// not — so it is assigned without `setState`.
+  ({String listId, String? ownerPubkey})? _pendingDelete;
 
   void _deleteList(String listId) {
-    setState(() {
-      _pendingDeleteListId = listId;
-    });
-    context.read<PeopleListsBloc>().add(
-      PeopleListsDeleteRequested(listId: listId),
-    );
+    final bloc = context.read<PeopleListsBloc>();
+    _pendingDelete = (listId: listId, ownerPubkey: bloc.state.ownerPubkey);
+    bloc.add(PeopleListsDeleteRequested(listId: listId));
   }
 
-  bool _deleteSettled(PeopleListsState previous, PeopleListsState current) {
-    final pendingListId = _pendingDeleteListId;
-    if (pendingListId == null) return false;
+  bool _pendingDeleteResolved(
+    PeopleListsState previous,
+    PeopleListsState current,
+  ) {
+    final pending = _pendingDelete;
+    if (pending == null) return false;
+    return _hasPendingDelete(previous, pending.listId) &&
+        !_hasPendingDelete(current, pending.listId);
+  }
 
-    final hadPendingDelete = previous.pendingMutations.values.any(
+  static bool _hasPendingDelete(PeopleListsState state, String listId) {
+    return state.pendingMutations.values.any(
       (mutation) =>
           mutation.kind == PeopleListsMutationKind.deleteList &&
-          mutation.listId == pendingListId,
+          mutation.listId == listId,
     );
-    final hasPendingDelete = current.pendingMutations.values.any(
-      (mutation) =>
-          mutation.kind == PeopleListsMutationKind.deleteList &&
-          mutation.listId == pendingListId,
-    );
-    return hadPendingDelete && !hasPendingDelete;
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<PeopleListsBloc, PeopleListsState>(
-      listenWhen: _deleteSettled,
+      listenWhen: _pendingDeleteResolved,
       listener: (context, state) {
+        final pending = _pendingDelete;
         final failed = state.status == PeopleListsStatus.failure;
-        setState(() {
-          _pendingDeleteListId = null;
-        });
+        _pendingDelete = null;
+        // The bloc dropped the mutation rather than resolving it: the feature
+        // was turned off, or another account took over. Nothing settled, so
+        // announce nothing and stay on the route.
+        if (pending == null ||
+            !state.enabled ||
+            state.ownerPubkey != pending.ownerPubkey) {
+          return;
+        }
         if (failed) {
           final message = context.l10n.peopleListsDeleteFailed;
           SemanticsService.sendAnnouncement(

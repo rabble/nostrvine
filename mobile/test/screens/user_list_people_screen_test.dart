@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +24,8 @@ class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
 
 const _ownerPubkey =
     'f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0';
+const _otherOwnerPubkey =
+    '0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a';
 
 UserList _buildList({
   String id = 'list-1',
@@ -59,6 +62,92 @@ Future<void> _pumpPeopleListScreen(
     ),
   );
   await tester.pump();
+}
+
+/// Pushes the list route on top of a home route, so a pop is observable as
+/// `Open list` coming back into view.
+Future<void> _pumpPushedListRoute(
+  WidgetTester tester, {
+  required PeopleListsBloc bloc,
+  required UserList list,
+}) async {
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () =>
+                  context.push('/people-lists/${Uri.encodeComponent(list.id)}'),
+              child: const Text('Open list'),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: UserListPeopleScreen.path,
+        name: UserListPeopleScreen.routeName,
+        builder: (context, state) {
+          final listId = state.pathParameters['listId'];
+          if (listId == null || listId.isEmpty) {
+            return const Scaffold(body: Center(child: Text('Invalid list')));
+          }
+          return UserListPeopleScreen(listId: listId);
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    testProviderScope(
+      child: BlocProvider<PeopleListsBloc>.value(
+        value: bloc,
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.tap(find.text('Open list'));
+  await tester.pumpAndSettle();
+}
+
+/// Collects screen-reader announcements until the test ends.
+List<String> _captureAnnouncements(WidgetTester tester) {
+  final announcements = <String>[];
+  tester.binding.defaultBinaryMessenger.setMockDecodedMessageHandler<Object?>(
+    SystemChannels.accessibility,
+    (Object? message) async {
+      if (message is Map && message['type'] == 'announce') {
+        final data = message['data'];
+        if (data is Map) announcements.add('${data['message']}');
+      }
+      return null;
+    },
+  );
+  addTearDown(
+    () => tester.binding.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(
+          SystemChannels.accessibility,
+          null,
+        ),
+  );
+  return announcements;
+}
+
+/// Opens the delete confirmation from the overflow menu and confirms it.
+Future<void> _confirmDelete(WidgetTester tester, AppLocalizations l10n) async {
+  await tester.tap(find.byTooltip(l10n.peopleListsActionsTooltip));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(l10n.listDeleteAction));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(l10n.commonDelete));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -375,60 +464,8 @@ void main() {
           ),
         );
 
-        final router = GoRouter(
-          initialLocation: '/',
-          routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => context.push(
-                      '/people-lists/${Uri.encodeComponent(list.id)}',
-                    ),
-                    child: const Text('Open list'),
-                  ),
-                ),
-              ),
-            ),
-            GoRoute(
-              path: UserListPeopleScreen.path,
-              name: UserListPeopleScreen.routeName,
-              builder: (context, state) {
-                final listId = state.pathParameters['listId'];
-                if (listId == null || listId.isEmpty) {
-                  return const Scaffold(
-                    body: Center(child: Text('Invalid list')),
-                  );
-                }
-                return UserListPeopleScreen(listId: listId);
-              },
-            ),
-          ],
-        );
-
-        await tester.pumpWidget(
-          testProviderScope(
-            child: BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: MaterialApp.router(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                routerConfig: router,
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.tap(find.text('Open list'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.byTooltip(l10n.peopleListsActionsTooltip));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.listDeleteAction));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text(l10n.commonDelete));
-        await tester.pumpAndSettle();
+        await _pumpPushedListRoute(tester, bloc: bloc, list: list);
+        await _confirmDelete(tester, l10n);
 
         verify(
           () => bloc.add(
@@ -461,6 +498,107 @@ void main() {
 
         expect(find.text('Confirm Delete List'), findsNothing);
         expect(find.text('Open list'), findsOneWidget);
+      },
+    );
+
+    // #6504: a teardown clears `pendingMutations` wholesale, which reads
+    // exactly like the delete settling. The relay still has the list, so
+    // announcing a delete and popping the route would be a lie.
+    testWidgets('a delete dropped by a flag-off neither announces nor pops', (
+      tester,
+    ) async {
+      final bloc = _MockPeopleListsBloc();
+      final list = _buildList(id: 'flag-off-list', name: 'Flag Off List');
+      final controller = StreamController<PeopleListsState>.broadcast();
+      addTearDown(controller.close);
+      whenListen(
+        bloc,
+        controller.stream,
+        initialState: PeopleListsState(
+          status: PeopleListsStatus.ready,
+          ownerPubkey: _ownerPubkey,
+          lists: [list],
+        ),
+      );
+
+      await _pumpPushedListRoute(tester, bloc: bloc, list: list);
+      await _confirmDelete(tester, l10n);
+      final announcements = _captureAnnouncements(tester);
+
+      controller
+        ..add(
+          const PeopleListsState(
+            status: PeopleListsStatus.submitting,
+            ownerPubkey: _ownerPubkey,
+            pendingMutations: {
+              'delete-1': PeopleListsMutation(
+                id: 'delete-1',
+                kind: PeopleListsMutationKind.deleteList,
+                listId: 'flag-off-list',
+              ),
+            },
+          ),
+        )
+        // What `_onEnabledChanged` emits when the curated-lists flag goes off.
+        ..add(
+          const PeopleListsState(ownerPubkey: _ownerPubkey, enabled: false),
+        );
+      await tester.pumpAndSettle();
+
+      expect(announcements, isEmpty);
+      expect(find.text(l10n.peopleListsDeleteFailed), findsNothing);
+      expect(find.text('Open list'), findsNothing);
+      expect(find.text(l10n.peopleListsListNotFoundTitle), findsOneWidget);
+    });
+
+    testWidgets(
+      'a delete dropped by an account switch neither announces nor pops',
+      (tester) async {
+        final bloc = _MockPeopleListsBloc();
+        final list = _buildList(id: 'switch-list', name: 'Switch List');
+        final controller = StreamController<PeopleListsState>.broadcast();
+        addTearDown(controller.close);
+        whenListen(
+          bloc,
+          controller.stream,
+          initialState: PeopleListsState(
+            status: PeopleListsStatus.ready,
+            ownerPubkey: _ownerPubkey,
+            lists: [list],
+          ),
+        );
+
+        await _pumpPushedListRoute(tester, bloc: bloc, list: list);
+        await _confirmDelete(tester, l10n);
+        final announcements = _captureAnnouncements(tester);
+
+        controller
+          ..add(
+            const PeopleListsState(
+              status: PeopleListsStatus.submitting,
+              ownerPubkey: _ownerPubkey,
+              pendingMutations: {
+                'delete-1': PeopleListsMutation(
+                  id: 'delete-1',
+                  kind: PeopleListsMutationKind.deleteList,
+                  listId: 'switch-list',
+                ),
+              },
+            ),
+          )
+          // What `_onOwnerChanged` emits when another account signs in.
+          ..add(
+            const PeopleListsState(
+              status: PeopleListsStatus.loading,
+              ownerPubkey: _otherOwnerPubkey,
+            ),
+          );
+        await tester.pumpAndSettle();
+
+        expect(announcements, isEmpty);
+        expect(find.text(l10n.peopleListsDeleteFailed), findsNothing);
+        expect(find.text('Open list'), findsNothing);
+        expect(find.text(l10n.peopleListsListNotFoundTitle), findsOneWidget);
       },
     );
 

@@ -42,12 +42,18 @@ typedef PeopleListsClock = DateTime Function();
 ///
 /// ## Failure recovery contract
 ///
-/// A mutation that throws transitions [PeopleListsState.status] to
-/// [PeopleListsStatus.failure] and reports the error via `addError`. The
-/// status automatically recovers to [PeopleListsStatus.ready] once all
-/// pending mutations drain without a fresh failure, so the UI does not
-/// stay stuck on `failure` when subsequent mutations succeed or the
-/// repository stream never re-emits.
+/// A mutation that throws — or comes back unsubmitted — transitions
+/// [PeopleListsState.status] to [PeopleListsStatus.failure] and reports any
+/// error via `addError`. The status automatically recovers to
+/// [PeopleListsStatus.ready] once all pending mutations drain without a fresh
+/// failure, so the UI does not stay stuck on `failure` when subsequent
+/// mutations succeed or the repository stream never re-emits.
+///
+/// A result that lands after the bloc tore down the state its mutation was
+/// issued against writes nothing at all — see [_resultStillApplies]. A rollback
+/// that does apply undoes only its own mutation rather than restoring a
+/// pre-flight snapshot, so it cannot revert a repository emission that arrived
+/// meanwhile — see [_emitRollback].
 class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
   /// Creates a new bloc instance.
   ///
@@ -86,10 +92,7 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
        _clock = clock ?? _defaultClock,
        super(PeopleListsState(ownerPubkey: initialOwnerPubkey)) {
     on<PeopleListsStarted>(_onStarted);
-    on<PeopleListsEnabledChanged>(
-      _onEnabledChanged,
-      transformer: sequential(),
-    );
+    on<PeopleListsEnabledChanged>(_onEnabledChanged, transformer: sequential());
     on<PeopleListsRepositoryChanged>(
       _onRepositoryChanged,
       transformer: sequential(),
@@ -206,9 +209,9 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       // owner stream is not seeded, so state is the only place a later flag-on
       // can learn who is signed in.
       //
-      // A mutation still in flight resumes against the snapshot it captured
-      // before this emit and puts it back — the pre-existing account-switch
-      // race, tracked in #6504.
+      // Dropping `pendingMutations` is also what stops a mutation still in
+      // flight from applying any result to state that has been torn down — see
+      // [_resultStillApplies].
       emit(PeopleListsState(ownerPubkey: state.ownerPubkey, enabled: false));
       return;
     }
@@ -377,9 +380,15 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
         imageUrl: event.imageUrl,
         initialPubkeys: event.initialPubkeys,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
+      if (!result.submitted) {
+        emit(_withoutMutation(state, mutation.id, failed: true));
+        return;
+      }
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
+      if (!_resultStillApplies(mutation, owner)) return;
       emit(_withoutMutation(state, mutation.id, failed: true));
     }
   }
@@ -397,8 +406,10 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       PeopleListsMutationKind.deleteList,
       listId: event.listId,
     );
-    final previousLists = List<UserList>.of(state.lists, growable: false);
-    final previousIndex = _copyReverseIndex(state.listIdsByPubkey);
+    final removedIndex = state.lists.indexWhere(
+      (list) => list.id == event.listId,
+    );
+    final removedList = removedIndex == -1 ? null : state.lists[removedIndex];
 
     // Optimistically remove the list and any reverse-index entries.
     final optimisticLists = state.lists
@@ -415,31 +426,24 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       ),
     );
 
+    List<UserList> undo(List<UserList> lists) =>
+        _restoreList(lists, removedList, removedIndex);
+
     try {
       final result = await _repository.deleteList(
         ownerPubkey: owner,
         listId: event.listId,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
       if (!result.submitted) {
-        emit(
-          _withoutMutation(
-            state,
-            mutation.id,
-            failed: true,
-          ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
-        );
+        _emitRollback(emit, mutation.id, undo);
         return;
       }
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(
-        _withoutMutation(
-          state,
-          mutation.id,
-          failed: true,
-        ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
-      );
+      if (!_resultStillApplies(mutation, owner)) return;
+      _emitRollback(emit, mutation.id, undo);
     }
   }
 
@@ -509,9 +513,6 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       listId: listId,
       pubkey: pubkey,
     );
-    final previousLists = List<UserList>.of(state.lists, growable: false);
-    final previousIndex = _copyReverseIndex(state.listIdsByPubkey);
-
     final optimisticLists = _applyOptimisticAdd(
       state.lists,
       listId: listId,
@@ -529,32 +530,29 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       ),
     );
 
+    List<UserList> undo(List<UserList> lists) => _applyOptimisticRemove(
+      lists,
+      listId: listId,
+      pubkey: pubkey,
+      now: _clock(),
+    );
+
     try {
       final result = await _repository.addPubkey(
         ownerPubkey: owner,
         listId: listId,
         pubkey: pubkey,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
       if (!result.submitted) {
-        emit(
-          _withoutMutation(
-            state,
-            mutation.id,
-            failed: true,
-          ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
-        );
+        _emitRollback(emit, mutation.id, undo);
         return;
       }
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(
-        _withoutMutation(
-          state,
-          mutation.id,
-          failed: true,
-        ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
-      );
+      if (!_resultStillApplies(mutation, owner)) return;
+      _emitRollback(emit, mutation.id, undo);
     }
   }
 
@@ -579,8 +577,11 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       listId: listId,
       pubkey: pubkey,
     );
-    final previousLists = List<UserList>.of(state.lists, growable: false);
-    final previousIndex = _copyReverseIndex(state.listIdsByPubkey);
+    final removedIndex = _memberIndex(
+      state.lists,
+      listId: listId,
+      pubkey: pubkey,
+    );
 
     final optimisticLists = _applyOptimisticRemove(
       state.lists,
@@ -599,38 +600,80 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
       ),
     );
 
+    List<UserList> undo(List<UserList> lists) => _restorePubkey(
+      lists,
+      listId: listId,
+      pubkey: pubkey,
+      index: removedIndex,
+      now: _clock(),
+    );
+
     try {
       final result = await _repository.removePubkey(
         ownerPubkey: owner,
         listId: listId,
         pubkey: pubkey,
       );
+      if (!_resultStillApplies(mutation, owner)) return;
       if (!result.submitted) {
-        emit(
-          _withoutMutation(
-            state,
-            mutation.id,
-            failed: true,
-          ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
-        );
+        _emitRollback(emit, mutation.id, undo);
         return;
       }
       emit(_withoutMutation(state, mutation.id, resultEventId: result.eventId));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(
-        _withoutMutation(
-          state,
-          mutation.id,
-          failed: true,
-        ).copyWith(lists: previousLists, listIdsByPubkey: previousIndex),
-      );
+      if (!_resultStillApplies(mutation, owner)) return;
+      _emitRollback(emit, mutation.id, undo);
     }
   }
 
   // --------------------------------------------------------------------------
   // Helpers
   // --------------------------------------------------------------------------
+
+  /// Whether a mutation result that arrived after an `await` may still be
+  /// written to state.
+  ///
+  /// Mutation outcomes and rollbacks are only valid for the state that issued
+  /// them. In between, the bloc may have torn that state down — an account
+  /// switch, a sign-out, or `FeatureFlag.curatedLists` going off each emit a
+  /// fresh state with an empty `pendingMutations`. Applying a result there can
+  /// write one owner's lists or mutation status onto whoever is signed in by
+  /// then (#6504).
+  ///
+  /// The mutation lookup is what actually detects a teardown; the owner check
+  /// keeps the guard honest if a future teardown ever preserves the map.
+  bool _resultStillApplies(PeopleListsMutation mutation, String owner) {
+    return state.activeOwnerPubkey == owner &&
+        state.pendingMutations.containsKey(mutation.id);
+  }
+
+  /// Emits the failure state for [mutationId] with [undo] applied to the
+  /// *current* lists.
+  ///
+  /// Rollbacks used to restore a whole `lists`/`listIdsByPubkey` snapshot
+  /// captured before the round-trip. That snapshot also loses to a repository
+  /// emission that lands mid-flight — `_onRepositoryListsChanged` keeps
+  /// `pendingMutations`, so the guard passes and the restore drops whatever
+  /// arrived meanwhile (a list synced from a relay, another device's edit).
+  ///
+  /// Undoing just this mutation's own change instead leaves everything else
+  /// alone. The repository writes its cache only after a successful publish, so
+  /// a mid-flight emission carries the pre-mutation truth and every [undo] here
+  /// is a no-op against it — which also makes the rollback order-independent.
+  void _emitRollback(
+    Emitter<PeopleListsState> emit,
+    String mutationId,
+    List<UserList> Function(List<UserList> lists) undo,
+  ) {
+    final restored = undo(state.lists);
+    emit(
+      _withoutMutation(state, mutationId, failed: true).copyWith(
+        lists: restored,
+        listIdsByPubkey: _buildReverseIndex(restored),
+      ),
+    );
+  }
 
   /// Builds a mutation record with a unique id.
   ///
@@ -702,12 +745,49 @@ class PeopleListsBloc extends Bloc<PeopleListsEvent, PeopleListsState> {
     return index;
   }
 
-  static Map<String, Set<String>> _copyReverseIndex(
-    Map<String, Set<String>> index,
+  /// Position of [pubkey] within [listId]'s members, or `-1` when absent.
+  static int _memberIndex(
+    List<UserList> lists, {
+    required String listId,
+    required String pubkey,
+  }) {
+    for (final list in lists) {
+      if (list.id == listId) return list.pubkeys.indexOf(pubkey);
+    }
+    return -1;
+  }
+
+  /// Re-inserts [list] at [index], unless it is already back.
+  static List<UserList> _restoreList(
+    List<UserList> lists,
+    UserList? list,
+    int index,
   ) {
-    return {
-      for (final entry in index.entries) entry.key: Set<String>.of(entry.value),
-    };
+    if (list == null) return lists;
+    if (lists.any((candidate) => candidate.id == list.id)) return lists;
+    final restored = List<UserList>.of(lists)
+      ..insert(index.clamp(0, lists.length), list);
+    return restored.toList(growable: false);
+  }
+
+  /// Re-inserts [pubkey] into [listId] at [index], unless it is already back.
+  static List<UserList> _restorePubkey(
+    List<UserList> lists, {
+    required String listId,
+    required String pubkey,
+    required int index,
+    required DateTime now,
+  }) {
+    if (index < 0) return lists;
+    return lists
+        .map((list) {
+          if (list.id != listId) return list;
+          if (list.pubkeys.contains(pubkey)) return list;
+          final pubkeys = List<String>.of(list.pubkeys)
+            ..insert(index.clamp(0, list.pubkeys.length), pubkey);
+          return list.copyWith(pubkeys: pubkeys, updatedAt: now);
+        })
+        .toList(growable: false);
   }
 
   static List<UserList> _applyOptimisticAdd(
