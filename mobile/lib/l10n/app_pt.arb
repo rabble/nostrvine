@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Rascunho excluído",
     "libraryDraftDuplicatedSnackbar": "Rascunho duplicado",
     "libraryDraftDuplicateFailedSnackbar": "Falha ao duplicar rascunho",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplicar",
     "libraryDraftCopyTitle": "{title} (cópia {number})",
     "@libraryDraftCopyTitle": {

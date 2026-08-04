@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Bozza eliminata",
     "libraryDraftDuplicatedSnackbar": "Bozza duplicata",
     "libraryDraftDuplicateFailedSnackbar": "Duplicazione bozza non riuscita",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplica",
     "libraryDraftCopyTitle": "{title} (copia {number})",
     "@libraryDraftCopyTitle": {

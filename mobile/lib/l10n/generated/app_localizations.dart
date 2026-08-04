@@ -11006,6 +11006,12 @@ abstract class AppLocalizations {
   /// **'Failed to duplicate draft'**
   String get libraryDraftDuplicateFailedSnackbar;
 
+  /// No description provided for @libraryDraftInProgressBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get libraryDraftInProgressBadge;
+
   /// No description provided for @libraryDraftActionPost.
   ///
   /// In en, this message translates to:

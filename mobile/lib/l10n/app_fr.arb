@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Brouillon supprimé",
     "libraryDraftDuplicatedSnackbar": "Brouillon dupliqué",
     "libraryDraftDuplicateFailedSnackbar": "Échec de la duplication du brouillon",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Dupliquer",
     "libraryDraftCopyTitle": "{title} (copie {number})",
     "@libraryDraftCopyTitle": {

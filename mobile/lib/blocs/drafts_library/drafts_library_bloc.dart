@@ -15,7 +15,7 @@ part 'drafts_library_state.dart';
 /// BLoC for managing draft video projects in the library.
 ///
 /// Loads drafts from [DraftStorageService] and handles deletion.
-/// Filters out autosave and already published drafts.
+/// Filters out empty autosaves and already published drafts.
 class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
   DraftsLibraryBloc({required DraftStorageService draftStorageService})
     : _draftStorageService = draftStorageService,
@@ -48,7 +48,8 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
     try {
       final allDrafts = await _draftStorageService.getAllDrafts();
 
-      // Filter out autosave and already published drafts, sort by newest first
+      // Filter out empty autosaves and already published drafts, sort by
+      // newest first.
       final filteredDrafts =
           allDrafts
               .where(

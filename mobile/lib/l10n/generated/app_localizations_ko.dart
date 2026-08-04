@@ -6059,6 +6059,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => '임시 저장을 복제하지 못했어요';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => '게시';
 
   @override

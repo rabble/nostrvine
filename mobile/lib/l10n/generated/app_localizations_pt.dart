@@ -6352,6 +6352,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Falha ao duplicar rascunho';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Publicar';
 
   @override

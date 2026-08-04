@@ -2489,6 +2489,7 @@
     "libraryDraftDeletedSnackbar": "下書きを削除しました",
     "libraryDraftDuplicatedSnackbar": "下書きを複製しました",
     "libraryDraftDuplicateFailedSnackbar": "下書きを複製できませんでした",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "複製",
     "libraryDraftCopyTitle": "{title}（コピー {number}）",
     "@libraryDraftCopyTitle": {

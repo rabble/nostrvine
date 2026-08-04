@@ -25,16 +25,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// (post, edit, delete) internally.
 class DraftsTab extends ConsumerWidget {
   /// Creates a drafts tab.
-  const DraftsTab({
-    required this.showRecordButton,
-    this.showAutosavedDraft = true,
-    super.key,
-  });
+  const DraftsTab({required this.showRecordButton, super.key});
 
   final bool showRecordButton;
-
-  /// Whether to include the autosaved draft in the list.
-  final bool showAutosavedDraft;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,12 +102,7 @@ class DraftsTab extends ConsumerWidget {
           DraftsLibraryDuplicateFailed(:final drafts) ||
           DraftsLibraryDraftDeleted(:final drafts) ||
           DraftsLibraryDeleteFailed(:final drafts) => () {
-            final filtered = showAutosavedDraft
-                ? drafts
-                : drafts
-                      .where((d) => d.id != VideoEditorConstants.autoSaveId)
-                      .toList();
-            if (filtered.isEmpty) {
+            if (drafts.isEmpty) {
               return EmptyLibraryState(
                 showRecordButton: showRecordButton,
                 icon: DivineIconName.pencilSimple,
@@ -123,9 +111,9 @@ class DraftsTab extends ConsumerWidget {
               );
             }
             return ListView.builder(
-              itemCount: filtered.length,
+              itemCount: drafts.length,
               itemBuilder: (context, index) {
-                final draft = filtered[index];
+                final draft = drafts[index];
                 return DraftListTile(
                   draft: draft,
                   onTap: () => _openDraft(context, ref, draft),
@@ -362,6 +350,7 @@ class DraftListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final thumbnailPath = draft.coverThumbnailPath;
+    final isAutosaveDraft = draft.id == VideoEditorConstants.autoSaveId;
 
     return ListTile(
       onTap: onTap,
@@ -406,11 +395,23 @@ class DraftListTile extends StatelessWidget {
                 size: 20,
               ),
       ),
-      title: Text(
-        draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
-        style: VineTheme.titleSmallFont(color: context.vineColors.primaryText),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              draft.title.isEmpty ? context.l10n.draftUntitled : draft.title,
+              style: VineTheme.titleSmallFont(
+                color: context.vineColors.primaryText,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isAutosaveDraft) ...[
+            const SizedBox(width: 8),
+            _DraftStatusBadge(label: context.l10n.libraryDraftInProgressBadge),
+          ],
+        ],
       ),
       subtitle: Text(
         _formatDraftSubtitle(context, draft.lastModified),
@@ -426,6 +427,32 @@ class DraftListTile extends StatelessWidget {
                 size: 28,
               ),
             ),
+    );
+  }
+}
+
+class _DraftStatusBadge extends StatelessWidget {
+  const _DraftStatusBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.vineGreen.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.45)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: Text(
+          label,
+          style: VineTheme.labelSmallFont(color: VineTheme.vineGreen),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
     );
   }
 }

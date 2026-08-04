@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Concept verwijderd",
     "libraryDraftDuplicatedSnackbar": "Concept gedupliceerd",
     "libraryDraftDuplicateFailedSnackbar": "Concept dupliceren mislukt",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Dupliceren",
     "libraryDraftCopyTitle": "{title} (kopie {number})",
     "@libraryDraftCopyTitle": {

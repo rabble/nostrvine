@@ -6371,6 +6371,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да дублираме черновата';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Публикувай';
 
   @override

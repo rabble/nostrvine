@@ -6306,6 +6306,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att duplicera utkastet';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Publicera';
 
   @override

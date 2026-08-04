@@ -3742,6 +3742,7 @@
   "libraryDraftDeleteFailedSnackbar": "Gagal memadam draf",
   "libraryDraftDuplicatedSnackbar": "Draf diduplikasi",
   "libraryDraftDuplicateFailedSnackbar": "Gagal menduplikasi draf",
+  "libraryDraftInProgressBadge": "In progress",
   "libraryDraftActionPost": "Siarkan",
   "libraryDraftActionEdit": "Sunting",
   "libraryDraftActionDuplicate": "Duplikasi",

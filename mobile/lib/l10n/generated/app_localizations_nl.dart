@@ -6341,6 +6341,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Concept dupliceren mislukt';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Plaatsen';
 
   @override

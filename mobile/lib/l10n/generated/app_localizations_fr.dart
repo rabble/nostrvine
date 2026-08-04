@@ -6391,6 +6391,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de la duplication du brouillon';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Publier';
 
   @override

@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Usunięto wersję roboczą",
     "libraryDraftDuplicatedSnackbar": "Zduplikowano wersję roboczą",
     "libraryDraftDuplicateFailedSnackbar": "Nie udało się zduplikować wersji roboczej",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplikuj",
     "libraryDraftCopyTitle": "{title} (kopia {number})",
     "@libraryDraftCopyTitle": {

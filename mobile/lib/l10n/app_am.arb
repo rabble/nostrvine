@@ -2939,6 +2939,7 @@
     "libraryDraftDeletedSnackbar": "ረቂቅ ተሰርዟል።",
     "libraryDraftDuplicatedSnackbar": "ረቂቅ ተባዝቷል።",
     "libraryDraftDuplicateFailedSnackbar": "ረቂቅን ማባዛት አልተሳካም።",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "አባዛ",
     "libraryDraftCopyTitle": "{title} (ቅጂ {number})",
     "@libraryDraftCopyTitle": {

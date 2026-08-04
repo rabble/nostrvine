@@ -1614,6 +1614,7 @@
     "libraryDraftDeletedSnackbar": "Nabura ang draft",
     "libraryDraftDuplicatedSnackbar": "Na-duplicate ang draft",
     "libraryDraftDuplicateFailedSnackbar": "Hindi na-duplicate ang draft",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "I-duplicate",
     "libraryDraftCopyTitle": "{title} (kopya {number})",
     "@libraryDraftCopyTitle": {

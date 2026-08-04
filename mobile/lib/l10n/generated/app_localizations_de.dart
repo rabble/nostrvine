@@ -6388,6 +6388,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Entwurf konnte nicht dupliziert werden';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Posten';
 
   @override

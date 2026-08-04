@@ -2702,6 +2702,7 @@
     "libraryDraftDeletedSnackbar": "Черновата е изтрита",
     "libraryDraftDuplicatedSnackbar": "Черновата е дублирана",
     "libraryDraftDuplicateFailedSnackbar": "Не успяхме да дублираме черновата",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Дублирай",
     "libraryDraftCopyTitle": "{title} (копие {number})",
     "@libraryDraftCopyTitle": {

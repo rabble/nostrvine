@@ -6363,6 +6363,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo duplicar el borrador';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Publicar';
 
   @override

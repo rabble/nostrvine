@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Ciornă ștearsă",
     "libraryDraftDuplicatedSnackbar": "Ciornă duplicată",
     "libraryDraftDuplicateFailedSnackbar": "Nu s-a putut duplica ciorna",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplică",
     "libraryDraftCopyTitle": "{title} (copie {number})",
     "@libraryDraftCopyTitle": {

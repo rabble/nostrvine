@@ -6319,6 +6319,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Không nhân bản được bản nháp';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Đăng';
 
   @override

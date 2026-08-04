@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Entwurf gelöscht",
     "libraryDraftDuplicatedSnackbar": "Entwurf dupliziert",
     "libraryDraftDuplicateFailedSnackbar": "Entwurf konnte nicht dupliziert werden",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplizieren",
     "libraryDraftCopyTitle": "{title} (Kopie {number})",
     "@libraryDraftCopyTitle": {

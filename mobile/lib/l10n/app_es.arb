@@ -2505,6 +2505,7 @@
     "libraryDraftDeletedSnackbar": "Borrador eliminado",
     "libraryDraftDuplicatedSnackbar": "Borrador duplicado",
     "libraryDraftDuplicateFailedSnackbar": "No se pudo duplicar el borrador",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplicar",
     "libraryDraftCopyTitle": "{title} (copia {number})",
     "@libraryDraftCopyTitle": {

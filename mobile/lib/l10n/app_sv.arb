@@ -2497,6 +2497,7 @@
     "libraryDraftDeletedSnackbar": "Utkast borttaget",
     "libraryDraftDuplicatedSnackbar": "Utkast duplicerat",
     "libraryDraftDuplicateFailedSnackbar": "Det gick inte att duplicera utkastet",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplicera",
     "libraryDraftCopyTitle": "{title} (kopia {number})",
     "@libraryDraftCopyTitle": {

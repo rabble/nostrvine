@@ -6367,6 +6367,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Duplicazione bozza non riuscita';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Pubblica';
 
   @override

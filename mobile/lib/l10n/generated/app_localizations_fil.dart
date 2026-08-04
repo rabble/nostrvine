@@ -6386,6 +6386,9 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-duplicate ang draft';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'I-post';
 
   @override
