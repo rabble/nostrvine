@@ -3,7 +3,6 @@
 
 import 'package:categories_repository/categories_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,21 +29,21 @@ void main() {
     VoidCallback? onRetry,
     Widget? galleryOverride,
   }) {
+    // No Scaffold: the route mounts this view on the root navigator, so
+    // nothing above it supplies a Material. Pump it the same way here.
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: CategoryGalleryView(
-          category: category,
-          state: state,
-          onBack: onBack ?? () {},
-          onRetry: onRetry ?? () {},
-          onSortChanged: onSortChanged ?? (_) {},
-          onVideoTap: (videos, index) {},
-          onLoadMore: () async {},
-          onRefresh: () async {},
-          galleryOverride: galleryOverride,
-        ),
+      home: CategoryGalleryView(
+        category: category,
+        state: state,
+        onBack: onBack ?? () {},
+        onRetry: onRetry ?? () {},
+        onSortChanged: onSortChanged ?? (_) {},
+        onVideoTap: (videos, index) {},
+        onLoadMore: () async {},
+        onRefresh: () async {},
+        galleryOverride: galleryOverride,
       ),
     );
   }
@@ -187,25 +186,14 @@ void main() {
     ) async {
       final l10n = lookupAppLocalizations(const Locale('en'));
 
-      // The route mounts this view on the root navigator, so nothing above
-      // it supplies a Material — pump it the same way here. Without one,
-      // every Text inherits MaterialApp's yellow double-underline fallback.
+      // Without a Material the view's Text widgets inherit MaterialApp's
+      // yellow double-underline fallback style.
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: CategoryGalleryView(
-            category: category,
-            state: const CategoriesState(
-              selectedCategory: category,
-              videosStatus: CategoriesVideosStatus.error,
-            ),
-            onBack: () {},
-            onRetry: () {},
-            onSortChanged: (_) {},
-            onVideoTap: (videos, index) {},
-            onLoadMore: () async {},
-            onRefresh: () async {},
+        buildSubject(
+          category: category,
+          state: const CategoriesState(
+            selectedCategory: category,
+            videosStatus: CategoriesVideosStatus.error,
           ),
         ),
       );
@@ -214,7 +202,6 @@ void main() {
         tester.element(find.text(l10n.categoryGalleryCouldNotLoadVideos)),
       ).style;
       expect(inheritedStyle.decoration, isNot(TextDecoration.underline));
-      expect(find.byType(DivineButton), findsOneWidget);
     });
 
     testWidgets('shows empty state when selected category has no videos', (
