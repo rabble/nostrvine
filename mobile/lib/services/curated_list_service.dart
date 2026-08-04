@@ -1077,13 +1077,10 @@ class CuratedListService extends ChangeNotifier {
     );
   }
 
-  /// Publish list to Nostr as NIP-51 kind 30005 event.
+  /// Publishes [list] as a NIP-51 kind 30005 event.
   ///
   /// Empty lists are published too — a freshly created public list must
   /// reach the relay immediately or it exists only on this device.
-  ///
-  /// Returns `true` when the relay accepted the event. Failures are logged.
-  /// Publishes [list] as a NIP-51 kind 30005 event.
   ///
   /// [confirmed] picks the failure semantics. Set, the publish waits for relay
   /// `OK` frames and a `false` return means no relay took the event. Unset,
