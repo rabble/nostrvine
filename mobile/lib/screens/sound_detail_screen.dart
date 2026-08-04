@@ -228,16 +228,25 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
   /// verified against their exact source video and otherwise fail closed.
   bool _canReuseSound() {
     final sound = widget.sound;
-    if (sound.isBundled) return true;
-    if (sound.externalSource case final external?) {
-      return external.license.allowsDerivatives;
+    final knownTerms = audioReuseTermsFromEvent(sound);
+    if (knownTerms == true) return true;
+    // Keep the synchronously knowable owner gate local so the button does not
+    // disappear for a frame on the creator's own sound.
+    ref.watch(currentAuthStateProvider);
+    final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
+    if (viewer != null && viewer.isNotEmpty && viewer == sound.pubkey) {
+      return true;
     }
-    // The owner exception and the auth-transition re-read now live in
-    // `audioReuseConsentProvider`, so every consumer gets the same answer.
-    // Still fail-closed while it resolves: this gates an action, and offering
-    // a button that might not be permitted is worse than showing it a beat
-    // late.
+    if (knownTerms == false) return false;
     return ref.watch(audioReuseConsentProvider(sound)).value ?? false;
+  }
+
+  /// Public reuse terms for [SoundDetailScreen.sound], or `null` while legacy
+  /// consent is still being verified.
+  bool? _reuseTerms() {
+    final sound = widget.sound;
+    return audioReuseTermsFromEvent(sound) ??
+        ref.watch(audioReuseTermsProvider(sound)).value;
   }
 
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {
@@ -284,6 +293,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
         widget.sound.isOriginalSound && widget.sourceVideo != null;
     final usageCountAsync = ref.watch(soundUsageCountProvider(soundEventId));
     final canReuseSound = _canReuseSound();
+    final reuseAllowed = _reuseTerms();
     SavedSoundsBloc? savedSoundsBloc;
     try {
       savedSoundsBloc = inherited_provider.Provider.of<SavedSoundsBloc>(
@@ -320,7 +330,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   isLoadingPreview: _isLoadingPreview,
                   onPreviewTap: _togglePreview,
                   onUseSoundTap: canReuseSound ? _onUseSound : null,
-                  reuseAllowed: canReuseSound,
+                  reuseAllowed: reuseAllowed,
                 ),
 
                 if (savedSoundsBloc != null)
@@ -412,7 +422,7 @@ class _SoundHeader extends ConsumerStatefulWidget {
   final bool isPlaying;
   final bool isLoadingPreview;
   final VoidCallback onPreviewTap;
-  final bool reuseAllowed;
+  final bool? reuseAllowed;
 
   /// Tap handler for the "Use Sound" button, or `null` when the sound may not
   /// be reused — in which case the button is hidden entirely.
@@ -535,16 +545,17 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                           color: VineTheme.onSurfaceVariant,
                         ),
                       ),
-                    Text(
-                      widget.reuseAllowed
-                          ? context.l10n.soundRemixingAllowed
-                          : context.l10n.soundCreditOnly,
-                      style: VineTheme.labelSmallFont(
-                        color: widget.reuseAllowed
-                            ? VineTheme.vineGreen
-                            : VineTheme.onSurfaceVariant,
+                    if (widget.reuseAllowed case final reuseAllowed?)
+                      Text(
+                        reuseAllowed
+                            ? context.l10n.soundRemixingAllowed
+                            : context.l10n.soundCreditOnly,
+                        style: VineTheme.labelSmallFont(
+                          color: reuseAllowed
+                              ? VineTheme.vineGreen
+                              : VineTheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
                     if (sound.publicTags.isNotEmpty)
                       Wrap(
                         spacing: 6,

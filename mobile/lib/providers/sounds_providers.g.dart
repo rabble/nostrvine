@@ -597,32 +597,107 @@ final class SoundUsageCountFamily extends $Family
   String toString() => r'soundUsageCountProvider';
 }
 
+/// Viewer-independent reuse terms for explicit and legacy audio events.
+
+@ProviderFor(audioReuseTerms)
+final audioReuseTermsProvider = AudioReuseTermsFamily._();
+
+/// Viewer-independent reuse terms for explicit and legacy audio events.
+
+final class AudioReuseTermsProvider
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
+  /// Viewer-independent reuse terms for explicit and legacy audio events.
+  AudioReuseTermsProvider._({
+    required AudioReuseTermsFamily super.from,
+    required AudioEvent super.argument,
+  }) : super(
+         retry: null,
+         name: r'audioReuseTermsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioReuseTermsHash();
+
+  @override
+  String toString() {
+    return r'audioReuseTermsProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<bool> create(Ref ref) {
+    final argument = this.argument as AudioEvent;
+    return audioReuseTerms(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is AudioReuseTermsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$audioReuseTermsHash() => r'f8dde7271c3f3bf5f45dba9a5decbafd5785a33d';
+
+/// Viewer-independent reuse terms for explicit and legacy audio events.
+
+final class AudioReuseTermsFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<bool>, AudioEvent> {
+  AudioReuseTermsFamily._()
+    : super(
+        retry: null,
+        name: r'audioReuseTermsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Viewer-independent reuse terms for explicit and legacy audio events.
+
+  AudioReuseTermsProvider call(AudioEvent sound) =>
+      AudioReuseTermsProvider._(argument: sound, from: this);
+
+  @override
+  String toString() => r'audioReuseTermsProvider';
+}
+
 /// Fail-closed reuse consent for explicit and legacy audio events.
 ///
-/// A creator always has consent for their own sound. That exception lives here
-/// rather than at each call site because the call sites had drifted: the sound
-/// detail screen applied it and the picker did not, so the same creator was
-/// told their own private sound was both usable and unusable in one session.
+/// A creator always has consent for their own sound. The shared permission
+/// provider owns that rule so call sites agree; UI may still short-circuit
+/// synchronously knowable cases to avoid one-frame action flicker.
 
 @ProviderFor(audioReuseConsent)
 final audioReuseConsentProvider = AudioReuseConsentFamily._();
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
 ///
-/// A creator always has consent for their own sound. That exception lives here
-/// rather than at each call site because the call sites had drifted: the sound
-/// detail screen applied it and the picker did not, so the same creator was
-/// told their own private sound was both usable and unusable in one session.
+/// A creator always has consent for their own sound. The shared permission
+/// provider owns that rule so call sites agree; UI may still short-circuit
+/// synchronously knowable cases to avoid one-frame action flicker.
 
 final class AudioReuseConsentProvider
     extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
     with $FutureModifier<bool>, $FutureProvider<bool> {
   /// Fail-closed reuse consent for explicit and legacy audio events.
   ///
-  /// A creator always has consent for their own sound. That exception lives here
-  /// rather than at each call site because the call sites had drifted: the sound
-  /// detail screen applied it and the picker did not, so the same creator was
-  /// told their own private sound was both usable and unusable in one session.
+  /// A creator always has consent for their own sound. The shared permission
+  /// provider owns that rule so call sites agree; UI may still short-circuit
+  /// synchronously knowable cases to avoid one-frame action flicker.
   AudioReuseConsentProvider._({
     required AudioReuseConsentFamily super.from,
     required AudioEvent super.argument,
@@ -666,14 +741,13 @@ final class AudioReuseConsentProvider
   }
 }
 
-String _$audioReuseConsentHash() => r'57bf316a48fea51478eee5cec669d4f9e53ff190';
+String _$audioReuseConsentHash() => r'71e983b97064d07c92e7fd97de594d14f4a4fb9b';
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
 ///
-/// A creator always has consent for their own sound. That exception lives here
-/// rather than at each call site because the call sites had drifted: the sound
-/// detail screen applied it and the picker did not, so the same creator was
-/// told their own private sound was both usable and unusable in one session.
+/// A creator always has consent for their own sound. The shared permission
+/// provider owns that rule so call sites agree; UI may still short-circuit
+/// synchronously knowable cases to avoid one-frame action flicker.
 
 final class AudioReuseConsentFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<bool>, AudioEvent> {
@@ -688,10 +762,9 @@ final class AudioReuseConsentFamily extends $Family
 
   /// Fail-closed reuse consent for explicit and legacy audio events.
   ///
-  /// A creator always has consent for their own sound. That exception lives here
-  /// rather than at each call site because the call sites had drifted: the sound
-  /// detail screen applied it and the picker did not, so the same creator was
-  /// told their own private sound was both usable and unusable in one session.
+  /// A creator always has consent for their own sound. The shared permission
+  /// provider owns that rule so call sites agree; UI may still short-circuit
+  /// synchronously knowable cases to avoid one-frame action flicker.
 
   AudioReuseConsentProvider call(AudioEvent sound) =>
       AudioReuseConsentProvider._(argument: sound, from: this);

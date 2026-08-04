@@ -1,6 +1,8 @@
 // ABOUTME: Tests for MetadataSoundsSection - audio info in metadata sheet.
 // ABOUTME: Tests both shared audio and original sound display modes.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -136,6 +138,7 @@ void main() {
           buildTestWidget(
             video: createVideoWithAudio(),
             audioOverride: creditedAudio,
+            viewerPubkey: testPubkey,
           ),
         );
         await tester.pumpAndSettle();
@@ -146,6 +149,52 @@ void main() {
         expect(find.text('CC BY 4.0'), findsOneWidget);
         expect(find.text('https://example.com/original'), findsOneWidget);
         expect(find.text('#loops'), findsOneWidget);
+      });
+
+      testWidgets('withholds reuse badge while legacy terms are pending', (
+        tester,
+      ) async {
+        final pendingTerms = Completer<bool>();
+        final legacyAudio = testAudio.copyWith(
+          allowsReuse: false,
+          hasExplicitReuseConsent: false,
+          sourceVideoReference: '34236:$testPubkey:source-video',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              soundByIdProvider(testAudioEventId).overrideWith((ref) async {
+                return legacyAudio;
+              }),
+              audioReuseTermsProvider(
+                legacyAudio,
+              ).overrideWith((ref) => pendingTerms.future),
+              authServiceProvider.overrideWithValue(_mockAuth()),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              home: Scaffold(
+                backgroundColor: Colors.black,
+                body: MetadataSoundsSection(video: createVideoWithAudio()),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('Cool Beat'), findsOneWidget);
+        expect(find.text('Credit only'), findsNothing);
+        expect(find.text('Remixing allowed'), findsNothing);
+
+        pendingTerms.complete(true);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Remixing allowed'), findsOneWidget);
       });
 
       testWidgets('shows Sounds label', (tester) async {

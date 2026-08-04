@@ -277,14 +277,11 @@ class _SoundListItem extends ConsumerWidget {
                 audio.creatorPubkey != audio.pubkey)
               context.l10n.soundSharedBy(publisherName),
           ].join(' · ');
-    // Null while the resolver is still deciding. Collapsing that to `false`
-    // states another creator's licensing terms before we know them — a legacy
-    // sound rendered "Credit only" for the first frames and then flipped to
-    // "Remixing allowed" once the relay answered, and stayed wrong for as long
-    // as the round-trip took. The badge is withheld until there is an answer.
-    final reuseAllowed = audio.isBundled
-        ? true
-        : ref.watch(audioReuseConsentProvider(audio)).value;
+    // Null while legacy terms are still being verified. The badge states the
+    // sound's public terms, not the current viewer's permission to reuse it.
+    final knownReuseTerms = audioReuseTermsFromEvent(audio);
+    final reuseAllowed =
+        knownReuseTerms ?? ref.watch(audioReuseTermsProvider(audio)).value;
 
     return Semantics(
       button: true,
