@@ -72,6 +72,9 @@ class _ProfileNameAndBio extends StatelessWidget {
                     color: context.vineColors.primaryText,
                   ),
                   anonymousName: displayNameHint,
+                  // Never show the signed-in user a generated handle in place
+                  // of their own name — that is the #6423 report verbatim.
+                  neverGenerateName: isOwnProfile,
                 ),
               Skeleton.keep(
                 child: _UniqueIdentifier(
