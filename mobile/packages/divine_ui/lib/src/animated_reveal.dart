@@ -25,6 +25,10 @@ import 'package:flutter/material.dart';
 /// widget receives, so wrapping an existing widget does not move or resize
 /// it. Content already present when this mounts is not animated. Honours
 /// [MediaQueryData.disableAnimations].
+///
+/// Needs a bounded-width parent: the empty state spans the full available
+/// width so only the height animates, which throws under an unbounded width
+/// (an unconstrained [Row] child, a horizontal list).
 class AnimatedReveal extends StatefulWidget {
   /// Creates an [AnimatedReveal].
   const AnimatedReveal({

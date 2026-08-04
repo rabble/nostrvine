@@ -127,8 +127,9 @@ class _CollaboratorsSectionStatusAware extends StatelessWidget {
 /// Renders the collaborators section from a [CollaboratorVisibility].
 ///
 /// Promoted to a top-level class with [visibleForTesting] so widget tests
-/// can exercise every render branch without standing up a Riverpod
-/// container, a `BlocProvider`, or a mock repository.
+/// can exercise every render branch without standing up a `BlocProvider` or
+/// a mock repository. A `ProviderScope` is still required: the chip names
+/// come from [fetchUserProfileProvider].
 @visibleForTesting
 class MetadataCollaboratorsSectionBody extends ConsumerWidget {
   const MetadataCollaboratorsSectionBody({
