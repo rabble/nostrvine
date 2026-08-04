@@ -151,8 +151,7 @@ class ProfileLikedVideosBloc
     // progress bar straight away rather than flashing the full-screen spinner.
     // An empty settled grid needs the flag too: a re-sync that stays empty
     // emits a state equal to the current one, which bloc suppresses, so
-    // without this transition the profile pull-to-refresh (it awaits the next
-    // settled state) hangs.
+    // without this transition the bar would never appear for an empty tab.
     if (state.status != ProfileLikedVideosStatus.initial &&
         !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));

@@ -76,8 +76,8 @@ class ProfileCollabVideosBloc
     Emitter<ProfileCollabVideosState> emit,
   ) async {
     // Flag the revalidation whenever a settled result is on screen — an empty
-    // one included — so a re-sync always has an observable start edge, matching
-    // the liked/reposted/saved tabs.
+    // one included — so the sticky cache-revalidation bar runs for the whole
+    // re-sync, matching the liked/reposted/saved tabs.
     if (state.status != ProfileCollabVideosStatus.initial &&
         !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));

@@ -89,9 +89,10 @@ class ProfileSavedVideosBloc
     Emitter<ProfileSavedVideosState> emit,
   ) async {
     // Flag the revalidation whenever a settled result is on screen — an empty
-    // one included. A re-sync that stays empty emits a state equal to the
-    // current one, which bloc suppresses, so without this transition the
-    // profile pull-to-refresh (it awaits the next settled state) hangs.
+    // one included — so the sticky cache-revalidation bar runs for the whole
+    // re-sync. A re-sync that stays empty emits a state equal to the current
+    // one, which bloc suppresses, so without this transition the bar would
+    // never appear for an empty tab.
     if (state.status != ProfileSavedVideosStatus.initial &&
         !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));
