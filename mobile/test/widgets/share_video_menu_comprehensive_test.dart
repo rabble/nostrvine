@@ -140,6 +140,7 @@ void main() {
       mockAuthService: mockAuthService,
       additionalOverrides: [
         profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+        profileReadRepositoryProvider.overrideWithValue(mockProfileRepository),
         bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
@@ -514,6 +515,9 @@ void main() {
         mockFollowRepository: mockFollowRepository,
         additionalOverrides: [
           profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+          profileReadRepositoryProvider.overrideWithValue(
+            mockProfileRepository,
+          ),
           bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
           videoSharingServiceProvider.overrideWith(
             (ref) => mockVideoSharingService,
