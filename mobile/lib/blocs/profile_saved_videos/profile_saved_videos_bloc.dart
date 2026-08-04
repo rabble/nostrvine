@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -45,7 +46,10 @@ class ProfileSavedVideosBloc
        super(const ProfileSavedVideosState()) {
     on<ProfileSavedVideosSyncRequested>(
       _onSyncRequested,
-      transformer: droppable(),
+      // Sequential, not droppable: a dropped event never reaches the handler,
+      // so nothing would complete its completer and pull-to-refresh would spin
+      // forever. Rapid syncs queue instead of coalescing.
+      transformer: sequential(),
     );
     on<ProfileSavedVideosLoadMoreRequested>(_onLoadMoreRequested);
   }
@@ -66,8 +70,22 @@ class ProfileSavedVideosBloc
   /// On reopen the persisted snapshot is served immediately; revalidation then
   /// re-reads the (in-memory, SharedPreferences-cached) bookmark list and only
   /// reconciles it against the shown videos — no bulk re-fetch / re-serialize.
+  ///
+  /// [ProfileSavedVideosSyncRequested.completer] fires only once all of that is
+  /// done, snapshot write included, so a refresh waiter is released exactly
+  /// when the bloc is free to take the next sync.
   Future<void> _onSyncRequested(
     ProfileSavedVideosSyncRequested event,
+    Emitter<ProfileSavedVideosState> emit,
+  ) async {
+    try {
+      await _syncAndRevalidate(emit);
+    } finally {
+      completeProfileTabSync(event.completer);
+    }
+  }
+
+  Future<void> _syncAndRevalidate(
     Emitter<ProfileSavedVideosState> emit,
   ) async {
     // Flag the revalidation whenever a settled result is on screen — an empty

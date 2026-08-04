@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -40,6 +41,41 @@ class _MockContentBlocklistRepository extends Mock
 
 class _MockBookmarkService extends Mock implements BookmarkService {}
 
+/// In-memory [CacheDao] whose writes can be parked, so a test can hold a tab
+/// BLoC in the post-emit snapshot write the way a real disk write does.
+class _GatedCacheDao implements CacheDao {
+  final Map<String, String> _store = {};
+
+  Completer<void>? writeGate;
+
+  @override
+  Future<String?> read(String key) async => _store[key];
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {
+    await writeGate?.future;
+    _store[key] = payload;
+  }
+
+  @override
+  Future<void> delete(String key) async => _store.remove(key);
+
+  @override
+  Future<void> deletePrefix(String prefix) async =>
+      _store.removeWhere((key, _) => key.startsWith(prefix));
+
+  @override
+  Future<int> totalPayloadBytes() async =>
+      _store.values.fold<int>(0, (sum, v) => sum + v.length);
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 class _MockProfileFeedCubit extends MockBloc<ProfileFeedEvent, ProfileFeedState>
     implements ProfileFeedCubit {}
 
@@ -60,13 +96,16 @@ void main() {
     late _MockProfileFeedCubit profileFeedCubit;
     late _MockMyProfileBloc myProfileBloc;
     late MockNostrClient nostrClient;
+    late _GatedCacheDao cacheDao;
 
     setUpAll(() {
       registerFallbackValue(const MyProfileLoadRequested());
       registerFallbackValue(const ProfileFeedStarted());
     });
 
-    setUp(() {
+    setUp(() async {
+      cacheDao = _GatedCacheDao();
+      await CacheSync.init(dao: cacheDao);
       likesRepository = _MockLikesRepository();
       repostsRepository = _MockRepostsRepository();
       videosRepository = _MockVideosRepository();
@@ -314,6 +353,52 @@ void main() {
         // The spinner runs until this future resolves, so a tab that reports
         // no state change leaves the user stuck on it forever.
         expect(refreshed, isTrue);
+      },
+    );
+
+    testWidgets(
+      "pull-to-refresh completes when the next pull lands during a tab's "
+      'snapshot write',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(isOwnProfile: true));
+        await tester.pump();
+
+        // View Saved so it joins the set of tabs a refresh re-syncs, and let
+        // it settle on the empty bookmark list.
+        final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+        tabBar.controller!.animateTo(
+          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.saved),
+        );
+        await tester.pumpAndSettle();
+
+        final refreshIndicator = tester.widget<RefreshIndicator>(
+          find.byType(RefreshIndicator),
+        );
+
+        // Park the first refresh in the tab's post-emit snapshot write. The
+        // grid already looks settled here, so nothing on screen tells the user
+        // to hold off on the next pull.
+        cacheDao.writeGate = Completer<void>();
+        var firstRefreshed = false;
+        var secondRefreshed = false;
+        unawaited(
+          refreshIndicator.onRefresh().then((_) => firstRefreshed = true),
+        );
+        await tester.pumpAndSettle();
+        expect(firstRefreshed, isFalse);
+
+        // A pull landing in that window used to be discarded by the tab BLoC,
+        // so its refresh had nothing left to wait for.
+        unawaited(
+          refreshIndicator.onRefresh().then((_) => secondRefreshed = true),
+        );
+        await tester.pumpAndSettle();
+
+        cacheDao.writeGate!.complete();
+        await tester.pumpAndSettle();
+
+        expect(firstRefreshed, isTrue);
+        expect(secondRefreshed, isTrue);
       },
     );
 

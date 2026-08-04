@@ -1,12 +1,15 @@
 // ABOUTME: BLoC for managing profile collab videos grid
 // ABOUTME: Fetches Funnelcake-confirmed collaborator videos for a profile
 
+import 'dart:async';
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_cursor_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -35,7 +38,10 @@ class ProfileCollabVideosBloc
        super(const ProfileCollabVideosState()) {
     on<ProfileCollabVideosFetchRequested>(
       _onFetchRequested,
-      transformer: droppable(),
+      // Sequential, not droppable: a dropped event never reaches the handler,
+      // so nothing would complete its completer and pull-to-refresh would spin
+      // forever. Rapid fetches queue instead of coalescing.
+      transformer: sequential(),
     );
     on<ProfileCollabVideosLoadMoreRequested>(_onLoadMoreRequested);
   }
@@ -51,8 +57,22 @@ class ProfileCollabVideosBloc
   /// On reopen the persisted snapshot is served immediately; revalidation then
   /// re-fetches just the first page and prepends any genuinely-new collab
   /// videos — it never re-fetches the whole loaded feed.
+  ///
+  /// [ProfileCollabVideosFetchRequested.completer] fires only once all of that
+  /// is done, snapshot write included, so a refresh waiter is released exactly
+  /// when the bloc is free to take the next fetch.
   Future<void> _onFetchRequested(
     ProfileCollabVideosFetchRequested event,
+    Emitter<ProfileCollabVideosState> emit,
+  ) async {
+    try {
+      await _fetchAndRevalidate(emit);
+    } finally {
+      completeProfileTabSync(event.completer);
+    }
+  }
+
+  Future<void> _fetchAndRevalidate(
     Emitter<ProfileCollabVideosState> emit,
   ) async {
     // Flag the revalidation whenever a settled result is on screen — an empty

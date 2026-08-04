@@ -11,7 +11,12 @@ sealed class ProfileSavedVideosEvent {
 /// Request to load saved bookmark IDs from [BookmarkService] and fetch the
 /// first page of videos.
 final class ProfileSavedVideosSyncRequested extends ProfileSavedVideosEvent {
-  const ProfileSavedVideosSyncRequested();
+  const ProfileSavedVideosSyncRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances, completed once the
+  /// handler is fully done — snapshot write included. See
+  /// [completeProfileTabSync].
+  final Completer<void>? completer;
 }
 
 /// Request to load more saved videos (pagination).

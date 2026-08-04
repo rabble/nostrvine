@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ProfileCollabVideosBloc - fetching and paginating collab
 // ABOUTME: videos. Tests confirmed repository fetch and state management.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,10 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 class _InMemoryCacheDao implements CacheDao {
   final Map<String, String> _store = {};
 
+  /// When set, [write] parks until it completes, holding a fetch handler in the
+  /// post-emit snapshot write the way a real disk write does.
+  Completer<void>? writeGate;
+
   @override
   Future<String?> read(String key) async => _store[key];
 
@@ -26,6 +32,7 @@ class _InMemoryCacheDao implements CacheDao {
     required String payload,
     Duration? ttl,
   }) async {
+    await writeGate?.future;
     _store[key] = payload;
   }
 
@@ -229,6 +236,42 @@ void main() {
               .having((s) => s.hasMoreContent, 'hasMoreContent', isFalse),
         ],
       );
+
+      test('a fetch arriving during the snapshot write still runs', () async {
+        when(
+          () => mockVideosRepository.getCollabVideos(
+            taggedPubkey: targetPubkey,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        // Park the first fetch in its post-emit snapshot write — the window in
+        // which the tab already looks settled but the handler is still busy.
+        final writeGate = Completer<void>();
+        cacheDao.writeGate = writeGate;
+        final firstFetch = Completer<void>();
+        bloc.add(ProfileCollabVideosFetchRequested(completer: firstFetch));
+        await bloc.stream.firstWhere(
+          (state) => state.status == ProfileCollabVideosStatus.success,
+        );
+        expect(firstFetch.isCompleted, isFalse);
+
+        // A pull landing in that window used to be discarded outright, leaving
+        // the RefreshIndicator with nothing left to wait for.
+        final secondFetch = Completer<void>();
+        bloc.add(ProfileCollabVideosFetchRequested(completer: secondFetch));
+        writeGate.complete();
+
+        await Future.wait([firstFetch.future, secondFetch.future]).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => fail(
+            'a fetch dispatched during the snapshot write never completed — '
+            'pull-to-refresh would spin forever',
+          ),
+        );
+      });
 
       test(
         're-fetch of a settled empty tab keeps it, without the loading state',
@@ -491,7 +534,7 @@ void main() {
       );
 
       blocTest<ProfileCollabVideosBloc, ProfileCollabVideosState>(
-        'droppable: ignores a second fetch while one is in flight',
+        'sequential: queues a second fetch behind one in flight',
         build: () {
           when(
             () => mockVideosRepository.getCollabVideos(
@@ -508,12 +551,14 @@ void main() {
         },
         wait: const Duration(milliseconds: 50),
         verify: (_) {
+          // Both run: dropping the second would strand its completer and hang
+          // the pull-to-refresh that is waiting on it.
           verify(
             () => mockVideosRepository.getCollabVideos(
               taggedPubkey: targetPubkey,
               limit: any(named: 'limit'),
             ),
-          ).called(1);
+          ).called(2);
         },
       );
     });

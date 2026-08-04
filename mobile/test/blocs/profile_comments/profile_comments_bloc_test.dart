@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -234,33 +236,6 @@ void main() {
       );
 
       blocTest<ProfileCommentsBloc, ProfileCommentsState>(
-        'does not re-fetch when already loading',
-        build: () {
-          when(
-            () => mockCommentsRepository.loadCommentsByAuthor(
-              authorPubkey: any(named: 'authorPubkey'),
-              limit: any(named: 'limit'),
-              includeVideoReplies: true,
-            ),
-          ).thenAnswer((_) async => []);
-          return createBloc();
-        },
-        seed: () =>
-            const ProfileCommentsState(status: ProfileCommentsStatus.loading),
-        act: (bloc) => bloc.add(const ProfileCommentsSyncRequested()),
-        expect: () => <ProfileCommentsState>[],
-        verify: (_) {
-          verifyNever(
-            () => mockCommentsRepository.loadCommentsByAuthor(
-              authorPubkey: any(named: 'authorPubkey'),
-              limit: any(named: 'limit'),
-              includeVideoReplies: true,
-            ),
-          );
-        },
-      );
-
-      blocTest<ProfileCommentsBloc, ProfileCommentsState>(
         'sets hasMoreContent to true when page is full',
         build: () {
           // Return exactly 50 comments (page size)
@@ -295,6 +270,44 @@ void main() {
           ),
         ],
       );
+
+      test('a sync arriving while another is in flight still runs', () async {
+        final inFlight = Completer<List<Comment>>();
+        var calls = 0;
+        when(
+          () => mockCommentsRepository.loadCommentsByAuthor(
+            authorPubkey: any(named: 'authorPubkey'),
+            limit: any(named: 'limit'),
+            includeVideoReplies: true,
+          ),
+        ).thenAnswer((_) {
+          calls++;
+          return calls == 1 ? inFlight.future : Future.value(const <Comment>[]);
+        });
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        final firstSync = Completer<void>();
+        bloc.add(ProfileCommentsSyncRequested(completer: firstSync));
+        await bloc.stream.firstWhere(
+          (state) => state.status == ProfileCommentsStatus.loading,
+        );
+
+        // This one used to hit the in-handler "already loading" guard and
+        // return without doing anything — including without completing.
+        final secondSync = Completer<void>();
+        bloc.add(ProfileCommentsSyncRequested(completer: secondSync));
+        inFlight.complete(const []);
+
+        await Future.wait([firstSync.future, secondSync.future]).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => fail(
+            'a sync dispatched during an in-flight sync never completed — '
+            'pull-to-refresh would spin forever',
+          ),
+        );
+        expect(calls, 2);
+      });
     });
 
     group('ProfileCommentsLoadMoreRequested', () {

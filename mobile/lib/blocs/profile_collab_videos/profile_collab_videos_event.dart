@@ -12,7 +12,12 @@ sealed class ProfileCollabVideosEvent {
 ///
 /// This triggers the repository's Funnelcake-confirmed collaborator read path.
 final class ProfileCollabVideosFetchRequested extends ProfileCollabVideosEvent {
-  const ProfileCollabVideosFetchRequested();
+  const ProfileCollabVideosFetchRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances, completed once the
+  /// handler is fully done — snapshot write included. See
+  /// [completeProfileTabSync].
+  final Completer<void>? completer;
 }
 
 /// Request to load more collab videos (pagination).
