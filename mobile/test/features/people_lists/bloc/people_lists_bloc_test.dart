@@ -1234,6 +1234,148 @@ void main() {
       });
     });
 
+    // A rollback undoes only its own mutation. `_onRepositoryListsChanged`
+    // keeps `pendingMutations`, so an emission that lands mid-round-trip
+    // passes the teardown guard — restoring a pre-flight snapshot there would
+    // drop whatever arrived meanwhile.
+    group('rollbacks that race a repository emission', () {
+      Future<PeopleListsBloc> startedWithOwnerALists(
+        List<UserList> lists,
+      ) async {
+        final bloc = buildBloc()..add(const PeopleListsStarted());
+        await _flush();
+        ownerPubkeyController.add(_ownerA);
+        await _flush();
+        ownerAListsController.add(lists);
+        await _flush();
+        return bloc;
+      }
+
+      test('a failed delete keeps a list that synced mid-round-trip', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.deleteList(ownerPubkey: _ownerA, listId: 'l1'),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerALists([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        addTearDown(bloc.close);
+
+        bloc.add(const PeopleListsDeleteRequested(listId: 'l1'));
+        await _flush();
+        expect(bloc.state.lists, isEmpty);
+
+        // l3 arrives from a relay while the deletion is still publishing.
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+          _buildList(id: 'l3', name: 'From Relay', pubkeys: const [_memberBob]),
+        ]);
+        await _flush();
+
+        publish.complete(const PeopleListPublishResult.failed());
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(
+          bloc.state.lists.map((list) => list.id).toList(),
+          equals(['l1', 'l3']),
+        );
+        expect(
+          bloc.state.listIdsByPubkey,
+          equals({
+            _memberAlice: {'l1'},
+            _memberBob: {'l3'},
+          }),
+        );
+      });
+
+      test('a failed add undoes only its own pubkey', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.addPubkey(
+            ownerPubkey: _ownerA,
+            listId: 'l1',
+            pubkey: _memberBob,
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerALists([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+        ]);
+        addTearDown(bloc.close);
+
+        bloc.add(
+          const PeopleListsPubkeyAddRequested(
+            listId: 'l1',
+            pubkey: _memberBob,
+          ),
+        );
+        await _flush();
+        expect(bloc.state.lists.single.pubkeys, contains(_memberBob));
+
+        ownerAListsController.add([
+          _buildList(id: 'l1', name: 'Friends', pubkeys: const [_memberAlice]),
+          _buildList(id: 'l3', name: 'From Relay', pubkeys: const [_memberBob]),
+        ]);
+        await _flush();
+
+        publish.complete(const PeopleListPublishResult.failed());
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        expect(
+          bloc.state.lists.map((list) => list.id).toList(),
+          equals(['l1', 'l3']),
+        );
+        // Undone on l1, untouched on the list that arrived meanwhile.
+        expect(bloc.state.lists.first.pubkeys, equals([_memberAlice]));
+        expect(bloc.state.lists.last.pubkeys, equals([_memberBob]));
+      });
+
+      test('a failed remove restores the member at its old index', () async {
+        final publish = Completer<PeopleListPublishResult>();
+        when(
+          () => repository.removePubkey(
+            ownerPubkey: _ownerA,
+            listId: 'l1',
+            pubkey: _memberAlice,
+          ),
+        ).thenAnswer((_) => publish.future);
+
+        final bloc = await startedWithOwnerALists([
+          _buildList(
+            id: 'l1',
+            name: 'Friends',
+            pubkeys: const [_memberAlice, _memberBob],
+          ),
+        ]);
+        addTearDown(bloc.close);
+
+        bloc.add(
+          const PeopleListsPubkeyRemoveRequested(
+            listId: 'l1',
+            pubkey: _memberAlice,
+          ),
+        );
+        await _flush();
+        expect(bloc.state.lists.single.pubkeys, equals([_memberBob]));
+
+        publish.complete(const PeopleListPublishResult.failed());
+        await _flush();
+        await _flush();
+
+        expect(bloc.state.status, equals(PeopleListsStatus.failure));
+        // Back at index 0, not appended after bob.
+        expect(
+          bloc.state.lists.single.pubkeys,
+          equals([_memberAlice, _memberBob]),
+        );
+      });
+    });
+
     // #6504: rollbacks are computed from a snapshot captured before the
     // repository round-trip. A teardown in between — flag-off or account
     // switch — drops that snapshot on purpose, so applying it afterwards puts
