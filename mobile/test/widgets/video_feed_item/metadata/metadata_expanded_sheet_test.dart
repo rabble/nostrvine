@@ -61,6 +61,12 @@ const _parentEventId =
 const _parentAddressableId =
     '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:parent-d-tag';
 
+/// Chips dimmed by [Opacity]. Deliberately ignores fully opaque wrappers so
+/// the assertion means "nothing is dimmed" rather than "nothing anywhere
+/// uses Opacity".
+Finder _dimmed() =>
+    find.byWidgetPredicate((widget) => widget is Opacity && widget.opacity < 1);
+
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
@@ -889,7 +895,7 @@ void main() {
           find.text(l10n.videoCollaboratorPendingDecoration),
           findsNothing,
         );
-        expect(find.byType(Opacity), findsNothing);
+        expect(_dimmed(), findsNothing);
       },
     );
 
@@ -927,10 +933,10 @@ void main() {
           find.text(l10n.videoCollaboratorPendingDecoration),
           findsOneWidget,
         );
-        // The pending chip is wrapped in an Opacity.
-        final opacityWidgets = tester.widgetList<Opacity>(find.byType(Opacity));
-        expect(opacityWidgets, hasLength(1));
-        expect(opacityWidgets.first.opacity, closeTo(0.7, 0.001));
+        // The pending chip is the only one wrapped in a dimming Opacity.
+        final dimmed = tester.widgetList<Opacity>(_dimmed());
+        expect(dimmed, hasLength(1));
+        expect(dimmed.first.opacity, closeTo(0.7, 0.001));
       },
     );
 
@@ -1014,7 +1020,7 @@ void main() {
           find.text(l10n.videoCollaboratorPendingDecoration),
           findsNothing,
         );
-        expect(find.byType(Opacity), findsNothing);
+        expect(_dimmed(), findsNothing);
       },
     );
   });

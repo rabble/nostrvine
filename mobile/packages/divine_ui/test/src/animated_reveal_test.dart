@@ -64,6 +64,32 @@ void main() {
       expect(tester.getSize(subject()).height, 40);
     });
 
+    testWidgets('lays the child out under the parent constraints', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 300,
+              child: AnimatedReveal(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [Text('leading')],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Stacking the child (as an AnimatedSwitcher does) would hand it loose
+      // constraints, shrink-wrapping the column and centring it instead.
+      expect(tester.getSize(find.byType(Column)).width, 300);
+      expect(tester.getTopLeft(find.text('leading')).dx, 0);
+    });
+
     testWidgets('lands at full height when animations are disabled', (
       tester,
     ) async {

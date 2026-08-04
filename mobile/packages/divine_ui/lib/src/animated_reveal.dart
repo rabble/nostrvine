@@ -21,9 +21,11 @@ import 'package:flutter/material.dart';
 /// appears together with its content mounts at its final size and has nothing
 /// to animate from.
 ///
-/// The empty state spans the full available width so only the height
-/// animates. Honours [MediaQueryData.disableAnimations].
-class AnimatedReveal extends StatelessWidget {
+/// Layout-transparent: the child is laid out under the constraints this
+/// widget receives, so wrapping an existing widget does not move or resize
+/// it. Content already present when this mounts is not animated. Honours
+/// [MediaQueryData.disableAnimations].
+class AnimatedReveal extends StatefulWidget {
   /// Creates an [AnimatedReveal].
   const AnimatedReveal({
     this.child,
@@ -40,22 +42,43 @@ class AnimatedReveal extends StatelessWidget {
   final Duration duration;
 
   @override
+  State<AnimatedReveal> createState() => _AnimatedRevealState();
+}
+
+class _AnimatedRevealState extends State<AnimatedReveal> {
+  /// Content that is already there when this mounts has not "arrived", so it
+  /// must not fade in on first paint.
+  late final bool _startsRevealed = widget.child != null;
+
+  @override
   Widget build(BuildContext context) {
-    final content = child ?? const SizedBox(width: .infinity);
+    final content = widget.child;
     // Drop the animators entirely under reduce motion rather than passing them
     // Duration.zero: a zero-duration AnimatedSize completes its controller
     // synchronously inside performLayout, which re-dirties the render object
     // mid-layout and trips a framework assertion.
-    if (MediaQuery.disableAnimationsOf(context)) return content;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return content ?? const SizedBox(width: .infinity);
+    }
 
-    // AnimatedSwitcher alone would not do: it stacks the outgoing and incoming
-    // child and adopts the larger size at once, fading the content in while
-    // the layout still jumps. The height has to come from AnimatedSize.
     return AnimatedSize(
-      duration: duration,
+      duration: widget.duration,
       curve: Curves.easeOutCubic,
-      alignment: Alignment.topCenter,
-      child: AnimatedSwitcher(duration: duration, child: content),
+      alignment: AlignmentDirectional.topStart,
+      // The empty state spans the full available width so only the height
+      // animates when content arrives.
+      child: content == null
+          ? const SizedBox(width: .infinity)
+          // Opacity rather than an AnimatedSwitcher: the switcher stacks its
+          // children and hands them loose constraints, which shrink-wraps and
+          // centres a child that the surrounding layout meant to stretch.
+          : TweenAnimationBuilder<double>(
+              tween: Tween(begin: _startsRevealed ? 1.0 : 0.0, end: 1),
+              duration: widget.duration,
+              builder: (context, opacity, child) =>
+                  Opacity(opacity: opacity, child: child),
+              child: content,
+            ),
     );
   }
 }
