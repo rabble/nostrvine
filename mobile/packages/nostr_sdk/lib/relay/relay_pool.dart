@@ -699,9 +699,7 @@ class RelayPool {
     // Log message type + sub ID (full json is too verbose for data frames)
     if (json.length >= 2) {
       final msgSubId = json[1];
-      if (messageType == 'AUTH' ||
-          messageType == 'CLOSED' ||
-          messageType == 'NOTICE') {
+      if (messageType == 'CLOSED' || messageType == 'NOTICE') {
         log('📡 Raw message from ${relay.url}: $json');
       } else if (messageType != 'EVENT') {
         // EVENT is excluded: it is the highest-volume frame, and a reconnect
