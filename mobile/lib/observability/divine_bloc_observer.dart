@@ -26,10 +26,12 @@ const String kBlocDiagnosticNotObserved = '<not observed>';
 ///
 /// All three are written to the unified log (so the in-memory bug-report
 /// capture flow stays complete). Forwarding to Crashlytics is **gated** on
-/// the error implementing [ReportableError] — without that gate, expected
-/// domain errors (network timeouts, "no public key yet" during cold start,
-/// 4xx responses, validation failures) flood the dashboard and drown the
-/// real bugs. See the decision matrix in `.claude/rules/error_handling.md`.
+/// the error implementing [ReportableError] or being a bare programming
+/// invariant error ([StateError], [TypeError], or [RangeError]) — without that
+/// gate, expected domain errors (network timeouts, "no public key yet" during
+/// cold start, 4xx responses, validation failures) flood the dashboard and
+/// drown the real bugs. See the decision matrix in
+/// `.claude/rules/error_handling.md`.
 ///
 /// On a forwarded error the observer also attaches the bloc's most recent
 /// event, state, and transition time as Crashlytics custom keys
@@ -86,7 +88,8 @@ class DivineBlocObserver extends BlocObserver {
       error: error,
       stackTrace: stackTrace,
     );
-    if (error is! ReportableError) return;
+    final reportableError = _asReportable(error);
+    if (reportableError == null) return;
     // Dispatch the diagnostic keys before recordError so they attach to the
     // report it emits. Both are fire-and-forget, but invoked synchronously and
     // in order, so the platform-channel messages stay ordered without blocking
@@ -95,7 +98,17 @@ class DivineBlocObserver extends BlocObserver {
     // crash_reporting_service.dart).
     _attachDiagnosticKeys(_diagnostics[bloc]);
     final reason = sanitizeForCrashReport('Bloc.addError $runtimeType');
-    unawaited(_crashReporting.recordError(error, stackTrace, reason: reason));
+    unawaited(
+      _crashReporting.recordError(reportableError, stackTrace, reason: reason),
+    );
+  }
+
+  ReportableError? _asReportable(Object error) {
+    if (error is ReportableError) return error;
+    if (error is StateError || error is TypeError || error is RangeError) {
+      return Reportable(error, context: 'DivineBlocObserver.onError');
+    }
+    return null;
   }
 
   void _attachDiagnosticKeys(_BlocDiagnostics? diagnostics) {

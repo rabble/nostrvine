@@ -823,10 +823,7 @@ void main() {
           ],
         ),
         act: (bloc) async {
-          await expectLater(
-            bloc.parkInFlight(),
-            throwsA(isA<Exception>()),
-          );
+          await expectLater(bloc.parkInFlight(), throwsA(isA<Exception>()));
         },
         errors: () => [isA<Exception>()],
       );
@@ -852,10 +849,7 @@ void main() {
           ],
         ),
         act: (bloc) async {
-          await expectLater(
-            bloc.parkInFlight(),
-            throwsA(isA<StateError>()),
-          );
+          await expectLater(bloc.parkInFlight(), throwsA(isA<StateError>()));
         },
         errors: () => [isA<StateError>()],
       );
@@ -1120,6 +1114,71 @@ void main() {
           verify(() => mockPublishService.publishVideo(draft: draft)).called(1);
         },
       );
+
+      test(
+        'does not add retry publish event after close while service loads',
+        () async {
+          final serviceCompleter = Completer<_MockVideoPublishService>();
+          final bloc = BackgroundPublishBloc(
+            videoPublishServiceFactory:
+                ({required OnProgressChanged onProgress}) {
+                  return serviceCompleter.future;
+                },
+            draftStorageService: mockDraftStorageService,
+          );
+          bloc.add(
+            BackgroundPublishFailed(
+              draft: draft,
+              error: const PublishError(PublishErrorKind.generic),
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(BackgroundPublishRetryRequested(draftId: draftId));
+          await Future<void>.delayed(Duration.zero);
+
+          final closeFuture = bloc.close();
+          serviceCompleter.complete(mockPublishService);
+
+          await expectLater(closeFuture, completes);
+          verifyNever(() => mockPublishService.publishVideo(draft: draft));
+        },
+      );
+
+      test('ignores progress callbacks after close', () async {
+        late OnProgressChanged capturedProgress;
+        final publishCompleter = Completer<PublishResult>();
+        final bloc = BackgroundPublishBloc(
+          videoPublishServiceFactory:
+              ({required OnProgressChanged onProgress}) {
+                capturedProgress = onProgress;
+                return Future.value(mockPublishService);
+              },
+          draftStorageService: mockDraftStorageService,
+        );
+
+        bloc.add(
+          BackgroundPublishFailed(
+            draft: draft,
+            error: const PublishError(PublishErrorKind.generic),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        when(
+          () => mockPublishService.publishVideo(draft: draft),
+        ).thenAnswer((_) => publishCompleter.future);
+
+        bloc.add(BackgroundPublishRetryRequested(draftId: draftId));
+        await Future<void>.delayed(Duration.zero);
+        final closeFuture = bloc.close();
+
+        expect(
+          () => capturedProgress(draftId: draftId, progress: 0.5),
+          returnsNormally,
+        );
+        publishCompleter.complete(const PublishSuccess());
+        await expectLater(closeFuture, completes);
+      });
     });
   });
 }

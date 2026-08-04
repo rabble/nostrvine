@@ -172,7 +172,7 @@ class _StabilizationButton extends StatelessWidget {
       ],
     );
 
-    if (selected == null) return;
+    if (selected == null || !context.mounted || bloc.isClosed) return;
     bloc.add(
       VideoRecorderStabilizationModeSet(
         DivineVideoStabilizationMode.fromNativeString(selected),

@@ -663,9 +663,11 @@ void main() {
 
       mockEditorBloc = _MockProfileEditorBloc();
       when(() => mockEditorBloc.state).thenReturn(const ProfileEditorState());
+      when(() => mockEditorBloc.isClosed).thenReturn(false);
 
       mockMyProfileBloc = _MockMyProfileBloc();
       when(() => mockMyProfileBloc.state).thenReturn(const MyProfileInitial());
+      when(() => mockMyProfileBloc.isClosed).thenReturn(false);
     });
 
     /// Pumps the screen with mocked blocs. The bloc state is owned by the
@@ -1716,6 +1718,8 @@ void main() {
       UrlLauncherPlatform.instance = launcher;
       editorBloc = _MockProfileEditorBloc();
       myProfileBloc = _MockMyProfileBloc();
+      when(() => editorBloc.isClosed).thenReturn(false);
+      when(() => myProfileBloc.isClosed).thenReturn(false);
     });
 
     tearDown(() {
@@ -1823,5 +1827,21 @@ void main() {
         );
       },
     );
+
+    test('does not add events after verifier blocs close', () async {
+      when(() => editorBloc.isClosed).thenReturn(true);
+      when(() => myProfileBloc.isClosed).thenReturn(true);
+
+      final launched = await launchVerifierFlow(
+        editorBloc: editorBloc,
+        myProfileBloc: myProfileBloc,
+        isWeb: true,
+        pushVerifierRoute: (_, {extra}) async {},
+      );
+
+      expect(launched, isTrue);
+      verifyNever(() => editorBloc.add(const VerifierLaunchHandled()));
+      verifyNever(() => myProfileBloc.add(const MyProfileFetchRequested()));
+    });
   });
 }

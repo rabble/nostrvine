@@ -228,6 +228,7 @@ class BackgroundPublishBloc
       );
     }
     for (final upload in inFlight) {
+      if (isClosed) return;
       add(BackgroundPublishVanished(draftId: upload.draft.id));
     }
   }
@@ -292,6 +293,7 @@ class BackgroundPublishBloc
 
     final videoPublishService = await _videoPublishServiceFactory(
       onProgress: ({required String draftId, required double progress}) {
+        if (isClosed) return;
         add(
           BackgroundPublishProgressChanged(
             draftId: draftId,
@@ -300,6 +302,7 @@ class BackgroundPublishBloc
         );
       },
     );
+    if (isClosed) return;
 
     final newPublishProcess = videoPublishService.publishVideo(
       draft: uploadToRetry.draft,
