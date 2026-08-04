@@ -265,10 +265,10 @@ class ContentDeletionService {
 
       // One acceptance is the bar, not all of them. NIP-09 deletion is a
       // request relays SHOULD honour, so no acknowledgement proves the video
-      // is gone — requiring every relay buys a guarantee that does not exist
-      // and costs the user the feature, because the target set includes pool
-      // members the client never connected to and nothing here republishes.
-      // Breadth is reported on [DeleteResult.acceptance] instead.
+      // is gone. Requiring every targeted relay buys a guarantee that does not
+      // exist and costs the user the feature when a relay rejects, times out, or
+      // cannot be reached. Breadth is reported on [DeleteResult.acceptance]
+      // instead.
       if (publishOutcome.failed) {
         Log.error(
           'Delete publish not confirmed by any relay: '
@@ -321,10 +321,7 @@ class ContentDeletionService {
         name: 'ContentDeletionService',
         category: LogCategory.system,
       );
-      return DeleteResult.createSuccess(
-        deleteEvent.id,
-        acceptance: acceptance,
-      );
+      return DeleteResult.createSuccess(deleteEvent.id, acceptance: acceptance);
     } catch (e) {
       Log.error(
         'Failed to delete content: $e',

@@ -437,6 +437,27 @@ void main() {
     });
 
     group('publish diagnostics metadata', () {
+      test('does not expose mutable counted target state', () {
+        final expectedRelays = {'wss://a.example', 'wss://b.example'};
+        final tracker = PublishTracker(
+          eventId: 'note-1',
+          expectedRelays: expectedRelays,
+          timeout: const Duration(seconds: 30),
+        );
+
+        expectedRelays.add('wss://outside.example');
+
+        expect(
+          tracker.countedTargets,
+          equals({'wss://a.example', 'wss://b.example'}),
+        );
+        expect(
+          () => tracker.countedTargets.add('wss://mutated.example'),
+          throwsUnsupportedError,
+        );
+        tracker.cancel();
+      });
+
       test('keeps diagnostic tag caller-supplied and domain-neutral', () {
         final tracker = PublishTracker(
           eventId: 'note-1',

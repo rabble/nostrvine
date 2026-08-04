@@ -6,95 +6,15 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
-/// Sink that accepts every frame without erroring — the zombie-socket
-/// behaviour: a half-open TCP connection buffers outbound bytes and
-/// `sink.add` never throws.
-class _BufferingSink implements WebSocketSink {
-  final List<dynamic> messages = [];
-  bool closed = false;
-  final Completer<void> _doneCompleter = Completer<void>();
-
-  @override
-  void add(dynamic data) {
-    if (closed) throw StateError('Sink is closed');
-    messages.add(data);
-  }
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {}
-
-  @override
-  Future<dynamic> addStream(Stream<dynamic> stream) async {
-    await for (final data in stream) {
-      add(data);
-    }
-  }
-
-  @override
-  Future<dynamic> close([int? closeCode, String? closeReason]) async {
-    closed = true;
-    if (!_doneCompleter.isCompleted) {
-      _doneCompleter.complete();
-    }
-  }
-
-  @override
-  Future<dynamic> get done => _doneCompleter.future;
-}
-
-class _FakeWebSocketChannel implements WebSocketChannel {
-  final _BufferingSink _sink = _BufferingSink();
-  final StreamController<dynamic> _streamController =
-      StreamController<dynamic>.broadcast();
-
-  @override
-  WebSocketSink get sink => _sink;
-
-  @override
-  Stream<dynamic> get stream => _streamController.stream;
-
-  @override
-  int? get closeCode => null;
-
-  @override
-  String? get closeReason => null;
-
-  @override
-  String? get protocol => null;
-
-  @override
-  Future<void> get ready => Future.value();
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) {
-    throw UnimplementedError('${invocation.memberName} not used in this test');
-  }
-
-  /// Simulate an inbound frame from the relay.
-  void simulateMessage(String message) => _streamController.add(message);
-
-  List<dynamic> get sentMessages => _sink.messages;
-}
-
-class _FakeChannelFactory implements WebSocketChannelFactory {
-  final List<_FakeWebSocketChannel> createdChannels = [];
-
-  @override
-  WebSocketChannel create(Uri uri) {
-    final channel = _FakeWebSocketChannel();
-    createdChannels.add(channel);
-    return channel;
-  }
-}
+import '../support/fake_web_socket.dart';
 
 void main() {
   group('RelayPool zombie-socket remediation on OK timeout', () {
     const relayUrl = 'wss://relay.divine.video';
     late LocalNostrSigner signer;
     late Nostr nostr;
-    late _FakeChannelFactory factory;
+    late FakeWebSocketChannelFactory factory;
     late RelayBase relay;
 
     setUp(() async {
@@ -103,7 +23,7 @@ void main() {
       );
       nostr = Nostr(signer, [], (url) => RelayBase(url, RelayStatus(url)));
       await nostr.refreshPublicKey();
-      factory = _FakeChannelFactory();
+      factory = FakeWebSocketChannelFactory();
       relay = RelayBase(
         relayUrl,
         RelayStatus(relayUrl),
@@ -214,7 +134,7 @@ void main() {
       // and said nothing. That is the wedged-socket signal repair exists for,
       // and a confirmed publish no longer hides it.
       const siblingUrl = 'wss://inbox.example.com';
-      final siblingFactory = _FakeChannelFactory();
+      final siblingFactory = FakeWebSocketChannelFactory();
       final sibling = RelayBase(
         siblingUrl,
         RelayStatus(siblingUrl),
@@ -260,7 +180,7 @@ void main() {
       // churning healthy connections: any inbound frame since the publish
       // proves the socket is alive, so the relay is left alone.
       const siblingUrl = 'wss://busy.example.com';
-      final siblingFactory = _FakeChannelFactory();
+      final siblingFactory = FakeWebSocketChannelFactory();
       final sibling = RelayBase(
         siblingUrl,
         RelayStatus(siblingUrl),

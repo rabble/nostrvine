@@ -1455,12 +1455,12 @@ class RelayPool {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    final sentTo = await _sendCollect(
+    final result = await _sendCollect(
       message,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
-    return sentTo.isNotEmpty;
+    return result.sentTo.isNotEmpty;
   }
 
   /// Same as [send] but returns the list of relay URLs the message reached.
@@ -1487,7 +1487,7 @@ class RelayPool {
   /// the publish call in their own outer guard should size that guard
   /// against `perRelaySendTimeout * configuredRelays.length` plus a small
   /// scheduling buffer.
-  Future<List<String>> _sendCollect(
+  Future<({List<String> sentTo, Set<String> attemptedRelayUrls})> _sendCollect(
     List<dynamic> message, {
     List<String>? tempRelays,
     List<String>? targetRelays,
@@ -1551,6 +1551,8 @@ class RelayPool {
         }
       }
 
+      final sendStartedWhileConnecting =
+          relay.relayStatus.connected == ClientConnected.connecting;
       try {
         // Check if relay requires authentication
         if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
@@ -1586,7 +1588,10 @@ class RelayPool {
                     return false;
                   },
                 );
-            if (result || timedOut || deadlineExpired()) {
+            if (result ||
+                timedOut ||
+                sendStartedWhileConnecting ||
+                deadlineExpired()) {
               attemptedRelayUrls.add(relay.url);
             }
             if (result) {
@@ -1636,7 +1641,10 @@ class RelayPool {
                   return false;
                 },
               );
-          if (result || timedOut || deadlineExpired()) {
+          if (result ||
+              timedOut ||
+              sendStartedWhileConnecting ||
+              deadlineExpired()) {
             attemptedRelayUrls.add(relay.url);
           }
           if (result) {
@@ -1647,6 +1655,9 @@ class RelayPool {
           );
         }
       } catch (err) {
+        if (sendStartedWhileConnecting) {
+          attemptedRelayUrls.add(relay.url);
+        }
         logDiagnostic(
           'send error kind=$eventKind eventId=$eventId relay=${relay.url} error=$err',
         );
@@ -1702,7 +1713,7 @@ class RelayPool {
       'send complete kind=$eventKind eventId=$eventId sentTo=$sentTo',
     );
 
-    return sentTo;
+    return (sentTo: sentTo, attemptedRelayUrls: attemptedRelayUrls);
   }
 
   /// Record how broadly a publish was accepted.
@@ -1722,7 +1733,8 @@ class RelayPool {
     );
   }
 
-  /// Every relay a publish with these parameters intends to reach.
+  /// Every relay a publish with these parameters intends to reach, split into
+  /// who may answer it and who counts towards its denominator.
   ///
   /// Mirrors the iteration [_sendCollect] performs, but resolves it *before*
   /// the fan-out starts so the set is complete even for relays the fan-out
@@ -1730,21 +1742,59 @@ class RelayPool {
   /// instead would silently shrink the denominator: a relay that could not be
   /// written to would be absent from the outcome entirely, and a publish could
   /// settle while later relays had not been attempted yet.
-  Set<String> _intendedPublishTargets(
+  ///
+  /// `expected` is every write-enabled relay the fan-out may write to, and is
+  /// what [PublishTracker.isTarget] admits. It deliberately ignores connection
+  /// state: `relayStatus.connected` lags the socket it describes — it starts
+  /// at [ClientConnected.disconnect] and only advances when the state stream
+  /// delivers, and a relay retrying a dead host is [ClientConnected.connecting]
+  /// exactly like one whose first handshake is still in flight. Gating who may
+  /// answer on it would discard a real `OK true` from a healthy relay that
+  /// replied before the fan-out reported, since `send` waits out the
+  /// `connecting` state and writes anyway.
+  ///
+  /// `counted` starts as the relays a failed write should be reported against,
+  /// dropping configured relays that were plainly offline before the fan-out.
+  /// The fan-out then adds back relays it actually attempted, including ones
+  /// whose in-flight connection waited until the publish deadline. `writeAccess`
+  /// is a config flag that defaults to true, so counting on it alone made every
+  /// offline relay a target that could only ever land in
+  /// [PublishOutcome.unreachableTargets] — which on mobile, where some relay
+  /// is nearly always down, left [PublishOutcome.acceptedByAll] permanently
+  /// false and reported every successful publish as partial. Nothing the
+  /// fan-out actually reached or exhausted drops out: [PublishTracker.setReachable]
+  /// receives both the written relays and the attempted denominator.
+  ///
+  /// [targetRelays] and [tempRelays] are exempt from the narrowing. Naming a
+  /// relay is the caller asserting intent for that specific relay, and "we
+  /// never reached the one you asked for" is the answer it wants — the
+  /// kind:10002 bootstrap publish names its indexers precisely so it can tell
+  /// an unreached indexer from a refusing one.
+  ({Set<String> expected, Set<String> counted}) _intendedPublishTargets(
     List<dynamic> message, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) {
-    final targets = <String>{};
+    final expected = <String>{};
+    final counted = <String>{};
     final isEvent = message.isNotEmpty && message[0] == "EVENT";
     final hasFilter = targetRelays != null && targetRelays.isNotEmpty;
     for (final relay in _relaysSnapshot()) {
       if (isEvent && !relay.relayStatus.writeAccess) continue;
       if (hasFilter && !targetRelays.contains(relay.url)) continue;
-      targets.add(relay.url);
+      expected.add(relay.url);
+      if (isEvent &&
+          !hasFilter &&
+          relay.relayStatus.connected != ClientConnected.connected) {
+        continue;
+      }
+      counted.add(relay.url);
     }
-    if (tempRelays != null) targets.addAll(tempRelays);
-    return targets;
+    if (tempRelays != null) {
+      expected.addAll(tempRelays);
+      counted.addAll(tempRelays);
+    }
+    return (expected: expected, counted: counted);
   }
 
   /// Send an `EVENT` message and wait for `OK` confirmations from relays.
@@ -1781,17 +1831,19 @@ class RelayPool {
     }
     final sentAt = DateTime.now();
     final deadline = sentAt.add(timeout);
+    final targets = _intendedPublishTargets(
+      message,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
     final tracker = PublishTracker(
       eventId: eventId,
       eventKind: eventKind ?? _eventKindFromMessage(message),
       diagnosticTag: diagnosticTag,
       message: message,
       deadline: deadline,
-      expectedRelays: _intendedPublishTargets(
-        message,
-        tempRelays: tempRelays,
-        targetRelays: targetRelays,
-      ),
+      expectedRelays: targets.expected,
+      countedTargets: targets.counted,
       timeout: timeout,
     );
     _pendingPublishes[eventId] = tracker;
@@ -1804,16 +1856,19 @@ class RelayPool {
     // until this call arrives: a fan-out that threw would otherwise leave the
     // publish hanging.
     var sentTo = const <String>[];
+    var countedTargets = targets.counted;
     try {
-      sentTo = await _sendCollect(
+      final result = await _sendCollect(
         message,
         tempRelays: tempRelays,
         targetRelays: targetRelays,
         deadline: deadline,
         diagnosticTag: diagnosticTag,
       );
+      sentTo = result.sentTo;
+      countedTargets = {...targets.counted, ...result.attemptedRelayUrls};
     } finally {
-      tracker.setReachable(sentTo);
+      tracker.setReachable(sentTo, countedTargets: countedTargets);
     }
 
     unawaited(
