@@ -526,6 +526,53 @@ void main() {
       );
     });
 
+    test(
+      "a stale handshake stops suppressing the relay's own refusal",
+      () async {
+        final nostr = _newNostr();
+        final gated = _SilentRelay('wss://swallows-auth.example');
+        expect(await nostr.relayPool.add(gated), isTrue);
+
+        // The relay challenges us, takes our AUTH event, and never answers it.
+        final first = nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: const Duration(milliseconds: 300));
+        final firstSubId = await gated.awaitPendingQuery();
+        await gated.deliver(['AUTH', 'test-challenge']);
+        await gated.deliver(['CLOSED', firstSubId, 'auth-required: sign in']);
+        expect(gated.capturedAuthEventId, isNotNull);
+        await first;
+
+        // No `OK` lands and the socket never cycles, so the marker is still
+        // there while the handshake it describes is long dead.
+        await Future<void>.delayed(RelayPool.authHandshakeWindow * 1.2);
+
+        final stopwatch = Stopwatch()..start();
+        final pending = nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: _timeout);
+        final subId = await gated.awaitPendingQuery();
+        // The relay names the gate again. A dead handshake is not a reason to
+        // discard that evidence — nothing is going to run the replay it parks
+        // the query for, so every later query would pay its full budget.
+        await gated.deliver(['CLOSED', subId, 'auth-required: sign in']);
+
+        final result = await pending;
+        stopwatch.stop();
+
+        expect(result.timedOut, isFalse);
+        expect(
+          stopwatch.elapsed,
+          lessThan(RelayPool.querySettleWindow),
+          reason: 'the refusal releases the query outright, not on a timer',
+        );
+      },
+    );
+
     test('a healthy relay still holds the query until its EOSE', () async {
       final nostr = _newNostr();
       final fast = _SilentRelay('wss://fast.example');

@@ -1457,12 +1457,13 @@ class RelayPool {
       // A refused/abandoned REQ is terminal unless it is the pre-AUTH probe
       // that must stay saved for replay after NIP-42 succeeds.
       if (_shouldReplayQueryAfterAuth(relay, reason)) {
-        // The relay named the gate itself. With no handshake outstanding
-        // nothing is going to run that replay, and this refusal is the
-        // evidence [_canStillSettleQuery] waits for before giving up on it.
-        if (!_authHandshakeStartedAt.containsKey(relay.url)) {
-          _closeAuthGate(relay);
-        }
+        // The relay named the gate itself. With no live handshake nothing is
+        // going to run that replay, and this refusal is the evidence
+        // [_canStillSettleQuery] waits for before giving up on it. Judged on
+        // the same bound as everywhere else: a handshake the relay swallowed
+        // must stop suppressing its own refusal once it goes stale, or every
+        // later query on that socket pays its full budget.
+        if (!_hasLiveAuthHandshake(relay)) _closeAuthGate(relay);
       } else if (relay.discardQuery(subscriptionId)) {
         _fireQueryCompleteIfSettled(subscriptionId, afterTerminalFrame: true);
       }
