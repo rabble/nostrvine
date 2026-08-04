@@ -1,3 +1,4 @@
+export 'src/animated_reveal.dart';
 export 'src/app_bar/app_bar.dart';
 export 'src/bottom_sheet/bottom_sheet.dart';
 export 'src/button/button.dart';

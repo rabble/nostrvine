@@ -40,7 +40,7 @@ class MetadataCreatorSection extends StatelessWidget {
 /// `ignored` for this video. Pending collaborator chips are dimmed when
 /// the current user is the video's creator.
 ///
-/// Returns [SizedBox.shrink] when the resulting list is empty.
+/// Renders nothing while the resulting list is empty.
 class MetadataCollaboratorsSection extends ConsumerWidget {
   const MetadataCollaboratorsSection({required this.video, super.key});
 
@@ -123,21 +123,25 @@ class MetadataCollaboratorsSectionBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visible = visibility.visiblePubkeys;
-    if (visible.isEmpty) return const SizedBox.shrink();
-
-    return MetadataSection(
-      label: context.l10n.metadataCollaboratorsLabel,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final pubkey in visible)
-            _TappableUserChip(
-              pubkey: pubkey,
-              isPending: visibility.isPendingForInviter(pubkey),
+    // A tagged collaborator stays hidden until their confirmation status
+    // resolves, so this section arrives late on videos that have one.
+    return AnimatedReveal(
+      child: visible.isEmpty
+          ? null
+          : MetadataSection(
+              label: context.l10n.metadataCollaboratorsLabel,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final pubkey in visible)
+                    _TappableUserChip(
+                      pubkey: pubkey,
+                      isPending: visibility.isPendingForInviter(pubkey),
+                    ),
+                ],
+              ),
             ),
-        ],
-      ),
     );
   }
 }
@@ -167,7 +171,7 @@ class MetadataInspiredBySection extends StatelessWidget {
 /// Reads reposter pubkeys from [VideoRepostersCubit] (provided by the
 /// metadata sheet) and merges with any pre-populated
 /// [VideoEvent.reposterPubkeys] from feed consolidation.
-/// Returns [SizedBox.shrink] when no reposters are found.
+/// Renders nothing while no reposters are found.
 class MetadataRepostedBySection extends StatelessWidget {
   const MetadataRepostedBySection({required this.video, super.key});
 
@@ -194,7 +198,9 @@ class MetadataRepostedBySection extends StatelessWidget {
 
 /// Content widget for the Reposted-by section.
 ///
-/// Returns [SizedBox.shrink] when [pubkeys] is empty.
+/// Renders nothing while [pubkeys] is empty. The reposters resolve from a
+/// relay round-trip, so the section is revealed through an [AnimatedReveal]
+/// rather than snapping the sections below it down on arrival.
 class _RepostedByContent extends StatelessWidget {
   const _RepostedByContent({required this.pubkeys});
 
@@ -202,17 +208,20 @@ class _RepostedByContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (pubkeys.isEmpty) return const SizedBox.shrink();
-
-    return MetadataSection(
-      label: context.l10n.metadataRepostedByLabel,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final pubkey in pubkeys) _TappableUserChip(pubkey: pubkey),
-        ],
-      ),
+    return AnimatedReveal(
+      child: pubkeys.isEmpty
+          ? null
+          : MetadataSection(
+              label: context.l10n.metadataRepostedByLabel,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final pubkey in pubkeys)
+                    _TappableUserChip(pubkey: pubkey),
+                ],
+              ),
+            ),
     );
   }
 }

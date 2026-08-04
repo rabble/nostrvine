@@ -3,6 +3,8 @@
 // ABOUTME: data is absent. Covers badges, title, stats, creator, tags,
 // ABOUTME: collaborators, inspired by, reposted by, and sounds sections.
 
+import 'dart:async';
+
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -1121,6 +1123,41 @@ void main() {
         expect(find.text('Reposted by'), findsNothing);
       },
     );
+
+    testWidgetsWithSurfaceSize('grows in when the relay answers late', (
+      tester,
+    ) async {
+      final reposters = StreamController<VideoRepostersState>.broadcast();
+      addTearDown(reposters.close);
+      when(() => mockRepostersCubit.stream).thenAnswer((_) => reposters.stream);
+
+      await tester.pumpWidget(
+        buildSubject(
+          providerOverrides: [
+            fetchUserProfileProvider(_reposterPubkey).overrideWith(
+              (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+            ),
+          ],
+          child: MetadataRepostedBySection(video: _makeVideo()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final section = find.byType(AnimatedReveal);
+      expect(tester.getSize(section).height, 0);
+
+      reposters.add(const VideoRepostersState(pubkeys: [_reposterPubkey]));
+      // The reposters are laid out on this frame, but the section is still
+      // collapsed — it grows from there rather than snapping the sections
+      // below it down.
+      await tester.pump();
+      final revealingHeight = tester.getSize(section).height;
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reposted by'), findsOneWidget);
+      expect(revealingHeight, lessThan(tester.getSize(section).height));
+    });
   });
 
   // ---------------------------------------------------------------------------
