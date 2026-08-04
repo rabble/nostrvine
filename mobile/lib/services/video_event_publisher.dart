@@ -31,6 +31,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_event_tag_source.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
@@ -1875,19 +1876,32 @@ class VideoEventPublisher {
   ///
   /// Strips any existing text-track tags from the original event, then emits
   /// one tag per ref ([textTrackRef] followed by each entry in
-  /// [extraTextTrackRefs]) for read-time redundancy. Returns true if
-  /// publishing succeeded.
-  Future<bool> republishWithSubtitles({
+  /// [extraTextTrackRefs]) for read-time redundancy. Returns the updated
+  /// video event after relay acceptance, or `null` if publishing failed.
+  Future<VideoEvent?> republishWithSubtitles({
     required VideoEvent existingEvent,
     required String textTrackRef,
     List<String> extraTextTrackRefs = const [],
     String textTrackLang = 'en',
   }) async {
     // Start from the original Nostr event tags, stripping old text-track tags.
-    final tags = existingEvent.nostrEventTags
-        .where((t) => t.isNotEmpty && t.first != 'text-track')
-        .map(List<String>.from)
-        .toList();
+    final tags =
+        sourceOriginalVideoTags(
+              video: existingEvent,
+              personalEventCache: _personalEventCache,
+            )
+            .where((t) => t.isNotEmpty && t.first != 'text-track')
+            .map(List<String>.from)
+            .toList();
+
+    if (!tags.any((tag) => tag.length >= 2 && tag.first == 'd')) {
+      Log.error(
+        'Cannot republish subtitles for video ${existingEvent.id}: missing d tag',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
 
     for (final ref in [textTrackRef, ...extraTextTrackRefs]) {
       tags.add([
@@ -1904,6 +1918,7 @@ class VideoEventPublisher {
       kind: NIP71VideoKinds.getPreferredAddressableKind(),
       content: existingEvent.content,
       tags: tags,
+      createdAt: existingEvent.createdAt + 1,
     );
 
     if (event == null) {
@@ -1912,16 +1927,19 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
-      return false;
+      return null;
     }
 
     // Publish to relays before updating local cache. A WebSocket send is not
     // enough here; rejected subtitle republishes must not appear locally.
     final published = await _publishEventToNostr(event);
-    if (!published) return false;
+    if (!published) return null;
+
+    final updatedVideo = VideoEvent.fromNostrEvent(event);
 
     try {
-      _videoEventService?.addVideoEvent(VideoEvent.fromNostrEvent(event));
+      _personalEventCache?.cacheUserEvent(event);
+      _videoEventService?.updateVideoEvent(updatedVideo);
     } catch (e) {
       Log.warning(
         'Failed to update local cache after subtitle republish: $e',
@@ -1930,7 +1948,7 @@ class VideoEventPublisher {
       );
     }
 
-    return true;
+    return updatedVideo;
   }
 
   /// Publishes a Kind 39307 subtitle event for [video] and returns its

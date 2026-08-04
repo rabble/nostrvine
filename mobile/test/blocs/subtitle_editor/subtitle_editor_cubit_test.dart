@@ -21,6 +21,11 @@ final _video = VideoEvent(
   vineId: 'd1',
 );
 
+final VideoEvent _updatedVideo = _video.copyWith(
+  id: 'updated',
+  textTrackRef: 'https://media.divine.video/edited.vtt',
+);
+
 void main() {
   setUpAll(() => registerFallbackValue(_video));
 
@@ -115,7 +120,7 @@ void main() {
             video: any(named: 'video'),
             cues: any(named: 'cues'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => _updatedVideo);
       },
       build: () => SubtitleEditorCubit(repository: repo, video: _video),
       act: (c) async {
@@ -131,7 +136,8 @@ void main() {
         ),
         isA<SubtitleEditorState>()
             .having((s) => s.status, 'status', SubtitleEditorStatus.success)
-            .having((s) => s.isDirty, 'isDirty', false),
+            .having((s) => s.isDirty, 'isDirty', false)
+            .having((s) => s.updatedVideo, 'updatedVideo', _updatedVideo),
       ],
     );
 
@@ -178,15 +184,15 @@ void main() {
       expect(cubit.state.status, SubtitleEditorStatus.loading);
 
       await cubit.close();
-      completer.complete(
-        const [SubtitleCue(start: 0, end: 1000, text: 'late')],
-      );
+      completer.complete(const [
+        SubtitleCue(start: 0, end: 1000, text: 'late'),
+      ]);
 
       await expectLater(loadFuture, completes);
     });
 
     test('save completes without emitting after close', () async {
-      final completer = Completer<void>();
+      final completer = Completer<VideoEvent>();
       when(
         () => repo.publishEditedSubtitles(
           video: any(named: 'video'),
@@ -199,7 +205,7 @@ void main() {
       expect(cubit.state.status, SubtitleEditorStatus.saving);
 
       await cubit.close();
-      completer.complete();
+      completer.complete(_updatedVideo);
 
       await expectLater(saveFuture, completes);
     });

@@ -15,6 +15,15 @@ const _maxBlossomPollAttempts = 4;
 const _maxBlossomPollWait = Duration(seconds: 15);
 const _defaultBlossomRetryAfter = Duration(seconds: 3);
 
+/// Source ordering for [fetchSubtitleCues].
+enum SubtitleSourcePreference {
+  /// Prefer embedded REST VTT before trying text-track refs.
+  embeddedFirst,
+
+  /// Prefer text-track refs before embedded REST VTT.
+  refsFirst,
+}
+
 Duration _parseRetryAfter(Map<String, String> headers) {
   final rawValue = headers['retry-after'];
   if (rawValue == null) return _defaultBlossomRetryAfter;
@@ -124,9 +133,17 @@ Future<List<SubtitleCue>> fetchSubtitleCues({
   String? textTrackContent,
   List<String> textTrackRefs = const [],
   String? sha256,
+  SubtitleSourcePreference sourcePreference =
+      SubtitleSourcePreference.embeddedFirst,
 }) async {
-  if (textTrackContent != null && textTrackContent.isNotEmpty) {
+  List<SubtitleCue>? embeddedCues() {
+    if (textTrackContent == null || textTrackContent.isEmpty) return null;
     return SubtitleService.parseVtt(textTrackContent);
+  }
+
+  if (sourcePreference == SubtitleSourcePreference.embeddedFirst) {
+    final cues = embeddedCues();
+    if (cues != null) return cues;
   }
 
   for (final ref in textTrackRefs) {
@@ -149,6 +166,11 @@ Future<List<SubtitleCue>> fetchSubtitleCues({
         );
       }
     }
+  }
+
+  if (sourcePreference == SubtitleSourcePreference.refsFirst) {
+    final cues = embeddedCues();
+    if (cues != null) return cues;
   }
 
   if (sha256 != null && sha256.isNotEmpty) {

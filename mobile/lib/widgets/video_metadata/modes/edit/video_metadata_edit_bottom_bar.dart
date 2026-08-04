@@ -26,12 +26,14 @@ class VideoMetadataEditBottomBar extends ConsumerStatefulWidget {
     required this.video,
     required this.initialCollaboratorPubkeys,
     this.pendingThumbnailPath,
+    this.onVideoUpdated,
     super.key,
   });
 
   final VideoEvent video;
   final Set<String> initialCollaboratorPubkeys;
   final String? pendingThumbnailPath;
+  final ValueChanged<VideoEvent>? onVideoUpdated;
 
   @override
   ConsumerState<VideoMetadataEditBottomBar> createState() =>
@@ -45,11 +47,13 @@ class _VideoMetadataEditBottomBarState
 
   bool get _isBusy => _isUpdating || _isDeleting;
 
-  void _editSubtitles() {
-    context.push(
+  Future<void> _editSubtitles() async {
+    final updatedVideo = await context.push<VideoEvent>(
       SubtitleEditorScreen.pathFor(widget.video.id),
       extra: widget.video,
     );
+    if (!mounted || updatedVideo == null) return;
+    widget.onVideoUpdated?.call(updatedVideo);
   }
 
   Future<void> _updateVideo() async {

@@ -12,6 +12,7 @@ VideoEvent _video({
   String? vineId,
   String? textTrackRef,
   List<String> textTrackRefs = const [],
+  String? textTrackContent,
 }) {
   return VideoEvent(
     id: id,
@@ -22,6 +23,7 @@ VideoEvent _video({
     vineId: vineId,
     textTrackRef: textTrackRef,
     textTrackRefs: textTrackRefs,
+    textTrackContent: textTrackContent,
   );
 }
 
@@ -55,6 +57,29 @@ void main() {
         'https://media.divine.video/subtitle-vtt',
         '39307:pubkey:subtitles:video-subtitles',
       ]);
+    });
+
+    test('does not inherit stale embedded text when current has refs', () {
+      final current = _video(
+        id: 'nostr',
+        vineId: 'video-subtitles',
+        textTrackRef: 'https://media.divine.video/edited.vtt',
+      );
+      final enriched = _video(
+        id: 'rest',
+        vineId: 'video-subtitles',
+        textTrackContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nstale\n',
+      );
+
+      final merged = mergeProfileFeedEnrichment(
+        current: [current],
+        sourceKeys: {canonicalProfileFeedVideoKey(current)},
+        incoming: [enriched],
+        removeTombstones: (videos) => videos,
+      );
+
+      expect(merged.single.textTrackRef, current.textTrackRef);
+      expect(merged.single.textTrackContent, isNull);
     });
 
     test('does not reintroduce source videos missing from current state', () {

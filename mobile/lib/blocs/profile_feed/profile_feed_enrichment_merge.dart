@@ -97,7 +97,12 @@ VideoEvent _mergeEnrichmentIntoCurrent(
     textTrackRefs: current.textTrackRefs.isNotEmpty
         ? current.textTrackRefs
         : enriched.textTrackRefs,
-    textTrackContent: current.textTrackContent ?? enriched.textTrackContent,
+    textTrackContent:
+        current.textTrackContent ??
+        ((current.textTrackRef?.isNotEmpty ?? false) ||
+                current.textTrackRefs.isNotEmpty
+            ? null
+            : enriched.textTrackContent),
     nostrEventTags: current.nostrEventTags.isNotEmpty
         ? current.nostrEventTags
         : enriched.nostrEventTags,

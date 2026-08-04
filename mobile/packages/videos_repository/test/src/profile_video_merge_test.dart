@@ -19,6 +19,7 @@ VideoEvent _video({
   List<List<String>> nostrEventTags = const [],
   String? textTrackRef,
   List<String> textTrackRefs = const [],
+  String? textTrackContent,
   List<String> contentWarningLabels = const [],
   int? originalLikes,
   int? originalComments,
@@ -45,6 +46,7 @@ VideoEvent _video({
     nostrEventTags: nostrEventTags,
     textTrackRef: textTrackRef,
     textTrackRefs: textTrackRefs,
+    textTrackContent: textTrackContent,
     contentWarningLabels: contentWarningLabels,
     originalLikes: originalLikes,
     originalComments: originalComments,
@@ -202,6 +204,31 @@ void main() {
         'https://media.divine.video/current-vtt',
         '39307:pubkey:subtitles:current-video-subtitles',
       ]);
+    });
+
+    test('does not inherit stale embedded text when primary has refs', () {
+      final merged = mergeProfileFeedVideos(
+        _video(
+          id: 'primary',
+          pubkey: 'pubkey',
+          createdAt: 2000,
+          vineId: 'video-subtitles',
+          textTrackRef: 'https://media.divine.video/current-vtt',
+        ),
+        _video(
+          id: 'secondary',
+          pubkey: 'pubkey',
+          createdAt: 1000,
+          vineId: 'video-subtitles',
+          textTrackContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nstale\n',
+        ),
+      );
+
+      expect(
+        merged.textTrackRef,
+        equals('https://media.divine.video/current-vtt'),
+      );
+      expect(merged.textTrackContent, isNull);
     });
 
     test('primary fields fall back to secondary when null', () {

@@ -12,6 +12,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_event_tag_source.dart';
 import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/inspired_by_tags.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -422,12 +423,10 @@ class VideoMetadataUpdateService {
   /// the personal cache so preservation is not silently defeated; if it is
   /// not cached, fall back to an empty list (the pre-existing behavior).
   List<List<String>> _sourceOriginalTags(VideoEvent video) {
-    if (video.nostrEventTags.isNotEmpty) return video.nostrEventTags;
-    final cached = _personalEventCache.getEventById(video.id);
-    if (cached == null) return const [];
-    return cached.tags
-        .map((tag) => (tag as List).map((e) => e.toString()).toList())
-        .toList();
+    return sourceOriginalVideoTags(
+      video: video,
+      personalEventCache: _personalEventCache,
+    );
   }
 
   /// Extracts all valid HTTP video URLs from the event's imeta tags.

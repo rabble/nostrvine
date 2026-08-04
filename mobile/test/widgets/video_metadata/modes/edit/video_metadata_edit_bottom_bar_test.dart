@@ -26,7 +26,10 @@ void main() {
       );
     });
 
-    Widget buildSubject(MockGoRouter goRouter) {
+    Widget buildSubject(
+      MockGoRouter goRouter, {
+      ValueChanged<VideoEvent>? onVideoUpdated,
+    }) {
       return ProviderScope(
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -37,6 +40,7 @@ void main() {
               child: VideoMetadataEditBottomBar(
                 video: testVideo,
                 initialCollaboratorPubkeys: const {},
+                onVideoUpdated: onVideoUpdated,
               ),
             ),
           ),
@@ -47,7 +51,7 @@ void main() {
     testWidgets('navigates to subtitle editor when tapped', (tester) async {
       final mockGoRouter = MockGoRouter();
       when(
-        () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
+        () => mockGoRouter.push<VideoEvent>(any(), extra: any(named: 'extra')),
       ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(buildSubject(mockGoRouter));
@@ -56,11 +60,32 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockGoRouter.push<Object?>(
+        () => mockGoRouter.push<VideoEvent>(
           SubtitleEditorScreen.pathFor(testVideo.id),
           extra: testVideo,
         ),
       ).called(1);
+    });
+
+    testWidgets('adopts returned subtitle editor video', (tester) async {
+      final mockGoRouter = MockGoRouter();
+      final updatedVideo = testVideo.copyWith(
+        id: '1111111111111111111111111111111111111111111111111111111111111111',
+        textTrackRef: 'https://media.divine.video/edited.vtt',
+      );
+      VideoEvent? adopted;
+      when(
+        () => mockGoRouter.push<VideoEvent>(any(), extra: any(named: 'extra')),
+      ).thenAnswer((_) async => updatedVideo);
+
+      await tester.pumpWidget(
+        buildSubject(mockGoRouter, onVideoUpdated: (video) => adopted = video),
+      );
+
+      await tester.tap(find.text(l10n.videoEditEditSubtitles));
+      await tester.pump();
+
+      expect(adopted, updatedVideo);
     });
 
     testWidgets('uses DivineButton styling for subtitle editing', (
