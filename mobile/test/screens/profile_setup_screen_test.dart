@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,6 +31,8 @@ class _MockProfileEditorBloc
 
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
+
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 Finder _divineIcon(DivineIconName name) =>
     find.byWidgetPredicate((w) => w is DivineIcon && w.icon == name);
@@ -1253,6 +1256,128 @@ void main() {
           findsNothing,
         );
         expect(find.text('Profile destination'), findsOneWidget);
+      });
+
+      /// The guard compares each field against a baseline the seeding path
+      /// supplies. Seeding runs more than once — the cache fills the form and
+      /// the relay's copy refreshes whatever the user has not touched — so the
+      /// baseline has to keep up with it.
+      group('against the real editor bloc', () {
+        late ProfileEditorBloc editorBloc;
+        late StreamController<MyProfileState> profileStates;
+
+        setUp(() {
+          editorBloc = ProfileEditorBloc(
+            profileRepository: mockProfileRepository,
+            blossomUploadService: _MockBlossomUploadService(),
+            hasExistingProfile: true,
+            currentUserPubkey: testPubkeyHex,
+          );
+          addTearDown(editorBloc.close);
+
+          profileStates = StreamController<MyProfileState>();
+          addTearDown(profileStates.close);
+          whenListen(
+            mockMyProfileBloc,
+            profileStates.stream,
+            initialState: const MyProfileInitial(),
+          );
+        });
+
+        Future<void> pumpRealBloc(WidgetTester tester) async {
+          await tester.pumpWidget(
+            testProviderScope(
+              additionalOverrides: [
+                authServiceProvider.overrideWithValue(mockAuthService),
+                profileRepositoryProvider.overrideWith(
+                  (ref) => mockProfileRepository,
+                ),
+                fetchUserProfileProvider(
+                  testPubkeyHex,
+                ).overrideWith((ref) async => null),
+                userProfileReactiveProvider(
+                  testPubkeyHex,
+                ).overrideWith(
+                  (ref) => Stream<models.UserProfile?>.value(null),
+                ),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: VineTheme.theme,
+                home: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<ProfileEditorBloc>.value(value: editorBloc),
+                    BlocProvider<MyProfileBloc>.value(value: mockMyProfileBloc),
+                  ],
+                  child: const ProfileSetupScreenView(isNewUser: false),
+                ),
+              ),
+            ),
+          );
+        }
+
+        testWidgets('a seeded profile alone is not an unsaved change', (
+          tester,
+        ) async {
+          await pumpRealBloc(tester);
+          profileStates.add(MyProfileLoading(profile: cachedProfile()));
+          await tester.pumpAndSettle();
+
+          expect(editorBloc.state.hasUnsavedChanges, isFalse);
+        });
+
+        testWidgets(
+          'a relay name that differs from the cache is not an unsaved change',
+          (tester) async {
+            await pumpRealBloc(tester);
+            profileStates.add(MyProfileLoading(profile: cachedProfile()));
+            await tester.pumpAndSettle();
+
+            // Renamed on another device: the cache is stale and the relay's
+            // copy refreshes the untouched field. The user has typed nothing,
+            // so leaving must not claim there is anything to save.
+            profileStates.add(
+              MyProfileLoaded(
+                profile: cachedProfile(
+                  displayName: 'Relay Name',
+                  eventId: freshEventId,
+                ),
+                isFresh: true,
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            expect(find.text('Relay Name'), findsOneWidget);
+            expect(editorBloc.state.hasUnsavedChanges, isFalse);
+          },
+        );
+
+        testWidgets('a fresher profile does not clear a typed edit', (
+          tester,
+        ) async {
+          await pumpRealBloc(tester);
+          profileStates.add(MyProfileLoading(profile: cachedProfile()));
+          await tester.pumpAndSettle();
+
+          await tester.enterText(find.byType(TextField).first, 'My Own Name');
+          await tester.pumpAndSettle();
+          expect(editorBloc.state.hasUnsavedChanges, isTrue);
+
+          profileStates.add(
+            MyProfileLoaded(
+              profile: cachedProfile(
+                displayName: 'Relay Name',
+                eventId: freshEventId,
+              ),
+              isFresh: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(editorBloc.state.displayName, 'My Own Name');
+          expect(editorBloc.state.hasUnsavedChanges, isTrue);
+        });
       });
     });
 

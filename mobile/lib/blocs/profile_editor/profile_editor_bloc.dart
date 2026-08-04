@@ -130,10 +130,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           ? PendingAvatarStatus.idle
           : PendingAvatarStatus.staged,
       pendingPictureUrl: staged.pictureUrl,
+      pictureCleared: staged.pictureCleared,
       pendingBannerStatus: staged.bannerUrl == null
           ? PendingBannerStatus.idle
           : PendingBannerStatus.staged,
       pendingBannerUrl: staged.bannerUrl,
+      bannerCleared: staged.bannerCleared,
     );
   }
 
@@ -200,6 +202,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         externalNip05: state.initialExternalNip05 ?? '',
         pendingAvatarStatus: PendingAvatarStatus.idle,
         pendingPictureUrl: null,
+        pictureCleared: false,
         pendingBannerStatus: PendingBannerStatus.idle,
         pendingBannerUrl: null,
         pendingBannerColor: _parseBannerHexColor(state.persistedBanner),
@@ -254,11 +257,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         name: 'ProfileEditorBloc',
         category: LogCategory.ui,
       );
-      await _persistStagedProfileMedia(
-        pubkey: event.pubkey,
-        pictureUrl: stagedPictureUrl,
-        bannerUrl: state.pendingBannerUrl,
-      );
       emit(
         state.copyWith(
           pendingAvatarStatus: PendingAvatarStatus.staged,
@@ -266,6 +264,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           pictureCleared: false,
         ),
       );
+      await _persistStagedProfileMedia(pubkey: event.pubkey);
       return;
     }
 
@@ -316,10 +315,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     ProfilePictureUploadCleared event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    await _persistStagedProfileMedia(
-      pictureUrl: null,
-      bannerUrl: state.pendingBannerUrl,
-    );
     emit(
       state.copyWith(
         pendingAvatarStatus: PendingAvatarStatus.idle,
@@ -328,12 +323,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pictureCleared: false,
       ),
     );
+    await _persistStagedProfileMedia();
   }
 
-  void _onProfilePictureCleared(
+  Future<void> _onProfilePictureCleared(
     ProfilePictureCleared event,
     Emitter<ProfileEditorState> emit,
-  ) {
+  ) async {
     if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
       Log.info(
         'Ignoring ProfilePictureCleared received while an upload is in flight',
@@ -348,6 +344,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pictureCleared: true,
       ),
     );
+    // Writes through the removal *and* drops the staged URL, so the next
+    // editor build neither restores the picture the user just removed nor
+    // forgets that they removed it.
+    await _persistStagedProfileMedia();
   }
 
   Future<void> _onProfilePictureUrlSet(
@@ -364,10 +364,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     final trimmed = event.url.trim();
     if (trimmed.isEmpty) {
-      await _persistStagedProfileMedia(
-        pictureUrl: null,
-        bannerUrl: state.pendingBannerUrl,
-      );
       emit(
         state.copyWith(
           pendingAvatarStatus: PendingAvatarStatus.idle,
@@ -378,12 +374,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           // branch in [_onProfileBannerUrlSet].
         ),
       );
+      await _persistStagedProfileMedia();
       return;
     }
-    await _persistStagedProfileMedia(
-      pictureUrl: trimmed,
-      bannerUrl: state.pendingBannerUrl,
-    );
     emit(
       state.copyWith(
         pendingAvatarStatus: PendingAvatarStatus.staged,
@@ -391,6 +384,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pictureCleared: false,
       ),
     );
+    await _persistStagedProfileMedia();
   }
 
   void _onInitialPersistedBannerSet(
@@ -398,6 +392,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) {
     final banner = event.banner;
+    // A removal restored from the staged store outlives this seed: the first
+    // snapshot always seeds the persisted banner, and resetting the flag here
+    // would hand it straight back to a user who had already cleared it.
+    if (state.bannerCleared) {
+      emit(state.copyWith(persistedBanner: banner));
+      return;
+    }
     final parsedColor = state.pendingBannerUrl == null
         ? _parseBannerHexColor(banner)
         : null;
@@ -471,11 +472,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         name: 'ProfileEditorBloc',
         category: LogCategory.ui,
       );
-      await _persistStagedProfileMedia(
-        pubkey: event.pubkey,
-        pictureUrl: state.pendingPictureUrl,
-        bannerUrl: stagedBannerUrl,
-      );
       emit(
         state.copyWith(
           pendingBannerStatus: PendingBannerStatus.staged,
@@ -485,6 +481,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           bannerCleared: false,
         ),
       );
+      await _persistStagedProfileMedia(pubkey: event.pubkey);
       return;
     }
 
@@ -527,10 +524,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     ProfileBannerColorSelected event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    await _persistStagedProfileMedia(
-      pictureUrl: state.pendingPictureUrl,
-      bannerUrl: null,
-    );
     emit(
       state.copyWith(
         pendingBannerColor: event.color,
@@ -540,12 +533,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         bannerCleared: false,
       ),
     );
+    await _persistStagedProfileMedia();
   }
 
-  void _onProfileBannerUrlSet(
+  Future<void> _onProfileBannerUrlSet(
     ProfileBannerUrlSet event,
     Emitter<ProfileEditorState> emit,
-  ) {
+  ) async {
     if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
       Log.info(
         'Ignoring ProfileBannerUrlSet received while banner upload is in '
@@ -563,6 +557,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           pendingBannerStatus: PendingBannerStatus.idle,
         ),
       );
+      await _persistStagedProfileMedia();
       return;
     }
 
@@ -575,16 +570,15 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         bannerCleared: false,
       ),
     );
+    // Mirrors the pasted-picture branch: a link the user pasted is staged the
+    // same as an upload, so it has to survive the editor being rebuilt too.
+    await _persistStagedProfileMedia();
   }
 
   Future<void> _onProfileBannerCleared(
     ProfileBannerCleared event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    await _persistStagedProfileMedia(
-      pictureUrl: state.pendingPictureUrl,
-      bannerUrl: null,
-    );
     emit(
       state.copyWith(
         pendingBannerUrl: null,
@@ -595,6 +589,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         bannerCleared: true,
       ),
     );
+    await _persistStagedProfileMedia();
   }
 
   bool _shouldDropSaveBecauseUploadInFlight(String saveSource) {
@@ -1278,6 +1273,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pendingAvatarStatus: PendingAvatarStatus.idle,
         pendingPictureUrl: null,
         persistedPictureUrl: picture,
+        pictureCleared: false,
         pendingBannerStatus: PendingBannerStatus.idle,
         pendingBannerUrl: null,
         pendingBannerColor: _parseBannerHexColor(banner),
@@ -1315,18 +1311,22 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
   }
 
-  Future<void> _persistStagedProfileMedia({
-    required String? pictureUrl,
-    required String? bannerUrl,
-    String? pubkey,
-  }) async {
+  /// Mirrors the staged media on [state] into the durable store.
+  ///
+  /// Reads the fields off `state` rather than taking them as arguments, so it
+  /// must be called *after* the matching `emit`. Hand-threaded arguments are
+  /// what let two handlers ship without writing through at all (#6680); there
+  /// is only one source of truth now, and it is the state the UI renders.
+  Future<void> _persistStagedProfileMedia({String? pubkey}) async {
     final scopedPubkey = pubkey ?? _currentUserPubkey;
     final store = _stagedProfileMediaStore;
     if (store == null || scopedPubkey == null) return;
     await store.save(
       scopedPubkey,
-      pictureUrl: pictureUrl,
-      bannerUrl: bannerUrl,
+      pictureUrl: state.pendingPictureUrl,
+      bannerUrl: state.pendingBannerUrl,
+      pictureCleared: state.pictureCleared,
+      bannerCleared: state.bannerCleared,
     );
   }
 

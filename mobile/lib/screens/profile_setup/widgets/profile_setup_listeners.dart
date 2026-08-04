@@ -134,20 +134,30 @@ class _ProfileSetupListenersState extends ConsumerState<ProfileSetupListeners> {
     }
 
     final editorBloc = context.read<ProfileEditorBloc>();
+    // The baseline the unsaved-changes guard compares against is whatever was
+    // last *seeded*, which is not the same as what the profile now says: a
+    // field the user has typed into keeps its old baseline so the edit still
+    // counts as unsaved. Refreshing it on every snapshot — not just the first —
+    // is what stops a relay copy that disagrees with the cache from reading as
+    // an edit on a form nobody touched. The current values come back off the
+    // controllers, because a field the user touched is not the seed.
+    editorBloc
+      ..add(
+        InitialProfileFieldsSet(
+          displayName: _seededName ?? '',
+          about: _seededBio ?? '',
+          website: _seededWebsite ?? '',
+        ),
+      )
+      ..add(DisplayNameChanged(widget.nameController.text))
+      ..add(AboutChanged(widget.bioController.text))
+      ..add(WebsiteChanged(widget.websiteController.text));
     if (!_hasSeeded) {
       _hasSeeded = true;
       // Seed bloc with the persisted picture so the avatar widget can
       // render `pendingPictureUrl ?? persistedPictureUrl` purely from
-      // state, no widget-local fallback for the existing avatar. The initial
-      // fields set the baseline that Revert changes restores.
+      // state, no widget-local fallback for the existing avatar.
       editorBloc
-        ..add(
-          InitialProfileFieldsSet(
-            displayName: profile.displayName ?? profile.name ?? '',
-            about: profile.about ?? '',
-            website: profile.website ?? '',
-          ),
-        )
         ..add(InitialPersistedPictureSet(profile.picture))
         ..add(InitialPersistedBannerSet(profile.banner));
     } else {

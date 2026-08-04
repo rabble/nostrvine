@@ -1,5 +1,5 @@
-// ABOUTME: Persists pre-save staged profile avatar/banner media URLs.
-// ABOUTME: Keeps Blossom upload URLs recoverable across editor recreation.
+// ABOUTME: Persists pre-save staged profile avatar/banner media edits.
+// ABOUTME: Keeps Blossom upload URLs and removals recoverable across editor recreation.
 
 import 'dart:async';
 import 'dart:convert';
@@ -11,21 +11,42 @@ class StagedProfileMedia {
     required this.stagedAt,
     this.pictureUrl,
     this.bannerUrl,
+    this.pictureCleared = false,
+    this.bannerCleared = false,
   });
 
   final String? pictureUrl;
   final String? bannerUrl;
+
+  /// Whether the user staged the removal of their persisted picture.
+  ///
+  /// Carried alongside the URLs because a removal is as much an unsaved media
+  /// edit as an upload: without it the editor rebuilds with the persisted
+  /// picture back in place and the removal is silently forgotten.
+  final bool pictureCleared;
+
+  /// Whether the user staged the removal of their persisted banner.
+  final bool bannerCleared;
+
   final DateTime stagedAt;
 
   bool get isEmpty =>
       (pictureUrl == null || pictureUrl!.isEmpty) &&
-      (bannerUrl == null || bannerUrl!.isEmpty);
+      (bannerUrl == null || bannerUrl!.isEmpty) &&
+      !pictureCleared &&
+      !bannerCleared;
 }
 
 abstract interface class StagedProfileMediaStore {
   StagedProfileMedia? load(String pubkey);
 
-  Future<void> save(String pubkey, {String? pictureUrl, String? bannerUrl});
+  Future<void> save(
+    String pubkey, {
+    String? pictureUrl,
+    String? bannerUrl,
+    bool pictureCleared,
+    bool bannerCleared,
+  });
 
   Future<void> clear(String pubkey);
 }
@@ -67,6 +88,10 @@ class SharedPreferencesStagedProfileMediaStore
       final media = StagedProfileMedia(
         pictureUrl: _nonEmptyString(decoded['pictureUrl']),
         bannerUrl: _nonEmptyString(decoded['bannerUrl']),
+        // Absent on payloads written before removals were staged; a missing
+        // flag reads as "nothing removed", which is what those payloads meant.
+        pictureCleared: decoded['pictureCleared'] == true,
+        bannerCleared: decoded['bannerCleared'] == true,
         stagedAt: stagedAt,
       );
       if (media.isEmpty) return _clearInvalid(pubkey);
@@ -81,11 +106,16 @@ class SharedPreferencesStagedProfileMediaStore
     String pubkey, {
     String? pictureUrl,
     String? bannerUrl,
+    bool pictureCleared = false,
+    bool bannerCleared = false,
   }) async {
     try {
       final trimmedPicture = _nonEmptyString(pictureUrl);
       final trimmedBanner = _nonEmptyString(bannerUrl);
-      if (trimmedPicture == null && trimmedBanner == null) {
+      if (trimmedPicture == null &&
+          trimmedBanner == null &&
+          !pictureCleared &&
+          !bannerCleared) {
         await clear(pubkey);
         return;
       }
@@ -96,6 +126,8 @@ class SharedPreferencesStagedProfileMediaStore
           'version': _schemaVersion,
           'pictureUrl': trimmedPicture,
           'bannerUrl': trimmedBanner,
+          'pictureCleared': pictureCleared,
+          'bannerCleared': bannerCleared,
           'stagedAt': _now().millisecondsSinceEpoch,
         }),
       );
