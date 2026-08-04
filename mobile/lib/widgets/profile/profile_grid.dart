@@ -293,6 +293,16 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     unawaited(_refreshSyncedTabs());
   }
 
+  /// Re-syncs every tab the user has viewed and resolves once all of them have
+  /// finished.
+  ///
+  /// Each sync event carries its own [Completer], which its handler completes
+  /// in a `finally`. Watching the state stream instead cannot express this: an
+  /// unchanged re-sync emits a state equal to the current one and bloc
+  /// suppresses it, and a handler stays busy past its terminal emit while it
+  /// writes its snapshot to the cache — so a settled-looking tab could still be
+  /// mid-handler. Holding the indicator until the completers fire also keeps
+  /// the next pull from landing on a bloc that is still working.
   Future<void> _refreshSyncedTabs() async {
     // Re-dispatch sync only for tabs that have been viewed (lazy load still
     // applies).
@@ -304,64 +314,33 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         case ProfileTabKind.collabs:
           final bloc = _collabVideosBloc;
           if (bloc == null) break;
-          bloc.add(const ProfileCollabVideosFetchRequested());
-          refreshes.add(
-            bloc.stream.firstWhere(
-              (state) =>
-                  !state.isRefreshing &&
-                  state.status != ProfileCollabVideosStatus.loading,
-              orElse: () => bloc.state,
-            ),
-          );
+          final completer = Completer<void>();
+          bloc.add(ProfileCollabVideosFetchRequested(completer: completer));
+          refreshes.add(completer.future);
         case ProfileTabKind.liked:
           final bloc = _likedVideosBloc;
           if (bloc == null) break;
-          bloc.add(const ProfileLikedVideosSyncRequested());
-          refreshes.add(
-            bloc.stream.firstWhere(
-              (state) =>
-                  !state.isRefreshing &&
-                  state.status != ProfileLikedVideosStatus.syncing &&
-                  state.status != ProfileLikedVideosStatus.loading,
-              orElse: () => bloc.state,
-            ),
-          );
+          final completer = Completer<void>();
+          bloc.add(ProfileLikedVideosSyncRequested(completer: completer));
+          refreshes.add(completer.future);
         case ProfileTabKind.reposts:
           final bloc = _repostedVideosBloc;
           if (bloc == null) break;
-          bloc.add(const ProfileRepostedVideosSyncRequested());
-          refreshes.add(
-            bloc.stream.firstWhere(
-              (state) =>
-                  !state.isRefreshing &&
-                  state.status != ProfileRepostedVideosStatus.syncing &&
-                  state.status != ProfileRepostedVideosStatus.loading,
-              orElse: () => bloc.state,
-            ),
-          );
+          final completer = Completer<void>();
+          bloc.add(ProfileRepostedVideosSyncRequested(completer: completer));
+          refreshes.add(completer.future);
         case ProfileTabKind.saved:
           final bloc = _savedVideosBloc;
           if (bloc == null) break;
-          bloc.add(const ProfileSavedVideosSyncRequested());
-          refreshes.add(
-            bloc.stream.firstWhere(
-              (state) =>
-                  !state.isRefreshing &&
-                  state.status != ProfileSavedVideosStatus.syncing &&
-                  state.status != ProfileSavedVideosStatus.loading,
-              orElse: () => bloc.state,
-            ),
-          );
+          final completer = Completer<void>();
+          bloc.add(ProfileSavedVideosSyncRequested(completer: completer));
+          refreshes.add(completer.future);
         case ProfileTabKind.comments:
           final bloc = _commentsBloc;
           if (bloc == null) break;
-          bloc.add(const ProfileCommentsSyncRequested());
-          refreshes.add(
-            bloc.stream.firstWhere(
-              (state) => state.status != ProfileCommentsStatus.loading,
-              orElse: () => bloc.state,
-            ),
-          );
+          final completer = Completer<void>();
+          bloc.add(ProfileCommentsSyncRequested(completer: completer));
+          refreshes.add(completer.future);
       }
     }
     await Future.wait(refreshes);
@@ -382,15 +361,21 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       profileRefresh.complete();
     }
 
-    final profileFeedCubit = context.read<ProfileFeedCubit>();
-    profileFeedCubit.add(const ProfileFeedRefreshRequested());
-    final feedRefresh = profileFeedCubit.stream.firstWhere(
-      (state) => !state.isRefreshing && !state.isFetchingTotalCount,
-      orElse: () => profileFeedCubit.state,
+    // The Videos tab uses the same completer handshake as the other tabs, for
+    // the same reason: its terminal emit is not the end of the handler, and a
+    // refresh that changes nothing would emit a suppressed state.
+    final feedRefresh = Completer<void>();
+    context.read<ProfileFeedCubit>().add(
+      ProfileFeedRefreshRequested(completer: feedRefresh),
     );
+
     final tabRefresh = _refreshSyncedTabs();
 
-    await Future.wait([profileRefresh.future, feedRefresh, tabRefresh]);
+    await Future.wait([
+      profileRefresh.future,
+      feedRefresh.future,
+      tabRefresh,
+    ]);
   }
 
   @override

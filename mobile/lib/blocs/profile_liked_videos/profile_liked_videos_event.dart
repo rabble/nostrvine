@@ -14,7 +14,12 @@ sealed class ProfileLikedVideosEvent {
 /// 1. Sync of liked event IDs from LikesRepository
 /// 2. Fetch of video data for those IDs from cache/relays
 final class ProfileLikedVideosSyncRequested extends ProfileLikedVideosEvent {
-  const ProfileLikedVideosSyncRequested();
+  const ProfileLikedVideosSyncRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances, completed once the
+  /// handler is fully done — snapshot write included. See
+  /// [completeProfileTabSync].
+  final Completer<void>? completer;
 }
 
 /// Request to start listening for liked IDs changes from the repository.

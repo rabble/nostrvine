@@ -27,6 +27,10 @@ class _MockContentBlocklistRepository extends Mock
 class _InMemoryCacheDao implements CacheDao {
   final Map<String, String> _store = {};
 
+  /// When set, [write] parks until it completes, holding a sync handler in the
+  /// post-emit snapshot write the way a real disk write does.
+  Completer<void>? writeGate;
+
   @override
   Future<String?> read(String key) async => _store[key];
 
@@ -36,6 +40,7 @@ class _InMemoryCacheDao implements CacheDao {
     required String payload,
     Duration? ttl,
   }) async {
+    await writeGate?.future;
     _store[key] = payload;
   }
 
@@ -268,6 +273,39 @@ void main() {
           );
         },
       );
+
+      test('a sync arriving during the snapshot write still runs', () async {
+        when(
+          () => mockLikesRepository.syncUserReactions(),
+        ).thenAnswer((_) async => const LikesSyncResult.empty());
+        final bloc = createBloc();
+        addTearDown(bloc.close);
+
+        // Park the first sync in its post-emit snapshot write — the window in
+        // which the tab already looks settled but the handler is still busy.
+        final writeGate = Completer<void>();
+        cacheDao.writeGate = writeGate;
+        final firstSync = Completer<void>();
+        bloc.add(ProfileLikedVideosSyncRequested(completer: firstSync));
+        await bloc.stream.firstWhere(
+          (state) => state.status == ProfileLikedVideosStatus.success,
+        );
+        expect(firstSync.isCompleted, isFalse);
+
+        // A pull landing in that window used to be discarded outright, leaving
+        // the RefreshIndicator with nothing left to wait for.
+        final secondSync = Completer<void>();
+        bloc.add(ProfileLikedVideosSyncRequested(completer: secondSync));
+        writeGate.complete();
+
+        await Future.wait([firstSync.future, secondSync.future]).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => fail(
+            'a sync dispatched during the snapshot write never completed — '
+            'pull-to-refresh would spin forever',
+          ),
+        );
+      });
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'emits [success] with videos when liked videos found',

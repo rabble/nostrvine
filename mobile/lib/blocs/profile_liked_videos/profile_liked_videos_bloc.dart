@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -54,7 +55,10 @@ class ProfileLikedVideosBloc
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(
       _onSyncRequested,
-      transformer: droppable(),
+      // Sequential, not droppable: a dropped event never reaches the handler,
+      // so nothing would complete its completer and pull-to-refresh would spin
+      // forever. Rapid syncs queue instead of coalescing.
+      transformer: sequential(),
     );
     on<ProfileLikedVideosSubscriptionRequested>(_onSubscriptionRequested);
     on<ProfileLikedVideosReconcileRequested>(
@@ -118,8 +122,22 @@ class ProfileLikedVideosBloc
   /// re-serializes the whole window, which previously janked the UI thread
   /// when fresh data arrived. On a cold open the state stays loading until
   /// the first page resolves.
+  ///
+  /// [ProfileLikedVideosSyncRequested.completer] fires only once all of that
+  /// is done, snapshot write included, so a refresh waiter is released exactly
+  /// when the bloc is free to take the next sync.
   Future<void> _onSyncRequested(
     ProfileLikedVideosSyncRequested event,
+    Emitter<ProfileLikedVideosState> emit,
+  ) async {
+    try {
+      await _syncAndRevalidate(emit);
+    } finally {
+      completeProfileTabSync(event.completer);
+    }
+  }
+
+  Future<void> _syncAndRevalidate(
     Emitter<ProfileLikedVideosState> emit,
   ) async {
     Log.info(
@@ -133,8 +151,7 @@ class ProfileLikedVideosBloc
     // progress bar straight away rather than flashing the full-screen spinner.
     // An empty settled grid needs the flag too: a re-sync that stays empty
     // emits a state equal to the current one, which bloc suppresses, so
-    // without this transition the profile pull-to-refresh (it awaits the next
-    // settled state) hangs.
+    // without this transition the bar would never appear for an empty tab.
     if (state.status != ProfileLikedVideosStatus.initial &&
         !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));

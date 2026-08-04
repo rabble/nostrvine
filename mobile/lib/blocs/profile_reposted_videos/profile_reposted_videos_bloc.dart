@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -53,7 +54,10 @@ class ProfileRepostedVideosBloc
        super(const ProfileRepostedVideosState()) {
     on<ProfileRepostedVideosSyncRequested>(
       _onSyncRequested,
-      transformer: droppable(),
+      // Sequential, not droppable: a dropped event never reaches the handler,
+      // so nothing would complete its completer and pull-to-refresh would spin
+      // forever. Rapid syncs queue instead of coalescing.
+      transformer: sequential(),
     );
     on<ProfileRepostedVideosSubscriptionRequested>(_onSubscriptionRequested);
     on<ProfileRepostedVideosReconcileRequested>(
@@ -91,14 +95,29 @@ class ProfileRepostedVideosBloc
   /// On reopen the persisted snapshot is deserialized once and served
   /// immediately; revalidation then only refreshes the reposted-ID list and
   /// reconciles it against the shown videos (no bulk re-fetch / re-serialize).
+  ///
+  /// [ProfileRepostedVideosSyncRequested.completer] fires only once all of that
+  /// is done, snapshot write included, so a refresh waiter is released exactly
+  /// when the bloc is free to take the next sync.
   Future<void> _onSyncRequested(
     ProfileRepostedVideosSyncRequested event,
     Emitter<ProfileRepostedVideosState> emit,
   ) async {
+    try {
+      await _syncAndRevalidate(emit);
+    } finally {
+      completeProfileTabSync(event.completer);
+    }
+  }
+
+  Future<void> _syncAndRevalidate(
+    Emitter<ProfileRepostedVideosState> emit,
+  ) async {
     // Flag the revalidation whenever a settled result is on screen — an empty
-    // one included. A re-sync that stays empty emits a state equal to the
-    // current one, which bloc suppresses, so without this transition the
-    // profile pull-to-refresh (it awaits the next settled state) hangs.
+    // one included — so the sticky cache-revalidation bar runs for the whole
+    // re-sync. A re-sync that stays empty emits a state equal to the current
+    // one, which bloc suppresses, so without this transition the bar would
+    // never appear for an empty tab.
     if (state.status != ProfileRepostedVideosStatus.initial &&
         !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));

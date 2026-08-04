@@ -1043,5 +1043,65 @@ void main() {
         expect(cubit.state.videos.single.originalLikes, isNull);
       },
     );
+
+    group('ProfileFeedRefreshRequested completer', () {
+      test('fires once the refresh has settled', () async {
+        final cubit = await buildReady(_result([_video('a')]));
+        addTearDown(cubit.close);
+
+        final refresh = Completer<void>();
+        cubit.add(ProfileFeedRefreshRequested(completer: refresh));
+
+        await refresh.future.timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => fail(
+            'the refresh completer never fired — pull-to-refresh '
+            'would spin forever',
+          ),
+        );
+      });
+
+      test('a superseded refresh still fires its own completer', () async {
+        Completer<AuthorFeedResult>? gate;
+        when(
+          () => h.repo.getAuthorFeed(
+            authorPubkey: any(named: 'authorPubkey'),
+            offset: any(named: 'offset'),
+            relaySeed: any(named: 'relaySeed'),
+            skipCache: any(named: 'skipCache'),
+          ),
+        ).thenAnswer((_) {
+          final parked = gate;
+          gate = null;
+          return parked?.future ?? Future.value(_result([_video('a')]));
+        });
+
+        final cubit = h.build();
+        addTearDown(cubit.close);
+        await pumpEventQueue();
+
+        // Park the first refresh mid-load, then supersede it. `restartable()`
+        // cancels the loser's emitter but still runs its handler, so its
+        // `finally` — and therefore its waiter — must survive the swap.
+        final firstLoad = Completer<AuthorFeedResult>();
+        gate = firstLoad;
+        final first = Completer<void>();
+        cubit.add(ProfileFeedRefreshRequested(completer: first));
+        await pumpEventQueue();
+        expect(first.isCompleted, isFalse);
+
+        final second = Completer<void>();
+        cubit.add(ProfileFeedRefreshRequested(completer: second));
+        firstLoad.complete(_result([_video('b')]));
+
+        await Future.wait([first.future, second.future]).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () => fail(
+            'a superseded refresh stranded its completer — '
+            'pull-to-refresh would spin forever',
+          ),
+        );
+      });
+    });
   });
 }

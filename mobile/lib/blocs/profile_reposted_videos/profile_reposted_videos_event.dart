@@ -15,7 +15,12 @@ sealed class ProfileRepostedVideosEvent {
 /// 2. Resolution of addressable IDs to VideoEvents
 final class ProfileRepostedVideosSyncRequested
     extends ProfileRepostedVideosEvent {
-  const ProfileRepostedVideosSyncRequested();
+  const ProfileRepostedVideosSyncRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances, completed once the
+  /// handler is fully done — snapshot write included. See
+  /// [completeProfileTabSync].
+  final Completer<void>? completer;
 }
 
 /// Request to start listening for repost changes from the repository.

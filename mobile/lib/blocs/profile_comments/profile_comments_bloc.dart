@@ -2,9 +2,13 @@
 // ABOUTME: Splits results into video replies and text comments for UI display.
 // ABOUTME: Supports lazy loading and cursor-based pagination.
 
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 
 part 'profile_comments_event.dart';
 part 'profile_comments_state.dart';
@@ -32,7 +36,12 @@ class ProfileCommentsBloc
        _targetUserPubkey = targetUserPubkey,
        _includeVideoReplies = includeVideoReplies,
        super(const ProfileCommentsState()) {
-    on<ProfileCommentsSyncRequested>(_onSyncRequested);
+    on<ProfileCommentsSyncRequested>(
+      _onSyncRequested,
+      // Sequential so every sync runs — and therefore completes its completer,
+      // which is what holds the profile pull-to-refresh indicator.
+      transformer: sequential(),
+    );
     on<ProfileCommentsLoadMoreRequested>(_onLoadMoreRequested);
   }
 
@@ -40,12 +49,21 @@ class ProfileCommentsBloc
   final String _targetUserPubkey;
   final bool _includeVideoReplies;
 
+  /// Loads the target user's comments, completing
+  /// [ProfileCommentsSyncRequested.completer] once the load has settled so the
+  /// profile pull-to-refresh can release its indicator.
   Future<void> _onSyncRequested(
     ProfileCommentsSyncRequested event,
     Emitter<ProfileCommentsState> emit,
   ) async {
-    if (state.status == ProfileCommentsStatus.loading) return;
+    try {
+      await _sync(emit);
+    } finally {
+      completeProfileTabSync(event.completer);
+    }
+  }
 
+  Future<void> _sync(Emitter<ProfileCommentsState> emit) async {
     emit(state.copyWith(status: ProfileCommentsStatus.loading));
 
     try {

@@ -10,7 +10,11 @@ sealed class ProfileCommentsEvent {
 
 /// Requests the initial sync of comments for the target user.
 final class ProfileCommentsSyncRequested extends ProfileCommentsEvent {
-  const ProfileCommentsSyncRequested();
+  const ProfileCommentsSyncRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances, completed once the
+  /// handler is fully done. See [completeProfileTabSync].
+  final Completer<void>? completer;
 }
 
 /// Requests loading more comments for pagination.

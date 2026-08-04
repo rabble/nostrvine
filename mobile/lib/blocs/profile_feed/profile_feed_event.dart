@@ -21,7 +21,15 @@ final class ProfileFeedLoadMoreRequested extends ProfileFeedEvent {
 
 /// Forces a full refresh. `restartable` — the latest refresh wins.
 final class ProfileFeedRefreshRequested extends ProfileFeedEvent {
-  const ProfileFeedRefreshRequested();
+  const ProfileFeedRefreshRequested({this.completer});
+
+  /// Optional completion signal for UI refresh affordances, completed once the
+  /// handler is fully done. See [completeProfileTabSync].
+  ///
+  /// Deliberately not in [props]: the completer is an out-of-band callback, not
+  /// part of the event's identity, and equality is what lets a caller verify
+  /// `add(const ProfileFeedRefreshRequested())` regardless of the waiter.
+  final Completer<void>? completer;
 }
 
 /// Re-applies feed filters in place over the cached source (no re-fetch).
