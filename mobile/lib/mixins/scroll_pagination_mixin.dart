@@ -55,11 +55,13 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
   FutureOr<void> onLoadMore();
 
   /// How many viewports ahead of the bottom edge the next page is requested.
+  ///
+  /// Callers that also choose a page size must keep it comfortably above one
+  /// viewport, or the prefetch fires again the moment the page lands and the
+  /// list never leaves the loading state. `profileTabPageSize` in
+  /// `lib/blocs/profile_shared/` is sized against this factor — revisit it if
+  /// this changes.
   static const double _viewportPrefetchFactor = 1.5;
-
-  /// Distance used before the scroll view has an attached position to read a
-  /// viewport height from.
-  static const double _fallbackThreshold = 200;
 
   /// Distance from the bottom edge (in logical pixels) at which [onLoadMore]
   /// is triggered.
@@ -70,12 +72,17 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
   /// off screen. A fixed pixel distance is not enough: on a dense grid it is
   /// only a row or two, so the request starts when the user is already at the
   /// bottom. Called on every scroll tick, so keep overrides cheap.
+  ///
+  /// Only valid while [paginationScrollController] has clients, which the
+  /// mixin guarantees at its own call site. Reads the first attached position
+  /// rather than [ScrollController.position] because one controller can drive
+  /// several viewports (profile tabs share the [PrimaryScrollController] of
+  /// their [NestedScrollView]); siblings are the same height, so any of them
+  /// answers the question.
   @protected
-  double get paginationLoadMoreThreshold {
-    final positions = paginationScrollController.positions;
-    if (positions.isEmpty) return _fallbackThreshold;
-    return positions.first.viewportDimension * _viewportPrefetchFactor;
-  }
+  double get paginationLoadMoreThreshold =>
+      paginationScrollController.positions.first.viewportDimension *
+      _viewportPrefetchFactor;
 
   Future<void>? _pendingPaginationLoad;
 
