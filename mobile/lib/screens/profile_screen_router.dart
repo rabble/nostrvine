@@ -94,11 +94,11 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         parseRoute(GoRouterState.of(context).uri.path);
 
     // Check if this is own profile grid view (needs own scaffold)
-    final currentNpub = ref.read(authServiceProvider).currentNpub;
+    final currentUserHex = ref.read(authServiceProvider).currentPublicKeyHex;
     final isOwnProfileGrid =
         routeContext.type == RouteType.profile &&
         routeContext.videoIndex == null && // Video mode uses shell
-        (routeContext.npub == 'me' || routeContext.npub == currentNpub);
+        routeIdentifiesUser(routeContext.npub, currentUserHex);
 
     final content = _ProfileContentView(
       routeContext: routeContext,

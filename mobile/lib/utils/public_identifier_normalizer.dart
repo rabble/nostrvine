@@ -43,7 +43,10 @@ NormalizedPublicIdentifier? normalizePublicIdentifier(
 
   // Try hex format first (most common internally)
   if (NostrKeyUtils.isValidKey(identifier)) {
-    return NormalizedPublicIdentifier(hexPubkey: identifier);
+    // Canonicalize casing: consumers compare this hex against the signed-in
+    // pubkey and key providers with it, so an uppercase deep-link segment must
+    // not read as a different identity than its lowercase form.
+    return NormalizedPublicIdentifier(hexPubkey: identifier.toLowerCase());
   }
 
   // Try npub format
