@@ -788,6 +788,24 @@ class RelayPool {
     });
   }
 
+  /// Restarts an armed settle window for [subId] because a relay is still
+  /// streaming its result set.
+  ///
+  /// The window bounds *silence* — a relay that never terminates a REQ gives
+  /// off no other signal. A relay part-way through answering is not that: it
+  /// is being served, just not finished. Expiring the window under it closes
+  /// the REQ mid-stream, and the caller is told the query completed normally,
+  /// so a truncated result set is indistinguishable from a complete one.
+  ///
+  /// No-op unless a window is already armed, so a query nobody has answered
+  /// yet still gets the caller's full timeout.
+  void _restartQuerySettleWindow(String subId) {
+    final armed = _querySettleTimers.remove(subId);
+    if (armed == null) return;
+    armed.cancel();
+    _armQuerySettleWindow(subId);
+  }
+
   /// Relay urls that never answered [subId]; diagnostic only.
   List<String> _queryStragglers(String subId) => [
     for (final r in [
@@ -1112,7 +1130,13 @@ class RelayPool {
           subscription.onEvent(event);
         } else {
           subscription = relay.getRequestSubscription(subId);
-          subscription?.onEvent(event);
+          if (subscription != null) {
+            // The relay is mid-answer for this one-shot query, so it has not
+            // gone silent — restart the grace period rather than cut its
+            // result set off part-way through.
+            _restartQuerySettleWindow(subId);
+            subscription.onEvent(event);
+          }
         }
       } catch (err) {
         log(err.toString());

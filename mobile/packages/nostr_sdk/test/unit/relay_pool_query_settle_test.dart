@@ -399,6 +399,50 @@ void main() {
       );
     });
 
+    test('a relay still streaming its result set is not cut off by the settle '
+        'window', () async {
+      final nostr = _newNostr();
+      final fast = _SilentRelay('wss://fast.example');
+      final streaming = _SilentRelay('wss://streams-slowly.example');
+      expect(await nostr.relayPool.add(fast), isTrue);
+      expect(await nostr.relayPool.add(streaming), isTrue);
+      final pubkey = await nostr.ensurePublicKey();
+
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      final subId = await fast.awaitPendingQuery();
+      await streaming.awaitPendingQuery();
+      // `fast` has nothing to return and answers at once, arming the window.
+      await fast.deliver(['EOSE', subId]);
+
+      // `streaming` is healthy and part-way through a result set larger than
+      // the window. Its events are the proof it has not gone silent, so the
+      // window must not expire under it and truncate the caller's results.
+      const streamed = 5;
+      for (var i = 0; i < streamed; i++) {
+        await Future<void>.delayed(RelayPool.querySettleWindow ~/ 2);
+        final event = await nostr.nostrSigner.signEvent(
+          Event(pubkey, EventKind.textNote, const [], 'streamed-$i'),
+        );
+        await streaming.deliver(['EVENT', subId, event!.toJson()]);
+      }
+      await streaming.deliver(['EOSE', subId]);
+
+      final result = await pending;
+      expect(result.timedOut, isFalse);
+      expect(
+        result.events,
+        hasLength(streamed),
+        reason:
+            'every event the relay sent must reach the caller — a '
+            'truncated result set reads as a complete one',
+      );
+    });
+
     test('a healthy relay still holds the query until its EOSE', () async {
       final nostr = _newNostr();
       final fast = _SilentRelay('wss://fast.example');
