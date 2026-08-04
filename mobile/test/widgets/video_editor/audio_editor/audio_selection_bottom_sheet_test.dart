@@ -15,8 +15,10 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
@@ -90,6 +92,9 @@ void main() {
         value: savedSoundsBloc,
         child: ProviderScope(
           overrides: [
+            // `audioReuseConsentProvider` reads the viewer so it can grant a
+            // creator consent for their own sound.
+            authServiceProvider.overrideWithValue(_StubAuthService()),
             soundLibraryServiceProvider.overrideWith(
               (_) async => _FakeSoundLibraryService(bundledSounds),
             ),
@@ -582,4 +587,17 @@ class _FakeSoundLibraryService extends SoundLibraryService {
 
   @override
   Future<void> loadCustomSounds() async {}
+}
+
+/// Signed out, so no sound in these tests is owned by the viewer and the
+/// owner exception in `audioReuseConsentProvider` never short-circuits.
+class _StubAuthService extends Mock implements AuthService {
+  @override
+  String? get currentPublicKeyHex => null;
+
+  @override
+  Stream<AuthState> get authStateStream => const Stream<AuthState>.empty();
+
+  @override
+  AuthState get authState => AuthState.unauthenticated;
 }

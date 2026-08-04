@@ -277,9 +277,14 @@ class _SoundListItem extends ConsumerWidget {
                 audio.creatorPubkey != audio.pubkey)
               context.l10n.soundSharedBy(publisherName),
           ].join(' · ');
-    final reuseAllowed =
-        audio.isBundled ||
-        (ref.watch(audioReuseConsentProvider(audio)).value ?? false);
+    // Null while the resolver is still deciding. Collapsing that to `false`
+    // states another creator's licensing terms before we know them — a legacy
+    // sound rendered "Credit only" for the first frames and then flipped to
+    // "Remixing allowed" once the relay answered, and stayed wrong for as long
+    // as the round-trip took. The badge is withheld until there is an answer.
+    final reuseAllowed = audio.isBundled
+        ? true
+        : ref.watch(audioReuseConsentProvider(audio)).value;
 
     return Semantics(
       button: true,
@@ -317,16 +322,17 @@ class _SoundListItem extends ConsumerWidget {
                       color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
-                  Text(
-                    reuseAllowed
-                        ? context.l10n.soundRemixingAllowed
-                        : context.l10n.soundCreditOnly,
-                    style: VineTheme.labelSmallFont(
-                      color: reuseAllowed
-                          ? VineTheme.vineGreen
-                          : VineTheme.onSurfaceVariant,
+                  if (reuseAllowed != null)
+                    Text(
+                      reuseAllowed
+                          ? context.l10n.soundRemixingAllowed
+                          : context.l10n.soundCreditOnly,
+                      style: VineTheme.labelSmallFont(
+                        color: reuseAllowed
+                            ? VineTheme.vineGreen
+                            : VineTheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
                   if (audio.licenseName case final license?)
                     Text(
                       license,
@@ -386,10 +392,7 @@ class _SoundListItem extends ConsumerWidget {
       // "Sound not found".
       hostContext.pushWithVideoPause(
         SoundDetailScreen.pathForId(audio.id),
-        extra: <String, dynamic>{
-          'sound': audio,
-          'sourceVideo': sourceVideo,
-        },
+        extra: <String, dynamic>{'sound': audio, 'sourceVideo': sourceVideo},
       );
     });
   }

@@ -2,6 +2,7 @@
 // ABOUTME: Provides reactive state management for sounds from SoundsRepository.
 
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -141,9 +142,21 @@ Future<int> soundUsageCount(Ref ref, String audioEventId) async {
 }
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
+///
+/// A creator always has consent for their own sound. That exception lives here
+/// rather than at each call site because the call sites had drifted: the sound
+/// detail screen applied it and the picker did not, so the same creator was
+/// told their own private sound was both usable and unusable in one session.
 @riverpod
 Future<bool> audioReuseConsent(Ref ref, AudioEvent sound) {
   if (sound.allowsReuse) return Future.value(true);
+  // Re-read on auth transitions so an account switch cannot leave the previous
+  // identity's ownership answer cached against this sound.
+  ref.watch(currentAuthStateProvider);
+  final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
+  if (viewer != null && viewer.isNotEmpty && viewer == sound.pubkey) {
+    return Future.value(true);
+  }
   if (sound.hasExplicitReuseConsent) return Future.value(false);
   return AudioReuseConsentResolver(
     soundsRepository: ref.watch(soundsRepositoryProvider),

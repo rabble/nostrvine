@@ -211,14 +211,12 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          switch (result) {
-            SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
-            SavedSoundSaveResult.alreadySaved =>
-              context.l10n.soundsAlreadySavedToLibrary,
-            null => context.l10n.soundsSaveFailed,
-          },
-        ),
+        content: Text(switch (result) {
+          SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
+          SavedSoundSaveResult.alreadySaved =>
+            context.l10n.soundsAlreadySavedToLibrary,
+          null => context.l10n.soundsSaveFailed,
+        }),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -234,12 +232,11 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     if (sound.externalSource case final external?) {
       return external.license.allowsDerivatives;
     }
-    if (sound.allowsReuse) return true;
-    // Owner exception — re-evaluate on auth restore/logout/account-switch so it
-    // can't go stale (authServiceProvider alone is a stable instance).
-    ref.watch(currentAuthStateProvider);
-    final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
-    if (viewer != null && viewer == sound.pubkey) return true;
+    // The owner exception and the auth-transition re-read now live in
+    // `audioReuseConsentProvider`, so every consumer gets the same answer.
+    // Still fail-closed while it resolves: this gates an action, and offering
+    // a button that might not be permitted is worse than showing it a beat
+    // late.
     return ref.watch(audioReuseConsentProvider(sound)).value ?? false;
   }
 

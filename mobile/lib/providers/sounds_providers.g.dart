@@ -598,16 +598,31 @@ final class SoundUsageCountFamily extends $Family
 }
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
+///
+/// A creator always has consent for their own sound. That exception lives here
+/// rather than at each call site because the call sites had drifted: the sound
+/// detail screen applied it and the picker did not, so the same creator was
+/// told their own private sound was both usable and unusable in one session.
 
 @ProviderFor(audioReuseConsent)
 final audioReuseConsentProvider = AudioReuseConsentFamily._();
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
+///
+/// A creator always has consent for their own sound. That exception lives here
+/// rather than at each call site because the call sites had drifted: the sound
+/// detail screen applied it and the picker did not, so the same creator was
+/// told their own private sound was both usable and unusable in one session.
 
 final class AudioReuseConsentProvider
     extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
     with $FutureModifier<bool>, $FutureProvider<bool> {
   /// Fail-closed reuse consent for explicit and legacy audio events.
+  ///
+  /// A creator always has consent for their own sound. That exception lives here
+  /// rather than at each call site because the call sites had drifted: the sound
+  /// detail screen applied it and the picker did not, so the same creator was
+  /// told their own private sound was both usable and unusable in one session.
   AudioReuseConsentProvider._({
     required AudioReuseConsentFamily super.from,
     required AudioEvent super.argument,
@@ -651,9 +666,14 @@ final class AudioReuseConsentProvider
   }
 }
 
-String _$audioReuseConsentHash() => r'4a102b058d8f99eb42e971973629018669c74d6e';
+String _$audioReuseConsentHash() => r'57bf316a48fea51478eee5cec669d4f9e53ff190';
 
 /// Fail-closed reuse consent for explicit and legacy audio events.
+///
+/// A creator always has consent for their own sound. That exception lives here
+/// rather than at each call site because the call sites had drifted: the sound
+/// detail screen applied it and the picker did not, so the same creator was
+/// told their own private sound was both usable and unusable in one session.
 
 final class AudioReuseConsentFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<bool>, AudioEvent> {
@@ -667,6 +687,11 @@ final class AudioReuseConsentFamily extends $Family
       );
 
   /// Fail-closed reuse consent for explicit and legacy audio events.
+  ///
+  /// A creator always has consent for their own sound. That exception lives here
+  /// rather than at each call site because the call sites had drifted: the sound
+  /// detail screen applied it and the picker did not, so the same creator was
+  /// told their own private sound was both usable and unusable in one session.
 
   AudioReuseConsentProvider call(AudioEvent sound) =>
       AudioReuseConsentProvider._(argument: sound, from: this);

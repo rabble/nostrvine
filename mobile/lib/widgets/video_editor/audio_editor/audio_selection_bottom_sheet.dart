@@ -239,11 +239,14 @@ class _AudioSelectionBottomSheetState
   Future<void> _selectSound(AudioEvent sound) async {
     if (_selectedItem?.id == sound.id) return;
 
+    // Bundled / imported / provider-catalog sounds carry their own terms and
+    // never reach the resolver. Everything else — including the creator's own
+    // sounds — is decided by `audioReuseConsentProvider`, which owns the owner
+    // exception this call site used to be missing.
     final canReuse =
         sound.isBundled ||
         sound.isLocalImport ||
         sound.isExternalProviderSound ||
-        sound.allowsReuse ||
         await ref.read(audioReuseConsentProvider(sound).future);
     if (!mounted) return;
     if (!canReuse) {
