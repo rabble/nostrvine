@@ -412,40 +412,49 @@ void main() {
     expect(find.text(l10n.settingsAccountSwitchFailed), findsOneWidget);
   });
 
-  testWidgets('offers a fresh sign-in when the target session is unusable', (
-    tester,
-  ) async {
-    // Same seam as the `_MockDeviceScope` note above: reading
-    // `switchController` throws inside the tile's try, standing in for a swap
-    // that dies on the target account's dead session.
-    when(() => deviceScope.switchController).thenThrow(
-      SessionExpiredException(),
-    );
-    when(() => authService.signOut()).thenAnswer((_) async {});
+  // Both failures mean the same thing to the user — the stored credentials
+  // cannot be used — and both take the re-auth route, so both clauses are
+  // covered here rather than only the one that happens to be listed first.
+  final unusableSessionFailures = <String, Object>{
+    'SessionExpiredException': SessionExpiredException(),
+    'AccountRestoreFailedException': const AccountRestoreFailedException(
+      otherPubkey,
+      AuthState.unauthenticated,
+    ),
+  };
 
-    final l10n = await pumpAndTapSwitch(tester);
-    await tester.tap(accountTile(otherPubkey));
-    await tester.pumpAndSettle();
+  for (final entry in unusableSessionFailures.entries) {
+    testWidgets('offers a fresh sign-in on ${entry.key}', (tester) async {
+      // Same seam as the `_MockDeviceScope` note above: reading
+      // `switchController` throws inside the tile's try, standing in for a
+      // swap that dies on the target account's unusable credentials.
+      when(() => deviceScope.switchController).thenThrow(entry.value);
+      when(() => authService.signOut()).thenAnswer((_) async {});
 
-    // A dead session is recoverable by signing in again, so the user gets that
-    // offer instead of the dead-end "couldn't switch" snackbar — and the copy
-    // says what confirming costs, since it signs the working account out.
-    expect(
-      find.text(l10n.settingsSessionExpiredSwitchMessage),
-      findsOneWidget,
-    );
-    expect(find.text(l10n.settingsAccountSwitchFailed), findsNothing);
+      final l10n = await pumpAndTapSwitch(tester);
+      await tester.tap(accountTile(otherPubkey));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.text(l10n.authSignInTitle));
-    await tester.pumpAndSettle();
+      // Recoverable by signing in again, so the user gets that offer instead
+      // of the dead-end "couldn't switch" snackbar — and the copy says what
+      // confirming costs, since it signs the working account out.
+      expect(
+        find.text(l10n.settingsSessionExpiredSwitchMessage),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.settingsAccountSwitchFailed), findsNothing);
 
-    // Signing out lands on the welcome screen, where the pending pubkey
-    // pre-selects the account the user was trying to reach.
-    verify(
-      () => authService.pendingAccountSwitchPubkey = otherPubkey,
-    ).called(1);
-    verify(() => authService.signOut()).called(1);
-  });
+      await tester.tap(find.text(l10n.authSignInTitle));
+      await tester.pumpAndSettle();
+
+      // Signing out lands on the welcome screen, where the pending pubkey
+      // pre-selects the account the user was trying to reach.
+      verify(
+        () => authService.pendingAccountSwitchPubkey = otherPubkey,
+      ).called(1);
+      verify(() => authService.signOut()).called(1);
+    });
+  }
 
   testWidgets('declining the fresh sign-in keeps the current account', (
     tester,
