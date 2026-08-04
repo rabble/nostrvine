@@ -7,12 +7,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_collaborator_status/video_collaborator_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -187,10 +189,13 @@ class MetadataRepostedBySection extends StatelessWidget {
         }.toList();
 
         if (state.isLoading && allPubkeys.isEmpty) {
-          return _RepostedByContent(pubkeys: video.reposterPubkeys ?? []);
+          return _RepostedByContent(
+            pubkeys: video.reposterPubkeys ?? [],
+            video: video,
+          );
         }
 
-        return _RepostedByContent(pubkeys: allPubkeys);
+        return _RepostedByContent(pubkeys: allPubkeys, video: video);
       },
     );
   }
@@ -198,16 +203,31 @@ class MetadataRepostedBySection extends StatelessWidget {
 
 /// Content widget for the Reposted-by section.
 ///
+/// Shows at most [_maxVisibleReposters] chips and hands the rest to the
+/// reposters list screen. A popular video can be reposted thousands of
+/// times, and every chip resolves its own profile — rendering the full set
+/// would fire a profile fetch per reposter and lay them all out at once.
+///
 /// Renders nothing while [pubkeys] is empty. The reposters resolve from a
 /// relay round-trip, so the section is revealed through an [AnimatedReveal]
 /// rather than snapping the sections below it down on arrival.
 class _RepostedByContent extends StatelessWidget {
-  const _RepostedByContent({required this.pubkeys});
+  const _RepostedByContent({required this.pubkeys, required this.video});
+
+  /// Roughly three rows of chips on a phone — nine came out at five.
+  ///
+  /// Not an exact row count: chip width follows the display name, and those
+  /// resolve per chip after this has already been laid out.
+  static const _maxVisibleReposters = 5;
 
   final List<String> pubkeys;
+  final VideoEvent video;
 
   @override
   Widget build(BuildContext context) {
+    final visible = pubkeys.take(_maxVisibleReposters).toList();
+    final hiddenCount = pubkeys.length - visible.length;
+
     return AnimatedReveal(
       child: pubkeys.isEmpty
           ? null
@@ -216,13 +236,50 @@ class _RepostedByContent extends StatelessWidget {
               child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  for (final pubkey in pubkeys)
+                  for (final pubkey in visible)
                     _TappableUserChip(pubkey: pubkey),
+                  if (hiddenCount > 0)
+                    _MoreRepostersChip(count: hiddenCount, video: video),
                 ],
               ),
             ),
     );
+  }
+}
+
+/// Button that opens the full reposters list for [video].
+///
+/// [DivineButtonSize.small] paints a 40px pill with the same 16px radius and
+/// 16/8 padding as [_TappableUserChip], so it sits on the chips' baseline
+/// while its outlined variant reads as an action rather than a person. The
+/// row centres its children because this carries a 4px tap-target halo the
+/// chips do not.
+class _MoreRepostersChip extends StatelessWidget {
+  const _MoreRepostersChip({required this.count, required this.video});
+
+  final int count;
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context) {
+    return DivineButton(
+      label: context.l10n.metadataMoreReposters(count),
+      type: DivineButtonType.secondary,
+      size: DivineButtonSize.small,
+      onPressed: () => _openRepostersList(context),
+    );
+  }
+
+  void _openRepostersList(BuildContext context) {
+    final addressableId = video.addressableId;
+    final location = GoRouter.of(context).namedLocation(
+      VideoEngagementListScreen.repostersRouteName,
+      pathParameters: {'eventId': video.id},
+      queryParameters: addressableId == null ? const {} : {'a': addressableId},
+    );
+    context.pushWithVideoPause<void>(location);
   }
 }
 

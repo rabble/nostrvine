@@ -1831,6 +1831,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get metadataRepostedByLabel => 'Được đăng lại bởi';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count người nữa';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -695,6 +695,7 @@
     "metadataCollaboratorsLabel": "Samarbetspartner",
     "metadataInspiredByLabel": "Inspirerad av",
     "metadataRepostedByLabel": "Återpublicerad av",
+    "metadataMoreReposters": "+{count} till",
     "metadataLoopsLabel": "Loopar",
     "metadataLikesLabel": "Gillamarkeringar",
     "metadataCommentsLabel": "Kommentarer",

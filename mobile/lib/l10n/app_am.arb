@@ -811,6 +811,7 @@
     "metadataCollaboratorsLabel": "ተባባሪዎች",
     "metadataInspiredByLabel": "ተመስጦ",
     "metadataRepostedByLabel": "በድጋሚ የተለጠፈው በ",
+    "metadataMoreReposters": "+{count} ተጨማሪ",
     "metadataLoopsLabel": "{count, plural, =1{ሉፕ} other{ሉፖች}}",
     "@metadataLoopsLabel": {
         "placeholders": {

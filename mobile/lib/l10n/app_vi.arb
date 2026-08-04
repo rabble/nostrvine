@@ -991,6 +991,7 @@
   "metadataCollaboratorsLabel": "Cộng tác viên",
   "metadataInspiredByLabel": "Lấy cảm hứng từ",
   "metadataRepostedByLabel": "Được đăng lại bởi",
+  "metadataMoreReposters": "+{count} người nữa",
   "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loop}}",
   "@metadataLoopsLabel": {
     "placeholders": {

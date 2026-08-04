@@ -1836,6 +1836,11 @@ class AppLocalizationsMs extends AppLocalizations {
   String get metadataRepostedByLabel => 'Disiarkan semula oleh';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count lagi';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -695,6 +695,7 @@
     "metadataCollaboratorsLabel": "Samenwerkers",
     "metadataInspiredByLabel": "Geïnspireerd door",
     "metadataRepostedByLabel": "Gerepost door",
+    "metadataMoreReposters": "+{count} meer",
     "metadataLoopsLabel": "Loops",
     "metadataLikesLabel": "Likes",
     "metadataCommentsLabel": "Reacties",

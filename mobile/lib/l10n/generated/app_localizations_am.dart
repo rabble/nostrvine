@@ -1790,6 +1790,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get metadataRepostedByLabel => 'በድጋሚ የተለጠፈው በ';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count ተጨማሪ';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
