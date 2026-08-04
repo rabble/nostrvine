@@ -1320,7 +1320,7 @@ class VideoEventPublisher {
           // Continue publishing without blurhash - it's optional metadata
         } finally {
           blurhashWatch.stop();
-          logPublishPhase('nostr.blurhash', blurhashWatch.elapsed);
+          logPublishPhase(PublishPhases.nostrBlurhash, blurhashWatch.elapsed);
         }
       }
 
@@ -1748,7 +1748,9 @@ class VideoEventPublisher {
       logPublishPhase(
         PublishPhases.nostrSign,
         signWatch.elapsed,
-        detail: reusedEvent != null ? 'reused' : 'signed',
+        detail: reusedEvent != null
+            ? PublishPhases.reusedDetail
+            : PublishPhases.signedDetail,
       );
 
       if (event == null) {

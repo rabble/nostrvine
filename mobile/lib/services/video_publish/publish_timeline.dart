@@ -28,20 +28,33 @@ abstract class PublishPhases {
   static const String upload = 'upload';
   static const String uploadTransfer = 'upload.transfer';
   static const String uploadThumbnail = 'upload.thumbnail';
+  static const String uploadThumbnailExtract = 'upload.thumbnail.extract';
+  static const String uploadThumbnailBlurhash = 'upload.thumbnail.blurhash';
+  static const String uploadThumbnailPut = 'upload.thumbnail.put';
   static const String mentions = 'mentions';
   static const String subtitles = 'subtitles';
   static const String nostr = 'nostr';
+  static const String nostrBlurhash = 'nostr.blurhash';
   static const String nostrSign = 'nostr.sign';
   static const String nostrPublish = 'nostr.publish';
   static const String invites = 'invites';
 
-  /// Detail marker on [uploadThumbnail] for the leg that short-circuited on a
-  /// thumbnail a previous attempt already put on the CDN.
+  /// Detail marker for a leg that short-circuited on work a previous attempt
+  /// already finished — a thumbnail already on the CDN, or an event the
+  /// signer already signed.
   static const String reusedDetail = 'reused';
+
+  /// Detail marker on [nostrSign] for a signature this attempt really made.
+  static const String signedDetail = 'signed';
 }
 
 /// Firebase metric name per phase. A phase that never ran reports no metric,
 /// so an absent metric reads as "did not happen" rather than as zero.
+///
+/// The metrics are *not* additive: [PublishPhases.uploadThumbnail] runs in
+/// parallel with [PublishPhases.uploadTransfer], so `upload_ms` is roughly the
+/// longer of the two rather than their sum. Only the summary log line's
+/// top-level phases add up to the total.
 const Map<String, String> _metricByPhase = {
   PublishPhases.upload: 'upload_ms',
   PublishPhases.uploadTransfer: 'transfer_ms',
@@ -59,7 +72,18 @@ const String publishTotalMetric = 'total_ms';
 
 /// Uploaded video size, so throughput can be derived from [publishTraceName]
 /// rather than guessed from a nominal connection speed.
+///
+/// It is the size of the file, reported once, while `transfer_ms` sums every
+/// attempt — including one that timed out and one that resumed mid-file. Only
+/// divide the two on traces whose [publishTransferAttemptsMetric] is 1.
 const String publishPayloadMetric = 'payload_bytes';
+
+/// How many times the transfer leg ran for this publish.
+///
+/// `transfer_ms` is the sum across attempts, so without this a retried publish
+/// and a slow one look identical — and a publish whose first attempt hit the
+/// upload timeout carries minutes of dead time in the metric.
+const String publishTransferAttemptsMetric = 'transfer_attempts';
 
 /// Zone key the ambient [PublishTimeline] is stored under.
 const Object _timelineZoneKey = #publishTimeline;
@@ -147,7 +171,12 @@ class PublishTimeline {
   final Map<String, Duration> _elapsedByPhase = <String, Duration>{};
 
   int? _payloadBytes;
-  bool _thumbnailReused = false;
+  int _transferAttempts = 0;
+
+  /// Null until the leg ran at all, so a publish that failed before it reports
+  /// no attribute rather than claiming work it never did.
+  bool? _thumbnailReused;
+  bool? _signatureReused;
 
   /// Phases recorded so far, in completion order.
   List<PublishPhase> get phases => List.unmodifiable(_phases);
@@ -189,14 +218,23 @@ class PublishTimeline {
   void _absorb(String phase, Duration elapsed, {String? detail, int? bytes}) {
     _elapsedByPhase[phase] =
         (_elapsedByPhase[phase] ?? Duration.zero) + elapsed;
-    if (bytes != null && bytes > 0 && phase == PublishPhases.uploadTransfer) {
-      _payloadBytes = bytes;
-    }
-    if (phase == PublishPhases.uploadThumbnail &&
-        detail == PublishPhases.reusedDetail) {
-      _thumbnailReused = true;
+    switch (phase) {
+      case PublishPhases.uploadTransfer:
+        _transferAttempts++;
+        if (bytes != null && bytes > 0) _payloadBytes = bytes;
+      case PublishPhases.uploadThumbnail:
+        _thumbnailReused = _reuseOf(_thumbnailReused, detail);
+      case PublishPhases.nostrSign:
+        _signatureReused = _reuseOf(_signatureReused, detail);
     }
   }
+
+  /// Folds one attempt's [detail] into a leg's reuse flag.
+  ///
+  /// A leg that did real work once is reported as such even if a later attempt
+  /// short-circuited, because its metric then carries that real work.
+  static bool _reuseOf(bool? current, String? detail) =>
+      (current ?? true) && detail == PublishPhases.reusedDetail;
 
   /// Builds the one-line summary for a publish that ended with [outcome].
   String summaryLine({required String outcome}) {
@@ -243,9 +281,31 @@ class PublishTimeline {
     if (payloadBytes != null) {
       _trace.setMetric(publishPayloadMetric, payloadBytes);
     }
-    _trace
-      ..putAttribute('outcome', outcome)
-      ..putAttribute('thumbnail', _thumbnailReused ? 'reused' : 'generated');
+    if (_transferAttempts > 0) {
+      _trace.setMetric(publishTransferAttemptsMetric, _transferAttempts);
+    }
+    _trace.putAttribute('outcome', outcome);
+    _putReuseAttribute('thumbnail', _thumbnailReused, freshValue: 'generated');
+    _putReuseAttribute(
+      'signature',
+      _signatureReused,
+      freshValue: PublishPhases.signedDetail,
+    );
     unawaited(_trace.stop());
+  }
+
+  /// Tags a leg as reused or freshly done, and says nothing at all about a leg
+  /// that never ran — a metric near zero because the work was skipped must be
+  /// filterable out of the distribution for the work itself.
+  void _putReuseAttribute(
+    String attribute,
+    bool? reused, {
+    required String freshValue,
+  }) {
+    if (reused == null) return;
+    _trace.putAttribute(
+      attribute,
+      reused ? PublishPhases.reusedDetail : freshValue,
+    );
   }
 }

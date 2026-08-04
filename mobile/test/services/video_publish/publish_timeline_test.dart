@@ -205,14 +205,16 @@ void main() {
         expect(monitor.trace.stopCount, equals(1));
       });
 
-      test('reports each phase once, even when it is measured', () async {
-        await traced.run(
-          () => traced.measure(PublishPhases.nostr, () async {}),
-        );
+      test('counts a phase it records itself only once', () async {
+        // A recorded phase logs its own line rather than going back through
+        // logPublishPhase, which would fold it in a second time from the zone.
+        await traced.run(() async {
+          traced.record(PublishPhases.nostr, const Duration(milliseconds: 120));
+        });
 
         traced.finish(outcome: 'success');
 
-        expect(monitor.trace.metrics['nostr_ms'], isNotNull);
+        expect(monitor.trace.metrics['nostr_ms'], equals(120));
       });
 
       test('adds a retried phase up across its attempts', () async {
@@ -232,12 +234,40 @@ void main() {
         expect(monitor.trace.metrics['transfer_ms'], equals(1200));
       });
 
+      test('reports how many attempts the summed transfer covers', () async {
+        await traced.run(() async {
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(milliseconds: 700),
+            bytes: 16572,
+          );
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(milliseconds: 500),
+            bytes: 16572,
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        // Without this, payload_bytes / transfer_ms silently reads as half the
+        // real throughput on any publish that retried.
+        expect(
+          monitor.trace.metrics[publishTransferAttemptsMetric],
+          equals(2),
+        );
+      });
+
       test('omits a metric for a phase that never ran', () {
         traced.finish(outcome: 'success');
 
         expect(monitor.trace.metrics.containsKey('transfer_ms'), isFalse);
         expect(
           monitor.trace.metrics.containsKey(publishPayloadMetric),
+          isFalse,
+        );
+        expect(
+          monitor.trace.metrics.containsKey(publishTransferAttemptsMetric),
           isFalse,
         );
       });
@@ -276,6 +306,69 @@ void main() {
         traced.finish(outcome: 'success');
 
         expect(monitor.trace.attributes['thumbnail'], equals('generated'));
+      });
+
+      test('says nothing about a leg the publish never reached', () {
+        traced.finish(outcome: 'error:notSignedIn');
+
+        // Claiming `generated` here would put publishes that never touched a
+        // thumbnail into the distribution for ones that built a thumbnail.
+        expect(monitor.trace.attributes.containsKey('thumbnail'), isFalse);
+        expect(monitor.trace.attributes.containsKey('signature'), isFalse);
+      });
+
+      test(
+        "tags a publish that reused a previous attempt's signature",
+        () async {
+          await traced.run(() async {
+            logPublishPhase(
+              PublishPhases.nostrSign,
+              Duration.zero,
+              detail: PublishPhases.reusedDetail,
+            );
+          });
+
+          traced.finish(outcome: 'success');
+
+          // A reused signature reports ~0ms, which would drag the signer latency
+          // distribution down if it could not be filtered out.
+          expect(monitor.trace.attributes['signature'], equals('reused'));
+        },
+      );
+
+      test('tags a publish that really signed its event', () async {
+        await traced.run(() async {
+          logPublishPhase(
+            PublishPhases.nostrSign,
+            const Duration(milliseconds: 800),
+            detail: PublishPhases.signedDetail,
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.attributes['signature'], equals('signed'));
+      });
+
+      test('counts a leg as fresh when any attempt did the work', () async {
+        await traced.run(() async {
+          logPublishPhase(
+            PublishPhases.nostrSign,
+            const Duration(milliseconds: 800),
+            detail: PublishPhases.signedDetail,
+          );
+          logPublishPhase(
+            PublishPhases.nostrSign,
+            Duration.zero,
+            detail: PublishPhases.reusedDetail,
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        // sign_ms carries the 800ms the first attempt really spent, so this
+        // trace belongs in the signer distribution.
+        expect(monitor.trace.attributes['signature'], equals('signed'));
       });
 
       test('still logs the summary line', () {
