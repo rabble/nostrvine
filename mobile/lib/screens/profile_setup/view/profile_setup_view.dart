@@ -276,7 +276,7 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
   }) {
     VineBottomSheetPrompt.show<void>(
       context: context,
-      sticker: .videoClapBoard,
+      sticker: .alert,
       title: context.l10n.profileSetupUnsavedChangesTitle,
       subtitle: context.l10n.profileSetupUnsavedChangesSubtitle,
       primaryButtonText: context.l10n.profileSetupUnsavedChangesSaveButton,
