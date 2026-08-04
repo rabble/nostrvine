@@ -96,6 +96,7 @@ void main() {
         find.text(FeatureFlag.publishDmRelayList.displayName),
         findsNothing,
       );
+      expect(find.text(FeatureFlag.feedTuning.displayName), findsNothing);
     });
 
     testWidgets('shows internal flags when developer mode is on', (
@@ -121,6 +122,7 @@ void main() {
         find.text(FeatureFlag.publishDmRelayList.displayName),
         findsOneWidget,
       );
+      expect(find.text(FeatureFlag.feedTuning.displayName), findsOneWidget);
     });
 
     testWidgets('should display all flags', (tester) async {
@@ -346,9 +348,7 @@ void main() {
       // The app bar's reset-all action is the only way back to defaults.
       await tester.tap(
         find.bySemanticsLabel(
-          lookupAppLocalizations(
-            const Locale('en'),
-          ).featureFlagResetAllTooltip,
+          lookupAppLocalizations(const Locale('en')).featureFlagResetAllTooltip,
         ),
       );
       await tester.pumpAndSettle();
