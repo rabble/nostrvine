@@ -108,6 +108,22 @@ class RelayPool {
   // Track pending AUTH events to match with OK responses
   final Map<String, String> _pendingAuthEvents = {};
 
+  /// Relay urls with a NIP-42 handshake outstanding.
+  ///
+  /// Entered when the relay's AUTH challenge starts being answered and left
+  /// when the relay resolves it (`OK`) or answering it fails. A one-shot query
+  /// parked behind an auth gate is only worth waiting for while this holds —
+  /// see [_canStillSettleQuery].
+  ///
+  /// Distinct from [_pendingAuthEvents], which is keyed by event id and only
+  /// populated once signing has finished; this is set first so the async
+  /// signing gap does not read as "no handshake".
+  final Set<String> _authHandshakeRelays = {};
+
+  /// Relays whose status callback this pool has already chained onto. Weak, so
+  /// a removed or replaced relay is not retained by the bookkeeping.
+  final Expando<bool> _statusObserved = Expando<bool>('relayStatusObserved');
+
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
 
@@ -349,6 +365,7 @@ class RelayPool {
     }
 
     relay.onMessage = _onEvent;
+    _observeRelayStatus(relay);
 
     if (await relay.connect()) {
       if (autoSubscribe) {
@@ -685,11 +702,75 @@ class RelayPool {
     ];
     for (final r in list) {
       // Some relay still owes us a terminal frame for this query.
-      if (r.checkQuery(subId)) return;
+      if (r.checkQuery(subId) && _canStillSettleQuery(r)) return;
     }
 
     _queryCompleteCallbacks.remove(subId);
     callback();
+  }
+
+  /// Whether a query saved on [relay] can still produce a terminal frame, and
+  /// therefore deserves to hold [_fireQueryCompleteIfSettled] back.
+  ///
+  /// A saved query means one of two different things, and only the first is
+  /// worth waiting for:
+  ///
+  /// * the REQ is live on the current socket and its `EOSE`/`CLOSED` is still
+  ///   coming, or
+  /// * the REQ is parked for replay — the relay refused it with
+  ///   `auth-required`, or the socket died under it.
+  ///
+  /// A parked query is replayed after NIP-42 succeeds or after a reconnect,
+  /// both of which land far outside the caller's timeout. Counting it as
+  /// outstanding makes *every* query in the app pay its full timeout for as
+  /// long as one relay sits behind a closed auth gate, even when the healthy
+  /// relays already answered.
+  bool _canStillSettleQuery(Relay relay) {
+    // A dropped socket cannot deliver the terminal frame for a REQ that was
+    // written to it; the reconnect path re-issues the REQ on a fresh socket.
+    if (relay.relayStatus.connected != ClientConnected.connected) return false;
+
+    // Behind an auth gate the replay only happens if NIP-42 completes, so wait
+    // only while a handshake is actually outstanding. Without one — signing
+    // unavailable, challenge never answered, AUTH refused — nothing is going
+    // to release this query.
+    if (relay.relayStatus.alwaysAuth && !relay.relayStatus.authed) {
+      return _authHandshakeRelays.contains(relay.url);
+    }
+
+    return true;
+  }
+
+  /// Watches [relay]'s connection state so a dropped socket releases the
+  /// one-shot queries that were still riding on it.
+  ///
+  /// [Relay.relayStatusCallback] is a single slot that NIP-46 also uses on its
+  /// own (non-pool) relays, so any existing callback is chained rather than
+  /// replaced. Wiring is idempotent: `add` is public and re-entrant for relay
+  /// types it does not de-duplicate, and a chain that grew per call would
+  /// re-run the settle sweep once per `add`.
+  void _observeRelayStatus(Relay relay) {
+    if (_statusObserved[relay] ?? false) return;
+    _statusObserved[relay] = true;
+    final previous = relay.relayStatusCallback;
+    relay.relayStatusCallback = () {
+      previous?.call();
+      _settleQueriesBlockedBy(relay);
+    };
+  }
+
+  /// Releases the one-shot queries [relay] is parked on once it can no longer
+  /// answer them.
+  ///
+  /// [_fireQueryCompleteIfSettled] only runs off a terminal frame or the end of
+  /// fan-out. When a relay goes quiet instead — socket dropped, AUTH refused —
+  /// nothing re-runs the check, so the callers blocked behind it have to be
+  /// released here.
+  void _settleQueriesBlockedBy(Relay relay) {
+    if (_canStillSettleQuery(relay)) return;
+    for (final query in relay.getQueries()) {
+      _fireQueryCompleteIfSettled(query.id);
+    }
   }
 
   Future<void> _onEvent(Relay relay, List<dynamic> json) async {
@@ -972,6 +1053,7 @@ class RelayPool {
       // Check if this is responding to our AUTH event
       if (_pendingAuthEvents.containsKey(eventId)) {
         _pendingAuthEvents.remove(eventId);
+        _authHandshakeRelays.remove(relay.url);
 
         if (success) {
           relay.relayStatus.authed = true;
@@ -1016,6 +1098,9 @@ class RelayPool {
           relay.relayStatus.authed = false;
           log('🔐 AUTH failed for ${relay.url}: $message');
           _rejectAuthRequiredPublishesForRelay(relay, message);
+          // The gate stayed shut, so the queries parked for the post-AUTH
+          // replay will never be replayed.
+          _settleQueriesBlockedBy(relay);
         }
       }
     } else if (messageType == "NOTICE") {
@@ -1034,6 +1119,10 @@ class RelayPool {
         final challenge = _stringAt(relay, json, 1, 'AUTH challenge');
         if (challenge == null) return;
         relay.relayStatus.alwaysAuth = true;
+        // Marks the handshake outstanding before the async signing below, so
+        // queries parked behind this gate keep waiting instead of reading the
+        // signing gap as "nothing is coming". See [_canStillSettleQuery].
+        _authHandshakeRelays.add(relay.url);
         final challengePreview = challenge.length > 16
             ? challenge.substring(0, 16)
             : challenge;
@@ -1066,11 +1155,15 @@ class RelayPool {
           }
         } else {
           log('🔐 AUTH signing returned null for ${relay.url}');
+          _authHandshakeRelays.remove(relay.url);
           _rejectAuthRequiredPublishesForRelay(relay, '');
+          _settleQueriesBlockedBy(relay);
         }
       } catch (err, stackTrace) {
         log('🔐 AUTH handling failed for ${relay.url}: $err\n$stackTrace');
+        _authHandshakeRelays.remove(relay.url);
         _rejectAuthRequiredPublishesForRelay(relay, '');
+        _settleQueriesBlockedBy(relay);
       }
     } else if (messageType == 'COUNT') {
       // NIP-45 COUNT response
