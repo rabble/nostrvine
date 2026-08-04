@@ -1,10 +1,13 @@
 // ABOUTME: Cubit for managing Bluesky crosspost toggle state
 // ABOUTME: Loads status from keycast API and handles optimistic toggle updates
 
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/models/atproto_provisioning_state.dart';
+import 'package:openvine/repositories/bluesky_crosspost_repository.dart';
 import 'package:openvine/services/crosspost_api_client.dart';
-import 'package:profile_repository/profile_repository.dart';
 
 part 'crosspost_settings_state.dart';
 
@@ -14,52 +17,49 @@ part 'crosspost_settings_state.dart';
 /// and provides optimistic toggle with rollback on failure.
 class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
   CrosspostSettingsCubit({
-    required CrosspostApiClient apiClient,
-    required ProfileRepository profileRepository,
+    required BlueskyCrosspostRepository repository,
     required String pubkey,
-  }) : _apiClient = apiClient,
-       _profileRepository = profileRepository,
+    Duration provisioningPollInterval = _defaultProvisioningPollInterval,
+  }) : _repository = repository,
        _pubkey = pubkey,
+       _provisioningPollInterval = provisioningPollInterval,
        super(const CrosspostSettingsState()) {
     loadStatus();
   }
 
-  final CrosspostApiClient _apiClient;
-  final ProfileRepository _profileRepository;
+  static const _defaultProvisioningPollInterval = Duration(seconds: 5);
+
+  final BlueskyCrosspostRepository _repository;
   final String _pubkey;
+  final Duration _provisioningPollInterval;
+  Timer? _provisioningPollTimer;
+  var _loadingStatus = false;
 
   /// Load the current crosspost status from keycast.
-  Future<void> loadStatus() async {
-    emit(state.copyWith(status: CrosspostSettingsStatus.loading));
-    final claimLookup = await _lookupUsernameClaimStatus();
+  Future<void> loadStatus() => _loadStatus(showLoading: true);
+
+  Future<void> _loadStatus({required bool showLoading}) async {
+    if (_loadingStatus) return;
+    _loadingStatus = true;
+    if (showLoading) {
+      emit(state.copyWith(status: CrosspostSettingsStatus.loading));
+    }
     try {
-      final result = await _apiClient.getStatus();
-      final displayUsername = result.username ?? claimLookup.username;
-      emit(
-        CrosspostSettingsState(
-          status: CrosspostSettingsStatus.loaded,
-          enabled: result.crosspostEnabled,
-          username: displayUsername,
-          handle: _handleFor(displayUsername),
-          provisioningState: result.provisioningState,
-          usernameClaimStatus: claimLookup.status,
-          attempt: state.attempt,
-        ),
-      );
+      final result = await _repository.loadStatus(pubkey: _pubkey);
+      if (isClosed) return;
+      _emitLoaded(result);
     } catch (e, stackTrace) {
+      if (isClosed) return;
       addError(e, stackTrace);
       emit(
-        CrosspostSettingsState(
+        state.copyWith(
           status: CrosspostSettingsStatus.failure,
-          enabled: state.enabled,
-          username: claimLookup.username,
-          handle: _handleFor(claimLookup.username),
-          provisioningState: state.provisioningState,
-          usernameClaimStatus: claimLookup.status,
           error: CrosspostSettingsError.generic,
           attempt: state.attempt + 1,
         ),
       );
+    } finally {
+      _loadingStatus = false;
     }
   }
 
@@ -100,20 +100,11 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     );
 
     try {
-      final result = await _apiClient.setCrosspost(
+      final result = await _repository.setCrosspost(
         pubkey: _pubkey,
         enabled: enabled,
       );
-      emit(
-        state.copyWith(
-          status: CrosspostSettingsStatus.loaded,
-          enabled: result.crosspostEnabled,
-          username: result.username ?? state.username,
-          handle: result.handle ?? state.handle,
-          provisioningState: result.provisioningState,
-          clearError: true,
-        ),
-      );
+      _emitLoaded(result);
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       // Revert to previous state on failure, tagging the reason.
@@ -127,6 +118,9 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     }
   }
 
+  /// Retry provisioning after keycast reports a failed ATProto account setup.
+  Future<void> retryProvisioning() => toggleCrosspost(enabled: true);
+
   /// Clear a surfaced error after the UI has acted on it, returning to a
   /// loaded state so the same error does not fire again.
   void acknowledgeError() {
@@ -136,30 +130,37 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
     );
   }
 
-  Future<({UsernameClaimStatus status, String? username})>
-  _lookupUsernameClaimStatus() async {
-    final lookup = await _profileRepository.lookupUsernameByPubkey(
-      pubkeyHex: _pubkey,
+  void _emitLoaded(BlueskyCrosspostAccountStatus result) {
+    emit(
+      CrosspostSettingsState(
+        status: CrosspostSettingsStatus.loaded,
+        enabled: result.crosspostEnabled,
+        username: result.username,
+        handle: result.handle,
+        provisioningState: result.provisioningState,
+        did: result.did,
+        provisioningError: result.provisioningError,
+        usernameClaimStatus: result.usernameClaimStatus,
+        attempt: state.attempt,
+      ),
     );
-    return switch (lookup) {
-      DivineUsernameFound(:final canonical) => (
-        status: UsernameClaimStatus.claimed,
-        username: canonical,
-      ),
-      DivineUsernameNotFound() => (
-        status: UsernameClaimStatus.notClaimed,
-        username: null,
-      ),
-      DivineUsernameUnknown() => (
-        status: UsernameClaimStatus.unknown,
-        username: null,
-      ),
-    };
+    _syncProvisioningPoller(result.provisioningState);
   }
 
-  String? _handleFor(String? username) {
-    if (username == null || username.isEmpty) return null;
-    return '$username.divine.video';
+  void _syncProvisioningPoller(AtprotoProvisioningState provisioningState) {
+    if (provisioningState == AtprotoProvisioningState.pending) {
+      _provisioningPollTimer ??= Timer.periodic(
+        _provisioningPollInterval,
+        (_) => unawaited(_loadStatus(showLoading: false)),
+      );
+      return;
+    }
+    _stopProvisioningPoller();
+  }
+
+  void _stopProvisioningPoller() {
+    _provisioningPollTimer?.cancel();
+    _provisioningPollTimer = null;
   }
 
   CrosspostSettingsError _errorFromException(
@@ -183,5 +184,11 @@ class CrosspostSettingsCubit extends Cubit<CrosspostSettingsState> {
       }
     }
     return CrosspostSettingsError.generic;
+  }
+
+  @override
+  Future<void> close() {
+    _stopProvisioningPoller();
+    return super.close();
   }
 }

@@ -5,19 +5,21 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/models/atproto_provisioning_state.dart';
 
 /// Response model for crosspost status from keycast's `AtprotoStatusResponse`.
 class CrosspostStatus {
   const CrosspostStatus({
     required this.crosspostEnabled,
+    required this.provisioningState,
     this.username,
     this.handle,
-    this.provisioningState,
     this.did,
+    this.provisioningError,
   });
 
   /// Builds a status from keycast's `AtprotoStatusResponse` JSON shape:
-  /// `{enabled, state, did, username}`.
+  /// `{enabled, state, did, error, username}`.
   ///
   /// `username` is the bare local part; the displayable Bluesky handle is
   /// `<username>.divine.video`.
@@ -25,24 +27,28 @@ class CrosspostStatus {
     final username = json['username'] as String?;
     return CrosspostStatus(
       crosspostEnabled: json['enabled'] as bool? ?? false,
+      provisioningState: AtprotoProvisioningState.fromWireName(
+        json['state'] as String?,
+      ),
       username: username,
       handle: username == null ? null : '$username.$_handleDomain',
-      provisioningState: json['state'] as String?,
       did: json['did'] as String?,
+      provisioningError: json['error'] as String?,
     );
   }
 
   static const _handleDomain = 'divine.video';
 
   final bool crosspostEnabled;
+  final AtprotoProvisioningState provisioningState;
 
   /// The bare local part of the user's `.divine.video` handle, or `null` when
   /// the user has not yet claimed a username. Enabling crossposting requires a
   /// claimed username, so `null` here means the toggle cannot succeed yet.
   final String? username;
   final String? handle;
-  final String? provisioningState;
   final String? did;
+  final String? provisioningError;
 }
 
 /// Client for keycast crosspost API endpoints.
@@ -87,7 +93,10 @@ class CrosspostApiClient {
 
     if (response.statusCode == 404) {
       // No account link exists — return disabled default
-      return const CrosspostStatus(crosspostEnabled: false);
+      return const CrosspostStatus(
+        crosspostEnabled: false,
+        provisioningState: AtprotoProvisioningState.notLinked,
+      );
     }
 
     if (response.statusCode != 200) {

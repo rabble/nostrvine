@@ -7696,7 +7696,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je video\'s worden niet gepubliceerd naar Bluesky';
 
   @override
+  String get blueskyBackfillDisclosureTitle => 'Your past videos will post too';
+
+  @override
+  String get blueskyBackfillDisclosureSubtitle =>
+      'When you turn this on, Divine will start sending your older videos to Bluesky, oldest first, without rushing the daily limit.';
+
+  @override
   String get blueskyHandle => 'Bluesky-handle';
+
+  @override
+  String get blueskyDid => 'Bluesky DID';
 
   @override
   String get blueskyStatus => 'Status';

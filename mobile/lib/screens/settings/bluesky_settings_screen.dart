@@ -10,7 +10,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/crosspost_settings/crosspost_settings_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/atproto_provisioning_state.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/bluesky_crosspost_repository.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
@@ -42,7 +44,6 @@ class BlueskySettingsScreen extends ConsumerWidget {
       );
     }
 
-    final apiClient = ref.watch(crosspostApiClientProvider);
     final profileRepository = ref.watch(profileRepositoryProvider);
     if (profileRepository == null) {
       return Scaffold(
@@ -55,11 +56,11 @@ class BlueskySettingsScreen extends ConsumerWidget {
         body: const Center(child: BrandedLoadingIndicator(size: 60)),
       );
     }
+    final repository = ref.watch(blueskyCrosspostRepositoryProvider);
 
     return BlocProvider(
       create: (_) => CrosspostSettingsCubit(
-        apiClient: apiClient,
-        profileRepository: profileRepository,
+        repository: repository,
         pubkey: pubkey,
       ),
       child: const _BlueskySettingsView(),
@@ -98,8 +99,10 @@ class _BlueskySettingsView extends StatelessWidget {
                     const _UsernameRequiredNotice(),
                   if (state.usernameClaimStatus == UsernameClaimStatus.unknown)
                     const _UsernameLookupUnavailableNotice(),
+                  const _BackfillDisclosure(),
                   _CrosspostToggle(state: state),
                   if (state.handle != null) _HandleInfo(handle: state.handle!),
+                  if (state.did != null) _DidInfo(did: state.did!),
                   _ProvisioningStatus(state: state),
                 ],
               );
@@ -163,6 +166,28 @@ class _BlueskySettingsView extends StatelessWidget {
           ),
         );
     }
+  }
+}
+
+class _BackfillDisclosure extends StatelessWidget {
+  const _BackfillDisclosure();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const DivineIcon(
+        icon: DivineIconName.info,
+        color: VineTheme.accentOrange,
+      ),
+      title: Text(
+        context.l10n.blueskyBackfillDisclosureTitle,
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
+      ),
+      subtitle: Text(
+        context.l10n.blueskyBackfillDisclosureSubtitle,
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
+      ),
+    );
   }
 }
 
@@ -278,6 +303,31 @@ class _HandleInfo extends StatelessWidget {
   }
 }
 
+class _DidInfo extends StatelessWidget {
+  const _DidInfo({required this.did});
+
+  final String did;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const DivineIcon(
+        icon: DivineIconName.fingerprint,
+        color: VineTheme.vineGreen,
+      ),
+      title: Text(
+        context.l10n.blueskyDid,
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
+      ),
+      subtitle: Text(
+        did,
+        overflow: TextOverflow.ellipsis,
+        style: VineTheme.bodyMediumFont(color: context.vineColors.mutedText),
+      ),
+    );
+  }
+}
+
 class _ProvisioningStatus extends StatelessWidget {
   const _ProvisioningStatus({required this.state});
 
@@ -286,17 +336,17 @@ class _ProvisioningStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusText = switch (state.provisioningState) {
-      'ready' => context.l10n.blueskyStatusReady,
-      'pending' => context.l10n.blueskyStatusPending,
-      'failed' => context.l10n.blueskyStatusFailed,
-      'disabled' => context.l10n.blueskyStatusDisabled,
+      AtprotoProvisioningState.ready => context.l10n.blueskyStatusReady,
+      AtprotoProvisioningState.pending => context.l10n.blueskyStatusPending,
+      AtprotoProvisioningState.failed => context.l10n.blueskyStatusFailed,
+      AtprotoProvisioningState.disabled => context.l10n.blueskyStatusDisabled,
       _ => context.l10n.blueskyStatusNotLinked,
     };
 
     final statusColor = switch (state.provisioningState) {
-      'ready' => VineTheme.vineGreen,
-      'pending' => VineTheme.accentOrange,
-      'failed' => VineTheme.error,
+      AtprotoProvisioningState.ready => VineTheme.vineGreen,
+      AtprotoProvisioningState.pending => VineTheme.accentOrange,
+      AtprotoProvisioningState.failed => VineTheme.error,
       _ => context.vineColors.mutedText,
     };
 
@@ -306,10 +356,60 @@ class _ProvisioningStatus extends StatelessWidget {
         context.l10n.blueskyStatus,
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
-      subtitle: Text(
+      subtitle: _ProvisioningStatusDetail(
+        state: state,
+        statusText: statusText,
+        statusColor: statusColor,
+      ),
+      trailing: state.provisioningState == AtprotoProvisioningState.failed
+          ? DivineButton(
+              label: context.l10n.commonRetry,
+              onPressed: () =>
+                  context.read<CrosspostSettingsCubit>().retryProvisioning(),
+              type: DivineButtonType.link,
+              size: DivineButtonSize.small,
+            )
+          : null,
+    );
+  }
+}
+
+class _ProvisioningStatusDetail extends StatelessWidget {
+  const _ProvisioningStatusDetail({
+    required this.state,
+    required this.statusText,
+    required this.statusColor,
+  });
+
+  final CrosspostSettingsState state;
+  final String statusText;
+  final Color statusColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final provisioningError = state.provisioningError;
+    if (state.provisioningState != AtprotoProvisioningState.failed ||
+        provisioningError == null ||
+        provisioningError.isEmpty) {
+      return Text(
         statusText,
         style: VineTheme.bodyMediumFont(color: statusColor),
-      ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          statusText,
+          style: VineTheme.bodyMediumFont(color: statusColor),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          provisioningError,
+          style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
+        ),
+      ],
     );
   }
 }

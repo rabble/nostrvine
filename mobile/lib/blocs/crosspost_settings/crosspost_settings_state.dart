@@ -5,10 +5,6 @@ part of 'crosspost_settings_cubit.dart';
 
 enum CrosspostSettingsStatus { initial, loading, loaded, toggling, failure }
 
-/// Whether divine-name-server can confirm this pubkey owns an active
-/// `.divine.video` username.
-enum UsernameClaimStatus { unknown, claimed, notClaimed }
-
 /// The actionable reason a crosspost action failed, so the UI can guide the
 /// user instead of silently reverting the toggle.
 enum CrosspostSettingsError {
@@ -34,7 +30,9 @@ class CrosspostSettingsState extends Equatable {
     this.enabled = false,
     this.username,
     this.handle,
-    this.provisioningState,
+    this.provisioningState = AtprotoProvisioningState.notLinked,
+    this.did,
+    this.provisioningError,
     this.usernameClaimStatus = UsernameClaimStatus.unknown,
     this.error,
     this.attempt = 0,
@@ -47,7 +45,9 @@ class CrosspostSettingsState extends Equatable {
   /// no username has been claimed.
   final String? username;
   final String? handle;
-  final String? provisioningState;
+  final AtprotoProvisioningState provisioningState;
+  final String? did;
+  final String? provisioningError;
   final UsernameClaimStatus usernameClaimStatus;
 
   /// The reason the last action failed, set only when [status] is
@@ -61,7 +61,7 @@ class CrosspostSettingsState extends Equatable {
   final int attempt;
 
   /// Whether the account has been fully provisioned on Bluesky.
-  bool get isProvisioned => provisioningState == 'ready';
+  bool get isProvisioned => provisioningState == AtprotoProvisioningState.ready;
 
   /// Whether the user has claimed a `.divine.video` username, a precondition
   /// for enabling crossposting.
@@ -73,7 +73,9 @@ class CrosspostSettingsState extends Equatable {
     bool? enabled,
     String? username,
     String? handle,
-    String? provisioningState,
+    AtprotoProvisioningState? provisioningState,
+    String? did,
+    String? provisioningError,
     UsernameClaimStatus? usernameClaimStatus,
     CrosspostSettingsError? error,
     bool clearError = false,
@@ -85,6 +87,8 @@ class CrosspostSettingsState extends Equatable {
       username: username ?? this.username,
       handle: handle ?? this.handle,
       provisioningState: provisioningState ?? this.provisioningState,
+      did: did ?? this.did,
+      provisioningError: provisioningError ?? this.provisioningError,
       usernameClaimStatus: usernameClaimStatus ?? this.usernameClaimStatus,
       error: clearError ? null : (error ?? this.error),
       attempt: attempt ?? this.attempt,
@@ -98,6 +102,8 @@ class CrosspostSettingsState extends Equatable {
     username,
     handle,
     provisioningState,
+    did,
+    provisioningError,
     usernameClaimStatus,
     error,
     attempt,

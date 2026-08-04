@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/atproto_provisioning_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
@@ -106,7 +107,12 @@ void main() {
       ).thenAnswer((_) async => const DivineUsernameNotFound());
       when(
         () => apiClient.getStatus(),
-      ).thenAnswer((_) async => const CrosspostStatus(crosspostEnabled: false));
+      ).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: false,
+          provisioningState: AtprotoProvisioningState.notLinked,
+        ),
+      );
 
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
@@ -115,6 +121,8 @@ void main() {
       expect(find.byType(DivineSwitchTile), findsOneWidget);
       expect(find.text(l10n.blueskyPublishVideos), findsOneWidget);
       expect(find.text(l10n.blueskyDisabledSubtitle), findsOneWidget);
+      expect(find.text(l10n.blueskyBackfillDisclosureTitle), findsOneWidget);
+      expect(find.text(l10n.blueskyBackfillDisclosureSubtitle), findsOneWidget);
     });
 
     testWidgets('hides the claim notice once a username is claimed', (
@@ -125,7 +133,7 @@ void main() {
           crosspostEnabled: false,
           username: 'testuser',
           handle: 'testuser.divine.video',
-          provisioningState: 'pending',
+          provisioningState: AtprotoProvisioningState.pending,
         ),
       );
 
@@ -146,7 +154,12 @@ void main() {
       ).thenAnswer((_) async => const DivineUsernameNotFound());
       when(
         () => apiClient.getStatus(),
-      ).thenAnswer((_) async => const CrosspostStatus(crosspostEnabled: false));
+      ).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: false,
+          provisioningState: AtprotoProvisioningState.notLinked,
+        ),
+      );
 
       await tester.pumpWidget(buildApp());
       await tester.pumpAndSettle();
@@ -168,7 +181,10 @@ void main() {
           ),
         ).thenAnswer((_) async => const DivineUsernameNotFound());
         when(() => apiClient.getStatus()).thenAnswer(
-          (_) async => const CrosspostStatus(crosspostEnabled: false),
+          (_) async => const CrosspostStatus(
+            crosspostEnabled: false,
+            provisioningState: AtprotoProvisioningState.notLinked,
+          ),
         );
 
         await tester.pumpWidget(buildApp());
@@ -217,7 +233,7 @@ void main() {
         when(() => apiClient.getStatus()).thenAnswer((_) async {
           return const CrosspostStatus(
             crosspostEnabled: false,
-            provisioningState: 'pending',
+            provisioningState: AtprotoProvisioningState.pending,
           );
         });
 
@@ -260,7 +276,7 @@ void main() {
         when(() => apiClient.getStatus()).thenAnswer((_) async {
           return const CrosspostStatus(
             crosspostEnabled: false,
-            provisioningState: 'pending',
+            provisioningState: AtprotoProvisioningState.pending,
           );
         });
 
@@ -287,7 +303,10 @@ void main() {
       'hides claim notice when name server confirms claim despite keycast null',
       (tester) async {
         when(() => apiClient.getStatus()).thenAnswer(
-          (_) async => const CrosspostStatus(crosspostEnabled: false),
+          (_) async => const CrosspostStatus(
+            crosspostEnabled: false,
+            provisioningState: AtprotoProvisioningState.notLinked,
+          ),
         );
 
         await tester.pumpWidget(buildApp());
@@ -307,7 +326,10 @@ void main() {
           ),
         ).thenAnswer((_) async => const DivineUsernameUnknown());
         when(() => apiClient.getStatus()).thenAnswer(
-          (_) async => const CrosspostStatus(crosspostEnabled: false),
+          (_) async => const CrosspostStatus(
+            crosspostEnabled: false,
+            provisioningState: AtprotoProvisioningState.notLinked,
+          ),
         );
 
         await tester.pumpWidget(buildApp());
@@ -331,7 +353,10 @@ void main() {
           ),
         ).thenAnswer((_) async => const DivineUsernameNotFound());
         when(() => apiClient.getStatus()).thenAnswer(
-          (_) async => const CrosspostStatus(crosspostEnabled: false),
+          (_) async => const CrosspostStatus(
+            crosspostEnabled: false,
+            provisioningState: AtprotoProvisioningState.notLinked,
+          ),
         );
 
         await tester.pumpWidget(buildApp(startAtHome: true));
@@ -377,7 +402,12 @@ void main() {
     ) async {
       when(
         () => apiClient.getStatus(),
-      ).thenAnswer((_) async => const CrosspostStatus(crosspostEnabled: false));
+      ).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: false,
+          provisioningState: AtprotoProvisioningState.notLinked,
+        ),
+      );
       when(
         () => apiClient.setCrosspost(pubkey: 'pubkeyhex', enabled: true),
       ).thenAnswer(
@@ -397,6 +427,98 @@ void main() {
       expect(find.text(l10n.blueskyUsernameSyncPending), findsOneWidget);
       expect(find.byType(SnackBarAction), findsNothing);
       expect(find.text(l10n.blueskySetUpHandle), findsNothing);
+    });
+
+    testWidgets('renders ready state with handle and DID', (tester) async {
+      when(() => apiClient.getStatus()).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: true,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.ready,
+          did: 'did:plc:test123',
+        ),
+      );
+
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.blueskyStatusReady), findsOneWidget);
+      expect(find.text('testuser.divine.video'), findsOneWidget);
+      expect(find.text(l10n.blueskyDid), findsOneWidget);
+      expect(find.text('did:plc:test123'), findsOneWidget);
+    });
+
+    testWidgets('renders pending state', (tester) async {
+      when(() => apiClient.getStatus()).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: true,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.pending,
+        ),
+      );
+
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.blueskyStatusPending), findsOneWidget);
+    });
+
+    testWidgets('renders disabled state separately from not linked', (
+      tester,
+    ) async {
+      when(() => apiClient.getStatus()).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: false,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.disabled,
+        ),
+      );
+
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.blueskyStatusDisabled), findsOneWidget);
+      expect(find.text(l10n.blueskyStatusNotLinked), findsNothing);
+    });
+
+    testWidgets('renders failed state with error detail and retry', (
+      tester,
+    ) async {
+      when(() => apiClient.getStatus()).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: false,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.failed,
+          provisioningError: 'PDS quota exhausted',
+        ),
+      );
+      when(
+        () => apiClient.setCrosspost(pubkey: 'pubkeyhex', enabled: true),
+      ).thenAnswer(
+        (_) async => const CrosspostStatus(
+          crosspostEnabled: true,
+          username: 'testuser',
+          handle: 'testuser.divine.video',
+          provisioningState: AtprotoProvisioningState.pending,
+        ),
+      );
+
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.blueskyStatusFailed), findsOneWidget);
+      expect(find.text('PDS quota exhausted'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.commonRetry));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => apiClient.setCrosspost(pubkey: 'pubkeyhex', enabled: true),
+      ).called(1);
     });
   });
 }
