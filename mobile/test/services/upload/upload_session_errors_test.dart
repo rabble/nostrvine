@@ -25,6 +25,27 @@ void main() {
       );
     });
 
+    test('BlossomResumableUploadException 401 → true', () {
+      expect(
+        isExpiredResumableSessionError(
+          const BlossomResumableUploadException(
+            'Unauthorized',
+            statusCode: 401,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('BlossomResumableUploadException 403 → true', () {
+      expect(
+        isExpiredResumableSessionError(
+          const BlossomResumableUploadException('Forbidden', statusCode: 403),
+        ),
+        isTrue,
+      );
+    });
+
     test('BlossomResumableUploadException 500 → false', () {
       expect(
         isExpiredResumableSessionError(

@@ -155,6 +155,11 @@ class UploadProgressReporter {
 
   /// Categorise [error] into a string category constant for monitoring.
   Future<String> categorizeError(dynamic error) async {
+    if (error is BlossomResumableUploadException &&
+        (error.statusCode == 401 || error.statusCode == 403)) {
+      return 'AUTHENTICATION';
+    }
+
     if (isExpiredResumableSessionError(error)) {
       return 'UPLOAD_SESSION_EXPIRED';
     }
@@ -163,6 +168,33 @@ class UploadProgressReporter {
 
     if (connectivity == ConnectivityResult.none) {
       return 'NO_INTERNET';
+    }
+
+    final resumableStatusCode = error is BlossomResumableUploadException
+        ? error.statusCode
+        : null;
+    final resumableFailureReason = error is BlossomResumableUploadException
+        ? error.failureReason
+        : null;
+
+    if (resumableFailureReason == BlossomUploadFailureReason.authUnavailable) {
+      return 'NETWORK_ERROR';
+    }
+
+    if (resumableStatusCode != null) {
+      if (resumableStatusCode == 408) return 'TIMEOUT';
+      if (resumableStatusCode == 413) return 'FILE_TOO_LARGE';
+      if (resumableStatusCode == 429) return 'RATE_LIMITED';
+      if (resumableStatusCode == 401 || resumableStatusCode == 403) {
+        return 'AUTHENTICATION';
+      }
+      if (resumableStatusCode == 502 ||
+          resumableStatusCode == 503 ||
+          resumableStatusCode == 504) {
+        return 'SERVER_UNAVAILABLE';
+      }
+      if (resumableStatusCode >= 500) return 'SERVER_ERROR';
+      if (resumableStatusCode >= 400) return 'CLIENT_ERROR';
     }
 
     if (error is BlossomUploadFailureException) {
@@ -367,6 +399,7 @@ class UploadProgressReporter {
     String errorCategory,
     UploadMetrics? metrics,
     ConnectivityResult connectivity, {
+    required StackTrace stackTrace,
     required bool isManagerInitialized,
   }) async {
     try {
@@ -421,8 +454,6 @@ class UploadProgressReporter {
         );
       }
 
-      final stackTrace = StackTrace.current;
-
       final fileExists = kIsWeb
           ? 'N/A (web)'
           : '${File(upload.localVideoPath).existsSync()}';
@@ -445,6 +476,16 @@ ${metrics != null ? '- File Size: ${metrics.fileSizeMB} MB\n- Duration: ${metric
 
       crashReporting.log('UPLOAD_FAILURE: $detailedError');
 
+      if (!_isReportableUploadFailure(errorCategory)) {
+        Log.info(
+          'Skipping Crashlytics recordError for expected upload failure: '
+          '$errorCategory',
+          name: 'UploadManager',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
       await crashReporting.recordError(
         error,
         stackTrace,
@@ -463,6 +504,13 @@ ${metrics != null ? '- File Size: ${metrics.fileSizeMB} MB\n- Duration: ${metric
         category: LogCategory.video,
       );
     }
+  }
+
+  bool _isReportableUploadFailure(String errorCategory) {
+    return switch (errorCategory) {
+      'OUT_OF_MEMORY' || 'UNKNOWN' => true,
+      _ => false,
+    };
   }
 
   /// Send an initialization-failure report to Crashlytics.

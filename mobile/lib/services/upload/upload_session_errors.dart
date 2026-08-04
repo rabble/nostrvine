@@ -4,7 +4,7 @@
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 
 /// Returns true if [error] represents an expired resumable-upload session — the
-/// server returned 404/410, or the message says the session is gone.
+/// server returned 401/403/404/410, or the message says the session is gone.
 ///
 /// This predicate decides both whether the error is retriable *and* whether the
 /// resumable session is nulled on failure, so the two used to drift between
@@ -12,7 +12,10 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 /// lives here as a single source of truth to keep those callers in lockstep.
 bool isExpiredResumableSessionError(dynamic error) {
   if (error is BlossomResumableUploadException) {
-    return error.statusCode == 404 || error.statusCode == 410;
+    return error.statusCode == 401 ||
+        error.statusCode == 403 ||
+        error.statusCode == 404 ||
+        error.statusCode == 410;
   }
 
   final errorMessage = error.toString().toLowerCase();

@@ -1313,10 +1313,16 @@ class BlossomUploadService {
       ),
     );
 
-    if (response.statusCode == 404 || response.statusCode == 410) {
+    if (response.statusCode == 401 ||
+        response.statusCode == 403 ||
+        response.statusCode == 404 ||
+        response.statusCode == 410) {
       throw BlossomResumableUploadException(
         'Resumable upload session is no longer available',
         statusCode: response.statusCode,
+        failureReason: BlossomUploadFailureReason.fromStatusCode(
+          response.statusCode,
+        ),
       );
     }
     if (response.statusCode != 200 && response.statusCode != 204) {
@@ -1422,10 +1428,16 @@ class BlossomUploadService {
           }
         }
 
-        if (response.statusCode == 404 || response.statusCode == 410) {
+        if (response.statusCode == 401 ||
+            response.statusCode == 403 ||
+            response.statusCode == 404 ||
+            response.statusCode == 410) {
           throw BlossomResumableUploadException(
             'Resumable upload session expired during chunk upload',
             statusCode: response.statusCode,
+            failureReason: BlossomUploadFailureReason.fromStatusCode(
+              response.statusCode,
+            ),
           );
         }
         if (response.statusCode != 200 &&
@@ -1569,7 +1581,12 @@ class BlossomUploadService {
     void Function(double)? onProgress,
     void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
   }) async {
-    final initialSession = resumableSession == null
+    final now = _clock();
+    final persistedSessionExpired =
+        resumableSession?.expiresAt != null &&
+        !now.isBefore(resumableSession!.expiresAt!);
+
+    final initialSession = resumableSession == null || persistedSessionExpired
         ? await _initResumableUpload(
             serverUrl: serverUrl,
             fileHash: fileHash,

@@ -289,6 +289,31 @@ class UploadRetryPolicy {
       return false;
     }
 
+    if (error is BlossomResumableUploadException) {
+      final reason = error.failureReason;
+      if (reason == BlossomUploadFailureReason.authUnavailable ||
+          reason == BlossomUploadFailureReason.network ||
+          error.isRecoverableResumableFailure) {
+        return true;
+      }
+      if (reason == BlossomUploadFailureReason.auth ||
+          reason == BlossomUploadFailureReason.fileTooLarge ||
+          reason == BlossomUploadFailureReason.cancelled) {
+        return false;
+      }
+
+      final code = error.statusCode;
+      if (code != null) {
+        if (code == 408) return true;
+        if (code == 429) return true;
+        if (code == 500 || code == 502 || code == 503 || code == 504) {
+          return true;
+        }
+        if (code >= 500) return false;
+        if (code >= 400) return false;
+      }
+    }
+
     // Use structured classification when available.
     if (error is BlossomUploadFailureException) {
       // A transient inability to *produce* a signed auth header (the remote
