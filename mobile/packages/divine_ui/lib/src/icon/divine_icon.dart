@@ -39,6 +39,8 @@ enum DivineIconName {
   bookmarkPlus('bookmark_plus'),
   bookmarkSimple('bookmark_simple'),
   bracketsAngle('brackets_angle'),
+  bug('bug'),
+  bugFill('bug_fill'),
   camera('camera'),
   cameraPlus('cameraPlus'),
   cameraRetro('retro-camera'),

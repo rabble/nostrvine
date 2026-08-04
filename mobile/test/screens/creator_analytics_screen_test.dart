@@ -161,4 +161,27 @@ void main() {
 
     expect(find.text('25'), findsWidgets);
   });
+
+  testWidgets('toggles diagnostics from the app bar action', (tester) async {
+    await pumpAnalyticsScreen(
+      tester,
+      videos: [
+        analyticsVideo(
+          id: 'diagnostics-video',
+          views: 120,
+          nostrLikeCount: 19,
+          nostrCommentCount: 7,
+          nostrRepostCount: 1,
+        ),
+      ],
+    );
+
+    expect(find.text('Total videos: 1'), findsNothing);
+
+    await tester.tap(find.bySemanticsLabel('Toggle diagnostics'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Total videos: 1'), findsOneWidget);
+    expect(find.text('Sources: bulk-video-stats'), findsOneWidget);
+  });
 }
