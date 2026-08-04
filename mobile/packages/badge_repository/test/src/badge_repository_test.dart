@@ -28,30 +28,26 @@ void main() {
       lastSignedEvent = () => signedEvent;
 
       when(() => nostrClient.queryEvents(any())).thenAnswer((_) async => []);
-      when(() => nostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(
-          event: invocation.positionalArguments.single as Event,
-        ),
-      );
+      when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+        invocation,
+      ) async {
+        final event = invocation.positionalArguments.single as Event;
+        return _acceptedPublishOutcome(event);
+      });
 
       repository = BadgeRepository(
         nostrClient: nostrClient,
         sharedPreferences: preferences,
         currentPubkey: () => _pubkey(1),
-        signEvent:
-            ({
-              required kind,
-              required content,
-              required tags,
-            }) async {
-              return signedEvent = _event(
-                id: _eventId(900 + kind),
-                pubkey: _pubkey(1),
-                kind: kind,
-                tags: tags,
-                content: content,
-              );
-            },
+        signEvent: ({required kind, required content, required tags}) async {
+          return signedEvent = _event(
+            id: _eventId(900 + kind),
+            pubkey: _pubkey(1),
+            kind: kind,
+            tags: tags,
+            content: content,
+          );
+        },
       );
     });
 
@@ -207,7 +203,7 @@ void main() {
         ['a', '30009:${_pubkey(2)}:daily-diviner'],
         ['e', _eventId(5)],
       ]);
-      verify(() => nostrClient.publishEvent(event)).called(1);
+      verify(() => nostrClient.publishEventAwaitOk(event)).called(1);
     });
 
     test('removeAward publishes kind 10008 without the removed pair', () async {
@@ -242,7 +238,7 @@ void main() {
         ['a', '30009:${_pubkey(3)}:weekly-diviner'],
         ['e', _eventId(10)],
       ]);
-      verify(() => nostrClient.publishEvent(event)).called(1);
+      verify(() => nostrClient.publishEventAwaitOk(event)).called(1);
     });
 
     test('hideAward stores a local per-user dismissal', () async {
@@ -422,7 +418,7 @@ void main() {
     );
 
     test(
-      'loadAwardedBadges prefers current profile badges over newer legacy',
+      'loadAwardedBadges uses newer legacy profile badges over older current',
       () async {
         final coordinate = '30009:${_pubkey(2)}:daily-diviner';
         final award = _awardEvent(
@@ -431,7 +427,7 @@ void main() {
           definitionCoordinate: coordinate,
           recipients: [_pubkey(1)],
         );
-        final currentProfileBadges = _profileBadgesEvent(
+        final olderCurrentProfileBadges = _profileBadgesEvent(
           id: _eventId(28),
           pubkey: _pubkey(1),
           tags: [
@@ -452,13 +448,178 @@ void main() {
         );
         _stubQueries(nostrClient, {
           'awarded': [award],
-          'profileCurrent:${_pubkey(1)}': [currentProfileBadges],
+          'profileCurrent:${_pubkey(1)}': [olderCurrentProfileBadges],
           'profileLegacy:${_pubkey(1)}': [newerLegacyWithoutAward],
         });
 
         final awards = await repository.loadAwardedBadges();
 
+        expect(awards.single.isAccepted, isFalse);
+      },
+    );
+
+    test(
+      'loadAwardedBadges uses newer current profile badges over older legacy',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(34),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final newerCurrentProfileBadges = _profileBadgesEvent(
+          id: _eventId(35),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(34)],
+          ],
+        );
+        final olderLegacyWithoutAward = _event(
+          id: _eventId(36),
+          pubkey: _pubkey(1),
+          kind: EventKind.badgeSet,
+          createdAt: 2000,
+          tags: [
+            ['d', 'profile_badges'],
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(37)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [newerCurrentProfileBadges],
+          'profileLegacy:${_pubkey(1)}': [olderLegacyWithoutAward],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
         expect(awards.single.isAccepted, isTrue);
+      },
+    );
+
+    test(
+      'loadAwardedBadges treats newer empty profile badges as authoritative',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(38),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final newerEmptyProfileBadges = _profileBadgesEvent(
+          id: _eventId(39),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: const [],
+        );
+        final olderLegacyWithAward = _event(
+          id: _eventId(40),
+          pubkey: _pubkey(1),
+          kind: EventKind.badgeSet,
+          createdAt: 2000,
+          tags: [
+            ['d', 'profile_badges'],
+            ['a', coordinate],
+            ['e', _eventId(38)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [newerEmptyProfileBadges],
+          'profileLegacy:${_pubkey(1)}': [olderLegacyWithAward],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.isAccepted, isFalse);
+      },
+    );
+
+    test(
+      'loadAwardedBadges prefers current profile badges when timestamps tie',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(41),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final currentProfileBadges = _profileBadgesEvent(
+          id: _eventId(43),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(41)],
+          ],
+        );
+        final legacyWithoutAward = _event(
+          id: _eventId(42),
+          pubkey: _pubkey(1),
+          kind: EventKind.badgeSet,
+          createdAt: 3000,
+          tags: [
+            ['d', 'profile_badges'],
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(44)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [currentProfileBadges],
+          'profileLegacy:${_pubkey(1)}': [legacyWithoutAward],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.isAccepted, isTrue);
+      },
+    );
+
+    test(
+      'loadAwardedBadges uses lowest event id when same-kind timestamps tie',
+      () async {
+        final coordinate = '30009:${_pubkey(2)}:daily-diviner';
+        final award = _awardEvent(
+          id: _eventId(46),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: coordinate,
+          recipients: [_pubkey(1)],
+        );
+        final higherIdWithAward = _profileBadgesEvent(
+          id: _eventId(48),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', coordinate],
+            ['e', _eventId(46)],
+          ],
+        );
+        final lowerIdWithoutAward = _profileBadgesEvent(
+          id: _eventId(47),
+          pubkey: _pubkey(1),
+          createdAt: 3000,
+          tags: [
+            ['a', '30009:${_pubkey(3)}:weekly-diviner'],
+            ['e', _eventId(49)],
+          ],
+        );
+        _stubQueries(nostrClient, {
+          'awarded': [award],
+          'profileCurrent:${_pubkey(1)}': [
+            higherIdWithAward,
+            lowerIdWithoutAward,
+          ],
+        });
+
+        final awards = await repository.loadAwardedBadges();
+
+        expect(awards.single.isAccepted, isFalse);
       },
     );
 
@@ -560,12 +721,8 @@ void main() {
         nostrClient: nostrClient,
         sharedPreferences: preferences,
         currentPubkey: () => _pubkey(1),
-        signEvent:
-            ({
-              required kind,
-              required content,
-              required tags,
-            }) async => null,
+        signEvent: ({required kind, required content, required tags}) async =>
+            null,
       );
       final award = _awardEvent(
         id: _eventId(44),
@@ -582,24 +739,43 @@ void main() {
       );
     });
 
-    test('acceptAward throws a StateError when publishing fails', () async {
-      when(
-        () => nostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => const PublishFailed());
-      final award = _awardEvent(
-        id: _eventId(45),
-        issuerPubkey: _pubkey(2),
-        definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
-        recipients: [_pubkey(1)],
-      );
+    test(
+      'acceptAward throws a BadgePublishException when no relay accepts',
+      () async {
+        when(() => nostrClient.publishEventAwaitOk(any())).thenAnswer((
+          invocation,
+        ) async {
+          final event = invocation.positionalArguments.single as Event;
+          return _rejectedPublishOutcome(event);
+        });
+        final award = _awardEvent(
+          id: _eventId(45),
+          issuerPubkey: _pubkey(2),
+          definitionCoordinate: '30009:${_pubkey(2)}:daily-diviner',
+          recipients: [_pubkey(1)],
+        );
 
-      await expectLater(
-        repository.acceptAward(
-          BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
-        ),
-        throwsA(isA<StateError>()),
-      );
-    });
+        await expectLater(
+          repository.acceptAward(
+            BadgeAwardViewData(award: Nip58BadgeParser.parseAward(award)!),
+          ),
+          throwsA(
+            isA<BadgePublishException>()
+                .having(
+                  (error) => error.outcome.acceptedBy,
+                  'acceptedBy',
+                  isEmpty,
+                )
+                .having(
+                  (error) => error.toString(),
+                  'toString',
+                  contains('Could not publish profile badges event'),
+                ),
+          ),
+        );
+        verifyNever(() => nostrClient.publishEvent(any()));
+      },
+    );
 
     test('acceptAward throws a StateError without a current pubkey', () async {
       // A WORKING signer is injected so the only possible StateError source is
@@ -610,12 +786,8 @@ void main() {
         nostrClient: nostrClient,
         sharedPreferences: preferences,
         currentPubkey: () => null,
-        signEvent:
-            ({
-              required kind,
-              required content,
-              required tags,
-            }) async => _event(
+        signEvent: ({required kind, required content, required tags}) async =>
+            _event(
               id: _eventId(946),
               pubkey: _pubkey(1),
               kind: kind,
@@ -860,12 +1032,36 @@ Event _profileBadgesEvent({
   required String id,
   required String pubkey,
   required List<List<String>> tags,
+  int createdAt = 1000,
 }) {
   return _event(
     id: id,
     pubkey: pubkey,
     kind: EventKind.profileBadges,
     tags: tags,
+    createdAt: createdAt,
+  );
+}
+
+PublishOutcome _acceptedPublishOutcome(Event event) {
+  return PublishOutcome(
+    eventId: event.id,
+    eventKind: event.kind,
+    acceptedBy: const ['wss://relay.divine.video'],
+    rejectedBy: const {},
+    noResponseFrom: const [],
+  );
+}
+
+PublishOutcome _rejectedPublishOutcome(Event event) {
+  return PublishOutcome(
+    eventId: event.id,
+    eventKind: event.kind,
+    acceptedBy: const [],
+    rejectedBy: const {
+      'wss://relay.divine.video': 'blocked: kind 10008 not in allowed list',
+    },
+    noResponseFrom: const [],
   );
 }
 

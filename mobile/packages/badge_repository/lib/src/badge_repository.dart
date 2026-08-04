@@ -94,6 +94,19 @@ class IssuedBadgeRecipientViewData {
   final bool isAccepted;
 }
 
+/// Failure to publish profile badges to at least one relay.
+///
+/// Carries the relay-level [outcome] for logging and triage.
+class BadgePublishException implements Exception {
+  const BadgePublishException(this.message, {required this.outcome});
+
+  final String message;
+  final PublishOutcome outcome;
+
+  @override
+  String toString() => 'BadgePublishException: $message';
+}
+
 class BadgeRepository {
   BadgeRepository({
     required NostrClient nostrClient,
@@ -214,9 +227,7 @@ class BadgeRepository {
     List<String> cappedRecipients(Nip58BadgeAward award) => award
         .recipientPubkeys
         .take(recipientCheckLimit)
-        .toList(
-          growable: false,
-        );
+        .toList(growable: false);
 
     final definitionsFuture = _definitionsByCoordinate(memo, [
       for (final award in awards) award.definitionCoordinate,
@@ -279,6 +290,13 @@ class BadgeRepository {
     return {for (var i = 0; i < unique.length; i++) unique[i]: loaded[i]};
   }
 
+  /// Accepts [award] by publishing the current user's profile badge list.
+  ///
+  /// Throws:
+  ///
+  /// * [StateError] if there is no current pubkey or the profile badge event
+  ///   cannot be signed.
+  /// * [BadgePublishException] when no relay confirms the published list.
   Future<void> acceptAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
@@ -303,6 +321,13 @@ class BadgeRepository {
     await _publishProfileBadges(refs);
   }
 
+  /// Removes [award] from the current user's profile badge list.
+  ///
+  /// Throws:
+  ///
+  /// * [StateError] if there is no current pubkey or the profile badge event
+  ///   cannot be signed.
+  /// * [BadgePublishException] when no relay confirms the published list.
   Future<void> removeAward(BadgeAwardViewData award) async {
     final pubkey = _requireCurrentPubkey();
     final currentProfileBadges = await _latestProfileBadges(pubkey);
@@ -343,8 +368,6 @@ class BadgeRepository {
   }
 
   Future<Nip58ProfileBadges?> _latestProfileBadges(String pubkey) async {
-    // Both kinds are queried concurrently; the current kind keeps
-    // precedence and legacy is consulted only when it parses to nothing.
     final results = await Future.wait([
       _nostrClient.queryEvents([
         Filter(authors: [pubkey], kinds: [EventKind.profileBadges], limit: 10),
@@ -358,8 +381,9 @@ class BadgeRepository {
         ),
       ]),
     ]);
-    return _newestParsedProfileBadges(results[0]) ??
-        _newestParsedProfileBadges(results[1]);
+    // NIP-58 treats legacy 30008/d=profile_badges as equivalent to 10008,
+    // so resolve both encodings as one newest-wins profile badge list.
+    return _newestParsedProfileBadges([...results[0], ...results[1]]);
   }
 
   Future<Nip58BadgeDefinition?> _loadDefinition(String coordinate) async {
@@ -418,9 +442,12 @@ class BadgeRepository {
       throw StateError('Could not sign profile badges event');
     }
 
-    final published = await _nostrClient.publishEvent(event);
-    if (published is! PublishSuccess) {
-      throw StateError('Could not publish profile badges event');
+    final outcome = await _nostrClient.publishEventAwaitOk(event);
+    if (outcome.failed) {
+      throw BadgePublishException(
+        'Could not publish profile badges event: ${outcome.summary}',
+        outcome: outcome,
+      );
     }
   }
 
@@ -446,9 +473,19 @@ class BadgeRepository {
     if (parsed.isEmpty) return null;
 
     final sorted = parsed.toList()
-      ..sort(
-        (left, right) => right.event.createdAt.compareTo(left.event.createdAt),
-      );
+      ..sort((left, right) {
+        final byCreatedAt = right.event.createdAt.compareTo(
+          left.event.createdAt,
+        );
+        if (byCreatedAt != 0) return byCreatedAt;
+
+        final byKind = (right.isLegacyProfileBadges ? 0 : 1).compareTo(
+          left.isLegacyProfileBadges ? 0 : 1,
+        );
+        if (byKind != 0) return byKind;
+
+        return left.event.id.compareTo(right.event.id);
+      });
     return sorted.first;
   }
 
