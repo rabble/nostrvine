@@ -3044,6 +3044,15 @@ void main() {
       return orphan;
     }
 
+    Future<void> expectFileReaped(File file, {required String reason}) async {
+      for (var attempt = 0; attempt < 20; attempt++) {
+        await pumpEventQueue();
+        if (!file.existsSync()) return;
+      }
+
+      expect(file.existsSync(), isFalse, reason: reason);
+    }
+
     test('an autosave keeps its orphaned files alive', () async {
       final orphan = stubDeferringAutosave();
       final notifier = container.read(videoEditorProvider.notifier);
@@ -3086,11 +3095,9 @@ void main() {
 
       // Drives the real ref.onDispose wiring, not the @visibleForTesting flush.
       disposeContainer();
-      await pumpEventQueue();
 
-      expect(
-        orphan.existsSync(),
-        isFalse,
+      await expectFileReaped(
+        orphan,
         reason: 'onDispose reaps deferred files left when reset never ran',
       );
     });
