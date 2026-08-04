@@ -1222,7 +1222,7 @@ void main() {
         await pumpScreenWithRouter(tester);
         await tester.pumpAndSettle();
 
-        await tester.enterText(find.byType(TextFormField).first, 'Edited');
+        await tester.enterText(find.byType(TextField).first, 'Edited');
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
 
