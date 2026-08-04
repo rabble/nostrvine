@@ -90,6 +90,8 @@ void main() {
           mockRelayPool.add(any(), autoSubscribe: any(named: 'autoSubscribe')),
     ).thenAnswer((_) async => true);
     when(() => mockRelayPool.remove(any())).thenReturn(null);
+    when(() => mockStorage.loadRemovedRelays()).thenAnswer((_) async => []);
+    when(() => mockStorage.saveRemovedRelays(any())).thenAnswer((_) async {});
 
     manager = RelayManager(config: config, relayPool: mockRelayPool);
   });
@@ -335,6 +337,10 @@ void main() {
       test('saves configuration after adding relay', () async {
         when(() => mockStorage.loadRelays()).thenAnswer((_) async => []);
         when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+        when(() => mockStorage.loadRemovedRelays()).thenAnswer((_) async => []);
+        when(
+          () => mockStorage.saveRemovedRelays(any()),
+        ).thenAnswer((_) async {});
 
         final configWithStorage = _createTestConfig(storage: mockStorage);
         final managerWithStorage = RelayManager(
@@ -346,6 +352,68 @@ void main() {
         await managerWithStorage.addRelay(testCustomRelayUrl);
 
         verify(() => mockStorage.saveRelays(any())).called(1);
+      });
+
+      test('skips automatic add for a user-removed relay', () async {
+        final storage = InMemoryRelayStorage([], [testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        await managerWithStorage.initialize();
+        clearInteractions(mockRelayPool);
+        final result = await managerWithStorage.addRelay(testCustomRelayUrl);
+
+        expect(result, isFalse);
+        expect(
+          managerWithStorage.configuredRelays,
+          isNot(contains(testCustomRelayUrl)),
+        );
+        verifyNever(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        );
+      });
+
+      test('reports whether a relay is user-removed', () async {
+        final storage = InMemoryRelayStorage([], [testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        expect(
+          await managerWithStorage.isUserRemovedRelay(testCustomRelayUrl),
+          isTrue,
+        );
+        expect(
+          await managerWithStorage.isUserRemovedRelay(testCustomRelayUrl2),
+          isFalse,
+        );
+      });
+
+      test('user add clears removed relay ledger and succeeds', () async {
+        final storage = InMemoryRelayStorage([], [testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        await managerWithStorage.initialize();
+        final result = await managerWithStorage.addRelay(
+          testCustomRelayUrl,
+          source: RelayAddSource.user,
+        );
+
+        expect(result, isTrue);
+        expect(
+          managerWithStorage.configuredRelays,
+          contains(testCustomRelayUrl),
+        );
+        expect(await storage.loadRemovedRelays(), isEmpty);
       });
 
       test('updates status to connected on success', () async {
@@ -450,7 +518,7 @@ void main() {
       });
 
       // Scheme validation before bare-host upgrade (#3362 review follow-up).
-      // Without this gate, `_normalizeUrl` would string-prefix `wss://` onto
+      // Without this gate, `normalizeRelayUrl` would string-prefix `wss://` onto
       // any input not already starting with `wss://`/`ws://`, turning
       // `http://attacker.example.com` into `wss://http://attacker.example.com`
       // (host=`http`, path=`//attacker…` — the wrong target).
@@ -533,7 +601,7 @@ void main() {
 
       test('case-folds uppercase scheme to canonical lowercase', () async {
         // Discovery accepts `WSS://relay.example.com` because Dart's Uri
-        // canonicalises the scheme to lowercase. `_normalizeUrl` must do
+        // canonicalises the scheme to lowercase. `normalizeRelayUrl` must do
         // the same so the URL is stored in canonical form and string-based
         // dedup / persistence checks compare equal across casings.
         final result = await manager.addRelay('WSS://relay.example.com');
@@ -615,7 +683,10 @@ void main() {
       });
 
       test('removes relay from configured list', () async {
-        final result = await manager.removeRelay(testCustomRelayUrl);
+        final result = await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isTrue);
         expect(manager.configuredRelays, isNot(contains(testCustomRelayUrl)));
@@ -623,32 +694,47 @@ void main() {
 
       test('disconnects from the relay via RelayPool', () async {
         clearInteractions(mockRelayPool);
-        await manager.removeRelay(testCustomRelayUrl);
+        await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
       });
 
       test('allows removing default relay', () async {
-        final result = await manager.removeRelay(testDefaultRelayUrl);
+        final result = await manager.removeRelay(
+          testDefaultRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isTrue);
         expect(manager.configuredRelays, isNot(contains(testDefaultRelayUrl)));
       });
 
       test('returns false for non-configured relay', () async {
-        final result = await manager.removeRelay('wss://unknown.relay.com');
+        final result = await manager.removeRelay(
+          'wss://unknown.relay.com',
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isFalse);
       });
 
       test('returns false for invalid URL', () async {
-        final result = await manager.removeRelay('invalid-url');
+        final result = await manager.removeRelay(
+          'invalid-url',
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isFalse);
       });
 
       test('removes status entry for relay', () async {
-        await manager.removeRelay(testCustomRelayUrl);
+        await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         final status = manager.getRelayStatus(testCustomRelayUrl);
         expect(status, isNull);
@@ -657,6 +743,10 @@ void main() {
       test('saves configuration after removing relay', () async {
         when(() => mockStorage.loadRelays()).thenAnswer((_) async => []);
         when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+        when(() => mockStorage.loadRemovedRelays()).thenAnswer((_) async => []);
+        when(
+          () => mockStorage.saveRemovedRelays(any()),
+        ).thenAnswer((_) async {});
 
         final configWithStorage = _createTestConfig(storage: mockStorage);
         final managerWithStorage = RelayManager(
@@ -668,16 +758,171 @@ void main() {
         await managerWithStorage.addRelay(testCustomRelayUrl);
         clearInteractions(mockStorage);
 
-        await managerWithStorage.removeRelay(testCustomRelayUrl);
+        await managerWithStorage.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         verify(() => mockStorage.saveRelays(any())).called(1);
+      });
+
+      test('persists removed relay ledger after removing relay', () async {
+        final storage = InMemoryRelayStorage([testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        await managerWithStorage.initialize();
+        await managerWithStorage.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
+
+        expect(await storage.loadRemovedRelays(), equals([testCustomRelayUrl]));
+      });
+
+      test(
+        'initialize filters user-removed relays from polluted storage',
+        () async {
+          final storage = InMemoryRelayStorage(
+            [testCustomRelayUrl, testCustomRelayUrl2],
+            [testCustomRelayUrl],
+          );
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: storage),
+            relayPool: mockRelayPool,
+          );
+
+          await managerWithStorage.initialize();
+
+          expect(
+            managerWithStorage.configuredRelays,
+            isNot(contains(testCustomRelayUrl)),
+          );
+          expect(
+            managerWithStorage.configuredRelays,
+            contains(testCustomRelayUrl2),
+          );
+          expect(
+            await storage.loadRelays(),
+            isNot(contains(testCustomRelayUrl)),
+          );
+        },
+      );
+
+      test(
+        'initialize filters user-removed default relay from polluted storage',
+        () async {
+          final storage = InMemoryRelayStorage(
+            [testDefaultRelayUrl, testCustomRelayUrl],
+            [testDefaultRelayUrl],
+          );
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: storage),
+            relayPool: mockRelayPool,
+          );
+
+          await managerWithStorage.initialize();
+
+          expect(
+            managerWithStorage.configuredRelays,
+            isNot(contains(testDefaultRelayUrl)),
+          );
+          expect(
+            managerWithStorage.configuredRelays,
+            contains(testCustomRelayUrl),
+          );
+          expect(
+            await storage.loadRelays(),
+            isNot(contains(testDefaultRelayUrl)),
+          );
+        },
+      );
+
+      test(
+        'automatic add before initialize honors persisted removal ledger',
+        () async {
+          final storage = InMemoryRelayStorage(const [], [testCustomRelayUrl]);
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: storage),
+            relayPool: mockRelayPool,
+          );
+
+          final result = await managerWithStorage.addRelay(testCustomRelayUrl);
+
+          expect(result, isFalse);
+          expect(
+            managerWithStorage.configuredRelays,
+            isNot(contains(testCustomRelayUrl)),
+          );
+          expect(await storage.loadRelays(), isEmpty);
+        },
+      );
+
+      test('concurrent ledger loads share one storage read', () async {
+        final removedRelaysCompleter = Completer<List<String>>();
+        var removedRelaysLoadCount = 0;
+        when(() => mockStorage.loadRemovedRelays()).thenAnswer((_) {
+          removedRelaysLoadCount++;
+          return removedRelaysCompleter.future;
+        });
+        when(() => mockStorage.loadRelays()).thenAnswer((_) async => []);
+        when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+        when(
+          () => mockStorage.saveRemovedRelays(any()),
+        ).thenAnswer((_) async {});
+
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: mockStorage),
+          relayPool: mockRelayPool,
+        );
+
+        final initializeFuture = managerWithStorage.initialize();
+        await Future<void>.delayed(Duration.zero);
+        final restoreFuture = managerWithStorage.addRelay(
+          testCustomRelayUrl,
+          source: RelayAddSource.user,
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        expect(removedRelaysLoadCount, equals(1));
+
+        removedRelaysCompleter.complete([testCustomRelayUrl]);
+        await initializeFuture;
+
+        expect(await restoreFuture, isTrue);
+        expect(
+          managerWithStorage.configuredRelays,
+          contains(testCustomRelayUrl),
+        );
+        verify(() => mockStorage.saveRemovedRelays([])).called(1);
+      });
+
+      test('automatic removal does not persist user removal intent', () async {
+        final storage = InMemoryRelayStorage([testCustomRelayUrl]);
+        final managerWithStorage = RelayManager(
+          config: _createTestConfig(storage: storage),
+          relayPool: mockRelayPool,
+        );
+
+        await managerWithStorage.initialize();
+        await managerWithStorage.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.automatic,
+        );
+
+        expect(await storage.loadRemovedRelays(), isEmpty);
       });
 
       test('emits status update when relay is removed', () async {
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);
 
-        await manager.removeRelay(testCustomRelayUrl);
+        await manager.removeRelay(
+          testCustomRelayUrl,
+          source: RelayRemoveSource.user,
+        );
         await Future<void>.delayed(Duration.zero);
 
         expect(statusUpdates, isNotEmpty);
@@ -1393,6 +1638,18 @@ void main() {
       expect(relays, isNot(contains(testDefaultRelayUrl)));
       expect(relays, contains(testCustomRelayUrl));
     });
+
+    test(
+      'removed relays persist independently from configured relays',
+      () async {
+        final storage = InMemoryRelayStorage([testDefaultRelayUrl]);
+
+        await storage.saveRemovedRelays([testCustomRelayUrl]);
+
+        expect(await storage.loadRelays(), equals([testDefaultRelayUrl]));
+        expect(await storage.loadRemovedRelays(), equals([testCustomRelayUrl]));
+      },
+    );
   });
 
   group('Blocked Relays', () {

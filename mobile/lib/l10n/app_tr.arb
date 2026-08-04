@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Stop motion klibi",
   "profileNotifyBellOff": "Yeni vine'lardan haberdar et",
   "profileNotifyBellOn": "Yeni vine bildirimlerini kapat",
-  "profileNotifyUpdateFailed": "Kaydedilemedi. Tekrar denensin mi?"
+  "profileNotifyUpdateFailed": "Kaydedilemedi. Tekrar denensin mi?",
+  "relaySettingsRemoveDefaultRelayTitle": "Divine rölesi kaldırılsın mı?",
+  "relaySettingsRemoveDefaultRelayMessage": "Divine'ın rölesini kaldırmak uygulama deneyimini kötüleştirir. Videolar, paylaşım ve senkronizasyon daha az güvenilir olabilir. Bunu yalnızca deneyimli Nostr kullanıcıları yapmalı.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Röleyi kaldır"
 }

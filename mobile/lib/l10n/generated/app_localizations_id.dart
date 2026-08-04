@@ -1959,6 +1959,17 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'Hapus relay Divine?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Menghapus relay Divine bakal menurunkan pengalaman di app. Video, posting, dan sinkronisasi bisa jadi kurang andal. Ini sebaiknya cuma dilakukan pengguna Nostr yang berpengalaman.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Hapus relay';
+
+  @override
   String get relaySettingsCancel => 'Batal';
 
   @override

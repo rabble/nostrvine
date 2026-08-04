@@ -2008,6 +2008,17 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'Xoá relay của Divine?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Xoá relay của Divine sẽ làm giảm trải nghiệm trong ứng dụng. Video, đăng bài và đồng bộ có thể kém ổn định hơn. Chỉ nên làm điều này nếu bạn đã quen dùng Nostr.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Xoá relay';
+
+  @override
   String get relaySettingsCancel => 'Hủy';
 
   @override

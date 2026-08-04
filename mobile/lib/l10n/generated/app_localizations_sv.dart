@@ -1992,6 +1992,17 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'Ta bort Divines rel?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Att ta bort Divines rel försämrar upplevelsen i appen. Videor, publicering och synk kan bli mindre pålitliga. Gör bara det här om du är en van Nostr-användare.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Ta bort rel';
+
+  @override
   String get relaySettingsCancel => 'Avbryt';
 
   @override

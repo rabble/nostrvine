@@ -1984,6 +1984,17 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'إزالة محوّل Divine؟';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'إزالة محوّل Divine ستضعف تجربتك في التطبيق. قد تصبح الفيديوهات والنشر والمزامنة أقل موثوقية. يُفضّل ألا يفعل ذلك إلا مستخدمو Nostr ذوو الخبرة.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'إزالة المحوّل';
+
+  @override
   String get relaySettingsCancel => 'إلغاء';
 
   @override

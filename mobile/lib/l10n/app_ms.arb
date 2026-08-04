@@ -6682,5 +6682,15 @@
   },
   "profileNotifyBellOff": "Beritahu saya tentang vine baharu",
   "profileNotifyBellOn": "Berhenti beritahu saya tentang vine baharu",
-  "profileNotifyUpdateFailed": "Tidak dapat disimpan. Cuba lagi?"
+  "profileNotifyUpdateFailed": "Tidak dapat disimpan. Cuba lagi?",
+  "relaySettingsRemoveDefaultRelayTitle": "Buang relay Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Membuang relay Divine akan menjejaskan pengalaman dalam apl. Video, siaran dan penyegerakan mungkin kurang boleh dipercayai. Ini hanya patut dilakukan oleh pengguna Nostr yang berpengalaman.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Buang relay"
 }

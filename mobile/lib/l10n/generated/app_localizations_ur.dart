@@ -2002,6 +2002,17 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'Divine کا ریلے ہٹائیں؟';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Divine کا ریلے ہٹانے سے ایپ کا تجربہ خراب ہو جائے گا۔ ویڈیوز، پوسٹنگ اور سنک کم قابلِ بھروسہ ہو سکتے ہیں۔ یہ صرف تجربہ کار Nostr صارفین کو کرنا چاہیے۔\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'ریلے ہٹائیں';
+
+  @override
   String get relaySettingsCancel => 'منسوخ کریں';
 
   @override

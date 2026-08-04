@@ -3502,6 +3502,24 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to remove this relay?\n\n{relayUrl}'**
   String relaySettingsRemoveRelayMessage(String relayUrl);
 
+  /// No description provided for @relaySettingsRemoveDefaultRelayTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Divine Relay?'**
+  String get relaySettingsRemoveDefaultRelayTitle;
+
+  /// No description provided for @relaySettingsRemoveDefaultRelayMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing Divine\'s relay will degrade the app experience. Videos, posting, and sync may be less reliable. This should only be done by experienced Nostr users.\n\n{relayUrl}'**
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl);
+
+  /// No description provided for @relaySettingsRemoveRelayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove relay'**
+  String get relaySettingsRemoveRelayTooltip;
+
   /// No description provided for @relaySettingsCancel.
   ///
   /// In en, this message translates to:

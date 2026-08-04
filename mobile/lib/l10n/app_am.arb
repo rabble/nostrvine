@@ -4954,5 +4954,15 @@
     "libraryStopMotionClipLabel": "የስቶፕ-ሞሽን ክሊፕ",
   "profileNotifyBellOff": "ስለ አዲስ ቫይኖች አሳውቀኝ",
   "profileNotifyBellOn": "ስለ አዲስ ቫይኖች አታሳውቀኝ",
-  "profileNotifyUpdateFailed": "ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ?"
+  "profileNotifyUpdateFailed": "ማስቀመጥ አልተቻለም። እንደገና ይሞክሩ?",
+  "relaySettingsRemoveDefaultRelayTitle": "የDivine ቅብብሎሽ ይወገድ?",
+  "relaySettingsRemoveDefaultRelayMessage": "የDivine ቅብብሎሽን ማስወገድ የመተግበሪያውን አጠቃቀም ያዳክማል። ቪዲዮዎች፣ ልጥፎች እና ማመሳሰል አስተማማኝ ላይሆኑ ይችላሉ። ይህን ማድረግ ያለባቸው ልምድ ያላቸው የNostr ተጠቃሚዎች ብቻ ናቸው።\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "ቅብብሎሽ አስወግድ"
 }

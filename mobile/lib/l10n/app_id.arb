@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Klip stop-motion",
   "profileNotifyBellOff": "Beri tahu tentang vine baru",
   "profileNotifyBellOn": "Hentikan pemberitahuan vine baru",
-  "profileNotifyUpdateFailed": "Gagal menyimpan. Coba lagi?"
+  "profileNotifyUpdateFailed": "Gagal menyimpan. Coba lagi?",
+  "relaySettingsRemoveDefaultRelayTitle": "Hapus relay Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Menghapus relay Divine bakal menurunkan pengalaman di app. Video, posting, dan sinkronisasi bisa jadi kurang andal. Ini sebaiknya cuma dilakukan pengguna Nostr yang berpengalaman.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Hapus relay"
 }

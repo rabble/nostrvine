@@ -31,6 +31,9 @@ import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
+typedef BugReportTargetRelayResolver =
+    Future<List<String>?> Function(String recipientPubkey);
+
 /// Service for creating and managing bug reports
 class BugReportService {
   BugReportService({
@@ -38,16 +41,22 @@ class BugReportService {
     BlossomUploadService? blossomUploadService,
     ErrorAnalyticsTracker? errorTracker,
     StorageManagementService? storageManagementService,
+    BugReportTargetRelayResolver? targetRelayResolver,
+    List<String> fallbackTargetRelays = BugReportConfig.supportDmTargetRelays,
   }) : _nip17MessageService = nip17MessageService,
        _blossomUploadService = blossomUploadService,
        _errorTracker = errorTracker ?? ErrorAnalyticsTracker(),
-       _storageManagementService = storageManagementService;
+       _storageManagementService = storageManagementService,
+       _targetRelayResolver = targetRelayResolver,
+       _fallbackTargetRelays = List.unmodifiable(fallbackTargetRelays);
 
   static const _uuid = Uuid();
   final NIP17MessageService? _nip17MessageService;
   final BlossomUploadService? _blossomUploadService;
   final ErrorAnalyticsTracker _errorTracker;
   final StorageManagementService? _storageManagementService;
+  final BugReportTargetRelayResolver? _targetRelayResolver;
+  final List<String> _fallbackTargetRelays;
 
   /// Collect comprehensive diagnostics for bug report
   Future<BugReportData> collectDiagnostics({
@@ -315,27 +324,15 @@ class BugReportService {
         sanitizedData,
         bugReportUrl,
       );
-
-      // Ensure backup relay is connected for bug reports
-      try {
-        await _nip17MessageService.nostrService.addRelay(
-          'wss://relay.nos.social',
-        );
-        Log.info(
-          'Added relay.nos.social as backup for bug report',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          'Failed to add backup relay, continuing anyway: $e',
-          category: LogCategory.system,
-        );
-      }
+      final targetRelays = await _resolveTargetRelays(recipientPubkey);
 
       // Send via NIP-17 encrypted message
       final result = await _nip17MessageService.sendPrivateMessage(
         recipientPubkey: recipientPubkey,
         content: messageContent,
+        targetRelays: targetRelays,
+        awaitRecipientOk: true,
+        selfWrapOnSoftUnconfirmed: false,
         additionalTags: [
           Nip89ClientTag.tag,
           ['report_id', data.reportId],
@@ -391,6 +388,24 @@ class BugReportService {
         category: LogCategory.system,
       );
       return sendBugReportViaEmail(data);
+    }
+  }
+
+  Future<List<String>?> _resolveTargetRelays(String recipientPubkey) async {
+    final resolver = _targetRelayResolver;
+    if (resolver == null) return _fallbackTargetRelays;
+    try {
+      final relays = await resolver(recipientPubkey);
+      if (relays == null || relays.isEmpty) {
+        return _fallbackTargetRelays;
+      }
+      return relays;
+    } catch (e) {
+      Log.warning(
+        'Failed to resolve bug-report DM target relays; using fallback relays: $e',
+        category: LogCategory.system,
+      );
+      return _fallbackTargetRelays;
     }
   }
 

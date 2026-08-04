@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Stop-motion-clip",
   "profileNotifyBellOff": "Melden bij nieuwe vines",
   "profileNotifyBellOn": "Niet meer melden bij nieuwe vines",
-  "profileNotifyUpdateFailed": "Kon niet opslaan. Opnieuw proberen?"
+  "profileNotifyUpdateFailed": "Kon niet opslaan. Opnieuw proberen?",
+  "relaySettingsRemoveDefaultRelayTitle": "Divine-relay verwijderen?",
+  "relaySettingsRemoveDefaultRelayMessage": "Als je Divines relay verwijdert, gaat de app-ervaring achteruit. Video's, posten en synchroniseren worden mogelijk minder betrouwbaar. Doe dit alleen als je ervaring hebt met Nostr.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Relay verwijderen"
 }

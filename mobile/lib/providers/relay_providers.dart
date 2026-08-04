@@ -7,7 +7,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_client/nostr_client.dart'
-    show NostrClient, RelayConnectionStatus, RelayState;
+    show NostrClient, RelayConnectionStatus, RelayRemoveSource, RelayState;
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -19,7 +19,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'relay_providers.g.dart';
 
-/// Current configured relay URLs, including the environment default relay.
+/// Current configured relay URLs.
 ///
 /// Updated by [relaySetChangeBridge] from the active relay status map so UI
 /// that only needs the relay set can react without constructing its own client.
@@ -247,11 +247,7 @@ class _RelaySetChangeCoordinator {
         }
       }
 
-      if (!_operationIsCurrent(
-        attachment,
-        transaction,
-        transactionVersion,
-      )) {
+      if (!_operationIsCurrent(attachment, transaction, transactionVersion)) {
         _rescheduleAfterOperation = _pendingTransaction != null;
         return;
       }
@@ -277,11 +273,7 @@ class _RelaySetChangeCoordinator {
         );
       }
 
-      if (!_operationIsCurrent(
-        attachment,
-        transaction,
-        transactionVersion,
-      )) {
+      if (!_operationIsCurrent(attachment, transaction, transactionVersion)) {
         _rescheduleAfterOperation = _pendingTransaction != null;
         return;
       }
@@ -296,11 +288,7 @@ class _RelaySetChangeCoordinator {
         );
       }
 
-      if (!_operationIsCurrent(
-        attachment,
-        transaction,
-        transactionVersion,
-      )) {
+      if (!_operationIsCurrent(attachment, transaction, transactionVersion)) {
         _rescheduleAfterOperation = _pendingTransaction != null;
         return;
       }
@@ -323,20 +311,22 @@ class _RelaySetChangeCoordinator {
     required int transactionVersion,
   }) async {
     final client = attachment.client;
-    final targetRelaySet = Set.of(transaction.targetRelaySet)
-      ..add(client.defaultRelayUrl);
+    final targetRelaySet = Set.of(transaction.targetRelaySet);
     try {
       final currentRelaySet = client.configuredRelays.toSet();
-      final additions = targetRelaySet.difference(currentRelaySet).toList();
+      final additions = <String>[];
+      for (final relay in targetRelaySet.difference(currentRelaySet)) {
+        if (await client.isUserRemovedRelay(relay)) {
+          targetRelaySet.remove(relay);
+        } else {
+          additions.add(relay);
+        }
+      }
       final removals = currentRelaySet.difference(targetRelaySet).toList();
 
       if (additions.isNotEmpty) {
         final addedCount = await client.addRelays(additions);
-        if (!_operationIsCurrent(
-          attachment,
-          transaction,
-          transactionVersion,
-        )) {
+        if (!_operationIsCurrent(attachment, transaction, transactionVersion)) {
           return const _RelayReconciliationResult.superseded();
         }
         if (addedCount != additions.length) {
@@ -346,12 +336,11 @@ class _RelaySetChangeCoordinator {
         }
       }
       for (final relay in removals) {
-        final removed = await client.removeRelay(relay);
-        if (!_operationIsCurrent(
-          attachment,
-          transaction,
-          transactionVersion,
-        )) {
+        final removed = await client.removeRelay(
+          relay,
+          source: RelayRemoveSource.automatic,
+        );
+        if (!_operationIsCurrent(attachment, transaction, transactionVersion)) {
           return const _RelayReconciliationResult.superseded();
         }
         if (!removed) {
@@ -369,11 +358,7 @@ class _RelaySetChangeCoordinator {
       }
       return const _RelayReconciliationResult.complete();
     } catch (e) {
-      if (!_operationIsCurrent(
-        attachment,
-        transaction,
-        transactionVersion,
-      )) {
+      if (!_operationIsCurrent(attachment, transaction, transactionVersion)) {
         return const _RelayReconciliationResult.superseded();
       }
       return _RelayReconciliationResult.incomplete(e.toString());

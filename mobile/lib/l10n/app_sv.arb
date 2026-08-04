@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Stop motion-klipp",
   "profileNotifyBellOff": "Meddela om nya vines",
   "profileNotifyBellOn": "Sluta meddela om nya vines",
-  "profileNotifyUpdateFailed": "Kunde inte sparas. Försök igen?"
+  "profileNotifyUpdateFailed": "Kunde inte sparas. Försök igen?",
+  "relaySettingsRemoveDefaultRelayTitle": "Ta bort Divines rel?",
+  "relaySettingsRemoveDefaultRelayMessage": "Att ta bort Divines rel försämrar upplevelsen i appen. Videor, publicering och synk kan bli mindre pålitliga. Gör bara det här om du är en van Nostr-användare.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Ta bort rel"
 }

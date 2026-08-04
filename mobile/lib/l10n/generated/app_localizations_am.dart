@@ -1963,6 +1963,17 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'የDivine ቅብብሎሽ ይወገድ?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'የDivine ቅብብሎሽን ማስወገድ የመተግበሪያውን አጠቃቀም ያዳክማል። ቪዲዮዎች፣ ልጥፎች እና ማመሳሰል አስተማማኝ ላይሆኑ ይችላሉ። ይህን ማድረግ ያለባቸው ልምድ ያላቸው የNostr ተጠቃሚዎች ብቻ ናቸው።\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'ቅብብሎሽ አስወግድ';
+
+  @override
   String get relaySettingsCancel => 'ሰርዝ';
 
   @override

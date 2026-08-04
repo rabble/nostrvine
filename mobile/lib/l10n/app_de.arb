@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Stop-Motion-Clip",
   "profileNotifyBellOff": "Über neue Vines benachrichtigen",
   "profileNotifyBellOn": "Keine Benachrichtigungen über neue Vines",
-  "profileNotifyUpdateFailed": "Konnte nicht gespeichert werden. Nochmal?"
+  "profileNotifyUpdateFailed": "Konnte nicht gespeichert werden. Nochmal?",
+  "relaySettingsRemoveDefaultRelayTitle": "Divine-Relay entfernen?",
+  "relaySettingsRemoveDefaultRelayMessage": "Wenn du Divines Relay entfernst, wird die App-Erfahrung schlechter. Videos, Posten und Synchronisierung können unzuverlässiger werden. Das sollten nur erfahrene Nostr-Nutzer tun.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Relay entfernen"
 }

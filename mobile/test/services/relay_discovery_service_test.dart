@@ -280,7 +280,7 @@ void main() {
 
     test('drops https:// relay tags (NIP-65 advertises WS endpoints only)', () {
       // A published kind:10002 tag like `["r", "https://relay.example.com"]`
-      // is not a usable relay endpoint — `RelayManager._normalizeUrl` will
+      // is not a usable relay endpoint — `normalizeRelayUrl` will
       // reject it downstream. If discovery kept it, `result.hasRelays`
       // would be true and the safe-fallback bootstrap (#2931) would be
       // suppressed, leaving the user with no relays.
@@ -327,8 +327,8 @@ void main() {
         // `wss://http://attacker` parses with host=`http` and path=`//attacker…`.
         // Without the `path.startsWith('//')` guard in `isRelayUrlAllowed`,
         // the predicate would accept it (scheme=wss) and discovery would
-        // surface a relay pointing at host `http`. `RelayManager.
-        // _normalizeUrl` would also reject it downstream, but we don't want
+        // surface a relay pointing at host `http`. `normalizeRelayUrl`
+        // would also reject it downstream, but we don't want
         // discovery's `hasRelays` to flip true on a malformed tag — that
         // would suppress the safe-fallback bootstrap (#2931).
         final relays = service.parseRelayListFromJson(

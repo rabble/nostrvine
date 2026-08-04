@@ -1903,6 +1903,17 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => '移除 Divine 中继？';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return '移除 Divine 的中继会让应用体验变差。视频、发布和同步可能变得不太可靠。建议只有熟悉 Nostr 的用户才这么做。\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => '移除中继';
+
+  @override
   String get relaySettingsCancel => '取消';
 
   @override

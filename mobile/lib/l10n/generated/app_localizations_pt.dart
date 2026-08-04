@@ -2017,6 +2017,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle =>
+      'Remover o relay do Divine?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Remover o relay do Divine vai piorar a experiência no app. Vídeos, publicações e sincronização podem ficar menos confiáveis. Isso só deve ser feito por usuários experientes em Nostr.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Remover relay';
+
+  @override
   String get relaySettingsCancel => 'Cancelar';
 
   @override

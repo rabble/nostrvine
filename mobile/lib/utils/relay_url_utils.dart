@@ -1,6 +1,7 @@
 // ABOUTME: Helpers for resolving API base URLs from Nostr relay WebSocket URLs.
 // ABOUTME: Keeps REST endpoints aligned with active relay configuration.
 
+import 'package:nostr_client/nostr_client.dart' as nostr_client;
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 
 const _divineRelayHost = 'relay.divine.video';
@@ -64,9 +65,9 @@ bool usesUserChosenRelay(
 /// Nostr relays speak WebSocket only — `wss://` is accepted for any host,
 /// and `ws://` is accepted only for a recognized loopback host. Any other
 /// scheme (`https://`, `http://`, `ftp://`, …), a malformed URL, or a missing
-/// host is rejected. This matches the acceptance rule enforced by
-/// `RelayManager._normalizeUrl` in `nostr_client`, so the predicate doubles
-/// as the upstream "is this URL a usable relay endpoint" check.
+/// host is rejected. Unlike `normalizeRelayUrl` in `nostr_client`, this
+/// requires an explicit scheme and rejects bare hosts because it validates
+/// user/app-layer input before the connection layer canonicalizes identity.
 ///
 /// This predicate is the single source of truth for the application-layer
 /// relay URL allowlist. The loopback host predicate itself lives in
@@ -83,6 +84,22 @@ bool isRelayUrlAllowed(String url) {
   if (scheme == 'wss') return true;
   if (scheme == 'ws') return isLoopbackHost(uri.host);
   return false;
+}
+
+/// Normalizes a relay URL for identity comparison in UI state.
+///
+/// Delegates to the connection-layer normalizer so Settings identity checks
+/// cannot drift from persisted relay identity.
+String? normalizeRelayUrlForComparison(String url) =>
+    nostr_client.normalizeRelayUrl(url);
+
+/// True when [a] and [b] identify the same relay endpoint.
+bool relayUrlsEquivalent(String a, String b) {
+  final normalizedA = normalizeRelayUrlForComparison(a);
+  final normalizedB = normalizeRelayUrlForComparison(b);
+  return normalizedA != null &&
+      normalizedB != null &&
+      normalizedA == normalizedB;
 }
 
 /// Convert a relay WebSocket URL to an HTTP(S) base URL.

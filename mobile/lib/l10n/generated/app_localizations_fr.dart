@@ -2028,6 +2028,18 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle =>
+      'Retirer le relay Divine ?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Retirer le relay de Divine dégradera l\'expérience dans l\'app. Les vidéos, la publication et la synchronisation risquent d\'être moins fiables. À réserver aux utilisateurs Nostr expérimentés.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Retirer le relay';
+
+  @override
   String get relaySettingsCancel => 'Annuler';
 
   @override

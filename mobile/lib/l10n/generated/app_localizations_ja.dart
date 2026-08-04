@@ -1880,6 +1880,17 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'Divine のリレーを削除する？';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Divine のリレーを削除すると、アプリの使い心地が悪くなるよ。動画の読み込みや投稿、同期が不安定になることがある。Nostr に慣れている人だけにおすすめだよ。\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'リレーを削除';
+
+  @override
   String get relaySettingsCancel => 'キャンセル';
 
   @override

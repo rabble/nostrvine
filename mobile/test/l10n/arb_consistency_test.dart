@@ -189,6 +189,53 @@ void main() {
       }
     });
 
+    test('default-relay removal copy is localized for every locale', () {
+      final l10nDir = Directory('lib/l10n');
+      final arbFiles =
+          l10nDir
+              .listSync()
+              .whereType<File>()
+              .where((file) => file.path.endsWith('.arb'))
+              .where((file) => !file.path.endsWith('app_en.arb'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+
+      final template = _readArb(File('lib/l10n/app_en.arb'));
+      const keys = [
+        'relaySettingsRemoveDefaultRelayTitle',
+        'relaySettingsRemoveDefaultRelayMessage',
+        'relaySettingsRemoveRelayTooltip',
+      ];
+      const mustDifferFromEnglish = {
+        'relaySettingsRemoveDefaultRelayTitle',
+        'relaySettingsRemoveDefaultRelayMessage',
+        'relaySettingsRemoveRelayTooltip',
+      };
+
+      for (final file in arbFiles) {
+        final arb = _readArb(file);
+
+        for (final key in keys) {
+          final value = arb[key];
+
+          expect(
+            value,
+            isA<String>().having((s) => s.isNotEmpty, 'isNotEmpty', isTrue),
+            reason: '${file.path} must define a non-empty $key message',
+          );
+          if (mustDifferFromEnglish.contains(key)) {
+            expect(
+              value,
+              isNot(template[key]),
+              reason:
+                  '${file.path} must not fall back to English for the '
+                  'default-relay removal warning',
+            );
+          }
+        }
+      }
+    });
+
     test('every locale keeps the placeholders app_en.arb interpolates', () {
       final l10nDir = Directory('lib/l10n');
       final arbFiles =

@@ -2032,6 +2032,18 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle =>
+      'Alisin ang relay ng Divine?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Kapag inalis mo ang relay ng Divine, hihina ang karanasan mo sa app. Baka maging hindi maaasahan ang video, pag-post, at pag-sync. Para lang ito sa mga sanay nang gumamit ng Nostr.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Alisin ang relay';
+
+  @override
   String get relaySettingsCancel => 'Kanselahin';
 
   @override

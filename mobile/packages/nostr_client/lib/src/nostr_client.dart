@@ -603,9 +603,14 @@ class NostrClient {
       _cacheEvent(event);
     }
 
+    final hasExplicitTargets =
+        effectiveTargets != null && effectiveTargets.isNotEmpty;
+
     // Checks health of relays, attempts reconnection if none connected,
-    // and exits if reconnect is unsuccessful
-    if (_relayManager.connectedRelays.isEmpty) {
+    // and exits if reconnect is unsuccessful. Explicit target relays use
+    // temporary SDK connections, so they do not require the configured pool
+    // to already have a connected relay.
+    if (_relayManager.connectedRelays.isEmpty && !hasExplicitTargets) {
       await retryDisconnectedRelays();
       if (_relayManager.connectedRelays.isEmpty) {
         // Rollback optimistic cache on failure
@@ -1158,8 +1163,11 @@ class NostrClient {
   /// Adds a relay connection
   ///
   /// Delegates to RelayManager for persistence and status tracking.
-  Future<bool> addRelay(String relayUrl) async {
-    return _relayManager.addRelay(relayUrl);
+  Future<bool> addRelay(
+    String relayUrl, {
+    RelayAddSource source = RelayAddSource.automatic,
+  }) async {
+    return _relayManager.addRelay(relayUrl, source: source);
   }
 
   /// Adds multiple relay connections
@@ -1168,10 +1176,13 @@ class NostrClient {
   /// all relays are connected before the client starts making requests.
   ///
   /// Returns the number of relays successfully added.
-  Future<int> addRelays(List<String> relayUrls) async {
+  Future<int> addRelays(
+    List<String> relayUrls, {
+    RelayAddSource source = RelayAddSource.automatic,
+  }) async {
     var addedCount = 0;
     for (final relayUrl in relayUrls) {
-      final added = await addRelay(relayUrl);
+      final added = await addRelay(relayUrl, source: source);
       if (added) {
         addedCount++;
       }
@@ -1192,11 +1203,15 @@ class NostrClient {
     return allowed.isEmpty ? null : allowed;
   }
 
-  /// Removes a relay connection
+  /// Removes a relay connection.
   ///
-  /// Delegates to RelayManager.
-  Future<bool> removeRelay(String relayUrl) async {
-    return _relayManager.removeRelay(relayUrl);
+  /// User removals are remembered so automatic discovery does not re-add the
+  /// relay. Automatic removals are only reconciliation cleanup.
+  Future<bool> removeRelay(
+    String relayUrl, {
+    required RelayRemoveSource source,
+  }) async {
+    return _relayManager.removeRelay(relayUrl, source: source);
   }
 
   /// Whether [url] is admissible under the configured environment lock.
@@ -1205,8 +1220,16 @@ class NostrClient {
   /// for the rule. Non-production builds lock to their own relay host.
   bool isRelayAllowed(String url) => _relayManager.isRelayAllowed(url);
 
-  /// The environment default relay URL that is always included and cannot be
-  /// removed. Resolves per environment (e.g. the staging relay on staging).
+  /// Whether [url] is currently suppressed by user-removal intent.
+  Future<bool> isUserRemovedRelay(String url) {
+    return _relayManager.isUserRemovedRelay(url);
+  }
+
+  /// The environment default relay URL.
+  ///
+  /// Resolves per environment (e.g. the staging relay on staging). Users can
+  /// remove it from Settings, but doing so may degrade the app experience until
+  /// it is restored.
   String get defaultRelayUrl => _relayManager.defaultRelayUrl;
 
   /// Gets list of configured relay URLs
@@ -1232,7 +1255,7 @@ class NostrClient {
   /// Primary relay for client operations
   ///
   /// Returns the first connected relay, or first configured relay,
-  /// or the default relay URL if none are configured.
+  /// or the environment default relay URL if none are configured.
   String get primaryRelay {
     if (connectedRelays.isNotEmpty) {
       return connectedRelays.first;
@@ -1240,7 +1263,7 @@ class NostrClient {
     if (configuredRelays.isNotEmpty) {
       return configuredRelays.first;
     }
-    return 'wss://relay.divine.video';
+    return _relayManager.defaultRelayUrl;
   }
 
   /// Returns per-relay counters from the SDK's [RelayStatus].

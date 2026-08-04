@@ -5,10 +5,49 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:meta/meta.dart';
+import 'package:nostr_client/src/models/relay_add_source.dart';
 import 'package:nostr_client/src/models/relay_connection_status.dart';
 import 'package:nostr_client/src/models/relay_manager_config.dart';
+import 'package:nostr_client/src/models/relay_remove_source.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
+
+/// Normalizes a relay URL into the canonical form used by [RelayManager].
+///
+/// Accepts explicit `ws://` / `wss://` relay URLs and bare
+/// host[:port][/path] values, which are upgraded to `wss://`. Returns `null`
+/// for unsupported schemes, malformed URLs, empty hosts, or cleartext
+/// non-loopback relays.
+String? normalizeRelayUrl(String url) {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return null;
+
+  // Validate any explicit scheme BEFORE the bare-host upgrade. Without this
+  // gate, `http://attacker.example.com` would slip past the prefix check below
+  // and be string-prefixed into `wss://http://attacker.example.com` (a URL
+  // whose authority parses as host=`http`, path=`//attacker...` - routed to
+  // the wrong host rather than rejected).
+  String normalized;
+  final initial = Uri.tryParse(trimmed);
+  if (initial != null && initial.hasAuthority) {
+    final scheme = initial.scheme.toLowerCase();
+    if (scheme != 'wss' && scheme != 'ws') return null;
+    if (initial.path.startsWith('//')) return null;
+    normalized = initial.toString();
+  } else {
+    if (trimmed.contains('://')) return null;
+    normalized = 'wss://$trimmed';
+  }
+
+  if (normalized.endsWith('/')) {
+    normalized = normalized.substring(0, normalized.length - 1);
+  }
+
+  final uri = Uri.tryParse(normalized);
+  if (uri == null || uri.host.isEmpty) return null;
+  if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
+  return normalized;
+}
 
 /// {@template relay_manager}
 /// Manages relay configuration and connection status.
@@ -59,7 +98,7 @@ class RelayManager {
   /// source of truth for the rule — callers that bypass [addRelay] (e.g.
   /// one-off `tempRelays` in `NostrClient`) consult it directly.
   bool isRelayAllowed(String url) {
-    final normalized = _normalizeUrl(url);
+    final normalized = normalizeRelayUrl(url);
     if (normalized == null) return false;
     final allowedHost = _config.allowedRelayHost;
     if (allowedHost == null) return true;
@@ -72,6 +111,9 @@ class RelayManager {
 
   /// Configured relay URLs (user's list, persisted)
   final List<String> _configuredRelays = [];
+
+  /// Relay URLs the user explicitly removed.
+  final Set<String> _userRemovedRelays = {};
 
   /// Status for each relay
   final Map<String, RelayConnectionStatus> _relayStatuses = {};
@@ -86,14 +128,20 @@ class RelayManager {
   /// Whether the manager has been initialized
   bool _initialized = false;
 
+  /// Whether persisted user-removal intent has been loaded.
+  bool _userRemovedRelaysLoaded = false;
+
+  /// In-flight load of persisted user-removal intent.
+  Future<void>? _userRemovedRelaysLoadFuture;
+
   // ---------------------------------------------------------------------------
   // Public Getters
   // ---------------------------------------------------------------------------
 
-  /// The default relay URL that cannot be removed
+  /// The environment default relay URL.
   String get defaultRelayUrl => _config.defaultRelayUrl;
 
-  /// List of relay URLs the user has configured (including default)
+  /// List of relay URLs the user has configured.
   List<String> get configuredRelays => List.unmodifiable(_configuredRelays);
 
   /// List of relay URLs currently connected
@@ -143,16 +191,18 @@ class RelayManager {
 
     _log('Initializing RelayManager');
 
-    // Load persisted relays
     final storage = _config.storage;
     if (storage != null) {
+      await _ensureUserRemovedRelaysLoaded();
+
       final savedRelays = await storage.loadRelays();
-      // Normalize loaded relays and filter out blocked/duplicate/invalid
-      // relays.
+      // Normalize loaded relays and filter out blocked, duplicate, invalid,
+      // disallowed, or user-suppressed relays.
       var blockedCount = 0;
       var droppedCount = 0;
+      var userRemovedCount = 0;
       for (final url in savedRelays) {
-        final normalized = _normalizeUrl(url);
+        final normalized = normalizeRelayUrl(url);
         if (normalized == null) {
           // URL is malformed or now disallowed by the loopback gate
           // (#3362). Drop it from the in-memory list and re-save below so
@@ -170,6 +220,10 @@ class RelayManager {
           droppedCount++;
           continue;
         }
+        if (_userRemovedRelays.contains(normalized)) {
+          userRemovedCount++;
+          continue;
+        }
         if (!_configuredRelays.contains(normalized)) {
           _configuredRelays.add(normalized);
         }
@@ -180,7 +234,10 @@ class RelayManager {
       if (droppedCount > 0) {
         _log('Filtered $droppedCount invalid relay URLs from storage');
       }
-      if (blockedCount > 0 || droppedCount > 0) {
+      if (userRemovedCount > 0) {
+        _log('Filtered $userRemovedCount user-removed relays from storage');
+      }
+      if (blockedCount > 0 || droppedCount > 0 || userRemovedCount > 0) {
         // Persist the filtered list so removed entries don't reappear
         // on the next launch.
         await storage.saveRelays(_configuredRelays);
@@ -189,11 +246,11 @@ class RelayManager {
       _log('Loaded ${_configuredRelays.length} relays from storage');
     }
 
-    // Ensure default relay is always included
-    // (uses normalized URL for comparison)
-    final normalizedDefault = _normalizeUrl(_config.defaultRelayUrl);
+    // Add the environment default unless the user explicitly removed it.
+    final normalizedDefault = normalizeRelayUrl(_config.defaultRelayUrl);
     if (normalizedDefault != null &&
         isRelayAllowed(normalizedDefault) &&
+        !_userRemovedRelays.contains(normalizedDefault) &&
         !_configuredRelays.contains(normalizedDefault)) {
       _configuredRelays.insert(0, normalizedDefault);
       _log('Added default relay: $normalizedDefault');
@@ -226,8 +283,13 @@ class RelayManager {
   ///
   /// Returns true if the relay was added and connected successfully.
   /// Returns false if the relay URL is invalid, blocked, or already configured.
-  Future<bool> addRelay(String url) async {
-    final normalizedUrl = _normalizeUrl(url);
+  Future<bool> addRelay(
+    String url, {
+    RelayAddSource source = RelayAddSource.automatic,
+  }) async {
+    await _ensureUserRemovedRelaysLoaded();
+
+    final normalizedUrl = normalizeRelayUrl(url);
 
     if (normalizedUrl == null) {
       _log('Invalid relay URL: $url');
@@ -244,6 +306,16 @@ class RelayManager {
     if (!isRelayAllowed(normalizedUrl)) {
       _log('Relay not allowed in this environment: $normalizedUrl');
       return false;
+    }
+
+    if (source == RelayAddSource.automatic &&
+        _userRemovedRelays.contains(normalizedUrl)) {
+      _log('Skipping user-removed automatic relay: $normalizedUrl');
+      return false;
+    }
+
+    if (source == RelayAddSource.user) {
+      await _clearUserRemovedRelay(normalizedUrl);
     }
 
     if (_configuredRelays.contains(normalizedUrl)) {
@@ -287,8 +359,13 @@ class RelayManager {
   ///
   /// Returns true if the relay was removed.
   /// Returns false if the relay URL is invalid or not configured.
-  Future<bool> removeRelay(String url) async {
-    final normalizedUrl = _normalizeUrl(url);
+  Future<bool> removeRelay(
+    String url, {
+    required RelayRemoveSource source,
+  }) async {
+    await _ensureUserRemovedRelaysLoaded();
+
+    final normalizedUrl = normalizeRelayUrl(url);
 
     if (normalizedUrl == null) {
       _log('Invalid relay URL: $url');
@@ -311,6 +388,10 @@ class RelayManager {
 
     // Persist configuration
     await _saveConfiguration();
+    if (source == RelayRemoveSource.user) {
+      _userRemovedRelays.add(normalizedUrl);
+      await _saveUserRemovedRelays();
+    }
 
     _notifyStatusChange();
     return true;
@@ -318,13 +399,20 @@ class RelayManager {
 
   /// Check if a relay URL is configured
   bool isRelayConfigured(String url) {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     return normalizedUrl != null && _configuredRelays.contains(normalizedUrl);
+  }
+
+  /// Check if a relay URL is currently suppressed by user-removal intent.
+  Future<bool> isUserRemovedRelay(String url) async {
+    await _ensureUserRemovedRelaysLoaded();
+    final normalizedUrl = normalizeRelayUrl(url);
+    return normalizedUrl != null && _userRemovedRelays.contains(normalizedUrl);
   }
 
   /// Check if a relay is currently connected
   bool isRelayConnected(String url) {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     if (normalizedUrl == null) return false;
 
     final status = _relayStatuses[normalizedUrl];
@@ -333,7 +421,7 @@ class RelayManager {
 
   /// Get the status of a specific relay
   RelayConnectionStatus? getRelayStatus(String url) {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     if (normalizedUrl == null) return null;
     return _relayStatuses[normalizedUrl];
   }
@@ -463,7 +551,7 @@ class RelayManager {
 
   /// Reconnect to a specific relay
   Future<bool> reconnectRelay(String url) async {
-    final normalizedUrl = _normalizeUrl(url);
+    final normalizedUrl = normalizeRelayUrl(url);
     if (normalizedUrl == null || !_configuredRelays.contains(normalizedUrl)) {
       return false;
     }
@@ -664,50 +752,64 @@ class RelayManager {
     }
   }
 
-  String? _normalizeUrl(String url) {
-    final trimmed = url.trim();
-    if (trimmed.isEmpty) return null;
+  Future<void> _saveUserRemovedRelays() async {
+    final storage = _config.storage;
+    if (storage != null) {
+      await storage.saveRemovedRelays(_userRemovedRelays.toList());
+      _log('Saved ${_userRemovedRelays.length} user-removed relays to storage');
+    }
+  }
 
-    // Validate any explicit scheme BEFORE the bare-host upgrade. Without this
-    // gate, `http://attacker.example.com` would slip past the prefix check
-    // below and be string-prefixed into `wss://http://attacker.example.com`
-    // (a URL whose authority parses as host=`http`, path=`//attacker…` —
-    // routed to the wrong host rather than rejected). Schemes are
-    // case-insensitive per RFC 3986 §3.1; Dart's Uri canonicalises them to
-    // lowercase, so `WSS://X` round-trips through `toString()` as `wss://X`.
-    String normalized;
-    final initial = Uri.tryParse(trimmed);
-    if (initial != null && initial.hasAuthority) {
-      final scheme = initial.scheme.toLowerCase();
-      if (scheme != 'wss' && scheme != 'ws') return null;
-      // `wss://http://x` parses with host=`http` and path=`//x`. Reject so
-      // an attacker can't smuggle a cleartext URL past us by pre-wrapping
-      // it inside a `wss://` prefix.
-      if (initial.path.startsWith('//')) return null;
-      normalized = initial.toString();
-    } else {
-      // No parsable authority → bare host[:port][/path]; upgrade to wss://.
-      // Reject inputs that contain `://` anywhere we couldn't parse, so we
-      // never silently rewrite something that looked scheme-shaped.
-      if (trimmed.contains('://')) return null;
-      normalized = 'wss://$trimmed';
+  Future<void> _ensureUserRemovedRelaysLoaded() async {
+    if (_userRemovedRelaysLoaded) return;
+    final existingLoad = _userRemovedRelaysLoadFuture;
+    if (existingLoad != null) return existingLoad;
+
+    final loadFuture = _loadUserRemovedRelays();
+    _userRemovedRelaysLoadFuture = loadFuture;
+    try {
+      await loadFuture;
+    } catch (_) {
+      _userRemovedRelaysLoadFuture = null;
+      rethrow;
+    }
+  }
+
+  Future<void> _loadUserRemovedRelays() async {
+    final storage = _config.storage;
+    if (storage == null) {
+      _userRemovedRelaysLoaded = true;
+      return;
     }
 
-    // Remove trailing slash
-    if (normalized.endsWith('/')) {
-      normalized = normalized.substring(0, normalized.length - 1);
+    final savedRemovedRelays = await storage.loadRemovedRelays();
+    final normalizedRelays = <String>{};
+    for (final url in savedRemovedRelays) {
+      final normalized = normalizeRelayUrl(url);
+      if (normalized != null && isRelayAllowed(normalized)) {
+        normalizedRelays.add(normalized);
+      }
     }
 
-    // Re-parse to apply host validation and the loopback gate. Only wss/ws
-    // can reach this point per the scheme check above; the second
-    // `tryParse` also catches inputs whose bare-host upgrade produced an
-    // unparseable authority (e.g. `wss:relay.example.com` →
-    // `wss://wss:relay.example.com`, where `relay.example.com` is not a
-    // valid port).
-    final uri = Uri.tryParse(normalized);
-    if (uri == null || uri.host.isEmpty) return null;
-    if (uri.scheme == 'ws' && !isLoopbackHost(uri.host)) return null;
-    return normalized;
+    _userRemovedRelays
+      ..clear()
+      ..addAll(normalizedRelays);
+
+    if (savedRemovedRelays.length != normalizedRelays.length ||
+        !_setsEqual(normalizedRelays, savedRemovedRelays.toSet())) {
+      await storage.saveRemovedRelays(_userRemovedRelays.toList());
+      _log('Saved filtered user-removed relay list to storage');
+    }
+    _userRemovedRelaysLoaded = true;
+  }
+
+  bool _setsEqual<T>(Set<T> a, Set<T> b) =>
+      a.length == b.length && a.containsAll(b);
+
+  Future<void> _clearUserRemovedRelay(String normalizedUrl) async {
+    if (_userRemovedRelays.remove(normalizedUrl)) {
+      await _saveUserRemovedRelays();
+    }
   }
 
   void _log(String message) {

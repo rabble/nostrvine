@@ -8,6 +8,8 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart'
+    show SharedPreferencesRelayStorage;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth/nostr_identity.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -159,6 +161,31 @@ void main() {
       expect(prefs.getString('terms_accepted_at'), isNull);
     });
 
+    test('signOut clears configured and user-removed relays', () async {
+      await prefs.setStringList(
+        SharedPreferencesRelayStorage.defaultKey,
+        ['wss://relay.divine.video'],
+      );
+      await prefs.setStringList(
+        SharedPreferencesRelayStorage.defaultRemovedRelaysKey,
+        ['wss://relay.divine.video'],
+      );
+      when(() => mockKeyStorage.clearCache()).thenReturn(null);
+
+      await authService.signOut();
+
+      expect(
+        prefs.getStringList(SharedPreferencesRelayStorage.defaultKey),
+        isNull,
+      );
+      expect(
+        prefs.getStringList(
+          SharedPreferencesRelayStorage.defaultRemovedRelaysKey,
+        ),
+        isNull,
+      );
+    });
+
     test('non-destructive signOut passes deleteUserData: false', () async {
       // Setup mock
       when(() => mockKeyStorage.clearCache()).thenReturn(null);
@@ -218,6 +245,36 @@ void main() {
       // Note: After deleteKeys=true, a new identity is auto-created,
       // which sets a new pubkey. So we verify cleanup was called,
       // not that pubkey is null (since new identity sets it).
+    });
+
+    test('remove-device signOut clears user-removed relays', () async {
+      await prefs.setStringList(
+        SharedPreferencesRelayStorage.defaultRemovedRelaysKey,
+        ['wss://relay.divine.video'],
+      );
+      when(() => mockKeyStorage.deleteKeys()).thenAnswer((_) async => {});
+      when(
+        () => mockKeyStorage.deleteIdentityKeyContainer(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+      when(() => mockKeyStorage.initialize()).thenAnswer((_) async => {});
+      when(
+        () => mockKeyStorage.generateAndStoreKeys(
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      ).thenAnswer((_) async => SecureKeyContainer.fromNsec(testNsec));
+
+      await authService.signOut(deleteKeys: true);
+
+      expect(
+        prefs.getStringList(
+          SharedPreferencesRelayStorage.defaultRemovedRelaysKey,
+        ),
+        isNull,
+      );
     });
 
     test('account deletion signOut deletes owner-scoped user data', () async {

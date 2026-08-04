@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "ストップモーションクリップ",
   "profileNotifyBellOff": "新しい動画を通知する",
   "profileNotifyBellOn": "新しい動画の通知を停止",
-  "profileNotifyUpdateFailed": "保存できませんでした。もう一度試しますか？"
+  "profileNotifyUpdateFailed": "保存できませんでした。もう一度試しますか？",
+  "relaySettingsRemoveDefaultRelayTitle": "Divine のリレーを削除する？",
+  "relaySettingsRemoveDefaultRelayMessage": "Divine のリレーを削除すると、アプリの使い心地が悪くなるよ。動画の読み込みや投稿、同期が不安定になることがある。Nostr に慣れている人だけにおすすめだよ。\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "リレーを削除"
 }

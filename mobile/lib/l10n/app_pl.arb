@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Klip poklatkowy",
   "profileNotifyBellOff": "Powiadamiaj o nowych vine'ach",
   "profileNotifyBellOn": "Nie powiadamiaj o nowych vine'ach",
-  "profileNotifyUpdateFailed": "Nie udało się zapisać. Spróbować ponownie?"
+  "profileNotifyUpdateFailed": "Nie udało się zapisać. Spróbować ponownie?",
+  "relaySettingsRemoveDefaultRelayTitle": "Usunąć przekaźnik Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Usunięcie przekaźnika Divine pogorszy działanie aplikacji. Filmy, publikowanie i synchronizacja mogą być mniej niezawodne. Rób to tylko, jeśli znasz się na Nostr.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Usuń przekaźnik"
 }

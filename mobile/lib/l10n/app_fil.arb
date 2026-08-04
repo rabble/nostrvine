@@ -3412,5 +3412,15 @@
     "libraryStopMotionClipLabel": "Stop-motion na clip",
   "profileNotifyBellOff": "Ipaalam ang mga bagong vine",
   "profileNotifyBellOn": "Itigil ang pagpaalam sa mga bagong vine",
-  "profileNotifyUpdateFailed": "Hindi nai-save. Subukan muli?"
+  "profileNotifyUpdateFailed": "Hindi nai-save. Subukan muli?",
+  "relaySettingsRemoveDefaultRelayTitle": "Alisin ang relay ng Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Kapag inalis mo ang relay ng Divine, hihina ang karanasan mo sa app. Baka maging hindi maaasahan ang video, pag-post, at pag-sync. Para lang ito sa mga sanay nang gumamit ng Nostr.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Alisin ang relay"
 }

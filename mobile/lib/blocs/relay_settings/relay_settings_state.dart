@@ -77,6 +77,9 @@ enum AddRelayOutcome {
   /// URL used cleartext `ws://` against a non-loopback host (#3362).
   insecureUrl,
 
+  /// URL was saved, but the relay did not accept a connection yet.
+  addedConnectionPending,
+
   /// The service refused the URL or threw.
   failed,
 }
@@ -85,7 +88,11 @@ enum AddRelayOutcome {
 enum RemoveRelayOutcome { removed, failed }
 
 /// Outcome of `RelaySettingsCubit.restoreDefaultRelay()`.
-enum RestoreDefaultRelayOutcome { restored, failed }
+enum RestoreDefaultRelayOutcome {
+  restored,
+  restoredConnectionPending,
+  failed,
+}
 
 /// Outcome of `RelaySettingsCubit.retryConnection()`.
 ///

@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "مقطع الحركة الإيقافية",
   "profileNotifyBellOff": "أبلغني عن المقاطع الجديدة",
   "profileNotifyBellOn": "أوقف إشعارات المقاطع الجديدة",
-  "profileNotifyUpdateFailed": "لم نتمكن من الحفظ. أعد المحاولة؟"
+  "profileNotifyUpdateFailed": "لم نتمكن من الحفظ. أعد المحاولة؟",
+  "relaySettingsRemoveDefaultRelayTitle": "إزالة محوّل Divine؟",
+  "relaySettingsRemoveDefaultRelayMessage": "إزالة محوّل Divine ستضعف تجربتك في التطبيق. قد تصبح الفيديوهات والنشر والمزامنة أقل موثوقية. يُفضّل ألا يفعل ذلك إلا مستخدمو Nostr ذوو الخبرة.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "إزالة المحوّل"
 }

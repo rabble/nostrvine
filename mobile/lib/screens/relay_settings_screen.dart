@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -212,6 +213,11 @@ class _RelayList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final defaultRelayUrl = context.read<RelaySettingsCubit>().defaultRelayUrl;
+    final hasDefaultRelay = relays.any(
+      (relay) => relayUrlsEquivalent(relay, defaultRelayUrl),
+    );
+
     return Column(
       children: [
         Container(
@@ -239,6 +245,16 @@ class _RelayList extends StatelessWidget {
             ],
           ),
         ),
+        if (!hasDefaultRelay)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: DivineButton(
+              label: context.l10n.relaySettingsRestoreDefaultRelay,
+              leadingIcon: DivineIconName.arrowCounterClockwise,
+              expanded: true,
+              onPressed: () => _restoreDefaultRelay(context),
+            ),
+          ),
         Expanded(
           child: ListView.builder(
             itemCount: relays.length,
@@ -262,6 +278,10 @@ class _RelayTile extends ConsumerWidget {
     final stats = statsAsync.whenData((allStats) => allStats[relayUrl]).value;
     final isConnected = stats?.isConnected ?? false;
     final statusSummary = _relayStatusSummary(context, stats);
+    final isDefaultRelay = relayUrlsEquivalent(
+      relayUrl,
+      context.read<RelaySettingsCubit>().defaultRelayUrl,
+    );
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: VineTheme.transparent),
@@ -300,8 +320,12 @@ class _RelayTile extends ConsumerWidget {
               backgroundColor: VineTheme.transparent,
               foregroundColor: VineTheme.error,
               showShadow: false,
-              tooltip: context.l10n.relaySettingsRemove,
-              onPressed: () => _confirmRemoveRelay(context, relayUrl),
+              tooltip: context.l10n.relaySettingsRemoveRelayTooltip,
+              onPressed: () => _confirmRemoveRelay(
+                context,
+                relayUrl,
+                isDefaultRelay: isDefaultRelay,
+              ),
             ),
             const SizedBox(width: 8),
             DivineIcon(
@@ -693,6 +717,17 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
         'Successfully added relay: $relayUrl',
         name: 'RelaySettingsScreen',
       );
+    case AddRelayOutcome.addedConnectionPending:
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.relaySettingsFailedToConnectCheck),
+          backgroundColor: VineTheme.warning,
+        ),
+      );
+      Log.info(
+        'Added relay without connection: $relayUrl',
+        name: 'RelaySettingsScreen',
+      );
     case AddRelayOutcome.invalidUrl:
       _showError(messenger, l10n.relaySettingsInvalidUrl);
     case AddRelayOutcome.insecureUrl:
@@ -702,7 +737,11 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
   }
 }
 
-Future<void> _confirmRemoveRelay(BuildContext context, String relayUrl) async {
+Future<void> _confirmRemoveRelay(
+  BuildContext context,
+  String relayUrl, {
+  required bool isDefaultRelay,
+}) async {
   final cubit = context.read<RelaySettingsCubit>();
   final messenger = ScaffoldMessenger.of(context);
   final l10n = context.l10n;
@@ -710,12 +749,16 @@ Future<void> _confirmRemoveRelay(BuildContext context, String relayUrl) async {
   final confirm = await VineBottomSheet.show<bool>(
     context: context,
     scrollable: false,
-    contentTitle: l10n.relaySettingsRemoveRelayTitle,
+    contentTitle: isDefaultRelay
+        ? l10n.relaySettingsRemoveDefaultRelayTitle
+        : l10n.relaySettingsRemoveRelayTitle,
     children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
         child: Text(
-          l10n.relaySettingsRemoveRelayMessage(relayUrl),
+          isDefaultRelay
+              ? l10n.relaySettingsRemoveDefaultRelayMessage(relayUrl)
+              : l10n.relaySettingsRemoveRelayMessage(relayUrl),
           style: VineTheme.bodyMediumFont(
             color: context.vineColors.secondaryText,
           ),
@@ -803,6 +846,17 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
         ),
       );
       Log.info('Restored default relay', name: 'RelaySettingsScreen');
+    case RestoreDefaultRelayOutcome.restoredConnectionPending:
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.relaySettingsFailedToConnectCheck),
+          backgroundColor: VineTheme.warning,
+        ),
+      );
+      Log.info(
+        'Restored default relay without connection',
+        name: 'RelaySettingsScreen',
+      );
     case RestoreDefaultRelayOutcome.failed:
       _showError(messenger, l10n.relaySettingsFailedToRestoreDefault);
   }

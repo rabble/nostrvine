@@ -100,9 +100,16 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
     if (!isRelayUrlAllowed(trimmed)) return AddRelayOutcome.insecureUrl;
 
     try {
-      final success = await _nostrClient.addRelay(trimmed);
-      if (!success) return AddRelayOutcome.failed;
+      final success = await _nostrClient.addRelay(
+        trimmed,
+        source: RelayAddSource.user,
+      );
       refreshRelays();
+      if (!success) {
+        return _hasRelayConfigured(trimmed)
+            ? AddRelayOutcome.addedConnectionPending
+            : AddRelayOutcome.failed;
+      }
       return AddRelayOutcome.added;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -112,9 +119,16 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
 
   Future<RemoveRelayOutcome> removeRelay(String relayUrl) async {
     try {
-      final success = await _nostrClient.removeRelay(relayUrl);
-      if (!success) return RemoveRelayOutcome.failed;
+      final success = await _nostrClient.removeRelay(
+        relayUrl,
+        source: RelayRemoveSource.user,
+      );
       refreshRelays();
+      if (!success) {
+        return _hasRelayConfigured(relayUrl)
+            ? RemoveRelayOutcome.failed
+            : RemoveRelayOutcome.removed;
+      }
       return RemoveRelayOutcome.removed;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -124,9 +138,16 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
 
   Future<RestoreDefaultRelayOutcome> restoreDefaultRelay() async {
     try {
-      final success = await _nostrClient.addRelay(defaultRelayUrl);
-      if (!success) return RestoreDefaultRelayOutcome.failed;
+      final success = await _nostrClient.addRelay(
+        defaultRelayUrl,
+        source: RelayAddSource.user,
+      );
       refreshRelays();
+      if (!success) {
+        return _hasDefaultRelayConfigured()
+            ? RestoreDefaultRelayOutcome.restoredConnectionPending
+            : RestoreDefaultRelayOutcome.failed;
+      }
       return RestoreDefaultRelayOutcome.restored;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
@@ -153,5 +174,13 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
     final updated = Map<String, RelayCapabilityEntry>.from(state.capabilities)
       ..[relayUrl] = entry;
     emit(state.copyWith(capabilities: updated));
+  }
+
+  bool _hasDefaultRelayConfigured() {
+    return _hasRelayConfigured(defaultRelayUrl);
+  }
+
+  bool _hasRelayConfigured(String relayUrl) {
+    return state.relays.any((relay) => relayUrlsEquivalent(relay, relayUrl));
   }
 }

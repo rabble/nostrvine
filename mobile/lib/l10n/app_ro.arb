@@ -4829,5 +4829,15 @@
     "libraryStopMotionClipLabel": "Clip stop-motion",
   "profileNotifyBellOff": "Anunță-mă despre videoclipuri noi",
   "profileNotifyBellOn": "Nu mă mai anunța despre videoclipuri noi",
-  "profileNotifyUpdateFailed": "Nu s-a salvat. Reîncerci?"
+  "profileNotifyUpdateFailed": "Nu s-a salvat. Reîncerci?",
+  "relaySettingsRemoveDefaultRelayTitle": "Elimini relay-ul Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Eliminarea relay-ului Divine va înrăutăți experiența în aplicație. Videoclipurile, publicarea și sincronizarea pot deveni mai puțin fiabile. Fă asta doar dacă ești un utilizator Nostr experimentat.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Elimină relay-ul"
 }

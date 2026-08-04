@@ -47,6 +47,8 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(File(''));
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(RelayAddSource.automatic);
   });
 
   setUp(() async {
@@ -79,13 +81,10 @@ void main() {
       },
     );
 
-    // Mock nostrService getter and addRelay for backup relay connection
-    when(() => mockNip17.nostrService).thenReturn(mockNostrClient);
-    when(() => mockNostrClient.addRelay(any())).thenAnswer((_) async => true);
-
     service = BugReportService(
       nip17MessageService: mockNip17,
       blossomUploadService: mockBlossom,
+      targetRelayResolver: (_) async => const ['wss://relay.test.dvines.org'],
     );
   });
 
@@ -107,6 +106,9 @@ void main() {
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
+          targetRelays: any(named: 'targetRelays'),
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer(
@@ -125,6 +127,19 @@ void main() {
       expect(result.success, isTrue);
       expect(result.reportId, equals('test-report-001'));
       expect(result.messageEventId, equals('event-abc123'));
+      verify(
+        () => mockNip17.sendPrivateMessage(
+          recipientPubkey: 'test-pubkey',
+          content: any(named: 'content'),
+          targetRelays: const ['wss://relay.test.dvines.org'],
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
+          additionalTags: any(named: 'additionalTags'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockNostrClient.addRelay(any(), source: any(named: 'source')),
+      );
     });
 
     test(
@@ -140,6 +155,9 @@ void main() {
           () => mockNip17.sendPrivateMessage(
             recipientPubkey: any(named: 'recipientPubkey'),
             content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer(
@@ -186,6 +204,9 @@ void main() {
           () => mockNip17.sendPrivateMessage(
             recipientPubkey: any(named: 'recipientPubkey'),
             content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer((invocation) async {
@@ -213,13 +234,19 @@ void main() {
 
     test('sends summary only when Blossom upload not available', () async {
       // Create service with NIP-17 but without Blossom
-      final serviceNoBlossom = BugReportService(nip17MessageService: mockNip17);
+      final serviceNoBlossom = BugReportService(
+        nip17MessageService: mockNip17,
+        targetRelayResolver: (_) async => const ['wss://relay.test.dvines.org'],
+      );
 
       String? capturedContent;
       when(
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
+          targetRelays: any(named: 'targetRelays'),
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),
         ),
       ).thenAnswer((invocation) async {
@@ -243,9 +270,100 @@ void main() {
         () => mockNip17.sendPrivateMessage(
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
+          targetRelays: const ['wss://relay.test.dvines.org'],
+          awaitRecipientOk: true,
+          selfWrapOnSoftUnconfirmed: false,
           additionalTags: any(named: 'additionalTags'),
         ),
       ).called(1);
     });
+
+    test(
+      'uses static support relay fallback when DM inbox relay resolution is absent',
+      () async {
+        const envFallbackRelay = ['wss://relay.test.dvines.org'];
+        final serviceWithoutResolvedRelays = BugReportService(
+          nip17MessageService: mockNip17,
+          fallbackTargetRelays: envFallbackRelay,
+          targetRelayResolver: (_) async => null,
+        );
+
+        List<String>? capturedTargetRelays;
+        when(
+          () => mockNip17.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTargetRelays =
+              invocation.namedArguments[#targetRelays] as List<String>?;
+          return NIP17SendResult.success(
+            rumorEventId: 'rumor-no-target',
+            messageEventId: 'event-no-target',
+            recipientPubkey: 'test-pubkey',
+          );
+        });
+
+        await serviceWithoutResolvedRelays.sendBugReportToRecipient(
+          testData,
+          'test-pubkey',
+        );
+
+        verify(
+          () => mockNip17.sendPrivateMessage(
+            recipientPubkey: 'test-pubkey',
+            content: any(named: 'content'),
+            targetRelays: envFallbackRelay,
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).called(1);
+        expect(capturedTargetRelays, envFallbackRelay);
+      },
+    );
+
+    test(
+      'uses static support relay fallback when relay resolution throws',
+      () async {
+        const envFallbackRelay = ['wss://relay.test.dvines.org'];
+        final serviceWithFailingResolver = BugReportService(
+          nip17MessageService: mockNip17,
+          fallbackTargetRelays: envFallbackRelay,
+          targetRelayResolver: (_) async => throw StateError('no relays'),
+        );
+
+        List<String>? capturedTargetRelays;
+        when(
+          () => mockNip17.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            targetRelays: any(named: 'targetRelays'),
+            awaitRecipientOk: true,
+            selfWrapOnSoftUnconfirmed: false,
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTargetRelays =
+              invocation.namedArguments[#targetRelays] as List<String>?;
+          return NIP17SendResult.success(
+            rumorEventId: 'rumor-fallback-target',
+            messageEventId: 'event-fallback-target',
+            recipientPubkey: 'test-pubkey',
+          );
+        });
+
+        await serviceWithFailingResolver.sendBugReportToRecipient(
+          testData,
+          'test-pubkey',
+        );
+
+        expect(capturedTargetRelays, envFallbackRelay);
+      },
+    );
   });
 }

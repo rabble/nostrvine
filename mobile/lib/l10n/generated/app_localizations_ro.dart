@@ -2042,6 +2042,17 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get relaySettingsRemoveDefaultRelayTitle => 'Elimini relay-ul Divine?';
+
+  @override
+  String relaySettingsRemoveDefaultRelayMessage(String relayUrl) {
+    return 'Eliminarea relay-ului Divine va înrăutăți experiența în aplicație. Videoclipurile, publicarea și sincronizarea pot deveni mai puțin fiabile. Fă asta doar dacă ești un utilizator Nostr experimentat.\n\n$relayUrl';
+  }
+
+  @override
+  String get relaySettingsRemoveRelayTooltip => 'Elimină relay-ul';
+
+  @override
   String get relaySettingsCancel => 'Anulează';
 
   @override

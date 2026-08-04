@@ -19,6 +19,11 @@ class _MockRelayCapabilityService extends Mock
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(RelayAddSource.automatic);
+    registerFallbackValue(RelayRemoveSource.user);
+  });
+
   group(RelaySettingsCubit, () {
     late _MockNostrClient nostr;
     late _MockRelayCapabilityService capabilities;
@@ -30,8 +35,12 @@ void main() {
       videos = _MockVideoEventService();
       when(() => nostr.configuredRelays).thenReturn(const []);
       when(() => nostr.connectedRelayCount).thenReturn(0);
-      when(() => nostr.addRelay(any())).thenAnswer((_) async => true);
-      when(() => nostr.removeRelay(any())).thenAnswer((_) async => true);
+      when(
+        () => nostr.addRelay(any(), source: any(named: 'source')),
+      ).thenAnswer((_) async => true);
+      when(
+        () => nostr.removeRelay(any(), source: any(named: 'source')),
+      ).thenAnswer((_) async => true);
       when(nostr.forceReconnectAll).thenAnswer((_) async {});
       when(videos.resetAndResubscribeAll).thenAnswer((_) async {});
     });
@@ -45,10 +54,9 @@ void main() {
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'load snapshots configured relays',
       setUp: () {
-        when(() => nostr.configuredRelays).thenReturn([
-          'wss://a.example',
-          'wss://b.example',
-        ]);
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://a.example', 'wss://b.example']);
       },
       build: buildCubit,
       act: (cubit) => cubit.load(),
@@ -88,11 +96,10 @@ void main() {
           isA<RelayCapabilityEntry>()
               .having((e) => e.loading, 'loading', isFalse)
               .having((e) => e.fetched, 'fetched', isTrue)
-              .having(
-                (e) => e.capabilities?.supportedNips,
-                'supportedNips',
-                [1, 11],
-              ),
+              .having((e) => e.capabilities?.supportedNips, 'supportedNips', [
+                1,
+                11,
+              ]),
         ),
       ],
     );
@@ -100,9 +107,7 @@ void main() {
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'fetchCapabilities short-circuits on second call',
       seed: () => const RelaySettingsState(
-        capabilities: {
-          'wss://a.example': RelayCapabilityEntry(fetched: true),
-        },
+        capabilities: {'wss://a.example': RelayCapabilityEntry(fetched: true)},
       ),
       build: buildCubit,
       act: (cubit) => cubit.fetchCapabilities('wss://a.example'),
@@ -149,16 +154,14 @@ void main() {
       },
       expect: () => const <RelaySettingsState>[],
       verify: (_) {
-        verifyNever(() => nostr.addRelay(any()));
+        verifyNever(() => nostr.addRelay(any(), source: any(named: 'source')));
       },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'addRelay accepts wss:// and re-snapshots relays',
       setUp: () {
-        when(
-          () => nostr.configuredRelays,
-        ).thenReturn(['wss://added.example']);
+        when(() => nostr.configuredRelays).thenReturn(['wss://added.example']);
       },
       build: buildCubit,
       act: (cubit) async {
@@ -169,27 +172,56 @@ void main() {
         const RelaySettingsState(relays: ['wss://added.example']),
       ],
       verify: (_) {
-        verify(() => nostr.addRelay('wss://added.example')).called(1);
+        verify(
+          () => nostr.addRelay(
+            'wss://added.example',
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
       },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'addRelay returns failed when service returns false',
       setUp: () {
-        when(() => nostr.addRelay(any())).thenAnswer((_) async => false);
+        when(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
       },
       build: buildCubit,
       act: (cubit) async {
         final outcome = await cubit.addRelay('wss://noop.example');
         expect(outcome, AddRelayOutcome.failed);
       },
-      expect: () => const <RelaySettingsState>[],
+      expect: () => [const RelaySettingsState()],
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'addRelay refreshes when relay is saved but connection is pending',
+      setUp: () {
+        when(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://pending.example']);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        final outcome = await cubit.addRelay('wss://pending.example');
+        expect(outcome, AddRelayOutcome.addedConnectionPending);
+      },
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://pending.example']),
+      ],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'addRelay surfaces service throw via addError + failed outcome',
       setUp: () {
-        when(() => nostr.addRelay(any())).thenThrow(StateError('boom'));
+        when(
+          () => nostr.addRelay(any(), source: any(named: 'source')),
+        ).thenThrow(StateError('boom'));
       },
       build: buildCubit,
       act: (cubit) async {
@@ -219,14 +251,22 @@ void main() {
         const RelaySettingsState(relays: ['wss://a.example']),
       ],
       verify: (_) {
-        verify(() => nostr.removeRelay('wss://b.example')).called(1);
+        verify(
+          () => nostr.removeRelay(
+            'wss://b.example',
+            source: RelayRemoveSource.user,
+          ),
+        ).called(1);
       },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
       'removeRelay returns failed when service returns false',
       setUp: () {
-        when(() => nostr.removeRelay(any())).thenAnswer((_) async => false);
+        when(
+          () => nostr.removeRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
+        when(() => nostr.configuredRelays).thenReturn(['wss://a.example']);
       },
       build: buildCubit,
       act: (cubit) async {
@@ -235,7 +275,28 @@ void main() {
           RemoveRelayOutcome.failed,
         );
       },
-      expect: () => const <RelaySettingsState>[],
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://a.example']),
+      ],
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'removeRelay refreshes and reports removed when relay is already gone',
+      seed: () => const RelaySettingsState(relays: ['wss://stale.example']),
+      setUp: () {
+        when(
+          () => nostr.removeRelay(any(), source: any(named: 'source')),
+        ).thenAnswer((_) async => false);
+        when(() => nostr.configuredRelays).thenReturn(const []);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        expect(
+          await cubit.removeRelay('wss://stale.example'),
+          RemoveRelayOutcome.removed,
+        );
+      },
+      expect: () => [const RelaySettingsState()],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
@@ -255,7 +316,46 @@ void main() {
       },
       verify: (_) {
         verify(
-          () => nostr.addRelay('wss://relay.staging.divine.video'),
+          () => nostr.addRelay(
+            'wss://relay.staging.divine.video',
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'restoreDefaultRelay refreshes when relay is configured but not connected',
+      setUp: () {
+        when(
+          () => nostr.defaultRelayUrl,
+        ).thenReturn('wss://relay.staging.divine.video');
+        when(
+          () => nostr.addRelay(
+            'wss://relay.staging.divine.video',
+            source: RelayAddSource.user,
+          ),
+        ).thenAnswer((_) async => false);
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://relay.staging.divine.video']);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        expect(
+          await cubit.restoreDefaultRelay(),
+          RestoreDefaultRelayOutcome.restoredConnectionPending,
+        );
+      },
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://relay.staging.divine.video']),
+      ],
+      verify: (_) {
+        verify(
+          () => nostr.addRelay(
+            'wss://relay.staging.divine.video',
+            source: RelayAddSource.user,
+          ),
         ).called(1);
       },
     );

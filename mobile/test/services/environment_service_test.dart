@@ -135,6 +135,7 @@ void main() {
     test('setEnvironment clears configured_relays', () async {
       SharedPreferences.setMockInitialValues({
         'configured_relays': 'some_relay_value',
+        'user_removed_relays': ['wss://relay.divine.video'],
       });
 
       service = EnvironmentService();
@@ -144,6 +145,7 @@ void main() {
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('configured_relays'), isNull);
+      expect(prefs.getStringList('user_removed_relays'), isNull);
     });
   });
 }

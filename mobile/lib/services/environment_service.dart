@@ -2,6 +2,8 @@
 // ABOUTME: Handles developer mode unlock and environment switching
 
 import 'package:flutter/foundation.dart';
+import 'package:nostr_client/nostr_client.dart'
+    show SharedPreferencesRelayStorage;
 import 'package:openvine/models/environment_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -67,8 +69,10 @@ class EnvironmentService extends ChangeNotifier {
 
     await _prefs!.setString(_keyEnvironment, environment.name);
 
-    // Clear persisted relay list so new environment starts fresh with its default
-    await _prefs!.remove('configured_relays');
+    // Clear persisted relay state so new environment starts fresh with its
+    // default and does not inherit user-removal intent from another relay set.
+    await _prefs!.remove(SharedPreferencesRelayStorage.defaultKey);
+    await _prefs!.remove(SharedPreferencesRelayStorage.defaultRemovedRelaysKey);
 
     notifyListeners();
   }

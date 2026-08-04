@@ -61,8 +61,7 @@ class NostrServiceFactory {
         ? null
         : relayHost;
 
-    // Create relay manager config with persistent storage
-    // The Divine relay is always the default relay (cannot be removed)
+    // Create relay manager config with persistent storage.
     final relayManagerConfig = RelayManagerConfig(
       defaultRelayUrl: divineRelayUrl,
       storage: SharedPreferencesRelayStorage(),

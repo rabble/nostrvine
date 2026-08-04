@@ -258,13 +258,19 @@ class TestNostrService implements NostrClient {
   List<String> get connectedRelays => _isConnected ? ['wss://test.relay'] : [];
 
   @override
-  Future<bool> addRelay(String relayUrl) async {
+  Future<bool> addRelay(
+    String relayUrl, {
+    RelayAddSource source = RelayAddSource.automatic,
+  }) async {
     // No-op for tests
     return true;
   }
 
   @override
-  Future<bool> removeRelay(String relayUrl) async {
+  Future<bool> removeRelay(
+    String relayUrl, {
+    required RelayRemoveSource source,
+  }) async {
     // No-op for tests
     return true;
   }

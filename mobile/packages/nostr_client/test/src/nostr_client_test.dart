@@ -109,6 +109,8 @@ void main() {
       registerFallbackValue(<Map<String, dynamic>>[]);
       registerFallbackValue(<String>[]);
       registerFallbackValue(RelayType.all);
+      registerFallbackValue(RelayAddSource.automatic);
+      registerFallbackValue(RelayRemoveSource.user);
       registerFallbackValue(const Duration(seconds: 10));
       registerFallbackValue(const CountResponse(count: 0));
     });
@@ -130,6 +132,9 @@ void main() {
       // Default: no environment lock (production behavior). Tests that
       // exercise the lock override specific URLs to false.
       when(() => mockRelayManager.isRelayAllowed(any())).thenReturn(true);
+      when(
+        () => mockRelayManager.defaultRelayUrl,
+      ).thenReturn('wss://relay.example.com');
 
       client = NostrClient.forTesting(
         nostr: mockNostr,
@@ -412,6 +417,36 @@ void main() {
 
         await client.publishEvent(event, targetRelays: targetRelays);
 
+        verify(
+          () => mockNostr.sendEvent(
+            event,
+            targetRelays: targetRelays,
+            tempRelays: targetRelays,
+          ),
+        ).called(1);
+      });
+
+      test('publishes event to explicit target relays without connected '
+          'pool relays', () async {
+        final event = _createTestEvent();
+        final targetRelays = ['wss://relay1.example.com'];
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {});
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => event);
+
+        final result = await client.publishEvent(
+          event,
+          targetRelays: targetRelays,
+        );
+
+        expect(result, isA<PublishSuccess>());
+        verifyNever(mockRelayManager.retryDisconnectedRelays);
         verify(
           () => mockNostr.sendEvent(
             event,
@@ -2072,19 +2107,50 @@ void main() {
       test('delegates to RelayManager', () async {
         const relayUrl = 'wss://relay.example.com';
         when(
-          () => mockRelayManager.addRelay(relayUrl),
+          () => mockRelayManager.addRelay(
+            relayUrl,
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => true);
 
         final result = await client.addRelay(relayUrl);
 
         expect(result, isTrue);
-        verify(() => mockRelayManager.addRelay(relayUrl)).called(1);
+        final captured = verify(
+          () => mockRelayManager.addRelay(
+            relayUrl,
+            source: captureAny(named: 'source'),
+          ),
+        ).captured;
+        expect(captured, equals([RelayAddSource.automatic]));
+      });
+
+      test('forwards explicit add source to RelayManager', () async {
+        const relayUrl = 'wss://relay.example.com';
+        when(
+          () =>
+              mockRelayManager.addRelay(relayUrl, source: RelayAddSource.user),
+        ).thenAnswer((_) async => true);
+
+        final result = await client.addRelay(
+          relayUrl,
+          source: RelayAddSource.user,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () =>
+              mockRelayManager.addRelay(relayUrl, source: RelayAddSource.user),
+        ).called(1);
       });
 
       test('returns false when RelayManager returns false', () async {
         const relayUrl = 'wss://relay.example.com';
         when(
-          () => mockRelayManager.addRelay(relayUrl),
+          () => mockRelayManager.addRelay(
+            relayUrl,
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => false);
 
         final result = await client.addRelay(relayUrl);
@@ -2104,23 +2170,72 @@ void main() {
           ];
 
           when(
-            () => mockRelayManager.addRelay(any()),
+            () => mockRelayManager.addRelay(
+              any(),
+              source: any(named: 'source'),
+            ),
           ).thenAnswer((_) async => true);
 
           final result = await client.addRelays(relayUrls);
 
           expect(result, equals(3));
-          verify(() => mockRelayManager.addRelay(relayUrls[0])).called(1);
-          verify(() => mockRelayManager.addRelay(relayUrls[1])).called(1);
-          verify(() => mockRelayManager.addRelay(relayUrls[2])).called(1);
+          verify(
+            () => mockRelayManager.addRelay(
+              relayUrls[0],
+              source: any(named: 'source'),
+            ),
+          ).called(1);
+          verify(
+            () => mockRelayManager.addRelay(
+              relayUrls[1],
+              source: any(named: 'source'),
+            ),
+          ).called(1);
+          verify(
+            () => mockRelayManager.addRelay(
+              relayUrls[2],
+              source: any(named: 'source'),
+            ),
+          ).called(1);
         },
       );
+
+      test('forwards explicit source for multiple relays', () async {
+        final relayUrls = [
+          'wss://relay1.example.com',
+          'wss://relay2.example.com',
+        ];
+        when(
+          () => mockRelayManager.addRelay(any(), source: RelayAddSource.user),
+        ).thenAnswer((_) async => true);
+
+        final result = await client.addRelays(
+          relayUrls,
+          source: RelayAddSource.user,
+        );
+
+        expect(result, equals(2));
+        verify(
+          () => mockRelayManager.addRelay(
+            relayUrls[0],
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
+        verify(
+          () => mockRelayManager.addRelay(
+            relayUrls[1],
+            source: RelayAddSource.user,
+          ),
+        ).called(1);
+      });
 
       test('returns 0 when empty list is provided', () async {
         final result = await client.addRelays([]);
 
         expect(result, equals(0));
-        verifyNever(() => mockRelayManager.addRelay(any()));
+        verifyNever(
+          () => mockRelayManager.addRelay(any(), source: any(named: 'source')),
+        );
       });
 
       test(
@@ -2134,13 +2249,22 @@ void main() {
 
           // First and third succeed, second fails
           when(
-            () => mockRelayManager.addRelay('wss://relay1.example.com'),
+            () => mockRelayManager.addRelay(
+              'wss://relay1.example.com',
+              source: any(named: 'source'),
+            ),
           ).thenAnswer((_) async => true);
           when(
-            () => mockRelayManager.addRelay('wss://relay2.example.com'),
+            () => mockRelayManager.addRelay(
+              'wss://relay2.example.com',
+              source: any(named: 'source'),
+            ),
           ).thenAnswer((_) async => false);
           when(
-            () => mockRelayManager.addRelay('wss://relay3.example.com'),
+            () => mockRelayManager.addRelay(
+              'wss://relay3.example.com',
+              source: any(named: 'source'),
+            ),
           ).thenAnswer((_) async => true);
 
           final result = await client.addRelays(relayUrls);
@@ -2156,7 +2280,10 @@ void main() {
         ];
 
         when(
-          () => mockRelayManager.addRelay(any()),
+          () => mockRelayManager.addRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => false);
 
         final result = await client.addRelays(relayUrls);
@@ -2168,14 +2295,20 @@ void main() {
         final relayUrls = ['wss://single-relay.example.com'];
 
         when(
-          () => mockRelayManager.addRelay(any()),
+          () => mockRelayManager.addRelay(
+            any(),
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => true);
 
         final result = await client.addRelays(relayUrls);
 
         expect(result, equals(1));
         verify(
-          () => mockRelayManager.addRelay('wss://single-relay.example.com'),
+          () => mockRelayManager.addRelay(
+            'wss://single-relay.example.com',
+            source: any(named: 'source'),
+          ),
         ).called(1);
       });
     });
@@ -2184,14 +2317,67 @@ void main() {
       test('delegates to RelayManager', () async {
         const relayUrl = 'wss://relay.example.com';
         when(
-          () => mockRelayManager.removeRelay(relayUrl),
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: any(named: 'source'),
+          ),
         ).thenAnswer((_) async => true);
 
-        final result = await client.removeRelay(relayUrl);
+        final result = await client.removeRelay(
+          relayUrl,
+          source: RelayRemoveSource.user,
+        );
 
         expect(result, isTrue);
-        verify(() => mockRelayManager.removeRelay(relayUrl)).called(1);
+        final captured = verify(
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: captureAny(named: 'source'),
+          ),
+        ).captured;
+        expect(captured, equals([RelayRemoveSource.user]));
       });
+
+      test('forwards explicit remove source to RelayManager', () async {
+        const relayUrl = 'wss://relay.example.com';
+        when(
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: RelayRemoveSource.automatic,
+          ),
+        ).thenAnswer((_) async => true);
+
+        final result = await client.removeRelay(
+          relayUrl,
+          source: RelayRemoveSource.automatic,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockRelayManager.removeRelay(
+            relayUrl,
+            source: RelayRemoveSource.automatic,
+          ),
+        ).called(1);
+      });
+    });
+
+    group('primaryRelay', () {
+      test(
+        'falls back to environment default when no relays are configured',
+        () {
+          when(() => mockRelayManager.connectedRelays).thenReturn(const []);
+          when(() => mockRelayManager.configuredRelays).thenReturn(const []);
+          when(
+            () => mockRelayManager.defaultRelayUrl,
+          ).thenReturn('wss://relay.staging.divine.video');
+
+          expect(
+            client.primaryRelay,
+            equals('wss://relay.staging.divine.video'),
+          );
+        },
+      );
     });
 
     group('connectedRelays', () {

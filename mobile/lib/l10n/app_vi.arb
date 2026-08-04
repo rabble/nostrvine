@@ -6682,5 +6682,15 @@
   },
   "profileNotifyBellOff": "Nhận thông báo về vine mới",
   "profileNotifyBellOn": "Ngừng thông báo về vine mới",
-  "profileNotifyUpdateFailed": "Không lưu được. Thử lại nhé?"
+  "profileNotifyUpdateFailed": "Không lưu được. Thử lại nhé?",
+  "relaySettingsRemoveDefaultRelayTitle": "Xoá relay của Divine?",
+  "relaySettingsRemoveDefaultRelayMessage": "Xoá relay của Divine sẽ làm giảm trải nghiệm trong ứng dụng. Video, đăng bài và đồng bộ có thể kém ổn định hơn. Chỉ nên làm điều này nếu bạn đã quen dùng Nostr.\n\n{relayUrl}",
+  "@relaySettingsRemoveDefaultRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsRemoveRelayTooltip": "Xoá relay"
 }

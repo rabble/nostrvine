@@ -82,7 +82,7 @@ class RelayConnectionStatus extends Equatable {
   /// Current connection state
   final RelayState state;
 
-  /// Whether this is the default relay that cannot be removed
+  /// Whether this is the environment default relay.
   final bool isDefault;
 
   /// Whether this relay is in the user's configured list
