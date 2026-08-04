@@ -696,11 +696,10 @@ class RelayPool {
     final messageType = _stringAt(relay, json, 0, 'message type');
     if (messageType == null) return;
 
-    // Log message type + sub ID (full json is too verbose for non-DM events)
+    // Log message type + sub ID (full json is too verbose for data frames)
     if (json.length >= 2) {
       final msgSubId = json[1];
-      if (msgSubId == 'dm_inbox' ||
-          messageType == 'AUTH' ||
+      if (messageType == 'AUTH' ||
           messageType == 'CLOSED' ||
           messageType == 'NOTICE') {
         log('📡 Raw message from ${relay.url}: $json');
@@ -809,25 +808,12 @@ class RelayPool {
           }
         }
 
-        if (event.kind == EventKind.giftWrap) {
-          log(
-            '🎁 Kind 1059 gift wrap received! subId=$subId '
-            'from ${relay.url}, eventId=${event.id}',
-          );
-        }
-
         // add some statistics
         relay.relayStatus.noteReceive();
 
         // check block pubkey
         for (var eventFilter in eventFilters) {
           if (eventFilter.check(event)) {
-            if (event.kind == EventKind.giftWrap) {
-              log(
-                '🎁 Kind 1059 BLOCKED by eventFilter! '
-                'eventId=${event.id}',
-              );
-            }
             return;
           }
         }
@@ -859,9 +845,6 @@ class RelayPool {
     } else if (messageType == 'EOSE') {
       final subId = _stringAt(relay, json, 1, 'EOSE subscription id');
       if (subId == null) return;
-      if (subId == 'dm_inbox') {
-        log('📬 EOSE received for dm_inbox from ${relay.url}');
-      }
       var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
         _fireQueryCompleteIfSettled(subId);
