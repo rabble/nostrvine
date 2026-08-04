@@ -1889,6 +1889,12 @@ class DmRepository {
       );
       if (isDuplicate) {
         await _recordProcessedWrap(giftWrapEvent.id);
+        Log.debug(
+          'Skipping duplicate NIP-17 DM ${rumor.id} in conversation '
+          '$conversationId from ${rumor.pubkey}: matching message already '
+          'stored',
+          category: LogCategory.system,
+        );
         return;
       }
 
@@ -1901,11 +1907,16 @@ class DmRepository {
           ? _filePreviewText(fileMetadata?.fileType)
           : rumor.content;
 
+      var inserted = false;
+      var skippedByTransactionalGiftWrapDedup = false;
       await _conversationsDao.runInTransaction(() async {
         // Re-check dedup inside transaction (TOCTOU protection).
-        if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) return;
+        if (await _directMessagesDao.hasGiftWrap(giftWrapEvent.id)) {
+          skippedByTransactionalGiftWrapDedup = true;
+          return;
+        }
 
-        await _directMessagesDao.insertMessage(
+        inserted = await _directMessagesDao.insertMessage(
           id: rumor.id,
           conversationId: conversationId,
           senderPubkey: rumor.pubkey,
@@ -1929,6 +1940,7 @@ class DmRepository {
           ownerPubkey: _userPubkey,
           sendBatchId: sendBatchId,
         );
+        if (!inserted) return;
 
         final existing = await _conversationsDao.getConversation(
           conversationId,
@@ -1951,6 +1963,24 @@ class DmRepository {
           dmProtocol: 'nip17',
         );
       });
+
+      if (skippedByTransactionalGiftWrapDedup) {
+        Log.debug(
+          'Skipping NIP-17 gift wrap ${giftWrapEvent.id}: already persisted '
+          'during transaction',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      if (!inserted) {
+        await _recordProcessedWrap(giftWrapEvent.id);
+        Log.debug(
+          'Skipped duplicate NIP-17 DM ${rumor.id} in conversation '
+          '$conversationId: insert was ignored by local dedup constraints',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // Advance sync boundaries from the bounded local timestamp. The outer
       // gift wrap randomizes its own created_at within a ~2 day window
@@ -2431,8 +2461,9 @@ class DmRepository {
       // dual-send fires both NIP-17 and NIP-04 copies. The receiver (also
       // Divine) will process the NIP-17 first, then see the NIP-04 copy.
       // Since the two events have different IDs, hasGiftWrap won't catch it.
-      // Match on sender+content only (no createdAt) because the NIP-17 rumor
-      // and NIP-04 event may have slightly different timestamps.
+      // Match on sender+content within hasMatchingMessage's narrow createdAt
+      // window because the NIP-17 rumor and NIP-04 event may have slightly
+      // different timestamps.
       final isDuplicate = await _directMessagesDao.hasMatchingMessage(
         conversationId: conversationId,
         senderPubkey: senderPubkey,
@@ -2450,11 +2481,16 @@ class DmRepository {
       }
 
       // Persist message + conversation atomically inside a transaction.
+      var inserted = false;
+      var skippedByTransactionalGiftWrapDedup = false;
       await _conversationsDao.runInTransaction(() async {
         // Re-check dedup inside transaction (TOCTOU protection).
-        if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) return;
+        if (await _directMessagesDao.hasGiftWrap(nip04Event.id)) {
+          skippedByTransactionalGiftWrapDedup = true;
+          return;
+        }
 
-        await _directMessagesDao.insertMessage(
+        inserted = await _directMessagesDao.insertMessage(
           id: nip04Event.id,
           conversationId: conversationId,
           senderPubkey: senderPubkey,
@@ -2464,6 +2500,7 @@ class DmRepository {
           messageKind: EventKind.directMessage,
           ownerPubkey: _userPubkey,
         );
+        if (!inserted) return;
 
         final existing = await _conversationsDao.getConversation(
           conversationId,
@@ -2485,6 +2522,23 @@ class DmRepository {
           dmProtocol: existing?.dmProtocol ?? 'nip04',
         );
       });
+
+      if (skippedByTransactionalGiftWrapDedup) {
+        Log.debug(
+          'Skipping NIP-04 event ${nip04Event.id}: already persisted during '
+          'transaction',
+          category: LogCategory.system,
+        );
+        return;
+      }
+      if (!inserted) {
+        Log.debug(
+          'Skipped duplicate NIP-04 event ${nip04Event.id}: insert was '
+          'ignored by local dedup constraints',
+          category: LogCategory.system,
+        );
+        return;
+      }
 
       // NIP-04 created_at values are not randomized (unlike NIP-17 gift
       // wraps) so the event timestamp is safe to use directly.

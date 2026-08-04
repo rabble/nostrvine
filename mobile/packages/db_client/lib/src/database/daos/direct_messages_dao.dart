@@ -23,20 +23,22 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     return column.equals(ownerPubkey) | column.isNull();
   }
 
-  /// Insert a decrypted DM, silently skipping duplicates.
+  /// Insert a decrypted DM, returning whether a row was actually written.
   ///
   /// Uses `INSERT OR IGNORE` so that violations on either the primary key
   /// (`id`) **or** the UNIQUE index on `gift_wrap_id` are handled gracefully
-  /// without throwing. Callers already dedup via [hasGiftWrap] before calling
-  /// this method; the ignore mode is a safety net for race conditions.
+  /// without throwing. A `false` return means a local uniqueness constraint
+  /// skipped the row, and callers must avoid advancing receive-side state that
+  /// depends on a newly persisted message.
   ///
   /// NIP-17 rumor events are immutable — the same rumor ID always carries
-  /// the same content, so skipping duplicates never loses data.
+  /// the same content. The current message uniqueness constraints are global,
+  /// so callers still need owner-scoped checks where account isolation matters.
   ///
   /// For kind 14 (text), only [content] is used.
   /// For kind 15 (file), [content] holds the file URL and file metadata
   /// fields are populated from the event tags.
-  Future<void> insertMessage({
+  Future<bool> insertMessage({
     required String id,
     required String conversationId,
     required String senderPubkey,
@@ -59,8 +61,8 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
     String? thumbnailUrl,
     String? ownerPubkey,
     String? sendBatchId,
-  }) {
-    return into(directMessages).insert(
+  }) async {
+    final inserted = await into(directMessages).insertReturningOrNull(
       DirectMessagesCompanion.insert(
         id: id,
         conversationId: conversationId,
@@ -87,6 +89,7 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
       ),
       mode: InsertMode.insertOrIgnore,
     );
+    return inserted != null;
   }
 
   /// Get messages for a conversation, newest first.
@@ -209,9 +212,12 @@ class DirectMessagesDao extends DatabaseAccessor<AppDatabase>
   /// conversation within a ±5 second window. Used for cross-protocol dedup
   /// when both a NIP-17 and NIP-04 copy of the same message arrive.
   ///
-  /// The time window prevents false positives when a user genuinely sends
-  /// the same text twice (e.g. "ok") while still catching dual-send
-  /// duplicates where timestamps differ by at most a few seconds.
+  /// The window is deliberately narrow: a genuine repeat of the same text
+  /// (e.g. "ok") is only collapsed when it lands within ±[windowSeconds],
+  /// which is still wide enough for dual-send duplicates, whose timestamps
+  /// differ by at most a few seconds. Widening it drops more legitimate
+  /// repeats — it does not gain a retry signal, because a re-minted rumor
+  /// is indistinguishable from a genuine second send.
   Future<bool> hasMatchingMessage({
     required String conversationId,
     required String senderPubkey,

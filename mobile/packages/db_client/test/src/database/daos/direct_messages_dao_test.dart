@@ -230,6 +230,40 @@ void main() {
         expect(results, hasLength(1));
         expect(results.first.sendBatchId, isNull);
       });
+
+      test('reports whether insert wrote a row', () async {
+        final firstInserted = await dao.insertMessage(
+          id: 'msg_insert_result',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Original',
+          createdAt: 1700000000,
+          giftWrapId: 'gw_insert_result',
+        );
+        final duplicateInserted = await dao.insertMessage(
+          id: 'msg_insert_result',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Ignored duplicate',
+          createdAt: 1700000001,
+          giftWrapId: 'gw_insert_result_duplicate',
+        );
+        final duplicateGiftWrapInserted = await dao.insertMessage(
+          id: 'msg_insert_result_duplicate_gift_wrap',
+          conversationId: conversationId1,
+          senderPubkey: 'pubkey_alice',
+          content: 'Ignored duplicate gift wrap',
+          createdAt: 1700000002,
+          giftWrapId: 'gw_insert_result',
+        );
+
+        expect(firstInserted, isTrue);
+        expect(duplicateInserted, isFalse);
+        expect(duplicateGiftWrapInserted, isFalse);
+        final results = await dao.getMessagesForConversation(conversationId1);
+        expect(results, hasLength(1));
+        expect(results.first.content, equals('Original'));
+      });
     });
 
     group('getMessagesForConversation', () {
@@ -509,6 +543,58 @@ void main() {
 
         expect(await dao.giftWrapIdsPresent(const <String>{}), isEmpty);
       });
+    });
+
+    group('hasMatchingMessage', () {
+      test(
+        'matches cross-protocol duplicates within the default 5s window',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_original',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'Retryable message',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_original',
+            ownerPubkey: 'pubkey_owner',
+          );
+
+          final duplicate = await dao.hasMatchingMessage(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'Retryable message',
+            createdAt: 1700000004,
+            ownerPubkey: 'pubkey_owner',
+          );
+
+          expect(duplicate, isTrue);
+        },
+      );
+
+      test(
+        'does not match repeated identical content after the default window',
+        () async {
+          await dao.insertMessage(
+            id: 'msg_first_ok',
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'ok',
+            createdAt: 1700000000,
+            giftWrapId: 'gw_first_ok',
+            ownerPubkey: 'pubkey_owner',
+          );
+
+          final duplicate = await dao.hasMatchingMessage(
+            conversationId: conversationId1,
+            senderPubkey: 'pubkey_peer',
+            content: 'ok',
+            createdAt: 1700000030,
+            ownerPubkey: 'pubkey_owner',
+          );
+
+          expect(duplicate, isFalse);
+        },
+      );
     });
 
     group('hasMessageWithSendBatchId', () {
