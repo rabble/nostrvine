@@ -2883,6 +2883,96 @@ void main() {
     });
   });
 
+  group('flushPendingAutosave', () {
+    late _MockDraftStorageService mockDraftStorage;
+    late AppDatabase database;
+    late ProviderContainer container;
+
+    setUpAll(() {
+      registerFallbackValue(
+        DivineVideoDraft.create(
+          id: 'fallback',
+          clips: const [],
+          title: '',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'video',
+        ),
+      );
+    });
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      mockDraftStorage = _MockDraftStorageService();
+      database = AppDatabase.test(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+          databaseProvider.overrideWithValue(database),
+        ],
+      );
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await database.close();
+    });
+
+    void stubSuccessfulAutosave() {
+      when(
+        () => mockDraftStorage.saveDraft(
+          any(),
+          deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+        ),
+      ).thenAnswer((_) async {});
+    }
+
+    test('returns false without writing when no autosave is pending', () async {
+      final result = await container
+          .read(videoEditorProvider.notifier)
+          .flushPendingAutosave();
+
+      expect(result, isFalse);
+      verifyNever(
+        () => mockDraftStorage.saveDraft(
+          any(),
+          deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+        ),
+      );
+    });
+
+    test('persists pending autosave and prevents timer re-fire', () {
+      stubSuccessfulAutosave();
+
+      fakeAsync((async) {
+        final notifier = container.read(videoEditorProvider.notifier);
+        notifier.updateMetadata(title: 'Almost lost');
+
+        bool? result;
+        notifier.flushPendingAutosave().then((value) => result = value);
+        async.flushMicrotasks();
+
+        expect(result, isTrue);
+        final captured =
+            verify(
+                  () => mockDraftStorage.saveDraft(
+                    captureAny(),
+                    deferOrphanCleanup: any(named: 'deferOrphanCleanup'),
+                  ),
+                ).captured.single
+                as DivineVideoDraft;
+        expect(captured.title, 'Almost lost');
+
+        async.elapse(const Duration(milliseconds: 801));
+        async.flushMicrotasks();
+
+        verifyNoMoreInteractions(mockDraftStorage);
+      });
+    });
+  });
+
   group('VideoEditorProvider deferred file cleanup', () {
     late _MockDraftStorageService mockDraftStorage;
     late AppDatabase database;

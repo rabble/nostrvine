@@ -86,9 +86,7 @@ late SharedPreferences testPrefs;
 /// recorder's autosave/clip checks resolve to empty during tests.
 List<Override> _stubStorageOverrides() {
   final mockDraftStorage = _MockDraftStorageService();
-  when(
-    () => mockDraftStorage.getDraftById(any()),
-  ).thenAnswer((_) async => null);
+  when(mockDraftStorage.getAutosaveDraft).thenAnswer((_) async => null);
   final mockClipLibrary = _MockClipLibraryService();
   when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
   return [
@@ -603,7 +601,7 @@ void main() {
           publishAttempts: 0,
         );
         when(
-          () => mockDraftStorage.getDraftById(any()),
+          mockDraftStorage.getAutosaveDraft,
         ).thenAnswer((_) async => editedDraft);
 
         final mockClipLibrary = _MockClipLibraryService();
@@ -639,20 +637,26 @@ void main() {
         await tester.pump();
 
         // Bottom sheet should be visible
-        expect(find.text('We found work in progress'), findsOneWidget);
-        expect(find.text('Yes, continue'), findsOneWidget);
-        expect(find.text('No, start a new video'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsOneWidget);
+        expect(
+          find.text(l10n.videoRecorderAutosaveContinueButton),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoRecorderAutosaveDiscardButton),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('does not show bottom sheet when draft has no edits', (
+      testWidgets('shows bottom sheet when autosaved draft only has clips', (
         tester,
       ) async {
         SharedPreferences.setMockInitialValues({'why_six_seconds_shown': true});
         final prefs = await SharedPreferences.getInstance();
 
         final mockDraftStorage = _MockDraftStorageService();
-        // Draft with clips but no metadata edits → hasBeenEdited = false
-        final uneditedDraft = DivineVideoDraft(
+        final clipsOnlyDraft = DivineVideoDraft(
           id: 'autosave',
           clips: [
             DivineVideoClip(
@@ -674,8 +678,8 @@ void main() {
           publishAttempts: 0,
         );
         when(
-          () => mockDraftStorage.getDraftById(any()),
-        ).thenAnswer((_) async => uneditedDraft);
+          mockDraftStorage.getAutosaveDraft,
+        ).thenAnswer((_) async => clipsOnlyDraft);
 
         final mockClipLibrary = _MockClipLibraryService();
         when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
@@ -707,8 +711,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pump();
 
-        // Bottom sheet should NOT appear
-        expect(find.text('We found work in progress'), findsNothing);
+        // Clips-only sessions still represent user work and must be reachable.
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsOneWidget);
+        expect(
+          find.text(l10n.videoRecorderAutosaveContinueButton),
+          findsOneWidget,
+        );
       });
 
       testWidgets('does not show bottom sheet when no draft exists', (
@@ -719,7 +728,7 @@ void main() {
 
         final mockDraftStorage = _MockDraftStorageService();
         when(
-          () => mockDraftStorage.getDraftById(any()),
+          mockDraftStorage.getAutosaveDraft,
         ).thenAnswer((_) async => null);
 
         final mockClipLibrary = _MockClipLibraryService();
@@ -752,7 +761,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pump();
 
-        expect(find.text('We found work in progress'), findsNothing);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoRecorderAutosaveFoundTitle), findsNothing);
       });
     });
   });

@@ -13,6 +13,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/account_state_resume_refresher.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -96,6 +97,15 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
     // Notify background activity manager first
     _backgroundManager.onAppLifecycleStateChanged(state);
+
+    if (state != AppLifecycleState.resumed) {
+      // Inactive is routine on desktop, but this no-ops unless an editor
+      // autosave debounce is pending. Detached may be the only signal before
+      // process teardown, so flush before the state-specific work below.
+      unawaited(
+        ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
+      );
+    }
 
     switch (state) {
       case AppLifecycleState.resumed:
