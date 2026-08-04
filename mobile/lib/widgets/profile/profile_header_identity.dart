@@ -142,18 +142,19 @@ class _ProfileHeaderReveal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = MediaQuery.disableAnimationsOf(context)
-        ? Duration.zero
-        : _duration;
+    // The empty state spans the full width so only the height animates.
+    final content = child ?? const SizedBox(width: double.infinity);
+    // Drop the animators entirely under reduce motion rather than passing
+    // them Duration.zero: a zero-duration AnimatedSize completes its
+    // controller synchronously inside performLayout, which re-dirties the
+    // render object mid-layout and trips a framework assertion.
+    if (MediaQuery.disableAnimationsOf(context)) return content;
+
     return AnimatedSize(
-      duration: duration,
+      duration: _duration,
       curve: Curves.easeOutCubic,
       alignment: Alignment.topCenter,
-      child: AnimatedSwitcher(
-        duration: duration,
-        // The empty state spans the full width so only the height animates.
-        child: child ?? const SizedBox(width: double.infinity),
-      ),
+      child: AnimatedSwitcher(duration: _duration, child: content),
     );
   }
 }

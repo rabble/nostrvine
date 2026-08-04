@@ -326,6 +326,7 @@ void main() {
       MockGoRouter? goRouter,
       bool monetizationLinksEnabled = false,
       ThemeData? theme,
+      bool disableAnimations = false,
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -438,7 +439,14 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: theme,
-          home: Scaffold(body: SingleChildScrollView(child: header)),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: disableAnimations),
+              child: Scaffold(body: SingleChildScrollView(child: header)),
+            ),
+          ),
         ),
       );
 
@@ -630,6 +638,26 @@ void main() {
 
       expect(settledHeight, greaterThan(0));
       expect(revealingHeight, lessThan(settledHeight));
+    });
+
+    testWidgets('lands the badge row at once under reduce motion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: createTestProfile(displayName: 'Badged User'),
+          acceptedProfileBadges: [_acceptedBadge('Badge One', 'badge-one')],
+          disableAnimations: true,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      // A zero-duration AnimatedSize would assert here instead of rendering.
+      expect(find.text('Badge One'), findsOneWidget);
+      expect(find.byType(AnimatedSize), findsNothing);
     });
 
     testWidgets('displays user avatar when profile is loaded', (tester) async {
