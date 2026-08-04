@@ -395,8 +395,14 @@ List<dynamic> getStandardTestOverrides({
       authServiceProvider.overrideWithValue(mockAuth),
     if (mockSocialService != null)
       socialServiceProvider.overrideWithValue(mockSocial),
-    if (mockProfileRepository != null)
+    if (mockProfileRepository != null) ...[
       profileRepositoryProvider.overrideWithValue(mockProfile),
+      // Display code reads the identity-known-gated handle, not the
+      // relay-gated one (#6423). ProfileRepository implements ProfileReader,
+      // so the same mock serves both; overriding only the tight provider
+      // leaves every profile read resolving to null.
+      profileReadRepositoryProvider.overrideWithValue(mockProfile),
+    ],
   ];
 }
 
