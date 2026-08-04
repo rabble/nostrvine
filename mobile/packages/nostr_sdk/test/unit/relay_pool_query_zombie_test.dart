@@ -89,6 +89,45 @@ void main() {
       );
     });
 
+    test(
+      'a straggler the settle window abandons is still force-reconnected',
+      () async {
+        // A second relay answers, so the caller is released by the settle
+        // window rather than by the timeout. Remediation keys off the query
+        // being abandoned, not off how the caller was released.
+        const answeringUrl = 'wss://answers.example';
+        final answeringFactory = FakeWebSocketChannelFactory();
+        await nostr.relayPool.add(
+          RelayBase(
+            answeringUrl,
+            RelayStatus(answeringUrl),
+            channelFactory: answeringFactory,
+          ),
+        );
+        final answeringChannel = answeringFactory.createdChannels.single;
+
+        final pending = nostr.queryEventsDetailed([
+          {
+            'kinds': [1],
+          },
+        ], timeout: const Duration(seconds: 4));
+        await Future<void>.delayed(Duration.zero);
+        answeringChannel.simulateMessage(
+          jsonEncode(['EOSE', _lastReqSubId(answeringChannel)]),
+        );
+
+        final result = await pending;
+        expect(result.timedOut, isFalse);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(
+          factory.createdChannels,
+          hasLength(2),
+          reason: 'the relay that swallowed the REQ is still the zombie',
+        );
+      },
+    );
+
     test('a relay that stays inbound-active is left alone — silence '
         'discriminates zombie from slow', () async {
       final channel = factory.createdChannels.single;

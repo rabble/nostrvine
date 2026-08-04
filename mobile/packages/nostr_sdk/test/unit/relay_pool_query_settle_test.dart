@@ -22,6 +22,22 @@ class _SilentRelay extends Relay {
   /// When false, [send] reports failure the way a dead socket does.
   bool sendSucceeds = true;
 
+  /// When set, a `REQ` write blocks until [releaseReq], which holds the pool's
+  /// fan-out open while other relays answer.
+  Completer<void>? reqGate;
+
+  void releaseReq() {
+    final gate = reqGate;
+    if (gate != null && !gate.isCompleted) gate.complete();
+  }
+
+  /// `CLOSE` frames this relay was sent, by subscription id.
+  List<String> get closedSubIds => [
+    for (final message in sentMessages)
+      if (message.isNotEmpty && message[0] == 'CLOSE' && message.length > 1)
+        message[1] as String,
+  ];
+
   @override
   Future<bool> doConnect() async {
     if (!_connectSucceeds) return false;
@@ -45,6 +61,8 @@ class _SilentRelay extends Relay {
     sentMessages.add(message);
     if (message.isNotEmpty && message[0] == 'REQ' && message.length > 1) {
       capturedSubId = message[1] as String;
+      final gate = reqGate;
+      if (gate != null) await gate.future;
     } else if (message.isNotEmpty &&
         message[0] == 'AUTH' &&
         message.length > 1 &&
@@ -228,6 +246,156 @@ void main() {
         stopwatch.elapsed,
         greaterThanOrEqualTo(RelayPool.querySettleWindow),
         reason: 'the silent relay still gets its grace period first',
+      );
+    });
+
+    test('the settle window closes the REQ it abandons', () async {
+      final nostr = _newNostr();
+      final answering = _SilentRelay('wss://answers.example');
+      final mute = _SilentRelay('wss://never-eoses.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+      expect(await nostr.relayPool.add(mute), isTrue);
+
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      final subId = await answering.awaitPendingQuery();
+      await mute.awaitPendingQuery();
+      await answering.deliver(['EOSE', subId]);
+      await pending;
+
+      // The caller is gone, so the REQ it left on the silent relay has to go
+      // with it. Left open it stays live for the life of the socket — against
+      // the relay's concurrent-subscription cap, pinning the caller's event
+      // box, and re-issued by every post-AUTH and zombie-reconnect replay.
+      expect(
+        mute.closedSubIds,
+        contains(subId),
+        reason: 'the abandoned REQ must be closed on the relay',
+      );
+      expect(
+        mute.checkQuery(subId),
+        isFalse,
+        reason: 'and dropped from the pool-side query book',
+      );
+    });
+
+    test('a terminal frame that lands during fan-out still arms the settle '
+        'window', () async {
+      final nostr = _newNostr();
+      final fast = _SilentRelay('wss://fast.example');
+      final blocked = _SilentRelay('wss://slow-to-accept.example')
+        ..reqGate = Completer<void>();
+      expect(await nostr.relayPool.add(fast), isTrue);
+      expect(await nostr.relayPool.add(blocked), isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      // `fast` answers while `blocked` has not finished accepting its REQ, so
+      // the completion sweep driven by that EOSE is swallowed by the fan-out
+      // guard. The window still has to arm off it once fan-out ends.
+      final subId = await fast.awaitPendingQuery();
+      await fast.deliver(['EOSE', subId]);
+      blocked.releaseReq();
+
+      final result = await pending;
+      stopwatch.stop();
+
+      expect(result.timedOut, isFalse);
+      expect(
+        stopwatch.elapsed,
+        lessThan(_timeout),
+        reason: 'an EOSE during fan-out is still proof the fan-out is served',
+      );
+    });
+
+    test('an auth-gated relay that has not been challenged yet still holds '
+        'the query', () async {
+      final nostr = _newNostr();
+      final answering = _SilentRelay('wss://answers.example');
+      final gated = _SilentRelay('wss://gated.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+      expect(await nostr.relayPool.add(gated), isTrue);
+
+      // `alwaysAuth` latches for the session, so a relay that has just
+      // reconnected sits in this state for the round trip before its challenge
+      // arrives. Writing it off there would drop every read-gated relay's
+      // results on cold start.
+      gated.relayStatus.alwaysAuth = true;
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      final subId = await answering.awaitPendingQuery();
+      await gated.awaitPendingQuery();
+      await answering.deliver(['EOSE', subId]);
+
+      await pending;
+      stopwatch.stop();
+
+      expect(
+        stopwatch.elapsed,
+        greaterThanOrEqualTo(RelayPool.querySettleWindow),
+        reason: 'an unchallenged auth gate is not evidence the gate is shut',
+      );
+    });
+
+    test('a reconnect gives a relay whose auth gate was shut a fresh '
+        'handshake', () async {
+      final nostr = _newNostr();
+      final gated = _SilentRelay('wss://gated.example');
+      expect(await nostr.relayPool.add(gated), isTrue);
+      gated.relayStatus.alwaysAuth = true;
+
+      // First connection: the relay refuses the REQ outright, so the gate is
+      // recorded shut and the caller stops waiting on it.
+      final first = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+      final firstSubId = await gated.awaitPendingQuery();
+      await gated.deliver(['CLOSED', firstSubId, 'auth-required: sign in']);
+      expect((await first).timedOut, isFalse);
+
+      // The socket cycles. Whatever the previous connection concluded about
+      // NIP-42 does not carry over to the new one.
+      gated.onError('socket closed', reconnect: true);
+      expect(await gated.connect(), isTrue);
+
+      final answering = _SilentRelay('wss://answers.example');
+      expect(await nostr.relayPool.add(answering), isTrue);
+
+      final stopwatch = Stopwatch()..start();
+      final pending = nostr.queryEventsDetailed([
+        {
+          'kinds': [1],
+        },
+      ], timeout: _timeout);
+
+      final subId = await answering.awaitPendingQuery();
+      await gated.awaitPendingQuery();
+      await answering.deliver(['EOSE', subId]);
+
+      await pending;
+      stopwatch.stop();
+
+      expect(
+        stopwatch.elapsed,
+        greaterThanOrEqualTo(RelayPool.querySettleWindow),
+        reason: 'the fresh connection has not refused anything yet',
       );
     });
 
