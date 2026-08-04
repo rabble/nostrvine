@@ -208,12 +208,10 @@ class _VideoRecorderViewState extends ConsumerState<VideoRecorderView>
     );
 
     final draftService = ref.read(draftStorageServiceProvider);
-    final draft = await draftService.getDraftById(
-      VideoEditorConstants.autoSaveId,
-    );
+    final draft = await draftService.getAutosaveDraft();
     if (!mounted) return;
 
-    if (draft != null && draft.hasBeenEdited) {
+    if (draft != null && draft.clips.isNotEmpty) {
       Log.info(
         '📹 Found valid autosaved draft',
         name: 'VideoRecorderScreen',

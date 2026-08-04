@@ -13,6 +13,7 @@ import 'package:openvine/providers/analytics_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/account_state_resume_refresher.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -149,6 +150,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         );
 
       case AppLifecycleState.inactive:
+        unawaited(
+          ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
+        );
         // On desktop, inactive happens during normal UI operations (clicking, menu interactions, etc.)
         // Don't treat this as backgrounded - videos should continue playing
         Log.debug(
@@ -159,6 +163,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
+        unawaited(
+          ref.read(videoEditorProvider.notifier).flushPendingAutosave(),
+        );
         Log.info(
           '📱 App backgrounded - disabling foreground playback gates',
           name: 'AppLifecycleHandler',

@@ -720,6 +720,18 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     });
   }
 
+  /// Immediately persist a debounced autosave that has not fired yet.
+  ///
+  /// Returns `false` when there is no pending autosave or the write fails.
+  Future<bool> flushPendingAutosave() async {
+    final timer = _autosaveTimer;
+    if (timer == null || !timer.isActive) return false;
+
+    timer.cancel();
+    _autosaveTimer = null;
+    return autosaveChanges();
+  }
+
   /// Automatically save the current video project state.
   ///
   /// This method is typically called periodically or on significant changes
