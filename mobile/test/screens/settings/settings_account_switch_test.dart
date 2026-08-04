@@ -234,6 +234,7 @@ void main() {
         // Null repository keeps userProfileReactiveProvider on an empty stream,
         // so the account header renders from fallbacks without any network.
         profileRepositoryProvider.overrideWithValue(null),
+        profileReadRepositoryProvider.overrideWithValue(null),
         draftStorageServiceProvider.overrideWithValue(draftStorageService),
         isFeatureEnabledProvider(
           FeatureFlag.accountSwitching,

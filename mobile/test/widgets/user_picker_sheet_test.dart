@@ -232,6 +232,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
               contentBlocklistRepositoryProvider.overrideWithValue(
                 _createMockContentBlocklistRepository(),
@@ -350,6 +351,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
               contentBlocklistRepositoryProvider.overrideWithValue(
                 _createMockContentBlocklistRepository(),
@@ -413,6 +415,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
               contentBlocklistRepositoryProvider.overrideWithValue(
                 _createMockContentBlocklistRepository(),
@@ -477,6 +480,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(mockFollowRepo),
               contentBlocklistRepositoryProvider.overrideWithValue(
                 mockBlocklistRepo,
@@ -528,6 +532,9 @@ void main() {
             ProviderScope(
               overrides: [
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                profileReadRepositoryProvider.overrideWithValue(
+                  mockProfileRepo,
+                ),
                 followRepositoryProvider.overrideWithValue(mockFollowRepo),
                 contentBlocklistRepositoryProvider.overrideWithValue(
                   _createMockContentBlocklistRepository(),
@@ -648,6 +655,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(
                 _createMockFollowRepository(),
               ),
@@ -758,6 +766,9 @@ void main() {
             ProviderScope(
               overrides: [
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                profileReadRepositoryProvider.overrideWithValue(
+                  mockProfileRepo,
+                ),
                 followRepositoryProvider.overrideWithValue(mockFollowRepo),
               ],
               child: const MaterialApp(
@@ -885,6 +896,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
               followRepositoryProvider.overrideWithValue(
                 _createMockFollowRepository(),
               ),
@@ -1000,6 +1012,7 @@ void main() {
             ProviderScope(
               overrides: [
                 profileRepositoryProvider.overrideWithValue(null),
+                profileReadRepositoryProvider.overrideWithValue(null),
                 followRepositoryProvider.overrideWithValue(
                   _createMockFollowRepository(),
                 ),
@@ -1034,6 +1047,7 @@ void main() {
           ProviderScope(
             overrides: [
               profileRepositoryProvider.overrideWithValue(null),
+              profileReadRepositoryProvider.overrideWithValue(null),
               followRepositoryProvider.overrideWithValue(
                 _createMockFollowRepository(),
               ),

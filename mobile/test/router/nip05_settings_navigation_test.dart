@@ -108,6 +108,7 @@ void main() {
             (ref) async => MinorAccountReviewStatus.active(),
           ),
           profileRepositoryProvider.overrideWithValue(profileRepository),
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
           blossomUploadServiceProvider.overrideWithValue(blossomUploadService),
         ],
       );

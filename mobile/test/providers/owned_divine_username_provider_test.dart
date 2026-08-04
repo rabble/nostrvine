@@ -34,6 +34,7 @@ void main() {
         overrides: [
           authServiceProvider.overrideWithValue(auth),
           profileRepositoryProvider.overrideWithValue(repository),
+          profileReadRepositoryProvider.overrideWithValue(repository),
         ],
       );
       addTearDown(container.dispose);
@@ -49,6 +50,7 @@ void main() {
         overrides: [
           authServiceProvider.overrideWithValue(auth),
           profileRepositoryProvider.overrideWithValue(repository),
+          profileReadRepositoryProvider.overrideWithValue(repository),
         ],
       );
       addTearDown(container.dispose);
@@ -62,6 +64,7 @@ void main() {
         overrides: [
           authServiceProvider.overrideWithValue(auth),
           profileRepositoryProvider.overrideWithValue(null),
+          profileReadRepositoryProvider.overrideWithValue(null),
         ],
       );
       addTearDown(container.dispose);

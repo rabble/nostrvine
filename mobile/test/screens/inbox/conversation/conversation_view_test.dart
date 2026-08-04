@@ -200,6 +200,7 @@ void main() {
             mockWatermarkDownloadService,
           ),
           profileRepositoryProvider.overrideWithValue(null),
+          profileReadRepositoryProvider.overrideWithValue(null),
           fetchUserProfileProvider(
             otherPubkey,
           ).overrideWith((ref) async => otherProfile),

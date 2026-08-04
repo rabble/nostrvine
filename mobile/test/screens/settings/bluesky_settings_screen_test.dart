@@ -86,6 +86,7 @@ void main() {
           authServiceProvider.overrideWithValue(authService),
           crosspostApiClientProvider.overrideWithValue(apiClient),
           profileRepositoryProvider.overrideWithValue(profileRepository),
+          profileReadRepositoryProvider.overrideWithValue(profileRepository),
         ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -53,6 +53,7 @@ void main() {
         ),
         additionalOverrides: [
           profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+          profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
         ],
       );
     }
@@ -304,6 +305,9 @@ void main() {
               ),
               additionalOverrides: [
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                profileReadRepositoryProvider.overrideWithValue(
+                  mockProfileRepo,
+                ),
               ],
             ),
           );

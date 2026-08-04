@@ -75,6 +75,7 @@ void main() {
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           profileRepositoryProvider.overrideWithValue(repository),
+          profileReadRepositoryProvider.overrideWithValue(repository),
           analyticsEventSinkProvider.overrideWithValue(
             const NoOpAnalyticsEventSink(),
           ),
@@ -144,6 +145,7 @@ void main() {
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           profileRepositoryProvider.overrideWithValue(repository),
+          profileReadRepositoryProvider.overrideWithValue(repository),
           analyticsEventSinkProvider.overrideWithValue(
             const NoOpAnalyticsEventSink(),
           ),
@@ -205,6 +207,7 @@ void main() {
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           profileRepositoryProvider.overrideWithValue(repository),
+          profileReadRepositoryProvider.overrideWithValue(repository),
           analyticsEventSinkProvider.overrideWithValue(
             const NoOpAnalyticsEventSink(),
           ),
@@ -322,6 +325,7 @@ void main() {
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           profileRepositoryProvider.overrideWithValue(repository),
+          profileReadRepositoryProvider.overrideWithValue(repository),
           analyticsEventSinkProvider.overrideWithValue(
             const NoOpAnalyticsEventSink(),
           ),
