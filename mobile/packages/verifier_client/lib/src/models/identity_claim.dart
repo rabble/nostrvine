@@ -23,9 +23,12 @@ class IdentityClaim extends Equatable {
   /// 64-character lowercase hex pubkey.
   final String pubkey;
 
-  /// Platform identifier — one of `github | twitter | mastodon |
-  /// telegram | bluesky | discord | youtube | tiktok` at the time of
-  /// writing. Forward-compatible: the verifier may add platforms.
+  /// Platform identifier accepted by the verifier.
+  ///
+  /// Mobile filters against [supportedPlatforms] before batching claims so
+  /// unsupported NIP-39 tags cannot 400 the whole verifier request. Keep this
+  /// in sync with
+  /// `divine-identify-verification-service/src/utils/validation.ts:3`.
   final String platform;
 
   /// Platform-specific user identifier (handle, account ID).
@@ -34,6 +37,71 @@ class IdentityClaim extends Equatable {
   /// Proof material (URL, post ID, OAuth token reference, …) — opaque
   /// to mobile.
   final String proof;
+
+  /// Platforms accepted by the verifier service.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:3`.
+  static const supportedPlatforms = <String>{
+    'github',
+    'twitter',
+    'mastodon',
+    'telegram',
+    'bluesky',
+    'discord',
+    'youtube',
+    'tiktok',
+  };
+
+  static final RegExp _hexPubkeyPattern = RegExp(r'^[0-9a-fA-F]+$');
+  static final RegExp _invalidServerTextPattern = RegExp(
+    r'''[<>"'{}|\\^`;]''',
+  );
+  static final RegExp _controlCharacterPattern = RegExp(r'[\x00-\x1f\x7f]');
+
+  /// Maximum verifier-accepted identity/proof length.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:16,24`.
+  static const int maxServerTextLength = 500;
+
+  /// Whether [value] is a verifier-accepted 64-character hex pubkey.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:7`.
+  static bool isServerValidPubkey(String value) =>
+      value.length == 64 && _hexPubkeyPattern.hasMatch(value);
+
+  /// Whether [value] is a verifier-accepted platform.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:5`.
+  static bool isServerValidPlatform(String value) =>
+      supportedPlatforms.contains(value);
+
+  /// Whether [value] is a verifier-accepted identity string.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:24-28`.
+  static bool isServerValidIdentity(String value) => _isServerValidText(value);
+
+  /// Whether [value] is a verifier-accepted proof string.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:16-21`.
+  static bool isServerValidProof(String value) => _isServerValidText(value);
+
+  /// Whether this claim matches the verifier's request validation contract.
+  ///
+  /// Mirrors
+  /// `divine-identify-verification-service/src/utils/validation.ts:62-78`.
+  bool get isServerValid {
+    if (!isServerValidPubkey(pubkey)) return false;
+    if (!isServerValidPlatform(platform)) return false;
+    if (!isServerValidIdentity(identity)) return false;
+    if (platform == 'bluesky' && proof.trim().isEmpty) return true;
+    return isServerValidProof(proof);
+  }
 
   /// Serializes this claim to the verifier API JSON shape.
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -45,4 +113,11 @@ class IdentityClaim extends Equatable {
 
   @override
   List<Object?> get props => [pubkey, platform, identity, proof];
+
+  static bool _isServerValidText(String value) {
+    if (value.isEmpty || value.length > maxServerTextLength) return false;
+    if (_invalidServerTextPattern.hasMatch(value)) return false;
+    if (_controlCharacterPattern.hasMatch(value)) return false;
+    return true;
+  }
 }

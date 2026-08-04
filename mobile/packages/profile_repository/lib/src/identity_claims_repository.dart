@@ -76,11 +76,12 @@ class IdentityClaimsRepository {
   /// Parses NIP-39 identity claims out of the given identity-event tag
   /// list (kind 10011, or kind 0 for pre-migration profiles).
   ///
-  /// Filters to `['i', '<platform>:<identity>', '<proof>']` shape, skips
-  /// malformed entries, dedupes case-insensitively on `<platform>:<identity>`
-  /// (preferring the first occurrence — matches verifier UI behaviour at
-  /// `divine-identify-verification-service/src/index.ts:1784`), caps at
-  /// [VerifierClient.maxBatchSize] (10) so a single batch suffices.
+  /// Filters to `['i', '<platform>:<identity>', '<proof>']` shape and the
+  /// verifier's request contract, skips malformed entries, dedupes
+  /// case-insensitively on `<platform>:<identity>` (preferring the first
+  /// valid occurrence — matches verifier UI behaviour at
+  /// `divine-identify-verification-service/src/index.ts:1784`), caps valid
+  /// claims at [VerifierClient.maxBatchSize] (10) so a single batch suffices.
   static List<IdentityClaim> parseClaims(
     String pubkey,
     List<List<String>> tags,
@@ -95,16 +96,16 @@ class IdentityClaimsRepository {
       if (colon <= 0 || colon == claimKey.length - 1) continue;
       final platform = claimKey.substring(0, colon);
       final identity = claimKey.substring(colon + 1);
+      final claim = IdentityClaim(
+        pubkey: pubkey,
+        platform: platform,
+        identity: identity,
+        proof: tag[2],
+      );
+      if (!claim.isServerValid) continue;
       final dedupeKey = '$platform:$identity'.toLowerCase();
       if (!seen.add(dedupeKey)) continue;
-      claims.add(
-        IdentityClaim(
-          pubkey: pubkey,
-          platform: platform,
-          identity: identity,
-          proof: tag[2],
-        ),
-      );
+      claims.add(claim);
       if (claims.length >= VerifierClient.maxBatchSize) break;
     }
     return claims;
