@@ -337,6 +337,7 @@ class NIP17MessageService {
   /// that also pass `false` are choosing a hard no-self-wrap confirmation
   /// contract: soft-unconfirmed recipient publishes return retryable failure
   /// and the caller owns any fallback behavior.
+  @useResult
   Future<NIP17SendResult> sendRumor({
     required Event rumorEvent,
     required String recipientPubkey,
@@ -634,6 +635,7 @@ class NIP17MessageService {
   /// new recipient-wrap event id is produced on this path) or
   /// [NIP17SendResult.failure] when the self-wrap could not be built
   /// or did not reach a relay.
+  @useResult
   Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
     try {
       // Same fail-fast as sendRumor: a frame buffered to a stale-`connected`
@@ -797,6 +799,7 @@ class NIP17MessageService {
   /// keep working unchanged. New callers that need to enqueue a durable
   /// queue row keyed by the rumor's id should call [buildRumor] +
   /// [sendRumor] directly so the queue insert happens between the two.
+  @useResult
   Future<NIP17SendResult> sendPrivateMessage({
     required String recipientPubkey,
     required String content,

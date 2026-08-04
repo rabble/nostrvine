@@ -1985,6 +1985,7 @@
             }
         }
     },
+    "reportNotSent": "Kunde inte skicka din anmälan. Kontrollera din anslutning och försök igen.",
     "reportReceivedTitle": "Rapport mottagen",
     "reportReceivedThankYou": "Tack för att du hjälper till att hålla Divine säkert.",
     "reportReceivedReviewNotice": "Vårt team granskar din rapport och vidtar lämpliga åtgärder. Du kan få uppdateringar via direktmeddelande.",

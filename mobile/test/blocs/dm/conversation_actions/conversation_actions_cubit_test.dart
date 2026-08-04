@@ -96,7 +96,12 @@ void main() {
               reason: ContentFilterReason.other,
               details: 'Reported from DM conversation',
             ),
-          ).thenAnswer((_) async => ReportResult.createSuccess('report-id'));
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'report-id',
+              delivery: ReportDelivery.reached,
+            ),
+          );
         },
         build: createCubit,
         act: (cubit) async {
@@ -118,6 +123,39 @@ void main() {
             ),
           ).called(1);
         },
+      );
+
+      blocTest<ConversationActionsCubit, ConversationActionsState>(
+        'returns false when the report reached no channel',
+        // #6387: `success` is true even when the relay publish and the
+        // Zendesk ticket both failed. The caller renders a
+        // "Reported {name}" snackbar off this bool, so an undelivered
+        // report must not report as reported.
+        setUp: () {
+          when(
+            () => mockReportingService.reportUser(
+              userPubkey: pubkey,
+              reason: ContentFilterReason.other,
+              details: 'Reported from DM conversation',
+            ),
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'report-id',
+              delivery: ReportDelivery.localOnly,
+            ),
+          );
+        },
+        build: createCubit,
+        act: (cubit) async {
+          final result = await cubit.reportUser(pubkey);
+          expect(result, isFalse);
+        },
+        expect: () => [
+          const ConversationActionsState(
+            status: ConversationActionsStatus.processing,
+          ),
+          const ConversationActionsState(),
+        ],
       );
 
       blocTest<ConversationActionsCubit, ConversationActionsState>(

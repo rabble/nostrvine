@@ -4919,6 +4919,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Kunde inte skicka din anmälan. Kontrollera din anslutning och försök igen.';
+
+  @override
   String get reportReceivedTitle => 'Rapport mottagen';
 
   @override

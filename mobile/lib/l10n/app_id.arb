@@ -1984,6 +1984,7 @@
             }
         }
     },
+    "reportNotSent": "Laporanmu tidak terkirim. Periksa koneksimu dan coba lagi.",
     "reportReceivedTitle": "Laporan Diterima",
     "reportReceivedThankYou": "Terima kasih sudah membantu menjaga Divine tetap aman.",
     "reportReceivedReviewNotice": "Tim kami akan meninjau laporanmu dan mengambil tindakan yang sesuai. Kamu mungkin menerima pembaruan via pesan langsung.",

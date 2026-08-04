@@ -4974,6 +4974,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Impossibile inviare la segnalazione. Controlla la connessione e riprova.';
+
+  @override
   String get reportReceivedTitle => 'Segnalazione ricevuta';
 
   @override

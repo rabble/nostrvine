@@ -1985,6 +1985,7 @@
             }
         }
     },
+    "reportNotSent": "Nie udało się wysłać zgłoszenia. Sprawdź połączenie i spróbuj ponownie.",
     "reportReceivedTitle": "Zgłoszenie odebrane",
     "reportReceivedThankYou": "Dziękujemy za pomoc w utrzymaniu Divine bezpiecznym.",
     "reportReceivedReviewNotice": "Nasz zespół przejrzy twoje zgłoszenie i podejmie odpowiednie działania. Możesz otrzymać aktualizacje przez wiadomość bezpośrednią.",

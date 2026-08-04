@@ -5058,6 +5058,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Nu s-a putut trimite raportarea. Verifică conexiunea și încearcă din nou.';
+
+  @override
   String get reportReceivedTitle => 'Raport primit';
 
   @override

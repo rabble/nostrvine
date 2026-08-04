@@ -4947,6 +4947,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Kan je melding niet versturen. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
   String get reportReceivedTitle => 'Melding ontvangen';
 
   @override

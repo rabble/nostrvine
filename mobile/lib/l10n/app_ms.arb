@@ -2756,6 +2756,7 @@
       }
     }
   },
+  "reportNotSent": "Laporan anda tidak dapat dihantar. Semak sambungan anda dan cuba lagi.",
   "reportReceivedTitle": "Laporan Diterima",
   "reportReceivedThankYou": "Terima kasih kerana membantu memastikan Divine selamat.",
   "reportReceivedReviewNotice": "Pasukan kami akan menyemak laporan anda dan mengambil tindakan yang sewajarnya. Anda mungkin menerima kemas kini melalui mesej langsung.",

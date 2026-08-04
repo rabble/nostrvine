@@ -339,12 +339,27 @@ class CommentReactionsBloc
   ) async {
     try {
       final reportingService = await _contentReportingServiceFuture;
-      await reportingService.reportContent(
+      final result = await reportingService.reportContent(
         eventId: event.commentId,
         authorPubkey: event.authorPubkey,
         reason: event.reason,
         details: event.details,
       );
+      // The result carries two separate claims and the UI needs both:
+      // `success` is false for an uninitialized service, a missing signer,
+      // or an unbuildable event, and a `success` report can still have
+      // reached no channel off this device (#6387). Neither throws, so
+      // discarding the result showed the user a silent success (#6595).
+      if (!result.success || result.delivery != ReportDelivery.reached) {
+        Log.warning(
+          'Comment report not delivered '
+          '(success=${result.success}, delivery=${result.delivery}): '
+          '${result.error ?? 'reached no channel'}',
+          name: 'CommentReactionsBloc',
+          category: LogCategory.ui,
+        );
+        emit(state.copyWith(error: ReactionsError.reportFailed));
+      }
     } catch (e, stackTrace) {
       // ContentReportingService returns a typed failure result for normal
       // domain issues; a throw escaping here is unexpected.

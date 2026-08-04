@@ -1315,6 +1315,7 @@
             }
         }
     },
+    "reportNotSent": "신고를 보내지 못했어요. 연결 상태를 확인하고 다시 시도해보세요.",
     "reportReceivedTitle": "신고 접수 완료",
     "reportReceivedThankYou": "Divine을 안전하게 지키는 데 도움을 주셔서 감사해요.",
     "reportReceivedReviewNotice": "저희 팀이 신고를 검토하고 적절한 조치를 취할 거예요. 다이렉트 메시지로 업데이트를 받을 수 있어요.",

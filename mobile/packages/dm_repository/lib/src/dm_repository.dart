@@ -21,6 +21,7 @@ import 'package:dm_repository/src/dm_sync_state.dart';
 import 'package:dm_repository/src/dm_verify_isolate.dart';
 import 'package:dm_repository/src/nip17_message_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -2837,6 +2838,7 @@ class DmRepository {
   ///   so only the missing self-wrap is retried later.
   /// - Recipient publish failure: mark both wraps `failed` and leave
   ///   the row queued for replay.
+  @useResult
   Future<NIP17SendResult> sendMessage({
     required String recipientPubkey,
     required String content,
@@ -3066,6 +3068,7 @@ class DmRepository {
         isGroup: false,
         content: content,
       );
+      return _stampQueuedRow(result, rumor.id);
     } else if (outgoingDao != null) {
       // Recipient publish hard-failed (explicit rejection / offline / error)
       // before the self-wrap could land, so both wrap statuses remain
@@ -3084,10 +3087,29 @@ class DmRepository {
         isGroup: false,
         content: content,
       );
+      return _stampQueuedRow(result, rumor.id);
     }
 
     return result;
   }
+
+  /// Tag a failure with the `outgoing_dms` row it left parked, so the caller
+  /// can re-drive that row ([recoverFullSend]) instead of calling
+  /// [sendMessage] again — a second call mints a fresh rumor and a second
+  /// durable row, and the sweep then delivers one copy while the retry
+  /// delivers another.
+  ///
+  /// Only ever called from the two branches that finalize a surviving row;
+  /// the blocked branch deletes its row and the success branch consumes it.
+  NIP17SendResult _stampQueuedRow(NIP17SendResult result, String rumorId) =>
+      switch (result) {
+        NIP17SendSuccess() => result,
+        NIP17SendFailure() => NIP17SendFailure(
+          result.error,
+          retryablePending: result.retryablePending,
+          queuedRumorId: rumorId,
+        ),
+      };
 
   /// Shares a video into a 1:1 NIP-17 DM as a kind-14 rumor that cites the
   /// video with a NIP-18 `q` tag and a NIP-21 `nostr:` URI, in addition to the
@@ -3104,6 +3126,7 @@ class DmRepository {
   /// `VideoSharingService`).
   ///
   /// Throws the same errors as [sendMessage].
+  @useResult
   Future<NIP17SendResult> sendSharedVideo({
     required String recipientPubkey,
     required String baseContent,
@@ -3163,6 +3186,7 @@ class DmRepository {
   /// back to a plain-text [sendGroupMessage].
   ///
   /// Throws the same errors as [sendGroupMessage].
+  @useResult
   Future<List<NIP17SendResult>> sendSharedVideoGroup({
     required List<String> recipientPubkeys,
     required String baseContent,
@@ -3230,6 +3254,7 @@ class DmRepository {
   /// Throws [StateError] if the repository or its queue DAO are not
   /// wired in. Throws [ArgumentError] if no row exists for [rumorId]
   /// or the row belongs to a different account.
+  @useResult
   Future<NIP17SendResult> recoverSelfWrap({required String rumorId}) async {
     _assertInitialized();
     final dao = _outgoingDmsDao;
@@ -3452,6 +3477,7 @@ class DmRepository {
   /// the shared sweep budget, and once `retry_count` reaches the sweep's
   /// `maxRetries` the sweep abandons the row permanently — an explicit user
   /// resend is the signal to hand it back with a fresh budget.
+  @useResult
   Future<NIP17SendResult> recoverFullSend({
     required String rumorId,
     bool resetRetryBudget = false,
@@ -4259,6 +4285,7 @@ class DmRepository {
   /// that inserts `direct_messages`; partial delivery → recipient
   /// `sent` + self `failed` so the recovery path can replay only the
   /// missing self-wraps without re-delivering to recipients).
+  @useResult
   Future<List<NIP17SendResult>> sendGroupMessage({
     required List<String> recipientPubkeys,
     required String content,
@@ -4791,6 +4818,7 @@ class DmRepository {
   /// Throws [StateError] if the repository has not been initialized.
   /// Throws [ArgumentError] if [recipientPubkey] is invalid or required
   /// metadata is missing.
+  @useResult
   Future<NIP17SendResult> sendFileMessage({
     required String recipientPubkey,
     required String fileUrl,

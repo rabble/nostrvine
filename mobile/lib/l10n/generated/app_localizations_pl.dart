@@ -5047,6 +5047,10 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Nie udało się wysłać zgłoszenia. Sprawdź połączenie i spróbuj ponownie.';
+
+  @override
   String get reportReceivedTitle => 'Zgłoszenie odebrane';
 
   @override

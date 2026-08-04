@@ -76,7 +76,12 @@ void main() {
         additionalContext: any(named: 'additionalContext'),
         hashtags: any(named: 'hashtags'),
       ),
-    ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
+    ).thenAnswer(
+      (_) async => ReportResult.createSuccess(
+        'test_report_id',
+        delivery: ReportDelivery.reached,
+      ),
+    );
 
     when(
       () => mockReportingService.reportUser(
@@ -86,7 +91,10 @@ void main() {
         relatedEventIds: any(named: 'relatedEventIds'),
       ),
     ).thenAnswer(
-      (_) async => ReportResult.createSuccess('test_user_report_id'),
+      (_) async => ReportResult.createSuccess(
+        'test_user_report_id',
+        delivery: ReportDelivery.reached,
+      ),
     );
   });
 
@@ -461,7 +469,12 @@ void main() {
           reason: 'Button must show loading state during submission',
         );
 
-        completer.complete(ReportResult.createSuccess('test_report_id'));
+        completer.complete(
+          ReportResult.createSuccess(
+            'test_report_id',
+            delivery: ReportDelivery.reached,
+          ),
+        );
         await tester.pumpAndSettle();
       },
     );
@@ -869,6 +882,506 @@ void main() {
     testWidgets('does not show the DM-delayed notice when the DM succeeds', (
       tester,
     ) async {
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
+    });
+
+    // #6387: sendMessage signals non-delivery by RETURNING a failure, never
+    // by throwing, so the sibling `thenThrow` test above exercises a shape
+    // production cannot produce. These pin the shapes it actually produces.
+    void stubDmResult(NIP17SendResult result) {
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).thenAnswer((_) async => result);
+    }
+
+    testWidgets('shows the DM-delayed notice when the send is blocked', (
+      tester,
+    ) async {
+      // The #176 protected-minor send gate returns before the outgoing
+      // queue row is written, so this is the one branch with no retry.
+      stubDmResult(
+        const NIP17SendResult.blocked(
+          'blocked: recipient not permitted by send policy',
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('shows the DM-delayed notice on a hard send failure', (
+      tester,
+    ) async {
+      stubDmResult(
+        const NIP17SendResult.failure('Message publish failed to relays'),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('shows the DM-delayed notice when the device is offline', (
+      tester,
+    ) async {
+      // Verbatim the value NIP17MessageService returns when its
+      // connectivity probe reports offline — the most common instance.
+      stubDmResult(
+        const NIP17SendResult.failure('Message not sent: device offline'),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('shows the DM-delayed notice when the send is unconfirmed', (
+      tester,
+    ) async {
+      // Recipient frame written but no relay OK inside the window. The
+      // durable queue re-drives it, so the notice is pessimistic rather
+      // than wrong — but silence would be a claim we cannot support.
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'Message publish timed out',
+          retryablePending: true,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+    });
+
+    testWidgets('does not confirm when the report reached no channel', (
+      tester,
+    ) async {
+      // #6387/R2: reportContent returns success even when the kind-1984
+      // publish failed on every relay AND the Zendesk ticket failed. The
+      // confirmation screen would then be false in four places at once, so
+      // the flow must surface the failure instead of confirming.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportReceivedTitle), findsNothing);
+      expect(find.text(l10n.reportNotSent), findsOneWidget);
+      // The DM still goes out: sendMessage writes a durable outgoing_dms
+      // row before any I/O, and OutgoingDmRetryService replays it on
+      // reconnect. It is the only report channel with a retry, so skipping
+      // it would make an offline report deliver less often than before.
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('handles unawaited moderation DM preflight failures', (
+      tester,
+    ) async {
+      // The localOnly path fires the moderation DM unawaited. Provider reads
+      // and DM formatting must still be inside _dispatchModerationDm's catch,
+      // otherwise a preflight error escapes to the zone handler.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
+      );
+      when(
+        () => mockModerationLabelService.divineModerationPubkeyHex,
+      ).thenThrow(StateError('moderation labels unavailable'));
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+      await tester.pump();
+
+      expect(find.text(l10n.reportNotSent), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      verifyNever(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      );
+    });
+
+    testWidgets('does not queue a second moderation DM on a repeat submit', (
+      tester,
+    ) async {
+      // Submit stays live on the undelivered path so retrying is one tap.
+      // Each tap must not stack another identical row for the sweep to
+      // deliver — the user is being invited to retry, not to spam.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(2);
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
+    });
+
+    /// Stubs `reportContent` to walk [deliveries], one per successive call,
+    /// holding the last entry once exhausted.
+    void stubReportDeliveries(List<ReportDelivery> deliveries) {
+      var call = 0;
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer((_) async {
+        final delivery = deliveries[call.clamp(0, deliveries.length - 1)];
+        call++;
+        return ReportResult.createSuccess('test_report_id', delivery: delivery);
+      });
+    }
+
+    testWidgets('re-drives the parked DM when a later submit gets through', (
+      tester,
+    ) async {
+      // #6610: the undelivered submit parks a durable outgoing_dms row for
+      // the sweep. A later submit that does reach a relay must re-drive
+      // THAT row — calling sendMessage again mints a fresh rumor and a
+      // second row, so the sweep delivers one copy of the report and the
+      // retry delivers another. Receiver-side gift-wrap dedup keys on the
+      // rumor id and cannot collapse two of them.
+      stubReportDeliveries([ReportDelivery.localOnly, ReportDelivery.reached]);
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      when(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'parked_rumor_id',
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+      expect(find.text(l10n.reportNotSent), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      // Exactly one row ever existed, and the second submit drove it.
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
+      verify(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: 'parked_rumor_id',
+          // An explicit resubmit re-arms a budget the sweep may already
+          // have spent, so coalescing can't turn a duplicate into a drop.
+          resetRetryBudget: true,
+        ),
+      ).called(1);
+      // The team got it, so the confirmation carries no delayed caveat.
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsNothing);
+    });
+
+    testWidgets(
+      'keeps the delayed caveat when recovery cannot prove delivery',
+      (tester) async {
+        // The sweep can land between two submits and delete the row, but
+        // recoverFullSend also throws ArgumentError when the user deleted the
+        // failed DM or the row belongs to another account. The dialog cannot
+        // distinguish those cases, so it must coalesce (no fresh sendMessage)
+        // without claiming this DM definitely reached moderation.
+        stubReportDeliveries([
+          ReportDelivery.localOnly,
+          ReportDelivery.reached,
+        ]);
+        stubDmResult(
+          const NIP17SendResult.failure(
+            'No relays connected',
+            queuedRumorId: 'parked_rumor_id',
+          ),
+        );
+        when(
+          () => mockDmRepository.recoverFullSend(
+            rumorId: any(named: 'rumorId'),
+            resetRetryBudget: any(named: 'resetRetryBudget'),
+          ),
+        ).thenThrow(
+          ArgumentError.value(
+            'parked_rumor_id',
+            'rumorId',
+            'no queued outgoing DM with this id',
+          ),
+        );
+
+        await setLargeSurface(tester);
+        await openAndSubmitReport(tester);
+
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+            skipNip04Fallback: any(named: 'skipNip04Fallback'),
+          ),
+        ).called(1);
+        expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+        expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+      },
+    );
+
+    testWidgets('never mints a second DM after recovery loses the row', (
+      tester,
+    ) async {
+      // Losing track of the parked row must not re-arm the fresh-send path.
+      // Submit stays live on the undelivered path, so an ambiguous
+      // ArgumentError followed by one more tap is a third dispatch — and
+      // that one has no row to re-drive. Minting a rumor there is the #6610
+      // duplicate wearing a different hat: two kind-1059 wraps, two reports
+      // to triage, and no correlator to collapse them receiver-side.
+      stubReportDeliveries([ReportDelivery.localOnly]);
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      when(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenThrow(
+        ArgumentError.value(
+          'parked_rumor_id',
+          'rumorId',
+          'no queued outgoing DM with this id',
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
+      // Coalescing spent the row, so the re-drive is not retried either.
+      verify(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: 'parked_rumor_id',
+          resetRetryBudget: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('keeps the delayed caveat when the re-drive also fails', (
+      tester,
+    ) async {
+      // Coalescing must not launder a still-undelivered DM into silence:
+      // the row survives for the sweep, but the team does not have the
+      // report yet, so the confirmation still has to say so.
+      stubReportDeliveries([ReportDelivery.localOnly, ReportDelivery.reached]);
+      stubDmResult(
+        const NIP17SendResult.failure(
+          'No relays connected',
+          queuedRumorId: 'parked_rumor_id',
+        ),
+      );
+      when(
+        () => mockDmRepository.recoverFullSend(
+          rumorId: any(named: 'rumorId'),
+          resetRetryBudget: any(named: 'resetRetryBudget'),
+        ),
+      ).thenAnswer((_) async => const NIP17SendResult.failure('Still offline'));
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
+      expect(find.text(l10n.reportModerationDmDelayed), findsOneWidget);
+      verify(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('leaves the report resubmittable after it reached no channel', (
+      tester,
+    ) async {
+      // Leaving Submit live is the whole reason this branch shows an inline
+      // error instead of the confirmation, so pin it: a second tap must
+      // reach the service again. That also proves the reason selection
+      // survived, since _handleSubmitReport short-circuits to
+      // reportSelectReason when _selectedReason is null.
+      when(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).thenAnswer(
+        (_) async => ReportResult.createSuccess(
+          'test_report_id',
+          delivery: ReportDelivery.localOnly,
+        ),
+      );
+
+      await setLargeSurface(tester);
+      await openAndSubmitReport(tester);
+
+      expect(find.text(l10n.reportNotSent), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.reportSelectReason), findsNothing);
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          sourceRelay: any(named: 'sourceRelay'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(2);
+    });
+
+    testWidgets('stays silent when only the sender self-wrap failed', (
+      tester,
+    ) async {
+      // The moderation team DID receive the report; only the sender's own
+      // cross-device copy is missing. Claiming we couldn't reach the team
+      // would be false, so this must NOT show the notice.
+      stubDmResult(
+        NIP17SendResult.success(
+          rumorEventId: 'dm_rumor_id',
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.fallbackModerationPubkeyHex,
+          selfWrapPublished: false,
+        ),
+      );
+
       await setLargeSurface(tester);
       await openAndSubmitReport(tester);
 

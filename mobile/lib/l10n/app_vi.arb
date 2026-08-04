@@ -2756,6 +2756,7 @@
       }
     }
   },
+  "reportNotSent": "Không gửi được báo cáo của bạn. Kiểm tra kết nối của bạn rồi thử lại nhé.",
   "reportReceivedTitle": "Đã nhận báo cáo",
   "reportReceivedThankYou": "Cảm ơn bạn đã giúp giữ Divine an toàn.",
   "reportReceivedReviewNotice": "Đội ngũ của bọn mình sẽ xem xét báo cáo của bạn và có hành động phù hợp. Bạn có thể nhận được cập nhật qua tin nhắn trực tiếp.",

@@ -4930,6 +4930,10 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Không gửi được báo cáo của bạn. Kiểm tra kết nối của bạn rồi thử lại nhé.';
+
+  @override
   String get reportReceivedTitle => 'Đã nhận báo cáo';
 
   @override

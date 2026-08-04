@@ -4818,6 +4818,9 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent => 'ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።';
+
+  @override
   String get reportReceivedTitle => 'ሪፖርት ደርሷል';
 
   @override

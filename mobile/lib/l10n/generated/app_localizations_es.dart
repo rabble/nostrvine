@@ -4968,6 +4968,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'No se pudo enviar tu reporte. Verificá tu conexión e intentá de nuevo.';
+
+  @override
   String get reportReceivedTitle => 'Reporte recibido';
 
   @override

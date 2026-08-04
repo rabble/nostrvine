@@ -334,7 +334,12 @@ void main() {
               reason: any(named: 'reason'),
               details: any(named: 'details'),
             ),
-          ).thenAnswer((_) async => ReportResult.createSuccess('rid'));
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'rid',
+              delivery: ReportDelivery.reached,
+            ),
+          );
         },
         build: createBloc,
         act: (b) => b.add(
@@ -378,6 +383,73 @@ void main() {
           ),
         ),
         errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.error,
+            'error',
+            ReactionsError.reportFailed,
+          ),
+        ],
+      );
+
+      // #6595: the sibling test above stubs a throw, which the handler
+      // already caught before the fix — so it passed either way. These two
+      // stub the shapes reportContent actually produces: a RETURNED failure
+      // and a success that reached no channel. Both showed nothing.
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'emits reportFailed when reporting returns a failure',
+        setUp: () {
+          when(
+            () => mockContentReportingService.reportContent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              reason: any(named: 'reason'),
+              details: any(named: 'details'),
+            ),
+          ).thenAnswer((_) async => ReportResult.failure('Not authenticated'));
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentReportRequested(
+            commentId: validId('c1'),
+            authorPubkey: validId('a1'),
+            reason: ContentFilterReason.spam,
+          ),
+        ),
+        expect: () => [
+          isA<CommentReactionsState>().having(
+            (s) => s.error,
+            'error',
+            ReactionsError.reportFailed,
+          ),
+        ],
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'emits reportFailed when the report reached no channel',
+        setUp: () {
+          when(
+            () => mockContentReportingService.reportContent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              reason: any(named: 'reason'),
+              details: any(named: 'details'),
+            ),
+          ).thenAnswer(
+            (_) async => ReportResult.createSuccess(
+              'rid',
+              delivery: ReportDelivery.localOnly,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (b) => b.add(
+          CommentReportRequested(
+            commentId: validId('c1'),
+            authorPubkey: validId('a1'),
+            reason: ContentFilterReason.spam,
+          ),
+        ),
         expect: () => [
           isA<CommentReactionsState>().having(
             (s) => s.error,

@@ -2374,6 +2374,7 @@
             }
         }
     },
+    "reportNotSent": "ሪፖርትዎን መላክ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
     "reportReceivedTitle": "ሪፖርት ደርሷል",
     "reportReceivedThankYou": "Divine ደህንነትን ለመጠበቅ ስለረዱዎት እናመሰግናለን።",
     "reportReceivedReviewNotice": "ቡድናችን የእርስዎን ሪፖርት ተመልክቶ ተገቢውን እርምጃ ይወስዳል። ዝማኔዎችን በቀጥታ መልእክት ሊቀበሉ ይችላሉ።",

@@ -1989,6 +1989,7 @@
             }
         }
     },
+    "reportNotSent": "No se pudo enviar tu reporte. Verificá tu conexión e intentá de nuevo.",
     "reportReceivedTitle": "Reporte recibido",
     "reportReceivedThankYou": "Gracias por ayudar a mantener Divine seguro.",
     "reportReceivedReviewNotice": "Nuestro equipo va a revisar tu reporte y tomar las medidas necesarias. Quizás recibas novedades por mensaje directo.",

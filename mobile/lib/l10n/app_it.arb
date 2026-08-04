@@ -1985,6 +1985,7 @@
             }
         }
     },
+    "reportNotSent": "Impossibile inviare la segnalazione. Controlla la connessione e riprova.",
     "reportReceivedTitle": "Segnalazione ricevuta",
     "reportReceivedThankYou": "Grazie per aiutarci a mantenere Divine sicuro.",
     "reportReceivedReviewNotice": "Il nostro team esaminerà la tua segnalazione e prenderà i provvedimenti del caso. Potresti ricevere aggiornamenti tramite messaggio diretto.",

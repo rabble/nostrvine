@@ -987,10 +987,18 @@ class _MessagesScrollViewState extends ConsumerState<_MessagesScrollView>
 
         case ConversationAction.report:
           final reported = await actionsCubit.reportUser(otherPubkey);
-          if (context.mounted && reported) {
+          if (context.mounted) {
+            // `reported` is false when the report reached no channel off
+            // this device. Staying silent there would be worse than the
+            // false confirmation it replaced — the user would have no way
+            // to tell the report was lost.
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(context.l10n.inboxReportedUser(displayName)),
+                content: Text(
+                  reported
+                      ? context.l10n.inboxReportedUser(displayName)
+                      : context.l10n.reportNotSent,
+                ),
               ),
             );
           }

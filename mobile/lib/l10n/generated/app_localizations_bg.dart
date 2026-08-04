@@ -4973,6 +4973,10 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Не успяхме да изпратим сигнала ти. Провери връзката си и опитай пак.';
+
+  @override
   String get reportReceivedTitle => 'Докладът е получен';
 
   @override

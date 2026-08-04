@@ -4896,6 +4896,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Bildirimin gönderilemedi. Bağlantını kontrol et ve tekrar dene.';
+
+  @override
   String get reportReceivedTitle => 'Bildirim Alındı';
 
   @override

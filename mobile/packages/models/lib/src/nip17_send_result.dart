@@ -68,9 +68,13 @@ sealed class NIP17SendResult {
   /// actual delivery, so reaction callers keep such a send in a retryable
   /// pending state rather than flipping it to a hard failure. Defaults to
   /// `false` (a confirmed rejection or error).
+  ///
+  /// [queuedRumorId] is the durable `outgoing_dms` row the send left behind
+  /// for the retry sweep — see [NIP17SendResult.queuedRumorId].
   const factory NIP17SendResult.failure(
     String error, {
     bool retryablePending,
+    String? queuedRumorId,
   }) = NIP17SendFailure;
 
   /// Build a policy-block result (protected-minor DM restriction, #176). Unlike
@@ -93,6 +97,20 @@ sealed class NIP17SendResult {
   /// failures. Reaction callers keep a `retryablePending` send in a pending,
   /// sweep-retryable state instead of marking it failed.
   bool get retryablePending => false;
+
+  /// The `outgoing_dms` row this send left parked for the retry sweep, when
+  /// it enqueued one before failing.
+  ///
+  /// A caller that wants to try the same message again must re-drive **this**
+  /// row (`DmRepository.recoverFullSend`) rather than calling `sendMessage`
+  /// again: a second call mints a fresh rumor and a second durable row, so
+  /// the sweep and the retry each deliver a copy. Receiver-side gift-wrap
+  /// dedup keys on the rumor id and cannot collapse two of them.
+  ///
+  /// `null` when there is no row to coalesce onto — always on success (the
+  /// row is consumed), on a [blocked] result (the send gate returns before
+  /// the enqueue), and whenever the queue DAO is not wired in.
+  String? get queuedRumorId => null;
 
   /// The rumor event ID (kind 14/15) — the canonical message
   /// identifier. Use this as the primary key when persisting sent
@@ -191,13 +209,20 @@ final class NIP17SendSuccess extends NIP17SendResult {
 /// the recipient at all. Self-wrap is not attempted on this branch.
 @immutable
 final class NIP17SendFailure extends NIP17SendResult {
-  const NIP17SendFailure(this.error, {this.retryablePending = false})
-    : blocked = false;
+  const NIP17SendFailure(
+    this.error, {
+    this.retryablePending = false,
+    this.queuedRumorId,
+  }) : blocked = false;
 
   /// A policy block (#176): same non-delivery as a failure, but not retriable.
+  ///
+  /// Never carries a [queuedRumorId]: the send gate returns before the
+  /// enqueue, so a block leaves no row behind to coalesce onto.
   const NIP17SendFailure.blocked(this.error)
     : blocked = true,
-      retryablePending = false;
+      retryablePending = false,
+      queuedRumorId = null;
 
   @override
   final String error;
@@ -207,6 +232,9 @@ final class NIP17SendFailure extends NIP17SendResult {
 
   @override
   final bool retryablePending;
+
+  @override
+  final String? queuedRumorId;
 
   @override
   String? get rumorEventId => null;
@@ -229,14 +257,17 @@ final class NIP17SendFailure extends NIP17SendResult {
     return other is NIP17SendFailure &&
         other.error == error &&
         other.blocked == blocked &&
-        other.retryablePending == retryablePending;
+        other.retryablePending == retryablePending &&
+        other.queuedRumorId == queuedRumorId;
   }
 
   @override
-  int get hashCode => Object.hash(error, blocked, retryablePending);
+  int get hashCode =>
+      Object.hash(error, blocked, retryablePending, queuedRumorId);
 
   @override
   String toString() =>
       'NIP17SendFailure(error: $error, blocked: $blocked, '
-      'retryablePending: $retryablePending)';
+      'retryablePending: $retryablePending, '
+      'queuedRumorId: $queuedRumorId)';
 }

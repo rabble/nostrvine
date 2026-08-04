@@ -1985,6 +1985,7 @@
             }
         }
     },
+    "reportNotSent": "Kan je melding niet versturen. Controleer je verbinding en probeer het opnieuw.",
     "reportReceivedTitle": "Melding ontvangen",
     "reportReceivedThankYou": "Bedankt dat je helpt Divine veilig te houden.",
     "reportReceivedReviewNotice": "Ons team bekijkt je melding en onderneemt passende actie. Je kunt updates ontvangen via directe berichten.",

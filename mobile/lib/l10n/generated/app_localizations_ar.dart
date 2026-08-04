@@ -4881,6 +4881,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'تعذّر إرسال بلاغك. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
   String get reportReceivedTitle => 'تم استلام البلاغ';
 
   @override

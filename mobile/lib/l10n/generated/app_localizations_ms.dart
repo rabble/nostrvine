@@ -4964,6 +4964,10 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Laporan anda tidak dapat dihantar. Semak sambungan anda dan cuba lagi.';
+
+  @override
   String get reportReceivedTitle => 'Laporan Diterima';
 
   @override

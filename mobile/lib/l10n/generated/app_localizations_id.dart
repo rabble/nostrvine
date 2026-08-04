@@ -4886,6 +4886,10 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get reportNotSent =>
+      'Laporanmu tidak terkirim. Periksa koneksimu dan coba lagi.';
+
+  @override
   String get reportReceivedTitle => 'Laporan Diterima';
 
   @override

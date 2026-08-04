@@ -2776,6 +2776,10 @@
       }
     }
   },
+  "reportNotSent": "Couldn't send your report. Check your connection and try again.",
+  "@reportNotSent": {
+    "description": "Shown when a submitted report reached no channel off the device — every publish target refused it, which in practice almost always means no connectivity. Covers both content and user reports, so it must not name either subject."
+  },
   "reportReceivedTitle": "Report Received",
   "reportReceivedThankYou": "Thank you for helping keep Divine safe.",
   "reportReceivedReviewNotice": "Our team will review your report and take appropriate action. You may receive updates via direct message.",
