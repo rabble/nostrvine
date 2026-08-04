@@ -124,6 +124,11 @@ class RelayPool {
   /// a removed or replaced relay is not retained by the bookkeeping.
   final Expando<bool> _statusObserved = Expando<bool>('relayStatusObserved');
 
+  /// When each one-shot query's REQ fan-out started, so an abandoned query can
+  /// ask [Relay.isSilentSince] whether a relay that never answered had gone
+  /// quiet altogether. Dropped when the query settles or is unsubscribed.
+  final Map<String, DateTime> _querySentAt = {};
+
   /// Track publishes awaiting OK confirmations (per event id).
   final Map<String, PublishTracker> _pendingPublishes = {};
 
@@ -706,6 +711,7 @@ class RelayPool {
     }
 
     _queryCompleteCallbacks.remove(subId);
+    _querySentAt.remove(subId);
     callback();
   }
 
@@ -729,6 +735,11 @@ class RelayPool {
     // A dropped socket cannot deliver the terminal frame for a REQ that was
     // written to it; the reconnect path re-issues the REQ on a fresh socket.
     if (relay.relayStatus.connected != ClientConnected.connected) return false;
+
+    // A connection being force-cycled as a zombie reports `connected`
+    // throughout, so it would otherwise keep charging concurrent queries the
+    // full timeout for the whole repair.
+    if (_silentRelayRepairsInFlight.contains(relay.url)) return false;
 
     // Behind an auth gate the replay only happens if NIP-42 completes, so wait
     // only while a handshake is actually outstanding. Without one — signing
@@ -757,6 +768,32 @@ class RelayPool {
       previous?.call();
       _settleQueriesBlockedBy(relay);
     };
+  }
+
+  /// Force-cycles the relays that never produced a terminal frame for the
+  /// abandoned query [subId].
+  ///
+  /// A caller only abandons a query by timing out, so any relay still holding
+  /// it demonstrably did not answer. When that same connection also received no
+  /// inbound frame of any kind since the REQ was written, it is the half-open
+  /// zombie [_repairSilentRelays] already remediates on the publish side — a
+  /// socket that still reports `connected` to every health gate while silently
+  /// swallowing everything written to it. Without this, queries never trigger
+  /// that repair, so a zombie keeps charging every subsequent query the full
+  /// timeout until something else happens to cycle the connection.
+  void _repairRelaysThatNeverAnswered(String subId) {
+    final sentAt = _querySentAt.remove(subId);
+    if (sentAt == null) return;
+    final silent = [
+      for (final relay in [
+        ..._relaysSnapshot(),
+        ..._tempRelaysSnapshot(),
+        ..._cacheRelaysSnapshot(),
+      ])
+        if (relay.checkQuery(subId)) relay.url,
+    ];
+    if (silent.isEmpty) return;
+    _repairSilentRelays(silent, sentAt);
   }
 
   /// Releases the one-shot queries [relay] is parked on once it can no longer
@@ -1395,6 +1432,7 @@ class RelayPool {
       // never-fired callback in [_queryCompleteCallbacks].
       _queryCompleteCallbacks.remove(id);
       _queryFanoutInProgress.remove(id);
+      _repairRelaysThatNeverAnswered(id);
 
       // check query and send close
       var it = _relaysSnapshot();
@@ -1474,6 +1512,7 @@ class RelayPool {
     if (onComplete != null) {
       _queryCompleteCallbacks[subscription.id] = onComplete;
       _queryFanoutInProgress.add(subscription.id);
+      _querySentAt[subscription.id] = DateTime.now();
     }
 
     // Collect futures so we can await them before the early-completion
