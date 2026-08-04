@@ -36,7 +36,9 @@ class SavedVideosScreen extends ConsumerWidget {
         backgroundColor: context.vineColors.surfaceContainerHigh,
         title: Text(
           context.l10n.shareMenuBookmarks,
-          style: VineTheme.titleMediumFont(),
+          style: VineTheme.titleMediumFont(
+            color: context.vineColors.onNav,
+          ),
         ),
       ),
       body: BlocProvider<ProfileSavedVideosBloc>(

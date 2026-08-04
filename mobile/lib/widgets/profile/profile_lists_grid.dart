@@ -119,7 +119,9 @@ class _BookmarksEntry extends StatelessWidget {
               Expanded(
                 child: Text(
                   context.l10n.shareMenuBookmarks,
-                  style: VineTheme.titleSmallFont(),
+                  style: VineTheme.titleSmallFont(
+                    color: context.vineColors.primaryText,
+                  ),
                 ),
               ),
               DivineIcon(
