@@ -12185,13 +12185,13 @@ abstract class AppLocalizations {
   /// **'To confirm, type your username:'**
   String get deleteAccountConfirmUsernamePrompt;
 
-  /// No description provided for @deleteAccountConfirmationHint.
+  /// Label on the delete-confirmation field when the user must type the DELETE token. Shown inside the field when empty and floating above it once focused, so it stays visible while typing.
   ///
   /// In en, this message translates to:
   /// **'Type DELETE'**
   String get deleteAccountConfirmationHint;
 
-  /// Hint text in the delete-confirmation field when the user must type their username.
+  /// Label on the delete-confirmation field when the user must type their username. Shown inside the field when empty and floating above it once focused, so it stays visible while typing.
   ///
   /// In en, this message translates to:
   /// **'Type your username'**

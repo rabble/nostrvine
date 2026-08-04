@@ -25,7 +25,6 @@ lib/utils/pause_aware_modals.dart	2
 lib/widgets/add_to_list_dialog.dart	1
 lib/widgets/age_verification_dialog.dart	1
 lib/widgets/composable_video_grid.dart	2
-lib/widgets/delete_account_dialog.dart	3
 lib/widgets/find_people_sheet.dart	1
 lib/widgets/for_you_tab.dart	1
 lib/widgets/library/drafts_tab.dart	1

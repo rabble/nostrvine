@@ -1,5 +1,5 @@
-// ABOUTME: Dialog widgets for account deletion flow
-// ABOUTME: Warning dialogs for key removal and content deletion with confirmation
+// ABOUTME: Account deletion flow: confirmation sheets, progress sheet, orchestration
+// ABOUTME: Warning sheets for key removal and content deletion with confirmation
 
 import 'dart:async';
 
@@ -20,70 +20,39 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Show warning dialog for removing keys from device only
-Future<void> showRemoveKeysWarningDialog({
-  required BuildContext context,
-  required FutureOr<void> Function() onConfirm,
-}) {
-  return showDialog(
+/// Ask whether to remove this account's keys from the device only.
+///
+/// Returns true when the user confirmed. Dismissing the sheet — barrier tap
+/// or swipe — counts as cancelling, so backing out is never destructive.
+Future<bool> showRemoveKeysWarningSheet(BuildContext context) async {
+  final confirmed = await VineBottomSheetPrompt.show<bool>(
     context: context,
-    barrierDismissible: false,
-    builder: (context) => AlertDialog(
-      backgroundColor: context.vineColors.card,
-      title: Text(
-        context.l10n.deleteAccountRemoveKeysTitle,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: Text(
-        context.l10n.deleteAccountRemoveKeysBody,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontSize: 16,
-          height: 1.5,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            context.l10n.commonCancel,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 16),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            unawaited(Future<void>.sync(onConfirm));
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.warning,
-            foregroundColor: VineTheme.whiteText,
-          ),
-          child: Text(
-            context.l10n.deleteAccountRemoveKeysConfirm,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
-    ),
+    sticker: DivineStickerName.skeletonKey,
+    title: context.l10n.deleteAccountRemoveKeysTitle,
+    subtitle: context.l10n.deleteAccountRemoveKeysBody,
+    primaryButtonText: context.l10n.deleteAccountRemoveKeysConfirm,
+    primaryButtonType: DivineButtonType.error,
+    onPrimaryPressed: () => Navigator.of(context).pop(true),
+    secondaryButtonText: context.l10n.commonCancel,
+    onSecondaryPressed: () => Navigator.of(context).pop(false),
   );
+  return confirmed ?? false;
 }
 
-/// Show confirmation dialog before deleting all content (requires typing
+/// Show the confirmation sheet before deleting all content (requires typing
 /// DELETE).
 ///
-/// This dialog ensures they understand the dangerous/irreversible nature of
-/// account deletion. The dialog opens immediately; [ownedUsernameFuture] is
+/// This sheet ensures they understand the dangerous/irreversible nature of
+/// account deletion. It opens immediately; [ownedUsernameFuture] is
 /// resolved in the background and the opt-in "burn my username" toggle is
 /// revealed only once it completes with a non-null handle — so a slow
 /// name-server lookup never blocks the tap or lets a second tap stack a
-/// duplicate dialog. [onConfirm] receives the handle the dialog actually
+/// duplicate sheet. [onConfirm] receives the handle the sheet actually
 /// displayed, so a burn only ever targets the name the user consented to.
-Future<void> showDeleteAllContentWarningDialog({
+///
+/// Dismissing the sheet cancels: nothing is deleted until the token is typed
+/// and the destructive button is tapped.
+Future<void> showDeleteAllContentWarningSheet({
   required BuildContext context,
   required DeleteAccountConfirmation confirmation,
   required void Function({
@@ -92,23 +61,102 @@ Future<void> showDeleteAllContentWarningDialog({
   })
   onConfirm,
   required Future<({String name, String canonical})?> ownedUsernameFuture,
-}) {
-  return showDialog<void>(
+}) async {
+  // The form and the pinned footer are sibling slots of the sheet rather than
+  // one subtree, so the footer learns about the typed token through this
+  // notifier and reaches the form's state through the key. The controllers
+  // themselves stay inside the form's State, which is what disposes them —
+  // the exit animation still rebuilds the field after this future completes.
+  // The notifier is safe to dispose here despite that: its only writer is the
+  // field's onChanged, and the text input connection is already closed by the
+  // time the route pops.
+  final canConfirm = ValueNotifier<bool>(false);
+  final formKey = GlobalKey<_DeleteAllContentFormState>();
+
+  await VineBottomSheet.show<void>(
     context: context,
-    barrierDismissible: false,
-    builder: (context) => _DeleteAllContentDialog(
+    initialChildSize: 0.85,
+    minChildSize: 0.5,
+    maxChildSize: 0.95,
+    // Error-coloured deliberately: this is the last gate before an
+    // irreversible delete, and the red title is the destructive-action signal
+    // the pre-sheet dialog carried. Reuses the header's own size and weight so
+    // only the colour differs from the sheet default.
+    title: Text(
+      context.l10n.deleteAccountFinalConfirmationTitle,
+      style: VineTheme.titleMediumFont(color: VineTheme.error),
+    ),
+    bottomInput: _DeleteAllContentActions(
+      canConfirm: canConfirm,
+      onConfirm: () => formKey.currentState?.confirm(),
+    ),
+    buildScrollBody: (scrollController) => _DeleteAllContentForm(
+      key: formKey,
       confirmation: confirmation,
       ownedUsernameFuture: ownedUsernameFuture,
       onConfirm: onConfirm,
+      canConfirm: canConfirm,
+      scrollController: scrollController,
     ),
   );
+
+  canConfirm.dispose();
 }
 
-class _DeleteAllContentDialog extends StatefulWidget {
-  const _DeleteAllContentDialog({
+/// Pinned footer of the delete sheet: cancel plus the destructive action.
+class _DeleteAllContentActions extends StatelessWidget {
+  const _DeleteAllContentActions({
+    required this.canConfirm,
+    required this.onConfirm,
+  });
+
+  final ValueNotifier<bool> canConfirm;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        spacing: 12,
+        children: [
+          Expanded(
+            child: DivineButton(
+              label: l10n.commonCancel,
+              type: DivineButtonType.secondary,
+              onPressed: context.pop,
+            ),
+          ),
+          Expanded(
+            child: ValueListenableBuilder<bool>(
+              valueListenable: canConfirm,
+              builder: (context, enabled, _) => DivineButton(
+                label: l10n.deleteAccountDeleteAllContentButton,
+                type: DivineButtonType.error,
+                onPressed: enabled ? onConfirm : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Scrollable body of the delete sheet.
+///
+/// [scrollController] comes from the sheet's `DraggableScrollableSheet`, so
+/// dragging the form down collapses and dismisses the sheet.
+class _DeleteAllContentForm extends StatefulWidget {
+  const _DeleteAllContentForm({
     required this.confirmation,
     required this.ownedUsernameFuture,
     required this.onConfirm,
+    required this.canConfirm,
+    required this.scrollController,
+    super.key,
   });
 
   final DeleteAccountConfirmation confirmation;
@@ -119,12 +167,15 @@ class _DeleteAllContentDialog extends StatefulWidget {
   })
   onConfirm;
 
+  /// Mirrors "the typed token matches" out to the pinned footer.
+  final ValueNotifier<bool> canConfirm;
+  final ScrollController scrollController;
+
   @override
-  State<_DeleteAllContentDialog> createState() =>
-      _DeleteAllContentDialogState();
+  State<_DeleteAllContentForm> createState() => _DeleteAllContentFormState();
 }
 
-class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
+class _DeleteAllContentFormState extends State<_DeleteAllContentForm> {
   final _confirmationController = TextEditingController();
   var _burnUsername = false;
   ({String name, String canonical})? _ownedUsername;
@@ -151,89 +202,86 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
     super.dispose();
   }
 
+  /// Closes the sheet and hands the consented values to the caller.
+  ///
+  /// Called by the footer through the form's key, since the two are sibling
+  /// slots of the sheet.
+  void confirm() {
+    // Re-derived from the controller rather than trusting the footer's
+    // notifier, which only gates the button's enabled state.
+    if (!widget.confirmation.matches(_confirmationController.text)) return;
+    context.pop();
+    widget.onConfirm(
+      burnUsername: _burnUsername,
+      ownedUsername: _ownedUsername,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final owned = _ownedUsername;
     final c = widget.confirmation;
-    final canConfirm = c.matches(_confirmationController.text);
-    return AlertDialog(
-      backgroundColor: context.vineColors.card,
-      scrollable: true,
-      title: Text(
-        context.l10n.deleteAccountFinalConfirmationTitle,
-        style: const TextStyle(
-          color: VineTheme.error,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: Column(
+
+    return SingleChildScrollView(
+      controller: widget.scrollController,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 16,
         children: [
           _DeleteIdentityHeader(confirmation: c),
-          const SizedBox(height: 16),
           Text(
-            context.l10n.deleteAccountWarningBody,
-            style: TextStyle(
-              color: context.vineColors.primaryText,
-              fontSize: 16,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            c.isUsernameConfirmation
-                ? context.l10n.deleteAccountConfirmUsernamePrompt
-                : context.l10n.deleteAccountConfirmDeletePrompt,
+            l10n.deleteAccountWarningBody,
             style: VineTheme.bodyLargeFont(
               color: context.vineColors.primaryText,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            c.requiredToken,
-            style: const TextStyle(
-              color: VineTheme.error,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'monospace',
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
+            children: [
+              Text(
+                c.isUsernameConfirmation
+                    ? l10n.deleteAccountConfirmUsernamePrompt
+                    : l10n.deleteAccountConfirmDeletePrompt,
+                style: VineTheme.bodyLargeFont(
+                  color: context.vineColors.primaryText,
+                ),
+              ),
+              // Monospaced so the token reads as something to copy verbatim.
+              Text(
+                c.requiredToken,
+                style: VineTheme.titleMediumFont(
+                  color: VineTheme.error,
+                ).copyWith(fontFamily: 'monospace'),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          TextField(
+          DivineTextField(
             controller: _confirmationController,
-            style: TextStyle(color: context.vineColors.primaryText),
+            labelText: c.isUsernameConfirmation
+                ? l10n.deleteAccountConfirmationHintUsername
+                : l10n.deleteAccountConfirmationHint,
+            filled: true,
             autocorrect: false,
             textCapitalization: c.isUsernameConfirmation
                 ? TextCapitalization.none
                 : TextCapitalization.characters,
-            decoration: InputDecoration(
-              hintText: c.isUsernameConfirmation
-                  ? context.l10n.deleteAccountConfirmationHintUsername
-                  : context.l10n.deleteAccountConfirmationHint,
-              hintStyle: TextStyle(color: context.vineColors.mutedText),
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(color: context.vineColors.card),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.error),
-              ),
-            ),
-            onChanged: (_) => setState(() {}),
+            onChanged: (value) => widget.canConfirm.value = c.matches(value),
           ),
-          if (owned != null) ...[
-            const SizedBox(height: 16),
-            CheckboxListTile(
-              value: _burnUsername,
-              onChanged: (value) =>
-                  setState(() => _burnUsername = value ?? false),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-              activeColor: VineTheme.error,
-              checkColor: VineTheme.whiteText,
-              title: Text(
-                context.l10n.deleteAccountBurnUsernameToggle(
+          // Row rather than the ListTile-based DivineCheckboxTile: the sheet
+          // paints its surface with a ColoredBox, which a ListTile's ink and
+          // background cannot draw through.
+          if (owned != null)
+            DivineRowCheckbox(
+              state: _burnUsername
+                  ? DivineCheckboxState.selected
+                  : DivineCheckboxState.unselected,
+              onChanged: (value) => setState(() => _burnUsername = value),
+              label: Text(
+                l10n.deleteAccountBurnUsernameToggle(
                   '@${owned.name}.divine.video',
                 ),
                 style: VineTheme.bodyMediumFont(
@@ -241,45 +289,13 @@ class _DeleteAllContentDialogState extends State<_DeleteAllContentDialog> {
                 ),
               ),
             ),
-          ],
         ],
       ),
-      actionsAlignment: MainAxisAlignment.spaceBetween,
-      actions: [
-        TextButton(
-          onPressed: context.pop,
-          child: Text(
-            context.l10n.commonCancel,
-            style: TextStyle(color: context.vineColors.mutedText, fontSize: 16),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: canConfirm
-              ? () {
-                  context.pop();
-                  widget.onConfirm(
-                    burnUsername: _burnUsername,
-                    ownedUsername: _ownedUsername,
-                  );
-                }
-              : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.error,
-            foregroundColor: VineTheme.whiteText,
-            disabledBackgroundColor: context.vineColors.card,
-            disabledForegroundColor: context.vineColors.mutedText,
-          ),
-          child: Text(
-            context.l10n.deleteAccountDeleteAllContentButton,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
     );
   }
 }
 
-/// Identity block (avatar + name + handle/npub) for the delete dialog.
+/// Identity block (avatar + name + handle/npub) for the delete sheet.
 class _DeleteIdentityHeader extends StatelessWidget {
   const _DeleteIdentityHeader({required this.confirmation});
 
@@ -330,77 +346,65 @@ class _DeleteIdentityHeader extends StatelessWidget {
   }
 }
 
-/// Progress dialog that shows deletion progress using BLoC pattern.
-class _DeletionProgressDialog extends StatelessWidget {
-  const _DeletionProgressDialog();
+/// Progress sheet content that shows deletion progress using BLoC pattern.
+class _DeletionProgressSheetContent extends StatelessWidget {
+  const _DeletionProgressSheetContent();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Card(
-        color: context.vineColors.card,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child:
-              BlocBuilder<
-                AccountDeletionProgressCubit,
-                AccountDeletionProgressState
-              >(
-                builder: (context, state) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: switch (state) {
-                      AccountDeletionProgressUpdating(
-                        :final current,
-                        :final total,
-                      ) =>
-                        [
-                          CircularProgressIndicator(
-                            value: current / total,
-                            color: VineTheme.vineGreen,
-                            backgroundColor: context.vineColors.card,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            context.l10n.videoGridDeletingContent,
-                            style: TextStyle(
-                              color: context.vineColors.primaryText,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            context.l10n.deleteAccountProgressEvents(
-                              current,
-                              total,
-                            ),
-                            style: TextStyle(
-                              color: context.vineColors.secondaryText,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      AccountDeletionProgressPreparing() => [
-                        const CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      child:
+          BlocBuilder<
+            AccountDeletionProgressCubit,
+            AccountDeletionProgressState
+          >(
+            builder: (context, state) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: switch (state) {
+                  AccountDeletionProgressUpdating(
+                    :final current,
+                    :final total,
+                  ) =>
+                    [
+                      CircularProgressIndicator(
+                        value: current / total,
+                        color: VineTheme.vineGreen,
+                        backgroundColor: context.vineColors.card,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        context.l10n.videoGridDeletingContent,
+                        style: VineTheme.bodyLargeFont(
+                          color: context.vineColors.primaryText,
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          context.l10n.deleteAccountPreparingDeletion,
-                          style: TextStyle(
-                            color: context.vineColors.primaryText,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.l10n.deleteAccountProgressEvents(
+                          current,
+                          total,
                         ),
-                      ],
-                    },
-                  );
+                        style: VineTheme.bodyMediumFont(
+                          color: context.vineColors.secondaryText,
+                        ),
+                      ),
+                    ],
+                  AccountDeletionProgressPreparing() => [
+                    const CircularProgressIndicator(color: VineTheme.vineGreen),
+                    const SizedBox(height: 16),
+                    Text(
+                      context.l10n.deleteAccountPreparingDeletion,
+                      style: VineTheme.bodyLargeFont(
+                        color: context.vineColors.primaryText,
+                      ),
+                    ),
+                  ],
                 },
-              ),
-        ),
-      ),
+              );
+            },
+          ),
     );
   }
 }
@@ -420,7 +424,7 @@ class _DeletionProgressDialog extends StatelessWidget {
 /// Aborts before any step (including the burn) when [confirmedPubkey] is set and
 /// no longer matches the signed-in account.
 ///
-/// [context] - BuildContext for showing dialogs
+/// [context] - BuildContext for showing sheets
 /// [deletionService] - Service to execute NIP-62 deletion
 /// [authService] - Service for Keycast deletion and sign out
 /// [profileRepository] - Burns the username / re-checks ownership when
@@ -443,26 +447,39 @@ Future<void> executeAccountDeletion({
   // Create cubit for tracking progress
   final cubit = AccountDeletionProgressCubit();
 
-  // Show progress dialog with BlocProvider
+  // Show progress sheet with BlocProvider
   if (!context.mounted) return;
   unawaited(
-    showDialog<void>(
+    VineBottomSheet.show<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => BlocProvider.value(
-        value: cubit,
-        child: const _DeletionProgressDialog(),
-      ),
+      scrollable: false,
+      showHeader: false,
+      showDragHandle: false,
+      isDismissible: false,
+      enableDrag: false,
+      tapOutsideToDismiss: false,
+      // Pinned rather than left at VineBottomSheet's local-navigator default:
+      // this blocks the UI through an irreversible delete, so it has to cover
+      // shell chrome too. Both callers are root-level routes today, so it
+      // changes nothing now — it keeps a future shell-nested caller from
+      // leaving the bottom nav tappable mid-deletion.
+      useRootNavigator: true,
+      body: const _DeletionProgressSheetContent(),
+      contentWrapper: (_, child) =>
+          BlocProvider.value(value: cubit, child: child),
     ),
   );
 
-  // Track if dialog was dismissed to avoid double-popping
-  var dialogDismissed = false;
+  // Track if the progress sheet was dismissed to avoid double-popping.
+  var progressSheetDismissed = false;
 
-  void dismissDialog() {
-    if (!dialogDismissed && context.mounted) {
-      dialogDismissed = true;
-      context.pop();
+  void dismissProgressSheet() {
+    if (!progressSheetDismissed && context.mounted) {
+      progressSheetDismissed = true;
+      // Targets the navigator the sheet was pushed onto. `context.pop()` would
+      // resolve to the innermost navigator instead, which for a shell-nested
+      // caller is not the one holding this sheet.
+      Navigator.of(context, rootNavigator: true).pop();
     }
   }
 
@@ -507,7 +524,7 @@ Future<void> executeAccountDeletion({
         name: screenName,
         category: LogCategory.auth,
       );
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           DivineSnackbarContainer.snackBar(accountChangedText, error: true),
@@ -534,7 +551,7 @@ Future<void> executeAccountDeletion({
         name: screenName,
         category: LogCategory.auth,
       );
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         final text = context.l10n.deleteAccountReauthRequired;
         ScaffoldMessenger.of(
@@ -593,7 +610,7 @@ Future<void> executeAccountDeletion({
           name: screenName,
           category: LogCategory.auth,
         );
-        dismissDialog();
+        dismissProgressSheet();
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(message, error: true),
@@ -612,7 +629,7 @@ Future<void> executeAccountDeletion({
         name: screenName,
         category: LogCategory.auth,
       );
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
@@ -646,7 +663,7 @@ Future<void> executeAccountDeletion({
           name: screenName,
           category: LogCategory.auth,
         );
-        dismissDialog();
+        dismissProgressSheet();
         if (context.mounted) {
           // The vanish and the kind-5 sweep have already been published and
           // confirmed by a relay at this point, so neither message may claim
@@ -700,7 +717,7 @@ Future<void> executeAccountDeletion({
 
       // Close loading indicator and show result snackbar
       // Router will automatically redirect to /welcome after sign out
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         // When the relay query that enumerates existing content failed, no
         // per-item deletion request was sent for anything the user had already
@@ -731,7 +748,7 @@ Future<void> executeAccountDeletion({
           category: LogCategory.auth,
         );
       }
-      dismissDialog();
+      dismissProgressSheet();
       if (context.mounted) {
         final text = (burnCommitted && burnReleasedText != null)
             ? burnReleasedText
@@ -747,8 +764,8 @@ Future<void> executeAccountDeletion({
   } finally {
     await cubit.close();
 
-    // Ensure dialog is dismissed even if an exception occurred
-    dismissDialog();
+    // Ensure the progress sheet is dismissed even if an exception occurred.
+    dismissProgressSheet();
   }
 }
 

@@ -166,50 +166,46 @@ class _RemoveKeysTile extends StatelessWidget {
         context.l10n.nostrSettingsCouldNotRemoveKeys;
     final failedToRemoveKeysFn = context.l10n.nostrSettingsFailedToRemoveKeys;
 
-    await showRemoveKeysWarningDialog(
-      context: context,
-      onConfirm: () async {
-        if (!context.mounted) return;
+    final confirmed = await showRemoveKeysWarningSheet(context);
+    if (!confirmed || !context.mounted) return;
 
-        // Resolved before the await: the spinner is an overlay entry, not a
-        // route, so a back press during sign-out pops this screen instead of
-        // the spinner. The app-level messenger outlives that pop; a
-        // post-await `ScaffoldMessenger.of(context)` would not, and the user
-        // would be left with no word on a key deletion that failed.
-        final messenger = ScaffoldMessenger.of(context);
-        final progressOverlay = ModalProgressOverlay.show(context);
+    // Resolved before the await: the spinner is an overlay entry, not a
+    // route, so a back press during sign-out pops this screen instead of
+    // the spinner. The app-level messenger outlives that pop; a
+    // post-await `ScaffoldMessenger.of(context)` would not, and the user
+    // would be left with no word on a key deletion that failed.
+    final messenger = ScaffoldMessenger.of(context);
+    final progressOverlay = ModalProgressOverlay.show(context);
 
-        try {
-          await authService.signOut(
-            deleteKeys: true,
-            abortOnKeyDeletionFailure: true,
-          );
-          progressOverlay.dismiss();
-          if (!context.mounted) return;
-          context.go(WelcomeScreen.path);
-        } on SecureKeyStorageException {
-          progressOverlay.dismiss();
-          // Platform key deletion failed — user stays signed in and can
-          // retry without having to log back in.
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              couldNotRemoveKeysMessage,
-              error: true,
-            ),
-          );
-        } catch (e) {
-          progressOverlay.dismiss();
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            DivineSnackbarContainer.snackBar(
-              failedToRemoveKeysFn('$e'),
-              error: true,
-            ),
-          );
-        }
-      },
-    );
+    try {
+      await authService.signOut(
+        deleteKeys: true,
+        abortOnKeyDeletionFailure: true,
+      );
+      progressOverlay.dismiss();
+      if (!context.mounted) return;
+      context.go(WelcomeScreen.path);
+    } on SecureKeyStorageException {
+      progressOverlay.dismiss();
+      // Platform key deletion failed — user stays signed in and can
+      // retry without having to log back in.
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          couldNotRemoveKeysMessage,
+          error: true,
+        ),
+      );
+    } catch (e) {
+      progressOverlay.dismiss();
+      if (!messenger.mounted) return;
+      messenger.showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          failedToRemoveKeysFn('$e'),
+          error: true,
+        ),
+      );
+    }
   }
 }
 
