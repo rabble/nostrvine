@@ -11,6 +11,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Signs [container]'s fresh [AuthService] in as [account].
 ///
@@ -67,6 +68,10 @@ String? _currentRouterLocation(AccountSwitchController controller) {
 /// to do that; without it the leaving account comes back as "session expired"
 /// with no refresh token left to recover from.
 ///
+/// That archive is a precondition, not a best-effort side trip: it throws if
+/// the write fails, aborting before anything is mutated, because a swap that
+/// carries on past it destroys the credentials it was meant to preserve.
+///
 /// Prove-then-commit: nothing user-visible changes until the new account's
 /// sign-in succeeds. On failure the half-built container is disposed and the
 /// current account's container is left untouched — the rollback the previous
@@ -79,7 +84,9 @@ String? _currentRouterLocation(AccountSwitchController controller) {
 /// enough to fail has already restored the *target* account's signer keys over
 /// the shared slots and persisted its auth source, which the live container
 /// never re-reads but the next cold launch does. The rollback restores the
-/// leaving account's keys from the archive written above.
+/// leaving account's keys from the archive written above. It cannot throw:
+/// callers dispatch on the sign-in failure's type, so a rollback that escaped
+/// would swap out the type they match on and cost the user the recovery route.
 ///
 /// [signIn] is injectable for testing; production uses [signInForAccount].
 Future<void> swapAccount({
@@ -108,11 +115,18 @@ Future<void> swapAccount({
       await container.read(authServiceProvider).claimLegacyRowsForCurrentUser();
     } catch (_) {
       try {
-        // Ordered first because it cannot throw: a failing primary-key
-        // restore must not skip it and strand this account on the target's
-        // signer.
         await currentAuthService.restoreSignerInfoForCurrentAccount();
         await keyStorage.restorePrimaryKeyContainer(previousPrimary);
+      } catch (rollbackError, rollbackStack) {
+        // Swallowed on purpose: the caller dispatches on the sign-in failure's
+        // type to decide between the re-auth offer and the generic snackbar,
+        // and letting a rollback failure escape here replaces that type.
+        Log.error(
+          'Account swap rollback failed',
+          name: 'swapAccount',
+          error: rollbackError,
+          stackTrace: rollbackStack,
+        );
       } finally {
         container.dispose();
       }

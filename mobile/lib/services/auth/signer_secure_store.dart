@@ -189,7 +189,12 @@ class SignerSecureStore {
 
   /// Archives the currently-active signer keys under per-account keys for
   /// [pubkeyHex], so they can be restored when switching back to this account.
-  Future<void> archive(String pubkeyHex) async {
+  ///
+  /// Failures are logged and swallowed by default, which suits sign-out: the
+  /// session is going away either way. Pass [throwOnFailure] when the caller
+  /// depends on the archive having landed — the in-place account switch does,
+  /// because the incoming sign-in overwrites the shared slots it copies from.
+  Future<void> archive(String pubkeyHex, {bool throwOnFailure = false}) async {
     if (_storage == null) return;
     try {
       // Archive Amber info
@@ -257,6 +262,7 @@ class SignerSecureStore {
         name: 'SignerSecureStore',
         category: LogCategory.auth,
       );
+      if (throwOnFailure) rethrow;
     }
   }
 

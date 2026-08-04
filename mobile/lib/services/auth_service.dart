@@ -1576,6 +1576,12 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// OAuth session outright — and the leaving account is left with no session
   /// and no refresh token to recover from. Call this before the incoming
   /// account's sign-in.
+  ///
+  /// Throws when the archive write fails, unlike the sign-out path that
+  /// swallows it. The swap has no second chance: the incoming sign-in wipes the
+  /// shared slots this copies from, so carrying on after a failed write
+  /// destroys the leaving account's session for a log line. Aborting is safe
+  /// because this runs before the swap mutates anything.
   Future<void> archiveCurrentSignerInfo() async {
     final pubkeyHex = currentPublicKeyHex;
     if (pubkeyHex == null) {
@@ -1586,7 +1592,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
       return;
     }
-    await _archiveSignerInfo(pubkeyHex);
+    await _signerStore.archive(pubkeyHex, throwOnFailure: true);
   }
 
   /// Restores the currently signed-in account's archived signer keys back into

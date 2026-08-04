@@ -154,13 +154,78 @@ void main() {
     // the leaving account's credentials must already be in its own archive.
     expect(currentAuthService.calls, equals(['archive', 'signIn']));
   });
+
+  testWidgets('aborts before building anything when the archive fails', (
+    tester,
+  ) async {
+    final initial = await pumpHost(tester);
+    currentAuthService.archiveError = Exception('keychain unavailable');
+    var signInAttempted = false;
+
+    await expectLater(
+      swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => signInAttempted = true,
+      ),
+      throwsException,
+    );
+    await tester.pump();
+
+    // Carrying on past a failed archive would let the incoming sign-in wipe
+    // the shared slots the archive was meant to copy, destroying the leaving
+    // account's session for a log line.
+    expect(signInAttempted, isFalse);
+    expect(_isDisposed(initial), isFalse);
+  });
+
+  testWidgets('surfaces the sign-in failure even when the rollback throws', (
+    tester,
+  ) async {
+    await pumpHost(tester);
+    keyStorage.primary = _FakeSecureKeyContainer(
+      npub: 'npub_previous',
+      publicKeyHex:
+          '2222222222222222222222222222222222222222222222222222222222222222',
+    );
+    keyStorage.restoreError = Exception('primary restore failed');
+
+    // The caller dispatches on this type to offer a fresh sign-in, so a
+    // rollback failure must not replace it with its own.
+    await expectLater(
+      swapAccount(
+        deviceScope: deviceScope,
+        controller: controller,
+        currentAuthService: currentAuthService,
+        account: account,
+        signIn: (_, _) async => throw _FakeSignInException(),
+      ),
+      throwsA(isA<_FakeSignInException>()),
+    );
+    await tester.pump();
+
+    // The signer restore is ordered ahead of the throwing primary restore, so
+    // it still ran.
+    expect(currentAuthService.calls, equals(['archive', 'restore']));
+  });
 }
+
+class _FakeSignInException implements Exception {}
 
 class _FakeAuthService implements AuthService {
   final calls = <String>[];
 
+  /// Set to make the pre-swap archive fail, as a keychain write would.
+  Object? archiveError;
+
   @override
-  Future<void> archiveCurrentSignerInfo() async => calls.add('archive');
+  Future<void> archiveCurrentSignerInfo() async {
+    calls.add('archive');
+    final error = archiveError;
+    if (error != null) throw error;
+  }
 
   @override
   Future<void> restoreSignerInfoForCurrentAccount() async =>
@@ -174,6 +239,10 @@ class _FakeSecureKeyStorage extends SecureKeyStorage {
   SecureKeyContainer? primary;
   SecureKeyContainer? restoredPrimary;
 
+  /// Set to make the rollback's primary restore fail. The real one can: it
+  /// hands the snapshot to `storeKey`, which reaches into the private key.
+  Object? restoreError;
+
   @override
   Future<SecureKeyContainer?> getKeyContainer({String? biometricPrompt}) async {
     return primary;
@@ -184,6 +253,8 @@ class _FakeSecureKeyStorage extends SecureKeyStorage {
     SecureKeyContainer? keyContainer, {
     String? biometricPrompt,
   }) async {
+    final error = restoreError;
+    if (error != null) throw error;
     restoredPrimary = keyContainer;
     primary = keyContainer;
   }
