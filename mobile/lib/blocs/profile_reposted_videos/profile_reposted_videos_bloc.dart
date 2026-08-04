@@ -95,7 +95,12 @@ class ProfileRepostedVideosBloc
     ProfileRepostedVideosSyncRequested event,
     Emitter<ProfileRepostedVideosState> emit,
   ) async {
-    if (state.videos.isNotEmpty && !state.isRefreshing) {
+    // Flag the revalidation whenever a settled result is on screen — an empty
+    // one included. A re-sync that stays empty emits a state equal to the
+    // current one, which bloc suppresses, so without this transition the
+    // profile pull-to-refresh (it awaits the next settled state) hangs.
+    if (state.status != ProfileRepostedVideosStatus.initial &&
+        !state.isRefreshing) {
       emit(state.copyWith(isRefreshing: true));
     }
 

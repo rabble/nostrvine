@@ -65,8 +65,8 @@ final class ProfileLikedVideosState extends Equatable {
   /// Whether more videos are being loaded (pagination)
   final bool isLoadingMore;
 
-  /// Whether a background revalidation is in progress while cached content is
-  /// already on screen. Drives the thin progress bar in the grid.
+  /// Whether a background revalidation is in progress while a settled result
+  /// is already on screen. Drives the thin progress bar in the grid.
   final bool isRefreshing;
 
   /// Whether there are more videos to load

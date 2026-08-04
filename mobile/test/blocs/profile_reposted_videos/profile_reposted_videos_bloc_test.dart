@@ -236,6 +236,50 @@ void main() {
         ],
       );
 
+      test(
+        're-sync of a settled empty tab still settles (pull-to-refresh)',
+        () async {
+          when(
+            () => mockRepostsRepository.syncUserReposts(),
+          ).thenAnswer((_) async => const RepostsSyncResult.empty());
+          final bloc = createBloc();
+          addTearDown(bloc.close);
+
+          bloc.add(const ProfileRepostedVideosSyncRequested());
+          await bloc.stream.firstWhere(
+            (state) => state.status == ProfileRepostedVideosStatus.success,
+          );
+
+          // Mirrors how ProfileGridView's RefreshIndicator awaits this tab:
+          // it holds the spinner until the bloc reports a settled state.
+          final emitted = <ProfileRepostedVideosState>[];
+          final subscription = bloc.stream.listen(emitted.add);
+          addTearDown(subscription.cancel);
+
+          bloc.add(const ProfileRepostedVideosSyncRequested());
+          final settled = await bloc.stream
+              .firstWhere(
+                (state) =>
+                    !state.isRefreshing &&
+                    state.status != ProfileRepostedVideosStatus.syncing &&
+                    state.status != ProfileRepostedVideosStatus.loading,
+              )
+              .timeout(const Duration(seconds: 1));
+
+          expect(settled.status, ProfileRepostedVideosStatus.success);
+          expect(settled.videos, isEmpty);
+          // The start/end edges are what let the refresh settle — without them
+          // the terminal state equals the current one and bloc suppresses it.
+          expect(
+            emitted.map((state) => (state.status, state.isRefreshing)),
+            const [
+              (ProfileRepostedVideosStatus.success, true),
+              (ProfileRepostedVideosStatus.success, false),
+            ],
+          );
+        },
+      );
+
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'emits [success] with videos when reposts found',
         setUp: () {
