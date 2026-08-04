@@ -38,6 +38,7 @@ class BuildConfiguration {
         // Default OFF until the backend relay accepts kind-10050 (#4974 RC3).
         return const bool.fromEnvironment('FF_PUBLISH_DM_RELAY_LIST');
       case FeatureFlag.feedTuning:
+        // TODO(#6649): Re-promote after divine-funnelcake#691 ships.
         return const bool.fromEnvironment('FF_FEED_TUNING');
       case FeatureFlag.profileMonetizationLinks:
         return const bool.fromEnvironment('FF_PROFILE_MONETIZATION_LINKS');

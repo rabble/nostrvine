@@ -47,7 +47,7 @@ enum FeatureFlag {
     'Feed Tuning Swipes',
     'Swipe left/right on the fullscreen feed to send "less/more like this" '
         'signals that personalize recommendations. Off by default until the '
-        'relay and recommendation backend are ready (funnelcake #691).',
+        'relay and recommendation backend are ready.',
     audience: FeatureFlagAudience.internal,
   ),
   profileMonetizationLinks(
