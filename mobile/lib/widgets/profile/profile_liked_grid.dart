@@ -51,16 +51,6 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
   @override
   ScrollController get paginationScrollController => _primaryScrollController!;
 
-  /// Prefetch the next page ~1.5 viewports before the bottom so it is already
-  /// loaded by the time the user scrolls to it — keeping scrolling smooth
-  /// instead of stalling on the loading-more indicator.
-  @override
-  double get paginationLoadMoreThreshold {
-    final positions = paginationScrollController.positions;
-    if (positions.isEmpty) return super.paginationLoadMoreThreshold;
-    return positions.first.viewportDimension * 1.5;
-  }
-
   @override
   bool canLoadMore() {
     final bloc = context.read<ProfileLikedVideosBloc>();

@@ -10,9 +10,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
+
+/// A window the user scrolled two pages deep into before leaving the tab.
+const int _scrolledWindow = profileTabPageSize * 2;
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
@@ -447,7 +451,7 @@ void main() {
         'ID list is unchanged',
         setUp: () async {
           final ids = List.generate(
-            50,
+            profileTabPageSize + 14,
             (i) => createAddressableId(currentUserPubkey, 'd$i'),
           );
           await cacheDao.write(
@@ -499,8 +503,16 @@ void main() {
             6,
           ),
           isA<ProfileRepostedVideosState>()
-              .having((s) => s.videos.length, 'grown to a full page', 18)
-              .having((s) => s.nextPageOffset, 'nextPageOffset', 18)
+              .having(
+                (s) => s.videos.length,
+                'grown to a full page',
+                profileTabPageSize,
+              )
+              .having(
+                (s) => s.nextPageOffset,
+                'nextPageOffset',
+                profileTabPageSize,
+              )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],
       );
@@ -584,11 +596,12 @@ void main() {
         'reopen restores the full scrolled-through list from cache',
         setUp: () async {
           final ids = List.generate(
-            40,
+            _scrolledWindow + 4,
             (i) => createAddressableId(currentUserPubkey, 'd$i'),
           );
+          // Two pages deep, so restoring page 1 would be visibly wrong.
           final videos = List.generate(
-            36,
+            _scrolledWindow,
             (i) => createTestVideo(
               id: 'e$i',
               pubkey: currentUserPubkey,
@@ -600,7 +613,7 @@ void main() {
             payload: ProfileVideoListSnapshot(
               videos: videos,
               itemIds: ids,
-              nextPageOffset: 36,
+              nextPageOffset: _scrolledWindow,
               hasMoreContent: true,
             ).toJson(),
           );
@@ -614,11 +627,19 @@ void main() {
         expect: () => [
           isA<ProfileRepostedVideosState>()
               .having((s) => s.isRefreshing, 'isRefreshing', true)
-              .having((s) => s.videos.length, 'cached videos', 36)
-              .having((s) => s.nextPageOffset, 'nextPageOffset', 36),
+              .having((s) => s.videos.length, 'cached videos', _scrolledWindow)
+              .having(
+                (s) => s.nextPageOffset,
+                'nextPageOffset',
+                _scrolledWindow,
+              ),
           isA<ProfileRepostedVideosState>()
               .having((s) => s.isRefreshing, 'isRefreshing', false)
-              .having((s) => s.videos.length, 'revalidated videos', 36),
+              .having(
+                (s) => s.videos.length,
+                'revalidated videos',
+                _scrolledWindow,
+              ),
         ],
       );
 

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_cursor_snapshot.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -365,10 +366,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              createTestVideo(
-                id: 'v1',
-                pubkey: targetPubkey,
-              ),
+              createTestVideo(id: 'v1', pubkey: targetPubkey),
               createTestVideo(
                 id: 'v2',
                 pubkey: authorPubkey,
@@ -491,7 +489,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              for (var i = 1; i <= 17; i++)
+              for (var i = 1; i < profileTabPageSize; i++)
                 createTestVideo(id: 'cached-$i', pubkey: authorPubkey),
               createTestVideo(id: 'new-confirmed', pubkey: authorPubkey),
             ],
@@ -503,7 +501,7 @@ void main() {
             key: '$targetPubkey:profile_collab_videos',
             payload: ProfileVideoCursorSnapshot(
               videos: [
-                for (var i = 1; i <= 17; i++)
+                for (var i = 1; i < profileTabPageSize; i++)
                   createTestVideo(id: 'cached-$i', pubkey: authorPubkey),
                 createTestVideo(id: 'tail-1', pubkey: authorPubkey),
               ],
@@ -520,15 +518,11 @@ void main() {
               .having((s) => s.videos.last.id, 'cached tail', 'tail-1'),
           isA<ProfileCollabVideosState>()
               .having((s) => s.isRefreshing, 'isRefreshing', false)
-              .having(
-                (s) => s.videos.map((v) => v.id).toList(),
-                'videos',
-                [
-                  for (var i = 1; i <= 17; i++) 'cached-$i',
-                  'new-confirmed',
-                  'tail-1',
-                ],
-              )
+              .having((s) => s.videos.map((v) => v.id).toList(), 'videos', [
+                for (var i = 1; i < profileTabPageSize; i++) 'cached-$i',
+                'new-confirmed',
+                'tail-1',
+              ])
               .having((s) => s.hasMoreContent, 'hasMoreContent', isTrue),
         ],
       );

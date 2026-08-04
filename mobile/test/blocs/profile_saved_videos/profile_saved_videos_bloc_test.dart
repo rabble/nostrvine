@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -147,9 +148,7 @@ void main() {
       test(
         're-sync of a settled empty tab still settles (pull-to-refresh)',
         () async {
-          when(
-            () => mockBookmarkService.globalBookmarks,
-          ).thenReturn(const []);
+          when(() => mockBookmarkService.globalBookmarks).thenReturn(const []);
           final bloc = createBloc();
           addTearDown(bloc.close);
 
@@ -262,7 +261,7 @@ void main() {
         'grows a persisted window shorter than a page even when the bookmark '
         'list is unchanged',
         setUp: () async {
-          final ids = List.generate(50, (i) => 'video-$i');
+          final ids = List.generate(profileTabPageSize + 14, (i) => 'video-$i');
           await cacheDao.write(
             key: '$currentUserPubkey:profile_saved_videos',
             payload: ProfileVideoListSnapshot(
@@ -272,9 +271,9 @@ void main() {
               hasMoreContent: true,
             ).toJson(),
           );
-          when(() => mockBookmarkService.globalBookmarks).thenReturn([
-            for (final id in ids) BookmarkItem(type: 'e', id: id),
-          ]);
+          when(
+            () => mockBookmarkService.globalBookmarks,
+          ).thenReturn([for (final id in ids) BookmarkItem(type: 'e', id: id)]);
           when(
             () => mockVideosRepository.getVideosByIds(
               any(),
@@ -297,8 +296,16 @@ void main() {
             6,
           ),
           isA<ProfileSavedVideosState>()
-              .having((s) => s.videos.length, 'grown to a full page', 18)
-              .having((s) => s.nextPageOffset, 'nextPageOffset', 18)
+              .having(
+                (s) => s.videos.length,
+                'grown to a full page',
+                profileTabPageSize,
+              )
+              .having(
+                (s) => s.nextPageOffset,
+                'nextPageOffset',
+                profileTabPageSize,
+              )
               .having((s) => s.hasMoreContent, 'hasMoreContent', true),
         ],
       );
@@ -324,9 +331,9 @@ void main() {
               hasMoreContent: false,
             ).toJson(),
           );
-          when(() => mockBookmarkService.globalBookmarks).thenReturn([
-            for (final id in ids) BookmarkItem(type: 'e', id: id),
-          ]);
+          when(
+            () => mockBookmarkService.globalBookmarks,
+          ).thenReturn([for (final id in ids) BookmarkItem(type: 'e', id: id)]);
           when(
             () => mockVideosRepository.getVideosByIds(
               any(),
@@ -424,10 +431,11 @@ void main() {
     });
 
     group('ProfileSavedVideosLoadMoreRequested', () {
-      // Build a list that exceeds the 18-item page size so hasMoreContent
-      // starts true and a second fetch is required.
+      // Build a list that exceeds one page so hasMoreContent starts true and
+      // a second fetch is required.
+      const bookmarkCount = profileTabPageSize + 7;
       final manyBookmarks = List.generate(
-        25,
+        bookmarkCount,
         (i) => BookmarkItem(type: 'e', id: 'video-$i'),
       );
 
@@ -458,8 +466,8 @@ void main() {
         },
         verify: (bloc) {
           expect(bloc.state.status, ProfileSavedVideosStatus.success);
-          expect(bloc.state.videos, hasLength(25));
-          expect(bloc.state.nextPageOffset, 25);
+          expect(bloc.state.videos, hasLength(bookmarkCount));
+          expect(bloc.state.nextPageOffset, bookmarkCount);
           expect(bloc.state.hasMoreContent, isFalse);
           expect(bloc.state.isLoadingMore, isFalse);
         },

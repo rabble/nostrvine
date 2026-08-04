@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -20,9 +21,6 @@ import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_saved_videos_event.dart';
 part 'profile_saved_videos_state.dart';
-
-/// Number of videos to load per page for pagination.
-const _pageSize = 18;
 
 /// BLoC for managing profile saved (bookmarked) videos.
 ///
@@ -85,9 +83,7 @@ class ProfileSavedVideosBloc
     }
   }
 
-  Future<void> _syncAndRevalidate(
-    Emitter<ProfileSavedVideosState> emit,
-  ) async {
+  Future<void> _syncAndRevalidate(Emitter<ProfileSavedVideosState> emit) async {
     // Flag the revalidation whenever a settled result is on screen — an empty
     // one included — so the sticky cache-revalidation bar runs for the whole
     // re-sync. A re-sync that stays empty emits a state equal to the current
@@ -177,7 +173,7 @@ class ProfileSavedVideosBloc
       return;
     }
 
-    final firstPageIds = savedEventIds.take(_pageSize).toList();
+    final firstPageIds = savedEventIds.take(profileTabPageSize).toList();
     final videos = await _fetchVideos(firstPageIds, cacheResults: true);
     if (isClosed) return;
 
@@ -250,7 +246,10 @@ class ProfileSavedVideosBloc
     // recover; see ProfileLikedVideosBloc for the lock-in it prevents.
     final loadedWindow =
         max(state.nextPageOffset, state.videos.length) + newAtTop;
-    final windowSize = max(loadedWindow, _pageSize).clamp(0, freshIds.length);
+    final windowSize = max(
+      loadedWindow,
+      profileTabPageSize,
+    ).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
@@ -286,7 +285,8 @@ class ProfileSavedVideosBloc
   /// must be topped up even when the ID list itself is unchanged. See
   /// ProfileLikedVideosBloc for the lock-in this prevents.
   bool _isWindowUnderfilled(List<String> ids) =>
-      state.nextPageOffset < _pageSize && state.nextPageOffset < ids.length;
+      state.nextPageOffset < profileTabPageSize &&
+      state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
       ProfileVideoListSnapshot(
@@ -336,10 +336,10 @@ class ProfileSavedVideosBloc
   /// Handle load more request — fetches the next page of videos.
   ///
   /// Uses [state.nextPageOffset] to track the position in
-  /// [state.savedEventIds] and fetches the next [_pageSize] IDs. The offset
-  /// advances by the number of IDs consumed, not the number of videos loaded
-  /// (some IDs may not resolve to videos due to relay unavailability or
-  /// format filtering).
+  /// [state.savedEventIds] and fetches the next [profileTabPageSize] IDs. The
+  /// offset advances by the number of IDs consumed, not the number of videos
+  /// loaded (some IDs may not resolve to videos due to relay unavailability
+  /// or format filtering).
   Future<void> _onLoadMoreRequested(
     ProfileSavedVideosLoadMoreRequested event,
     Emitter<ProfileSavedVideosState> emit,
@@ -370,7 +370,7 @@ class ProfileSavedVideosBloc
     try {
       final nextPageIds = state.savedEventIds
           .skip(offset)
-          .take(_pageSize)
+          .take(profileTabPageSize)
           .toList();
       final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
 

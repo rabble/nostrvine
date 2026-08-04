@@ -59,6 +59,37 @@ void main() {
       },
     );
 
+    testWidgets('prefetches a viewport ahead of the bottom by default', (
+      tester,
+    ) async {
+      var loadMoreCalls = 0;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: _TestWidget(
+            canLoadMore: () => true,
+            onLoadMore: () async => loadMoreCalls++,
+          ),
+        ),
+      );
+
+      final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
+      final scrollController = state.paginationScrollController;
+      final viewport = scrollController.position.viewportDimension;
+
+      // Just under one viewport from the bottom — still well outside any
+      // fixed few-hundred-pixel threshold, but inside the 1.5-viewport
+      // prefetch distance.
+      scrollController.jumpTo(
+        scrollController.position.maxScrollExtent - (viewport - 1),
+      );
+      await tester.pump();
+
+      expect(loadMoreCalls, 1);
+    });
+
     testWidgets(
       'a larger paginationLoadMoreThreshold triggers further from the bottom',
       (tester) async {
@@ -71,19 +102,19 @@ void main() {
             home: _TestWidget(
               canLoadMore: () => true,
               onLoadMore: () async => loadMoreCalls++,
-              // Prefetch a full extra screen ahead of the default 200px.
-              loadMoreThreshold: 2000,
+              loadMoreThreshold: 4000,
             ),
           ),
         );
 
         final state = tester.state<_TestWidgetState>(find.byType(_TestWidget));
         final scrollController = state.paginationScrollController;
+        final viewport = scrollController.position.viewportDimension;
 
-        // 1000px from the bottom: past the default 200px threshold (no
-        // trigger) but inside the overridden 2000px one (triggers).
+        // Three viewports from the bottom: past the 1.5-viewport default (no
+        // trigger) but inside the overridden 4000px one (triggers).
         scrollController.jumpTo(
-          scrollController.position.maxScrollExtent - 1000,
+          scrollController.position.maxScrollExtent - viewport * 3,
         );
         await tester.pump();
 

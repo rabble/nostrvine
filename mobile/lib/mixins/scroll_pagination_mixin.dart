@@ -54,20 +54,28 @@ mixin ScrollPaginationMixin<T extends StatefulWidget> on State<T> {
   /// ignored.
   FutureOr<void> onLoadMore();
 
-  /// Default distance from the bottom edge (in logical pixels) at which
-  /// loading is triggered.
-  static const double _defaultThreshold = 200;
+  /// How many viewports ahead of the bottom edge the next page is requested.
+  static const double _viewportPrefetchFactor = 1.5;
+
+  /// Distance used before the scroll view has an attached position to read a
+  /// viewport height from.
+  static const double _fallbackThreshold = 200;
 
   /// Distance from the bottom edge (in logical pixels) at which [onLoadMore]
   /// is triggered.
   ///
-  /// Defaults to [_defaultThreshold]. Override with a larger value (for
-  /// example a multiple of the viewport height) to prefetch the next page
-  /// well before the user reaches the bottom, so it is usually ready in time
-  /// and the loading-more indicator is not seen. Called on every scroll tick,
-  /// so keep it cheap.
+  /// Defaults to [_viewportPrefetchFactor] viewports so the next page is
+  /// requested well before the user reaches the bottom and is usually merged
+  /// in by the time they scroll that far — keeping the loading-more indicator
+  /// off screen. A fixed pixel distance is not enough: on a dense grid it is
+  /// only a row or two, so the request starts when the user is already at the
+  /// bottom. Called on every scroll tick, so keep overrides cheap.
   @protected
-  double get paginationLoadMoreThreshold => _defaultThreshold;
+  double get paginationLoadMoreThreshold {
+    final positions = paginationScrollController.positions;
+    if (positions.isEmpty) return _fallbackThreshold;
+    return positions.first.viewportDimension * _viewportPrefetchFactor;
+  }
 
   Future<void>? _pendingPaginationLoad;
 

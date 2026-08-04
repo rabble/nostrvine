@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:openvine/blocs/profile_shared/profile_tab_page_size.dart';
 import 'package:openvine/blocs/profile_shared/profile_tab_sync_completion.dart';
 import 'package:openvine/blocs/profile_shared/profile_video_list_snapshot.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -22,9 +23,6 @@ import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_reposted_videos_event.dart';
 part 'profile_reposted_videos_state.dart';
-
-/// Number of videos to load per page for pagination.
-const _pageSize = 18;
 
 /// BLoC for managing profile reposted videos.
 ///
@@ -39,7 +37,7 @@ const _pageSize = 18;
 /// - Resolving addressable IDs to VideoEvents with cache-first pattern
 /// - Filtering: excludes unsupported video formats
 /// - Listening for repost changes to update the list
-/// - Pagination: loads videos in batches of [_pageSize]
+/// - Pagination: loads videos in batches of [profileTabPageSize]
 class ProfileRepostedVideosBloc
     extends Bloc<ProfileRepostedVideosEvent, ProfileRepostedVideosState> {
   ProfileRepostedVideosBloc({
@@ -205,7 +203,7 @@ class ProfileRepostedVideosBloc
       return;
     }
 
-    final firstPageIds = addressableIds.take(_pageSize).toList();
+    final firstPageIds = addressableIds.take(profileTabPageSize).toList();
     final videos = await _fetchVideos(firstPageIds, cacheResults: true);
     if (isClosed) return;
 
@@ -231,9 +229,7 @@ class ProfileRepostedVideosBloc
 
   /// Warm path: cached videos are already on screen. Refresh the reposted-ID
   /// list against the relay and reconcile it against the shown videos.
-  Future<void> _warmRevalidate(
-    Emitter<ProfileRepostedVideosState> emit,
-  ) async {
+  Future<void> _warmRevalidate(Emitter<ProfileRepostedVideosState> emit) async {
     final List<String> freshIds;
     if (_isOtherUserProfile) {
       freshIds = await _repostsRepository.fetchUserReposts(_targetUserPubkey!);
@@ -290,7 +286,10 @@ class ProfileRepostedVideosBloc
     // recover; see ProfileLikedVideosBloc for the lock-in it prevents.
     final loadedWindow =
         max(state.nextPageOffset, state.videos.length) + newAtTop;
-    final windowSize = max(loadedWindow, _pageSize).clamp(0, freshIds.length);
+    final windowSize = max(
+      loadedWindow,
+      profileTabPageSize,
+    ).clamp(0, freshIds.length);
     final windowIds = freshIds.take(windowSize).toList();
 
     final missingIds = windowIds.where((id) => !byId.containsKey(id)).toList();
@@ -327,7 +326,8 @@ class ProfileRepostedVideosBloc
   /// must be topped up even when the ID list itself is unchanged. See
   /// ProfileLikedVideosBloc for the lock-in this prevents.
   bool _isWindowUnderfilled(List<String> ids) =>
-      state.nextPageOffset < _pageSize && state.nextPageOffset < ids.length;
+      state.nextPageOffset < profileTabPageSize &&
+      state.nextPageOffset < ids.length;
 
   static const ProfileVideoListSnapshot _emptySnapshot =
       ProfileVideoListSnapshot(
@@ -500,7 +500,7 @@ class ProfileRepostedVideosBloc
     try {
       final nextPageIds = state.repostedAddressableIds
           .skip(offset)
-          .take(_pageSize)
+          .take(profileTabPageSize)
           .toList();
       final newVideos = await _fetchVideos(nextPageIds, cacheResults: true);
 
