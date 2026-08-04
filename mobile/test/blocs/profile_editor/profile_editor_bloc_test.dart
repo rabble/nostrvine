@@ -6,6 +6,7 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' show Color;
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -15,6 +16,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/staged_profile_media_store.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -26,6 +28,39 @@ class _MockMentionResolutionService extends Mock
     implements MentionResolutionService {}
 
 class _FakeFile extends Fake implements File {}
+
+class _FakeStagedProfileMediaStore implements StagedProfileMediaStore {
+  final Map<String, StagedProfileMedia> values = {};
+  final List<String> clearedPubkeys = [];
+
+  @override
+  StagedProfileMedia? load(String pubkey) => values[pubkey];
+
+  @override
+  Future<void> save(
+    String pubkey, {
+    String? pictureUrl,
+    String? bannerUrl,
+  }) async {
+    final staged = StagedProfileMedia(
+      pictureUrl: pictureUrl,
+      bannerUrl: bannerUrl,
+      stagedAt: DateTime.utc(2026, 8, 4),
+    );
+    if (staged.isEmpty) {
+      values.remove(pubkey);
+      clearedPubkeys.add(pubkey);
+      return;
+    }
+    values[pubkey] = staged;
+  }
+
+  @override
+  Future<void> clear(String pubkey) async {
+    values.remove(pubkey);
+    clearedPubkeys.add(pubkey);
+  }
+}
 
 void main() {
   group('ProfileEditorBloc', () {
@@ -104,11 +139,15 @@ void main() {
     ProfileEditorBloc createBloc({
       bool hasExistingProfile = true,
       MentionResolutionService? mentionResolutionService,
+      StagedProfileMediaStore? stagedProfileMediaStore,
+      String? currentUserPubkey,
     }) => ProfileEditorBloc(
       profileRepository: mockProfileRepository,
       blossomUploadService: mockBlossomUploadService,
       hasExistingProfile: hasExistingProfile,
       mentionResolutionService: mentionResolutionService,
+      currentUserPubkey: currentUserPubkey,
+      stagedProfileMediaStore: stagedProfileMediaStore,
     );
 
     test('initial state is ProfileEditorStatus.initial', () {
@@ -488,9 +527,7 @@ void main() {
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
           },
-          seed: () => const ProfileEditorState(
-            initialUsername: testUsername,
-          ),
+          seed: () => const ProfileEditorState(initialUsername: testUsername),
           build: createBloc,
           act: (bloc) => bloc.add(
             const ProfileSaved(
@@ -1281,11 +1318,7 @@ void main() {
                 'usernameStatus',
                 UsernameStatus.checking,
               )
-              .having(
-                (s) => s.reservedUsernames,
-                'reservedUsernames',
-                isEmpty,
-              ),
+              .having((s) => s.reservedUsernames, 'reservedUsernames', isEmpty),
           isA<ProfileEditorState>()
               .having(
                 (s) => s.usernameStatus,
@@ -1321,9 +1354,8 @@ void main() {
             ),
           ).thenThrow(StateError('mention service invariant'));
         },
-        build: () => createBloc(
-          mentionResolutionService: mockMentionResolutionService,
-        ),
+        build: () =>
+            createBloc(mentionResolutionService: mockMentionResolutionService),
         act: (bloc) => bloc.add(
           const ProfileSaved(
             pubkey: testPubkey,
@@ -1363,6 +1395,90 @@ void main() {
           expect(payload.about, 'hi @alice');
         },
       );
+    });
+
+    group('hasUnsavedChanges', () {
+      test('is false for clean initial profile fields and media', () {
+        const state = ProfileEditorState(
+          displayName: 'Liz',
+          initialDisplayName: 'Liz',
+          about: 'Bio',
+          initialAbout: 'Bio',
+          website: 'https://divine.video',
+          initialWebsite: 'https://divine.video',
+          username: 'liz',
+          initialUsername: 'Liz',
+          externalNip05: 'liz@example.com',
+          initialExternalNip05: 'liz@example.com',
+          persistedPictureUrl: 'https://cdn.example.com/avatar.jpg',
+          persistedBanner: '0x33ccbf',
+          pendingBannerColor: Color(0xFF33CCBF),
+        );
+
+        expect(state.hasUnsavedChanges, isFalse);
+      });
+
+      test('detects dirty text fields', () {
+        expect(
+          const ProfileEditorState(
+            displayName: 'Liz',
+            initialDisplayName: 'Dr. Liz',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+        expect(
+          const ProfileEditorState(
+            about: 'new',
+            initialAbout: 'old',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+        expect(
+          const ProfileEditorState(
+            website: 'https://new.example',
+            initialWebsite: 'https://old.example',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+      });
+
+      test('detects dirty identity and staged media fields', () {
+        expect(
+          const ProfileEditorState(
+            username: 'new',
+            initialUsername: 'old',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+        expect(
+          const ProfileEditorState(
+            externalNip05: 'new@example.com',
+            initialExternalNip05: 'old@example.com',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+        expect(
+          const ProfileEditorState(
+            pendingPictureUrl: 'https://cdn.example.com/new.jpg',
+            persistedPictureUrl: 'https://cdn.example.com/old.jpg',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+        expect(
+          const ProfileEditorState(
+            pendingBannerUrl: 'https://cdn.example.com/new.jpg',
+            persistedBanner: 'https://cdn.example.com/old.jpg',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+        expect(
+          const ProfileEditorState(
+            isBannerCleared: true,
+            persistedBanner: 'https://cdn.example.com/old.jpg',
+          ).hasUnsavedChanges,
+          isTrue,
+        );
+      });
     });
 
     group('InitialUsernameSet', () {
@@ -1793,12 +1909,8 @@ void main() {
         },
         wait: debounceDuration,
         expect: () => [
-          isA<ProfileEditorState>().having(
-            (s) => s.initialUsername,
-            'initialUsername',
-            testUsername,
-          ),
           isA<ProfileEditorState>()
+              .having((s) => s.initialUsername, 'initialUsername', testUsername)
               .having((s) => s.username, 'username', testUsername)
               .having(
                 (s) => s.usernameStatus,
@@ -2460,6 +2572,97 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUploadRequested persists staged URL on success',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: testStagedUrl,
+              fallbackUrl: testStagedUrl,
+            ),
+          );
+        },
+        build: () {
+          final store = _FakeStagedProfileMediaStore();
+          addTearDown(() {
+            expect(store.values[testPubkey]!.pictureUrl, testStagedUrl);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(
+            pubkey: testPubkey,
+            bytes: testBytes,
+            filename: 'avatar.jpg',
+          ),
+        ),
+      );
+
+      test('restores staged picture and banner when bloc is recreated', () {
+        final store = _FakeStagedProfileMediaStore()
+          ..values[testPubkey] = StagedProfileMedia(
+            pictureUrl: testStagedUrl,
+            bannerUrl: 'https://media.divine.video/staged-banner-hash',
+            stagedAt: DateTime.utc(2026, 8, 4),
+          );
+
+        final bloc = createBloc(
+          stagedProfileMediaStore: store,
+          currentUserPubkey: testPubkey,
+        );
+        addTearDown(bloc.close);
+
+        expect(bloc.state.pendingAvatarStatus, PendingAvatarStatus.staged);
+        expect(bloc.state.pendingPictureUrl, testStagedUrl);
+        expect(bloc.state.pendingBannerStatus, PendingBannerStatus.staged);
+        expect(
+          bloc.state.pendingBannerUrl,
+          'https://media.divine.video/staged-banner-hash',
+        );
+        expect(bloc.state.pendingBannerColor, isNull);
+      });
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'InitialPersistedBannerSet does not resurrect color over restored banner URL',
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              bannerUrl: 'https://media.divine.video/staged-banner-hash',
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) => bloc.add(const InitialPersistedBannerSet('0x33ccbf')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingBannerUrl,
+                'pendingBannerUrl',
+                'https://media.divine.video/staged-banner-hash',
+              )
+              .having(
+                (s) => s.pendingBannerColor,
+                'pendingBannerColor',
+                isNull,
+              )
+              .having((s) => s.persistedBanner, 'persistedBanner', '0x33ccbf'),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'upload failure leaves pendingPictureUrl untouched and emits failed',
         setUp: () {
           when(
@@ -2769,6 +2972,39 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUploadCleared preserves staged banner in store',
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              pictureUrl: testStagedUrl,
+              bannerUrl: 'https://media.divine.video/staged-banner-hash',
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          addTearDown(() {
+            expect(store.values[testPubkey]!.pictureUrl, isNull);
+            expect(
+              store.values[testPubkey]!.bannerUrl,
+              'https://media.divine.video/staged-banner-hash',
+            );
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) => bloc.add(const ProfilePictureUploadCleared()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.idle,
+              )
+              .having((s) => s.pendingPictureUrl, 'pendingPictureUrl', isNull),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfilePictureUrlSet stages without an upload call',
         build: createBloc,
         act: (bloc) =>
@@ -2800,6 +3036,22 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUrlSet persists manual staged URL',
+        build: () {
+          final store = _FakeStagedProfileMediaStore();
+          addTearDown(() {
+            expect(store.values[testPubkey]!.pictureUrl, testStagedUrl);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) =>
+            bloc.add(const ProfilePictureUrlSet('  $testStagedUrl  ')),
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
@@ -2839,6 +3091,90 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved clears staged media after durable save is enqueued',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+        },
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              pictureUrl: testStagedUrl,
+              bannerUrl: 'https://media.divine.video/staged-banner-hash',
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          addTearDown(() {
+            expect(store.values[testPubkey], isNull);
+            expect(store.clearedPubkeys, contains(testPubkey));
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileEditDiscarded clears in-memory and persisted staged media',
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              pictureUrl: testStagedUrl,
+              bannerUrl: 'https://media.divine.video/staged-banner-hash',
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          addTearDown(() {
+            expect(store.values[testPubkey], isNull);
+            expect(store.clearedPubkeys, contains(testPubkey));
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        seed: () => const ProfileEditorState(
+          displayName: 'Edited',
+          initialDisplayName: 'Initial',
+          about: 'Edited bio',
+          initialAbout: 'Initial bio',
+          website: 'https://new.example',
+          initialWebsite: 'https://old.example',
+          username: 'newname',
+          initialUsername: 'oldname',
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: testStagedUrl,
+          pendingBannerStatus: PendingBannerStatus.staged,
+          pendingBannerUrl: 'https://media.divine.video/staged-banner-hash',
+          persistedBanner: '0x33ccbf',
+        ),
+        act: (bloc) => bloc.add(const ProfileEditDiscarded()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.displayName, 'displayName', 'Initial')
+              .having((s) => s.about, 'about', 'Initial bio')
+              .having((s) => s.website, 'website', 'https://old.example')
+              .having((s) => s.username, 'username', 'oldname')
+              .having(
+                (s) => s.pendingPictureUrl,
+                'pendingPictureUrl',
+                isNull,
+              )
+              .having((s) => s.pendingBannerUrl, 'pendingBannerUrl', isNull)
+              .having((s) => s.hasUnsavedChanges, 'hasUnsavedChanges', isFalse),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'ProfileSaved with no staged change publishes the persisted picture',
         setUp: () {
           when(
@@ -2869,6 +3205,106 @@ void main() {
           final payload = captured[0] as PendingProfileSave;
           expect(payload.picture, testPersistedUrl);
         },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved publishes null banner after explicit banner clear',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          persistedBanner: 'https://cdn.example.com/banner.jpg',
+          isBannerCleared: true,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+        verify: (_) {
+          final captured = verify(
+            () => mockProfileRepository.enqueuePendingSave(
+              captureAny(),
+              claimConfirmed: captureAny(named: 'claimConfirmed'),
+            ),
+          ).captured;
+          final payload = captured[0] as PendingProfileSave;
+          expect(payload.banner, isNull);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerUploadRequested persists staged banner URL',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: 'https://media.divine.video/staged-banner-hash',
+              fallbackUrl: 'https://media.divine.video/staged-banner-hash',
+            ),
+          );
+        },
+        build: () {
+          final store = _FakeStagedProfileMediaStore();
+          addTearDown(() {
+            expect(store.values[testPubkey]!.pictureUrl, testStagedUrl);
+            expect(
+              store.values[testPubkey]!.bannerUrl,
+              'https://media.divine.video/staged-banner-hash',
+            );
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: testStagedUrl,
+        ),
+        act: (bloc) => bloc.add(
+          ProfileBannerUploadRequested(
+            pubkey: testPubkey,
+            bytes: testBytes,
+            filename: 'banner.jpg',
+          ),
+        ),
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileBannerColorSelected removes staged banner URL from store',
+        build: () {
+          final store = _FakeStagedProfileMediaStore()
+            ..values[testPubkey] = StagedProfileMedia(
+              pictureUrl: testStagedUrl,
+              bannerUrl: 'https://media.divine.video/staged-banner-hash',
+              stagedAt: DateTime.utc(2026, 8, 4),
+            );
+          addTearDown(() {
+            expect(store.values[testPubkey]!.pictureUrl, testStagedUrl);
+            expect(store.values[testPubkey]!.bannerUrl, isNull);
+          });
+          return createBloc(
+            stagedProfileMediaStore: store,
+            currentUserPubkey: testPubkey,
+          );
+        },
+        act: (bloc) =>
+            bloc.add(const ProfileBannerColorSelected(Color(0xFF33CCBF))),
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(

@@ -53,10 +53,13 @@ class ProfileSetupListeners extends ConsumerWidget {
             final profile = myProfileState.profile;
             final extractedUsername = myProfileState.extractedUsername;
             final externalNip05 = myProfileState.externalNip05;
+            final displayName = profile.displayName ?? profile.name ?? '';
+            final about = profile.about ?? '';
+            final website = profile.website ?? '';
 
-            nameController.text = profile.displayName ?? profile.name ?? '';
-            bioController.text = profile.about ?? '';
-            websiteController.text = profile.website ?? '';
+            nameController.text = displayName;
+            bioController.text = about;
+            websiteController.text = website;
 
             if (extractedUsername != null) {
               nip05Controller.text = extractedUsername;
@@ -67,6 +70,13 @@ class ProfileSetupListeners extends ConsumerWidget {
             // render `pendingPictureUrl ?? persistedPictureUrl` purely from
             // state, no widget-local fallback for the existing avatar.
             editorBloc
+              ..add(
+                InitialProfileFieldsSet(
+                  displayName: displayName,
+                  about: about,
+                  website: website,
+                ),
+              )
               ..add(InitialPersistedPictureSet(profile.picture))
               ..add(InitialPersistedBannerSet(profile.banner));
             if (extractedUsername != null) {

@@ -779,6 +779,22 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupProfilePublished => 'پروفائل کامیابی سے شائع ہو گیا!';
 
   @override
+  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+
+  @override
+  String get profileSetupUnsavedChangesSubtitle =>
+      'Save your edits before leaving, or discard them and keep moving.';
+
+  @override
+  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+
+  @override
+  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+
+  @override
+  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+
+  @override
   String get profileSetupCreateNewProfile => 'نیا پروفائل بنائیں؟';
 
   @override

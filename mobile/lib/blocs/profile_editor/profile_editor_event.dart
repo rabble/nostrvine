@@ -66,6 +66,45 @@ final class ProfileSaveConfirmed extends ProfileEditorEvent {
   const ProfileSaveConfirmed();
 }
 
+/// Sets the initially-loaded text profile fields and current edit values.
+final class InitialProfileFieldsSet extends ProfileEditorEvent {
+  const InitialProfileFieldsSet({
+    required this.displayName,
+    required this.about,
+    required this.website,
+  });
+
+  final String displayName;
+  final String about;
+  final String website;
+}
+
+/// Event triggered when display name text changes.
+final class DisplayNameChanged extends ProfileEditorEvent {
+  const DisplayNameChanged(this.displayName);
+
+  final String displayName;
+}
+
+/// Event triggered when bio/about text changes.
+final class AboutChanged extends ProfileEditorEvent {
+  const AboutChanged(this.about);
+
+  final String about;
+}
+
+/// Event triggered when website text changes.
+final class WebsiteChanged extends ProfileEditorEvent {
+  const WebsiteChanged(this.website);
+
+  final String website;
+}
+
+/// User intentionally discarded the current profile edit session.
+final class ProfileEditDiscarded extends ProfileEditorEvent {
+  const ProfileEditDiscarded();
+}
+
 /// Sets the user's existing claimed username after profile load.
 final class InitialUsernameSet extends ProfileEditorEvent {
   const InitialUsernameSet(this.username);

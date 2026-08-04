@@ -9,6 +9,16 @@ part of 'profile_editor_bloc.dart';
 /// resorting to magic-string conventions.
 const Object _kUnset = Object();
 
+String _clean(String value) => value.trim();
+
+String _cleanBanner(String value) {
+  final cleaned = _clean(value).toLowerCase();
+  if (cleaned.startsWith('#') && cleaned.length == 7) {
+    return '0x${cleaned.substring(1)}';
+  }
+  return cleaned;
+}
+
 /// Status of the profile editor operation.
 enum ProfileEditorStatus {
   /// Initial state, no operation in progress.
@@ -246,6 +256,12 @@ final class ProfileEditorState extends Equatable {
     this.status = ProfileEditorStatus.initial,
     this.error,
     this.pendingEvent,
+    this.displayName = '',
+    this.initialDisplayName = '',
+    this.about = '',
+    this.initialAbout = '',
+    this.website = '',
+    this.initialWebsite = '',
     this.username = '',
     this.initialUsername,
     this.usernameStatus = UsernameStatus.idle,
@@ -263,6 +279,7 @@ final class ProfileEditorState extends Equatable {
     this.pendingBannerStatus = PendingBannerStatus.idle,
     this.pendingBannerUrl,
     this.pendingBannerColor,
+    this.isBannerCleared = false,
     this.persistedBanner,
     this.bannerUploadError,
     this.verifierStatus = VerifierStatus.idle,
@@ -276,6 +293,24 @@ final class ProfileEditorState extends Equatable {
 
   /// Pending event awaiting confirmation (for blank profile overwrite warning).
   final ProfileSaved? pendingEvent;
+
+  /// Current display name being edited.
+  final String displayName;
+
+  /// Display name loaded from the user's currently-persisted profile.
+  final String initialDisplayName;
+
+  /// Current profile bio/about text being edited.
+  final String about;
+
+  /// Bio/about text loaded from the user's currently-persisted profile.
+  final String initialAbout;
+
+  /// Current profile website being edited.
+  final String website;
+
+  /// Website loaded from the user's currently-persisted profile.
+  final String initialWebsite;
 
   /// Current username being edited (divine.video mode).
   final String username;
@@ -339,6 +374,9 @@ final class ProfileEditorState extends Equatable {
   /// persisted via Save. Mutually exclusive with [pendingBannerUrl].
   final Color? pendingBannerColor;
 
+  /// Whether the user explicitly cleared the banner in this edit session.
+  final bool isBannerCleared;
+
   /// Banner value currently persisted on the user's kind 0. Can be either
   /// a URL or a hex color string (e.g. `0x33ccbf`); see
   /// `UserProfileUtils.profileBackgroundColor` for the parse contract.
@@ -351,6 +389,7 @@ final class ProfileEditorState extends Equatable {
   /// staged image URL > staged color (encoded as `0xRRGGBB`) > persisted
   /// banner. Returns `null` when none are set.
   String? get effectiveBanner {
+    if (isBannerCleared) return null;
     final url = pendingBannerUrl;
     if (url != null && url.isNotEmpty) return url;
     final color = pendingBannerColor;
@@ -397,6 +436,29 @@ final class ProfileEditorState extends Equatable {
     };
   }
 
+  /// Whether leaving the editor would discard changes that have not been saved.
+  bool get hasUnsavedChanges {
+    if (_clean(displayName) != _clean(initialDisplayName)) return true;
+    if (_clean(about) != _clean(initialAbout)) return true;
+    if (_clean(website) != _clean(initialWebsite)) return true;
+    if (_clean(username).toLowerCase() !=
+        _clean(initialUsername ?? '').toLowerCase()) {
+      return true;
+    }
+    if (_clean(externalNip05) != _clean(initialExternalNip05 ?? '')) {
+      return true;
+    }
+    if (_clean(effectivePictureUrl ?? '') !=
+        _clean(persistedPictureUrl ?? '')) {
+      return true;
+    }
+    if (_cleanBanner(effectiveBanner ?? '') !=
+        _cleanBanner(persistedBanner ?? '')) {
+      return true;
+    }
+    return false;
+  }
+
   /// Creates a copy with updated values.
   ///
   /// `pendingPictureUrl` and `persistedPictureUrl` use a sentinel default so
@@ -406,15 +468,21 @@ final class ProfileEditorState extends Equatable {
     ProfileEditorStatus? status,
     ProfileEditorError? error,
     ProfileSaved? pendingEvent,
+    String? displayName,
+    String? initialDisplayName,
+    String? about,
+    String? initialAbout,
+    String? website,
+    String? initialWebsite,
     String? username,
-    String? initialUsername,
+    Object? initialUsername = _kUnset,
     UsernameStatus? usernameStatus,
     UsernameValidationError? usernameError,
     String? usernameFormatMessage,
     Set<String>? reservedUsernames,
     Nip05Mode? nip05Mode,
     String? externalNip05,
-    String? initialExternalNip05,
+    Object? initialExternalNip05 = _kUnset,
     ExternalNip05ValidationError? externalNip05Error,
     PendingAvatarStatus? pendingAvatarStatus,
     Object? pendingPictureUrl = _kUnset,
@@ -423,6 +491,7 @@ final class ProfileEditorState extends Equatable {
     PendingBannerStatus? pendingBannerStatus,
     Object? pendingBannerUrl = _kUnset,
     Object? pendingBannerColor = _kUnset,
+    bool? isBannerCleared,
     Object? persistedBanner = _kUnset,
     BannerUploadError? bannerUploadError,
     VerifierStatus? verifierStatus,
@@ -431,15 +500,25 @@ final class ProfileEditorState extends Equatable {
       status: status ?? this.status,
       error: error,
       pendingEvent: pendingEvent,
+      displayName: displayName ?? this.displayName,
+      initialDisplayName: initialDisplayName ?? this.initialDisplayName,
+      about: about ?? this.about,
+      initialAbout: initialAbout ?? this.initialAbout,
+      website: website ?? this.website,
+      initialWebsite: initialWebsite ?? this.initialWebsite,
       username: username ?? this.username,
-      initialUsername: initialUsername ?? this.initialUsername,
+      initialUsername: identical(initialUsername, _kUnset)
+          ? this.initialUsername
+          : initialUsername as String?,
       usernameStatus: usernameStatus ?? this.usernameStatus,
       usernameError: usernameError,
       usernameFormatMessage: usernameFormatMessage,
       reservedUsernames: reservedUsernames ?? this.reservedUsernames,
       nip05Mode: nip05Mode ?? this.nip05Mode,
       externalNip05: externalNip05 ?? this.externalNip05,
-      initialExternalNip05: initialExternalNip05 ?? this.initialExternalNip05,
+      initialExternalNip05: identical(initialExternalNip05, _kUnset)
+          ? this.initialExternalNip05
+          : initialExternalNip05 as String?,
       externalNip05Error: externalNip05Error,
       pendingAvatarStatus: pendingAvatarStatus ?? this.pendingAvatarStatus,
       pendingPictureUrl: identical(pendingPictureUrl, _kUnset)
@@ -456,6 +535,7 @@ final class ProfileEditorState extends Equatable {
       pendingBannerColor: identical(pendingBannerColor, _kUnset)
           ? this.pendingBannerColor
           : pendingBannerColor as Color?,
+      isBannerCleared: isBannerCleared ?? this.isBannerCleared,
       persistedBanner: identical(persistedBanner, _kUnset)
           ? this.persistedBanner
           : persistedBanner as String?,
@@ -469,6 +549,12 @@ final class ProfileEditorState extends Equatable {
     status,
     error,
     pendingEvent,
+    displayName,
+    initialDisplayName,
+    about,
+    initialAbout,
+    website,
+    initialWebsite,
     username,
     initialUsername,
     usernameStatus,
@@ -486,6 +572,7 @@ final class ProfileEditorState extends Equatable {
     pendingBannerStatus,
     pendingBannerUrl,
     pendingBannerColor,
+    isBannerCleared,
     persistedBanner,
     bannerUploadError,
     verifierStatus,
