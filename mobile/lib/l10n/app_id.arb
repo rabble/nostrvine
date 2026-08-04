@@ -2495,6 +2495,7 @@
     "libraryDraftDeletedSnackbar": "Draf dihapus",
     "libraryDraftDuplicatedSnackbar": "Draf diduplikat",
     "libraryDraftDuplicateFailedSnackbar": "Gagal menduplikat draf",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Duplikat",
     "libraryDraftCopyTitle": "{title} (salinan {number})",
     "@libraryDraftCopyTitle": {

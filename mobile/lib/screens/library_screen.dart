@@ -827,7 +827,7 @@ class _TabBody extends StatelessWidget {
     return TabBarView(
       controller: tabController,
       children: [
-        const DraftsTab(showRecordButton: false, showAutosavedDraft: false),
+        const DraftsTab(showRecordButton: false),
         ClipsTab(
           clips: clips,
           selectionEnabled: selectionEnabled,

@@ -6285,6 +6285,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'Taslak çoğaltılamadı';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Paylaş';
 
   @override

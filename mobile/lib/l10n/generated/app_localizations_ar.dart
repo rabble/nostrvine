@@ -6275,6 +6275,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'تعذّر تكرار المسودة';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'نشر';
 
   @override

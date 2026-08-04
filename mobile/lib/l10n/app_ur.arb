@@ -3738,6 +3738,7 @@
   "libraryDraftDeleteFailedSnackbar": "مسودہ حذف نہیں ہو سکا",
   "libraryDraftDuplicatedSnackbar": "مسودہ نقل ہو گیا",
   "libraryDraftDuplicateFailedSnackbar": "مسودہ نقل نہیں ہو سکا",
+  "libraryDraftInProgressBadge": "In progress",
   "libraryDraftActionPost": "پوسٹ کریں",
   "libraryDraftActionEdit": "ترمیم",
   "libraryDraftActionDuplicate": "نقل کریں",

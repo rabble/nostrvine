@@ -6193,6 +6193,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'ረቂቅን ማባዛት አልተሳካም።';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'ለጥፍ';
 
   @override

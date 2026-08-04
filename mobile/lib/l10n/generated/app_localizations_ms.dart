@@ -6367,6 +6367,9 @@ class AppLocalizationsMs extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'Gagal menduplikasi draf';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Siarkan';
 
   @override

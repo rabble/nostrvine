@@ -6017,6 +6017,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => '复制草稿失败';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => '发布';
 
   @override

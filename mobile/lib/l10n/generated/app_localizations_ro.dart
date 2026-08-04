@@ -6475,6 +6475,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut duplica ciorna';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Publică';
 
   @override

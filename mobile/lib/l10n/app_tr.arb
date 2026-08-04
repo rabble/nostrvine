@@ -2495,6 +2495,7 @@
     "libraryDraftDeletedSnackbar": "Taslak silindi",
     "libraryDraftDuplicatedSnackbar": "Taslak çoğaltıldı",
     "libraryDraftDuplicateFailedSnackbar": "Taslak çoğaltılamadı",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "Çoğalt",
     "libraryDraftCopyTitle": "{title} (kopya {number})",
     "@libraryDraftCopyTitle": {

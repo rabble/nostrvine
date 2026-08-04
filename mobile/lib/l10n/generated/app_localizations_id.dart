@@ -6283,6 +6283,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'Gagal menduplikat draf';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Posting';
 
   @override

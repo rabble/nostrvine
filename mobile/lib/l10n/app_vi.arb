@@ -3738,6 +3738,7 @@
   "libraryDraftDeleteFailedSnackbar": "Không xóa được bản nháp",
   "libraryDraftDuplicatedSnackbar": "Đã nhân bản bản nháp",
   "libraryDraftDuplicateFailedSnackbar": "Không nhân bản được bản nháp",
+  "libraryDraftInProgressBadge": "In progress",
   "libraryDraftActionPost": "Đăng",
   "libraryDraftActionEdit": "Sửa",
   "libraryDraftActionDuplicate": "Nhân bản",

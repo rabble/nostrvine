@@ -6325,6 +6325,9 @@ class AppLocalizationsUr extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'مسودہ نقل نہیں ہو سکا';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'پوسٹ کریں';
 
   @override

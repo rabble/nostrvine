@@ -2488,6 +2488,7 @@
     "libraryDraftDeletedSnackbar": "تم حذف المسودة",
     "libraryDraftDuplicatedSnackbar": "تم تكرار المسودة",
     "libraryDraftDuplicateFailedSnackbar": "تعذّر تكرار المسودة",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "تكرار",
     "libraryDraftCopyTitle": "{title} (نسخة {number})",
     "@libraryDraftCopyTitle": {

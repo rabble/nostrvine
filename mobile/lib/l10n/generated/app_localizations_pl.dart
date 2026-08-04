@@ -6477,6 +6477,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się zduplikować wersji roboczej';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Opublikuj';
 
   @override

@@ -65,10 +65,7 @@ void main() {
       mockBloc = _MockDraftsLibraryBloc();
     });
 
-    Widget buildWidget({
-      bool isSelectionMode = true,
-      bool showAutosavedDraft = true,
-    }) {
+    Widget buildWidget({bool isSelectionMode = true}) {
       return ProviderScope(
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -77,10 +74,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<DraftsLibraryBloc>.value(
               value: mockBloc,
-              child: DraftsTab(
-                showRecordButton: isSelectionMode,
-                showAutosavedDraft: showAutosavedDraft,
-              ),
+              child: DraftsTab(showRecordButton: isSelectionMode),
             ),
           ),
         ),
@@ -141,29 +135,7 @@ void main() {
         expect(find.byType(DraftListTile), findsNWidgets(2));
       });
 
-      testWidgets('hides autosaved draft when showAutosavedDraft is false', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(
-          DraftsLibraryLoaded(
-            drafts: [
-              createDraft(
-                id: VideoEditorConstants.autoSaveId,
-                title: 'Autosaved',
-              ),
-              createDraft(id: 'real-draft', title: 'Real Draft'),
-            ],
-          ),
-        );
-
-        await tester.pumpWidget(buildWidget(showAutosavedDraft: false));
-
-        expect(find.byType(DraftListTile), findsOneWidget);
-        expect(find.text('Real Draft'), findsOneWidget);
-        expect(find.text('Autosaved'), findsNothing);
-      });
-
-      testWidgets('shows autosaved draft when showAutosavedDraft is true', (
+      testWidgets('shows autosaved draft with in-progress badge', (
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
@@ -181,25 +153,8 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         expect(find.byType(DraftListTile), findsNWidgets(2));
-      });
-
-      testWidgets('shows $EmptyLibraryState when only autosaved draft '
-          'and showAutosavedDraft is false', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          DraftsLibraryLoaded(
-            drafts: [
-              createDraft(
-                id: VideoEditorConstants.autoSaveId,
-                title: 'Autosaved',
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpWidget(buildWidget(showAutosavedDraft: false));
-
-        expect(find.byType(EmptyLibraryState), findsOneWidget);
-        expect(find.text('No Drafts Yet'), findsOneWidget);
+        expect(find.text('Autosaved'), findsOneWidget);
+        expect(find.text(en.libraryDraftInProgressBadge), findsOneWidget);
       });
     });
 
@@ -448,6 +403,14 @@ void main() {
       await tester.pumpWidget(buildWidget(draft: createDraft(title: '')));
 
       expect(find.text(en.draftUntitled), findsOneWidget);
+    });
+
+    testWidgets('shows in-progress badge for autosaved draft', (tester) async {
+      await tester.pumpWidget(
+        buildWidget(draft: createDraft(id: VideoEditorConstants.autoSaveId)),
+      );
+
+      expect(find.text(en.libraryDraftInProgressBadge), findsOneWidget);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {

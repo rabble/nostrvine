@@ -6316,6 +6316,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => 'Failed to duplicate draft';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => 'Post';
 
   @override

@@ -6038,6 +6038,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get libraryDraftDuplicateFailedSnackbar => '下書きを複製できませんでした';
 
   @override
+  String get libraryDraftInProgressBadge => 'In progress';
+
+  @override
   String get libraryDraftActionPost => '投稿';
 
   @override

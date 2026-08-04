@@ -1826,6 +1826,7 @@
     "libraryDraftDeletedSnackbar": "임시 저장을 삭제했어요",
     "libraryDraftDuplicatedSnackbar": "임시 저장을 복제했어요",
     "libraryDraftDuplicateFailedSnackbar": "임시 저장을 복제하지 못했어요",
+    "libraryDraftInProgressBadge": "In progress",
     "libraryDraftActionDuplicate": "복제",
     "libraryDraftCopyTitle": "{title} (사본 {number})",
     "@libraryDraftCopyTitle": {

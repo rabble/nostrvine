@@ -3797,6 +3797,7 @@
   "libraryDraftDeleteFailedSnackbar": "Failed to delete draft",
   "libraryDraftDuplicatedSnackbar": "Draft duplicated",
   "libraryDraftDuplicateFailedSnackbar": "Failed to duplicate draft",
+  "libraryDraftInProgressBadge": "In progress",
   "libraryDraftActionPost": "Post",
   "libraryDraftActionEdit": "Edit",
   "libraryDraftActionDuplicate": "Duplicate",
