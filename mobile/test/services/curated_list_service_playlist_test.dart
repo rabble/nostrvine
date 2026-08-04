@@ -7,6 +7,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -52,6 +53,18 @@ void main() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return PublishSuccess(
           event: invocation.positionalArguments[0] as Event,
+        );
+      });
+      when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+        invocation,
+      ) async {
+        final event = invocation.positionalArguments[0] as Event;
+        return PublishOutcome(
+          eventId: event.id,
+          eventKind: event.kind,
+          acceptedBy: const ['wss://relay.test'],
+          rejectedBy: const {},
+          noResponseFrom: const [],
         );
       });
 
