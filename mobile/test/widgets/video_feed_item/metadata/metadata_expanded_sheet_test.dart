@@ -19,6 +19,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -1107,6 +1108,65 @@ void main() {
       expect(find.text('Reposted by'), findsOneWidget);
       expect(find.text('Improvising'), findsOneWidget);
     });
+
+    testWidgetsWithSurfaceSize(
+      'caps the chips and offers the rest through the full list',
+      (tester) async {
+        final pubkeys = List<String>.generate(
+          12,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: VideoRepostersState(
+              pubkeys: pubkeys,
+              isLoading: false,
+            ),
+            providerOverrides: [
+              for (final pubkey in pubkeys)
+                fetchUserProfileProvider(
+                  pubkey,
+                ).overrideWith((ref) async => null),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Every reposter would otherwise be a chip that fetches its own
+        // profile — a popular video has thousands.
+        expect(find.byType(UserAvatar), findsNWidgets(9));
+        expect(
+          find.text(_l10n(tester).metadataMoreReposters(3)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'shows every reposter when they fit under the cap',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
+            ),
+            providerOverrides: [
+              fetchUserProfileProvider(_reposterPubkey).overrideWith(
+                (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+              ),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Improvising'), findsOneWidget);
+        expect(find.textContaining('more'), findsNothing);
+      },
+    );
 
     testWidgetsWithSurfaceSize(
       'hides when relay returns empty and no pre-populated data',

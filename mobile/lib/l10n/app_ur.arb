@@ -991,6 +991,7 @@
   "metadataCollaboratorsLabel": "شریک کار",
   "metadataInspiredByLabel": "متاثر از",
   "metadataRepostedByLabel": "ریپوسٹ کرنے والے",
+  "metadataMoreReposters": "+{count} مزید",
   "metadataLoopsLabel": "{count, plural, =1{لوپ} other{لوپ}}",
   "@metadataLoopsLabel": {
     "placeholders": {

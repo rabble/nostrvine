@@ -692,6 +692,7 @@
     "metadataCollaboratorsLabel": "Kolaborator",
     "metadataInspiredByLabel": "Terinspirasi oleh",
     "metadataRepostedByLabel": "Di-repost oleh",
+    "metadataMoreReposters": "+{count} lainnya",
     "metadataLoopsLabel": "Loop",
     "metadataLikesLabel": "Suka",
     "metadataCommentsLabel": "Komentar",

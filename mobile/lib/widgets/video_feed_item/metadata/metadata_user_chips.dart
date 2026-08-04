@@ -7,12 +7,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_collaborator_status/video_collaborator_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -183,10 +185,13 @@ class MetadataRepostedBySection extends StatelessWidget {
         }.toList();
 
         if (state.isLoading && allPubkeys.isEmpty) {
-          return _RepostedByContent(pubkeys: video.reposterPubkeys ?? []);
+          return _RepostedByContent(
+            pubkeys: video.reposterPubkeys ?? [],
+            video: video,
+          );
         }
 
-        return _RepostedByContent(pubkeys: allPubkeys);
+        return _RepostedByContent(pubkeys: allPubkeys, video: video);
       },
     );
   }
@@ -194,15 +199,30 @@ class MetadataRepostedBySection extends StatelessWidget {
 
 /// Content widget for the Reposted-by section.
 ///
+/// Shows at most [_maxVisibleReposters] chips and hands the rest to the
+/// reposters list screen. A popular video can be reposted thousands of
+/// times, and every chip resolves its own profile — rendering the full set
+/// would fire a profile fetch per reposter and lay them all out at once.
+///
 /// Returns [SizedBox.shrink] when [pubkeys] is empty.
 class _RepostedByContent extends StatelessWidget {
-  const _RepostedByContent({required this.pubkeys});
+  const _RepostedByContent({required this.pubkeys, required this.video});
+
+  /// Roughly three rows of chips on a phone.
+  ///
+  /// Not an exact row count: chip width follows the display name, and those
+  /// resolve per chip after this has already been laid out.
+  static const _maxVisibleReposters = 9;
 
   final List<String> pubkeys;
+  final VideoEvent video;
 
   @override
   Widget build(BuildContext context) {
     if (pubkeys.isEmpty) return const SizedBox.shrink();
+
+    final visible = pubkeys.take(_maxVisibleReposters);
+    final hiddenCount = pubkeys.length - visible.length;
 
     return MetadataSection(
       label: context.l10n.metadataRepostedByLabel,
@@ -210,10 +230,62 @@ class _RepostedByContent extends StatelessWidget {
         spacing: 8,
         runSpacing: 8,
         children: [
-          for (final pubkey in pubkeys) _TappableUserChip(pubkey: pubkey),
+          for (final pubkey in visible) _TappableUserChip(pubkey: pubkey),
+          if (hiddenCount > 0)
+            _MoreRepostersChip(count: hiddenCount, video: video),
         ],
       ),
     );
+  }
+}
+
+/// Chip that opens the full reposters list for [video].
+///
+/// Styled as a sibling of [_TappableUserChip] so it reads as the tail of the
+/// same row rather than a separate control.
+class _MoreRepostersChip extends StatelessWidget {
+  const _MoreRepostersChip({required this.count, required this.video});
+
+  final int count;
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = context.l10n.metadataMoreReposters(count);
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () => _openRepostersList(context),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: context.vineColors.surfaceContainer,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                label,
+                style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openRepostersList(BuildContext context) {
+    final addressableId = video.addressableId;
+    final location = GoRouter.of(context).namedLocation(
+      VideoEngagementListScreen.repostersRouteName,
+      pathParameters: {'eventId': video.id},
+      queryParameters: addressableId == null ? const {} : {'a': addressableId},
+    );
+    context.pushWithVideoPause<void>(location);
   }
 }
 

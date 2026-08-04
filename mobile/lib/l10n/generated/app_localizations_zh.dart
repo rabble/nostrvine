@@ -1733,6 +1733,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get metadataRepostedByLabel => '转发自';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '还有 $count 人';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

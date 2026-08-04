@@ -1842,6 +1842,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get metadataRepostedByLabel => 'Repostado por';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count mais';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Loops';
   }

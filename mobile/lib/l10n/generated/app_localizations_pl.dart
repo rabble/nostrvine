@@ -1860,6 +1860,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get metadataRepostedByLabel => 'Repostowane przez';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count więcej';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Pętle';
   }

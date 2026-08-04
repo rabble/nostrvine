@@ -1814,6 +1814,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get metadataRepostedByLabel => 'أعاد نشره';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count آخرين';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'التكرارات';
   }
