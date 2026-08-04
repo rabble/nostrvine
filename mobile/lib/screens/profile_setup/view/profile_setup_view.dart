@@ -29,6 +29,7 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
   // name field when it is left empty.
   final _nameFocusNode = FocusNode();
   bool _refreshProfileOnResume = false;
+  bool _isLeavingProfileSetup = false;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -45,17 +46,31 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _nameController.addListener(_onProfileTextChanged);
+    _bioController.addListener(_onProfileTextChanged);
+    _websiteController.addListener(_onProfileTextChanged);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _nameController.removeListener(_onProfileTextChanged);
+    _bioController.removeListener(_onProfileTextChanged);
+    _websiteController.removeListener(_onProfileTextChanged);
     _nameController.dispose();
     _bioController.dispose();
     _websiteController.dispose();
     _nip05Controller.dispose();
     _nameFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onProfileTextChanged() {
+    if (!mounted) return;
+    context.read<ProfileEditorBloc>()
+      ..add(DisplayNameChanged(_nameController.text))
+      ..add(AboutChanged(_bioController.text))
+      ..add(WebsiteChanged(_websiteController.text));
   }
 
   @override
@@ -71,95 +86,95 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
       onNativeVerifierLaunched: () => _refreshProfileOnResume = true,
       child: BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
         builder: (context, profileEditorState) {
-          return Scaffold(
-            backgroundColor: context.vineColors.surfaceContainerHigh,
-            appBar: DiVineAppBar(
-              title: context.l10n.profileSetupEditProfileTitle,
-              backgroundMode: DiVineAppBarBackgroundMode.transparent,
-              showBackButton: true,
-              backButtonSemanticLabel: context.l10n.profileSetupBackLabel,
-              onBackPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                  return;
-                }
-                final authService = ref.read(authServiceProvider);
-                final currentPubkey = authService.currentPublicKeyHex;
-                if (currentPubkey != null) {
-                  final npub = authService.currentNpub;
-                  context.go('/profile/$npub');
-                } else {
-                  context.go('/home/0');
-                }
-              },
-              style: const DiVineAppBarStyle(
-                iconButtonBackgroundColor: VineTheme.scrim15,
-              ),
-              actions: [
-                DiVineAppBarAction(
-                  icon: SvgIconSource(DivineIconName.info.assetPath),
-                  onPressed: () => _showNostrInfoSheet(context),
-                  tooltip: context.l10n.profileSetupAboutNostr,
-                  semanticLabel: context.l10n.profileSetupAboutNostr,
+          return PopScope(
+            canPop:
+                _isLeavingProfileSetup || !profileEditorState.hasUnsavedChanges,
+            onPopInvokedWithResult: (didPop, result) {
+              if (!didPop && profileEditorState.hasUnsavedChanges) {
+                _confirmLeaveWithUnsavedChanges(context, pubkey: pubkey);
+              }
+            },
+            child: Scaffold(
+              backgroundColor: context.vineColors.surfaceContainerHigh,
+              appBar: DiVineAppBar(
+                title: context.l10n.profileSetupEditProfileTitle,
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                showBackButton: true,
+                backButtonSemanticLabel: context.l10n.profileSetupBackLabel,
+                onBackPressed: () => _handleLeavePressed(
+                  context,
+                  state: profileEditorState,
+                  pubkey: pubkey,
                 ),
-              ],
-            ),
-            body: GestureDetector(
-              onTap: () {
-                // Dismiss keyboard when tapping outside text fields
-                FocusScope.of(context).unfocus();
-              },
-              child: SafeArea(
-                bottom:
-                    false, // Don't add bottom padding - let content extend to bottom
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 600),
-                        child: Theme(
-                          data: Theme.of(context).copyWith(
-                            textSelectionTheme: const TextSelectionThemeData(
-                              cursorColor: VineTheme.primary,
-                              selectionColor: Color(0xFF1C4430),
+                style: const DiVineAppBarStyle(
+                  iconButtonBackgroundColor: VineTheme.scrim15,
+                ),
+                actions: [
+                  DiVineAppBarAction(
+                    icon: SvgIconSource(DivineIconName.info.assetPath),
+                    onPressed: () => _showNostrInfoSheet(context),
+                    tooltip: context.l10n.profileSetupAboutNostr,
+                    semanticLabel: context.l10n.profileSetupAboutNostr,
+                  ),
+                ],
+              ),
+              body: GestureDetector(
+                onTap: () {
+                  // Dismiss keyboard when tapping outside text fields
+                  FocusScope.of(context).unfocus();
+                },
+                child: SafeArea(
+                  bottom:
+                      false, // Don't add bottom padding - let content extend to bottom
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              textSelectionTheme: const TextSelectionThemeData(
+                                cursorColor: VineTheme.primary,
+                                selectionColor: Color(0xFF1C4430),
+                              ),
                             ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ProfileAvatarSection(
-                                nameController: _nameController,
-                              ),
-                              const SizedBox(height: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ProfileAvatarSection(
+                                  nameController: _nameController,
+                                ),
+                                const SizedBox(height: 24),
 
-                              DisplayNameField(
-                                controller: _nameController,
-                                focusNode: _nameFocusNode,
-                              ),
-                              const SizedBox(height: 16),
+                                DisplayNameField(
+                                  controller: _nameController,
+                                  focusNode: _nameFocusNode,
+                                ),
+                                const SizedBox(height: 16),
 
-                              BioField(controller: _bioController),
-                              const SizedBox(height: 16),
+                                BioField(controller: _bioController),
+                                const SizedBox(height: 16),
 
-                              WebsiteField(controller: _websiteController),
-                              const SizedBox(height: 16),
+                                WebsiteField(controller: _websiteController),
+                                const SizedBox(height: 16),
 
-                              const VerifiedAccountsSection(),
+                                const VerifiedAccountsSection(),
 
-                              const PublicKeyLink(),
-                              const SizedBox(height: 16),
+                                const PublicKeyLink(),
+                                const SizedBox(height: 16),
 
-                              UsernameField(controller: _nip05Controller),
-                              const SizedBox(height: 24),
+                                UsernameField(controller: _nip05Controller),
+                                const SizedBox(height: 24),
 
-                              // Banner section: image upload + color swatches.
-                              // Replaces the old standalone profile-color
-                              // picker; the bloc serializes the chosen color
-                              // into the same kind-0 `banner` field.
-                              const BannerEditingBlock(),
-                            ],
+                                // Banner section: image upload + color swatches.
+                                // Replaces the old standalone profile-color
+                                // picker; the bloc serializes the chosen color
+                                // into the same kind-0 `banner` field.
+                                const BannerEditingBlock(),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -167,93 +182,58 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
                   ),
                 ),
               ),
-            ),
-            bottomNavigationBar: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed:
-                            profileEditorState.status ==
-                                ProfileEditorStatus.loading
-                            ? null
-                            : () {
-                                // Wait for any ongoing transitions before popping
-                                // This prevents navigation timing race condition
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  if (mounted) {
-                                    Navigator.of(context).pop();
-                                  }
-                                });
-                              },
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: context.vineColors.surfaceContainer,
-                          foregroundColor: VineTheme.vineGreen,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 16,
-                          ),
-                          side: BorderSide(
-                            color: context.vineColors.outlineMuted,
-                            width: 2,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: Text(
-                          context.l10n.commonCancel,
-                          style: VineTheme.titleMediumFont(
-                            color: VineTheme.vineGreen,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    if (pubkey != null)
+              bottomNavigationBar: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  child: Row(
+                    children: [
                       Expanded(
-                        child: SaveButton(
-                          canSave: profileEditorState.isSaveReady,
-                          onSave: () {
-                            if (_nameController.text.trim().isEmpty) {
-                              _nameFocusNode.requestFocus();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    context
-                                        .l10n
-                                        .profileSetupDisplayNameRequired,
-                                  ),
-                                  backgroundColor: VineTheme.error,
+                        child: OutlinedButton(
+                          onPressed:
+                              profileEditorState.status ==
+                                  ProfileEditorStatus.loading
+                              ? null
+                              : () => _handleLeavePressed(
+                                  context,
+                                  state: profileEditorState,
+                                  pubkey: pubkey,
                                 ),
-                              );
-                              return;
-                            }
-                            context.read<ProfileEditorBloc>().add(
-                              ProfileSaved(
-                                pubkey: pubkey,
-                                displayName: _nameController.text,
-                                about: _bioController.text,
-                                website: _websiteController.text,
-                                username: _nip05Controller.text,
-                                // Picture and banner are owned by bloc state.
-                                // The bloc reads pendingPictureUrl /
-                                // pendingBannerUrl / pendingBannerColor /
-                                // persistedBanner directly via
-                                // `effectiveBanner`, so we don't pass them
-                                // through the event.
-                              ),
-                            );
-                          },
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor:
+                                context.vineColors.surfaceContainer,
+                            foregroundColor: VineTheme.vineGreen,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                            side: BorderSide(
+                              color: context.vineColors.outlineMuted,
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: Text(
+                            context.l10n.commonCancel,
+                            style: VineTheme.titleMediumFont(
+                              color: VineTheme.vineGreen,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                  ],
+                      const SizedBox(width: 16),
+                      if (pubkey != null)
+                        Expanded(
+                          child: SaveButton(
+                            canSave: profileEditorState.isSaveReady,
+                            onSave: () => _saveProfile(context, pubkey: pubkey),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -261,6 +241,92 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
         },
       ),
     );
+  }
+
+  void _handleLeavePressed(
+    BuildContext context, {
+    required ProfileEditorState state,
+    required String? pubkey,
+  }) {
+    if (state.hasUnsavedChanges) {
+      _confirmLeaveWithUnsavedChanges(context, pubkey: pubkey);
+      return;
+    }
+    _leaveProfileSetup(context);
+  }
+
+  void _confirmLeaveWithUnsavedChanges(
+    BuildContext context, {
+    required String? pubkey,
+  }) {
+    VineBottomSheetPrompt.show<void>(
+      context: context,
+      sticker: .videoClapBoard,
+      title: context.l10n.profileSetupUnsavedChangesTitle,
+      subtitle: context.l10n.profileSetupUnsavedChangesSubtitle,
+      primaryButtonText: context.l10n.profileSetupUnsavedChangesSaveButton,
+      secondaryButtonText: context.l10n.profileSetupUnsavedChangesDiscardButton,
+      tertiaryButtonText: context.l10n.profileSetupUnsavedChangesKeepButton,
+      onPrimaryPressed: pubkey == null
+          ? null
+          : () {
+              context.pop();
+              _saveProfile(context, pubkey: pubkey);
+            },
+      onSecondaryPressed: () {
+        context.pop();
+        context.read<ProfileEditorBloc>().add(const ProfileEditDiscarded());
+        _leaveProfileSetup(context);
+      },
+      onTertiaryPressed: context.pop,
+    );
+  }
+
+  void _saveProfile(BuildContext context, {required String pubkey}) {
+    if (_nameController.text.trim().isEmpty) {
+      _nameFocusNode.requestFocus();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.profileSetupDisplayNameRequired),
+          backgroundColor: VineTheme.error,
+        ),
+      );
+      return;
+    }
+    context.read<ProfileEditorBloc>().add(
+      ProfileSaved(
+        pubkey: pubkey,
+        displayName: _nameController.text,
+        about: _bioController.text,
+        website: _websiteController.text,
+        username: _nip05Controller.text,
+        // Picture and banner are owned by bloc state. The bloc reads
+        // pendingPictureUrl / pendingBannerUrl / pendingBannerColor /
+        // persistedBanner directly via `effectiveBanner`, so we don't pass
+        // them through the event.
+      ),
+    );
+  }
+
+  void _leaveProfileSetup(BuildContext context) {
+    if (!_isLeavingProfileSetup && mounted) {
+      setState(() => _isLeavingProfileSetup = true);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (context.canPop()) {
+        context.pop();
+        return;
+      }
+      final authService = ref.read(authServiceProvider);
+      final currentPubkey = authService.currentPublicKeyHex;
+      if (currentPubkey != null) {
+        final npub = authService.currentNpub;
+        context.go('/profile/$npub');
+      } else {
+        context.go('/home/0');
+      }
+    });
   }
 
   void _showNostrInfoSheet(BuildContext context) {

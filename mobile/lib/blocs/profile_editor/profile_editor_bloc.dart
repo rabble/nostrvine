@@ -64,6 +64,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
        _currentUserPubkey = currentUserPubkey,
        _stagedProfileMediaStore = stagedProfileMediaStore,
        super(_initialState(stagedProfileMediaStore, currentUserPubkey)) {
+    on<InitialProfileFieldsSet>(_onInitialProfileFieldsSet);
+    on<DisplayNameChanged>(_onDisplayNameChanged);
+    on<AboutChanged>(_onAboutChanged);
+    on<WebsiteChanged>(_onWebsiteChanged);
+    on<ProfileEditDiscarded>(_onProfileEditDiscarded);
     on<InitialUsernameSet>(_onInitialUsernameSet);
     on<InitialPersistedPictureSet>(_onInitialPersistedPictureSet);
     on<ProfileSaved>(_onProfileSaved);
@@ -134,7 +139,71 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     InitialUsernameSet event,
     Emitter<ProfileEditorState> emit,
   ) {
-    emit(state.copyWith(initialUsername: event.username));
+    emit(
+      state.copyWith(username: event.username, initialUsername: event.username),
+    );
+  }
+
+  void _onInitialProfileFieldsSet(
+    InitialProfileFieldsSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        displayName: event.displayName,
+        initialDisplayName: event.displayName,
+        about: event.about,
+        initialAbout: event.about,
+        website: event.website,
+        initialWebsite: event.website,
+      ),
+    );
+  }
+
+  void _onDisplayNameChanged(
+    DisplayNameChanged event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(displayName: event.displayName));
+  }
+
+  void _onAboutChanged(
+    AboutChanged event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(about: event.about));
+  }
+
+  void _onWebsiteChanged(
+    WebsiteChanged event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(website: event.website));
+  }
+
+  Future<void> _onProfileEditDiscarded(
+    ProfileEditDiscarded event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final pubkey = _currentUserPubkey;
+    if (pubkey != null) {
+      await _clearStagedProfileMedia(pubkey);
+    }
+    emit(
+      state.copyWith(
+        displayName: state.initialDisplayName,
+        about: state.initialAbout,
+        website: state.initialWebsite,
+        username: state.initialUsername ?? '',
+        externalNip05: state.initialExternalNip05 ?? '',
+        pendingAvatarStatus: PendingAvatarStatus.idle,
+        pendingPictureUrl: null,
+        pendingBannerStatus: PendingBannerStatus.idle,
+        pendingBannerUrl: null,
+        pendingBannerColor: _parseBannerHexColor(state.persistedBanner),
+        isBannerCleared: false,
+      ),
+    );
   }
 
   void _onInitialPersistedPictureSet(
@@ -303,7 +372,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         ? _parseBannerHexColor(banner)
         : null;
     emit(
-      state.copyWith(persistedBanner: banner, pendingBannerColor: parsedColor),
+      state.copyWith(
+        persistedBanner: banner,
+        pendingBannerColor: parsedColor,
+        isBannerCleared: false,
+      ),
     );
   }
 
@@ -379,6 +452,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           pendingBannerUrl: stagedBannerUrl,
           // Image and color are mutually exclusive — clear any staged color.
           pendingBannerColor: null,
+          isBannerCleared: false,
         ),
       );
       return;
@@ -432,6 +506,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         pendingBannerColor: event.color,
         // Image and color are mutually exclusive — clear any staged URL.
         pendingBannerUrl: null,
+        isBannerCleared: false,
         pendingBannerStatus: PendingBannerStatus.idle,
       ),
     );
@@ -449,6 +524,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       state.copyWith(
         pendingBannerUrl: null,
         pendingBannerColor: null,
+        isBannerCleared: true,
         pendingBannerStatus: PendingBannerStatus.idle,
       ),
     );
@@ -864,7 +940,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     InitialExternalNip05Set event,
     Emitter<ProfileEditorState> emit,
   ) {
-    emit(state.copyWith(initialExternalNip05: event.nip05));
+    emit(
+      state.copyWith(
+        externalNip05: event.nip05,
+        initialExternalNip05: event.nip05,
+      ),
+    );
   }
 
   /// Re-checks a previously reserved username against the nameserver.
@@ -1112,7 +1193,27 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       claimConfirmed: true,
     );
     await _clearStagedProfileMedia(event.pubkey);
-    emit(state.copyWith(status: ProfileEditorStatus.success));
+    emit(
+      state.copyWith(
+        status: ProfileEditorStatus.success,
+        displayName: displayName,
+        initialDisplayName: displayName,
+        about: about ?? '',
+        initialAbout: about ?? '',
+        website: website ?? '',
+        initialWebsite: website ?? '',
+        initialUsername: username,
+        initialExternalNip05: externalNip05,
+        pendingAvatarStatus: PendingAvatarStatus.idle,
+        pendingPictureUrl: null,
+        persistedPictureUrl: picture,
+        pendingBannerStatus: PendingBannerStatus.idle,
+        pendingBannerUrl: null,
+        pendingBannerColor: _parseBannerHexColor(banner),
+        isBannerCleared: false,
+        persistedBanner: banner,
+      ),
+    );
 
     // Fast-path publish, scoped to the generation just enqueued so a save the
     // user fires again while this drive is in flight is never clobbered by it.

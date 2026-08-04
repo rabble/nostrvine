@@ -712,6 +712,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupProfilePublished => '프로필을 게시했어요!';
 
   @override
+  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+
+  @override
+  String get profileSetupUnsavedChangesSubtitle =>
+      'Save your edits before leaving, or discard them and keep moving.';
+
+  @override
+  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+
+  @override
+  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+
+  @override
+  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+
+  @override
   String get profileSetupCreateNewProfile => '새 프로필을 만들까요?';
 
   @override

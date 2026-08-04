@@ -786,6 +786,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileSetupProfilePublished => '¡Perfil publicado con éxito!';
 
   @override
+  String get profileSetupUnsavedChangesTitle => 'Save changes?';
+
+  @override
+  String get profileSetupUnsavedChangesSubtitle =>
+      'Save your edits before leaving, or discard them and keep moving.';
+
+  @override
+  String get profileSetupUnsavedChangesSaveButton => 'Save changes';
+
+  @override
+  String get profileSetupUnsavedChangesDiscardButton => 'Discard changes';
+
+  @override
+  String get profileSetupUnsavedChangesKeepButton => 'Keep editing';
+
+  @override
   String get profileSetupCreateNewProfile => '¿Crear un perfil nuevo?';
 
   @override

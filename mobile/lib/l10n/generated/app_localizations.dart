@@ -1386,6 +1386,36 @@ abstract class AppLocalizations {
   /// **'Profile published successfully!'**
   String get profileSetupProfilePublished;
 
+  /// No description provided for @profileSetupUnsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes?'**
+  String get profileSetupUnsavedChangesTitle;
+
+  /// No description provided for @profileSetupUnsavedChangesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save your edits before leaving, or discard them and keep moving.'**
+  String get profileSetupUnsavedChangesSubtitle;
+
+  /// No description provided for @profileSetupUnsavedChangesSaveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get profileSetupUnsavedChangesSaveButton;
+
+  /// No description provided for @profileSetupUnsavedChangesDiscardButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get profileSetupUnsavedChangesDiscardButton;
+
+  /// No description provided for @profileSetupUnsavedChangesKeepButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep editing'**
+  String get profileSetupUnsavedChangesKeepButton;
+
   /// No description provided for @profileSetupCreateNewProfile.
   ///
   /// In en, this message translates to:

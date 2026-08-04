@@ -647,6 +647,7 @@ void main() {
       mockAuthService = createMockAuthService();
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      when(() => mockAuthService.currentNpub).thenReturn('npub-test-profile');
       when(() => mockAuthService.hasExistingProfile).thenReturn(true);
 
       mockProfileRepository = createMockProfileRepository();
@@ -686,6 +687,60 @@ void main() {
               ],
               child: const ProfileSetupScreenView(isNewUser: false),
             ),
+          ),
+        ),
+      );
+    }
+
+    Future<void> pumpScreenWithRouter(WidgetTester tester) async {
+      final router = GoRouter(
+        initialLocation: ProfileSetupScreen.editPath,
+        routes: [
+          GoRoute(
+            path: ProfileSetupScreen.editPath,
+            name: ProfileSetupScreen.editRouteName,
+            builder: (context, state) => MultiBlocProvider(
+              providers: [
+                BlocProvider<ProfileEditorBloc>.value(value: mockEditorBloc),
+                BlocProvider<MyProfileBloc>.value(value: mockMyProfileBloc),
+              ],
+              child: const ProfileSetupScreenView(isNewUser: false),
+            ),
+          ),
+          GoRoute(
+            path: '/profile/:npub',
+            builder: (context, state) => const Scaffold(
+              body: Text('Profile destination'),
+            ),
+          ),
+          GoRoute(
+            path: '/home/:tab',
+            builder: (context, state) => const Scaffold(
+              body: Text('Home destination'),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            authServiceProvider.overrideWithValue(mockAuthService),
+            profileRepositoryProvider.overrideWith(
+              (ref) => mockProfileRepository,
+            ),
+            fetchUserProfileProvider(
+              testPubkeyHex,
+            ).overrideWith((ref) async => null),
+            userProfileReactiveProvider(
+              testPubkeyHex,
+            ).overrideWith((ref) => Stream<models.UserProfile?>.value(null)),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            routerConfig: router,
           ),
         ),
       );
@@ -754,6 +809,116 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.profileSetupUploadStaged), findsOneWidget);
       expect(find.text('Banner updated'), findsNothing);
+    });
+
+    group('unsaved edit guard', () {
+      const dirtyState = ProfileEditorState(
+        displayName: 'Edited',
+        initialDisplayName: 'Original',
+      );
+
+      testWidgets('system back with a dirty edit shows the prompt', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(dirtyState);
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.profileSetupUnsavedChangesTitle),
+          findsOneWidget,
+        );
+        expect(find.text('Profile destination'), findsNothing);
+      });
+
+      testWidgets('keep editing dismisses the dirty prompt', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(dirtyState);
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.text(l10n.profileSetupUnsavedChangesKeepButton).last,
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.profileSetupUnsavedChangesTitle),
+          findsNothing,
+        );
+        expect(find.byType(ProfileSetupScreenView), findsOneWidget);
+      });
+
+      testWidgets('discard clears edit state and leaves the screen', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(dirtyState);
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.text(l10n.profileSetupUnsavedChangesDiscardButton).last,
+        );
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockEditorBloc.add(const ProfileEditDiscarded()),
+        ).called(1);
+        expect(find.text('Profile destination'), findsOneWidget);
+      });
+
+      testWidgets('save from prompt dispatches ProfileSaved', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(dirtyState);
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextFormField).first, 'Edited');
+        await tester.binding.handlePopRoute();
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.text(l10n.profileSetupUnsavedChangesSaveButton).last,
+        );
+        await tester.pumpAndSettle();
+
+        final captured = verify(
+          () => mockEditorBloc.add(captureAny(that: isA<ProfileSaved>())),
+        ).captured;
+        expect(captured.whereType<ProfileSaved>().last.displayName, 'Edited');
+      });
+
+      testWidgets('clean cancel leaves without showing prompt', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(const ProfileEditorState());
+
+        await pumpScreenWithRouter(tester);
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.commonCancel));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.profileSetupUnsavedChangesTitle),
+          findsNothing,
+        );
+        expect(find.text('Profile destination'), findsOneWidget);
+      });
     });
 
     group('banner block', () {
