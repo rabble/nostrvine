@@ -202,6 +202,16 @@ final class ProfilePictureUploadCleared extends ProfileEditorEvent {
   const ProfilePictureUploadCleared();
 }
 
+/// Stages removal of the profile picture.
+///
+/// The counterpart to [ProfileBannerCleared], and the stronger form of
+/// [ProfilePictureUploadCleared]: that one only drops an unsaved pick, while
+/// this makes Save publish `null` over a picture already on the user's kind 0.
+/// Staging a new picture — uploaded or pasted — cancels the removal.
+final class ProfilePictureCleared extends ProfileEditorEvent {
+  const ProfilePictureCleared();
+}
+
 /// Stages a profile picture URL the user pasted manually.
 ///
 /// Used by the manual-URL entry sheet. Bypasses the upload step because
@@ -280,6 +290,17 @@ final class ProfileBannerColorSelected extends ProfileEditorEvent {
   /// The selected color. The bloc serializes this into a hex string when
   /// publishing kind 0 via [ProfileEditorState.effectiveBanner].
   final Color color;
+}
+
+/// User typed or pasted a banner image URL rather than uploading a file.
+///
+/// The mirror of [ProfilePictureUrlSet] for the banner. An empty string
+/// clears the staged URL.
+final class ProfileBannerUrlSet extends ProfileEditorEvent {
+  const ProfileBannerUrlSet(this.url);
+
+  /// The URL to stage. Empty clears any prior staged change.
+  final String url;
 }
 
 /// User explicitly cleared the banner. Drops both the staged image URL and

@@ -833,35 +833,19 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Име за показване';
 
   @override
-  String get profileSetupDisplayNameHint => 'Как да те познават хората?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'Каквото име или етикет искаш. Не е нужно да е уникално.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Въведи име за показване';
 
   @override
   String get profileSetupBioLabel => 'Био (по избор)';
 
   @override
-  String get profileSetupBioHint => 'Разкажи на хората за себе си...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Публичен ключ (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Потребителско име (по избор)';
-
-  @override
-  String get profileSetupUsernameHint => 'Потребителско име';
 
   @override
   String get profileSetupUsernameHelper =>
@@ -923,13 +907,58 @@ class AppLocalizationsBg extends AppLocalizations {
       'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Банер';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Качи снимка';
-
-  @override
   String get profileSetupBannerClearButton => 'Изчисти банера';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Цвят на банера';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Смяна на банера';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Промяна на цвета на банера';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Персонализиран';
+
+  @override
+  String get profileSetupBannerColorNone => 'Без цвят';
+
+  @override
+  String get profileSetupBannerColorLime => 'Лайм';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Жълто';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Виолетово';
+
+  @override
+  String get profileSetupBannerColorPink => 'Розово';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Оранжево';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Лилаво';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Премахване на снимката';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Направете снимка';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Качване от библиотеката';
+
+  @override
+  String get profileSetupImagePasteLink => 'Поставете връзка към изображение';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Редактиране на профилната снимка';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Редактиране на банера';
 
   @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
@@ -5216,9 +5245,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Публичният ключ е копиран';
-
-  @override
-  String get profileEditPublicKeyLink => 'Виж публичния си ключ';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Запазено в галерията';

@@ -17,7 +17,6 @@ lib/screens/developer_options_screen.dart	2
 lib/screens/feed/pooled_fullscreen_video_feed_screen.dart	1
 lib/screens/inbox/conversation/widgets/reaction_picker_overlay.dart	1
 lib/screens/inbox/new_message_sheet.dart	1
-lib/screens/profile_setup/view/profile_setup_view.dart	1
 lib/screens/video_editor/video_text_editor_screen.dart	1
 lib/services/watermark_image_generator.dart	2
 lib/utils/user_profile_utils.dart	1

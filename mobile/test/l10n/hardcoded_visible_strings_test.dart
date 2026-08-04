@@ -166,9 +166,11 @@ void main() {
         profileSetupSource,
         isNot(contains("'This username is no longer available'")),
       );
-      expect(profileSetupSource, contains('context.l10n.profileSetupBioHint'));
-      expect(profileSetupSource, contains('profileSetupUsernameHint'));
+      // The filled form cards float the label into the placeholder slot, so
+      // the fields carry a label and no separate hint.
+      expect(profileSetupSource, contains('context.l10n.profileSetupBioLabel'));
       expect(profileSetupSource, contains('profileSetupUsernameLabel'));
+      expect(profileSetupSource, contains('profileSetupDisplayNameLabel'));
       expect(
         usernameStatusIndicatorSource,
         contains('profileSetupUsernameChecking'),

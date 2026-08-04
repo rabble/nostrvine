@@ -827,35 +827,19 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'ڈسپلے نام';
 
   @override
-  String get profileSetupDisplayNameHint => 'لوگ آپ کو کس نام سے جانیں؟';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'کوئی بھی نام یا لیبل جو آپ چاہیں۔ منفرد ہونا ضروری نہیں۔';
-
-  @override
   String get profileSetupDisplayNameRequired => 'براہ کرم ڈسپلے نام درج کریں';
 
   @override
   String get profileSetupBioLabel => 'بائیو (اختیاری)';
 
   @override
-  String get profileSetupBioHint => 'لوگوں کو اپنے بارے میں بتائیں...';
-
-  @override
   String get profileSetupWebsiteLabel => 'ویب سائٹ (اختیاری)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'عوامی کلید (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'صارف نام (اختیاری)';
-
-  @override
-  String get profileSetupUsernameHint => 'صارف نام';
 
   @override
   String get profileSetupUsernameHelper => 'Divine پر آپ کی منفرد شناخت';
@@ -916,13 +900,59 @@ class AppLocalizationsUr extends AppLocalizations {
       'پروفائل تصویر اپلوڈ ابھی ویب پر دستیاب نہیں۔ iOS یا Android ایپ استعمال کریں، یا تصویر کا URL پیسٹ کریں۔';
 
   @override
-  String get profileSetupBannerSectionTitle => 'بینر';
-
-  @override
-  String get profileSetupBannerUploadButton => 'تصویر اپلوڈ کریں';
-
-  @override
   String get profileSetupBannerClearButton => 'بینر ہٹائیں';
+
+  @override
+  String get profileSetupBannerChangeColor => 'بینر کا رنگ';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'بینر تبدیل کریں';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'بینر کا رنگ تبدیل کریں';
+
+  @override
+  String get profileSetupBannerColorCustom => 'حسبِ ضرورت';
+
+  @override
+  String get profileSetupBannerColorNone => 'کوئی رنگ نہیں';
+
+  @override
+  String get profileSetupBannerColorLime => 'لائم';
+
+  @override
+  String get profileSetupBannerColorYellow => 'پیلا';
+
+  @override
+  String get profileSetupBannerColorViolet => 'بنفشی';
+
+  @override
+  String get profileSetupBannerColorPink => 'گلابی';
+
+  @override
+  String get profileSetupBannerColorOrange => 'نارنجی';
+
+  @override
+  String get profileSetupBannerColorPurple => 'جامنی';
+
+  @override
+  String get profileSetupAvatarClearButton => 'تصویر ہٹائیں';
+
+  @override
+  String get profileSetupImageTakePhoto => 'تصویر لیں';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll =>
+      'کیمرہ رول سے اپ لوڈ کریں';
+
+  @override
+  String get profileSetupImagePasteLink => 'تصویر کا لنک چسپاں کریں';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'پروفائل تصویر میں ترمیم کریں';
+
+  @override
+  String get profileSetupEditBannerLabel => 'بینر میں ترمیم کریں';
 
   @override
   String get profileSetupUsernameChecking => 'دستیابی چیک ہو رہی ہے...';
@@ -5173,9 +5203,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'عوامی کلید کاپی ہو گئی';
-
-  @override
-  String get profileEditPublicKeyLink => 'اپنی عوامی کلید دیکھیں';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'کیمرہ رول میں محفوظ ہو گئی';

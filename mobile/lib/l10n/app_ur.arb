@@ -441,16 +441,11 @@
   "profileSetupNoRelaysConnected": "نیٹ ورک تک رسائی نہیں ہو سکی۔ اپنا کنکشن چیک کر کے دوبارہ کوشش کریں۔",
   "profileSetupRetryLabel": "دوبارہ کوشش کریں",
   "profileSetupDisplayNameLabel": "ڈسپلے نام",
-  "profileSetupDisplayNameHint": "لوگ آپ کو کس نام سے جانیں؟",
-  "profileSetupDisplayNameHelper": "کوئی بھی نام یا لیبل جو آپ چاہیں۔ منفرد ہونا ضروری نہیں۔",
   "profileSetupDisplayNameRequired": "براہ کرم ڈسپلے نام درج کریں",
   "profileSetupBioLabel": "بائیو (اختیاری)",
-  "profileSetupBioHint": "لوگوں کو اپنے بارے میں بتائیں...",
   "profileSetupWebsiteLabel": "ویب سائٹ (اختیاری)",
-  "profileSetupWebsiteHint": "https://yoursite.com",
   "profileSetupPublicKeyLabel": "عوامی کلید (npub)",
   "profileSetupUsernameLabel": "صارف نام (اختیاری)",
-  "profileSetupUsernameHint": "صارف نام",
   "profileSetupUsernameHelper": "Divine پر آپ کی منفرد شناخت",
   "profileSetupProfileColorLabel": "پروفائل کا رنگ (اختیاری)",
   "profileSetupSaveButton": "محفوظ کریں",
@@ -474,17 +469,29 @@
   "profileSetupUploadFileTooLarge": "فائل بہت بڑی ہے: براہ کرم چھوٹی تصویر منتخب کریں (زیادہ سے زیادہ 10MB)۔",
   "profileSetupUploadServerError": "اپلوڈ ناکام۔ ہمارے سرور عارضی طور پر دستیاب نہیں ہیں۔ براہ کرم تھوڑی دیر میں دوبارہ کوشش کریں۔",
   "profileSetupUploadUnsupportedOnWeb": "پروفائل تصویر اپلوڈ ابھی ویب پر دستیاب نہیں۔ iOS یا Android ایپ استعمال کریں، یا تصویر کا URL پیسٹ کریں۔",
-  "profileSetupBannerSectionTitle": "بینر",
-  "@profileSetupBannerSectionTitle": {
-    "description": "Section header above the profile banner editing block on the profile setup screen."
-  },
-  "profileSetupBannerUploadButton": "تصویر اپلوڈ کریں",
-  "@profileSetupBannerUploadButton": {
-    "description": "Label on the button that opens the image picker to upload a profile banner image."
-  },
   "profileSetupBannerClearButton": "بینر ہٹائیں",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
+  },
+  "profileSetupBannerChangeColor": "بینر کا رنگ",
+  "profileSetupBannerColorPickerTitle": "بینر کا رنگ تبدیل کریں",
+  "profileSetupBannerColorNone": "کوئی رنگ نہیں",
+  "profileSetupBannerColorCustom": "حسبِ ضرورت",
+  "profileSetupBannerColorLime": "لائم",
+  "profileSetupBannerColorYellow": "پیلا",
+  "profileSetupBannerColorViolet": "بنفشی",
+  "profileSetupBannerColorPink": "گلابی",
+  "profileSetupBannerColorOrange": "نارنجی",
+  "profileSetupBannerColorPurple": "جامنی",
+  "profileSetupAvatarClearButton": "تصویر ہٹائیں",
+  "profileSetupChangeBannerTitle": "بینر تبدیل کریں",
+  "profileSetupImageTakePhoto": "تصویر لیں",
+  "profileSetupImageUploadFromCameraRoll": "کیمرہ رول سے اپ لوڈ کریں",
+  "profileSetupImagePasteLink": "تصویر کا لنک چسپاں کریں",
+  "profileSetupEditAvatarLabel": "پروفائل تصویر میں ترمیم کریں",
+  "profileSetupEditBannerLabel": "بینر میں ترمیم کریں",
+  "@profileSetupBannerUploadSuccess": {
+    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
   },
   "profileSetupUsernameChecking": "دستیابی چیک ہو رہی ہے...",
   "profileSetupUsernameAvailable": "صارف نام دستیاب ہے!",
@@ -2886,10 +2893,6 @@
   "keyManagementPublicKeyCopied": "عوامی کلید کاپی ہو گئی",
   "@keyManagementPublicKeyCopied": {
     "description": "SnackBar shown after the user taps the copy icon next to their npub."
-  },
-  "profileEditPublicKeyLink": "اپنی عوامی کلید دیکھیں",
-  "@profileEditPublicKeyLink": {
-    "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
   "saveOriginalSavedToCameraRoll": "کیمرہ رول میں محفوظ ہو گئی",
   "saveOriginalShare": "شیئر",

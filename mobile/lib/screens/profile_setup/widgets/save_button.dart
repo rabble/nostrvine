@@ -16,41 +16,13 @@ class SaveButton extends StatelessWidget {
       (bloc) => bloc.state.status == ProfileEditorStatus.loading,
     );
 
-    return ElevatedButton(
+    return DivineButton(
+      label: isLoading
+          ? context.l10n.profileSetupSavingButton
+          : context.l10n.profileSetupSaveButton,
+      isLoading: isLoading,
+      expanded: true,
       onPressed: (isLoading || !canSave) ? null : onSave,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: VineTheme.vineGreen,
-        foregroundColor: VineTheme.onPrimary,
-        disabledBackgroundColor: VineTheme.vineGreen.withValues(alpha: 0.4),
-        disabledForegroundColor: VineTheme.onPrimary.withValues(alpha: 0.6),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-      child: isLoading
-          ? Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.onPrimary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  context.l10n.profileSetupSavingButton,
-                  style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
-                ),
-              ],
-            )
-          : Text(
-              context.l10n.profileSetupSaveButton,
-              style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
     );
   }
 }

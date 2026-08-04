@@ -32,14 +32,14 @@ void main() {
     ) async {
       await pump(tester);
       expect(find.text(l10n.profileSetupBioLabel), findsOneWidget);
-      expect(find.text('0/360'), findsOneWidget);
+      expect(find.text('0/1000'), findsOneWidget);
     });
 
     testWidgets('counter tracks user input', (tester) async {
       await pump(tester);
-      await tester.enterText(find.byType(TextFormField), 'hello');
+      await tester.enterText(find.byType(TextField), 'hello');
       await tester.pump();
-      expect(find.text('5/360'), findsOneWidget);
+      expect(find.text('5/1000'), findsOneWidget);
     });
 
     testWidgets('counter tracks programmatic controller changes (load)', (
@@ -48,10 +48,10 @@ void main() {
       await pump(tester);
       controller.text = 'loaded bio';
       await tester.pump();
-      expect(find.text('${'loaded bio'.length}/360'), findsOneWidget);
+      expect(find.text('${'loaded bio'.length}/1000'), findsOneWidget);
     });
 
-    testWidgets('re-subscribes the counter when the controller is swapped', (
+    testWidgets('counter follows a swapped controller', (
       tester,
     ) async {
       await pump(tester);
@@ -67,13 +67,36 @@ void main() {
         ),
       );
       await tester.pump();
-      expect(find.text('3/360'), findsOneWidget);
+      expect(find.text('3/1000'), findsOneWidget);
 
-      // Mutating the new controller drives the counter only if the listener
-      // was re-bound in didUpdateWidget.
+      // Mutating the new controller drives the counter only if the field
+      // listens to the instance it was last handed.
       swapped.text = 'abcdef';
       await tester.pump();
-      expect(find.text('6/360'), findsOneWidget);
+      expect(find.text('6/1000'), findsOneWidget);
+    });
+
+    testWidgets('tapping the counter still focuses the field', (tester) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BioField(controller: controller, focusNode: focusNode),
+          ),
+        ),
+      );
+
+      // The counter is painted over the field's top-right corner. Left
+      // hit-testable it wins that rectangle, and the tap escapes to the
+      // screen's dismiss-the-keyboard gesture instead of reaching the input.
+      await tester.tap(find.text('0/1000'));
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isTrue);
     });
   });
 }

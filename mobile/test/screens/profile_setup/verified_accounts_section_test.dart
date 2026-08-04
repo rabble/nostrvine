@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 import 'package:openvine/screens/profile_setup/widgets/verified_accounts_section.dart';
 
 class _MockProfileEditorBloc
@@ -58,6 +59,21 @@ void main() {
       await pump(tester);
       expect(find.text(l10n.profileEditVerifiedAccountsTitle), findsOneWidget);
       expect(find.text(l10n.profileEditGetVerifiedCta), findsOneWidget);
+    });
+
+    testWidgets('draws get-verified as a form card, not a list tile', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      final row = tester.widget<ProfileSelectRow>(
+        find.byType(ProfileSelectRow),
+      );
+      expect(row.label, l10n.profileEditGetVerifiedCta);
+      expect(row.trailingColor, VineTheme.primary);
+      expect(find.byType(ListTile), findsNothing);
+      // The explanation survives the move, as the card's supporting text.
+      expect(find.text(l10n.profileEditGetVerifiedSubtitle), findsOneWidget);
     });
 
     testWidgets('tapping get-verified dispatches VerifierLaunchRequested', (

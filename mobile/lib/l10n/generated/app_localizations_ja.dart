@@ -755,34 +755,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '表示名';
 
   @override
-  String get profileSetupDisplayNameHint => 'みんなに何て呼ばれたい?';
-
-  @override
-  String get profileSetupDisplayNameHelper => '好きな名前やラベルを使ってOK。一意じゃなくて大丈夫。';
-
-  @override
   String get profileSetupDisplayNameRequired => '表示名を入力してね';
 
   @override
   String get profileSetupBioLabel => '自己紹介 (任意)';
 
   @override
-  String get profileSetupBioHint => 'あなたのことを書いてみて...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => '公開鍵 (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'ユーザー名 (任意)';
-
-  @override
-  String get profileSetupUsernameHint => 'ユーザー名';
 
   @override
   String get profileSetupUsernameHelper => 'Divine での固有の ID だよ';
@@ -840,13 +825,58 @@ class AppLocalizationsJa extends AppLocalizations {
       'プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。';
 
   @override
-  String get profileSetupBannerSectionTitle => 'バナー';
-
-  @override
-  String get profileSetupBannerUploadButton => '写真をアップロード';
-
-  @override
   String get profileSetupBannerClearButton => 'バナーをクリア';
+
+  @override
+  String get profileSetupBannerChangeColor => 'バナーの色';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'バナーを変更';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'バナーの色を変更';
+
+  @override
+  String get profileSetupBannerColorCustom => 'カスタム';
+
+  @override
+  String get profileSetupBannerColorNone => '色なし';
+
+  @override
+  String get profileSetupBannerColorLime => 'ライム';
+
+  @override
+  String get profileSetupBannerColorYellow => 'イエロー';
+
+  @override
+  String get profileSetupBannerColorViolet => 'バイオレット';
+
+  @override
+  String get profileSetupBannerColorPink => 'ピンク';
+
+  @override
+  String get profileSetupBannerColorOrange => 'オレンジ';
+
+  @override
+  String get profileSetupBannerColorPurple => 'パープル';
+
+  @override
+  String get profileSetupAvatarClearButton => '写真を削除';
+
+  @override
+  String get profileSetupImageTakePhoto => '写真を撮る';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'カメラロールからアップロード';
+
+  @override
+  String get profileSetupImagePasteLink => '画像リンクを貼り付け';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'プロフィール画像を編集';
+
+  @override
+  String get profileSetupEditBannerLabel => 'バナーを編集';
 
   @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
@@ -4912,9 +4942,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => '公開鍵をコピーしたよ';
-
-  @override
-  String get profileEditPublicKeyLink => '公開鍵を表示';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'カメラロールに保存したよ';

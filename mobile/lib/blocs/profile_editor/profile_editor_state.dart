@@ -275,12 +275,13 @@ final class ProfileEditorState extends Equatable {
     this.pendingAvatarStatus = PendingAvatarStatus.idle,
     this.pendingPictureUrl,
     this.persistedPictureUrl,
+    this.pictureCleared = false,
     this.avatarUploadError,
     this.pendingBannerStatus = PendingBannerStatus.idle,
     this.pendingBannerUrl,
     this.pendingBannerColor,
-    this.isBannerCleared = false,
     this.persistedBanner,
+    this.bannerCleared = false,
     this.bannerUploadError,
     this.verifierStatus = VerifierStatus.idle,
   });
@@ -358,10 +359,24 @@ final class ProfileEditorState extends Equatable {
   /// state emit (matches the existing transient `error` field pattern).
   final AvatarUploadError? avatarUploadError;
 
+  /// Whether the user asked for the profile picture to be removed outright.
+  ///
+  /// Mirrors [bannerCleared]: it distinguishes "no staged change" from "staged
+  /// the absence of a picture", which is the only thing that makes Save publish
+  /// `null` over a persisted URL. Staging a new picture cancels it.
+  final bool pictureCleared;
+
   /// The picture URL that should be written when Save is tapped: prefer
   /// the staged value over the persisted one. Returns `null` when neither
   /// is set, signalling "no picture".
-  String? get effectivePictureUrl => pendingPictureUrl ?? persistedPictureUrl;
+  String? get effectivePictureUrl {
+    final pending = pendingPictureUrl;
+    if (pending != null && pending.isNotEmpty) return pending;
+    // Without this the persisted value would come straight back, and Remove
+    // would only ever discard an unsaved pick.
+    if (pictureCleared) return null;
+    return persistedPictureUrl;
+  }
 
   /// Status of the staged banner upload for this edit session.
   final PendingBannerStatus pendingBannerStatus;
@@ -373,9 +388,6 @@ final class ProfileEditorState extends Equatable {
   /// Staged banner color (user picked a swatch) that has not yet been
   /// persisted via Save. Mutually exclusive with [pendingBannerUrl].
   final Color? pendingBannerColor;
-
-  /// Whether the user explicitly cleared the banner in this edit session.
-  final bool isBannerCleared;
 
   /// Banner value currently persisted on the user's kind 0. Can be either
   /// a URL or a hex color string (e.g. `0x33ccbf`); see
@@ -389,15 +401,24 @@ final class ProfileEditorState extends Equatable {
   /// staged image URL > staged color (encoded as `0xRRGGBB`) > persisted
   /// banner. Returns `null` when none are set.
   String? get effectiveBanner {
-    if (isBannerCleared) return null;
     final url = pendingBannerUrl;
     if (url != null && url.isNotEmpty) return url;
     final color = pendingBannerColor;
     if (color != null) {
       return '0x${color.toARGB32().toRadixString(16).substring(2)}';
     }
+    // Without this the persisted value would come straight back, and Clear
+    // would only ever discard an unsaved pick.
+    if (bannerCleared) return null;
     return persistedBanner;
   }
+
+  /// Whether the user asked for the banner to be removed outright.
+  ///
+  /// Distinguishes "no staged change" from "staged the absence of a banner":
+  /// only the latter makes Save publish `null` over a persisted value. Staging
+  /// a new image or colour cancels it.
+  final bool bannerCleared;
 
   /// One-shot signal driving verifier launch handling in the UI.
   final VerifierStatus verifierStatus;
@@ -487,12 +508,13 @@ final class ProfileEditorState extends Equatable {
     PendingAvatarStatus? pendingAvatarStatus,
     Object? pendingPictureUrl = _kUnset,
     Object? persistedPictureUrl = _kUnset,
+    bool? pictureCleared,
     AvatarUploadError? avatarUploadError,
     PendingBannerStatus? pendingBannerStatus,
     Object? pendingBannerUrl = _kUnset,
     Object? pendingBannerColor = _kUnset,
-    bool? isBannerCleared,
     Object? persistedBanner = _kUnset,
+    bool? bannerCleared,
     BannerUploadError? bannerUploadError,
     VerifierStatus? verifierStatus,
   }) {
@@ -527,6 +549,7 @@ final class ProfileEditorState extends Equatable {
       persistedPictureUrl: identical(persistedPictureUrl, _kUnset)
           ? this.persistedPictureUrl
           : persistedPictureUrl as String?,
+      pictureCleared: pictureCleared ?? this.pictureCleared,
       avatarUploadError: avatarUploadError,
       pendingBannerStatus: pendingBannerStatus ?? this.pendingBannerStatus,
       pendingBannerUrl: identical(pendingBannerUrl, _kUnset)
@@ -535,10 +558,10 @@ final class ProfileEditorState extends Equatable {
       pendingBannerColor: identical(pendingBannerColor, _kUnset)
           ? this.pendingBannerColor
           : pendingBannerColor as Color?,
-      isBannerCleared: isBannerCleared ?? this.isBannerCleared,
       persistedBanner: identical(persistedBanner, _kUnset)
           ? this.persistedBanner
           : persistedBanner as String?,
+      bannerCleared: bannerCleared ?? this.bannerCleared,
       bannerUploadError: bannerUploadError,
       verifierStatus: verifierStatus ?? this.verifierStatus,
     );
@@ -568,12 +591,13 @@ final class ProfileEditorState extends Equatable {
     pendingAvatarStatus,
     pendingPictureUrl,
     persistedPictureUrl,
+    pictureCleared,
     avatarUploadError,
     pendingBannerStatus,
     pendingBannerUrl,
     pendingBannerColor,
-    isBannerCleared,
     persistedBanner,
+    bannerCleared,
     bannerUploadError,
     verifierStatus,
   ];

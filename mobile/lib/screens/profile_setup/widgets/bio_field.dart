@@ -1,97 +1,69 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/screens/profile_setup/widgets/profile_setup_field_decorations.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 
-class BioField extends StatefulWidget {
-  const BioField({required this.controller, super.key});
+/// Longest bio the profile form accepts.
+///
+/// The limit lives here and nowhere else — neither `ProfileEditorBloc`, the
+/// profile repository, nor `UserProfile` constrains `about`, which travels
+/// straight into the kind-0 payload. Raising it is a UI decision.
+const int bioMaxLength = 1000;
+
+/// Bio field for the profile-setup form, with the character counter Figma
+/// draws alongside the label.
+class BioField extends StatelessWidget {
+  const BioField({required this.controller, this.focusNode, super.key});
 
   final TextEditingController controller;
 
-  @override
-  State<BioField> createState() => _BioFieldState();
-}
-
-class _BioFieldState extends State<BioField> {
-  final _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_onChange);
-    // Rebuild the character counter on both user input and programmatic
-    // seeding (e.g. when an existing profile loads into the controller).
-    widget.controller.addListener(_onChange);
-  }
-
-  @override
-  void didUpdateWidget(BioField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_onChange);
-      widget.controller.addListener(_onChange);
-    }
-  }
-
-  void _onChange() => setState(() {});
-
-  @override
-  void dispose() {
-    _focusNode
-      ..removeListener(_onChange)
-      ..dispose();
-    widget.controller.removeListener(_onChange);
-    super.dispose();
-  }
+  /// Owned by the parent so the username field's next key can land here.
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                context.l10n.profileSetupBioLabel,
-                style: VineTheme.labelMediumFont(
-                  color: _focusNode.hasFocus
-                      ? VineTheme.primary
-                      : context.vineColors.onSurfaceMuted,
-                ),
-              ),
-              Text(
-                '${widget.controller.text.length}/360',
-                style: VineTheme.labelMediumFont(
+        DivineTextField(
+          controller: controller,
+          focusNode: focusNode,
+          labelText: context.l10n.profileSetupBioLabel,
+          filled: true,
+          fillColor: context.vineColors.surfaceContainer,
+          fillBorderRadius: profileFormCardRadius,
+          primaryWhenFilled: true,
+          textInputAction: .newline,
+          keyboardType: TextInputType.multiline,
+          minLines: 1,
+          maxLines: 6,
+          // Bounded by a formatter rather than `maxLength`, which would also
+          // render Material's own counter under the field and duplicate the
+          // one drawn beside the label.
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(bioMaxLength),
+          ],
+        ),
+        Positioned(
+          // Aligned to the field's own content padding so a tweak there keeps
+          // the counter in step. The -1 lifts the baseline onto the floating
+          // label's.
+          top: DivineTextField.defaultContentPadding.top - 1,
+          right: DivineTextField.defaultContentPadding.right,
+          // A readout, not a control: without this the text wins the hit test
+          // over the field beneath it, and tapping the field's top-right
+          // corner dismissed the keyboard instead of placing the caret.
+          child: IgnorePointer(
+            child: ValueListenableBuilder(
+              valueListenable: controller,
+              builder: (context, value, child) => Text(
+                '${value.text.length}/$bioMaxLength',
+                style: VineTheme.labelSmallFont(
                   color: context.vineColors.onSurfaceMuted,
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-        TextFormField(
-          controller: widget.controller,
-          focusNode: _focusNode,
-          style: VineTheme.bodyLargeFont(color: context.vineColors.onSurface),
-          decoration: InputDecoration(
-            isCollapsed: true,
-            hintText: context.l10n.profileSetupBioHint,
-            hintStyle: profileFieldHintStyleOf(context),
-            border: profileFieldBorderOf(context),
-            enabledBorder: profileFieldBorderOf(context),
-            focusedBorder: profileFieldBorderOf(context),
-            errorBorder: profileFieldBorderOf(context),
-            focusedErrorBorder: profileFieldBorderOf(context),
-            contentPadding: const EdgeInsets.all(16),
-            counterText: '',
-          ),
-          maxLines: null,
-          minLines: 1,
-          maxLength: 360,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
         ),
       ],
     );

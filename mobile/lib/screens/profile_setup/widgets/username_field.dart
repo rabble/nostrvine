@@ -4,36 +4,34 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/screens/profile_setup/widgets/profile_setup_field_decorations.dart';
+import 'package:openvine/screens/profile_setup/widgets/profile_setup_rows.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
-class UsernameField extends StatefulWidget {
-  const UsernameField({required this.controller, super.key});
+/// The Divine handle field.
+///
+/// The field renders `@name`, matching the product handle users expect.
+///
+/// Note this is display only — the controller holds the bare handle and that
+/// is what gets claimed. The registry still issues the underlying
+/// `_@<handle>.divine.video` NIP-05 subdomain form.
+///
+/// Disabled while the profile points at an external NIP-05: the two are
+/// alternatives, and the external address is edited on its own screen.
+class UsernameField extends StatelessWidget {
+  const UsernameField({
+    required this.controller,
+    required this.nextFocusNode,
+    super.key,
+  });
 
   final TextEditingController controller;
 
-  @override
-  State<UsernameField> createState() => _UsernameFieldState();
-}
-
-class _UsernameFieldState extends State<UsernameField> {
-  final _focusNode = FocusNode();
-
-  @override
-  void initState() {
-    super.initState();
-    _focusNode.addListener(_onChange);
-  }
-
-  void _onChange() => setState(() {});
-
-  @override
-  void dispose() {
-    _focusNode
-      ..removeListener(_onChange)
-      ..dispose();
-    super.dispose();
-  }
+  /// Focused when the keyboard's next key is pressed.
+  ///
+  /// Targeted rather than left to `nextFocus()`: the NIP-05 card sits between
+  /// this field and the bio in traversal order, and it takes focus without
+  /// bringing a keyboard — so next appeared to do nothing but dismiss it.
+  final FocusNode nextFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -44,71 +42,39 @@ class _UsernameFieldState extends State<UsernameField> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16),
-              child: Text(
-                context.l10n.profileSetupUsernameLabel,
-                style: VineTheme.labelMediumFont(
-                  color: _focusNode.hasFocus && !isExternal
-                      ? VineTheme.primary
-                      : context.vineColors.onSurfaceMuted,
-                ),
-              ),
-            ),
-            TextFormField(
-              controller: widget.controller,
-              focusNode: _focusNode,
+            DivineTextField(
+              controller: controller,
               enabled: !isExternal,
-              style: VineTheme.bodyLargeFont(
-                color: isExternal
-                    ? context.vineColors.onSurfaceMuted
-                    : context.vineColors.onSurface,
-              ),
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              decoration: InputDecoration(
-                isCollapsed: true,
-                hintText: context.l10n.profileSetupUsernameHint,
-                helperText: context.l10n.profileSetupUsernameHelper,
-                helperStyle: TextStyle(
-                  color: context.vineColors.onSurfaceMuted,
-                  fontSize: 12,
-                ),
-                hintStyle: TextStyle(color: context.vineColors.onSurfaceMuted),
-                border: profileFieldBorderOf(context),
-                enabledBorder: profileFieldBorderOf(context),
-                disabledBorder: profileFieldBorderOf(context),
-                focusedBorder: profileFieldBorderOf(context),
-                errorBorder: profileFieldBorderOf(context),
-                focusedErrorBorder: profileFieldBorderOf(context),
-                contentPadding: const EdgeInsets.all(16),
-                prefixText: '@',
-                prefixStyle: VineTheme.bodyLargeFont(
-                  color: context.vineColors.onSurfaceMuted,
-                ),
-                suffixText: '.divine.video',
-                suffixStyle: VineTheme.bodyLargeFont(
-                  color: context.vineColors.onSurfaceMuted,
-                ),
-                errorMaxLines: 2,
-              ),
-              // Lowercase as the user types and
-              // restrict to canonical subdomain
-              // characters. The name server stores
-              // and resolves usernames as lowercase,
-              // so normalizing here avoids a
-              // confusing "invalid format" error
-              // for a typed capital letter.
+              labelText: context.l10n.profileSetupUsernameLabel,
+              filled: true,
+              fillColor: context.vineColors.surfaceContainer,
+              fillBorderRadius: profileFormCardRadius,
+              primaryWhenFilled: true,
+              prefixText: '@',
+              textCapitalization: .none,
+              textInputAction: TextInputAction.next,
+              // Replaces the default next-focus walk rather than running after
+              // it, so focus lands on the bio in one hop.
+              onEditingComplete: () {
+                controller.clearComposing();
+                nextFocusNode.requestFocus();
+              },
+              onChanged: (value) =>
+                  context.read<ProfileEditorBloc>().add(UsernameChanged(value)),
+              // Lowercase as the user types and restrict to canonical
+              // subdomain characters. The name server stores and resolves
+              // usernames as lowercase, so normalizing here avoids a confusing
+              // "invalid format" error for a typed capital letter.
               inputFormatters: [
                 const LowercaseTextInputFormatter(),
                 FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
               ],
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-              onChanged: (value) =>
-                  context.read<ProfileEditorBloc>().add(UsernameChanged(value)),
             ),
-            // Username status indicators
-            if (!isExternal)
+            if (isExternal)
+              ProfileFieldSupportingText(
+                context.l10n.profileSetupUsernameHelper,
+              )
+            else
               BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
                 builder: (context, state) => UsernameStatusIndicator(
                   status: state.usernameStatus,

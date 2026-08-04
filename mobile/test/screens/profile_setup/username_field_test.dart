@@ -21,15 +21,20 @@ void main() {
 
   group(UsernameField, () {
     late TextEditingController controller;
+    late FocusNode nextFocusNode;
     late _MockProfileEditorBloc bloc;
 
     setUp(() {
       controller = TextEditingController();
+      nextFocusNode = FocusNode();
       bloc = _MockProfileEditorBloc();
       when(() => bloc.state).thenReturn(const ProfileEditorState());
     });
 
-    tearDown(() => controller.dispose());
+    tearDown(() {
+      controller.dispose();
+      nextFocusNode.dispose();
+    });
 
     Future<void> pump(WidgetTester tester) {
       return tester.pumpWidget(
@@ -40,7 +45,10 @@ void main() {
           home: Scaffold(
             body: BlocProvider<ProfileEditorBloc>.value(
               value: bloc,
-              child: UsernameField(controller: controller),
+              child: UsernameField(
+                controller: controller,
+                nextFocusNode: nextFocusNode,
+              ),
             ),
           ),
         ),
@@ -59,11 +67,55 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      await tester.enterText(find.byType(TextFormField), 'bob');
+      await tester.enterText(find.byType(TextField), 'bob');
       final changes = verify(
         () => bloc.add(captureAny()),
       ).captured.whereType<UsernameChanged>().toList();
       expect(changes.last.username, 'bob');
+    });
+
+    testWidgets('pins the public handle shape to at-name', (tester) async {
+      await pump(tester);
+
+      final field = tester.widget<TextField>(find.byType(TextField));
+      expect(field.decoration?.prefixText, '@');
+      expect(field.decoration?.suffixText, isNull);
+    });
+
+    testWidgets('the keyboard next key skips the select row for the bio', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BlocProvider<ProfileEditorBloc>.value(
+              value: bloc,
+              child: Column(
+                children: [
+                  UsernameField(
+                    controller: controller,
+                    nextFocusNode: nextFocusNode,
+                  ),
+                  // Stands in for the NIP-05 card: focusable, but with no
+                  // keyboard. A plain nextFocus() stops here.
+                  InkWell(onTap: () {}, child: const Text('select')),
+                  TextField(focusNode: nextFocusNode),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(TextField).first);
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+
+      expect(nextFocusNode.hasFocus, isTrue);
     });
 
     testWidgets('field is disabled in external NIP-05 mode', (tester) async {

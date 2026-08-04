@@ -806,35 +806,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'የማሳያ ስም';
 
   @override
-  String get profileSetupDisplayNameHint => 'ሰዎች እርስዎን እንዴት ማወቅ አለባቸው?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'የሚፈልጉት ማንኛውም ስም ወይም መለያ። ልዩ መሆን የለበትም።';
-
-  @override
   String get profileSetupDisplayNameRequired => 'እባክዎ የማሳያ ስም ያስገቡ';
 
   @override
   String get profileSetupBioLabel => 'ባዮ (አማራጭ)';
 
   @override
-  String get profileSetupBioHint => 'ስለራስዎ ለሰዎች ይንገሩ…';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'የህዝብ ቁልፍ (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'የተጠቃሚ ስም (አማራጭ)';
-
-  @override
-  String get profileSetupUsernameHint => 'የተጠቃሚ ስም';
 
   @override
   String get profileSetupUsernameHelper => 'ልዩ ማንነትህ በDivine ላይ';
@@ -894,13 +878,58 @@ class AppLocalizationsAm extends AppLocalizations {
       'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
 
   @override
-  String get profileSetupBannerSectionTitle => 'ባነር';
-
-  @override
-  String get profileSetupBannerUploadButton => 'ፎቶ ስቀል';
-
-  @override
   String get profileSetupBannerClearButton => 'ባነርን አጥፋ';
+
+  @override
+  String get profileSetupBannerChangeColor => 'የባነር ቀለም';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'ባነር ቀይር';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'የባነር ቀለም ቀይር';
+
+  @override
+  String get profileSetupBannerColorCustom => 'ብጁ';
+
+  @override
+  String get profileSetupBannerColorNone => 'ቀለም የለም';
+
+  @override
+  String get profileSetupBannerColorLime => 'ላይም';
+
+  @override
+  String get profileSetupBannerColorYellow => 'ቢጫ';
+
+  @override
+  String get profileSetupBannerColorViolet => 'ቫዮሌት';
+
+  @override
+  String get profileSetupBannerColorPink => 'ሮዝ';
+
+  @override
+  String get profileSetupBannerColorOrange => 'ብርቱካናማ';
+
+  @override
+  String get profileSetupBannerColorPurple => 'ወይን ጠጅ';
+
+  @override
+  String get profileSetupAvatarClearButton => 'ፎቶ አስወግድ';
+
+  @override
+  String get profileSetupImageTakePhoto => 'ፎቶ አንሳ';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'ከካሜራ ሮል ስቀል';
+
+  @override
+  String get profileSetupImagePasteLink => 'የምስል አገናኝ ለጥፍ';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'የመገለጫ ፎቶ አርትዕ';
+
+  @override
+  String get profileSetupEditBannerLabel => 'ባነር አርትዕ';
 
   @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';
@@ -5055,9 +5084,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'የህዝብ ቁልፍ ተቀድቷል';
-
-  @override
-  String get profileEditPublicKeyLink => 'የህዝብ ቁልፍህን ይመልከቱ';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'ወደ ካሜራ ጥቅል ተቀምጧል';

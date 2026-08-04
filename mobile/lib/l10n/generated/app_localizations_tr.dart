@@ -796,35 +796,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Görünen Ad';
 
   @override
-  String get profileSetupDisplayNameHint => 'Seni nasıl tanısınlar?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'İstediğin herhangi bir ad veya etiket. Benzersiz olması gerekmez.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Lütfen bir görünen ad gir';
 
   @override
   String get profileSetupBioLabel => 'Biyografi (Opsiyonel)';
 
   @override
-  String get profileSetupBioHint => 'İnsanlara kendinden bahset...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Açık anahtar (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Kullanıcı Adı (Opsiyonel)';
-
-  @override
-  String get profileSetupUsernameHint => 'kullanıcıadı';
 
   @override
   String get profileSetupUsernameHelper => 'Divine\'deki benzersiz kimliğin';
@@ -884,13 +868,58 @@ class AppLocalizationsTr extends AppLocalizations {
       'Profil resmi yükleme henüz web\'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL\'si yapıştır.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Afiş';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Fotoğraf yükle';
-
-  @override
   String get profileSetupBannerClearButton => 'Afişi temizle';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Afiş rengi';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Afişi değiştir';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Afiş rengini değiştir';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Özel';
+
+  @override
+  String get profileSetupBannerColorNone => 'Renk yok';
+
+  @override
+  String get profileSetupBannerColorLime => 'Misket limonu';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Sarı';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Menekşe';
+
+  @override
+  String get profileSetupBannerColorPink => 'Pembe';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Turuncu';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Mor';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Fotoğrafı kaldır';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Fotoğraf çek';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Galeriden yükle';
+
+  @override
+  String get profileSetupImagePasteLink => 'Görsel bağlantısı yapıştır';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Profil fotoğrafını düzenle';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Afişi düzenle';
 
   @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';
@@ -5139,9 +5168,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Açık anahtar kopyalandı';
-
-  @override
-  String get profileEditPublicKeyLink => 'Açık anahtarını görüntüle';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Kamera Rulosuna Kaydedildi';

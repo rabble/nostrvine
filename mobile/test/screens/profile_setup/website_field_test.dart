@@ -27,19 +27,27 @@ void main() {
       );
     }
 
-    testWidgets('renders the localized label and hint', (tester) async {
+    testWidgets('renders the localized label', (tester) async {
       await pump(tester);
+
       expect(find.text(l10n.profileSetupWebsiteLabel), findsOneWidget);
-      expect(find.text(l10n.profileSetupWebsiteHint), findsOneWidget);
     });
 
     testWidgets('typing updates the bound controller', (tester) async {
       await pump(tester);
-      await tester.enterText(
-        find.byType(TextFormField),
-        'https://divine.video',
-      );
+
+      await tester.enterText(find.byType(TextField), 'https://divine.video');
+
       expect(controller.text, 'https://divine.video');
+    });
+
+    testWidgets('opens a URL keyboard', (tester) async {
+      await pump(tester);
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).keyboardType,
+        TextInputType.url,
+      );
     });
   });
 }

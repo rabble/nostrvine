@@ -811,35 +811,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Visningsnamn';
 
   @override
-  String get profileSetupDisplayNameHint => 'Hur ska folk känna dig?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'Vilket namn eller etikett du vill. Behöver inte vara unikt.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Ange ett visningsnamn';
 
   @override
   String get profileSetupBioLabel => 'Bio (valfritt)';
 
   @override
-  String get profileSetupBioHint => 'Berätta om dig själv...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Publik nyckel (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Användarnamn (valfritt)';
-
-  @override
-  String get profileSetupUsernameHint => 'användarnamn';
 
   @override
   String get profileSetupUsernameHelper => 'Din unika identitet på Divine';
@@ -899,13 +883,59 @@ class AppLocalizationsSv extends AppLocalizations {
       'Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Ladda upp foto';
-
-  @override
   String get profileSetupBannerClearButton => 'Rensa banner';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Bannerfärg';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Byt banner';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Ändra bannerfärg';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Anpassad';
+
+  @override
+  String get profileSetupBannerColorNone => 'Ingen färg';
+
+  @override
+  String get profileSetupBannerColorLime => 'Lime';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Gul';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violett';
+
+  @override
+  String get profileSetupBannerColorPink => 'Rosa';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Orange';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Lila';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Ta bort foto';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Ta ett foto';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll =>
+      'Ladda upp från kamerarullen';
+
+  @override
+  String get profileSetupImagePasteLink => 'Klistra in en bildlänk';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Redigera profilbild';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Redigera banner';
 
   @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';
@@ -5162,9 +5192,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Publik nyckel kopierad';
-
-  @override
-  String get profileEditPublicKeyLink => 'Visa din publika nyckel';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Sparad i kamerarullen';

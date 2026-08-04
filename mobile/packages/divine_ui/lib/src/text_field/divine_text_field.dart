@@ -35,15 +35,18 @@ class DivineTextField extends StatelessWidget {
     this.spellCheckConfiguration,
     this.filled = false,
     this.fillColor,
+    this.fillBorderRadius = defaultFillBorderRadius,
     this.suffixIcon,
+    this.prefixText,
+    this.suffixText,
   });
 
   /// Default content padding around the input. Exposed so overlays
   /// (e.g. character counters) can stay aligned with the field's edges.
   static const EdgeInsets defaultContentPadding = EdgeInsets.all(16);
 
-  /// Corner radius of the surface painted when [filled] is set.
-  static const double fillBorderRadius = 16;
+  /// Corner radius used by [filled] fields that don't ask for another one.
+  static const double defaultFillBorderRadius = 16;
 
   /// Shapes the [filled] surface without painting a stroke.
   ///
@@ -52,10 +55,9 @@ class DivineTextField extends StatelessWidget {
   /// stroke to sit on. The underline variant floats it inside the surface, and
   /// an explicit radius still rounds all four corners.
   ///
-  /// Typed as [InputBorder] rather than inferred: hot reload keeps the value a
-  /// `static final` was first initialised with, so a narrower inferred type
-  /// would throw on the stale instance after this line is edited.
-  static final InputBorder _fillBorder = UnderlineInputBorder(
+  /// Typed as [InputBorder] rather than inferred so the ternaries below, which
+  /// also yield [InputBorder.none], keep a single static type.
+  InputBorder get _fillBorder => UnderlineInputBorder(
     borderRadius: BorderRadius.circular(fillBorderRadius),
     borderSide: BorderSide.none,
   );
@@ -177,6 +179,12 @@ class DivineTextField extends StatelessWidget {
   /// the bottom-sheet surface.
   final Color? fillColor;
 
+  /// Corner radius of the surface painted when [filled] is set.
+  ///
+  /// Defaults to [defaultFillBorderRadius]. The profile form's `input v2`
+  /// cards ask for a rounder 24.
+  final double fillBorderRadius;
+
   /// Widget rendered inside the field, after the input.
   ///
   /// For an action that belongs to the value being entered — paste, clear,
@@ -184,6 +192,18 @@ class DivineTextField extends StatelessWidget {
   /// field grows. Prefer a [DivineIconButton] over a raw icon so the slot
   /// keeps a 48px tap target.
   final Widget? suffixIcon;
+
+  /// Immutable text pinned before the input.
+  ///
+  /// For a fixed part of the value the user never types — the `@` on a handle.
+  /// Rendered muted so it reads as scaffolding rather than content. Material
+  /// reveals it only once the field is focused or non-empty.
+  final String? prefixText;
+
+  /// Immutable text pinned after the input, e.g. a fixed domain.
+  ///
+  /// Same muted treatment and same visibility rule as [prefixText].
+  final String? suffixText;
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +235,14 @@ class DivineTextField extends StatelessWidget {
         hintText: hintText,
         helperText: helperText,
         suffixIcon: suffixIcon,
+        prefixText: prefixText,
+        suffixText: suffixText,
+        prefixStyle: VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
+        suffixStyle: VineTheme.bodyLargeFont(
+          color: context.vineColors.onSurfaceMuted,
+        ),
         labelStyle: VineTheme.bodyLargeFont(
           color: context.vineColors.onSurfaceVariant,
         ),

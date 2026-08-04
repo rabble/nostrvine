@@ -28,6 +28,8 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
   // Owned here (not in DisplayNameField) so the Save action can focus the
   // name field when it is left empty.
   final _nameFocusNode = FocusNode();
+  // Owned here so the username field's next key can target it directly.
+  final _bioFocusNode = FocusNode();
   bool _refreshProfileOnResume = false;
   bool _isLeavingProfileSetup = false;
 
@@ -62,6 +64,7 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
     _websiteController.dispose();
     _nip05Controller.dispose();
     _nameFocusNode.dispose();
+    _bioFocusNode.dispose();
     super.dispose();
   }
 
@@ -98,7 +101,6 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
               backgroundColor: context.vineColors.surfaceContainerHigh,
               appBar: DiVineAppBar(
                 title: context.l10n.profileSetupEditProfileTitle,
-                backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 showBackButton: true,
                 backButtonSemanticLabel: context.l10n.profileSetupBackLabel,
                 onBackPressed: () => _handleLeavePressed(
@@ -106,8 +108,14 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
                   state: profileEditorState,
                   pubkey: pubkey,
                 ),
-                style: const DiVineAppBarStyle(
-                  iconButtonBackgroundColor: VineTheme.scrim15,
+                style: DiVineAppBarStyle(
+                  iconButtonBackgroundColor:
+                      context.vineColors.surfaceContainer,
+                  iconButtonBorderSide: BorderSide(
+                    color: context.vineColors.outlineMuted,
+                    width: 2,
+                  ),
+                  horizontalPadding: 12,
                 ),
                 actions: [
                   DiVineAppBarAction(
@@ -121,59 +129,87 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
               body: GestureDetector(
                 onTap: () {
                   // Dismiss keyboard when tapping outside text fields
-                  FocusScope.of(context).unfocus();
+                  FocusManager.instance.primaryFocus?.unfocus();
                 },
                 child: SafeArea(
                   bottom:
                       false, // Don't add bottom padding - let content extend to bottom
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          child: Theme(
-                            data: Theme.of(context).copyWith(
-                              textSelectionTheme: const TextSelectionThemeData(
-                                cursorColor: VineTheme.primary,
-                                selectionColor: Color(0xFF1C4430),
+                  // Rounds the body's top corners the way the app bar's
+                  // `radius 96` pieces do. Outside the scroll view on purpose:
+                  // the corners belong to the viewport edge, so they stay put
+                  // while the content moves under them. The fill behind the
+                  // clip carries the app bar's own colour, so the notches read
+                  // as a continuation of the bar rather than a hole.
+                  // Material, not ColoredBox: descendant ListTiles paint their
+                  // ink onto the nearest Material ancestor, and a bare
+                  // ColoredBox in between would swallow it.
+                  child: Material(
+                    color: context.vineColors.nav,
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(bodyTopRadius),
+                      ),
+                      child: SingleChildScrollView(
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            child: Theme(
+                              data: Theme.of(context).copyWith(
+                                textSelectionTheme: TextSelectionThemeData(
+                                  cursorColor: VineTheme.primary,
+                                  selectionColor: VineTheme.primary.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ProfileAvatarSection(
-                                  nameController: _nameController,
-                                ),
-                                const SizedBox(height: 24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // Banner and avatar are both edited from here, so
+                                  // neither has a section further down the form.
+                                  ProfileHeaderPreview(
+                                    nameController: _nameController,
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      16,
+                                      16,
+                                      16,
+                                      24,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      spacing: 16,
+                                      children: [
+                                        DisplayNameField(
+                                          controller: _nameController,
+                                          focusNode: _nameFocusNode,
+                                        ),
+                                        UsernameField(
+                                          controller: _nip05Controller,
+                                          nextFocusNode: _bioFocusNode,
+                                        ),
+                                        const Nip05Row(),
+                                        BioField(
+                                          controller: _bioController,
+                                          focusNode: _bioFocusNode,
+                                        ),
+                                        const PublicKeyRow(),
 
-                                DisplayNameField(
-                                  controller: _nameController,
-                                  focusNode: _nameFocusNode,
-                                ),
-                                const SizedBox(height: 16),
-
-                                BioField(controller: _bioController),
-                                const SizedBox(height: 16),
-
-                                WebsiteField(controller: _websiteController),
-                                const SizedBox(height: 16),
-
-                                const VerifiedAccountsSection(),
-
-                                const PublicKeyLink(),
-                                const SizedBox(height: 16),
-
-                                UsernameField(controller: _nip05Controller),
-                                const SizedBox(height: 24),
-
-                                // Banner section: image upload + color swatches.
-                                // Replaces the old standalone profile-color
-                                // picker; the bloc serializes the chosen color
-                                // into the same kind-0 `banner` field.
-                                const BannerEditingBlock(),
-                              ],
+                                        // Below here: still shipped, but absent from
+                                        // the current design for this screen. Kept
+                                        // in the same style rather than dropped.
+                                        WebsiteField(
+                                          controller: _websiteController,
+                                        ),
+                                        const VerifiedAccountsSection(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -186,9 +222,13 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   child: Row(
+                    spacing: 16,
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: DivineButton(
+                          label: context.l10n.commonCancel,
+                          type: DivineButtonType.secondary,
+                          expanded: true,
                           onPressed:
                               profileEditorState.status ==
                                   ProfileEditorStatus.loading
@@ -198,33 +238,8 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
                                   state: profileEditorState,
                                   pubkey: pubkey,
                                 ),
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor:
-                                context.vineColors.surfaceContainer,
-                            foregroundColor: VineTheme.vineGreen,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 16,
-                            ),
-                            side: BorderSide(
-                              color: context.vineColors.outlineMuted,
-                              width: 2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          child: Text(
-                            context.l10n.commonCancel,
-                            style: VineTheme.titleMediumFont(
-                              color: VineTheme.vineGreen,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
                         ),
                       ),
-                      const SizedBox(width: 16),
                       if (pubkey != null)
                         Expanded(
                           child: SaveButton(
@@ -286,9 +301,9 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
     if (_nameController.text.trim().isEmpty) {
       _nameFocusNode.requestFocus();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.profileSetupDisplayNameRequired),
-          backgroundColor: VineTheme.error,
+        DivineSnackbarContainer.snackBar(
+          context.l10n.profileSetupDisplayNameRequired,
+          error: true,
         ),
       );
       return;
@@ -331,15 +346,13 @@ class _ProfileSetupScreenViewState extends ConsumerState<ProfileSetupScreenView>
 
   void _showNostrInfoSheet(BuildContext context) {
     // Unfocus any field before opening sheet
-    FocusScope.of(context).unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
     VineBottomSheet.show<void>(
       context: context,
       children: const [NostrInfoSheetContent()],
     ).then((_) {
       // Unfocus after sheet is dismissed to prevent auto-focus on form fields
-      if (context.mounted) {
-        FocusScope.of(context).unfocus();
-      }
+      FocusManager.instance.primaryFocus?.unfocus();
     });
   }
 }

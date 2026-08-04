@@ -449,16 +449,14 @@
   "profileSetupNoRelaysConnected": "Couldn't reach the network. Check your connection and try again.",
   "profileSetupRetryLabel": "Retry",
   "profileSetupDisplayNameLabel": "Display Name",
-  "profileSetupDisplayNameHint": "How should people know you?",
-  "profileSetupDisplayNameHelper": "Any name or label you want. Doesn't have to be unique.",
   "profileSetupDisplayNameRequired": "Please enter a display name",
   "profileSetupBioLabel": "Bio (Optional)",
-  "profileSetupBioHint": "Tell people about yourself...",
   "profileSetupWebsiteLabel": "Website (Optional)",
-  "profileSetupWebsiteHint": "https://yoursite.com",
   "profileSetupPublicKeyLabel": "Public key (npub)",
+  "@profileSetupPublicKeyLabel": {
+    "description": "Label above the read-only npub row on the edit-profile screen."
+  },
   "profileSetupUsernameLabel": "Username (Optional)",
-  "profileSetupUsernameHint": "username",
   "profileSetupUsernameHelper": "Your unique identity on Divine",
   "profileSetupProfileColorLabel": "Profile Color (Optional)",
   "profileSetupSaveButton": "Save",
@@ -482,17 +480,77 @@
   "profileSetupUploadFileTooLarge": "File too large: Please choose a smaller image (max 10MB).",
   "profileSetupUploadServerError": "Upload failed. Our servers are temporarily unavailable. Please try again in a moment.",
   "profileSetupUploadUnsupportedOnWeb": "Profile picture upload isn't available on web yet. Use the iOS or Android app, or paste an image URL.",
-  "profileSetupBannerSectionTitle": "Banner",
-  "@profileSetupBannerSectionTitle": {
-    "description": "Section header above the profile banner editing block on the profile setup screen."
-  },
-  "profileSetupBannerUploadButton": "Upload photo",
-  "@profileSetupBannerUploadButton": {
-    "description": "Label on the button that opens the image picker to upload a profile banner image."
-  },
   "profileSetupBannerClearButton": "Clear banner",
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
+  },
+  "profileSetupBannerChangeColor": "Banner color",
+  "profileSetupChangeBannerTitle": "Change banner",
+  "@profileSetupChangeBannerTitle": {
+    "description": "Title of the bottom sheet that offers the banner image sources."
+  },
+  "@profileSetupBannerChangeColor": {
+    "description": "Label of the colour input in the banner picker sheet, and the heading of the swatch sheet it opens."
+  },
+  "profileSetupBannerColorPickerTitle": "Change banner color",
+  "@profileSetupBannerColorPickerTitle": {
+    "description": "Title of the bottom sheet holding the banner colour swatches."
+  },
+  "profileSetupBannerColorCustom": "Custom",
+  "@profileSetupBannerColorCustom": {
+    "description": "Name of the banner colour chosen through the full colour picker rather than the preset palette."
+  },
+  "profileSetupBannerColorNone": "No color",
+  "@profileSetupBannerColorNone": {
+    "description": "Name of the swatch that leaves the banner without a colour, shown in the colour picker and as the value of the banner colour input."
+  },
+  "profileSetupBannerColorLime": "Lime",
+  "@profileSetupBannerColorLime": {
+    "description": "Name of the lime green banner colour."
+  },
+  "profileSetupBannerColorYellow": "Yellow",
+  "@profileSetupBannerColorYellow": {
+    "description": "Name of the yellow banner colour."
+  },
+  "profileSetupBannerColorViolet": "Violet",
+  "@profileSetupBannerColorViolet": {
+    "description": "Name of the violet banner colour, a pale blue-purple."
+  },
+  "profileSetupBannerColorPink": "Pink",
+  "@profileSetupBannerColorPink": {
+    "description": "Name of the pink banner colour."
+  },
+  "profileSetupBannerColorOrange": "Orange",
+  "@profileSetupBannerColorOrange": {
+    "description": "Name of the orange banner colour."
+  },
+  "profileSetupBannerColorPurple": "Purple",
+  "@profileSetupBannerColorPurple": {
+    "description": "Name of the purple banner colour, deeper than the violet swatch."
+  },
+  "profileSetupAvatarClearButton": "Remove photo",
+  "@profileSetupAvatarClearButton": {
+    "description": "Action in the profile picture sheet that removes the current picture."
+  },
+  "profileSetupImageTakePhoto": "Take photo",
+  "@profileSetupImageTakePhoto": {
+    "description": "Action in the avatar/banner image sheet that opens the camera."
+  },
+  "profileSetupImageUploadFromCameraRoll": "Upload from camera roll",
+  "@profileSetupImageUploadFromCameraRoll": {
+    "description": "Action in the avatar/banner image sheet that opens the photo gallery."
+  },
+  "profileSetupImagePasteLink": "Paste an image link",
+  "@profileSetupImagePasteLink": {
+    "description": "Action in the avatar/banner image sheet that opens a field for an image URL."
+  },
+  "profileSetupEditAvatarLabel": "Edit profile picture",
+  "@profileSetupEditAvatarLabel": {
+    "description": "Semantic label and tooltip on the pencil button overlapping the avatar."
+  },
+  "profileSetupEditBannerLabel": "Edit banner",
+  "@profileSetupEditBannerLabel": {
+    "description": "Semantic label and tooltip on the pencil button in the banner's top corner."
   },
   "profileSetupUsernameChecking": "Checking availability...",
   "profileSetupUsernameAvailable": "Username available!",
@@ -2945,10 +3003,6 @@
   "keyManagementPublicKeyCopied": "Public key copied",
   "@keyManagementPublicKeyCopied": {
     "description": "SnackBar shown after the user taps the copy icon next to their npub."
-  },
-  "profileEditPublicKeyLink": "View your public key",
-  "@profileEditPublicKeyLink": {
-    "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
   },
   "saveOriginalSavedToCameraRoll": "Saved to Camera Roll",
   "saveOriginalShare": "Share",

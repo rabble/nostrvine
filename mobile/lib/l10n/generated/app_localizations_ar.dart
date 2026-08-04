@@ -809,35 +809,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'الاسم المعروض';
 
   @override
-  String get profileSetupDisplayNameHint => 'كيف يجب أن يعرفك الناس؟';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'أي اسم أو لقب تريد. لا يلزم أن يكون فريدًا.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'يرجى إدخال اسم معروض';
 
   @override
   String get profileSetupBioLabel => 'نبذة (اختيارية)';
 
   @override
-  String get profileSetupBioHint => 'أخبر الناس عن نفسك...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'المفتاح العام (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'اسم المستخدم (اختياري)';
-
-  @override
-  String get profileSetupUsernameHint => 'username';
 
   @override
   String get profileSetupUsernameHelper => 'هويتك الفريدة على Divine';
@@ -897,13 +881,58 @@ class AppLocalizationsAr extends AppLocalizations {
       'رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'الغلاف';
-
-  @override
-  String get profileSetupBannerUploadButton => 'رفع صورة';
-
-  @override
   String get profileSetupBannerClearButton => 'مسح الغلاف';
+
+  @override
+  String get profileSetupBannerChangeColor => 'لون اللافتة';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'تغيير اللافتة';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'تغيير لون اللافتة';
+
+  @override
+  String get profileSetupBannerColorCustom => 'مخصص';
+
+  @override
+  String get profileSetupBannerColorNone => 'بدون لون';
+
+  @override
+  String get profileSetupBannerColorLime => 'ليموني';
+
+  @override
+  String get profileSetupBannerColorYellow => 'أصفر';
+
+  @override
+  String get profileSetupBannerColorViolet => 'بنفسجي فاتح';
+
+  @override
+  String get profileSetupBannerColorPink => 'وردي';
+
+  @override
+  String get profileSetupBannerColorOrange => 'برتقالي';
+
+  @override
+  String get profileSetupBannerColorPurple => 'أرجواني';
+
+  @override
+  String get profileSetupAvatarClearButton => 'إزالة الصورة';
+
+  @override
+  String get profileSetupImageTakePhoto => 'التقاط صورة';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'الرفع من معرض الصور';
+
+  @override
+  String get profileSetupImagePasteLink => 'لصق رابط صورة';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'تعديل صورة الملف الشخصي';
+
+  @override
+  String get profileSetupEditBannerLabel => 'تعديل اللافتة';
 
   @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';
@@ -5127,9 +5156,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'تم نسخ المفتاح العام';
-
-  @override
-  String get profileEditPublicKeyLink => 'عرض مفتاحك العام';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'تم الحفظ في ألبوم الكاميرا';

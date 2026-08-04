@@ -860,35 +860,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nume afișat';
 
   @override
-  String get profileSetupDisplayNameHint => 'Cum să te știe oamenii?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'Orice nume sau etichetă vrei. Nu trebuie să fie unic.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Introdu un nume afișat';
 
   @override
   String get profileSetupBioLabel => 'Bio (opțional)';
 
   @override
-  String get profileSetupBioHint => 'Spune-le oamenilor despre tine...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Cheie publică (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Nume de utilizator (opțional)';
-
-  @override
-  String get profileSetupUsernameHint => 'nume-utilizator';
 
   @override
   String get profileSetupUsernameHelper => 'Identitatea ta unică pe Divine';
@@ -949,13 +933,59 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Încarcă fotografie';
-
-  @override
   String get profileSetupBannerClearButton => 'Șterge bannerul';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Culoarea bannerului';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Schimbă bannerul';
+
+  @override
+  String get profileSetupBannerColorPickerTitle =>
+      'Schimbă culoarea bannerului';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Personalizată';
+
+  @override
+  String get profileSetupBannerColorNone => 'Fără culoare';
+
+  @override
+  String get profileSetupBannerColorLime => 'Verde lime';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Galben';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violet deschis';
+
+  @override
+  String get profileSetupBannerColorPink => 'Roz';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Portocaliu';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Mov';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Elimină fotografia';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Fă o fotografie';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Încarcă din galerie';
+
+  @override
+  String get profileSetupImagePasteLink => 'Lipește un link de imagine';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Editează poza de profil';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Editează bannerul';
 
   @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
@@ -5310,9 +5340,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Cheia publică a fost copiată';
-
-  @override
-  String get profileEditPublicKeyLink => 'Vezi cheia ta publică';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Salvat în galerie';

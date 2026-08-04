@@ -835,13 +835,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Nome visualizzato';
 
   @override
-  String get profileSetupDisplayNameHint => 'Come ti devono conoscere?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'Qualsiasi nome o etichetta. Non deve essere univoco.';
-
-  @override
   String get profileSetupDisplayNameRequired =>
       'Inserisci un nome visualizzato';
 
@@ -849,22 +842,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupBioLabel => 'Bio (opzionale)';
 
   @override
-  String get profileSetupBioHint => 'Racconta qualcosa di te...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Optional)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Chiave pubblica (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Nome utente (opzionale)';
-
-  @override
-  String get profileSetupUsernameHint => 'nomeutente';
 
   @override
   String get profileSetupUsernameHelper => 'La tua identità univoca su Divine';
@@ -925,13 +909,59 @@ class AppLocalizationsIt extends AppLocalizations {
       'Il caricamento della foto profilo non è ancora disponibile sul web. Usa l\'app iOS o Android oppure incolla l\'URL di un\'immagine.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Banner';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Carica foto';
-
-  @override
   String get profileSetupBannerClearButton => 'Rimuovi banner';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Colore del banner';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Cambia banner';
+
+  @override
+  String get profileSetupBannerColorPickerTitle =>
+      'Cambia il colore del banner';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Personalizzato';
+
+  @override
+  String get profileSetupBannerColorNone => 'Nessun colore';
+
+  @override
+  String get profileSetupBannerColorLime => 'Lime';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Giallo';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Violetto';
+
+  @override
+  String get profileSetupBannerColorPink => 'Rosa';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Arancione';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Viola';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Rimuovi la foto';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Scatta una foto';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Carica dalla galleria';
+
+  @override
+  String get profileSetupImagePasteLink => 'Incolla un link immagine';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Modifica foto profilo';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Modifica banner';
 
   @override
   String get profileSetupUsernameChecking => 'Controllo disponibilità...';
@@ -5219,9 +5249,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Chiave pubblica copiata';
-
-  @override
-  String get profileEditPublicKeyLink => 'Vedi la tua chiave pubblica';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Salvato nel rullino';

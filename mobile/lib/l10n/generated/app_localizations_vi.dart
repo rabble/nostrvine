@@ -828,35 +828,19 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupDisplayNameLabel => 'Tên hiển thị';
 
   @override
-  String get profileSetupDisplayNameHint => 'Mọi người nên biết bạn là ai?';
-
-  @override
-  String get profileSetupDisplayNameHelper =>
-      'Bất kỳ tên hay biệt danh nào bạn thích. Không cần phải duy nhất.';
-
-  @override
   String get profileSetupDisplayNameRequired => 'Vui lòng nhập tên hiển thị';
 
   @override
   String get profileSetupBioLabel => 'Tiểu sử (Không bắt buộc)';
 
   @override
-  String get profileSetupBioHint => 'Kể cho mọi người nghe về bạn...';
-
-  @override
   String get profileSetupWebsiteLabel => 'Website (Không bắt buộc)';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => 'Khóa công khai (npub)';
 
   @override
   String get profileSetupUsernameLabel => 'Tên người dùng (Không bắt buộc)';
-
-  @override
-  String get profileSetupUsernameHint => 'tên người dùng';
 
   @override
   String get profileSetupUsernameHelper =>
@@ -918,13 +902,58 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chưa thể tải ảnh đại diện lên trên web. Hãy dùng ứng dụng iOS hoặc Android, hoặc dán URL hình ảnh.';
 
   @override
-  String get profileSetupBannerSectionTitle => 'Ảnh bìa';
-
-  @override
-  String get profileSetupBannerUploadButton => 'Tải ảnh lên';
-
-  @override
   String get profileSetupBannerClearButton => 'Xóa ảnh bìa';
+
+  @override
+  String get profileSetupBannerChangeColor => 'Màu biểu ngữ';
+
+  @override
+  String get profileSetupChangeBannerTitle => 'Đổi biểu ngữ';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => 'Đổi màu biểu ngữ';
+
+  @override
+  String get profileSetupBannerColorCustom => 'Tùy chỉnh';
+
+  @override
+  String get profileSetupBannerColorNone => 'Không màu';
+
+  @override
+  String get profileSetupBannerColorLime => 'Xanh chanh';
+
+  @override
+  String get profileSetupBannerColorYellow => 'Vàng';
+
+  @override
+  String get profileSetupBannerColorViolet => 'Tím nhạt';
+
+  @override
+  String get profileSetupBannerColorPink => 'Hồng';
+
+  @override
+  String get profileSetupBannerColorOrange => 'Cam';
+
+  @override
+  String get profileSetupBannerColorPurple => 'Tím';
+
+  @override
+  String get profileSetupAvatarClearButton => 'Xóa ảnh';
+
+  @override
+  String get profileSetupImageTakePhoto => 'Chụp ảnh';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => 'Tải lên từ thư viện ảnh';
+
+  @override
+  String get profileSetupImagePasteLink => 'Dán liên kết hình ảnh';
+
+  @override
+  String get profileSetupEditAvatarLabel => 'Chỉnh sửa ảnh đại diện';
+
+  @override
+  String get profileSetupEditBannerLabel => 'Chỉnh sửa biểu ngữ';
 
   @override
   String get profileSetupUsernameChecking => 'Đang kiểm tra...';
@@ -5174,9 +5203,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => 'Đã sao chép khóa công khai';
-
-  @override
-  String get profileEditPublicKeyLink => 'Xem khóa công khai của bạn';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Đã lưu vào thư viện ảnh';

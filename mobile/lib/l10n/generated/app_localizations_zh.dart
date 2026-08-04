@@ -776,34 +776,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupDisplayNameLabel => '昵称';
 
   @override
-  String get profileSetupDisplayNameHint => '希望大家怎么称呼你？';
-
-  @override
-  String get profileSetupDisplayNameHelper => '任何你想要的名字或称呼，不需要唯一。';
-
-  @override
   String get profileSetupDisplayNameRequired => '请输入昵称';
 
   @override
   String get profileSetupBioLabel => '简介（可选）';
 
   @override
-  String get profileSetupBioHint => '给大家介绍一下你自己...';
-
-  @override
   String get profileSetupWebsiteLabel => '网站（可选）';
-
-  @override
-  String get profileSetupWebsiteHint => 'https://yoursite.com';
 
   @override
   String get profileSetupPublicKeyLabel => '公钥（npub）';
 
   @override
   String get profileSetupUsernameLabel => '用户名（可选）';
-
-  @override
-  String get profileSetupUsernameHint => '用户名';
 
   @override
   String get profileSetupUsernameHelper => '你在 Divine 上的唯一标识';
@@ -857,13 +842,58 @@ class AppLocalizationsZh extends AppLocalizations {
       '网页版暂不支持上传头像。请使用 iOS 或 Android 应用，或直接粘贴图片链接。';
 
   @override
-  String get profileSetupBannerSectionTitle => '头图';
-
-  @override
-  String get profileSetupBannerUploadButton => '上传照片';
-
-  @override
   String get profileSetupBannerClearButton => '清除头图';
+
+  @override
+  String get profileSetupBannerChangeColor => '横幅颜色';
+
+  @override
+  String get profileSetupChangeBannerTitle => '更改横幅';
+
+  @override
+  String get profileSetupBannerColorPickerTitle => '更改横幅颜色';
+
+  @override
+  String get profileSetupBannerColorCustom => '自定义';
+
+  @override
+  String get profileSetupBannerColorNone => '无颜色';
+
+  @override
+  String get profileSetupBannerColorLime => '青柠色';
+
+  @override
+  String get profileSetupBannerColorYellow => '黄色';
+
+  @override
+  String get profileSetupBannerColorViolet => '紫罗兰色';
+
+  @override
+  String get profileSetupBannerColorPink => '粉色';
+
+  @override
+  String get profileSetupBannerColorOrange => '橙色';
+
+  @override
+  String get profileSetupBannerColorPurple => '紫色';
+
+  @override
+  String get profileSetupAvatarClearButton => '移除照片';
+
+  @override
+  String get profileSetupImageTakePhoto => '拍照';
+
+  @override
+  String get profileSetupImageUploadFromCameraRoll => '从相册上传';
+
+  @override
+  String get profileSetupImagePasteLink => '粘贴图片链接';
+
+  @override
+  String get profileSetupEditAvatarLabel => '编辑头像';
+
+  @override
+  String get profileSetupEditBannerLabel => '编辑横幅';
 
   @override
   String get profileSetupUsernameChecking => '正在检查可用性...';
@@ -4889,9 +4919,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get keyManagementPublicKeyCopied => '公钥已复制';
-
-  @override
-  String get profileEditPublicKeyLink => '查看你的公钥';
 
   @override
   String get saveOriginalSavedToCameraRoll => '已保存到相册';
