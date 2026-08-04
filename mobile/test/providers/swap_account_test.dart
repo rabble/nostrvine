@@ -7,13 +7,13 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
 import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/swap_account.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 bool _isDisposed(ProviderContainer c) {
@@ -35,6 +35,7 @@ void main() {
   late DeviceScope deviceScope;
   late AccountSwitchController controller;
   late _FakeSecureKeyStorage keyStorage;
+  late _FakeAuthService currentAuthService;
 
   final account = KnownAccount(
     pubkeyHex:
@@ -50,6 +51,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     controller = AccountSwitchController();
     keyStorage = _FakeSecureKeyStorage();
+    currentAuthService = _FakeAuthService();
     deviceScope = DeviceScope(
       database: database,
       sharedPreferences: prefs,
@@ -81,6 +83,7 @@ void main() {
     await swapAccount(
       deviceScope: deviceScope,
       controller: controller,
+      currentAuthService: currentAuthService,
       account: account,
       signIn: (container, acct) async {
         signedInto = container;
@@ -110,6 +113,7 @@ void main() {
       swapAccount(
         deviceScope: deviceScope,
         controller: controller,
+        currentAuthService: currentAuthService,
         account: account,
         signIn: (container, acct) async {
           attempted = container;
@@ -126,6 +130,37 @@ void main() {
     expect(_isDisposed(initial), isFalse);
     expect(keyStorage.restoredPrimary, same(keyStorage.primary));
   });
+
+  testWidgets('archives the leaving account before signing the new one in', (
+    tester,
+  ) async {
+    await pumpHost(tester);
+    final order = <String>[];
+    currentAuthService.onArchive = () => order.add('archive');
+
+    await swapAccount(
+      deviceScope: deviceScope,
+      controller: controller,
+      currentAuthService: currentAuthService,
+      account: account,
+      signIn: (_, _) async => order.add('signIn'),
+    );
+    await tester.pump();
+
+    // Signing the incoming account in overwrites the shared signer slots, so
+    // the leaving account's credentials must already be in its own archive.
+    expect(order, equals(['archive', 'signIn']));
+  });
+}
+
+class _FakeAuthService implements AuthService {
+  void Function()? onArchive;
+
+  @override
+  Future<void> archiveCurrentSignerInfo() async => onArchive?.call();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeSecureKeyStorage extends SecureKeyStorage {

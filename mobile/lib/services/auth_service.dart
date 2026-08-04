@@ -1567,6 +1567,28 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> _archiveSignerInfo(String pubkeyHex) =>
       _signerStore.archive(pubkeyHex);
 
+  /// Archives the active signer keys under the currently signed-in account.
+  ///
+  /// The in-place account switch swaps the container instead of signing out,
+  /// so the sign-out archival above never runs for the leaving account. Signing
+  /// the incoming account in then overwrites the shared signer slots — for a
+  /// local-key account [SignerSecureStore.restoreActiveKeys] even clears the
+  /// OAuth session outright — and the leaving account is left with no session
+  /// and no refresh token to recover from. Call this before the incoming
+  /// account's sign-in.
+  Future<void> archiveCurrentSignerInfo() async {
+    final pubkeyHex = currentPublicKeyHex;
+    if (pubkeyHex == null) {
+      Log.warning(
+        'archiveCurrentSignerInfo: no signed-in account to archive',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return;
+    }
+    await _archiveSignerInfo(pubkeyHex);
+  }
+
   /// Restores per-account signer keys to the active-session keys.
   ///
   /// Called before sign-in when switching to a previously used account.

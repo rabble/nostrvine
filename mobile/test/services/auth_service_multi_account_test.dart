@@ -780,6 +780,38 @@ void main() {
     });
   });
 
+  group('archiveCurrentSignerInfo', () {
+    setUp(() async {
+      await _ignoringDiscoveryErrors(authService.createNewIdentity);
+    });
+
+    test('archives the OAuth session while staying signed in', () async {
+      // The in-place account switch never signs out, so the archival that
+      // sign-out used to do has to happen here — otherwise the incoming
+      // account's sign-in overwrites the global slot and this account is left
+      // with nothing to refresh from.
+      final pubkeyHex = testKeyContainer.publicKeyHex;
+      when(() => mockSecureStorage.read(key: 'keycast_session')).thenAnswer(
+        (_) async => jsonEncode({
+          'bunker_url': 'wss://keycast.example.com',
+          'access_token': 'test_token',
+          'scope': 'policy:full',
+          'user_pubkey': pubkeyHex,
+        }),
+      );
+
+      await authService.archiveCurrentSignerInfo();
+
+      verify(
+        () => mockSecureStorage.write(
+          key: 'keycast_session_$pubkeyHex',
+          value: any(named: 'value'),
+        ),
+      ).called(1);
+      expect(authService.isAuthenticated, isTrue);
+    });
+  });
+
   group('_restoreSignerInfo (via signInForAccount)', () {
     test('restores Amber info for amber auth source', () async {
       final pubkeyHex = testKeyContainer.publicKeyHex;

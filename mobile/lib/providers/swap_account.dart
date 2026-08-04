@@ -10,6 +10,7 @@ import 'package:openvine/providers/device_scope.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/services/auth_service.dart';
 
 /// Signs [container]'s fresh [AuthService] in as [account].
 ///
@@ -59,20 +60,31 @@ String? _currentRouterLocation(AccountSwitchController controller) {
 /// Switches the live app to [account] in place: builds a new container on the
 /// shared [deviceScope], signs it in, and swaps it in via [controller].
 ///
+/// [currentAuthService] is the live container's service — the account being
+/// left. Its signer credentials (OAuth session, bunker URL, Amber info) live in
+/// shared secure-storage slots that the incoming account's sign-in overwrites,
+/// so they are archived per-account first. The sign-out this swap replaced used
+/// to do that; without it the leaving account comes back as "session expired"
+/// with no refresh token left to recover from.
+///
 /// Prove-then-commit: nothing user-visible changes until the new account's
 /// sign-in succeeds. On failure the half-built container is disposed and the
 /// current account's container is left untouched — the rollback the previous
 /// welcome-bounce flow could not guarantee (#4623). Rethrows so the caller can
-/// surface a "couldn't switch" affordance.
+/// surface a "couldn't switch" affordance. The archive survives that rollback
+/// intentionally: it only ever copies the leaving account's own credentials
+/// into its own slot.
 ///
 /// [signIn] is injectable for testing; production uses [signInForAccount].
 Future<void> swapAccount({
   required DeviceScope deviceScope,
   required AccountSwitchController controller,
+  required AuthService currentAuthService,
   required KnownAccount account,
   AccountSignIn signIn = _defaultSignIn,
 }) async {
   await controller.runExclusive(() async {
+    await currentAuthService.archiveCurrentSignerInfo();
     final currentLocation = _currentRouterLocation(controller);
     final container = buildAccountContainer(
       deviceScope,
