@@ -18,6 +18,10 @@ abstract class PerformanceTrace {
   /// Adds an attribute for filtering in the Firebase console.
   void putAttribute(String attribute, String value);
 
+  /// Sets a custom metric on this trace, so an operation can report a
+  /// breakdown (per-phase durations, payload sizes) next to its duration.
+  void setMetric(String metric, int value);
+
   /// Stops the trace and records its duration.
   Future<void> stop();
 }
@@ -49,6 +53,9 @@ class _NoOpPerformanceTrace implements PerformanceTrace {
   void putAttribute(String attribute, String value) {}
 
   @override
+  void setMetric(String metric, int value) {}
+
+  @override
   Future<void> stop() async {}
 }
 
@@ -65,6 +72,18 @@ class _FirebasePerformanceTrace implements PerformanceTrace {
     } catch (e) {
       Log.error(
         'Failed to put attribute $attribute: $e',
+        name: 'PerformanceMonitoring',
+      );
+    }
+  }
+
+  @override
+  void setMetric(String metric, int value) {
+    try {
+      _trace.setMetric(metric, value);
+    } catch (e) {
+      Log.error(
+        'Failed to set metric $metric: $e',
         name: 'PerformanceMonitoring',
       );
     }

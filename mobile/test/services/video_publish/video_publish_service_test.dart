@@ -17,9 +17,11 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/mention_resolution_service.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_publish/publish_error_kind.dart';
+import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -41,6 +43,49 @@ class MockCollaboratorInviteService extends Mock
 class MockMentionResolutionService extends Mock
     implements MentionResolutionService {}
 
+/// Captures what a publish would report to Firebase, without any Firebase.
+class _FakePerformanceTrace implements PerformanceTrace {
+  final Map<String, int> metrics = {};
+  final Map<String, String> attributes = {};
+  int stopCount = 0;
+
+  @override
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
+
+  @override
+  void setMetric(String metric, int value) => metrics[metric] = value;
+
+  @override
+  Future<void> stop() async => stopCount++;
+}
+
+class _FakePerformanceMonitor implements PerformanceTraceMonitor {
+  final List<String> startedOperations = [];
+  final _FakePerformanceTrace trace = _FakePerformanceTrace();
+
+  @override
+  PerformanceTrace startOperationTrace(String traceName) {
+    startedOperations.add(traceName);
+    return trace;
+  }
+
+  @override
+  Future<void> startTrace(String traceName) async {}
+
+  @override
+  Future<void> stopTrace(String traceName) async {}
+
+  @override
+  void incrementMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void setMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
+}
+
 void main() {
   const descriptionMentionPubkey =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -56,6 +101,7 @@ void main() {
   late MockDraftStorageService mockDraftService;
   late MockCollaboratorInviteService mockCollaboratorInviteService;
   late MockMentionResolutionService mockMentionResolutionService;
+  late _FakePerformanceMonitor fakePerformanceMonitor;
   late VideoPublishService service;
 
   late List<double> progressChanges;
@@ -83,6 +129,7 @@ void main() {
     mockDraftService = MockDraftStorageService();
     mockCollaboratorInviteService = MockCollaboratorInviteService();
     mockMentionResolutionService = MockMentionResolutionService();
+    fakePerformanceMonitor = _FakePerformanceMonitor();
 
     progressChanges = [];
 
@@ -100,6 +147,7 @@ void main() {
       draftService: mockDraftService,
       collaboratorInviteService: mockCollaboratorInviteService,
       mentionResolutionService: mockMentionResolutionService,
+      performanceMonitor: fakePerformanceMonitor,
       onProgressChanged:
           ({required double progress, required String draftId}) =>
               progressChanges.add(progress),
@@ -121,6 +169,43 @@ void main() {
         // Assert
         expect(result, isA<PublishError>());
         expect((result as PublishError).kind, PublishErrorKind.notSignedIn);
+      });
+
+      test('reports the publish breakdown as one performance trace', () async {
+        _setupSuccessfulPublish(
+          mockAuthService: mockAuthService,
+          mockUploadManager: mockUploadManager,
+          mockDraftService: mockDraftService,
+          mockVideoEventPublisher: mockVideoEventPublisher,
+        );
+
+        await service.publishVideo(draft: _createTestDraft());
+
+        expect(
+          fakePerformanceMonitor.startedOperations,
+          equals([publishTraceName]),
+        );
+        expect(
+          fakePerformanceMonitor.trace.attributes['outcome'],
+          equals('success'),
+        );
+        expect(
+          fakePerformanceMonitor.trace.metrics,
+          contains(publishTotalMetric),
+        );
+        expect(fakePerformanceMonitor.trace.stopCount, equals(1));
+      });
+
+      test('tags a failed publish with the error it ended on', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
+
+        await service.publishVideo(draft: _createTestDraft());
+
+        expect(
+          fakePerformanceMonitor.trace.attributes['outcome'],
+          equals('error:notSignedIn'),
+        );
       });
 
       test(

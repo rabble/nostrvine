@@ -1746,7 +1746,7 @@ class VideoEventPublisher {
           );
       signWatch.stop();
       logPublishPhase(
-        'nostr.sign',
+        PublishPhases.nostrSign,
         signWatch.elapsed,
         detail: reusedEvent != null ? 'reused' : 'signed',
       );
@@ -1789,7 +1789,7 @@ class VideoEventPublisher {
         isRetry: reusedEvent != null,
       );
       publishWatch.stop();
-      logPublishPhase('nostr.publish', publishWatch.elapsed);
+      logPublishPhase(PublishPhases.nostrPublish, publishWatch.elapsed);
 
       if (publishResult) {
         final shouldAddToDiscoveryCache =

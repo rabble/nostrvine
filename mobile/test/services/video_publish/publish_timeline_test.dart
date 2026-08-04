@@ -1,9 +1,53 @@
-// ABOUTME: Tests for PublishTimeline — phase capture, summary shape, and the
-// ABOUTME: PUBTIME token contract the log-filtering workflow depends on.
+// ABOUTME: Tests for PublishTimeline — phase capture, summary shape, the
+// ABOUTME: PUBTIME token contract, and the reported performance breakdown.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/video_publish/publish_timeline.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Records what a publish would report to Firebase, without any Firebase.
+class _FakePerformanceTrace implements PerformanceTrace {
+  final Map<String, int> metrics = {};
+  final Map<String, String> attributes = {};
+  int stopCount = 0;
+
+  @override
+  void putAttribute(String attribute, String value) =>
+      attributes[attribute] = value;
+
+  @override
+  void setMetric(String metric, int value) => metrics[metric] = value;
+
+  @override
+  Future<void> stop() async => stopCount++;
+}
+
+class _FakePerformanceMonitor implements PerformanceTraceMonitor {
+  final List<String> startedOperations = [];
+  final _FakePerformanceTrace trace = _FakePerformanceTrace();
+
+  @override
+  PerformanceTrace startOperationTrace(String traceName) {
+    startedOperations.add(traceName);
+    return trace;
+  }
+
+  @override
+  Future<void> startTrace(String traceName) async {}
+
+  @override
+  Future<void> stopTrace(String traceName) async {}
+
+  @override
+  void incrementMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void setMetric(String traceName, String metricName, int value) {}
+
+  @override
+  void putAttribute(String traceName, String attribute, String value) {}
+}
 
 void main() {
   group(PublishTimeline, () {
@@ -63,6 +107,197 @@ void main() {
         expect(summary, contains('outcome=threw'));
         expect(summary, contains('total='));
       });
+
+      test('ignores the nested phases the upload leg emits', () async {
+        await timeline.run(() async {
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(milliseconds: 700),
+          );
+        });
+        timeline.record(
+          PublishPhases.upload,
+          const Duration(milliseconds: 900),
+        );
+
+        // A nested phase is part of its parent, so counting it in the summary
+        // would double it and drive `other` negative.
+        final summary = timeline.summaryLine(outcome: 'success');
+        expect(summary, contains('upload=900ms'));
+        expect(summary, isNot(contains('upload.transfer=')));
+      });
+    });
+
+    group('run', () {
+      test('makes the timeline ambient only for the duration of the '
+          'action', () async {
+        expect(PublishTimeline.current, isNull);
+
+        await timeline.run(() async {
+          expect(PublishTimeline.current, same(timeline));
+        });
+
+        expect(PublishTimeline.current, isNull);
+      });
+
+      test('stays ambient across an await and inside a parallel leg', () async {
+        await timeline.run(() async {
+          final leg = Future<PublishTimeline?>(() => PublishTimeline.current);
+          await Future<void>.delayed(Duration.zero);
+          expect(PublishTimeline.current, same(timeline));
+          expect(await leg, same(timeline));
+        });
+      });
+    });
+
+    group('finish', () {
+      late _FakePerformanceMonitor monitor;
+      late PublishTimeline traced;
+
+      setUp(() {
+        monitor = _FakePerformanceMonitor();
+        traced = PublishTimeline('draft-1', performanceMonitor: monitor);
+      });
+
+      test('starts one publish trace per timeline', () {
+        expect(monitor.startedOperations, equals([publishTraceName]));
+      });
+
+      test('reports the phases the summary carries', () async {
+        await traced.run(() async {
+          traced
+            ..record(PublishPhases.upload, const Duration(milliseconds: 900))
+            ..record(PublishPhases.nostr, const Duration(milliseconds: 120));
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(milliseconds: 700),
+            bytes: 16572,
+          );
+          logPublishPhase(
+            PublishPhases.uploadThumbnail,
+            const Duration(milliseconds: 150),
+          );
+          logPublishPhase(
+            PublishPhases.nostrSign,
+            const Duration(milliseconds: 80),
+          );
+          logPublishPhase(
+            PublishPhases.nostrPublish,
+            const Duration(milliseconds: 40),
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        expect(
+          monitor.trace.metrics,
+          allOf([
+            containsPair('upload_ms', 900),
+            containsPair('nostr_ms', 120),
+            containsPair('transfer_ms', 700),
+            containsPair('thumbnail_ms', 150),
+            containsPair('sign_ms', 80),
+            containsPair('nostr_publish_ms', 40),
+            containsPair(publishPayloadMetric, 16572),
+            contains(publishTotalMetric),
+          ]),
+        );
+        expect(monitor.trace.stopCount, equals(1));
+      });
+
+      test('reports each phase once, even when it is measured', () async {
+        await traced.run(
+          () => traced.measure(PublishPhases.nostr, () async {}),
+        );
+
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.metrics['nostr_ms'], isNotNull);
+      });
+
+      test('adds a retried phase up across its attempts', () async {
+        await traced.run(() async {
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(milliseconds: 700),
+          );
+          logPublishPhase(
+            PublishPhases.uploadTransfer,
+            const Duration(milliseconds: 500),
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.metrics['transfer_ms'], equals(1200));
+      });
+
+      test('omits a metric for a phase that never ran', () {
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.metrics.containsKey('transfer_ms'), isFalse);
+        expect(
+          monitor.trace.metrics.containsKey(publishPayloadMetric),
+          isFalse,
+        );
+      });
+
+      test('distinguishes a failed publish from a successful one', () {
+        traced.finish(outcome: 'error:serverDown');
+
+        expect(monitor.trace.attributes['outcome'], equals('error:serverDown'));
+      });
+
+      test(
+        "tags a publish that reused a previous attempt's thumbnail",
+        () async {
+          await traced.run(() async {
+            logPublishPhase(
+              PublishPhases.uploadThumbnail,
+              Duration.zero,
+              detail: PublishPhases.reusedDetail,
+            );
+          });
+
+          traced.finish(outcome: 'success');
+
+          expect(monitor.trace.attributes['thumbnail'], equals('reused'));
+        },
+      );
+
+      test('tags a publish that generated its own thumbnail', () async {
+        await traced.run(() async {
+          logPublishPhase(
+            PublishPhases.uploadThumbnail,
+            const Duration(milliseconds: 150),
+          );
+        });
+
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.attributes['thumbnail'], equals('generated'));
+      });
+
+      test('still logs the summary line', () {
+        traced.record(PublishPhases.upload, const Duration(milliseconds: 900));
+
+        traced.finish(outcome: 'success');
+
+        final summary = LogCaptureService().getRecentLogs(limit: 1).single;
+        expect(summary.message, contains('$publishTimingToken summary'));
+        expect(summary.message, contains('outcome=success'));
+      });
+
+      test('ignores phases emitted outside its own run', () {
+        logPublishPhase(
+          PublishPhases.uploadTransfer,
+          const Duration(milliseconds: 700),
+        );
+
+        traced.finish(outcome: 'success');
+
+        expect(monitor.trace.metrics.containsKey('transfer_ms'), isFalse);
+      });
     });
   });
 
@@ -82,6 +317,18 @@ void main() {
       expect(captured.message, contains('upload.transfer'));
       expect(captured.message, contains('5231ms'));
       expect(captured.message, contains('8.00MB 1.53MB/s'));
+    });
+
+    test('renders a transferred payload as size and rate', () {
+      logPublishPhase(
+        'upload.transfer',
+        const Duration(seconds: 4),
+        bytes: 8 * 1024 * 1024,
+      );
+
+      final captured = LogCaptureService().getRecentLogs(limit: 1).single;
+
+      expect(captured.message, contains('8.00MB 2.00MB/s'));
     });
   });
 
