@@ -19,8 +19,8 @@ runs should be short — the ledger below tells you what's already handled.
 ## Hard rules (non-negotiable)
 
 1. **NEVER close, delete, or mutate the state of Crashlytics issues, events, or any
-   hosted data.** You may add notes (`crashlytics_create_note`) — nothing else. Do not
-   use `crashlytics_update_issue` to change state; do not delete notes.
+   hosted data.** You may add notes (`crashlytics_add_note`) — nothing else. Do not
+   use `crashlytics_update_issue` to change state; do not use `crashlytics_delete_note`.
 2. **Never run destructive local commands** (`git reset --hard`, `git clean`, `rm -rf`,
    branch force-deletes) on anything you didn't create this run.
 3. One crash worked per run, maximum. If nothing qualifies, report "nothing actionable"
@@ -31,19 +31,28 @@ runs should be short — the ledger below tells you what's already handled.
 
 ## Step 1 — Pull the crash picture
 
+The Firebase MCP server is **not** in this repo's `.mcp.json` (which registers only
+`nostr`, `dart` and `figma`), so the `crashlytics_*` tools are unavailable on a clean
+checkout. Wire it up first — `firebase experimental:mcp` from the `firebase-tools` CLI —
+and confirm the tools are listed before starting. If they are not available, stop and
+say so rather than guessing at crash data.
+
 Using the Firebase MCP tools against project `openvine-co`:
 
-1. `crashlytics_get_report` (top issues) for **both** the iOS and Android apps, over
-   the last 7 days, sorted by impacted users / event count.
-2. For candidates, `crashlytics_get_issue` to get details, and
-   `crashlytics_list_events` / `crashlytics_batch_get_events` for representative stack
-   traces, device/OS breakdown, and versions.
+1. `crashlytics_list_top_issues` for **both** the iOS and Android apps. It takes
+   `{app_id, issue_count, issue_type}` — `issue_type` is one of `FATAL`, `NON-FATAL`,
+   `ANR`. Ask for a generous `issue_count` (30+); see the ranking note below.
+2. For candidates, `crashlytics_get_issue_details` (`{app_id, issue_id}`), and
+   `crashlytics_get_sample_crash_for_issue`
+   (`{app_id, issue_id, sample_count, variant_id}`) for representative stack traces.
+   `crashlytics_list_top_devices`, `crashlytics_list_top_operating_systems` and
+   `crashlytics_list_top_versions` give the device / OS / version breakdown.
 
-Note: the `topIssues` report is sorted by **event count**, but rank your candidates by
-**impacted users** (with `SIGNAL_FRESH` / `SIGNAL_REGRESSED` / velocity as tiebreakers).
-Event count over-weights a single user who crash-loops; impacted-users is the better
-severity signal. Read enough rows that a high-user issue ranked below a high-event one
-isn't missed.
+Note: the tool takes **no time-window and no sort parameter** — it returns the top
+issues as Crashlytics ranks them, by event count. Rank your own candidates by
+**impacted users** from the issue details, because event count over-weights a single
+user who crash-loops. That means pulling more rows than you think you need and sorting
+them yourself, rather than trusting the returned order.
 
 ## Step 2 — Triage filter
 
