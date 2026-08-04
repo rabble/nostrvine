@@ -2052,7 +2052,7 @@
     "listContinue": "Lanjut",
     "listUpdateFailed": "Daftar ini gagal diperbarui. Coba lagi.",
     "listMakePrivateTitle": "Jadikan daftar ini privat?",
-    "listMakePrivateWarning": "Tautan publiknya akan berhenti berfungsi. Daftar ini cuma akan ada di perangkat ini dan tidak dicadangkan.",
+    "listMakePrivateWarning": "Kami akan meminta relay menghapus salinan publiknya, tapi salinan yang sudah tersebar bisa tetap ada. Daftar ini cuma akan ada di perangkat ini dan tidak dicadangkan.",
     "listMakePublicTitle": "Jadikan daftar ini publik?",
     "listMakePublicWarning": "Siapa pun yang punya tautannya bisa melihat daftar ini dan videonya.",
     "listShareText": "Lihat {name} di Divine: {url}",

@@ -2838,7 +2838,7 @@
   "listContinue": "Tiếp tục",
   "listUpdateFailed": "Không cập nhật được danh sách này. Thử lại nhé.",
   "listMakePrivateTitle": "Chuyển danh sách này thành riêng tư?",
-  "listMakePrivateWarning": "Liên kết công khai sẽ ngừng hoạt động. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.",
+  "listMakePrivateWarning": "Chúng tôi sẽ yêu cầu các relay gỡ bản sao công khai, nhưng những bản đã chia sẻ vẫn có thể còn trên mạng. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.",
   "listMakePublicTitle": "Chuyển danh sách này thành công khai?",
   "listMakePublicWarning": "Bất kỳ ai có liên kết đều xem được danh sách này và các video trong đó.",
   "listShareText": "Xem {name} trên Divine: {url}",

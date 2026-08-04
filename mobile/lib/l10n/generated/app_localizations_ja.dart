@@ -4848,7 +4848,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '公開リンクは使えなくなるよ。このリストはこの端末にだけ残って、バックアップされないよ。';
+      '公開コピーの削除をリレーにお願いするけど、すでに共有されたコピーは残ることがあるよ。このリストはこの端末にだけ残って、バックアップされないよ。';
 
   @override
   String get listMakePublicTitle => 'このリストを公開する？';

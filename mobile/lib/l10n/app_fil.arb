@@ -1338,7 +1338,7 @@
     "listContinue": "Magpatuloy",
     "listUpdateFailed": "Hindi na-update ang list na ito. Subukan ulit.",
     "listMakePrivateTitle": "Gawing private ang list na ito?",
-    "listMakePrivateWarning": "Hihinto sa paggana ang public link nito. Sa device na lang na ito mananatili ang list at hindi ito naba-back up.",
+    "listMakePrivateWarning": "Hihilingin namin sa mga relay na alisin ang public na kopya, pero puwedeng manatiling online ang mga kopyang naipamahagi na. Sa device na lang na ito mananatili ang list at hindi ito naba-back up.",
     "listMakePublicTitle": "Gawing public ang list na ito?",
     "listMakePublicWarning": "Makikita ng kahit sino na may link ang list na ito at ang mga video nito.",
     "listShareText": "Tingnan mo {name} sa Divine: {url}",

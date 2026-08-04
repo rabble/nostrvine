@@ -2053,7 +2053,7 @@
     "listContinue": "Continuă",
     "listUpdateFailed": "N-am putut actualiza lista. Mai încearcă.",
     "listMakePrivateTitle": "Faci lista privată?",
-    "listMakePrivateWarning": "Linkul public nu va mai funcționa. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.",
+    "listMakePrivateWarning": "Vom cere releelor să elimine copia publică, dar copiile deja distribuite pot rămâne online. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.",
     "listMakePublicTitle": "Faci lista publică?",
     "listMakePublicWarning": "Oricine are linkul poate vedea lista și videoclipurile din ea.",
     "listShareText": "Vezi {name} pe Divine: {url}",

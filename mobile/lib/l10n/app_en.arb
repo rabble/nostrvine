@@ -2915,7 +2915,7 @@
   "listContinue": "Continue",
   "listUpdateFailed": "Couldn't update this list. Try again.",
   "listMakePrivateTitle": "Make this list private?",
-  "listMakePrivateWarning": "Its public link will stop working. This list will live only on this device and won't be backed up.",
+  "listMakePrivateWarning": "We'll ask relays to remove the public copy, but copies already shared may stay online. This list will live only on this device and won't be backed up.",
   "listMakePublicTitle": "Make this list public?",
   "listMakePublicWarning": "Anyone with the link can see this list and its videos.",
   "listShareText": "Check out {name} on Divine: {url}",

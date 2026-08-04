@@ -5097,7 +5097,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Its public link will stop working. This list will live only on this device and won\'t be backed up.';
+      'We\'ll ask relays to remove the public copy, but copies already shared may stay online. This list will live only on this device and won\'t be backed up.';
 
   @override
   String get listMakePublicTitle => 'Make this list public?';

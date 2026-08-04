@@ -5161,7 +5161,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Der öffentliche Link funktioniert dann nicht mehr. Die Liste liegt nur noch auf diesem Gerät und wird nicht gesichert.';
+      'Wir bitten die Relays, die öffentliche Kopie zu entfernen, aber bereits geteilte Kopien können online bleiben. Die Liste liegt nur noch auf diesem Gerät und wird nicht gesichert.';
 
   @override
   String get listMakePublicTitle => 'Diese Liste öffentlich machen?';

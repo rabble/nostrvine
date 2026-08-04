@@ -4868,7 +4868,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      '공개 링크가 더 이상 작동하지 않아요. 이 목록은 이 기기에만 남고 백업되지 않아요.';
+      '릴레이에 공개 사본 삭제를 요청하지만, 이미 공유된 사본은 남아 있을 수 있어요. 이 목록은 이 기기에만 남고 백업되지 않아요.';
 
   @override
   String get listMakePublicTitle => '이 목록을 공개로 바꿀까요?';

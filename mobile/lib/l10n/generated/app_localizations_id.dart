@@ -5061,7 +5061,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Tautan publiknya akan berhenti berfungsi. Daftar ini cuma akan ada di perangkat ini dan tidak dicadangkan.';
+      'Kami akan meminta relay menghapus salinan publiknya, tapi salinan yang sudah tersebar bisa tetap ada. Daftar ini cuma akan ada di perangkat ini dan tidak dicadangkan.';
 
   @override
   String get listMakePublicTitle => 'Jadikan daftar ini publik?';

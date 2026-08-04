@@ -2053,7 +2053,7 @@
     "listContinue": "Doorgaan",
     "listUpdateFailed": "Kon deze lijst niet bijwerken. Probeer het opnieuw.",
     "listMakePrivateTitle": "Deze lijst privé maken?",
-    "listMakePrivateWarning": "De openbare link werkt dan niet meer. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.",
+    "listMakePrivateWarning": "We vragen de relays om de openbare kopie te verwijderen, maar al gedeelde kopieën kunnen online blijven. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.",
     "listMakePublicTitle": "Deze lijst openbaar maken?",
     "listMakePublicWarning": "Iedereen met de link kan deze lijst en de video's erin zien.",
     "listShareText": "Check {name} op Divine: {url}",

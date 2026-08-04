@@ -2053,7 +2053,7 @@
     "listContinue": "Fortsätt",
     "listUpdateFailed": "Kunde inte uppdatera listan. Försök igen.",
     "listMakePrivateTitle": "Göra listan privat?",
-    "listMakePrivateWarning": "Den publika länken slutar fungera. Listan finns bara på den här enheten och säkerhetskopieras inte.",
+    "listMakePrivateWarning": "Vi ber reläerna att ta bort den publika kopian, men redan delade kopior kan finnas kvar online. Listan finns bara på den här enheten och säkerhetskopieras inte.",
     "listMakePublicTitle": "Göra listan offentlig?",
     "listMakePublicWarning": "Alla med länken kan se listan och dess videor.",
     "listShareText": "Kolla in {name} på Divine: {url}",

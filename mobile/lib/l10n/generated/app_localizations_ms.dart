@@ -5140,7 +5140,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Pautan awamnya akan berhenti berfungsi. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.';
+      'Kami akan meminta relay membuang salinan awamnya, tetapi salinan yang sudah dikongsi mungkin masih kekal dalam talian. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.';
 
   @override
   String get listMakePublicTitle => 'Jadikan senarai ini awam?';

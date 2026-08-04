@@ -2053,7 +2053,7 @@
     "listContinue": "Weiter",
     "listUpdateFailed": "Liste konnte nicht aktualisiert werden. Versuch es nochmal.",
     "listMakePrivateTitle": "Diese Liste privat machen?",
-    "listMakePrivateWarning": "Der öffentliche Link funktioniert dann nicht mehr. Die Liste liegt nur noch auf diesem Gerät und wird nicht gesichert.",
+    "listMakePrivateWarning": "Wir bitten die Relays, die öffentliche Kopie zu entfernen, aber bereits geteilte Kopien können online bleiben. Die Liste liegt nur noch auf diesem Gerät und wird nicht gesichert.",
     "listMakePublicTitle": "Diese Liste öffentlich machen?",
     "listMakePublicWarning": "Alle mit dem Link können diese Liste und ihre Videos sehen.",
     "listShareText": "Schau dir {name} auf Divine an: {url}",

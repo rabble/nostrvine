@@ -5105,7 +5105,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'اس کا عوامی لنک کام کرنا بند کر دے گا۔ یہ فہرست صرف اسی ڈیوائس پر رہے گی اور اس کا بیک اپ نہیں بنے گا۔';
+      'ہم ریلے سے عوامی کاپی ہٹانے کی درخواست کریں گے، لیکن پہلے سے شیئر کی گئی کاپیاں آن لائن باقی رہ سکتی ہیں۔ یہ فہرست صرف اسی ڈیوائس پر رہے گی اور اس کا بیک اپ نہیں بنے گا۔';
 
   @override
   String get listMakePublicTitle => 'اس فہرست کو عوامی بنائیں؟';

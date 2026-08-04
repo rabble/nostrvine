@@ -5168,7 +5168,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Hihinto sa paggana ang public link nito. Sa device na lang na ito mananatili ang list at hindi ito naba-back up.';
+      'Hihilingin namin sa mga relay na alisin ang public na kopya, pero puwedeng manatiling online ang mga kopyang naipamahagi na. Sa device na lang na ito mananatili ang list at hindi ito naba-back up.';
 
   @override
   String get listMakePublicTitle => 'Gawing public ang list na ito?';

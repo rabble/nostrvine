@@ -5094,7 +5094,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Den publika länken slutar fungera. Listan finns bara på den här enheten och säkerhetskopieras inte.';
+      'Vi ber reläerna att ta bort den publika kopian, men redan delade kopior kan finnas kvar online. Listan finns bara på den här enheten och säkerhetskopieras inte.';
 
   @override
   String get listMakePublicTitle => 'Göra listan offentlig?';

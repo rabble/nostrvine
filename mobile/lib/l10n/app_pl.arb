@@ -2053,7 +2053,7 @@
     "listContinue": "Dalej",
     "listUpdateFailed": "Nie udało się zaktualizować tej listy. Spróbuj ponownie.",
     "listMakePrivateTitle": "Ustawić tę listę jako prywatną?",
-    "listMakePrivateWarning": "Publiczny link przestanie działać. Ta lista będzie tylko na tym urządzeniu i nie powstanie jej kopia zapasowa.",
+    "listMakePrivateWarning": "Poprosimy przekaźniki o usunięcie publicznej kopii, ale już udostępnione kopie mogą pozostać w sieci. Ta lista będzie tylko na tym urządzeniu i nie powstanie jej kopia zapasowa.",
     "listMakePublicTitle": "Ustawić tę listę jako publiczną?",
     "listMakePublicWarning": "Każdy, kto ma link, zobaczy tę listę i jej filmy.",
     "listShareText": "Zobacz {name} na Divine: {url}",

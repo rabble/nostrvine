@@ -5145,7 +5145,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Su enlace público va a dejar de funcionar. Esta lista va a quedar solo en este dispositivo y no se respalda.';
+      'Vamos a pedir a los relays que quiten la copia pública, pero las copias ya compartidas pueden seguir en línea. Esta lista va a quedar solo en este dispositivo y no se respalda.';
 
   @override
   String get listMakePublicTitle => '¿Hacer pública esta lista?';

@@ -4990,7 +4990,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'ይፋዊ አገናኙ መስራት ያቆማል። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።';
+      'የይፋዊውን ቅጂ እንዲያስወግዱ ሪሌዎችን እንጠይቃለን፣ ነገር ግን አስቀድመው የተጋሩ ቅጂዎች በመስመር ላይ ሊቀሩ ይችላሉ። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።';
 
   @override
   String get listMakePublicTitle => 'ይህ ዝርዝር ይፋዊ ይሁን?';

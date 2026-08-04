@@ -5106,7 +5106,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Liên kết công khai sẽ ngừng hoạt động. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.';
+      'Chúng tôi sẽ yêu cầu các relay gỡ bản sao công khai, nhưng những bản đã chia sẻ vẫn có thể còn trên mạng. Danh sách này sẽ chỉ nằm trên thiết bị này và không được sao lưu.';
 
   @override
   String get listMakePublicTitle => 'Chuyển danh sách này thành công khai?';

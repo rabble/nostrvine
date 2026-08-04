@@ -2053,7 +2053,7 @@
     "listContinue": "Continua",
     "listUpdateFailed": "Impossibile aggiornare questa lista. Riprova.",
     "listMakePrivateTitle": "Rendere privata questa lista?",
-    "listMakePrivateWarning": "Il suo link pubblico smetterà di funzionare. Questa lista resterà solo su questo dispositivo e non finirà nel backup.",
+    "listMakePrivateWarning": "Chiederemo ai relay di rimuovere la copia pubblica, ma le copie già condivise potrebbero restare online. Questa lista resterà solo su questo dispositivo e non finirà nel backup.",
     "listMakePublicTitle": "Rendere pubblica questa lista?",
     "listMakePublicWarning": "Chiunque abbia il link può vedere questa lista e i suoi video.",
     "listShareText": "Guarda {name} su Divine: {url}",

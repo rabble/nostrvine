@@ -2052,7 +2052,7 @@
     "listContinue": "Devam",
     "listUpdateFailed": "Bu liste güncellenemedi. Tekrar dene.",
     "listMakePrivateTitle": "Bu liste özel yapılsın mı?",
-    "listMakePrivateWarning": "Herkese açık bağlantısı çalışmayı bırakacak. Bu liste yalnızca bu cihazda kalacak ve yedeklenmeyecek.",
+    "listMakePrivateWarning": "Herkese açık kopyanın kaldırılmasını relay'lerden isteyeceğiz ama daha önce paylaşılan kopyalar çevrimiçi kalabilir. Bu liste yalnızca bu cihazda kalacak ve yedeklenmeyecek.",
     "listMakePublicTitle": "Bu liste herkese açık yapılsın mı?",
     "listMakePublicWarning": "Bağlantıya sahip herkes bu listeyi ve videolarını görebilir.",
     "listShareText": "{name} listesine Divine'da göz at: {url}",

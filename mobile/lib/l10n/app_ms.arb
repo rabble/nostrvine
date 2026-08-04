@@ -2838,7 +2838,7 @@
   "listContinue": "Teruskan",
   "listUpdateFailed": "Senarai ini tidak dapat dikemas kini. Cuba lagi.",
   "listMakePrivateTitle": "Jadikan senarai ini peribadi?",
-  "listMakePrivateWarning": "Pautan awamnya akan berhenti berfungsi. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.",
+  "listMakePrivateWarning": "Kami akan meminta relay membuang salinan awamnya, tetapi salinan yang sudah dikongsi mungkin masih kekal dalam talian. Senarai ini akan berada pada peranti ini sahaja dan tidak disandarkan.",
   "listMakePublicTitle": "Jadikan senarai ini awam?",
   "listMakePublicWarning": "Sesiapa yang ada pautan boleh melihat senarai ini dan videonya.",
   "listShareText": "Tengok {name} di Divine: {url}",

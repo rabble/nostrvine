@@ -5071,7 +5071,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Herkese açık bağlantısı çalışmayı bırakacak. Bu liste yalnızca bu cihazda kalacak ve yedeklenmeyecek.';
+      'Herkese açık kopyanın kaldırılmasını relay\'lerden isteyeceğiz ama daha önce paylaşılan kopyalar çevrimiçi kalabilir. Bu liste yalnızca bu cihazda kalacak ve yedeklenmeyecek.';
 
   @override
   String get listMakePublicTitle => 'Bu liste herkese açık yapılsın mı?';

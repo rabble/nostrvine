@@ -5234,7 +5234,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Publiczny link przestanie działać. Ta lista będzie tylko na tym urządzeniu i nie powstanie jej kopia zapasowa.';
+      'Poprosimy przekaźniki o usunięcie publicznej kopii, ale już udostępnione kopie mogą pozostać w sieci. Ta lista będzie tylko na tym urządzeniu i nie powstanie jej kopia zapasowa.';
 
   @override
   String get listMakePublicTitle => 'Ustawić tę listę jako publiczną?';

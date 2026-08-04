@@ -5124,7 +5124,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'De openbare link werkt dan niet meer. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.';
+      'We vragen de relays om de openbare kopie te verwijderen, maar al gedeelde kopieën kunnen online blijven. Deze lijst staat alleen nog op dit apparaat en er wordt geen back-up van gemaakt.';
 
   @override
   String get listMakePublicTitle => 'Deze lijst openbaar maken?';

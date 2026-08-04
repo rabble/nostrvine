@@ -5060,7 +5060,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'سيتوقف رابطها العام عن العمل. ستبقى هذه القائمة على هذا الجهاز فقط ولن يتم نسخها احتياطيًا.';
+      'سنطلب من المرحّلات إزالة النسخة العامة، لكن النسخ التي تمت مشاركتها قد تبقى متاحة على الإنترنت. ستبقى هذه القائمة على هذا الجهاز فقط ولن يتم نسخها احتياطيًا.';
 
   @override
   String get listMakePublicTitle => 'هل تريد جعل هذه القائمة عامة؟';

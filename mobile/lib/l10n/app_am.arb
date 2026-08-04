@@ -2451,7 +2451,7 @@
     "listContinue": "ቀጥል",
     "listUpdateFailed": "ይህን ዝርዝር ማዘመን አልተቻለም። እንደገና ይሞክሩ።",
     "listMakePrivateTitle": "ይህ ዝርዝር የግል ይሁን?",
-    "listMakePrivateWarning": "ይፋዊ አገናኙ መስራት ያቆማል። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።",
+    "listMakePrivateWarning": "የይፋዊውን ቅጂ እንዲያስወግዱ ሪሌዎችን እንጠይቃለን፣ ነገር ግን አስቀድመው የተጋሩ ቅጂዎች በመስመር ላይ ሊቀሩ ይችላሉ። ይህ ዝርዝር በዚህ መሣሪያ ላይ ብቻ ይቆያል፤ ምትኬም አይያዝለትም።",
     "listMakePublicTitle": "ይህ ዝርዝር ይፋዊ ይሁን?",
     "listMakePublicWarning": "አገናኙ ያለው ማንኛውም ሰው ይህን ዝርዝርና ቪዲዮዎቹን ማየት ይችላል።",
     "listShareText": "{name}ን በDivine ላይ ይመልከቱ፦ {url}",

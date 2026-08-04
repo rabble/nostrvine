@@ -5242,7 +5242,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listMakePrivateWarning =>
-      'Linkul public nu va mai funcționa. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.';
+      'Vom cere releelor să elimine copia publică, dar copiile deja distribuite pot rămâne online. Lista va rămâne doar pe acest dispozitiv și nu va avea backup.';
 
   @override
   String get listMakePublicTitle => 'Faci lista publică?';

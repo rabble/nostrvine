@@ -4831,7 +4831,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get listMakePrivateTitle => '将此列表设为私密？';
 
   @override
-  String get listMakePrivateWarning => '它的公开链接将失效。此列表只会保存在本设备，且不会备份。';
+  String get listMakePrivateWarning =>
+      '我们会请求中继移除公开副本，但已经分享出去的副本可能仍会留存。此列表只会保存在本设备，且不会备份。';
 
   @override
   String get listMakePublicTitle => '将此列表设为公开？';
