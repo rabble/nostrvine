@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/container_swap_host.dart';
@@ -59,6 +60,9 @@ void main() {
   final leavingNpub = NostrKeyUtils.encodePubKey(leavingHex);
   final targetNpub = NostrKeyUtils.encodePubKey(targetHex);
   final strangerNpub = NostrKeyUtils.encodePubKey(strangerHex);
+  final leavingNprofile = NIP19Tlv.encodeNprofile(
+    Nprofile(pubkey: leavingHex, relays: const ['wss://relay.divine.video']),
+  );
 
   final account = KnownAccount(
     pubkeyHex: targetHex,
@@ -91,7 +95,7 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile/$leavingNpub',
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         '/profile/$targetNpub',
@@ -102,7 +106,7 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile/me',
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         '/profile/$targetNpub',
@@ -113,10 +117,46 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile/$leavingNpub/7?source=notification#clip',
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         '/profile/$targetNpub/7?source=notification#clip',
+      );
+    });
+
+    // The own-profile route accepts three encodings of the same identity. A
+    // raw string compare against the npub leaves the other two stranded on the
+    // leaving account — /profile/{hex} is a documented deep-link form.
+    test('retargets an own-profile route carried as bare hex', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$leavingHex',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub',
+      );
+    });
+
+    test('retargets an own-profile route carried as uppercase hex', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/${leavingHex.toUpperCase()}',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub',
+      );
+    });
+
+    test('retargets an own-profile route carried as nprofile', () {
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$leavingNprofile',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$targetNpub',
       );
     });
 
@@ -124,10 +164,36 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile/$strangerNpub',
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         '/profile/$strangerNpub',
+      );
+    });
+
+    test('preserves another user profile carried as hex', () {
+      // Normalizing the comparison must not widen it: a stranger's hex is
+      // still a stranger.
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/$strangerHex',
+          currentPubkeyHex: leavingHex,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/$strangerHex',
+      );
+    });
+
+    test('preserves an undecodable identifier for an unknown identity', () {
+      // Both sides normalize to null here; treating that as a match would
+      // retarget a garbage route.
+      expect(
+        accountSwitchInitialLocation(
+          currentLocation: '/profile/not-an-identifier',
+          currentPubkeyHex: null,
+          targetPubkeyHex: targetHex,
+        ),
+        '/profile/not-an-identifier',
       );
     });
 
@@ -135,7 +201,7 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile/$leavingNpub',
-          currentNpub: null,
+          currentPubkeyHex: null,
           targetPubkeyHex: targetHex,
         ),
         '/profile/$leavingNpub',
@@ -148,7 +214,7 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/profile-view/$leavingNpub',
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         '/profile-view/$leavingNpub',
@@ -159,7 +225,7 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: '/settings',
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         '/settings',
@@ -170,7 +236,7 @@ void main() {
       expect(
         accountSwitchInitialLocation(
           currentLocation: null,
-          currentNpub: leavingNpub,
+          currentPubkeyHex: leavingHex,
           targetPubkeyHex: targetHex,
         ),
         isNull,
@@ -211,7 +277,7 @@ void main() {
     String from,
   ) async {
     final auth = _MockAuthService();
-    when(() => auth.currentNpub).thenReturn(leavingNpub);
+    when(() => auth.currentPublicKeyHex).thenReturn(leavingHex);
     final router = GoRouter(
       initialLocation: from,
       routes: [

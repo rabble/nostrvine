@@ -12,6 +12,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Signs [container]'s fresh [AuthService] in as [account].
@@ -66,9 +67,14 @@ String? _currentRouterLocation(AccountSwitchController controller) {
 /// profile URL is identity-bearing, though: carrying `/profile/<old npub>` into
 /// the new container renders the leaving account's profile while the rest of
 /// the app already reflects the target account.
+///
+/// The routed segment is matched with [routeIdentifiesUser] rather than
+/// compared raw, because the route accepts npub, nprofile and bare hex as well
+/// as the relative `me` — a raw compare leaves the hex and nprofile forms
+/// stranded on the leaving account.
 String? accountSwitchInitialLocation({
   required String? currentLocation,
-  required String? currentNpub,
+  required String? currentPubkeyHex,
   required String targetPubkeyHex,
 }) {
   if (currentLocation == null) return null;
@@ -80,8 +86,7 @@ String? accountSwitchInitialLocation({
     return currentLocation;
   }
 
-  final routedNpub = segments[1];
-  if (routedNpub != 'me' && routedNpub != currentNpub) {
+  if (!routeIdentifiesUser(segments[1], currentPubkeyHex)) {
     return currentLocation;
   }
 
@@ -134,7 +139,7 @@ Future<void> swapAccount({
     final current = controller.currentContainer;
     final currentLocation = accountSwitchInitialLocation(
       currentLocation: _currentRouterLocation(controller),
-      currentNpub: current?.read(authServiceProvider).currentNpub,
+      currentPubkeyHex: current?.read(authServiceProvider).currentPublicKeyHex,
       targetPubkeyHex: account.pubkeyHex,
     );
     final container = buildAccountContainer(
