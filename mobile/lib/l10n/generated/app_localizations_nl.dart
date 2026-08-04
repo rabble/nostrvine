@@ -910,9 +910,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Banner wissen';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner bijgewerkt';
-
-  @override
   String get profileSetupUsernameChecking => 'Beschikbaarheid controleren...';
 
   @override

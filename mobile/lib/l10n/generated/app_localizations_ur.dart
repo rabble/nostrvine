@@ -909,9 +909,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get profileSetupBannerClearButton => 'بینر ہٹائیں';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'بینر اپڈیٹ ہو گیا';
-
-  @override
   String get profileSetupUsernameChecking => 'دستیابی چیک ہو رہی ہے...';
 
   @override

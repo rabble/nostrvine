@@ -836,9 +836,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupBannerClearButton => '배너 지우기';
 
   @override
-  String get profileSetupBannerUploadSuccess => '배너가 업데이트되었어요';
-
-  @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';
 
   @override

@@ -892,9 +892,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Rensa banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner uppdaterad';
-
-  @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';
 
   @override

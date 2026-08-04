@@ -877,9 +877,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Afişi temizle';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Afiş güncellendi';
-
-  @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';
 
   @override

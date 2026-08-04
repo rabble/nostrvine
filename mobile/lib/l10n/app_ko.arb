@@ -229,7 +229,6 @@
     "profileSetupBannerSectionTitle": "배너",
     "profileSetupBannerUploadButton": "사진 업로드",
     "profileSetupBannerClearButton": "배너 지우기",
-    "profileSetupBannerUploadSuccess": "배너가 업데이트되었어요",
     "profileSetupUsernameChecking": "사용 가능 여부 확인 중...",
     "profileSetupUsernameAvailable": "사용 가능한 이름이에요!",
     "profileSetupUsernameTakenIndicator": "이미 사용 중인 이름이에요",

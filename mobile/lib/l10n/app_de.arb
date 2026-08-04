@@ -382,7 +382,6 @@
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Foto hochladen",
     "profileSetupBannerClearButton": "Banner entfernen",
-    "profileSetupBannerUploadSuccess": "Banner aktualisiert",
     "profileSetupUsernameChecking": "Verfügbarkeit wird geprüft...",
     "profileSetupUsernameAvailable": "Benutzername verfügbar!",
     "profileSetupUsernameTakenIndicator": "Benutzername bereits vergeben",

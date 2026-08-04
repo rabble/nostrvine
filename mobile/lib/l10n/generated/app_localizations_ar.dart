@@ -890,9 +890,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupBannerClearButton => 'مسح الغلاف';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'تم تحديث الغلاف';
-
-  @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';
 
   @override

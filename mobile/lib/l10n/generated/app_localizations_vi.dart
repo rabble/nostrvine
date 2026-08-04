@@ -911,9 +911,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Xóa ảnh bìa';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Đã cập nhật ảnh bìa';
-
-  @override
   String get profileSetupUsernameChecking => 'Đang kiểm tra...';
 
   @override

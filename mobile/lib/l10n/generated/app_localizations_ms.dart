@@ -911,9 +911,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Kosongkan sepanduk';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Sepanduk dikemas kini';
-
-  @override
   String get profileSetupUsernameChecking => 'Menyemak ketersediaan...';
 
   @override

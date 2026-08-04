@@ -916,9 +916,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Изчисти банера';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Банерът е обновен';
-
-  @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
 
   @override

@@ -1614,12 +1614,6 @@ abstract class AppLocalizations {
   /// **'Clear banner'**
   String get profileSetupBannerClearButton;
 
-  /// Snackbar message shown after a profile banner image is successfully uploaded.
-  ///
-  /// In en, this message translates to:
-  /// **'Banner updated'**
-  String get profileSetupBannerUploadSuccess;
-
   /// No description provided for @profileSetupUsernameChecking.
   ///
   /// In en, this message translates to:

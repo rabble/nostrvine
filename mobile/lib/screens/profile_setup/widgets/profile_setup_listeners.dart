@@ -257,9 +257,7 @@ class ProfileSetupListeners extends ConsumerWidget {
               case PendingBannerStatus.staged:
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.l10n.profileSetupBannerUploadSuccess,
-                    ),
+                    content: Text(context.l10n.profileSetupUploadStaged),
                     backgroundColor: VineTheme.vineGreen,
                   ),
                 );

@@ -737,6 +737,25 @@ void main() {
       },
     );
 
+    testWidgets('banner staged snackbar uses staged-save copy', (tester) async {
+      whenListen(
+        mockEditorBloc,
+        Stream<ProfileEditorState>.fromIterable([
+          const ProfileEditorState(
+            pendingBannerStatus: PendingBannerStatus.staged,
+          ),
+        ]),
+        initialState: const ProfileEditorState(),
+      );
+
+      await pumpScreen(tester);
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileSetupUploadStaged), findsOneWidget);
+      expect(find.text('Banner updated'), findsNothing);
+    });
+
     group('banner block', () {
       testWidgets(
         'pre-filled hex banner shows color preview',

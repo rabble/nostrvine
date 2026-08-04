@@ -850,9 +850,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get profileSetupBannerClearButton => '清除头图';
 
   @override
-  String get profileSetupBannerUploadSuccess => '头图已更新';
-
-  @override
   String get profileSetupUsernameChecking => '正在检查可用性...';
 
   @override

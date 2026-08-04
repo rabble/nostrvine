@@ -481,10 +481,6 @@
   "@profileSetupBannerClearButton": {
     "description": "Label on the button that removes the currently selected profile banner image."
   },
-  "profileSetupBannerUploadSuccess": "بینر اپڈیٹ ہو گیا",
-  "@profileSetupBannerUploadSuccess": {
-    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
-  },
   "profileSetupUsernameChecking": "دستیابی چیک ہو رہی ہے...",
   "profileSetupUsernameAvailable": "صارف نام دستیاب ہے!",
   "profileSetupUsernameTakenIndicator": "صارف نام پہلے ہی لیا جا چکا ہے",
