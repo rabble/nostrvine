@@ -74,7 +74,7 @@ void main() {
                     'duration': 6,
                     'previewUrl':
                         'https://cdn.freesound.org/previews/502/502915.mp3',
-                    'tags': ['crowd'],
+                    'tags': ['crowd', 'field recording', 'crowd', 7],
                   },
                 ],
                 'count': 1,
@@ -106,6 +106,10 @@ void main() {
         expect(sound.externalSource?.providerSoundId, equals('502915'));
         expect(sound.externalSource?.license.type, equals('cc0'));
         expect(sound.externalSource?.license.requiresAttribution, isFalse);
+        expect(sound.externalSource?.catalogTags, [
+          'crowd',
+          'field recording',
+        ]);
         expect(sound.isExternalProviderSound, isTrue);
       },
     );

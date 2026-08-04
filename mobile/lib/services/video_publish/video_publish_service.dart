@@ -384,6 +384,7 @@ class VideoPublishService {
           inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
           inspiredByNpub: draft.inspiredByNpub,
           selectedAudio: draft.selectedSound,
+          audioShareAttribution: draft.audioShareAttribution,
           selectedAudioEventId: draft.selectedSound?.id,
           selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
           language: languagePreferenceService?.contentLanguage,

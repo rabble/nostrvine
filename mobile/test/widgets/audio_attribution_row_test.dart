@@ -164,6 +164,30 @@ void main() {
         expect(find.textContaining('Original sound'), findsOneWidget);
       });
 
+      testWidgets('shows creator, publisher, license, and public tags', (
+        tester,
+      ) async {
+        final creditedAudio = testAudio.copyWith(
+          creatorName: 'Original Artist',
+          licenseName: 'CC BY 4.0',
+          publicTags: const ['field-recording'],
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            video: createVideoWithAudio(),
+            audioOverride: creditedAudio,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('By Original Artist'), findsOneWidget);
+        expect(find.textContaining('Shared by'), findsOneWidget);
+        expect(find.textContaining('CC BY 4.0'), findsOneWidget);
+        expect(find.textContaining('#field-recording'), findsOneWidget);
+        expect(find.textContaining('personalLabel'), findsNothing);
+      });
+
       testWidgets('displays caret right icon', (tester) async {
         final video = createVideoWithAudio();
 

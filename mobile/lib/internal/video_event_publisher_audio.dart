@@ -15,8 +15,26 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
     return 'wss://relay.divine.video';
   }
 
+  String _audioCreditContent({
+    required String title,
+    required String creatorName,
+    String? sourceUrl,
+    String? licenseName,
+  }) {
+    final lines = <String>[
+      title.trim(),
+      'Created by ${creatorName.trim()}',
+      if (sourceUrl?.trim().isNotEmpty ?? false) 'Source: ${sourceUrl!.trim()}',
+      if (licenseName?.trim().isNotEmpty ?? false)
+        'License: ${licenseName!.trim()}',
+    ];
+    return lines.join('\n');
+  }
+
   Future<String?> _publishImportedAudioEvent({
     required AudioEvent audio,
+    required AudioShareAttribution attribution,
+    required bool allowAudioReuse,
     required String videoDTag,
     required String pubkey,
     required String relayHint,
@@ -64,10 +82,17 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
       sha256: uploadResult.videoId,
       fileSize: await audioFile.length(),
       duration: audio.duration,
-      title: audio.title,
-      source: audio.source,
+      title: attribution.title.trim(),
+      source: attribution.sourceUrl?.trim(),
       sourceVideoReference: sourceVideoReference,
       sourceVideoRelay: relayHint,
+      creatorName: attribution.creatorName.trim(),
+      creatorPubkey: attribution.creatorPubkey,
+      creatorUrl: attribution.creatorUrl,
+      licenseName: attribution.licenseName,
+      licenseUrl: attribution.licenseUrl,
+      publicTags: attribution.publicTags,
+      allowsReuse: allowAudioReuse,
     );
 
     if (_authService == null || !_authService.isAuthenticated) {
@@ -81,7 +106,12 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
 
     final signedAudioEvent = await _authService.createAndSignEvent(
       kind: audioEventKind,
-      content: '',
+      content: _audioCreditContent(
+        title: attribution.title,
+        creatorName: attribution.creatorName,
+        sourceUrl: attribution.sourceUrl,
+        licenseName: attribution.licenseName,
+      ),
       tags: publishedAudio.toTags(),
     );
     if (signedAudioEvent == null) {
@@ -118,12 +148,81 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
     return signedAudioEvent.id;
   }
 
+  Future<String?> _publishProviderAudioBridge({
+    required AudioEvent audio,
+    required bool allowAudioReuse,
+    required String videoDTag,
+    required String pubkey,
+    required String relayHint,
+  }) async {
+    final external = audio.externalSource;
+    final url = audio.url;
+    if (external == null ||
+        url == null ||
+        url.isEmpty ||
+        external.sourceUrl?.trim().isEmpty != false) {
+      Log.error(
+        'Provider audio is missing durable public credit',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    // `creator` is nullable all the way down from the sound-proxy schema, so a
+    // thin catalog row credits the provider rather than losing the publish.
+    final creatorName = external.creatorName?.trim().isNotEmpty ?? false
+        ? external.creatorName!.trim()
+        : external.providerName;
+
+    final title = audio.title?.trim().isNotEmpty ?? false
+        ? audio.title!.trim()
+        : '${external.providerName} sound';
+    final bridge = AudioEvent(
+      id: '',
+      pubkey: pubkey,
+      createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      url: url,
+      mimeType: audio.mimeType,
+      duration: audio.duration,
+      title: title,
+      source: external.sourceUrl!.trim(),
+      sourceVideoReference:
+          '${NIP71VideoKinds.getPreferredAddressableKind()}:$pubkey:$videoDTag',
+      sourceVideoRelay: relayHint,
+      creatorName: creatorName,
+      creatorUrl: external.creatorUrl,
+      licenseName: external.license.name,
+      licenseUrl: external.license.url,
+      publicTags: external.catalogTags,
+      proxyId: external.providerSoundId,
+      proxyProtocol: external.provider,
+      allowsReuse: allowAudioReuse && external.license.allowsDerivatives,
+    );
+
+    final authService = _authService;
+    if (authService == null || !authService.isAuthenticated) return null;
+    final event = await authService.createAndSignEvent(
+      kind: audioEventKind,
+      content: _audioCreditContent(
+        title: title,
+        creatorName: creatorName,
+        sourceUrl: external.sourceUrl,
+        licenseName: external.license.name,
+      ),
+      tags: bridge.toTags(),
+    );
+    if (event == null || !await _publishEventToNostr(event)) return null;
+    return event.id;
+  }
+
   Future<String?> _publishAudioEvent({
     required String videoPath,
     required String videoDTag,
     required String pubkey,
     required String relayHint,
     String? videoTitle,
+    AudioShareAttribution? attribution,
   }) async {
     Log.info(
       'Starting audio extraction and publishing flow',
@@ -210,50 +309,31 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      // Step 3: Create audio title from video title or fallback to username
-      String audioTitle;
-      if (videoTitle != null && videoTitle.isNotEmpty) {
-        // Use the video title as the audio title
-        audioTitle = videoTitle;
-        Log.debug(
-          'Audio title set from video title: $audioTitle',
-          name: 'VideoEventPublisher',
-          category: LogCategory.video,
-        );
-      } else {
-        // Fallback to "Original sound - @username" format
-        audioTitle = 'Original sound';
-        if (_profileRepository != null) {
-          try {
-            final profile = await _profileRepository.fetchFreshProfile(
-              pubkey: pubkey,
-            );
-            if (profile != null) {
-              // Use bestDisplayName which has proper fallback logic:
-              // displayName -> name -> truncated npub
-              final displayName = profile.bestDisplayName;
-              audioTitle = 'Original sound - @$displayName';
-              Log.debug(
-                'Audio title set from profile: $audioTitle',
-                name: 'VideoEventPublisher',
-                category: LogCategory.video,
-              );
-            } else {
-              Log.warning(
-                'Profile not found for pubkey, using default audio title',
-                name: 'VideoEventPublisher',
-                category: LogCategory.video,
-              );
-            }
-          } catch (e) {
-            Log.warning(
-              'Failed to fetch profile for audio title: $e',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
+      // Step 3: Create public title and creator credit.
+      var creatorName = UserProfile.defaultDisplayNameFor(pubkey);
+      if (_profileRepository != null) {
+        try {
+          final profile = await _profileRepository.fetchFreshProfile(
+            pubkey: pubkey,
+          );
+          if (profile != null) creatorName = profile.bestDisplayName;
+        } catch (e) {
+          Log.warning(
+            'Failed to fetch profile for audio credit: $e',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
         }
       }
+      final audioTitle = attribution?.title.trim().isNotEmpty ?? false
+          ? attribution!.title.trim()
+          : (videoTitle?.trim().isNotEmpty ?? false)
+          ? videoTitle!.trim()
+          : 'Original sound - @$creatorName';
+      final creditedCreator =
+          attribution?.creatorName.trim().isNotEmpty ?? false
+          ? attribution!.creatorName.trim()
+          : creatorName;
 
       Log.debug(
         'Audio title: $audioTitle',
@@ -283,8 +363,15 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
         fileSize: extractionResult.fileSize,
         duration: extractionResult.duration,
         title: audioTitle,
+        source: attribution?.sourceUrl,
         sourceVideoReference: sourceVideoReference,
         sourceVideoRelay: relayHint,
+        creatorName: creditedCreator,
+        creatorPubkey: attribution?.creatorPubkey ?? pubkey,
+        creatorUrl: attribution?.creatorUrl,
+        licenseName: attribution?.licenseName,
+        licenseUrl: attribution?.licenseUrl,
+        publicTags: attribution?.publicTags ?? const [],
       );
 
       // Generate tags from the AudioEvent model
@@ -302,7 +389,12 @@ extension _VideoEventPublisherAudio on VideoEventPublisher {
 
       final signedAudioEvent = await _authService.createAndSignEvent(
         kind: audioEventKind, // Kind 1063
-        content: '', // Empty content per NIP-94
+        content: _audioCreditContent(
+          title: audioTitle,
+          creatorName: creditedCreator,
+          sourceUrl: attribution?.sourceUrl,
+          licenseName: attribution?.licenseName,
+        ),
         tags: audioTags,
       );
 

@@ -7,6 +7,7 @@ import 'package:db_client/db_client.dart';
 import 'package:flutter/widgets.dart' show SizedBox;
 import 'package:models/models.dart'
     show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_reply_context.dart';
@@ -42,6 +43,7 @@ class DivineVideoDraft {
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
+    this.audioShareAttribution,
     this.contentWarning,
     this.videoReplyContext,
     this.shareReplyToFeed = false,
@@ -66,6 +68,7 @@ class DivineVideoDraft {
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
     AudioEvent? selectedSound,
+    AudioShareAttribution? audioShareAttribution,
     String? contentWarning,
     VideoReplyContext? videoReplyContext,
     bool shareReplyToFeed = false,
@@ -94,6 +97,7 @@ class DivineVideoDraft {
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
       selectedSound: selectedSound,
+      audioShareAttribution: audioShareAttribution,
       contentWarning: contentWarning,
       videoReplyContext: videoReplyContext,
       shareReplyToFeed: shareReplyToFeed,
@@ -193,6 +197,13 @@ class DivineVideoDraft {
       selectedSound: json['selectedSound'] != null
           ? AudioEvent.fromJson(json['selectedSound'] as Map<String, dynamic>)
           : null,
+      audioShareAttribution: json['audioShareAttribution'] is Map
+          ? AudioShareAttribution.fromJson(
+              Map<String, dynamic>.from(
+                json['audioShareAttribution'] as Map,
+              ),
+            )
+          : null,
       contentWarning: json['contentWarning'] as String?,
       videoReplyContext: json['videoReplyContext'] != null
           ? VideoReplyContext.fromJson(
@@ -265,6 +276,9 @@ class DivineVideoDraft {
   /// Persisted to drafts so the sound selection survives app restarts.
   final AudioEvent? selectedSound;
 
+  /// Public credit used only when publishing a reusable audio event.
+  final AudioShareAttribution? audioShareAttribution;
+
   /// Comma-separated NIP-32 content warning labels for this video.
   final String? contentWarning;
 
@@ -333,6 +347,7 @@ class DivineVideoDraft {
     String? inspiredByNpub,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
+    Object? audioShareAttribution = _sentinel,
     Object? contentWarning = _sentinel,
     Object? videoReplyContext = _sentinel,
     bool? shareReplyToFeed,
@@ -375,6 +390,9 @@ class DivineVideoDraft {
     selectedSound: clearSelectedSound
         ? null
         : (selectedSound ?? this.selectedSound),
+    audioShareAttribution: audioShareAttribution == _sentinel
+        ? this.audioShareAttribution
+        : audioShareAttribution as AudioShareAttribution?,
     contentWarning: contentWarning == _sentinel
         ? this.contentWarning
         : contentWarning as String?,
@@ -428,6 +446,7 @@ class DivineVideoDraft {
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
       selectedSound: selectedSound,
+      audioShareAttribution: audioShareAttribution,
       contentWarning: contentWarning,
       videoReplyContext: videoReplyContext,
       shareReplyToFeed: shareReplyToFeed,
@@ -462,6 +481,8 @@ class DivineVideoDraft {
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
+    if (audioShareAttribution != null)
+      'audioShareAttribution': audioShareAttribution!.toJson(),
     if (contentWarning != null) 'contentWarning': contentWarning,
     if (videoReplyContext != null)
       'videoReplyContext': videoReplyContext!.toJson(),
@@ -544,6 +565,7 @@ class DivineVideoDraft {
           hasEditorStateEdits ||
           finalRenderedClip != null ||
           selectedSound != null ||
+          audioShareAttribution != null ||
           contentWarning != null ||
           videoReplyContext != null ||
           collaboratorPubkeys.isNotEmpty ||

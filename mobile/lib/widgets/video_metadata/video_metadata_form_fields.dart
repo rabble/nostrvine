@@ -2,8 +2,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' show AudioEvent, UserProfile;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
+import 'package:openvine/providers/auth_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
@@ -171,7 +175,7 @@ class _VideoMetadataFormFieldsState
             const _InputWrapper(child: VideoMetadataContentWarningSelector()),
 
           if (widget.enableAudioReuse && !reusesExternalAudio)
-            const _InputWrapper(child: _VideoMetadataAudioReuseToggle()),
+            const _InputWrapper(child: _VideoMetadataAudioSharingSection()),
 
           if (widget.enableVideoReply)
             const _InputWrapper(child: _VideoReplyVisibilityToggle()),
@@ -225,40 +229,309 @@ class _VideoReplyVisibilityToggle extends ConsumerWidget {
   }
 }
 
-class _VideoMetadataAudioReuseToggle extends ConsumerWidget {
-  const _VideoMetadataAudioReuseToggle();
+class _VideoMetadataAudioSharingSection extends ConsumerWidget {
+  const _VideoMetadataAudioSharingSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allowAudioReuse = ref.watch(
-      videoEditorProvider.select((state) => state.allowAudioReuse),
-    );
+    final editorState = ref.watch(videoEditorProvider);
+    final sound = editorState.audioForAttribution;
+    final external = sound?.externalSource;
+    final derivativesAllowed = external?.license.allowsDerivatives ?? true;
+    final allowAudioReuse = editorState.allowAudioReuse && derivativesAllowed;
+    final needsAttribution =
+        allowAudioReuse &&
+        external == null &&
+        editorState.audioShareAttribution == null;
+    if (needsAttribution) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final current = ref.read(videoEditorProvider);
+        final currentSound = current.audioForAttribution;
+        if (!current.allowAudioReuse ||
+            current.audioShareAttribution != null ||
+            currentSound?.externalSource != null) {
+          return;
+        }
+        ref
+            .read(videoEditorProvider.notifier)
+            .setAudioShareAttribution(_initialAttribution(ref, currentSound));
+      });
+    }
+
+    void updateReuse(bool value) {
+      final notifier = ref.read(videoEditorProvider.notifier);
+      notifier.setAllowAudioReuse(value);
+      if (!value ||
+          external != null ||
+          editorState.audioShareAttribution != null) {
+        return;
+      }
+      notifier.setAudioShareAttribution(_initialAttribution(ref, sound));
+    }
 
     return Padding(
       padding: const .symmetric(horizontal: 4),
-      child: Material(
-        type: MaterialType.transparency,
-        child: SwitchListTile(
-          value: allowAudioReuse,
-          title: Text(
-            context.l10n.videoMetadataAudioReuseTitle,
-            style: VineTheme.titleMediumFont(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            type: MaterialType.transparency,
+            child: SwitchListTile(
+              value: allowAudioReuse,
+              title: Text(
+                context.l10n.soundAllowRemix,
+                style: VineTheme.titleMediumFont(
+                  color: context.vineColors.onSurface,
+                ),
+              ),
+              subtitle: Text(
+                derivativesAllowed
+                    ? context.l10n.videoMetadataAudioReuseSubtitle
+                    : context.l10n.soundCreditOnly,
+                style: VineTheme.bodySmallFont(
+                  color: context.vineColors.onSurfaceVariant,
+                ),
+              ),
+              contentPadding: const .symmetric(horizontal: 12, vertical: 4),
+              activeThumbColor: VineTheme.vineGreen,
+              inactiveThumbColor: context.vineColors.mutedText,
+              onChanged: derivativesAllowed ? updateReuse : null,
+            ),
+          ),
+          if (external != null)
+            _ProviderAudioCredit(sound: sound!)
+          else if (allowAudioReuse)
+            _PublicAudioCreditEditor(
+              key: ValueKey(sound?.id ?? 'original-audio'),
+              sound: sound,
+            ),
+          if (editorState.requiresPublicAudioAttribution &&
+              !editorState.hasValidPublicAudioAttribution)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Text(
+                context.l10n.soundCreditRequired,
+                key: const Key('audio_credit_validation'),
+                style: VineTheme.bodySmallFont(color: VineTheme.error),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  AudioShareAttribution _initialAttribution(WidgetRef ref, AudioEvent? sound) {
+    final pubkey = ref.read(authServiceProvider).currentPublicKeyHex ?? '';
+    final profile = pubkey.isEmpty
+        ? null
+        : ref.read(userProfileReactiveProvider(pubkey)).value;
+    final publisherName =
+        profile?.bestDisplayName ??
+        (pubkey.isEmpty ? '' : UserProfile.defaultDisplayNameFor(pubkey));
+    final title = sound?.title?.trim();
+    if (sound?.isLocalImport == true) {
+      return AudioShareAttribution(
+        title: title?.isNotEmpty == true ? title! : '',
+        creatorName: '',
+        publicTags: const [],
+        confirmedOwnWork: false,
+      );
+    }
+    return AudioShareAttribution.forOwnedSound(
+      title: title?.isNotEmpty == true ? title! : 'Original sound',
+      publisherName: publisherName,
+      publisherPubkey: pubkey,
+    );
+  }
+}
+
+class _ProviderAudioCredit extends StatelessWidget {
+  const _ProviderAudioCredit({required this.sound});
+
+  final AudioEvent sound;
+
+  @override
+  Widget build(BuildContext context) {
+    final external = sound.externalSource!;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.soundPublicCredit,
+            style: VineTheme.titleSmallFont(
               color: context.vineColors.onSurface,
             ),
           ),
-          subtitle: Text(
-            context.l10n.videoMetadataAudioReuseSubtitle,
+          Text(
+            sound.title ?? external.providerName,
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.onSurface,
+            ),
+          ),
+          if (external.creatorName case final creator?)
+            Text(
+              context.l10n.soundCreatorBy(creator),
+              style: VineTheme.bodySmallFont(
+                color: context.vineColors.onSurfaceVariant,
+              ),
+            ),
+          Text(
+            external.license.name,
             style: VineTheme.bodySmallFont(
               color: context.vineColors.onSurfaceVariant,
             ),
           ),
-          contentPadding: const .symmetric(horizontal: 12, vertical: 4),
-          activeThumbColor: VineTheme.vineGreen,
-          inactiveThumbColor: context.vineColors.mutedText,
-          onChanged: (value) {
-            ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
-          },
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PublicAudioCreditEditor extends ConsumerStatefulWidget {
+  const _PublicAudioCreditEditor({required this.sound, super.key});
+
+  final AudioEvent? sound;
+
+  @override
+  ConsumerState<_PublicAudioCreditEditor> createState() =>
+      _PublicAudioCreditEditorState();
+}
+
+class _PublicAudioCreditEditorState
+    extends ConsumerState<_PublicAudioCreditEditor> {
+  late final TextEditingController _titleController;
+  late final TextEditingController _creatorController;
+  late final TextEditingController _sourceController;
+  late final TextEditingController _tagsController;
+
+  AudioShareAttribution get _attribution =>
+      ref.read(videoEditorProvider).audioShareAttribution ??
+      AudioShareAttribution(
+        title: widget.sound?.title ?? '',
+        creatorName: '',
+        publicTags: const [],
+        confirmedOwnWork: false,
+      );
+
+  @override
+  void initState() {
+    super.initState();
+    final attribution = _attribution;
+    _titleController = TextEditingController(text: attribution.title);
+    _creatorController = TextEditingController(text: attribution.creatorName);
+    _sourceController = TextEditingController(text: attribution.sourceUrl);
+    _tagsController = TextEditingController(
+      text: attribution.publicTags.map((tag) => '#$tag').join(' '),
+    );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _creatorController.dispose();
+    _sourceController.dispose();
+    _tagsController.dispose();
+    super.dispose();
+  }
+
+  void _update({
+    String? title,
+    String? creatorName,
+    String? sourceUrl,
+    List<String>? publicTags,
+    bool? confirmedOwnWork,
+  }) {
+    final current = _attribution;
+    ref
+        .read(videoEditorProvider.notifier)
+        .setAudioShareAttribution(
+          current.copyWith(
+            title: title,
+            creatorName: creatorName,
+            sourceUrl: sourceUrl,
+            publicTags: publicTags,
+            confirmedOwnWork: confirmedOwnWork,
+          ),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final attribution = ref.watch(
+      videoEditorProvider.select((state) => state.audioShareAttribution),
+    );
+    final ownWork = attribution?.confirmedOwnWork ?? false;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 8,
+        children: [
+          Text(
+            context.l10n.soundPublicCredit,
+            style: VineTheme.titleSmallFont(
+              color: context.vineColors.onSurface,
+            ),
+          ),
+          DivineTextField(
+            key: const Key('audio_credit_title'),
+            controller: _titleController,
+            labelText: context.l10n.soundCreditTitleLabel,
+            onChanged: (value) => _update(title: value),
+          ),
+          DivineTextField(
+            key: const Key('audio_credit_creator'),
+            controller: _creatorController,
+            labelText: context.l10n.soundCreditCreatorLabel,
+            onChanged: (value) => _update(creatorName: value),
+          ),
+          Material(
+            type: MaterialType.transparency,
+            child: CheckboxListTile(
+              value: ownWork,
+              title: Text(context.l10n.soundOwnWork),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (value) => _update(confirmedOwnWork: value ?? false),
+            ),
+          ),
+          if (!ownWork)
+            DivineTextField(
+              key: const Key('audio_credit_source'),
+              controller: _sourceController,
+              labelText: context.l10n.soundCreditSourceUrlLabel,
+              keyboardType: TextInputType.url,
+              autocorrect: false,
+              onChanged: (value) => _update(sourceUrl: value),
+            ),
+          DivineTextField(
+            key: const Key('audio_credit_tags'),
+            controller: _tagsController,
+            labelText: context.l10n.soundCreditPublicHashtagsLabel,
+            autocorrect: false,
+            onChanged: (value) =>
+                _update(publicTags: value.split(RegExp(r'[,\s]+'))),
+          ),
+          Text(
+            context.l10n.soundSharedAs,
+            style: VineTheme.labelMediumFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            [
+              _titleController.text.trim(),
+              if (_creatorController.text.trim().isNotEmpty)
+                context.l10n.soundCreatorBy(_creatorController.text.trim()),
+            ].where((value) => value.isNotEmpty).join(' · '),
+            key: const Key('audio_credit_preview'),
+            style: VineTheme.bodySmallFont(
+              color: context.vineColors.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

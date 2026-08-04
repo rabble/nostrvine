@@ -36,6 +36,7 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/blocs/saved_sounds/saved_sounds_scope.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/bootstrap/font_licenses.dart';
 import 'package:openvine/config/app_config.dart';
@@ -73,6 +74,7 @@ import 'package:openvine/providers/install_source_provider.dart';
 import 'package:openvine/providers/layer_rasterizer_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -2842,165 +2844,169 @@ class _DivineAppState extends ConsumerState<DivineApp>
       // The two app-shell badge cubits + their repository-sync listeners live
       // in AppShellBadgeScope so main.dart and its test pump the exact same
       // eager (`lazy: false`) wiring that stops the #6115 re-entrant create.
-      child: AppShellBadgeScope(
-        child: MultiBlocProvider(
-          providers: [
-            BlocProvider(
-              lazy: false,
-              create: (_) => VideoVolumeCubit(
-                sharedPreferences: ref.read(sharedPreferencesProvider),
-              ),
-            ),
-            // App-global signal: a codec-heavy surface (camera/editor/exporter)
-            // is open, so background feeds must release their hardware decoders.
-            BlocProvider(create: (_) => CodecHeavySurfaceCubit()),
-            BlocProvider(
-              create: (_) => LocaleCubit(
-                localePreferenceService: LocalePreferenceService(
+      child: SavedSoundsScope(
+        service: ref.watch(savedSoundsServiceProvider),
+        child: AppShellBadgeScope(
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(
+                lazy: false,
+                create: (_) => VideoVolumeCubit(
                   sharedPreferences: ref.read(sharedPreferencesProvider),
                 ),
               ),
-            ),
-            BlocProvider.value(value: ref.read(appearanceCubitProvider)),
-            BlocProvider(
-              create: (_) => BackgroundPublishBloc(
-                videoPublishServiceFactory: createPublishService,
-                draftStorageService: ref.read(draftStorageServiceProvider),
-                foregroundSession: ref.read(publishForegroundSessionProvider),
+              // App-global signal: a codec-heavy surface (camera/editor/exporter)
+              // is open, so background feeds must release their hardware decoders.
+              BlocProvider(create: (_) => CodecHeavySurfaceCubit()),
+              BlocProvider(
+                create: (_) => LocaleCubit(
+                  localePreferenceService: LocalePreferenceService(
+                    sharedPreferences: ref.read(sharedPreferencesProvider),
+                  ),
+                ),
               ),
-            ),
-            BlocProvider(
-              create: (_) => CameraPermissionBloc(
-                permissionsService: const PermissionHandlerPermissionsService(),
-              )..add(const CameraPermissionRefresh()),
-            ),
-            BlocProvider(
-              create: (context) => InviteGateBloc(
-                inviteApiClient: context.read<InviteApiClient>(),
+              BlocProvider.value(value: ref.read(appearanceCubitProvider)),
+              BlocProvider(
+                create: (_) => BackgroundPublishBloc(
+                  videoPublishServiceFactory: createPublishService,
+                  draftStorageService: ref.read(draftStorageServiceProvider),
+                  foregroundSession: ref.read(publishForegroundSessionProvider),
+                ),
               ),
-            ),
-            BlocProvider(
-              create: (context) => EmailVerificationCubit(
-                oauthClient: ref.read(oauthClientProvider),
-                authService: ref.read(authServiceProvider),
-                inviteApiClient: context.read<InviteApiClient>(),
+              BlocProvider(
+                create: (_) => CameraPermissionBloc(
+                  permissionsService:
+                      const PermissionHandlerPermissionsService(),
+                )..add(const CameraPermissionRefresh()),
               ),
-            ),
-            BlocProvider(
-              lazy: false,
-              create: (context) {
-                final authService = ref.read(authServiceProvider);
-                InviteStatusAuthSession currentAuthSession() =>
-                    InviteStatusAuthSession(
-                      accountId: authService.currentPublicKeyHex,
-                      isSignerReady: authService.canPublishNostrWritesNow,
-                    );
-
-                return InviteStatusCubit(
+              BlocProvider(
+                create: (context) => InviteGateBloc(
                   inviteApiClient: context.read<InviteApiClient>(),
-                  initialAuthSession: currentAuthSession(),
-                  authSessionStream: authService.authStateStream.map(
-                    (_) => currentAuthSession(),
-                  ),
-                )..start();
-              },
-            ),
-            BlocProvider(
-              create: (_) => AppUpdateBloc(
-                repository: AppUpdateRepository(
-                  appVersionClient: AppVersionClient(),
-                  sharedPreferences: ref.read(sharedPreferencesProvider),
-                  currentVersion: widget.packageInfo.version,
-                  // Real install source resolved at startup (Play / App Store
-                  // / TestFlight / Zapstore / sideload) — drives the correct
-                  // download URL for update nudges. Was hardcoded `sideload`.
-                  installSource: ref.read(installSourceProvider),
                 ),
-              )..add(const AppUpdateCheckRequested()),
-            ),
-            // Provisioned above MaterialApp.router so every route (including
-            // ones outside AppShell) sees the same lists state.
-            //
-            // Deliberately not wrapped in `if (curatedLists enabled)`: a
-            // conditional entry changes this provider chain's shape, so
-            // flipping the flag re-inflated everything below it — the whole
-            // MaterialApp.router subtree, feed state, video controllers, and
-            // the upload-listener dedupe sets with it. Users were thrown back
-            // to Settings from the imperatively pushed feature-flag screen;
-            // both the symptom and its disappearance under this shape are
-            // verified on device (#6477). What is not pinned is the
-            // Navigator-level step in between — a synthetic probe of the same
-            // shape kept the pushed route — so do not read the chain below
-            // re-inflation as established.
-            //
-            // Laziness does the creation gate instead: every entry point into
-            // the people-lists UI checks FeatureFlag.curatedLists before
-            // reading the bloc — the lists routes redirect home, the profile
-            // and search affordances stay hidden, and both sheets refuse to
-            // open — so a disabled feature does not construct the bloc.
-            //
-            // Once constructed while the flag is on, the bloc remains session-
-            // lifetime even if the flag flips off — laziness gates construction,
-            // not teardown. enabledStream is how it stands down instead: on a
-            // flag-off it drops its cache subscription and stops syncing, and on
-            // a flag-on it rewires to whoever is signed in then (#6494).
-            //
-            // peopleListsRepositoryProvider is keepAlive but not identity-
-            // stable: it watches nostrServiceProvider, which recreates its
-            // client on auth change. This provider is intentionally still not
-            // keyed; repositoryStream keeps the app-lifetime bloc pointed at
-            // the current repository without re-inflating MaterialApp.router
-            // (#6480, #6482).
-            BlocProvider(
-              create: (_) {
-                final authService = ref.read(authServiceProvider);
-                final ownerPubkeyStream = authService.authStateStream
-                    .map((_) => authService.currentPublicKeyHex)
-                    .distinct();
-                return PeopleListsBloc(
-                  repository: ref.read(peopleListsRepositoryProvider),
-                  repositoryStream: ref.read(
-                    peopleListsRepositoryIdentityStreamProvider,
-                  ),
-                  enabledStream: ref.read(curatedListsEnabledStreamProvider),
-                  ownerPubkeyStream: ownerPubkeyStream,
-                  initialOwnerPubkey: authService.currentPublicKeyHex,
-                )..add(const PeopleListsStarted());
-              },
-            ),
-          ],
-          // Global listener for email verification failures - shows snackbar
-          // when verification times out or fails while user is elsewhere in app
-          child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
-            listenWhen: (previous, current) =>
-                current.status == EmailVerificationStatus.failure &&
-                previous.status != EmailVerificationStatus.failure,
-            listener: (context, state) {
-              final messenger = ScaffoldMessenger.maybeOf(context);
-              final errorCode = state.errorCode;
-              if (messenger != null && errorCode != null) {
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      context.l10n.emailVerificationErrorMessage(errorCode),
+              ),
+              BlocProvider(
+                create: (context) => EmailVerificationCubit(
+                  oauthClient: ref.read(oauthClientProvider),
+                  authService: ref.read(authServiceProvider),
+                  inviteApiClient: context.read<InviteApiClient>(),
+                ),
+              ),
+              BlocProvider(
+                lazy: false,
+                create: (context) {
+                  final authService = ref.read(authServiceProvider);
+                  InviteStatusAuthSession currentAuthSession() =>
+                      InviteStatusAuthSession(
+                        accountId: authService.currentPublicKeyHex,
+                        isSignerReady: authService.canPublishNostrWritesNow,
+                      );
+
+                  return InviteStatusCubit(
+                    inviteApiClient: context.read<InviteApiClient>(),
+                    initialAuthSession: currentAuthSession(),
+                    authSessionStream: authService.authStateStream.map(
+                      (_) => currentAuthSession(),
                     ),
-                    backgroundColor: VineTheme.error,
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 5),
+                  )..start();
+                },
+              ),
+              BlocProvider(
+                create: (_) => AppUpdateBloc(
+                  repository: AppUpdateRepository(
+                    appVersionClient: AppVersionClient(),
+                    sharedPreferences: ref.read(sharedPreferencesProvider),
+                    currentVersion: widget.packageInfo.version,
+                    // Real install source resolved at startup (Play / App Store
+                    // / TestFlight / Zapstore / sideload) — drives the correct
+                    // download URL for update nudges. Was hardcoded `sideload`.
+                    installSource: ref.read(installSourceProvider),
                   ),
-                );
-              }
-            },
-            child: UpdateDialogListener(
-              child: UploadFailureListener(
-                child: GeoBlockingGate(
-                  child: AppLifecycleHandler(
-                    child: BlocBuilder<LocaleCubit, LocaleState>(
-                      builder: (context, localeState) =>
-                          BlocBuilder<AppearanceCubit, AppearanceMode>(
-                            builder: (context, appearanceMode) =>
-                                buildApp(localeState.locale, appearanceMode),
-                          ),
+                )..add(const AppUpdateCheckRequested()),
+              ),
+              // Provisioned above MaterialApp.router so every route (including
+              // ones outside AppShell) sees the same lists state.
+              //
+              // Deliberately not wrapped in `if (curatedLists enabled)`: a
+              // conditional entry changes this provider chain's shape, so
+              // flipping the flag re-inflated everything below it — the whole
+              // MaterialApp.router subtree, feed state, video controllers, and
+              // the upload-listener dedupe sets with it. Users were thrown back
+              // to Settings from the imperatively pushed feature-flag screen;
+              // both the symptom and its disappearance under this shape are
+              // verified on device (#6477). What is not pinned is the
+              // Navigator-level step in between — a synthetic probe of the same
+              // shape kept the pushed route — so do not read the chain below
+              // re-inflation as established.
+              //
+              // Laziness does the creation gate instead: every entry point into
+              // the people-lists UI checks FeatureFlag.curatedLists before
+              // reading the bloc — the lists routes redirect home, the profile
+              // and search affordances stay hidden, and both sheets refuse to
+              // open — so a disabled feature does not construct the bloc.
+              //
+              // Once constructed while the flag is on, the bloc remains session-
+              // lifetime even if the flag flips off — laziness gates construction,
+              // not teardown. enabledStream is how it stands down instead: on a
+              // flag-off it drops its cache subscription and stops syncing, and on
+              // a flag-on it rewires to whoever is signed in then (#6494).
+              //
+              // peopleListsRepositoryProvider is keepAlive but not identity-
+              // stable: it watches nostrServiceProvider, which recreates its
+              // client on auth change. This provider is intentionally still not
+              // keyed; repositoryStream keeps the app-lifetime bloc pointed at
+              // the current repository without re-inflating MaterialApp.router
+              // (#6480, #6482).
+              BlocProvider(
+                create: (_) {
+                  final authService = ref.read(authServiceProvider);
+                  final ownerPubkeyStream = authService.authStateStream
+                      .map((_) => authService.currentPublicKeyHex)
+                      .distinct();
+                  return PeopleListsBloc(
+                    repository: ref.read(peopleListsRepositoryProvider),
+                    repositoryStream: ref.read(
+                      peopleListsRepositoryIdentityStreamProvider,
+                    ),
+                    enabledStream: ref.read(curatedListsEnabledStreamProvider),
+                    ownerPubkeyStream: ownerPubkeyStream,
+                    initialOwnerPubkey: authService.currentPublicKeyHex,
+                  )..add(const PeopleListsStarted());
+                },
+              ),
+            ],
+            // Global listener for email verification failures - shows snackbar
+            // when verification times out or fails while user is elsewhere in app
+            child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
+              listenWhen: (previous, current) =>
+                  current.status == EmailVerificationStatus.failure &&
+                  previous.status != EmailVerificationStatus.failure,
+              listener: (context, state) {
+                final messenger = ScaffoldMessenger.maybeOf(context);
+                final errorCode = state.errorCode;
+                if (messenger != null && errorCode != null) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        context.l10n.emailVerificationErrorMessage(errorCode),
+                      ),
+                      backgroundColor: VineTheme.error,
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 5),
+                    ),
+                  );
+                }
+              },
+              child: UpdateDialogListener(
+                child: UploadFailureListener(
+                  child: GeoBlockingGate(
+                    child: AppLifecycleHandler(
+                      child: BlocBuilder<LocaleCubit, LocaleState>(
+                        builder: (context, localeState) =>
+                            BlocBuilder<AppearanceCubit, AppearanceMode>(
+                              builder: (context, appearanceMode) =>
+                                  buildApp(localeState.locale, appearanceMode),
+                            ),
+                      ),
                     ),
                   ),
                 ),

@@ -1,0 +1,169 @@
+// ABOUTME: Tests fail-closed consent verification for legacy Kind 1063 audio.
+// ABOUTME: Ensures only unambiguous matching source-video evidence permits reuse.
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:openvine/services/audio_reuse_consent_resolver.dart';
+import 'package:sounds_repository/sounds_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
+
+class _MockSoundsRepository extends Mock implements SoundsRepository {}
+
+class _MockVideosRepository extends Mock implements VideosRepository {}
+
+const _pubkey =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+AudioEvent _sound({
+  bool allowsReuse = false,
+  bool hasExplicitReuseConsent = false,
+  String? sourceVideoReference = '34236:$_pubkey:source-video',
+}) {
+  return AudioEvent(
+    id: 'audio-event',
+    pubkey: _pubkey,
+    createdAt: 100,
+    sourceVideoReference: sourceVideoReference,
+    allowsReuse: allowsReuse,
+    hasExplicitReuseConsent: hasExplicitReuseConsent,
+  );
+}
+
+VideoEvent _video({
+  String id = 'video-event',
+  String vineId = 'source-video',
+  int createdAt = 101,
+  bool allowsReuse = true,
+}) {
+  return VideoEvent(
+    id: id,
+    pubkey: _pubkey,
+    createdAt: createdAt,
+    content: '',
+    timestamp: DateTime.fromMillisecondsSinceEpoch(
+      createdAt * 1000,
+      isUtc: true,
+    ),
+    vineId: vineId,
+    rawTags: allowsReuse
+        ? const {'allow_audio_reuse': 'true'}
+        : const {'allow_audio_reuse': 'false'},
+  );
+}
+
+void main() {
+  late _MockSoundsRepository soundsRepository;
+  late _MockVideosRepository videosRepository;
+  late AudioReuseConsentResolver resolver;
+
+  setUp(() {
+    soundsRepository = _MockSoundsRepository();
+    videosRepository = _MockVideosRepository();
+    resolver = AudioReuseConsentResolver(
+      soundsRepository: soundsRepository,
+      videosRepository: videosRepository,
+    );
+  });
+
+  test('accepts explicit true without a legacy lookup', () async {
+    expect(await resolver.verify(_sound(allowsReuse: true)), isTrue);
+    verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
+  });
+
+  test('honors explicit false without a legacy lookup', () async {
+    expect(
+      await resolver.verify(
+        _sound(hasExplicitReuseConsent: true),
+      ),
+      isFalse,
+    );
+    verifyNever(() => soundsRepository.fetchVideosUsingSound(any()));
+  });
+
+  test('uses newest matching source video for a legacy event', () async {
+    when(
+      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+    ).thenAnswer((_) async => ['later', 'earliest', 'wrong']);
+    when(
+      () => videosRepository.getVideosByIds(
+        ['later', 'earliest', 'wrong'],
+        hydrateBulkStats: false,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        _video(id: 'later', createdAt: 120),
+        _video(id: 'earliest', createdAt: 110, allowsReuse: false),
+        _video(id: 'wrong', vineId: 'other-video', createdAt: 105),
+      ],
+    );
+
+    expect(await resolver.verify(_sound()), isTrue);
+  });
+
+  test('honours a revocation on the newest revision', () async {
+    when(
+      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+    ).thenAnswer((_) async => ['revoked', 'original']);
+    when(
+      () => videosRepository.getVideosByIds(
+        ['revoked', 'original'],
+        hydrateBulkStats: false,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        _video(id: 'revoked', createdAt: 120, allowsReuse: false),
+        _video(id: 'original', createdAt: 110),
+      ],
+    );
+
+    expect(await resolver.verify(_sound()), isFalse);
+  });
+
+  test('fails closed on ambiguous newest source events', () async {
+    when(
+      () => soundsRepository.fetchVideosUsingSound('audio-event'),
+    ).thenAnswer((_) async => ['first', 'second']);
+    when(
+      () => videosRepository.getVideosByIds(
+        ['first', 'second'],
+        hydrateBulkStats: false,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        _video(id: 'first', createdAt: 110),
+        _video(id: 'second', createdAt: 110),
+      ],
+    );
+
+    expect(await resolver.verify(_sound()), isFalse);
+  });
+
+  test(
+    'fails closed on missing, mismatched, old, or failed evidence',
+    () async {
+      expect(
+        await resolver.verify(_sound(sourceVideoReference: null)),
+        isFalse,
+      );
+
+      when(
+        () => soundsRepository.fetchVideosUsingSound('audio-event'),
+      ).thenAnswer((_) async => ['candidate']);
+      when(
+        () => videosRepository.getVideosByIds(
+          ['candidate'],
+          hydrateBulkStats: false,
+        ),
+      ).thenAnswer(
+        (_) async => [_video(vineId: 'other-video', createdAt: 99)],
+      );
+      expect(await resolver.verify(_sound()), isFalse);
+
+      when(
+        () => soundsRepository.fetchVideosUsingSound('audio-event'),
+      ).thenThrow(StateError('relay unavailable'));
+      expect(await resolver.verify(_sound()), isFalse);
+    },
+  );
+}

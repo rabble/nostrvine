@@ -7,19 +7,24 @@ import 'package:analytics/analytics.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:feed_repository/feed_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/saved_sound_context_builder.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:provider/provider.dart' as inherited_provider;
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -188,17 +193,31 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       });
     }
 
-    final result = await ref
-        .read(savedSoundsProvider.notifier)
-        .saveSound(widget.sound);
+    SavedSoundSaveResult? result;
+    try {
+      result = await context.read<SavedSoundsBloc>().saveSound(
+        widget.sound,
+        sourceContext: widget.sourceVideo == null
+            ? null
+            : const SavedSoundContextBuilder().fromVideo(
+                widget.sourceVideo!,
+                creatorName: widget.sourceVideo!.authorName,
+              ),
+      );
+    } catch (_) {
+      result = null;
+    }
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          result == SavedSoundSaveResult.saved
-              ? context.l10n.soundsSavedToLibrary
-              : context.l10n.soundsAlreadySavedToLibrary,
+          switch (result) {
+            SavedSoundSaveResult.saved => context.l10n.soundsSavedToLibrary,
+            SavedSoundSaveResult.alreadySaved =>
+              context.l10n.soundsAlreadySavedToLibrary,
+            null => context.l10n.soundsSaveFailed,
+          },
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -207,20 +226,21 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
 
   /// Whether the viewer may reuse [SoundDetailScreen.sound].
   ///
-  /// Shared and bundled sounds were explicitly published for reuse, so they
-  /// always qualify. A video's *original* sound is reusable only when its
-  /// creator enabled audio reuse (carried on [AudioEvent.allowsReuse], so this
-  /// holds regardless of how the screen was reached — reuse chain, deep link,
-  /// or the metadata sheet), or when the viewer is that creator.
+  /// Explicit consent is accepted directly. Older Kind 1063 events are
+  /// verified against their exact source video and otherwise fail closed.
   bool _canReuseSound() {
     final sound = widget.sound;
-    if (!sound.isOriginalSound) return true;
+    if (sound.isBundled) return true;
+    if (sound.externalSource case final external?) {
+      return external.license.allowsDerivatives;
+    }
     if (sound.allowsReuse) return true;
     // Owner exception — re-evaluate on auth restore/logout/account-switch so it
     // can't go stale (authServiceProvider alone is a stable instance).
     ref.watch(currentAuthStateProvider);
     final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
-    return viewer != null && viewer == sound.pubkey;
+    if (viewer != null && viewer == sound.pubkey) return true;
+    return ref.watch(audioReuseConsentProvider(sound)).value ?? false;
   }
 
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {
@@ -266,6 +286,16 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     final showsSourceVideo =
         widget.sound.isOriginalSound && widget.sourceVideo != null;
     final usageCountAsync = ref.watch(soundUsageCountProvider(soundEventId));
+    final canReuseSound = _canReuseSound();
+    SavedSoundsBloc? savedSoundsBloc;
+    try {
+      savedSoundsBloc = inherited_provider.Provider.of<SavedSoundsBloc>(
+        context,
+        listen: false,
+      );
+    } on inherited_provider.ProviderNotFoundException {
+      // Standalone embeds can display sound details without a saved library.
+    }
 
     return Scaffold(
       backgroundColor: context.vineColors.background,
@@ -292,8 +322,21 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                   isPlaying: _isPlayingPreview,
                   isLoadingPreview: _isLoadingPreview,
                   onPreviewTap: _togglePreview,
-                  onUseSoundTap: _canReuseSound() ? _onUseSound : null,
+                  onUseSoundTap: canReuseSound ? _onUseSound : null,
+                  reuseAllowed: canReuseSound,
                 ),
+
+                if (savedSoundsBloc != null)
+                  BlocBuilder<SavedSoundsBloc, SavedSoundsState>(
+                    bloc: savedSoundsBloc,
+                    builder: (context, state) {
+                      final records = state.sounds.where(
+                        (record) => record.id == widget.sound.id,
+                      );
+                      if (records.isEmpty) return const SizedBox.shrink();
+                      return SavedSoundDetailsEditor(sound: records.first);
+                    },
+                  ),
 
                 // Divider
                 Divider(color: context.vineColors.card, height: 1),
@@ -364,6 +407,7 @@ class _SoundHeader extends ConsumerStatefulWidget {
     required this.isLoadingPreview,
     required this.onPreviewTap,
     required this.onUseSoundTap,
+    required this.reuseAllowed,
   });
 
   final AudioEvent sound;
@@ -371,6 +415,7 @@ class _SoundHeader extends ConsumerStatefulWidget {
   final bool isPlaying;
   final bool isLoadingPreview;
   final VoidCallback onPreviewTap;
+  final bool reuseAllowed;
 
   /// Tap handler for the "Use Sound" button, or `null` when the sound may not
   /// be reused — in which case the button is hidden entirely.
@@ -393,6 +438,14 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
 
   void _lookUpAttribution() {
     final sound = widget.sound;
+    _artistName = sound.creatorName;
+    _license = sound.licenseName;
+    _sourceUrl = sound.source;
+    if (sound.externalSource case final external?) {
+      _artistName ??= external.creatorName;
+      _license ??= external.license.name;
+      _sourceUrl ??= external.sourceUrl;
+    }
     if (!sound.isBundled) return;
 
     final soundId = sound.id.replaceFirst('${AudioEvent.bundledMarker}_', '');
@@ -424,6 +477,13 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
 
   @override
   Widget build(BuildContext context) {
+    final sound = widget.sound;
+    final publisherProfile = _artistName == null
+        ? null
+        : ref.watch(userProfileReactiveProvider(sound.pubkey)).value;
+    final showsSeparatePublisher =
+        _artistName != null &&
+        (sound.creatorPubkey == null || sound.creatorPubkey != sound.pubkey);
     return Container(
       padding: const EdgeInsets.all(16),
       color: context.vineColors.card,
@@ -468,6 +528,39 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                         artistName: _artistName!,
                         license: _license,
                         sourceUrl: _sourceUrl,
+                      ),
+                    if (showsSeparatePublisher && publisherProfile != null)
+                      Text(
+                        context.l10n.soundSharedBy(
+                          publisherProfile.bestDisplayName,
+                        ),
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.onSurfaceVariant,
+                        ),
+                      ),
+                    Text(
+                      widget.reuseAllowed
+                          ? context.l10n.soundRemixingAllowed
+                          : context.l10n.soundCreditOnly,
+                      style: VineTheme.labelSmallFont(
+                        color: widget.reuseAllowed
+                            ? VineTheme.vineGreen
+                            : VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (sound.publicTags.isNotEmpty)
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          for (final tag in sound.publicTags)
+                            Text(
+                              '#$tag',
+                              style: VineTheme.labelSmallFont(
+                                color: VineTheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
                       ),
                   ],
                 ),
@@ -584,7 +677,7 @@ class _AttributionInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final attributionText = [
-      'by $artistName',
+      context.l10n.soundCreatorBy(artistName),
       if (license != null) license,
     ].join(' · ');
 

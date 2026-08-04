@@ -65,7 +65,7 @@ class _SharedAudioSection extends ConsumerWidget {
         }
         return MetadataSection(
           label: context.l10n.metadataSoundsLabel,
-          child: _SoundListItem(audio: audio),
+          child: _SoundListItem(audio: audio, sourceVideo: video),
         );
       },
       loading: () => MetadataSection(
@@ -248,31 +248,44 @@ class _OriginalSoundRow extends StatelessWidget {
 /// A list item showing audio cover, title, and artist name.
 /// Tapping navigates to the [SoundDetailScreen].
 class _SoundListItem extends ConsumerWidget {
-  const _SoundListItem({required this.audio});
+  const _SoundListItem({required this.audio, required this.sourceVideo});
 
   final AudioEvent audio;
+  final VideoEvent sourceVideo;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final soundName = audio.title ?? context.l10n.metadataOriginalSound;
-    final String creatorName;
+    final String publisherName;
 
     if (audio.isBundled) {
-      creatorName = audio.source ?? 'diVine';
+      publisherName = audio.source ?? 'diVine';
     } else {
-      final creatorProfile = ref
+      final publisherProfile = ref
           .watch(userProfileReactiveProvider(audio.pubkey))
           .value;
-      creatorName =
-          creatorProfile?.bestDisplayName ??
+      publisherName =
+          publisherProfile?.bestDisplayName ??
           UserProfile.defaultDisplayNameFor(audio.pubkey);
     }
+    final creatorName = audio.creatorName;
+    final creditText = creatorName == null
+        ? publisherName
+        : [
+            context.l10n.soundCreatorBy(creatorName),
+            if (audio.creatorPubkey == null ||
+                audio.creatorPubkey != audio.pubkey)
+              context.l10n.soundSharedBy(publisherName),
+          ].join(' · ');
+    final reuseAllowed =
+        audio.isBundled ||
+        (ref.watch(audioReuseConsentProvider(audio)).value ?? false);
 
     return Semantics(
       button: true,
       label: context.l10n.metadataSoundsSharedSoundSemantics(
         soundName,
-        creatorName,
+        creditText,
       ),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -297,13 +310,50 @@ class _SoundListItem extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    creatorName,
+                    creditText,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: VineTheme.bodyMediumFont(
                       color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
+                  Text(
+                    reuseAllowed
+                        ? context.l10n.soundRemixingAllowed
+                        : context.l10n.soundCreditOnly,
+                    style: VineTheme.labelSmallFont(
+                      color: reuseAllowed
+                          ? VineTheme.vineGreen
+                          : VineTheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (audio.licenseName case final license?)
+                    Text(
+                      license,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (audio.source case final source?)
+                    Text(
+                      source,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  if (audio.publicTags.isNotEmpty)
+                    Text(
+                      audio.publicTags.map((tag) => '#$tag').join(' '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -336,7 +386,10 @@ class _SoundListItem extends ConsumerWidget {
       // "Sound not found".
       hostContext.pushWithVideoPause(
         SoundDetailScreen.pathForId(audio.id),
-        extra: <String, dynamic>{'sound': audio},
+        extra: <String, dynamic>{
+          'sound': audio,
+          'sourceVideo': sourceVideo,
+        },
       );
     });
   }

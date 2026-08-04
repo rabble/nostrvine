@@ -23,6 +23,7 @@ import 'package:openvine/providers/service_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/providers/upload_media_providers.dart';
+import 'package:openvine/services/audio_reuse_consent_resolver.dart';
 import 'package:openvine/services/auth_service.dart' show AuthState;
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -45,6 +46,7 @@ import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sounds_repository/sounds_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -233,6 +235,12 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final profileRepository = ref.watch(profileRepositoryProvider);
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
   final savedSoundsService = ref.watch(savedSoundsServiceProvider);
+  final consentSoundsRepository = SoundsRepository(nostrClient: nostrService);
+  final consentResolver = AudioReuseConsentResolver(
+    soundsRepository: consentSoundsRepository,
+    videosRepository: ref.watch(videosRepositoryProvider),
+  );
+  ref.onDispose(() => unawaited(consentSoundsRepository.dispose()));
 
   // REST-first publish: POST the signed event to {eventPublishBaseUrl}/api/events with
   // NIP-98 auth, falling back to the WebSocket relay pool on transient
@@ -259,6 +267,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     profileStatsDao: profileStatsDao,
     savedSoundsService: savedSoundsService,
     eventApiClient: eventApiClient,
+    audioReuseConsentChecker: consentResolver.verify,
   );
 }
 

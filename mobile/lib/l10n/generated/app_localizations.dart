@@ -7328,6 +7328,18 @@ abstract class AppLocalizations {
   /// **'Removed from Sounds'**
   String get soundsRemovedFromLibrary;
 
+  /// Snackbar shown when saving a sound to the local library fails to persist.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save that sound. Try again.'**
+  String get soundsSaveFailed;
+
+  /// Snackbar shown when removing a sound from the local library fails to persist.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t remove that sound. Try again.'**
+  String get soundsRemoveFailed;
+
   /// No description provided for @soundsFailedToLoad.
   ///
   /// In en, this message translates to:
@@ -18575,6 +18587,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t save that. Try again?'**
   String get profileNotifyUpdateFailed;
+
+  /// No description provided for @savedSoundYourLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your label'**
+  String get savedSoundYourLabel;
+
+  /// No description provided for @savedSoundAddHashtags.
+  ///
+  /// In en, this message translates to:
+  /// **'Add hashtags'**
+  String get savedSoundAddHashtags;
+
+  /// No description provided for @savedSoundDeviceOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device'**
+  String get savedSoundDeviceOnly;
+
+  /// No description provided for @savedSoundDetailsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t save those details. Tap to retry.'**
+  String get savedSoundDetailsRetry;
+
+  /// No description provided for @savedSoundFallbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved sound'**
+  String get savedSoundFallbackTitle;
+
+  /// No description provided for @savedSoundPreviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview sound'**
+  String get savedSoundPreviewAction;
+
+  /// No description provided for @savedSoundEditAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit sound details'**
+  String get savedSoundEditAction;
+
+  /// No description provided for @savedSoundRemoveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove saved sound'**
+  String get savedSoundRemoveAction;
+
+  /// No description provided for @savedSoundClearHashtagFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear hashtag filter'**
+  String get savedSoundClearHashtagFilter;
+
+  /// No description provided for @soundAllowRemix.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow others to remix this sound'**
+  String get soundAllowRemix;
+
+  /// No description provided for @soundReuseUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This sound can\'t be remixed right now.'**
+  String get soundReuseUnavailable;
+
+  /// No description provided for @soundPublicCredit.
+  ///
+  /// In en, this message translates to:
+  /// **'Public sound credit'**
+  String get soundPublicCredit;
+
+  /// No description provided for @soundCreditRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Add public sound credit before posting.'**
+  String get soundCreditRequired;
+
+  /// No description provided for @soundSharedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared as'**
+  String get soundSharedAs;
+
+  /// No description provided for @soundOwnWork.
+  ///
+  /// In en, this message translates to:
+  /// **'I made this sound'**
+  String get soundOwnWork;
+
+  /// No description provided for @soundCreatorBy.
+  ///
+  /// In en, this message translates to:
+  /// **'By {creator}'**
+  String soundCreatorBy(String creator);
+
+  /// No description provided for @soundSharedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared by {publisher}'**
+  String soundSharedBy(String publisher);
+
+  /// No description provided for @soundRemixingAllowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remixing allowed'**
+  String get soundRemixingAllowed;
+
+  /// No description provided for @soundCreditOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit only'**
+  String get soundCreditOnly;
+
+  /// No description provided for @soundCreditTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound title'**
+  String get soundCreditTitleLabel;
+
+  /// No description provided for @soundCreditCreatorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator'**
+  String get soundCreditCreatorLabel;
+
+  /// No description provided for @soundCreditSourceUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Source URL'**
+  String get soundCreditSourceUrlLabel;
+
+  /// No description provided for @soundCreditPublicHashtagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Public hashtags'**
+  String get soundCreditPublicHashtagsLabel;
 }
 
 class _AppLocalizationsDelegate

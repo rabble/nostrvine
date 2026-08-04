@@ -122,6 +122,32 @@ void main() {
         expect(find.text('Cool Beat'), findsOneWidget);
       });
 
+      testWidgets('shows public credit and credit-only status', (tester) async {
+        final creditedAudio = testAudio.copyWith(
+          creatorName: 'Original Artist',
+          source: 'https://example.com/original',
+          licenseName: 'CC BY 4.0',
+          publicTags: const ['loops'],
+          allowsReuse: false,
+          hasExplicitReuseConsent: true,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            video: createVideoWithAudio(),
+            audioOverride: creditedAudio,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('By Original Artist'), findsOneWidget);
+        expect(find.textContaining('Shared by'), findsOneWidget);
+        expect(find.text('Credit only'), findsOneWidget);
+        expect(find.text('CC BY 4.0'), findsOneWidget);
+        expect(find.text('https://example.com/original'), findsOneWidget);
+        expect(find.text('#loops'), findsOneWidget);
+      });
+
       testWidgets('shows Sounds label', (tester) async {
         final video = createVideoWithAudio();
 

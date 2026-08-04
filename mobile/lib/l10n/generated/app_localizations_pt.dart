@@ -4249,6 +4249,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get soundsRemovedFromLibrary => 'Removido de Sons';
 
   @override
+  String get soundsSaveFailed => 'Couldn\'t save that sound. Try again.';
+
+  @override
+  String get soundsRemoveFailed => 'Couldn\'t remove that sound. Try again.';
+
+  @override
   String get soundsFailedToLoad => 'Falha ao carregar sons';
 
   @override
@@ -10857,4 +10863,78 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get profileNotifyUpdateFailed =>
       'Não foi possível salvar. Tentar de novo?';
+
+  @override
+  String get savedSoundYourLabel => 'Your label';
+
+  @override
+  String get savedSoundAddHashtags => 'Add hashtags';
+
+  @override
+  String get savedSoundDeviceOnly => 'Saved on this device';
+
+  @override
+  String get savedSoundDetailsRetry =>
+      'Couldn’t save those details. Tap to retry.';
+
+  @override
+  String get savedSoundFallbackTitle => 'Saved sound';
+
+  @override
+  String get savedSoundPreviewAction => 'Preview sound';
+
+  @override
+  String get savedSoundEditAction => 'Edit sound details';
+
+  @override
+  String get savedSoundRemoveAction => 'Remove saved sound';
+
+  @override
+  String get savedSoundClearHashtagFilter => 'Clear hashtag filter';
+
+  @override
+  String get soundAllowRemix => 'Allow others to remix this sound';
+
+  @override
+  String get soundReuseUnavailable => 'This sound can\'t be remixed right now.';
+
+  @override
+  String get soundPublicCredit => 'Public sound credit';
+
+  @override
+  String get soundCreditRequired => 'Add public sound credit before posting.';
+
+  @override
+  String get soundSharedAs => 'Shared as';
+
+  @override
+  String get soundOwnWork => 'I made this sound';
+
+  @override
+  String soundCreatorBy(String creator) {
+    return 'By $creator';
+  }
+
+  @override
+  String soundSharedBy(String publisher) {
+    return 'Shared by $publisher';
+  }
+
+  @override
+  String get soundRemixingAllowed => 'Remixing allowed';
+
+  @override
+  String get soundCreditOnly => 'Credit only';
+
+  @override
+  String get soundCreditTitleLabel => 'Sound title';
+
+  @override
+  String get soundCreditCreatorLabel => 'Creator';
+
+  @override
+  String get soundCreditSourceUrlLabel => 'Source URL';
+
+  @override
+  String get soundCreditPublicHashtagsLabel => 'Public hashtags';
 }

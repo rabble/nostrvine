@@ -11,16 +11,22 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart'
-    show AudioEvent, AudioExternalSource, AudioLicenseMetadata, audioEventKind;
+    show
+        AudioEvent,
+        AudioExternalSource,
+        AudioLicenseMetadata,
+        UserProfile,
+        audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
@@ -704,6 +710,38 @@ void main() {
       );
 
       test(
+        'blocks selected audio when the source explicitly forbids reuse',
+        () async {
+          stubSignAndPublish();
+
+          final forbiddenSound = AudioEvent(
+            id: 'd' * 64,
+            pubkey: sourceCreator,
+            createdAt: 1700000000,
+            allowsReuse: false,
+            hasExplicitReuseConsent: true,
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: forbiddenSound,
+            selectedAudioEventId: forbiddenSound.id,
+          );
+
+          expect(result, isFalse);
+          expect(
+            _containsTag(capturedTags, [
+              'e',
+              forbiddenSound.id,
+              'wss://relay.divine.video',
+              'audio',
+            ]),
+            isFalse,
+          );
+        },
+      );
+
+      test(
         'recovers the reference from an editor timeline track id',
         () async {
           stubSignAndPublish();
@@ -863,6 +901,25 @@ void main() {
           final audioEvent = signedEvents.singleWhere(
             (event) => event.kind == audioEventKind,
           );
+          final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
+          expect(
+            _containsTag(audioEvent.tags, [
+              'title',
+              'Original sound - @$fallbackName',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioEvent.tags, ['creator', fallbackName]),
+            isTrue,
+          );
+          final publicCreditTags = audioEvent.tags
+              .where(
+                (tag) =>
+                    tag.firstOrNull == 'title' || tag.firstOrNull == 'creator',
+              )
+              .expand((tag) => tag);
+          expect(publicCreditTags.join(' '), isNot(contains(testPubkey)));
           final videoEvent = signedEvents.singleWhere(
             (event) => event.kind != audioEventKind,
           );
@@ -886,7 +943,28 @@ void main() {
       );
 
       test(
-        'does not publish external-provider audio as reusable user audio',
+        'requested reusable original audio blocks on publish failure',
+        () async {
+          stubSignAndPublish();
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(localVideoPath: '/tmp/video-with-audio.mp4'),
+            allowAudioReuse: true,
+          );
+
+          expect(result, isFalse);
+          verifyNever(
+            () => authService.createAndSignEvent(
+              kind: NIP71VideoKinds.getPreferredAddressableKind(),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'publishes durable provider credit without claiming ownership',
         () async {
           stubSignAndPublish();
 
@@ -895,11 +973,16 @@ void main() {
             pubkey: AudioEvent.externalProviderMarker,
             createdAt: 0,
             url: 'https://cdn.example.com/freesound-preview.mp3',
+            title: 'Morning birds',
             externalSource: AudioExternalSource(
               provider: 'freesound',
               providerSoundId: '12345',
               providerName: 'Freesound',
               creatorName: 'Catalog Artist',
+              creatorUrl: 'https://freesound.org/people/catalog-artist/',
+              sourceUrl:
+                  'https://freesound.org/people/catalog-artist/sounds/12345/',
+              catalogTags: ['birds', 'field-recording'],
               license: AudioLicenseMetadata(
                 type: 'cc-by',
                 name: 'Creative Commons Attribution',
@@ -919,12 +1002,250 @@ void main() {
           );
 
           expect(result, isTrue);
+          final captured = verify(
+            () => authService.createAndSignEvent(
+              kind: audioEventKind,
+              content: captureAny(named: 'content'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured;
+          final audioContent = captured[0] as String;
+          final audioTags = captured[1] as List<List<String>>;
+          expect(audioContent, contains('Catalog Artist'));
           expect(
-            _containsTag(capturedTags, const ['allow_audio_reuse', 'true']),
-            isFalse,
+            _containsTag(audioTags, const [
+              'proxy',
+              '12345',
+              'freesound',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioTags, const [
+              'source',
+              'https://freesound.org/people/catalog-artist/sounds/12345/',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioTags, const [
+              'creator',
+              'Catalog Artist',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioTags, const [
+              'license',
+              'Creative Commons Attribution',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioTags, const ['allow_audio_reuse', 'true']),
+            isTrue,
+          );
+          expect(
+            audioTags.where((tag) => tag.first == 't').toList(),
+            equals([
+              ['t', 'birds'],
+              ['t', 'field-recording'],
+            ]),
           );
         },
       );
+
+      test(
+        'provider bridge keeps reuse off when the video toggle is off',
+        () async {
+          stubSignAndPublish();
+          const externalProviderSound = AudioEvent(
+            id: 'freesound:12345',
+            pubkey: AudioEvent.externalProviderMarker,
+            createdAt: 0,
+            url: 'https://cdn.example.com/freesound-preview.mp3',
+            externalSource: AudioExternalSource(
+              provider: 'freesound',
+              providerSoundId: '12345',
+              providerName: 'Freesound',
+              creatorName: 'Catalog Artist',
+              sourceUrl: 'https://freesound.org/s/12345/',
+              license: AudioLicenseMetadata(
+                type: 'cc-by',
+                name: 'Creative Commons Attribution',
+                url: 'https://creativecommons.org/licenses/by/4.0/',
+                allowsCommercialUse: true,
+                allowsDerivatives: true,
+                requiresAttribution: true,
+              ),
+            ),
+          );
+
+          expect(
+            await publisher.publishVideoEvent(
+              upload: createUpload(),
+              selectedAudio: externalProviderSound,
+              selectedAudioEventId: externalProviderSound.id,
+            ),
+            isTrue,
+          );
+
+          final captured =
+              verify(
+                    () => authService.createAndSignEvent(
+                      kind: audioEventKind,
+                      content: any(named: 'content'),
+                      tags: captureAny(named: 'tags'),
+                    ),
+                  ).captured.single
+                  as List<List<String>>;
+          expect(
+            _containsTag(captured, const ['allow_audio_reuse', 'false']),
+            isTrue,
+          );
+        },
+      );
+    });
+
+    test('provider license can forbid further reuse', () async {
+      stubSignAndPublish();
+      const sound = AudioEvent(
+        id: 'freesound:locked',
+        pubkey: AudioEvent.externalProviderMarker,
+        createdAt: 0,
+        url: 'https://cdn.example.com/locked.mp3',
+        externalSource: AudioExternalSource(
+          provider: 'freesound',
+          providerSoundId: 'locked',
+          providerName: 'Freesound',
+          creatorName: 'Catalog Artist',
+          sourceUrl: 'https://freesound.org/s/locked/',
+          license: AudioLicenseMetadata(
+            type: 'no-derivatives',
+            name: 'No derivatives',
+            url: 'https://license.example/no-derivatives',
+            allowsCommercialUse: true,
+            allowsDerivatives: false,
+            requiresAttribution: true,
+          ),
+        ),
+      );
+
+      expect(
+        await publisher.publishVideoEvent(
+          upload: createUpload(),
+          selectedAudio: sound,
+          selectedAudioEventId: sound.id,
+          allowAudioReuse: true,
+        ),
+        isTrue,
+      );
+
+      final tags =
+          verify(
+                () => authService.createAndSignEvent(
+                  kind: audioEventKind,
+                  content: any(named: 'content'),
+                  tags: captureAny(named: 'tags'),
+                ),
+              ).captured.single
+              as List<List<String>>;
+      expect(
+        _containsTag(tags, const ['allow_audio_reuse', 'false']),
+        isTrue,
+      );
+    });
+
+    test(
+      'blocks provider audio without durable credit only when reuse is asked '
+      'for',
+      () async {
+        stubSignAndPublish();
+
+        expect(
+          await publisher.publishVideoEvent(
+            upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+            allowAudioReuse: true,
+            selectedAudio: _uncreditedProviderSound,
+            selectedAudioEventId: _uncreditedProviderSound.id,
+          ),
+          isFalse,
+        );
+        verifyNever(
+          () => authService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'publishes without the provider reference when reuse was never asked for',
+      () async {
+        stubSignAndPublish();
+
+        expect(
+          await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: _uncreditedProviderSound,
+            selectedAudioEventId: _uncreditedProviderSound.id,
+          ),
+          isTrue,
+        );
+        verifyNever(
+          () => authService.createAndSignEvent(
+            kind: audioEventKind,
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        );
+      },
+    );
+
+    test('credits the provider when the catalog row has no creator', () async {
+      stubSignAndPublish();
+      const thinCatalogRow = AudioEvent(
+        id: 'freesound:thin',
+        pubkey: AudioEvent.externalProviderMarker,
+        createdAt: 0,
+        url: 'https://cdn.example.com/thin.mp3',
+        externalSource: AudioExternalSource(
+          provider: 'freesound',
+          providerSoundId: 'thin',
+          providerName: 'Freesound',
+          sourceUrl: 'https://freesound.org/s/thin/',
+          license: AudioLicenseMetadata(
+            type: 'cc0',
+            name: 'CC0',
+            url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+            allowsCommercialUse: true,
+            allowsDerivatives: true,
+            requiresAttribution: false,
+          ),
+        ),
+      );
+
+      expect(
+        await publisher.publishVideoEvent(
+          upload: createUpload(localVideoPath: '/tmp/divine-video-6185.mp4'),
+          allowAudioReuse: true,
+          selectedAudio: thinCatalogRow,
+          selectedAudioEventId: thinCatalogRow.id,
+        ),
+        isTrue,
+      );
+      final audioContent =
+          verify(
+                () => authService.createAndSignEvent(
+                  kind: audioEventKind,
+                  content: captureAny(named: 'content'),
+                  tags: any(named: 'tags'),
+                ),
+              ).captured.single
+              as String;
+      expect(audioContent, contains('Freesound'));
     });
 
     group('local imported audio', () {
@@ -1019,7 +1340,18 @@ void main() {
 
           final result = await publisher.publishVideoEvent(
             upload: createUpload(),
+            allowAudioReuse: true,
             selectedAudio: localAudio,
+            audioShareAttribution: const AudioShareAttribution(
+              title: 'Rain on a roof',
+              creatorName: 'Field Recordist',
+              creatorUrl: 'https://creator.example/profile',
+              sourceUrl: 'https://creator.example/rain',
+              licenseName: 'CC BY 4.0',
+              licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+              publicTags: ['rain', 'field-recording'],
+              confirmedOwnWork: false,
+            ),
           );
 
           expect(result, isTrue);
@@ -1047,9 +1379,27 @@ void main() {
           );
           expect(_containsTag(audioEvent.tags, const ['size', '3']), isTrue);
           expect(
-            _containsTag(audioEvent.tags, const ['title', 'imported_audio']),
+            _containsTag(audioEvent.tags, const ['title', 'Rain on a roof']),
             isTrue,
           );
+          expect(
+            _containsTag(audioEvent.tags, const [
+              'creator',
+              'Field Recordist',
+            ]),
+            isTrue,
+          );
+          expect(
+            _containsTag(audioEvent.tags, const ['allow_audio_reuse', 'true']),
+            isTrue,
+          );
+          final publishedAudio = [
+            audioEvent.content,
+            ...audioEvent.tags.expand((tag) => tag),
+          ].join(' ');
+          expect(publishedAudio, isNot(contains('imported_audio')));
+          expect(publishedAudio, isNot(contains('personalLabel')));
+          expect(publishedAudio, isNot(contains('personalHashtags')));
 
           final videoEvent = signedEvents.singleWhere(
             (event) => event.kind != audioEventKind,
@@ -1068,7 +1418,67 @@ void main() {
       );
 
       test(
-        'blocks video publish when local imported audio cannot be published',
+        'publishes video privately without uploading a local import',
+        () async {
+          final localAudio = AudioEvent.fromLocalImport(
+            id: 'local_import_1700000000000',
+            filePath: '${Directory.systemTemp.path}/private_import.mp3',
+            createdAt: 1700000000,
+            title: 'private',
+            mimeType: 'audio/mpeg',
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: localAudio,
+          );
+
+          expect(result, isTrue);
+          expect(
+            signedEvents.where((event) => event.kind == audioEventKind),
+            isEmpty,
+          );
+          verifyNever(
+            () => blossomUploadService.uploadAudio(
+              audioFile: any(named: 'audioFile'),
+              mimeType: any(named: 'mimeType'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'rejects reusable local import without public attribution before upload',
+        () async {
+          final localAudio = AudioEvent.fromLocalImport(
+            id: 'local_import_1700000000000',
+            filePath: '${Directory.systemTemp.path}/private_import.mp3',
+            createdAt: 1700000000,
+            title: 'private',
+            mimeType: 'audio/mpeg',
+          );
+
+          final result = await publisher.publishVideoEvent(
+            upload: createUpload(),
+            selectedAudio: localAudio,
+            allowAudioReuse: true,
+          );
+
+          expect(result, isFalse);
+          expect(signedEvents, isEmpty);
+          verifyNever(
+            () => blossomUploadService.uploadAudio(
+              audioFile: any(named: 'audioFile'),
+              mimeType: any(named: 'mimeType'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'blocks reusable local import when attributed audio cannot be published',
         () async {
           final localAudio = AudioEvent.fromLocalImport(
             id: 'local_import_1700000000000',
@@ -1081,6 +1491,13 @@ void main() {
           final result = await publisher.publishVideoEvent(
             upload: createUpload(),
             selectedAudio: localAudio,
+            allowAudioReuse: true,
+            audioShareAttribution: const AudioShareAttribution(
+              title: 'Missing sound',
+              creatorName: 'Me',
+              publicTags: [],
+              confirmedOwnWork: true,
+            ),
           );
 
           expect(result, isFalse);
@@ -1291,3 +1708,25 @@ void main() {
     );
   });
 }
+
+/// A catalog row with neither a creator nor a source URL — no durable public
+/// credit can be built from it.
+const _uncreditedProviderSound = AudioEvent(
+  id: 'freesound:uncredited',
+  pubkey: AudioEvent.externalProviderMarker,
+  createdAt: 0,
+  url: 'https://cdn.example.com/uncredited.mp3',
+  externalSource: AudioExternalSource(
+    provider: 'freesound',
+    providerSoundId: 'uncredited',
+    providerName: 'Freesound',
+    license: AudioLicenseMetadata(
+      type: 'cc0',
+      name: 'CC0',
+      url: 'https://creativecommons.org/publicdomain/zero/1.0/',
+      allowsCommercialUse: true,
+      allowsDerivatives: true,
+      requiresAttribution: false,
+    ),
+  ),
+);

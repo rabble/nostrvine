@@ -20,10 +20,11 @@ import 'package:nostr_sdk/relay/publish_outcome.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/audio_share_attribution.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/event_api_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
@@ -153,6 +154,12 @@ enum _EventPublishOutcome {
 
 enum _RelayPresence { found, notFound, unknown }
 
+/// Checks whether a selected sound may be reused in a newly published video.
+///
+/// The callback is injected by the app provider so this service remains
+/// independent of Riverpod and can fail closed in tests and other wiring.
+typedef AudioReuseConsentChecker = Future<bool> Function(AudioEvent sound);
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -168,6 +175,7 @@ class VideoEventPublisher {
     ProfileStatsDao? profileStatsDao,
     SavedSoundsService? savedSoundsService,
     EventApiClient? eventApiClient,
+    AudioReuseConsentChecker? audioReuseConsentChecker,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
@@ -178,7 +186,8 @@ class VideoEventPublisher {
        _audioExtractionService = audioExtractionService,
        _profileStatsDao = profileStatsDao,
        _savedSoundsService = savedSoundsService,
-       _eventApiClient = eventApiClient;
+       _eventApiClient = eventApiClient,
+       _audioReuseConsentChecker = audioReuseConsentChecker;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
   final AuthService? _authService;
@@ -195,6 +204,43 @@ class VideoEventPublisher {
   /// pool on transient REST failures. When null (legacy / test wiring), the
   /// publisher uses the WebSocket-only retry path.
   final EventApiClient? _eventApiClient;
+  final AudioReuseConsentChecker? _audioReuseConsentChecker;
+
+  /// Verifies that a selected sound is permitted to be reused.
+  ///
+  /// Bundled and local sounds do not represent another creator's Nostr
+  /// event. A creator may also reuse their own sound. Every other sound must
+  /// have explicit consent or pass the legacy source-video resolver; missing
+  /// verification fails closed so a private sound cannot be remixed by
+  /// accident.
+  Future<bool> _canReuseSelectedAudio(AudioEvent sound) async {
+    if (sound.isBundled ||
+        sound.isLocalImport ||
+        sound.isExternalProviderSound ||
+        sound.allowsReuse) {
+      return true;
+    }
+
+    final currentPubkey = _authService?.currentPublicKeyHex;
+    if (currentPubkey != null && currentPubkey == sound.pubkey) {
+      return true;
+    }
+
+    final checker = _audioReuseConsentChecker;
+    if (checker == null) return false;
+
+    try {
+      return await checker(sound);
+    } catch (error, _) {
+      Log.warning(
+        'Unable to verify selected audio reuse consent; blocking reuse: '
+        '$error',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+  }
 
   // Statistics
   int _totalEventsPublished = 0;
@@ -822,6 +868,7 @@ class VideoEventPublisher {
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
     AudioEvent? selectedAudio,
+    AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -849,6 +896,7 @@ class VideoEventPublisher {
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
       selectedAudio: selectedAudio,
+      audioShareAttribution: audioShareAttribution,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
@@ -881,6 +929,7 @@ class VideoEventPublisher {
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
     AudioEvent? selectedAudio,
+    AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -923,6 +972,7 @@ class VideoEventPublisher {
       inspiredByRelayUrl: inspiredByRelayUrl,
       inspiredByNpub: inspiredByNpub,
       selectedAudio: selectedAudio,
+      audioShareAttribution: audioShareAttribution,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
@@ -958,6 +1008,7 @@ class VideoEventPublisher {
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
     AudioEvent? selectedAudio,
+    AudioShareAttribution? audioShareAttribution,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
@@ -1364,33 +1415,93 @@ class VideoEventPublisher {
       var selectedAudioReferenceId = selectedAudioEventId;
       var selectedAudioReferenceRelay = selectedAudioRelay;
 
+      if (selectedAudio != null &&
+          !await _canReuseSelectedAudio(selectedAudio)) {
+        Log.warning(
+          'Selected audio does not permit reuse; blocking video publish',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        return false;
+      }
+
       if (selectedAudio?.isLocalImport == true) {
+        if (!allowAudioReuse) {
+          selectedAudioReferenceId = null;
+          selectedAudioReferenceRelay = null;
+        } else {
+          final attribution = audioShareAttribution;
+          if (attribution == null || !attribution.isValid) {
+            Log.error(
+              'Reusable imported audio requires valid public attribution',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+
+          final userPubkey = _authService?.currentPublicKeyHex;
+          final relayHint = _audioRelayHint();
+          if (userPubkey == null) {
+            Log.error(
+              'Cannot publish imported audio without an authenticated pubkey',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+
+          selectedAudioReferenceId = await _publishImportedAudioEvent(
+            audio: selectedAudio!,
+            attribution: attribution,
+            allowAudioReuse: true,
+            videoDTag: dTag,
+            pubkey: userPubkey,
+            relayHint: relayHint,
+          );
+          selectedAudioReferenceRelay = relayHint;
+
+          if (selectedAudioReferenceId == null) {
+            Log.error(
+              'Imported audio publishing failed; blocking video publish',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+        }
+      } else if (selectedAudio?.isExternalProviderSound == true) {
         final userPubkey = _authService?.currentPublicKeyHex;
         final relayHint = _audioRelayHint();
-        if (userPubkey == null) {
-          Log.error(
-            'Cannot publish imported audio without an authenticated pubkey',
-            name: 'VideoEventPublisher',
-            category: LogCategory.video,
-          );
-          return false;
-        }
-
-        selectedAudioReferenceId = await _publishImportedAudioEvent(
+        if (userPubkey == null) return false;
+        selectedAudioReferenceId = await _publishProviderAudioBridge(
           audio: selectedAudio!,
+          allowAudioReuse: allowAudioReuse,
           videoDTag: dTag,
           pubkey: userPubkey,
           relayHint: relayHint,
         );
         selectedAudioReferenceRelay = relayHint;
-
         if (selectedAudioReferenceId == null) {
-          Log.error(
-            'Imported audio publishing failed; blocking video publish',
+          // Only a creator who asked for reusable audio/credit loses the
+          // publish over a missing bridge; otherwise the video ships without
+          // the provider reference rather than stranding the user on a
+          // generic failure they cannot clear.
+          if (allowAudioReuse) {
+            Log.error(
+              'Provider credit publishing failed; blocking video publish',
+              name: 'VideoEventPublisher',
+              category: LogCategory.video,
+            );
+            return false;
+          }
+          Log.warning(
+            'Provider credit publishing failed; publishing without the '
+            'provider audio reference',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
-          return false;
+          selectedAudioReferenceRelay = null;
         }
       }
 
@@ -1465,6 +1576,7 @@ class VideoEventPublisher {
             pubkey: userPubkey,
             relayHint: relayHint,
             videoTitle: upload.title,
+            attribution: audioShareAttribution,
           );
 
           if (audioEventId != null) {
@@ -1477,18 +1589,20 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
           } else {
-            Log.warning(
-              'Audio publishing failed - continuing with video-only publish',
+            Log.error(
+              'Requested reusable audio failed to publish',
               name: 'VideoEventPublisher',
               category: LogCategory.video,
             );
+            return false;
           }
         } else {
-          Log.warning(
-            'No user pubkey available - skipping audio publishing',
+          Log.error(
+            'No user pubkey available for requested reusable audio',
             name: 'VideoEventPublisher',
             category: LogCategory.video,
           );
+          return false;
         }
       }
 
