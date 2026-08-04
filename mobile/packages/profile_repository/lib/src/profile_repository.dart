@@ -76,7 +76,7 @@ const defaultProfileIndexerRelays = [
 ];
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
-class ProfileRepository {
+class ProfileRepository implements ProfileReader {
   /// Creates a new profile repository.
   ProfileRepository({
     required NostrClient nostrClient,
@@ -336,6 +336,7 @@ class ProfileRepository {
   /// while [fetchFreshProfile] runs in parallel.
   ///
   /// Returns `null` if no cached profile exists for the given pubkey.
+  @override
   Future<UserProfile?> getCachedProfile({required String pubkey}) async {
     return _userProfilesDao.getProfile(pubkey);
   }
@@ -393,6 +394,7 @@ class ProfileRepository {
   /// Use this for reactive UI updates (e.g., BlocBuilder subscriptions).
   /// Pair with [fetchFreshProfile] to trigger relay fetches that write
   /// back to the cache and automatically flow through this stream.
+  @override
   Stream<UserProfile?> watchProfile({required String pubkey}) {
     return _userProfilesDao.watchProfile(pubkey);
   }
@@ -403,6 +405,7 @@ class ProfileRepository {
   /// been cached yet, when the cached row is corrupt, or when no
   /// [IdentityEventsDao] is wired. Use for instant chip rendering while
   /// [freshIdentityTags] runs (#3936).
+  @override
   Future<List<List<String>>?> cachedIdentityTags(String pubkey) async {
     final dao = _identityEventsDao;
     if (dao == null) return null;
@@ -424,6 +427,7 @@ class ProfileRepository {
   /// Never throws — relay failures fall through the consult order, and
   /// cache reads/writes are best-effort so a local persistence failure
   /// never discards tags already in hand.
+  @override
   Future<List<List<String>>> freshIdentityTags({
     required String pubkey,
     required List<List<String>> kind0Tags,
@@ -552,6 +556,7 @@ class ProfileRepository {
   /// [ProfileStats] domain models. Emits `null` if no stats exist.
   ///
   /// Returns an empty stream if [ProfileStatsDao] was not injected.
+  @override
   Stream<ProfileStats?> watchProfileStats({required String pubkey}) {
     final dao = _profileStatsDao;
     if (dao == null) return const Stream.empty();
@@ -625,6 +630,7 @@ class ProfileRepository {
   ///
   /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
+  @override
   Future<UserProfile?> fetchFreshProfile({
     required String pubkey,
     bool requireRawKind0 = false,
@@ -2228,6 +2234,7 @@ class ProfileRepository {
   /// Errors from the API or relay layers are caught and
   /// logged — partial results are returned rather than
   /// throwing.
+  @override
   Future<Map<String, UserProfile>> fetchBatchProfiles({
     required List<String> pubkeys,
   }) async {
