@@ -78,7 +78,14 @@ Future<void> showDeleteAllContentWarningSheet({
     initialChildSize: 0.85,
     minChildSize: 0.5,
     maxChildSize: 0.95,
-    title: Text(context.l10n.deleteAccountFinalConfirmationTitle),
+    // Error-coloured deliberately: this is the last gate before an
+    // irreversible delete, and the red title is the destructive-action signal
+    // the pre-sheet dialog carried. Reuses the header's own size and weight so
+    // only the colour differs from the sheet default.
+    title: Text(
+      context.l10n.deleteAccountFinalConfirmationTitle,
+      style: VineTheme.titleMediumFont(color: VineTheme.error),
+    ),
     bottomInput: _DeleteAllContentActions(
       canConfirm: canConfirm,
       onConfirm: () => formKey.currentState?.confirm(),

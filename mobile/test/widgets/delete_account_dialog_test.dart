@@ -178,6 +178,20 @@ void main() {
   });
 
   group('showDeleteAllContentWarningSheet – confirmation input', () {
+    // The red title is the destructive-action signal the pre-sheet dialog
+    // carried; inheriting the sheet header's default style silently drops it.
+    testWidgets('renders the final-confirmation title in the error colour', (
+      tester,
+    ) async {
+      await _showSheet(tester);
+
+      final l10n = _englishL10n();
+      final title = tester.widget<Text>(
+        find.text(l10n.deleteAccountFinalConfirmationTitle),
+      );
+      expect(title.style?.color, equals(VineTheme.error));
+    });
+
     testWidgets('empty string keeps Delete button disabled', (tester) async {
       await _showSheet(tester);
 
