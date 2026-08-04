@@ -382,7 +382,6 @@
     "profileSetupBannerSectionTitle": "Banner",
     "profileSetupBannerUploadButton": "Ladda upp foto",
     "profileSetupBannerClearButton": "Rensa banner",
-    "profileSetupBannerUploadSuccess": "Banner uppdaterad",
     "profileSetupUsernameChecking": "Kollar tillgänglighet...",
     "profileSetupUsernameAvailable": "Användarnamnet är ledigt!",
     "profileSetupUsernameTakenIndicator": "Användarnamnet är redan taget",

@@ -925,9 +925,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Supprimer la bannière';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Bannière mise à jour';
-
-  @override
   String get profileSetupUsernameChecking =>
       'Vérification de la disponibilité...';
 

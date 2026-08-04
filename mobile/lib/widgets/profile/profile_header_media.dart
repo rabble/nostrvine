@@ -117,14 +117,38 @@ class ProfileBanner extends StatelessWidget {
       ),
     );
 
+    final fallback = _BannerFallback(
+      height: height,
+      profileColor: profileColor,
+      scrimDecoration: scrimDecoration,
+    );
+
     if (bannerUrl != null) {
       return _BannerImage(
         bannerUrl: bannerUrl!,
         height: height,
         scrimDecoration: scrimDecoration,
+        fallback: fallback,
       );
     }
 
+    return fallback;
+  }
+}
+
+class _BannerFallback extends StatelessWidget {
+  const _BannerFallback({
+    required this.height,
+    required this.profileColor,
+    required this.scrimDecoration,
+  });
+
+  final double height;
+  final Color? profileColor;
+  final BoxDecoration scrimDecoration;
+
+  @override
+  Widget build(BuildContext context) {
     final backgroundGradient = profileColor != null
         ? LinearGradient(
             begin: Alignment.topCenter,
@@ -141,6 +165,7 @@ class ProfileBanner extends StatelessWidget {
           );
 
     return Container(
+      key: const ValueKey('profile_banner_fallback'),
       width: double.infinity,
       height: height,
       decoration: BoxDecoration(gradient: backgroundGradient),
@@ -157,11 +182,13 @@ class _BannerImage extends StatelessWidget {
     required this.bannerUrl,
     required this.height,
     required this.scrimDecoration,
+    required this.fallback,
   });
 
   final String bannerUrl;
   final double height;
   final BoxDecoration scrimDecoration;
+  final Widget fallback;
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +200,7 @@ class _BannerImage extends StatelessWidget {
       decoration: BoxDecoration(color: context.vineColors.surface),
       child: VineCachedImage(
         imageUrl: bannerUrl,
-        errorWidget: (_, _, _) => const SizedBox.shrink(),
+        errorWidget: (_, _, _) => fallback,
       ),
     );
   }

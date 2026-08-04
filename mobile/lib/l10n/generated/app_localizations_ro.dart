@@ -942,9 +942,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Șterge bannerul';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner actualizat';
-
-  @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
 
   @override

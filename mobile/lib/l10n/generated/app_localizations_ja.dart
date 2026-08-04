@@ -833,9 +833,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupBannerClearButton => 'バナーをクリア';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'バナーを更新したよ';
-
-  @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
 
   @override

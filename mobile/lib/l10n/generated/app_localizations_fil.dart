@@ -920,9 +920,6 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileSetupBannerClearButton => 'I-clear ang banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Na-update ang banner';
-
-  @override
   String get profileSetupUsernameChecking => 'Tinitingnan ang availability...';
 
   @override

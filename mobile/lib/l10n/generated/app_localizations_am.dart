@@ -887,9 +887,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupBannerClearButton => 'ባነርን አጥፋ';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'ባነር ተዘመነ';
-
-  @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';
 
   @override

@@ -880,9 +880,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Hapus banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner diperbarui';
-
-  @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';
 
   @override

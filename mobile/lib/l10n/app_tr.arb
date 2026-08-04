@@ -382,7 +382,6 @@
     "profileSetupBannerSectionTitle": "Afiş",
     "profileSetupBannerUploadButton": "Fotoğraf yükle",
     "profileSetupBannerClearButton": "Afişi temizle",
-    "profileSetupBannerUploadSuccess": "Afiş güncellendi",
     "profileSetupUsernameChecking": "Uygunluk kontrol ediliyor...",
     "profileSetupUsernameAvailable": "Kullanıcı adı uygun!",
     "profileSetupUsernameTakenIndicator": "Kullanıcı adı zaten alınmış",

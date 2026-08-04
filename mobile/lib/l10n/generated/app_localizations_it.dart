@@ -918,9 +918,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupBannerClearButton => 'Rimuovi banner';
 
   @override
-  String get profileSetupBannerUploadSuccess => 'Banner aggiornato';
-
-  @override
   String get profileSetupUsernameChecking => 'Controllo disponibilità...';
 
   @override
