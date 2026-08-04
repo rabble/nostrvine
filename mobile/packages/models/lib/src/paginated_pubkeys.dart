@@ -10,6 +10,7 @@ class PaginatedPubkeys {
     required this.pubkeys,
     this.total = 0,
     this.hasMore = false,
+    this.appliedQuery,
   });
 
   /// Creates a [PaginatedPubkeys] from JSON response.
@@ -37,6 +38,7 @@ class PaginatedPubkeys {
       pubkeys: pubkeysData.map((e) => e.toString()).toList(),
       total: json['total'] as int? ?? pubkeysData.length,
       hasMore: hasMore,
+      appliedQuery: json['query'] as String?,
     );
   }
 
@@ -52,11 +54,20 @@ class PaginatedPubkeys {
   /// Whether more results are available for pagination.
   final bool hasMore;
 
+  /// The search filter the server reports having applied, if any.
+  ///
+  /// `null` means the response is unfiltered — including on a deployment that
+  /// predates the filter parameter, which ignores the unknown query key and
+  /// answers with the plain page. Never read an unfiltered page as a set of
+  /// search matches: check this first.
+  final String? appliedQuery;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     if (other is! PaginatedPubkeys) return false;
     if (other.total != total || other.hasMore != hasMore) return false;
+    if (other.appliedQuery != appliedQuery) return false;
     if (other.pubkeys.length != pubkeys.length) return false;
     for (var i = 0; i < pubkeys.length; i++) {
       if (other.pubkeys[i] != pubkeys[i]) return false;
@@ -65,10 +76,11 @@ class PaginatedPubkeys {
   }
 
   @override
-  int get hashCode => Object.hash(Object.hashAll(pubkeys), total, hasMore);
+  int get hashCode =>
+      Object.hash(Object.hashAll(pubkeys), total, hasMore, appliedQuery);
 
   @override
   String toString() =>
       'PaginatedPubkeys(count: ${pubkeys.length}, '
-      'total: $total, hasMore: $hasMore)';
+      'total: $total, hasMore: $hasMore, appliedQuery: $appliedQuery)';
 }

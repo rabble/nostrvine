@@ -165,6 +165,29 @@ void main() {
       });
     });
 
+    group('appliedQuery', () {
+      test('reads the echoed filter from the response', () {
+        final result = PaginatedPubkeys.fromJson(const {
+          'followers': ['abc'],
+          'total': 1,
+          'query': 'ali',
+        });
+
+        expect(result.appliedQuery, equals('ali'));
+      });
+
+      test('is null when the server reports no filter', () {
+        // Also the shape an older deployment returns: it ignores the unknown
+        // `q` key and answers with the plain page.
+        final result = PaginatedPubkeys.fromJson(const {
+          'followers': ['abc'],
+          'total': 1,
+        });
+
+        expect(result.appliedQuery, isNull);
+      });
+    });
+
     group('toString', () {
       test('returns readable representation', () {
         const result = PaginatedPubkeys(
@@ -177,9 +200,15 @@ void main() {
           result.toString(),
           equals(
             'PaginatedPubkeys(count: 2, '
-            'total: 50, hasMore: true)',
+            'total: 50, hasMore: true, appliedQuery: null)',
           ),
         );
+      });
+
+      test('shows the applied query so an ignored filter is diagnosable', () {
+        const result = PaginatedPubkeys(pubkeys: ['abc'], appliedQuery: 'ali');
+
+        expect(result.toString(), contains('appliedQuery: ali'));
       });
     });
   });

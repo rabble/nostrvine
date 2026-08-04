@@ -3984,6 +3984,43 @@ void main() {
         expect(uri.queryParameters['limit'], equals('100'));
       });
 
+      test('sends the trimmed search query as q', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('{"followers": [], "total": 0}', 200),
+        );
+
+        await client.getFollowers(pubkey: testPubkey, query: '  ali  ');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        expect((captured.first as Uri).queryParameters['q'], equals('ali'));
+      });
+
+      test('omits q for a blank query', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('{"followers": [], "total": 0}', 200),
+        );
+
+        await client.getFollowers(pubkey: testPubkey, query: '   ');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        expect(
+          (captured.first as Uri).queryParameters.containsKey('q'),
+          isFalse,
+        );
+      });
+
       test('includes offset when > 0', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),

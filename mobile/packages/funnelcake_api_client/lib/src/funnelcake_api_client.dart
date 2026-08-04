@@ -1868,6 +1868,10 @@ class FunnelcakeApiClient {
   ///
   /// Returns a [PaginatedPubkeys] with follower pubkeys.
   ///
+  /// [query] narrows the page to profiles whose name, display name, or
+  /// NIP-05 contains it. A blank query is omitted from the request, so the
+  /// caller does not have to special-case an empty search field.
+  ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
   ///   configured.
@@ -1880,6 +1884,7 @@ class FunnelcakeApiClient {
     required String pubkey,
     int limit = 100,
     int offset = 0,
+    String? query,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -1892,6 +1897,10 @@ class FunnelcakeApiClient {
     final queryParams = <String, String>{'limit': limit.toString()};
     if (offset > 0) {
       queryParams['offset'] = offset.toString();
+    }
+    final trimmedQuery = query?.trim();
+    if (trimmedQuery != null && trimmedQuery.isNotEmpty) {
+      queryParams['q'] = trimmedQuery;
     }
 
     final uri = Uri.parse(
@@ -1933,6 +1942,10 @@ class FunnelcakeApiClient {
   ///
   /// Returns a [PaginatedPubkeys] with following pubkeys.
   ///
+  /// [query] narrows the page to profiles whose name, display name, or
+  /// NIP-05 contains it. A blank query is omitted from the request, so the
+  /// caller does not have to special-case an empty search field.
+  ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
   ///   configured.
@@ -1945,6 +1958,7 @@ class FunnelcakeApiClient {
     required String pubkey,
     int limit = 100,
     int offset = 0,
+    String? query,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -1957,6 +1971,10 @@ class FunnelcakeApiClient {
     final queryParams = <String, String>{'limit': limit.toString()};
     if (offset > 0) {
       queryParams['offset'] = offset.toString();
+    }
+    final trimmedQuery = query?.trim();
+    if (trimmedQuery != null && trimmedQuery.isNotEmpty) {
+      queryParams['q'] = trimmedQuery;
     }
 
     final uri = Uri.parse(

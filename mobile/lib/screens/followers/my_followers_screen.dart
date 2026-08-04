@@ -6,13 +6,17 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:follow_repository/follow_repository.dart';
+import 'package:openvine/blocs/follow_list_search/follow_list_search_bloc.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
+import 'package:openvine/widgets/profile/searchable_follow_list.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 /// Page widget for displaying current user's followers list.
@@ -28,6 +32,8 @@ class MyFollowersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
+    final profileRepository = ref.watch(profileRepositoryProvider);
+    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
 
     return MultiBlocProvider(
       providers: [
@@ -42,6 +48,17 @@ class MyFollowersScreen extends ConsumerWidget {
             followRepository: followRepository,
             contentBlocklistRepository: blocklistRepository,
           )..add(const MyFollowingListLoadRequested()),
+        ),
+        // Deliberately unkeyed: profileRepositoryProvider resolves from null
+        // shortly after mount, and a ValueKey here would re-inflate the whole
+        // view. The late instance is pushed in by the ref.listen below.
+        BlocProvider(
+          create: (_) => FollowListSearchBloc(
+            followRepository: followRepository,
+            subjectPubkey: currentUserPubkey,
+            listKind: FollowListKind.followers,
+            profileRepository: profileRepository,
+          ),
         ),
       ],
       child: _MyFollowersView(displayName: displayName),
@@ -58,6 +75,19 @@ class _MyFollowersView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(blocklistVersionProvider, (_, _) {
       context.read<MyFollowersBloc>().add(const MyFollowersBlocklistChanged());
+    });
+    ref.listen(profileRepositoryProvider, (_, repository) {
+      context.read<FollowListSearchBloc>().add(
+        FollowListSearchProfileRepositoryChanged(repository),
+      );
+    });
+    // The client is rebuilt when the key container changes, which is how the
+    // cold-start empty pubkey becomes the signed-in one. Without this the
+    // search BLoC would keep the empty one and never search server-side.
+    ref.listen(nostrServiceProvider, (_, client) {
+      context.read<FollowListSearchBloc>().add(
+        FollowListSearchSubjectPubkeyChanged(client.publicKey),
+      );
     });
 
     final appBarTitle = displayName?.isNotEmpty == true
@@ -141,36 +171,31 @@ class _FollowersListBody extends StatelessWidget {
       return const _FollowersEmptyState();
     }
 
-    return RefreshIndicator(
-      color: VineTheme.onPrimary,
-      backgroundColor: VineTheme.vineGreen,
+    return SearchableFollowList(
+      pubkeys: followers,
       onRefresh: () async {
         context.read<MyFollowersBloc>().add(
           const MyFollowersListLoadRequested(),
         );
       },
-      child: ListView.builder(
-        itemCount: followers.length,
-        itemBuilder: (context, index) {
-          final userPubkey = followers[index];
-          // Use MyFollowingBloc to check if current user follows this follower
-          return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
-            selector: (state) => state.isFollowing(userPubkey),
-            builder: (context, isFollowing) {
-              return UserProfileTile(
-                pubkey: userPubkey,
-                onTap: () => context.pushOtherProfile(userPubkey),
-                isFollowing: isFollowing,
-                onToggleFollow: () {
-                  context.read<MyFollowingBloc>().add(
-                    MyFollowingToggleRequested(userPubkey),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
+      itemBuilder: (context, userPubkey, index) {
+        // Use MyFollowingBloc to check if current user follows this follower
+        return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
+          selector: (state) => state.isFollowing(userPubkey),
+          builder: (context, isFollowing) {
+            return UserProfileTile(
+              pubkey: userPubkey,
+              onTap: () => context.pushOtherProfile(userPubkey),
+              isFollowing: isFollowing,
+              onToggleFollow: () {
+                context.read<MyFollowingBloc>().add(
+                  MyFollowingToggleRequested(userPubkey),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }
