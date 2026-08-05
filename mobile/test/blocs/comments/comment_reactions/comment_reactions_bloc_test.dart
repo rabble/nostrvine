@@ -101,16 +101,12 @@ void main() {
         'populates counts and statuses from likes repo',
         setUp: () {
           when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
-            (_) async => (
-              upvotes: {validId('c1'): 5},
-              downvotes: {validId('c1'): 1},
-            ),
+            (_) async =>
+                (upvotes: {validId('c1'): 5}, downvotes: {validId('c1'): 1}),
           );
           when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
-            (_) async => (
-              upvotedIds: {validId('c1')},
-              downvotedIds: <String>{},
-            ),
+            (_) async =>
+                (upvotedIds: {validId('c1')}, downvotedIds: <String>{}),
           );
         },
         build: createBloc,
@@ -184,9 +180,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               targetKind: any(named: 'targetKind'),
             ),
-          ).thenThrow(
-            const LikesRepositoryException('publish failed'),
-          );
+          ).thenThrow(const LikesRepositoryException('publish failed'));
         },
         build: createBloc,
         act: (b) => b.add(
@@ -354,6 +348,52 @@ void main() {
               eventId: validId('c1'),
               authorPubkey: validId('author1'),
               targetKind: 34236,
+              addressableId: '34236:${validId('author1')}:reply-d',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentReactionsBloc, CommentReactionsState>(
+        'tears down an upvote by coordinate when switching to a downvote '
+        '(#6124)',
+        setUp: () {
+          when(
+            () => mockLikesRepository.unlikeEvent(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+              addressableId: any(named: 'addressableId'),
+            ),
+          ).thenAnswer((_) async => 'downvote-event-id');
+        },
+        build: createBloc,
+        seed: () => CommentReactionsState(
+          upvotedCommentIds: {validId('c1')},
+          commentUpvoteCounts: {validId('c1'): 3},
+        ),
+        act: (b) => b.add(
+          CommentVoteToggled(
+            commentId: validId('c1'),
+            authorPubkey: validId('author1'),
+            vote: Vote.down,
+            addressableId: '34236:${validId('author1')}:reply-d',
+            targetKind: 34236,
+          ),
+        ),
+        verify: (_) {
+          // Symmetric with removeDownvote: an edited target answers to a new
+          // event id, so an id-only teardown throws NotLikedException and
+          // strands the upvote reaction.
+          verify(
+            () => mockLikesRepository.unlikeEvent(
+              validId('c1'),
               addressableId: '34236:${validId('author1')}:reply-d',
             ),
           ).called(1);

@@ -252,7 +252,10 @@ class CommentReactionsBloc
         // UI showed a vote that was never sent (#6124).
         try {
           if (wasUpvoted) {
-            await _likesRepository.unlikeEvent(commentId);
+            await _likesRepository.unlikeEvent(
+              commentId,
+              addressableId: event.addressableId,
+            );
           } else {
             await _likesRepository.removeDownvote(
               commentId,
