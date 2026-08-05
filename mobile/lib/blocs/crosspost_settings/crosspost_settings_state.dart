@@ -32,10 +32,14 @@ class CrosspostSettingsState extends Equatable {
     this.handle,
     this.provisioningState = AtprotoProvisioningState.notLinked,
     this.did,
-    this.provisioningError,
     this.usernameClaimStatus = UsernameClaimStatus.unknown,
     this.error,
     this.attempt = 0,
+    this.userLoadInFlight = false,
+    this.pollLoadInFlight = false,
+    this.operationGeneration = 0,
+    this.provisioningPollAttempts = 0,
+    this.provisioningPollingTimedOut = false,
   });
 
   final CrosspostSettingsStatus status;
@@ -47,7 +51,6 @@ class CrosspostSettingsState extends Equatable {
   final String? handle;
   final AtprotoProvisioningState provisioningState;
   final String? did;
-  final String? provisioningError;
   final UsernameClaimStatus usernameClaimStatus;
 
   /// The reason the last action failed, set only when [status] is
@@ -59,6 +62,12 @@ class CrosspostSettingsState extends Equatable {
   /// no claimed username) produce distinct states and re-trigger the UI
   /// listener that shows the snackbar.
   final int attempt;
+
+  final bool userLoadInFlight;
+  final bool pollLoadInFlight;
+  final int operationGeneration;
+  final int provisioningPollAttempts;
+  final bool provisioningPollingTimedOut;
 
   /// Whether the account has been fully provisioned on Bluesky.
   bool get isProvisioned => provisioningState == AtprotoProvisioningState.ready;
@@ -75,11 +84,16 @@ class CrosspostSettingsState extends Equatable {
     String? handle,
     AtprotoProvisioningState? provisioningState,
     String? did,
-    String? provisioningError,
+    bool clearDid = false,
     UsernameClaimStatus? usernameClaimStatus,
     CrosspostSettingsError? error,
     bool clearError = false,
     int? attempt,
+    bool? userLoadInFlight,
+    bool? pollLoadInFlight,
+    int? operationGeneration,
+    int? provisioningPollAttempts,
+    bool? provisioningPollingTimedOut,
   }) {
     return CrosspostSettingsState(
       status: status ?? this.status,
@@ -87,11 +101,17 @@ class CrosspostSettingsState extends Equatable {
       username: username ?? this.username,
       handle: handle ?? this.handle,
       provisioningState: provisioningState ?? this.provisioningState,
-      did: did ?? this.did,
-      provisioningError: provisioningError ?? this.provisioningError,
+      did: clearDid ? null : (did ?? this.did),
       usernameClaimStatus: usernameClaimStatus ?? this.usernameClaimStatus,
       error: clearError ? null : (error ?? this.error),
       attempt: attempt ?? this.attempt,
+      userLoadInFlight: userLoadInFlight ?? this.userLoadInFlight,
+      pollLoadInFlight: pollLoadInFlight ?? this.pollLoadInFlight,
+      operationGeneration: operationGeneration ?? this.operationGeneration,
+      provisioningPollAttempts:
+          provisioningPollAttempts ?? this.provisioningPollAttempts,
+      provisioningPollingTimedOut:
+          provisioningPollingTimedOut ?? this.provisioningPollingTimedOut,
     );
   }
 
@@ -103,9 +123,12 @@ class CrosspostSettingsState extends Equatable {
     handle,
     provisioningState,
     did,
-    provisioningError,
     usernameClaimStatus,
     error,
     attempt,
+    userLoadInFlight,
+    pollLoadInFlight,
+    provisioningPollAttempts,
+    provisioningPollingTimedOut,
   ];
 }

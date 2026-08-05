@@ -336,13 +336,19 @@ class _ProvisioningStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusText = switch (state.provisioningState) {
-      AtprotoProvisioningState.ready => context.l10n.blueskyStatusReady,
-      AtprotoProvisioningState.pending => context.l10n.blueskyStatusPending,
-      AtprotoProvisioningState.failed => context.l10n.blueskyStatusFailed,
-      AtprotoProvisioningState.disabled => context.l10n.blueskyStatusDisabled,
-      _ => context.l10n.blueskyStatusNotLinked,
-    };
+    final statusText =
+        state.provisioningState == AtprotoProvisioningState.pending &&
+            state.provisioningPollingTimedOut
+        ? context.l10n.crosspostStillWorking
+        : switch (state.provisioningState) {
+            AtprotoProvisioningState.ready => context.l10n.blueskyStatusReady,
+            AtprotoProvisioningState.pending =>
+              context.l10n.blueskyStatusPending,
+            AtprotoProvisioningState.failed => context.l10n.blueskyStatusFailed,
+            AtprotoProvisioningState.disabled =>
+              context.l10n.blueskyStatusDisabled,
+            _ => context.l10n.blueskyStatusNotLinked,
+          };
 
     final statusColor = switch (state.provisioningState) {
       AtprotoProvisioningState.ready => VineTheme.vineGreen,
@@ -358,7 +364,6 @@ class _ProvisioningStatus extends StatelessWidget {
         style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       subtitle: _ProvisioningStatusDetail(
-        state: state,
         statusText: statusText,
         statusColor: statusColor,
       ),
@@ -380,40 +385,18 @@ class _ProvisioningStatus extends StatelessWidget {
 
 class _ProvisioningStatusDetail extends StatelessWidget {
   const _ProvisioningStatusDetail({
-    required this.state,
     required this.statusText,
     required this.statusColor,
   });
 
-  final CrosspostSettingsState state;
   final String statusText;
   final Color statusColor;
 
   @override
   Widget build(BuildContext context) {
-    final provisioningError = state.provisioningError;
-    if (state.provisioningState != AtprotoProvisioningState.failed ||
-        provisioningError == null ||
-        provisioningError.isEmpty) {
-      return Text(
-        statusText,
-        style: VineTheme.bodyMediumFont(color: statusColor),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          statusText,
-          style: VineTheme.bodyMediumFont(color: statusColor),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          provisioningError,
-          style: VineTheme.bodySmallFont(color: context.vineColors.mutedText),
-        ),
-      ],
+    return Text(
+      statusText,
+      style: VineTheme.bodyMediumFont(color: statusColor),
     );
   }
 }

@@ -56,6 +56,56 @@ void main() {
       });
 
       test(
+        'treats keycast username as claimed when name server reports not found',
+        () async {
+          when(
+            () => profileRepository.lookupUsernameByPubkey(
+              pubkeyHex: any(named: 'pubkeyHex'),
+            ),
+          ).thenAnswer((_) async => const DivineUsernameNotFound());
+          when(() => apiClient.getStatus()).thenAnswer(
+            (_) async => const CrosspostStatus(
+              crosspostEnabled: false,
+              username: 'keycastuser',
+              handle: 'keycastuser.divine.video',
+              provisioningState: AtprotoProvisioningState.notLinked,
+            ),
+          );
+
+          final status = await repository.loadStatus(pubkey: pubkey);
+
+          expect(status.username, 'keycastuser');
+          expect(status.handle, 'keycastuser.divine.video');
+          expect(status.usernameClaimStatus, UsernameClaimStatus.claimed);
+        },
+      );
+
+      test(
+        'treats keycast username as claimed when name server lookup is unknown',
+        () async {
+          when(
+            () => profileRepository.lookupUsernameByPubkey(
+              pubkeyHex: any(named: 'pubkeyHex'),
+            ),
+          ).thenAnswer((_) async => const DivineUsernameUnknown());
+          when(() => apiClient.getStatus()).thenAnswer(
+            (_) async => const CrosspostStatus(
+              crosspostEnabled: false,
+              username: 'keycastuser',
+              handle: 'keycastuser.divine.video',
+              provisioningState: AtprotoProvisioningState.notLinked,
+            ),
+          );
+
+          final status = await repository.loadStatus(pubkey: pubkey);
+
+          expect(status.username, 'keycastuser');
+          expect(status.handle, 'keycastuser.divine.video');
+          expect(status.usernameClaimStatus, UsernameClaimStatus.claimed);
+        },
+      );
+
+      test(
         'falls back to name server username when keycast omits it',
         () async {
           when(() => apiClient.getStatus()).thenAnswer(
@@ -73,7 +123,7 @@ void main() {
         },
       );
 
-      test('keeps failed provisioning error as domain display data', () async {
+      test('keeps failed provisioning error as diagnostic data', () async {
         when(() => apiClient.getStatus()).thenAnswer(
           (_) async => const CrosspostStatus(
             crosspostEnabled: false,

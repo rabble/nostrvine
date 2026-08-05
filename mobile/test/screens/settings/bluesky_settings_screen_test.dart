@@ -146,6 +146,35 @@ void main() {
       expect(find.text('testuser.divine.video'), findsOneWidget);
     });
 
+    testWidgets(
+      'hides claim notice when keycast has a username missing from name server',
+      (tester) async {
+        when(
+          () => profileRepository.lookupUsernameByPubkey(
+            pubkeyHex: any(named: 'pubkeyHex'),
+          ),
+        ).thenAnswer((_) async => const DivineUsernameNotFound());
+        when(() => apiClient.getStatus()).thenAnswer(
+          (_) async => const CrosspostStatus(
+            crosspostEnabled: false,
+            username: 'keycastuser',
+            handle: 'keycastuser.divine.video',
+            provisioningState: AtprotoProvisioningState.notLinked,
+          ),
+        );
+
+        await tester.pumpWidget(buildApp());
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.blueskyUsernameRequired), findsNothing);
+        expect(find.text('keycastuser.divine.video'), findsOneWidget);
+        expect(
+          find.widgetWithText(DivineButton, l10n.blueskySetUpHandle),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('claim notice Set up button routes to the nip05 screen', (
       tester,
     ) async {
@@ -486,9 +515,7 @@ void main() {
       expect(find.text(l10n.blueskyStatusNotLinked), findsNothing);
     });
 
-    testWidgets('renders failed state with error detail and retry', (
-      tester,
-    ) async {
+    testWidgets('renders failed state with retry', (tester) async {
       when(() => apiClient.getStatus()).thenAnswer(
         (_) async => const CrosspostStatus(
           crosspostEnabled: false,
@@ -513,7 +540,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.blueskyStatusFailed), findsOneWidget);
-      expect(find.text('PDS quota exhausted'), findsOneWidget);
+      expect(find.text('PDS quota exhausted'), findsNothing);
 
       await tester.tap(find.widgetWithText(DivineButton, l10n.commonRetry));
       await tester.pumpAndSettle();

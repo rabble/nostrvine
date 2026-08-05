@@ -10,7 +10,7 @@ import 'package:profile_repository/profile_repository.dart';
 /// `.divine.video` username.
 enum UsernameClaimStatus { unknown, claimed, notClaimed }
 
-/// User-visible Bluesky crosspost settings state from keycast plus name server.
+/// Bluesky crosspost account status from keycast plus name server.
 class BlueskyCrosspostAccountStatus extends Equatable {
   const BlueskyCrosspostAccountStatus({
     required this.crosspostEnabled,
@@ -90,10 +90,13 @@ class BlueskyCrosspostRepository {
     ({UsernameClaimStatus status, String? username}) claimLookup,
   ) {
     final displayUsername = status.username ?? claimLookup.username;
+    final usernameClaimStatus = status.username == null
+        ? claimLookup.status
+        : UsernameClaimStatus.claimed;
     return BlueskyCrosspostAccountStatus(
       crosspostEnabled: status.crosspostEnabled,
       provisioningState: status.provisioningState,
-      usernameClaimStatus: claimLookup.status,
+      usernameClaimStatus: usernameClaimStatus,
       username: displayUsername,
       handle: _handleFor(displayUsername),
       did: status.did,
