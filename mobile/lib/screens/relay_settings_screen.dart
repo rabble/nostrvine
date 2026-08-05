@@ -743,7 +743,11 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
         name: 'RelaySettingsScreen',
       );
     case AddRelayOutcome.addedConnectionPendingLocalOnly:
-      _showWarning(messenger, l10n.relaySettingsSavedLocallyPublishPending);
+      _showWarning(
+        messenger,
+        '${l10n.relaySettingsFailedToConnectCheck} '
+        '${l10n.relaySettingsSavedLocallyPublishPending}',
+      );
       Log.warning(
         'Added relay locally without connection and kind:10002 publish is pending: $relayUrl',
         name: 'RelaySettingsScreen',
@@ -890,7 +894,11 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
         name: 'RelaySettingsScreen',
       );
     case RestoreDefaultRelayOutcome.restoredConnectionPendingLocalOnly:
-      _showWarning(messenger, l10n.relaySettingsSavedLocallyPublishPending);
+      _showWarning(
+        messenger,
+        '${l10n.relaySettingsFailedToConnectCheck} '
+        '${l10n.relaySettingsSavedLocallyPublishPending}',
+      );
       Log.warning(
         'Restored default relay locally without connection and kind:10002 publish is pending',
         name: 'RelaySettingsScreen',

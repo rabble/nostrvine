@@ -37,6 +37,15 @@ class _FakeRelayListRepository implements RelayListRepository {
   bool isDirty(String pubkey) => false;
 }
 
+class _FailingRelayListRepository extends _FakeRelayListRepository {
+  @override
+  Future<RelayListPublishResult> publishConfiguredRelayList() async =>
+      RelayListPublishResult.failed(
+        StateError('no indexer accepted'),
+        StackTrace.current,
+      );
+}
+
 class _MockRelayCapabilityService extends Mock
     implements RelayCapabilityService {}
 
@@ -251,6 +260,7 @@ void main() {
     Future<void> pumpScreen(
       WidgetTester tester, {
       required _MockNostrService nostrService,
+      RelayListRepository? relayListRepository,
     }) async {
       SharedPreferences.setMockInitialValues({});
 
@@ -274,7 +284,7 @@ void main() {
             (_) => const Stream<Map<String, RelayStatistics>>.empty(),
           ),
           relayListRepositoryProvider.overrideWithValue(
-            _FakeRelayListRepository(),
+            relayListRepository ?? _FakeRelayListRepository(),
           ),
           videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
@@ -396,6 +406,51 @@ void main() {
         () => nostrService.addRelay(relay, source: RelayAddSource.user),
       ).called(1);
     });
+
+    testWidgets(
+      'still reports the connection failure when the relay list also '
+      'failed to publish',
+      (tester) async {
+        const relay = 'wss://pending.example.com';
+        final nostrService = _MockNostrService();
+        final configuredRelays = <String>[];
+        when(
+          () => nostrService.defaultRelayUrl,
+        ).thenReturn('wss://relay.divine.video');
+        when(
+          () => nostrService.configuredRelays,
+        ).thenAnswer((_) => List.unmodifiable(configuredRelays));
+        when(
+          () => nostrService.addRelay(relay, source: RelayAddSource.user),
+        ).thenAnswer((_) async {
+          configuredRelays.add(relay);
+          return false;
+        });
+
+        await pumpScreen(
+          tester,
+          nostrService: nostrService,
+          relayListRepository: _FailingRelayListRepository(),
+        );
+        // pumpScreen pins configuredRelays to const []; restore the live view
+        // so the cubit sees the relay that addRelay just saved locally.
+        when(
+          () => nostrService.configuredRelays,
+        ).thenAnswer((_) => List.unmodifiable(configuredRelays));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openAddSheetAndSubmit(tester, relay, l10n);
+
+        expect(
+          find.textContaining(l10n.relaySettingsFailedToConnectCheck),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(l10n.relaySettingsSavedLocallyPublishPending),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('accepts uppercase WSS:// URL and forwards to NostrClient', (
       tester,
