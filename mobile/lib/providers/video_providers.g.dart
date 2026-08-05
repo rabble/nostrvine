@@ -739,7 +739,7 @@ final class DeadMediaFeedGuardProvider
 }
 
 String _$deadMediaFeedGuardHash() =>
-    r'faeda2741f550e4c61e2e7d8e90bbc2171aa5c77';
+    r'07d64f9bdd2bff2e8c34252023cd6c906e6362f0';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///

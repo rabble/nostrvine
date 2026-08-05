@@ -430,10 +430,17 @@ Future<BrokenVideoTracker> brokenVideoTracker(Ref ref) async {
 /// `filterVideoList`. See #5953 / #6251.
 @riverpod
 Future<DeadMediaFeedGuard> deadMediaFeedGuard(Ref ref) async {
+  // Watched before the await. A dispose *or* a rebuild during the suspension
+  // replaces the element's `ref`, and any `ref` use after that throws
+  // UnmountedRefException — which lands in an orphaned future, so the guard
+  // silently never resolves and the prune stops firing.
+  final moderationStatusService = ref.watch(
+    videoModerationStatusServiceProvider,
+  );
   final tracker = await ref.watch(brokenVideoTrackerProvider.future);
   return DeadMediaFeedGuard(
     brokenVideoTracker: tracker,
-    moderationStatusService: ref.watch(videoModerationStatusServiceProvider),
+    moderationStatusService: moderationStatusService,
   );
 }
 
