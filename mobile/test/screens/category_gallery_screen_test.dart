@@ -29,21 +29,21 @@ void main() {
     VoidCallback? onRetry,
     Widget? galleryOverride,
   }) {
+    // No Scaffold: the route mounts this view on the root navigator, so
+    // nothing above it supplies a Material. Pump it the same way here.
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: CategoryGalleryView(
-          category: category,
-          state: state,
-          onBack: onBack ?? () {},
-          onRetry: onRetry ?? () {},
-          onSortChanged: onSortChanged ?? (_) {},
-          onVideoTap: (videos, index) {},
-          onLoadMore: () async {},
-          onRefresh: () async {},
-          galleryOverride: galleryOverride,
-        ),
+      home: CategoryGalleryView(
+        category: category,
+        state: state,
+        onBack: onBack ?? () {},
+        onRetry: onRetry ?? () {},
+        onSortChanged: onSortChanged ?? (_) {},
+        onVideoTap: (videos, index) {},
+        onLoadMore: () async {},
+        onRefresh: () async {},
+        galleryOverride: galleryOverride,
       ),
     );
   }
@@ -179,6 +179,29 @@ void main() {
       expect(find.text('Could not load videos'), findsOneWidget);
       await tester.tap(find.text('Retry'));
       expect(retries, 1);
+    });
+
+    testWidgets('provides a $Material ancestor for its own text', (
+      tester,
+    ) async {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      // Without a Material the view's Text widgets inherit MaterialApp's
+      // yellow double-underline fallback style.
+      await tester.pumpWidget(
+        buildSubject(
+          category: category,
+          state: const CategoriesState(
+            selectedCategory: category,
+            videosStatus: CategoriesVideosStatus.error,
+          ),
+        ),
+      );
+
+      final inheritedStyle = DefaultTextStyle.of(
+        tester.element(find.text(l10n.categoryGalleryCouldNotLoadVideos)),
+      ).style;
+      expect(inheritedStyle.decoration, isNot(TextDecoration.underline));
     });
 
     testWidgets('shows empty state when selected category has no videos', (

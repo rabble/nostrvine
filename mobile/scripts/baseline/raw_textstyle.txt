@@ -18,7 +18,6 @@ lib/screens/auth/login_options_screen.dart	4
 lib/screens/auth/nostr_connect_screen.dart	12
 lib/screens/auth/reset_password.dart	2
 lib/screens/auth/welcome_screen.dart	1
-lib/screens/category_gallery_screen.dart	2
 lib/screens/comments/widgets/comment_item.dart	1
 lib/screens/comments/widgets/comments_empty_state.dart	2
 lib/screens/curated_list_feed_screen.dart	12
