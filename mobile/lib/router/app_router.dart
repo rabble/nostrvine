@@ -30,7 +30,6 @@ import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:openvine/screens/explore/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
@@ -78,12 +77,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final refreshListenable = RouterRefreshListenable(
     authService.authStateStream,
   );
-  var hasFollowingInCache = ref.read(hasFollowingInCacheProvider);
-  ref.listen(hasFollowingInCacheProvider, (previous, next) {
-    if (previous == next) return;
-    hasFollowingInCache = next;
-    refreshListenable.refresh();
-  });
   ref.listen(currentMinorAccountReviewStatusProvider, (previous, next) {
     // A resume/background refetch that resolves to a routing-identical status
     // (active → active) must not refresh: refreshing churns the route pipeline
@@ -106,8 +99,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: refreshListenable,
     errorBuilder: (context, state) =>
         RouteErrorScreen(message: context.l10n.routeUnknownPath),
-    redirect: (context, state) =>
-        appRouterRedirect(ref, state, hasFollowingInCache: hasFollowingInCache),
+    redirect: (context, state) => appRouterRedirect(ref, state),
     // go_router matches same-segment-count routes top-to-bottom, so spread
     // order below is load-bearing whenever two routes share a literal first
     // path segment. It's match-safe today because every module's

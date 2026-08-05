@@ -26,7 +26,7 @@ void main() {
 
       expect(calls, 0);
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
 
       expect(calls, 1);
     });
@@ -44,7 +44,7 @@ void main() {
 
         expect(calls, 0);
 
-        await Future<void>.delayed(Duration.zero);
+        await Future<void>.microtask(() {});
 
         expect(calls, 1);
       },
@@ -57,7 +57,7 @@ void main() {
       listenable.refresh();
       listenable.dispose();
 
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.microtask(() {});
 
       expect(calls, 0);
     });
