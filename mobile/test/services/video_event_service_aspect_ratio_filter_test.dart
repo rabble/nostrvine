@@ -46,8 +46,28 @@ void main() {
     });
 
     tearDown(() {
+      aspectRatioPreference.dispose();
       service.dispose();
     });
+
+    test(
+      'shouldHideVideo keeps portrait videos when square-only is enabled',
+      () async {
+        await aspectRatioPreference.setPreference(
+          FeedAspectRatioPreference.squareOnly,
+        );
+
+        expect(
+          service.shouldHideVideo(
+            _video(id: 'portrait', dimensions: '720x1280'),
+          ),
+          isFalse,
+          reason:
+              'The shape preference is a feed-list preference, not a '
+              'detail/by-id/search/reception hard-hide rule.',
+        );
+      },
+    );
 
     test(
       'filterVideoList hides portrait videos when square-only is enabled',
@@ -65,32 +85,29 @@ void main() {
       },
     );
 
-    test(
-      'filterVideoList re-filters an already-loaded list when the '
-      'preference flips',
-      () async {
-        final videos = [
-          _video(id: 'square', dimensions: '640x640'),
-          _video(id: 'portrait', dimensions: '720x1280'),
-        ];
+    test('filterVideoList re-filters an already-loaded list when the '
+        'preference flips', () async {
+      final videos = [
+        _video(id: 'square', dimensions: '640x640'),
+        _video(id: 'portrait', dimensions: '720x1280'),
+      ];
 
-        expect(
-          service.filterVideoList(videos).map((video) => video.id),
-          equals(['square', 'portrait']),
-        );
+      expect(
+        service.filterVideoList(videos).map((video) => video.id),
+        equals(['square', 'portrait']),
+      );
 
-        await aspectRatioPreference.setPreference(
-          FeedAspectRatioPreference.squareOnly,
-        );
+      await aspectRatioPreference.setPreference(
+        FeedAspectRatioPreference.squareOnly,
+      );
 
-        expect(
-          service.filterVideoList(videos).map((video) => video.id),
-          equals(['square']),
-          reason:
-              'The reported bug (#6511) is a live toggle: the service must '
-              'read the preference at filter time, not snapshot it at attach.',
-        );
-      },
-    );
+      expect(
+        service.filterVideoList(videos).map((video) => video.id),
+        equals(['square']),
+        reason:
+            'The reported bug (#6511) is a live toggle: the service must '
+            'read the preference at filter time, not snapshot it at attach.',
+      );
+    });
   });
 }

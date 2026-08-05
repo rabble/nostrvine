@@ -519,8 +519,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   /// Returns true when this video should be hidden — either because its author
   /// is blocked/muted (the viewer blocked them, or they blocked the viewer via
   /// kind-30000 `d=block` / muted via kind-10000), or because the viewer's
-  /// Divine-hosted-only preference is on and the video is not Divine-hosted, or
-  /// because the viewer's feed video-shape preference excludes this video.
+  /// Divine-hosted-only preference is on and the video is not Divine-hosted.
   ///
   /// Detail/by-id surfaces (sound detail, video detail, curated lists,
   /// notifications) resolve videos directly and bypass the reception-time
@@ -533,8 +532,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     if (shouldFilterNonDivineVideos && !video.isFromDivineServer) {
       return true;
     }
-    return _feedAspectRatioPreferenceService?.shouldHideVideo(video) ?? false;
+    return false;
   }
+
+  bool _shouldHideForFeedShapePreference(VideoEvent video) =>
+      _feedAspectRatioPreferenceService?.shouldHideVideo(video) ?? false;
 
   /// Returns true if adult content should be filtered from feeds
   bool get shouldFilterAdultContent =>
@@ -670,6 +672,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
         .where(
           (video) =>
               !shouldHideVideo(video) &&
+              !_shouldHideForFeedShapePreference(video) &&
               !(tracker?.isVideoBroken(video.id) ?? false),
         )
         .toList();
