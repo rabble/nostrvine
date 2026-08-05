@@ -313,6 +313,111 @@ void main() {
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
+      test(
+        'maps coordinate and kind from a REST video reply (#6124)',
+        () async {
+          // loadComments is REST-first, so this — not the relay mapper — is the
+          // path that serves the first page in production. Without it a vote on
+          // a REST-delivered video reply still carries k:1111 and no `a` tag.
+          when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeApiClient.getVideoComments(
+              videoId: any(named: 'videoId'),
+              sort: any(named: 'sort'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              cacheBustToken: any(named: 'cacheBustToken'),
+            ),
+          ).thenAnswer(
+            (_) async => VideoCommentsResponse(
+              comments: [
+                VideoComment(
+                  id: 'rest_video_reply',
+                  pubkey: testUserPubkey,
+                  createdAt: 1000,
+                  kind: EventKind.videoVertical,
+                  content: 'REST video reply',
+                  sig: 'sig',
+                  tags: [
+                    ['E', testRootEventId],
+                    ['P', testRootAuthorPubkey],
+                    ['d', 'rest_reply_d'],
+                    ['imeta', 'url https://media.divine.video/reply/12345'],
+                  ],
+                ),
+              ],
+              total: 1,
+            ),
+          );
+
+          repository = CommentsRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeApiClient,
+          );
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            includeVideoReplies: true,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.eventKind, EventKind.videoVertical);
+          expect(
+            result.comments.first.addressableId,
+            equals('${EventKind.videoVertical}:$testUserPubkey:rest_reply_d'),
+          );
+        },
+      );
+
+      test('leaves eventKind null when REST omits the kind (#6124)', () async {
+        // VideoComment.fromJson defaults an absent kind to 0. Forwarding that
+        // verbatim would put k:0 on the reaction; null keeps the handler's
+        // Kind 1111 fallback in charge.
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            cacheBustToken: any(named: 'cacheBustToken'),
+          ),
+        ).thenAnswer(
+          (_) async => VideoCommentsResponse(
+            comments: [
+              VideoComment(
+                id: 'rest_comment_no_kind',
+                pubkey: testUserPubkey,
+                createdAt: 1000,
+                kind: 0,
+                content: 'plain',
+                sig: 'sig',
+                tags: [
+                  ['E', testRootEventId],
+                  ['P', testRootAuthorPubkey],
+                ],
+              ),
+            ],
+            total: 1,
+          ),
+        );
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.eventKind, isNull);
+        expect(result.comments.first.addressableId, isNull);
+      });
+
       test('falls back to relay query when REST bootstrap throws', () async {
         when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
         when(
