@@ -207,13 +207,13 @@ class _ListVisibilityBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: 6,
       children: [
         DivineIcon(
           icon: isPublic ? DivineIconName.globe : DivineIconName.lockSimple,
           size: 14,
           color: context.vineColors.secondaryText,
         ),
-        const SizedBox(width: 6),
         Text(
           isPublic
               ? context.l10n.listVisibilityPublic
