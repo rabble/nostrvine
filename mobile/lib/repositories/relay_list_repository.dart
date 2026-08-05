@@ -18,6 +18,7 @@ enum RelayListPublishStatus {
   published,
   skippedNoKeys,
   skippedNonProduction,
+  skippedNotDirty,
   failed,
 }
 
@@ -37,6 +38,9 @@ class RelayListPublishResult {
   const RelayListPublishResult.skippedNonProduction()
     : this._(status: RelayListPublishStatus.skippedNonProduction);
 
+  const RelayListPublishResult.skippedNotDirty()
+    : this._(status: RelayListPublishStatus.skippedNotDirty);
+
   const RelayListPublishResult.failed(Object error, StackTrace stackTrace)
     : this._(
         status: RelayListPublishStatus.failed,
@@ -53,7 +57,8 @@ class RelayListPublishResult {
     RelayListPublishStatus.skippedNoKeys ||
     RelayListPublishStatus.failed => true,
     RelayListPublishStatus.published ||
-    RelayListPublishStatus.skippedNonProduction => false,
+    RelayListPublishStatus.skippedNonProduction ||
+    RelayListPublishStatus.skippedNotDirty => false,
   };
 }
 
@@ -115,9 +120,13 @@ class RelayListRepository {
 
   Future<RelayListPublishResult> retryDirtyPublish() async {
     final pubkey = _nostrClient.publicKey;
-    if (!_nostrClient.hasKeys || pubkey.isEmpty || !isDirty(pubkey)) {
+    if (!_nostrClient.hasKeys || pubkey.isEmpty) {
       return const RelayListPublishResult.skippedNoKeys();
     }
+    // Nothing pending is a no-op, not a failed sync — reporting it as
+    // localOnly would make the retry bridge warn about a publish it never
+    // attempted.
+    if (!isDirty(pubkey)) return const RelayListPublishResult.skippedNotDirty();
     return publishConfiguredRelayList();
   }
 

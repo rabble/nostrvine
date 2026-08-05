@@ -187,11 +187,13 @@ void main() {
 
       expect(
         await repository.retryDirtyPublish(),
-        isA<RelayListPublishResult>().having(
-          (result) => result.status,
-          'status',
-          RelayListPublishStatus.skippedNoKeys,
-        ),
+        isA<RelayListPublishResult>()
+            .having(
+              (result) => result.status,
+              'status',
+              RelayListPublishStatus.skippedNotDirty,
+            )
+            .having((result) => result.localOnly, 'localOnly', isFalse),
       );
       verifyNever(
         () => nostrClient.publishEventAwaitOk(
