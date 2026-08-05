@@ -93,10 +93,14 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
             controller: _searchController,
             autofocus: true,
             textInputAction: .search,
-            style: TextStyle(color: context.vineColors.primaryText),
+            style: VineTheme.bodyLargeFont(
+              color: context.vineColors.primaryText,
+            ),
             decoration: InputDecoration(
               hintText: context.l10n.shareFindPeople,
-              hintStyle: TextStyle(color: context.vineColors.secondaryText),
+              hintStyle: VineTheme.bodyLargeFont(
+                color: context.vineColors.secondaryText,
+              ),
               prefixIconConstraints: const BoxConstraints(),
               prefixIcon: Padding(
                 padding: const EdgeInsetsDirectional.only(start: 12, end: 8),
@@ -202,7 +206,9 @@ class _ResultsList extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   context.l10n.userSearchNoResults,
-                  style: TextStyle(color: context.vineColors.secondaryText),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.secondaryText,
+                  ),
                 ),
               ),
             ),
@@ -211,7 +217,9 @@ class _ResultsList extends StatelessWidget {
                 padding: const EdgeInsets.all(32),
                 child: Text(
                   context.l10n.userPickerSearchFailedTryAgain,
-                  style: TextStyle(color: context.vineColors.secondaryText),
+                  style: VineTheme.bodyMediumFont(
+                    color: context.vineColors.secondaryText,
+                  ),
                 ),
               ),
             ),
@@ -247,8 +255,10 @@ class _SearchResultsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomSafeArea = MediaQuery.viewPaddingOf(context).bottom;
     return ListView.builder(
       controller: scrollController,
+      padding: EdgeInsets.only(bottom: 16 + bottomSafeArea),
       itemCount: results.length,
       itemBuilder: (context, index) {
         final user = ShareableUser.fromProfile(
@@ -280,15 +290,19 @@ class _ContactsList extends StatelessWidget {
           padding: const EdgeInsets.all(32),
           child: Text(
             context.l10n.findPeopleNoContacts,
-            style: TextStyle(color: context.vineColors.secondaryText),
+            style: VineTheme.bodyMediumFont(
+              color: context.vineColors.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
       );
     }
 
+    final bottomSafeArea = MediaQuery.viewPaddingOf(context).bottom;
     return ListView.builder(
       controller: scrollController,
+      padding: EdgeInsets.only(bottom: 16 + bottomSafeArea),
       itemCount: contacts.length,
       itemBuilder: (context, index) {
         final contact = contacts[index];
@@ -301,14 +315,14 @@ class _ContactsList extends StatelessWidget {
   }
 }
 
-class _UserResultTile extends ConsumerWidget {
+class _UserResultTile extends StatelessWidget {
   const _UserResultTile({required this.user, required this.onTap});
 
   final ShareableUser user;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final handle = user.handle;
 
     return ListTile(
@@ -319,10 +333,7 @@ class _UserResultTile extends ConsumerWidget {
       ),
       title: Text(
         user.displayName ?? context.l10n.findPeopleAnonymousUser,
-        style: TextStyle(
-          color: context.vineColors.primaryText,
-          fontWeight: FontWeight.w600,
-        ),
+        style: VineTheme.titleMediumFont(color: context.vineColors.primaryText),
       ),
       // No npub fallback: a row without a nip05 or a name shows the name
       // line only, matching the Figma spec and the new-message sheet.
@@ -330,7 +341,9 @@ class _UserResultTile extends ConsumerWidget {
           ? null
           : Text(
               handle,
-              style: TextStyle(color: context.vineColors.secondaryText),
+              style: VineTheme.bodyMediumFont(
+                color: context.vineColors.secondaryText,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
       onTap: onTap,

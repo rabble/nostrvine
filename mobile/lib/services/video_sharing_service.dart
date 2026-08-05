@@ -20,8 +20,6 @@ class ShareableUser {
     this.displayName,
     this.handle,
     this.picture,
-    this.isFollowing = false,
-    this.isFollower = false,
   });
 
   /// Builds a shareable user from a (possibly missing) [profile].
@@ -36,9 +34,24 @@ class ShareableUser {
     return ShareableUser(
       pubkey: pubkey,
       displayName: profile?.bestDisplayName,
-      handle: profile?.displayNip05 ?? _handleFromName(profile?.name),
+      handle:
+          _handleFromDisplayNip05(profile?.displayNip05) ??
+          _handleFromName(profile?.name),
       picture: profile?.picture,
     );
+  }
+
+  /// [displayNip05] as a handle when it is already handle-shaped.
+  static String? _handleFromDisplayNip05(String? displayNip05) {
+    final trimmed = displayNip05?.trim();
+    if (trimmed == null ||
+        trimmed.isEmpty ||
+        RegExp(r'\s').hasMatch(trimmed) ||
+        !trimmed.contains('@') ||
+        trimmed == '@') {
+      return null;
+    }
+    return trimmed;
   }
 
   /// [name] as a handle: `@`-prefixed unless it already reads as one.
@@ -67,8 +80,6 @@ class ShareableUser {
   /// secondary line at all rather than falling back to an npub.
   final String? handle;
   final String? picture;
-  final bool isFollowing;
-  final bool isFollower;
 }
 
 /// Structured share metadata for the platform share sheet.
@@ -313,63 +324,6 @@ class VideoSharingService {
     }
 
     return results;
-  }
-
-  /// Get shareable users (followers, following, recent contacts)
-  Future<List<ShareableUser>> getShareableUsers({int limit = 20}) async {
-    try {
-      final shareableUsers = <ShareableUser>[];
-
-      // Add recently shared with users first
-      shareableUsers.addAll(_recentlySharedWith.take(5));
-
-      // TODO: Add followers and following when social service integration is complete
-      // For now, return recent users
-
-      Log.info(
-        'Found ${shareableUsers.length} shareable users',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return shareableUsers.take(limit).toList();
-    } catch (e) {
-      Log.error(
-        'Error getting shareable users: $e',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return [];
-    }
-  }
-
-  /// Search for users to share with (by display name or pubkey)
-  Future<List<ShareableUser>> searchUsersToShareWith(String query) async {
-    try {
-      // TODO: Implement user search when user directory service is available
-      // For now, check if query looks like a pubkey and create a basic user
-
-      if (query.length == 64 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(query)) {
-        // Looks like a hex pubkey
-        final profile = await _profileRepository.fetchFreshProfile(
-          pubkey: query,
-        );
-        return [ShareableUser.fromProfile(query, profile)];
-      }
-
-      Log.debug(
-        'User search not yet implemented for: $query',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return [];
-    } catch (e) {
-      Log.error(
-        'Error searching users: $e',
-        name: 'VideoSharingService',
-        category: LogCategory.video,
-      );
-      return [];
-    }
   }
 
   /// Generate external share URL for the video.

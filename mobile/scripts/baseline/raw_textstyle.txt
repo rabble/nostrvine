@@ -60,7 +60,6 @@ lib/widgets/composable_video_grid.dart	8
 lib/widgets/content_warning.dart	11
 lib/widgets/environment_indicator.dart	1
 lib/widgets/error_message.dart	1
-lib/widgets/find_people_sheet.dart	7
 lib/widgets/for_you_tab.dart	13
 lib/widgets/global_error_widget.dart	7
 lib/widgets/library/sounds_tab.dart	7
