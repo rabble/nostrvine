@@ -382,6 +382,8 @@
     "videoErrorUnsupportedFormat": "지원하지 않는 영상 형식",
     "videoErrorPlayback": "영상 재생 오류",
     "videoErrorAgeRestricted": "연령 제한 콘텐츠",
+    "videoErrorUnavailable": "영상을 사용할 수 없어요",
+    "videoErrorUnavailableBody": "이 영상은 지금 사용할 수 없어요.",
     "videoErrorVerifyAge": "나이 인증",
     "videoErrorRetry": "다시 시도",
     "videoErrorContentRestricted": "콘텐츠 제한됨",

@@ -36,6 +36,9 @@ const _videoUrl = 'https://media.divine.video/$_sha256/720p.mp4';
 String get _failureText =>
     lookupAppLocalizations(const Locale('en')).videoErrorVerifyAgeFailed;
 
+String get _unavailableText =>
+    lookupAppLocalizations(const Locale('en')).videoErrorUnavailable;
+
 String get _signerUnreachableText => lookupAppLocalizations(
   const Locale('en'),
 ).videoErrorVerifyAgeSignerUnreachable;
@@ -302,7 +305,7 @@ void main() {
       },
     );
 
-    testWidgets('surfaces feedback when authenticated retry fails', (
+    testWidgets('marks unavailable when authenticated retry fails', (
       tester,
     ) async {
       final mediaAuthInterceptor = _MockMediaAuthInterceptor();
@@ -343,9 +346,11 @@ void main() {
       expect(retryCount, 1);
       expect(
         playbackStatusCubit.state.statusFor(_videoId),
-        PlaybackStatus.ageRestricted,
+        PlaybackStatus.unavailable,
       );
-      expect(find.text(_failureText), findsOneWidget);
+      expect(playbackStatusCubit.state.hasAuthRetryExhausted(_videoId), isTrue);
+      expect(find.text(_unavailableText), findsOneWidget);
+      expect(find.text(_failureText), findsNothing);
     });
 
     testWidgets(
@@ -503,6 +508,56 @@ void main() {
       },
     );
   });
+
+  group('autoRetryAgeRestrictedPooledVideo', () {
+    testWidgets('marks authenticated retry exhausted silently when playback '
+        'still fails', (tester) async {
+      final mediaAuthInterceptor = _MockMediaAuthInterceptor();
+      final playbackStatusCubit = VideoPlaybackStatusCubit();
+      var retryCount = 0;
+      addTearDown(playbackStatusCubit.close);
+
+      when(
+        () => mediaAuthInterceptor.canAutoAuthorizeAdultMedia,
+      ).thenReturn(true);
+      when(
+        () => mediaAuthInterceptor.createAutoAuthHeadersForAdultMedia(
+          sha256Hash: _sha256,
+          url: _videoUrl,
+          serverUrl: 'https://media.divine.video',
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const ViewerAuthAuthorized({'Authorization': 'Nostr token'}),
+      );
+
+      await tester.pumpWidget(
+        _AutoRetryHarness(
+          mediaAuthInterceptor: mediaAuthInterceptor,
+          playbackStatusCubit: playbackStatusCubit,
+          retryPlayback: (_) {
+            retryCount++;
+            return false;
+          },
+        ),
+      );
+
+      playbackStatusCubit.report(_videoId, PlaybackStatus.ageRestricted);
+
+      await tester.tap(find.text('Auto retry'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(retryCount, 1);
+      expect(
+        playbackStatusCubit.state.statusFor(_videoId),
+        PlaybackStatus.unavailable,
+      );
+      expect(playbackStatusCubit.state.hasAuthRetryExhausted(_videoId), isTrue);
+      expect(find.text(_unavailableText), findsNothing);
+      expect(find.text(_failureText), findsNothing);
+    });
+  });
 }
 
 class _RetryHarness extends StatelessWidget {
@@ -548,6 +603,51 @@ class _RetryHarness extends StatelessWidget {
                     retryPlayback: retryPlayback,
                   ),
                   child: const Text('Verify'),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AutoRetryHarness extends StatelessWidget {
+  const _AutoRetryHarness({
+    required this.mediaAuthInterceptor,
+    required this.playbackStatusCubit,
+    required this.retryPlayback,
+  });
+
+  final MediaAuthInterceptor mediaAuthInterceptor;
+  final VideoPlaybackStatusCubit playbackStatusCubit;
+  final bool Function(Map<String, String>) retryPlayback;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProviderScope(
+      overrides: [
+        mediaAuthInterceptorProvider.overrideWithValue(mediaAuthInterceptor),
+      ],
+      child: BlocProvider<VideoPlaybackStatusCubit>.value(
+        value: playbackStatusCubit,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Consumer(
+              builder: (context, ref, _) {
+                return TextButton(
+                  onPressed: () => autoRetryAgeRestrictedPooledVideo(
+                    context: context,
+                    ref: ref,
+                    video: _video,
+                    index: 0,
+                    resolveSha256: _resolveSha256,
+                    retryPlayback: retryPlayback,
+                  ),
+                  child: const Text('Auto retry'),
                 );
               },
             ),

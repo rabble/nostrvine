@@ -1502,6 +1502,12 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Leeftijdsbeperkte inhoud';
 
   @override
+  String get videoErrorUnavailable => 'Video niet beschikbaar';
+
+  @override
+  String get videoErrorUnavailableBody => 'Deze video is nu niet beschikbaar.';
+
+  @override
   String get videoErrorVerifyAge => 'Leeftijd verifiëren';
 
   @override

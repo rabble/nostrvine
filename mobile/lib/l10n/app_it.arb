@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "Formato video non supportato",
     "videoErrorPlayback": "Errore di riproduzione video",
     "videoErrorAgeRestricted": "Contenuto con limite d'età",
+    "videoErrorUnavailable": "Video non disponibile",
+    "videoErrorUnavailableBody": "Questo video non è disponibile al momento.",
     "videoErrorVerifyAge": "Verifica età",
     "videoErrorRetry": "Riprova",
     "videoErrorContentRestricted": "Contenuto con restrizioni",

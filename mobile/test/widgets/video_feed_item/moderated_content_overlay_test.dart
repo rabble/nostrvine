@@ -62,6 +62,17 @@ void main() {
       expect(find.text(enL10n.videoErrorSkip), findsOneWidget);
     });
 
+    testWidgets('renders unavailable message with Skip and no Verify age', (
+      tester,
+    ) async {
+      await pumpOverlay(tester, status: PlaybackStatus.unavailable);
+
+      expect(find.text(enL10n.videoErrorUnavailable), findsOneWidget);
+      expect(find.text(enL10n.videoErrorUnavailableBody), findsOneWidget);
+      expect(find.text(enL10n.videoErrorSkip), findsOneWidget);
+      expect(find.text(enL10n.videoErrorVerifyAgeButton), findsNothing);
+    });
+
     testWidgets('calls onSkip when Skip is tapped', (tester) async {
       var skipped = 0;
       await pumpOverlay(

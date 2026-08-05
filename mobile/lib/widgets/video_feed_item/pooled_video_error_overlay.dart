@@ -37,6 +37,7 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
     this.onSkip,
     this.onVerifyAge,
     this.isVerifying = false,
+    this.isAuthRetryExhausted = false,
     this.shouldPortraitExpand = true,
     this.isSquare = false,
     super.key,
@@ -50,6 +51,9 @@ class PooledVideoErrorOverlay extends ConsumerStatefulWidget {
   /// Whether an age-verification retry is in flight. Shows the Verify age
   /// button's loading state (which also disables it, preventing double taps).
   final bool isVerifying;
+
+  /// Whether authenticated retry already failed for this video in this session.
+  final bool isAuthRetryExhausted;
 
   final VideoErrorType? errorType;
 
@@ -128,45 +132,63 @@ class _PooledVideoErrorOverlayState
         (shouldEnrichNotFoundWithModeration &&
             moderationStatus != null &&
             moderationStatus.isUnavailableDueToModeration);
+    final isUnavailableAfterAuthRetry = widget.isAuthRetryExhausted;
     final isAgeRestricted =
-        type == VideoErrorType.ageRestricted || isModerationAgeRestricted;
+        !isUnavailableAfterAuthRetry &&
+        (type == VideoErrorType.ageRestricted || isModerationAgeRestricted);
 
     final DivineIconName icon = switch ((
       type,
+      isUnavailableAfterAuthRetry,
       isAgeRestricted,
       isModerationRestricted,
     )) {
-      (_, true, _) => DivineIconName.lockSimple,
-      (VideoErrorType.notFound, false, true) => DivineIconName.shieldCheck,
-      (VideoErrorType.notFound, false, false) => DivineIconName.warningCircle,
-      (_, false, true) => DivineIconName.shieldCheck,
+      (_, true, _, _) => DivineIconName.warningCircle,
+      (_, false, true, _) => DivineIconName.lockSimple,
+      (VideoErrorType.notFound, false, false, true) =>
+        DivineIconName.shieldCheck,
+      (VideoErrorType.notFound, false, false, false) =>
+        DivineIconName.warningCircle,
+      (_, false, false, true) => DivineIconName.shieldCheck,
       _ => DivineIconName.warningCircle,
     };
 
-    final message = switch ((type, isAgeRestricted, isModerationRestricted)) {
-      (_, true, _) => context.l10n.videoErrorAgeRestricted,
-      (VideoErrorType.notFound, false, true) =>
+    final message = switch ((
+      type,
+      isUnavailableAfterAuthRetry,
+      isAgeRestricted,
+      isModerationRestricted,
+    )) {
+      (_, true, _, _) => context.l10n.videoErrorUnavailable,
+      (_, false, true, _) => context.l10n.videoErrorAgeRestricted,
+      (VideoErrorType.notFound, false, false, true) =>
         context.l10n.videoErrorContentRestricted,
-      (VideoErrorType.notFound, false, false) =>
+      (VideoErrorType.notFound, false, false, false) =>
         context.l10n.videoErrorNotFound,
-      (VideoErrorType.forbidden, false, true) =>
+      (VideoErrorType.forbidden, false, false, true) =>
         context.l10n.videoErrorContentRestricted,
-      (VideoErrorType.forbidden, false, false) =>
+      (VideoErrorType.forbidden, false, false, false) =>
         context.l10n.videoErrorPlayback,
-      (VideoErrorType.ageRestricted, false, _) =>
-        context.l10n.videoErrorAgeRestricted,
-      (VideoErrorType.generic, false, _) => context.l10n.videoErrorPlayback,
+      (VideoErrorType.ageRestricted, false, false, _) =>
+        context.l10n.videoErrorUnavailable,
+      (VideoErrorType.generic, false, false, _) =>
+        context.l10n.videoErrorPlayback,
     };
-    final body = isAgeRestricted
+    final body = isUnavailableAfterAuthRetry
+        ? context.l10n.videoErrorUnavailableBody
+        : isAgeRestricted
         ? context.l10n.videoErrorVerifyAgeBody
         : isModerationRestricted
         ? context.l10n.videoErrorContentRestrictedBody
         : null;
     final showVerifyAge = isAgeRestricted && widget.onVerifyAge != null;
     final showSkip =
-        isModerationRestricted && !isAgeRestricted && widget.onSkip != null;
+        (isUnavailableAfterAuthRetry ||
+            (isModerationRestricted && !isAgeRestricted)) &&
+        widget.onSkip != null;
     final showRetry =
         (!isModerationRestricted || (isAgeRestricted && !showVerifyAge)) &&
+        !isUnavailableAfterAuthRetry &&
         !showSkip &&
         !showVerifyAge;
     _maybeAutoRetryAgeRestricted(showVerifyAge: showVerifyAge);
@@ -178,7 +200,10 @@ class _PooledVideoErrorOverlayState
     // moderation result lands. Plain notFound / generic failures keep the event
     // blurhash and thumbnail fallback. #6242
     final suppressPreviewMedia =
-        isModerationStatusLoading || isModerationRestricted || isAgeRestricted;
+        isModerationStatusLoading ||
+        isModerationRestricted ||
+        isAgeRestricted ||
+        isUnavailableAfterAuthRetry;
 
     return Stack(
       fit: StackFit.expand,

@@ -412,6 +412,8 @@
     "videoErrorUnsupportedFormat": "Hindi sinusuportahang video format",
     "videoErrorPlayback": "Error sa playback ng video",
     "videoErrorAgeRestricted": "Age-restricted content",
+    "videoErrorUnavailable": "Hindi available ang video",
+    "videoErrorUnavailableBody": "Hindi available ang video na ito ngayon.",
     "videoErrorVerifyAge": "I-verify ang Edad",
     "videoErrorRetry": "Subukan ulit",
     "videoErrorContentRestricted": "Restricted ang content",

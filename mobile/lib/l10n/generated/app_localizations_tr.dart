@@ -1461,6 +1461,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Yaş kısıtlamalı içerik';
 
   @override
+  String get videoErrorUnavailable => 'Video kullanılamıyor';
+
+  @override
+  String get videoErrorUnavailableBody => 'Bu video şu anda kullanılamıyor.';
+
+  @override
   String get videoErrorVerifyAge => 'Yaşı Doğrula';
 
   @override

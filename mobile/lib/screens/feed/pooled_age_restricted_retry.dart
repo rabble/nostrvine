@@ -90,7 +90,9 @@ Future<void> retryAgeRestrictedPooledVideo({
         final playbackSucceeded = await retryPlayback(headers);
         if (!context.mounted) return;
         if (!playbackSucceeded) {
-          _showVerifyAgeFailed(context);
+          playbackStatusCubit.markAuthRetryExhausted(video.id);
+          playbackStatusCubit.report(video.id, PlaybackStatus.unavailable);
+          _showVideoUnavailable(context);
           return;
         }
         playbackStatusCubit.report(video.id, PlaybackStatus.ready);
@@ -153,7 +155,12 @@ Future<void> autoRetryAgeRestrictedPooledVideo({
     switch (authResult) {
       case ViewerAuthAuthorized(:final headers):
         final playbackSucceeded = await retryPlayback(headers);
-        if (!context.mounted || !playbackSucceeded) return;
+        if (!context.mounted) return;
+        if (!playbackSucceeded) {
+          playbackStatusCubit.markAuthRetryExhausted(video.id);
+          playbackStatusCubit.report(video.id, PlaybackStatus.unavailable);
+          return;
+        }
         playbackStatusCubit.report(video.id, PlaybackStatus.ready);
       case ViewerAuthSignerUnreachable():
       case ViewerAuthBlockedByPreference():
@@ -173,6 +180,14 @@ void _showVerifyAgeFailed(BuildContext context) {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     DivineSnackbarContainer.snackBar(context.l10n.videoErrorVerifyAgeFailed),
+  );
+}
+
+/// Surfaces a neutral unavailable message after valid auth was rejected.
+void _showVideoUnavailable(BuildContext context) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    DivineSnackbarContainer.snackBar(context.l10n.videoErrorUnavailable),
   );
 }
 

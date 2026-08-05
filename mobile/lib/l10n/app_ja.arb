@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "対応してない動画フォーマット",
     "videoErrorPlayback": "動画の再生エラー",
     "videoErrorAgeRestricted": "年齢制限のあるコンテンツ",
+    "videoErrorUnavailable": "動画を見れないよ",
+    "videoErrorUnavailableBody": "この動画は現在利用できません。",
     "videoErrorVerifyAge": "年齢を確認",
     "videoErrorRetry": "もう一回",
     "videoErrorContentRestricted": "コンテンツが制限されてる",

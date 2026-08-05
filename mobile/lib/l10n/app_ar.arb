@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "تنسيق الفيديو غير مدعوم",
     "videoErrorPlayback": "خطأ في تشغيل الفيديو",
     "videoErrorAgeRestricted": "محتوى مقيّد بالعمر",
+    "videoErrorUnavailable": "الفيديو غير متاح",
+    "videoErrorUnavailableBody": "هذا الفيديو غير متاح الآن.",
     "videoErrorVerifyAge": "تحقق من العمر",
     "videoErrorRetry": "إعادة المحاولة",
     "videoErrorContentRestricted": "المحتوى مقيّد",

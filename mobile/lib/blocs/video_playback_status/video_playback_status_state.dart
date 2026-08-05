@@ -22,6 +22,9 @@ enum PlaybackStatus {
   /// Content not found — 404 or unresolved blob hash.
   notFound,
 
+  /// Playback is unavailable after authenticated access was rejected.
+  unavailable,
+
   /// Any other playback failure.
   generic,
 }
@@ -41,6 +44,7 @@ class VideoPlaybackStatusState extends Equatable {
     LinkedHashMap<String, PlaybackStatus>? statuses,
     Set<String>? verifyingIds,
     Set<String>? autoRetryAttemptedIds,
+    Set<String>? authRetryExhaustedIds,
   }) : _statuses = statuses == null
            ? LinkedHashMap<String, PlaybackStatus>()
            : LinkedHashMap<String, PlaybackStatus>.from(statuses),
@@ -49,7 +53,10 @@ class VideoPlaybackStatusState extends Equatable {
            : Set<String>.from(verifyingIds),
        _autoRetryAttemptedIds = autoRetryAttemptedIds == null
            ? <String>{}
-           : Set<String>.from(autoRetryAttemptedIds);
+           : Set<String>.from(autoRetryAttemptedIds),
+       _authRetryExhaustedIds = authRetryExhaustedIds == null
+           ? <String>{}
+           : Set<String>.from(authRetryExhaustedIds);
 
   static const int _defaultMaxEntries = 100;
 
@@ -67,6 +74,10 @@ class VideoPlaybackStatusState extends Equatable {
   /// cannot reset the attempt budget.
   final Set<String> _autoRetryAttemptedIds;
 
+  /// Event IDs whose authenticated age-gate retry still failed for this feed
+  /// session. This downgrades the UI claim from age-gated to unavailable.
+  final Set<String> _authRetryExhaustedIds;
+
   /// Returns the status for [eventId], or [PlaybackStatus.ready] when no
   /// status has been recorded.
   PlaybackStatus statusFor(String eventId) =>
@@ -80,6 +91,10 @@ class VideoPlaybackStatusState extends Equatable {
   /// for [eventId].
   bool hasAutoRetryAttempted(String eventId) =>
       _autoRetryAttemptedIds.contains(eventId);
+
+  /// Whether authenticated playback was retried and still failed for [eventId].
+  bool hasAuthRetryExhausted(String eventId) =>
+      _authRetryExhaustedIds.contains(eventId);
 
   /// Returns a new state with [status] recorded for [eventId].
   ///
@@ -98,6 +113,7 @@ class VideoPlaybackStatusState extends Equatable {
       statuses: next,
       verifyingIds: _verifyingIds,
       autoRetryAttemptedIds: _autoRetryAttemptedIds,
+      authRetryExhaustedIds: _authRetryExhaustedIds,
     );
   }
 
@@ -114,6 +130,7 @@ class VideoPlaybackStatusState extends Equatable {
       statuses: _statuses,
       verifyingIds: next,
       autoRetryAttemptedIds: _autoRetryAttemptedIds,
+      authRetryExhaustedIds: _authRetryExhaustedIds,
     );
   }
 
@@ -125,6 +142,19 @@ class VideoPlaybackStatusState extends Equatable {
       statuses: _statuses,
       verifyingIds: _verifyingIds,
       autoRetryAttemptedIds: next,
+      authRetryExhaustedIds: _authRetryExhaustedIds,
+    );
+  }
+
+  /// Returns a new state with [eventId]'s authenticated retry marked exhausted.
+  VideoPlaybackStatusState withAuthRetryExhausted(String eventId) {
+    final next = Set<String>.from(_authRetryExhaustedIds)..add(eventId);
+    return VideoPlaybackStatusState(
+      maxEntries: maxEntries,
+      statuses: _statuses,
+      verifyingIds: _verifyingIds,
+      autoRetryAttemptedIds: _autoRetryAttemptedIds,
+      authRetryExhaustedIds: next,
     );
   }
 
@@ -148,6 +178,7 @@ class VideoPlaybackStatusState extends Equatable {
       maxEntries,
       _verifyingIds,
       _autoRetryAttemptedIds,
+      _authRetryExhaustedIds,
     ];
   }
 }

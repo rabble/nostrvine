@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "Format video tidak didukung",
     "videoErrorPlayback": "Kesalahan pemutaran video",
     "videoErrorAgeRestricted": "Konten dengan pembatasan usia",
+    "videoErrorUnavailable": "Video tidak tersedia",
+    "videoErrorUnavailableBody": "Video ini belum tersedia saat ini.",
     "videoErrorVerifyAge": "Verifikasi Usia",
     "videoErrorRetry": "Coba Lagi",
     "videoErrorContentRestricted": "Konten dibatasi",

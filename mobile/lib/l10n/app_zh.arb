@@ -715,6 +715,8 @@
   "videoErrorUnsupportedFormat": "不支持的视频格式",
   "videoErrorPlayback": "视频播放出错",
   "videoErrorAgeRestricted": "年龄限制内容",
+  "videoErrorUnavailable": "视频不可用",
+  "videoErrorUnavailableBody": "此视频目前不可用。",
   "videoErrorVerifyAge": "验证年龄",
   "videoErrorRetry": "重试",
   "videoErrorContentRestricted": "内容受限",

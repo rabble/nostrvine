@@ -1534,6 +1534,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Conținut cu restricție de vârstă';
 
   @override
+  String get videoErrorUnavailable => 'Videoclip indisponibil';
+
+  @override
+  String get videoErrorUnavailableBody =>
+      'Acest videoclip nu este disponibil acum.';
+
+  @override
   String get videoErrorVerifyAge => 'Verifică vârsta';
 
   @override

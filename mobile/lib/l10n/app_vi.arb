@@ -715,6 +715,8 @@
   "videoErrorUnsupportedFormat": "Định dạng video không được hỗ trợ",
   "videoErrorPlayback": "Lỗi phát video",
   "videoErrorAgeRestricted": "Nội dung giới hạn độ tuổi",
+  "videoErrorUnavailable": "Video không khả dụng",
+  "videoErrorUnavailableBody": "Video này hiện không khả dụng.",
   "videoErrorVerifyAge": "Xác minh tuổi",
   "videoErrorRetry": "Thử lại",
   "videoErrorContentRestricted": "Nội dung bị hạn chế",

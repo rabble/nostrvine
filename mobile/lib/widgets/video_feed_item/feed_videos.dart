@@ -557,6 +557,10 @@ class _OverlayAgeRestrictedMode extends _OverlayMode {
   const _OverlayAgeRestrictedMode();
 }
 
+class _OverlayUnavailableMode extends _OverlayMode {
+  const _OverlayUnavailableMode();
+}
+
 class _OverlayContentWarningMode extends _OverlayMode {
   const _OverlayContentWarningMode(this.labels);
 
@@ -714,6 +718,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
     return switch (playbackStatus) {
       PlaybackStatus.forbidden => const _OverlayForbiddenMode(),
       PlaybackStatus.ageRestricted => const _OverlayAgeRestrictedMode(),
+      PlaybackStatus.unavailable => const _OverlayUnavailableMode(),
       _ =>
         showContentWarningOverlay && !widget.contentWarningRevealed
             ? _OverlayContentWarningMode(overlayLabels)
@@ -820,6 +825,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
           onSkip: _skipToNextVideo,
           onVerifyAge: _verifyAgeForVideo,
           isVerifying: isVerifyingAge,
+        );
+      case _OverlayUnavailableMode():
+        return ModeratedContentOverlay(
+          status: playbackStatus,
+          onSkip: _skipToNextVideo,
         );
       case _OverlayContentWarningMode(:final labels):
         return ContentWarningBlurOverlay(
@@ -1244,6 +1254,13 @@ class _FeedLoadingOrRestrictedOverlayView extends ConsumerWidget {
                   resolveSha256: VideoModerationStatusService.resolveSha256,
                   // Retry is hidden while age-gated playback uses Verify age.
                   onRetry: () {},
+                  onSkip: () {
+                    unawaited(
+                      context
+                          .findAncestorStateOfType<InfiniteVideoFeedState>()
+                          ?.animateToPage(index + 1),
+                    );
+                  },
                   retryPlayback: (httpHeaders) =>
                       context
                           .findAncestorStateOfType<InfiniteVideoFeedState>()

@@ -663,6 +663,8 @@
     "videoErrorUnsupportedFormat": "የማይደገፍ የቪዲዮ ቅርጸት",
     "videoErrorPlayback": "የቪዲዮ መልሶ ማጫወት ስህተት",
     "videoErrorAgeRestricted": "በእድሜ የተገደበ ይዘት",
+    "videoErrorUnavailable": "ቪዲዮ አይገኝም",
+    "videoErrorUnavailableBody": "ይህ ቪዲዮ አሁን አይገኝም።",
     "videoErrorVerifyAge": "ዕድሜን ያረጋግጡ",
     "videoErrorRetry": "እንደገና ይሞክሩ",
     "videoErrorContentRestricted": "ይዘት ተገድቧል",

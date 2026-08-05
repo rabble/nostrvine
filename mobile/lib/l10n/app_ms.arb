@@ -715,6 +715,8 @@
   "videoErrorUnsupportedFormat": "Format video tidak disokong",
   "videoErrorPlayback": "Ralat main balik video",
   "videoErrorAgeRestricted": "Kandungan terhad mengikut umur",
+  "videoErrorUnavailable": "Video tidak tersedia",
+  "videoErrorUnavailableBody": "Video ini tidak tersedia buat masa ini.",
   "videoErrorVerifyAge": "Sahkan Umur",
   "videoErrorRetry": "Cuba Semula",
   "videoErrorContentRestricted": "Kandungan dihadkan",

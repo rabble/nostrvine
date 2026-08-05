@@ -58,10 +58,13 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
     return BlocSelector<
       VideoPlaybackStatusCubit,
       VideoPlaybackStatusState,
-      bool
+      ({bool isAuthRetryExhausted, bool isVerifying})
     >(
-      selector: (state) => state.isVerifying(video.id),
-      builder: (context, isVerifying) => PooledVideoErrorOverlay(
+      selector: (state) => (
+        isAuthRetryExhausted: state.hasAuthRetryExhausted(video.id),
+        isVerifying: state.isVerifying(video.id),
+      ),
+      builder: (context, status) => PooledVideoErrorOverlay(
         video: video,
         onRetry: onRetry,
         onSkip: onSkip,
@@ -74,7 +77,8 @@ class VerifyingAwareVideoErrorOverlay extends ConsumerWidget {
           retryPlayback: retryPlayback,
         ),
         errorType: errorType,
-        isVerifying: isVerifying,
+        isVerifying: status.isVerifying,
+        isAuthRetryExhausted: status.isAuthRetryExhausted,
         shouldPortraitExpand: shouldPortraitExpand,
         isSquare: isSquare,
       ),

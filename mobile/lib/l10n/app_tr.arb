@@ -577,6 +577,8 @@
     "videoErrorUnsupportedFormat": "Desteklenmeyen video formatı",
     "videoErrorPlayback": "Video oynatma hatası",
     "videoErrorAgeRestricted": "Yaş kısıtlamalı içerik",
+    "videoErrorUnavailable": "Video kullanılamıyor",
+    "videoErrorUnavailableBody": "Bu video şu anda kullanılamıyor.",
     "videoErrorVerifyAge": "Yaşı Doğrula",
     "videoErrorRetry": "Tekrar Dene",
     "videoErrorContentRestricted": "İçerik kısıtlandı",

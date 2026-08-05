@@ -1523,6 +1523,13 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoErrorAgeRestricted => 'Age-restricted content';
 
   @override
+  String get videoErrorUnavailable => 'Hindi available ang video';
+
+  @override
+  String get videoErrorUnavailableBody =>
+      'Hindi available ang video na ito ngayon.';
+
+  @override
   String get videoErrorVerifyAge => 'I-verify ang Edad';
 
   @override
