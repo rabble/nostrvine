@@ -686,17 +686,29 @@ String _$brokenVideoTrackerHash() =>
     r'a0b2af154496e50f633f49069986b3c0ee1f5585';
 
 /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-/// says blocked/quarantined before marking it broken. Reuses the singleton
+/// says the blob is `blocked` before marking it broken. Reuses the singleton
 /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
 /// `filterVideoList`. See #5953 / #6251.
+///
+/// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+/// fullscreen feed reads this imperatively from a BLoC callback, and an
+/// autoDispose future provider that nothing listens to is disposed right after
+/// each `ref.read`, so `asData` is always null and the prune never fires. It
+/// worked only while an unrelated widget happened to be watching it.
 
 @ProviderFor(deadMediaFeedGuard)
 final deadMediaFeedGuardProvider = DeadMediaFeedGuardProvider._();
 
 /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-/// says blocked/quarantined before marking it broken. Reuses the singleton
+/// says the blob is `blocked` before marking it broken. Reuses the singleton
 /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
 /// `filterVideoList`. See #5953 / #6251.
+///
+/// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+/// fullscreen feed reads this imperatively from a BLoC callback, and an
+/// autoDispose future provider that nothing listens to is disposed right after
+/// each `ref.read`, so `asData` is always null and the prune never fires. It
+/// worked only while an unrelated widget happened to be watching it.
 
 final class DeadMediaFeedGuardProvider
     extends
@@ -709,16 +721,22 @@ final class DeadMediaFeedGuardProvider
         $FutureModifier<DeadMediaFeedGuard>,
         $FutureProvider<DeadMediaFeedGuard> {
   /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-  /// says blocked/quarantined before marking it broken. Reuses the singleton
+  /// says the blob is `blocked` before marking it broken. Reuses the singleton
   /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
   /// `filterVideoList`. See #5953 / #6251.
+  ///
+  /// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+  /// fullscreen feed reads this imperatively from a BLoC callback, and an
+  /// autoDispose future provider that nothing listens to is disposed right after
+  /// each `ref.read`, so `asData` is always null and the prune never fires. It
+  /// worked only while an unrelated widget happened to be watching it.
   DeadMediaFeedGuardProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'deadMediaFeedGuardProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -739,7 +757,7 @@ final class DeadMediaFeedGuardProvider
 }
 
 String _$deadMediaFeedGuardHash() =>
-    r'07d64f9bdd2bff2e8c34252023cd6c906e6362f0';
+    r'958fa1e62ea46ed215cdc446b81e0f21b4822344';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///

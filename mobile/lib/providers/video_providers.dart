@@ -425,10 +425,16 @@ Future<BrokenVideoTracker> brokenVideoTracker(Ref ref) async {
 }
 
 /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
-/// says blocked/quarantined before marking it broken. Reuses the singleton
+/// says the blob is `blocked` before marking it broken. Reuses the singleton
 /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
 /// `filterVideoList`. See #5953 / #6251.
-@riverpod
+///
+/// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+/// fullscreen feed reads this imperatively from a BLoC callback, and an
+/// autoDispose future provider that nothing listens to is disposed right after
+/// each `ref.read`, so `asData` is always null and the prune never fires. It
+/// worked only while an unrelated widget happened to be watching it.
+@Riverpod(keepAlive: true)
 Future<DeadMediaFeedGuard> deadMediaFeedGuard(Ref ref) async {
   // Watched before the await. A dispose *or* a rebuild during the suspension
   // replaces the element's `ref`, and any `ref` use after that throws
