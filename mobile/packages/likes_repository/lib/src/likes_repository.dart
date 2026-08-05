@@ -1994,6 +1994,18 @@ class LikesRepository {
     ];
   }
 
+  /// Returns [future] marked as handled, for a query started before an
+  /// intervening `await`.
+  ///
+  /// The relay queries in [_fetchResolvedLikersByEvent] are started early so
+  /// they overlap the revision lookup, but nothing listens to them until the
+  /// later `Future.wait`. Without `Future.ignore` a query that fails inside
+  /// that window is reported as an unhandled async error — which fails the
+  /// test that provoked it and, in the app, reaches the zone error handler for
+  /// a failure the `Future.wait` is about to surface anyway. `ignore` only
+  /// suppresses the *unhandled* report; the error still arrives at the
+  /// `Future.wait`, so [fetchEventLikers] still turns it into a
+  /// [FetchLikersFailedException].
   Future<List<Event>> _awaitLater(Future<List<Event>> future) {
     future.ignore();
     return future;
