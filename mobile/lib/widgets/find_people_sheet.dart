@@ -120,12 +120,17 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
           ),
         ),
         Expanded(
-          child: _ResultsList(
-            searchQuery: _searchQuery,
-            searchBloc: _searchBloc,
-            contacts: widget.contacts,
-            scrollController: widget.scrollController,
-            onSelectUser: _selectUser,
+          // VineBottomSheet paints its surface with a ColoredBox, which would
+          // hide the tiles' ink splashes without an own Material in between.
+          child: Material(
+            type: MaterialType.transparency,
+            child: _ResultsList(
+              searchQuery: _searchQuery,
+              searchBloc: _searchBloc,
+              contacts: widget.contacts,
+              scrollController: widget.scrollController,
+              onSelectUser: _selectUser,
+            ),
           ),
         ),
         SizedBox(height: MediaQuery.viewInsetsOf(context).bottom),
@@ -283,6 +288,7 @@ class _ContactsList extends StatelessWidget {
     }
 
     return ListView.builder(
+      controller: scrollController,
       itemCount: contacts.length,
       itemBuilder: (context, index) {
         final contact = contacts[index];
@@ -305,35 +311,30 @@ class _UserResultTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final handle = user.handle;
 
-    // VineBottomSheet paints its surface with a ColoredBox, which would hide
-    // the tile's ink splashes without an own Material in between.
-    return Material(
-      type: MaterialType.transparency,
-      child: ListTile(
-        leading: UserAvatar(
-          imageUrl: user.picture,
-          placeholderSeed: user.pubkey,
-          size: 48,
-        ),
-        title: Text(
-          user.displayName ?? context.l10n.findPeopleAnonymousUser,
-          style: TextStyle(
-            color: context.vineColors.primaryText,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        // No npub fallback: a row without a nip05 or a name shows the name
-        // line only, matching the Figma spec and the new-message sheet.
-        subtitle: handle == null
-            ? null
-            : Text(
-                handle,
-                style: TextStyle(color: context.vineColors.secondaryText),
-                overflow: TextOverflow.ellipsis,
-              ),
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    return ListTile(
+      leading: UserAvatar(
+        imageUrl: user.picture,
+        placeholderSeed: user.pubkey,
+        size: 48,
       ),
+      title: Text(
+        user.displayName ?? context.l10n.findPeopleAnonymousUser,
+        style: TextStyle(
+          color: context.vineColors.primaryText,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      // No npub fallback: a row without a nip05 or a name shows the name
+      // line only, matching the Figma spec and the new-message sheet.
+      subtitle: handle == null
+          ? null
+          : Text(
+              handle,
+              style: TextStyle(color: context.vineColors.secondaryText),
+              overflow: TextOverflow.ellipsis,
+            ),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 }

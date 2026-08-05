@@ -451,6 +451,50 @@ void main() {
     });
 
     group('integration', () {
+      testWidgets('dragging the contacts list drags the sheet with it', (
+        tester,
+      ) async {
+        final contacts = [
+          for (var index = 0; index < 20; index++)
+            ShareableUser(
+              pubkey: '$index'.padLeft(64, '0'),
+              displayName: 'User $index',
+            ),
+        ];
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () =>
+                      FindPeopleSheet.show(context, contacts: contacts),
+                  child: const Text('Open Sheet'),
+                ),
+              ),
+            ),
+            additionalOverrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              profileReadRepositoryProvider.overrideWithValue(mockProfileRepo),
+            ],
+          ),
+        );
+
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        final sheet = find.byType(VineBottomSheet);
+        final topBeforeDrag = tester.getRect(sheet).top;
+
+        await tester.drag(find.text('User 0'), const Offset(0, 200));
+        await tester.pumpAndSettle();
+
+        // Without the enclosing sheet's ScrollController the drag would be
+        // swallowed by the list's own (already at offset 0) and the sheet
+        // would stay put.
+        expect(tester.getRect(sheet).top, greaterThan(topBeforeDrag));
+      });
+
       testWidgets(
         'creates UserSearchBloc with hasVideos: false (regression guard)',
         (tester) async {
