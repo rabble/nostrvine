@@ -128,7 +128,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -162,7 +161,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).called(1);
           service.dispose();
@@ -195,7 +193,6 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         ).thenAnswer(
           (_) async => PublishOutcome(
@@ -317,7 +314,6 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         );
         service.dispose();
@@ -344,7 +340,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -382,7 +377,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -417,7 +411,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -469,7 +462,6 @@ void main() {
               any(),
               targetRelays: any(named: 'targetRelays'),
               timeout: any(named: 'timeout'),
-              diagnosticTag: any(named: 'diagnosticTag'),
             ),
           );
           final messages = LogCaptureService().getRecentLogs().map(
@@ -506,7 +498,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -533,7 +524,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).called(1);
           service.dispose();
@@ -557,7 +547,6 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
             timeout: any(named: 'timeout'),
-            diagnosticTag: any(named: 'diagnosticTag'),
           ),
         );
         service.dispose();
@@ -579,7 +568,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -613,7 +601,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -711,7 +698,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -741,7 +727,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).called(1);
           service.dispose();
@@ -774,7 +759,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -798,7 +782,6 @@ void main() {
               any(),
               targetRelays: any(named: 'targetRelays'),
               timeout: any(named: 'timeout'),
-              diagnosticTag: any(named: 'diagnosticTag'),
             ),
           );
           verify(
@@ -806,7 +789,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).called(1);
           service.dispose();
@@ -845,7 +827,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -888,7 +869,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).called(1);
           service.dispose();
@@ -943,7 +923,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -983,7 +962,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -1174,7 +1152,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).thenAnswer(
             (_) async => PublishOutcome(
@@ -1201,7 +1178,6 @@ void main() {
               fakeEvent,
               targetRelays: [testEnvironment.relayUrl],
               timeout: pushPublishTimeout,
-              diagnosticTag: 'push-control',
             ),
           ).called(1);
 

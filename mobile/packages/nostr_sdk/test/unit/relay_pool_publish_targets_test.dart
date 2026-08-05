@@ -87,7 +87,6 @@ void main() {
             {'id': eventId, 'kind': 5},
           ],
           eventId: eventId,
-          eventKind: 5,
           timeout: const Duration(milliseconds: 400),
         );
 
@@ -125,7 +124,6 @@ void main() {
             {'id': eventId, 'kind': 10002},
           ],
           eventId: eventId,
-          eventKind: 10002,
           targetRelays: const [liveUrl, downUrl],
           timeout: const Duration(milliseconds: 400),
         );
@@ -146,7 +144,6 @@ void main() {
           {'id': eventId, 'kind': 5},
         ],
         eventId: eventId,
-        eventKind: 5,
         timeout: const Duration(milliseconds: 400),
       );
 
@@ -213,7 +210,6 @@ void main() {
             {'id': eventId, 'kind': 5},
           ],
           eventId: eventId,
-          eventKind: 5,
           timeout: const Duration(seconds: 3),
         );
 
@@ -266,7 +262,6 @@ void main() {
             {'id': eventId, 'kind': 5},
           ],
           eventId: eventId,
-          eventKind: 5,
           timeout: const Duration(milliseconds: 250),
         );
         await slowAdd;
@@ -326,7 +321,6 @@ void main() {
             {'id': eventId, 'kind': 5},
           ],
           eventId: eventId,
-          eventKind: 5,
           timeout: const Duration(seconds: 1),
         );
         await failedAdd;
