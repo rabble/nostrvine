@@ -225,6 +225,7 @@ void main() {
             body: VineBottomSheetHeader(
               title: const Text('Test Title'),
               trailing: Semantics(
+                key: const Key('trailing'),
                 button: true,
                 label: 'Sort comments',
                 child: const SizedBox(width: 120, height: 40),
@@ -234,6 +235,8 @@ void main() {
         ),
       );
 
+      // The slot is in the tree twice, but only the real one is announced.
+      expect(find.byKey(const Key('trailing')), findsNWidgets(2));
       expect(find.bySemanticsLabel('Sort comments'), findsOneWidget);
 
       semantics.dispose();
