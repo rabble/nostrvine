@@ -65,7 +65,14 @@ class _ProfileNameAndBio extends StatelessWidget {
                     color: context.vineColors.primaryText,
                   ),
                   // A kind-0 with empty name and display_name still falls
-                  // through to the generated handle without this (#6423).
+                  // through to the generated handle without this (#6423). Use
+                  // the route hint, then the full npub, as the non-generated
+                  // steady state so the header never renders a blank title.
+                  anonymousName: _ownProfileNamePlaceholder(
+                    isOwnProfile: isOwnProfile,
+                    displayNameHint: displayNameHint,
+                    userIdHex: userIdHex,
+                  ),
                   neverGenerateName: isOwnProfile,
                 )
               else
@@ -74,7 +81,13 @@ class _ProfileNameAndBio extends StatelessWidget {
                   style: VineTheme.titleLargeFont(
                     color: context.vineColors.primaryText,
                   ),
-                  anonymousName: displayNameHint,
+                  anonymousName:
+                      _ownProfileNamePlaceholder(
+                        isOwnProfile: isOwnProfile,
+                        displayNameHint: displayNameHint,
+                        userIdHex: userIdHex,
+                      ) ??
+                      displayNameHint,
                   // Never show the signed-in user a generated handle in place
                   // of their own name — that is the #6423 report verbatim.
                   neverGenerateName: isOwnProfile,
@@ -123,6 +136,17 @@ class _ProfileNameAndBio extends StatelessWidget {
       ],
     );
   }
+}
+
+String? _ownProfileNamePlaceholder({
+  required bool isOwnProfile,
+  required String? displayNameHint,
+  required String userIdHex,
+}) {
+  if (!isOwnProfile) return null;
+  final hint = displayNameHint?.trim();
+  if (hint != null && hint.isNotEmpty) return hint;
+  return NostrKeyUtils.encodePubKey(userIdHex);
 }
 
 /// Horizontal inset applied to the name/bio identity block. Shared so the

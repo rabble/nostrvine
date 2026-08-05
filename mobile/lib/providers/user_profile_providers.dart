@@ -29,11 +29,17 @@ final userProfileStatsReactiveProvider =
       // REST returns instead of stalling on "—" until relays connect (#5863).
       final repo = ref.watch(profileReadRepositoryProvider);
       if (repo == null) {
-        return const Stream<ProfileStats?>.empty();
+        // Match userProfileReactiveProvider: emit null instead of an empty
+        // stream so callers get AsyncData(null), not permanent AsyncLoading.
+        return _nullProfileStatsStream();
       }
 
       return _watchProfileStats(repo, pubkey);
     });
+
+Stream<ProfileStats?> _nullProfileStatsStream() async* {
+  yield null;
+}
 
 Stream<ProfileStats?> _watchProfileStats(
   ProfileReader repo,

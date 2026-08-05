@@ -231,8 +231,8 @@ void main() {
         authServiceProvider.overrideWithValue(authService),
         deviceScopeProvider.overrideWithValue(deviceScope),
         currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-        // Null repository keeps userProfileReactiveProvider on an empty stream,
-        // so the account header renders from fallbacks without any network.
+        // Null repository keeps profile reads offline, so the account header
+        // renders from fallbacks without any network.
         profileRepositoryProvider.overrideWithValue(null),
         profileReadRepositoryProvider.overrideWithValue(null),
         draftStorageServiceProvider.overrideWithValue(draftStorageService),

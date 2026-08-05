@@ -490,7 +490,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleSaveWithWatermark() async {
-    final profileRepo = ref.read(profileRepositoryProvider);
+    final profileRepo = ref.read(profileReadRepositoryProvider);
     final profile = await profileRepo?.getCachedProfile(
       pubkey: widget.video.pubkey,
     );

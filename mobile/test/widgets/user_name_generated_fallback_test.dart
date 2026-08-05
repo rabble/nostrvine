@@ -16,12 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
-  // The reporter's own pubkey, from the Zendesk ticket behind #6423.
+  // Synthetic full-length pubkey chosen for a stable generated fallback.
   const pubkey =
-      '389ea93870dd1240e67e4d957cdc8949be0d7dd5f6fd927ee1912ebe084181d3';
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
   /// What `UserProfile.defaultDisplayNameFor` invents for [pubkey] — the
-  /// string the reporter saw in place of their own name.
+  /// kind of string the reporter saw in place of their own name.
   final generatedName = UserProfile.defaultDisplayNameFor(pubkey);
 
   Future<Widget> buildSubject({
@@ -163,6 +163,46 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text(generatedName), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'uses anonymousName as the steady state for a nameless own profile',
+      (tester) async {
+        // Own-profile surfaces pass a concrete handle/npub placeholder so the
+        // generated-name suppression does not leave the title line blank.
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final nameless = UserProfile(
+          pubkey: pubkey,
+          rawData: const {},
+          createdAt: DateTime.utc(2026),
+          eventId: 'kind0_event_id',
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: Center(
+                  child: UserName.fromUserProfile(
+                    nameless,
+                    anonymousName: 'npub_placeholder',
+                    neverGenerateName: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('npub_placeholder'), findsOneWidget);
+        expect(find.text(generatedName), findsNothing);
+        expect(find.text(''), findsNothing);
       },
     );
   });
