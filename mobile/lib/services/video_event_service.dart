@@ -486,10 +486,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
   }
 
-  /// Set the broken-video tracker used to filter videos confirmed unavailable
-  /// (hard 404). Marked entries are persisted by the tracker, so this keeps
-  /// videos that 404'd in the fullscreen player out of every list surface
-  /// (home, profile, hashtag, grids) across app restarts. See #5237.
+  /// Set the broken-video tracker used to filter videos confirmed unavailable.
+  /// Marked entries are persisted by the tracker, so this keeps unavailable
+  /// videos out of every list surface (home, profile, hashtag, grids) across
+  /// app restarts. See #5237 / #6251.
   void setBrokenVideoTracker(BrokenVideoTracker tracker) {
     _brokenVideoTracker = tracker;
     Log.debug(
@@ -4901,12 +4901,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return; // Don't resurrect deleted videos
     }
 
-    // Filter out videos confirmed unavailable (hard 404) so they don't
-    // resurface on any list surface after being skipped in the player. See
-    // #5237.
+    // Filter out videos confirmed unavailable so they don't resurface on any
+    // list surface after being skipped in the player. See #5237 / #6251.
     if (_brokenVideoTracker?.isVideoBroken(videoEvent.id) == true) {
       Log.debug(
-        'Filtering out unavailable (404) video ${videoEvent.id} from $subscriptionType feed',
+        'Filtering out confirmed-unavailable video ${videoEvent.id} from $subscriptionType feed',
         name: 'VideoEventService',
         category: LogCategory.video,
       );

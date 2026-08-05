@@ -238,9 +238,11 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         .read(videoEventServiceProvider)
         .removedVideoIds;
 
-    // Persist confirmed-404 ids so the video stays filtered out of every list
-    // surface (feed, profile, hashtag, grids) across restarts. The bloc only
-    // fires this after a HEAD request confirms a hard 404 (#5237).
+    // Persist moderation-confirmed unavailable ids so the video stays filtered
+    // out of every list surface (feed, profile, hashtag, grids) across
+    // restarts. The bloc only fires this after DeadMediaFeedGuard confirms both
+    // a 404 and a requester-independent blocked/quarantined moderation
+    // verdict (#6251).
     void persistConfirmedUnavailable(String videoId) {
       unawaited(
         ref
@@ -248,7 +250,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             .then(
               (tracker) => tracker.markVideoBroken(
                 videoId,
-                'Confirmed 404 in fullscreen feed',
+                'Confirmed moderation-unavailable 404 in fullscreen feed',
               ),
             )
             .catchError((Object error) {
@@ -261,11 +263,11 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
       );
     }
 
-    // Filter videos confirmed unavailable (persisted hard 404) out of the
-    // fullscreen list at the stream boundary. This covers static / by-id
-    // sources (liked, saved, reposts, collabs, curated lists) whose
-    // repositories don't run the central feed filters, so a video that 404'd
-    // in a previous session won't reappear when opened fullscreen. Reads live
+    // Filter persisted unavailable videos out of the fullscreen list at the
+    // stream boundary. This covers static / by-id sources (liked, saved,
+    // reposts, collabs, curated lists) whose repositories don't run the central
+    // feed filters, so a video confirmed unavailable in a previous session
+    // won't reappear when opened fullscreen. Reads live
     // tracker state on every call via the provider (rather than capturing a
     // snapshot in `create:`, which would stay `null` if the tracker's async
     // init hadn't resolved by first build and never recover): before init
@@ -277,6 +279,18 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
           data: (tracker) => tracker.isVideoBroken(videoId),
           orElse: () => false,
         );
+
+    Future<bool> confirmVideoUnavailable({
+      required String? videoUrl,
+      String? explicitSha256,
+    }) async {
+      final guard = ref.read(deadMediaFeedGuardProvider).asData?.value;
+      if (guard == null) return false;
+      return guard.isConfirmedUnavailable(
+        videoUrl: videoUrl,
+        explicitSha256: explicitSha256,
+      );
+    }
 
     // Stable, keepAlive repository; reads `publicKey` live at publish time, so
     // capturing it once in `create:` stays correct across auth changes (no
@@ -295,6 +309,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             removedIdsStream: removedIdsStream,
             onLoadMore: () => unawaited(feedRepository.loadMore(source)),
             onVideoConfirmedUnavailable: persistConfirmedUnavailable,
+            confirmVideoUnavailable: confirmVideoUnavailable,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
             blockFilter: blockFilter,

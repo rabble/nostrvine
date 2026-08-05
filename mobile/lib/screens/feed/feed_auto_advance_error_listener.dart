@@ -15,13 +15,14 @@ import 'package:openvine/blocs/video_playback_status/video_playback_status_state
 /// Behavior by mode (see #5953):
 /// * **Auto mode** ([isAutoAdvanceActive] true) — skips immediately on any
 ///   non-ready status (unchanged), and additionally, when
-///   [confirmAndMarkMissing] is supplied, marks a HEAD-confirmed hard-404 item
-///   broken (fire-and-forget) so it is pruned from every surface on refetch.
+///   [confirmAndMarkMissing] is supplied, marks a moderation-confirmed
+///   unavailable item broken (fire-and-forget) so it is pruned from every
+///   surface on refetch.
 /// * **Manual scroll** — skips *only* when [confirmAndMarkMissing] resolves
-///   `true` (a HEAD-confirmed hard 404, which also marks it broken). Transient
-///   or non-404 failures keep the error tile, so a network flake can't evict a
-///   valid video. Without a [confirmAndMarkMissing] callback, manual scroll
-///   never auto-skips (prior behavior).
+///   `true` (which also marks it broken). Transient or recoverable failures
+///   keep the error tile, so a network flake or age-gate can't evict a valid
+///   video. Without a [confirmAndMarkMissing] callback, manual scroll never
+///   auto-skips (prior behavior).
 ///
 /// Gated on [isActive] so background / preloaded pages can't yank the feed
 /// forward if they fail while the user is still on an earlier page.
@@ -103,15 +104,17 @@ class _FeedAutoAdvancePastErrorListenerState
     final confirm = widget.confirmAndMarkMissing;
     if (widget.isAutoAdvanceActive) {
       // Auto already skips any non-ready item — preserve that immediately, and
-      // mark a hard-404 item broken (fire-and-forget) so it's pruned on refetch.
+      // mark a confirmed unavailable item broken (fire-and-forget) so it's
+      // pruned on refetch.
       _firedForCurrentBreak = true;
       _deferSkip();
       if (confirm != null) unawaited(confirm());
       return;
     }
 
-    // Manual scroll: only skip past a HEAD-confirmed hard 404 (which also
-    // marks it broken). Transient / non-404 failures keep the error tile.
+    // Manual scroll: only skip past a moderation-confirmed unavailable item
+    // (which also marks it broken). Transient / recoverable failures keep the
+    // error tile.
     //
     // Don't latch `_firedForCurrentBreak` when the guard isn't loaded yet —
     // no confirmation attempt happened, so `didUpdateWidget` must be able to

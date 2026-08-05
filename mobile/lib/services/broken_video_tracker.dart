@@ -7,15 +7,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class BrokenVideoTracker {
-  static const String _storageKey = 'broken_video_urls';
-  static const String _timestampKey = 'broken_video_timestamps';
+  BrokenVideoTracker({String? ownerPubkey})
+    : _storageKey = _scopedKey('broken_video_urls', ownerPubkey),
+      _timestampKey = _scopedKey('broken_video_timestamps', ownerPubkey);
+
   static const Duration _cleanupDuration = Duration(
     days: 7,
   ); // Clean up old entries after 7 days
 
+  final String _storageKey;
+  final String _timestampKey;
   late SharedPreferences _prefs;
   Set<String> _brokenVideoIds = {};
   Map<String, DateTime> _brokenTimestamps = {};
+
+  static String _scopedKey(String baseKey, String? ownerPubkey) {
+    final scope = ownerPubkey == null || ownerPubkey.isEmpty
+        ? 'anonymous'
+        : ownerPubkey;
+    return '${baseKey}_$scope';
+  }
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();

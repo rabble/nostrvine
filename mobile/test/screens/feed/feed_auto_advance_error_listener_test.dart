@@ -260,7 +260,7 @@ void main() {
     );
 
     testWidgets(
-      'manual scroll: skips when confirmAndMarkMissing confirms a hard 404',
+      'manual scroll: skips when confirmAndMarkMissing confirms unavailable media',
       (tester) async {
         var confirmCalls = 0;
         final updated = VideoPlaybackStatusState().withStatus(
@@ -282,7 +282,7 @@ void main() {
             onSkip: () => skipCount++,
             confirmAndMarkMissing: () async {
               confirmCalls++;
-              return true; // confirmed hard 404
+              return true; // confirmed unavailable
             },
           ),
         );
@@ -430,7 +430,7 @@ void main() {
               'confirmAndMarkMissing becomes available for this same item',
         );
 
-        confirmCompleter.complete(true); // confirmed hard 404
+        confirmCompleter.complete(true); // confirmed unavailable
         // A bare completer resolving outside any widget rebuild doesn't
         // schedule a frame on its own, so nudge the test binding to draw one
         // — otherwise pump() only flushes microtasks and the post-frame
@@ -486,7 +486,7 @@ void main() {
           ),
         );
 
-        confirmCompleter.complete(true); // confirms a hard 404, too late
+        confirmCompleter.complete(true); // confirms unavailable media, too late
         await tester.pump();
         await tester.pump();
 

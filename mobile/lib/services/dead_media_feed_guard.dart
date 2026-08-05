@@ -1,8 +1,9 @@
-// ABOUTME: Confirms a feed item's media is a hard 404 and marks it broken so
-// ABOUTME: the home feed can skip past + persistently prune it. See #5953.
+// ABOUTME: Confirms feed media is 404 plus moderation-unavailable before
+// ABOUTME: the home feed skips past + persistently prunes it. See #6251.
 
 import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/media_availability_checker.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 
 /// Decides whether a feed item whose player failed should be treated as
 /// permanently unavailable.
@@ -18,44 +19,66 @@ import 'package:openvine/services/media_availability_checker.dart';
 /// via [MediaAvailabilityChecker] — NOT the playback error string, which is
 /// platform-divergent (see #5953 findings).
 ///
-/// The 404 is deliberately the *only* status that acts here. An age-restricted
-/// blob answers **401**, and the feed already has a real affordance for it: the
-/// player's `ageRestricted` status routes to the Verify-age overlay, and
-/// `FeedLoadingModerationCubit` recovers a mis-classified 401 asynchronously
-/// (moderation-api → auth → retry). Skipping on 401 would beat that recovery
-/// and silently scroll past content the viewer can watch, so this guard leaves
-/// 401 alone entirely. See #6251 for the age-gate work.
+/// A 404 is only the first gate. Blossom can answer 404 for blobs that
+/// moderation still classifies as age-restricted, so a HEAD-confirmed 404 is
+/// persisted only when the requester-independent moderation status confirms the
+/// blob is blocked or quarantined. Age-restricted and unknown moderation states
+/// stay recoverable and must not be marked broken. See #6251.
 class DeadMediaFeedGuard {
   const DeadMediaFeedGuard({
     required BrokenVideoTracker brokenVideoTracker,
+    required VideoModerationStatusService moderationStatusService,
     MediaAvailabilityChecker availabilityChecker =
         const MediaAvailabilityChecker(),
   }) : _tracker = brokenVideoTracker,
-       _checker = availabilityChecker;
+       _checker = availabilityChecker,
+       _moderationStatusService = moderationStatusService;
 
   final BrokenVideoTracker _tracker;
   final MediaAvailabilityChecker _checker;
+  final VideoModerationStatusService _moderationStatusService;
 
-  /// Returns `true` iff [videoUrl] is a HEAD-confirmed hard 404, in which case
-  /// [videoId] is persisted as broken so [BrokenVideoTracker.isVideoBroken]
-  /// (and therefore `filterVideoList`) drops it from every list surface across
-  /// restarts.
+  /// Returns `true` iff [videoUrl] is a HEAD-confirmed 404 and moderation
+  /// confirms the blob is blocked or quarantined.
   ///
   /// Returns `false` when [videoUrl] is missing, reachable, returns any status
-  /// other than 404, or the HEAD request fails with a network error — the
-  /// caller must then treat the failure as transient and keep the item. This
-  /// conservative gate is what prevents a one-off network flake from evicting a
-  /// valid video.
-  Future<bool> confirmAndMarkMissing({
-    required String videoId,
+  /// other than 404, the HEAD request fails, the blob hash cannot be resolved,
+  /// the moderation lookup fails, or moderation says the blob is only
+  /// age-restricted. The caller must then keep the item recoverable.
+  Future<bool> isConfirmedUnavailable({
     required String? videoUrl,
+    String? explicitSha256,
   }) async {
     if (videoUrl == null || videoUrl.isEmpty) return false;
     final missing = await _checker.isConfirmedMissing(videoUrl);
     if (!missing) return false;
+
+    final sha256 = VideoModerationStatusService.resolveSha256(
+      explicitSha256: explicitSha256,
+      videoUrl: videoUrl,
+    );
+    if (sha256 == null) return false;
+
+    final status = await _moderationStatusService.fetchStatus(sha256);
+    return status?.blocked == true || status?.quarantined == true;
+  }
+
+  /// Persists [videoId] as broken iff [isConfirmedUnavailable] returns `true`,
+  /// so [BrokenVideoTracker.isVideoBroken] (and therefore `filterVideoList`)
+  /// drops it from every list surface across restarts.
+  Future<bool> confirmAndMarkMissing({
+    required String videoId,
+    required String? videoUrl,
+    String? explicitSha256,
+  }) async {
+    final unavailable = await isConfirmedUnavailable(
+      videoUrl: videoUrl,
+      explicitSha256: explicitSha256,
+    );
+    if (!unavailable) return false;
     await _tracker.markVideoBroken(
       videoId,
-      'Confirmed 404 in home feed',
+      'Confirmed moderation-unavailable 404 in home feed',
     );
     return true;
   }

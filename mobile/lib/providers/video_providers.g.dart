@@ -269,7 +269,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'e2aabe88e273a2b1748f596b7b32fa920122911d';
+String _$videoEventServiceHash() => r'a7c6b23e1f8d4f9fd8828e8b4adab600999eccd5';
 
 /// Video event publisher for publishing video events to Nostr relays
 
@@ -683,20 +683,20 @@ final class BrokenVideoTrackerProvider
 }
 
 String _$brokenVideoTrackerHash() =>
-    r'c22a5abecce15fbb6194948c3b23af91f1a7ebab';
+    r'a0b2af154496e50f633f49069986b3c0ee1f5585';
 
-/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-/// broken so the home feed can skip past + persistently prune it. Reuses the
-/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-/// surface's `filterVideoList`. See #5953.
+/// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+/// says blocked/quarantined before marking it broken. Reuses the singleton
+/// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+/// `filterVideoList`. See #5953 / #6251.
 
 @ProviderFor(deadMediaFeedGuard)
 final deadMediaFeedGuardProvider = DeadMediaFeedGuardProvider._();
 
-/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-/// broken so the home feed can skip past + persistently prune it. Reuses the
-/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-/// surface's `filterVideoList`. See #5953.
+/// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+/// says blocked/quarantined before marking it broken. Reuses the singleton
+/// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+/// `filterVideoList`. See #5953 / #6251.
 
 final class DeadMediaFeedGuardProvider
     extends
@@ -708,10 +708,10 @@ final class DeadMediaFeedGuardProvider
     with
         $FutureModifier<DeadMediaFeedGuard>,
         $FutureProvider<DeadMediaFeedGuard> {
-  /// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-  /// broken so the home feed can skip past + persistently prune it. Reuses the
-  /// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-  /// surface's `filterVideoList`. See #5953.
+  /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+  /// says blocked/quarantined before marking it broken. Reuses the singleton
+  /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+  /// `filterVideoList`. See #5953 / #6251.
   DeadMediaFeedGuardProvider._()
     : super(
         from: null,
@@ -739,7 +739,7 @@ final class DeadMediaFeedGuardProvider
 }
 
 String _$deadMediaFeedGuardHash() =>
-    r'c0eed3bb2461ee831a2619dd662ebaf88f0da3a5';
+    r'faeda2741f550e4c61e2e7d8e90bbc2171aa5c77';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
