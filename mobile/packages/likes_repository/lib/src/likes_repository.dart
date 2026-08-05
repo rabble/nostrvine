@@ -1053,10 +1053,18 @@ class LikesRepository {
       downvotes[eventId] = 0;
     }
 
+    // Retracted votes have to be excluded here, not just in
+    // [getUserVoteStatuses]. The coordinate leg reaches reactions cast against
+    // every earlier revision of the target, including ones their author has
+    // since deleted — switching an upvote to a downvote on an edited reply
+    // publishes exactly that pair, and counting both leaves netScore 0, which
+    // `comment_item.dart` renders by hiding the score outright (#6124).
+    final reactionsById = {for (final event in events) event.id: event};
+    final deletedReactionIds = await _deletedReactionIds(reactionsById);
+
     final knownEventIds = eventIds.toSet();
-    final counted = <String>{};
-    for (final event in events) {
-      if (!counted.add(event.id)) continue;
+    for (final event in reactionsById.values) {
+      if (deletedReactionIds.contains(event.id)) continue;
       final targetId = _resolveVoteTarget(
         event,
         knownEventIds,
@@ -1698,46 +1706,7 @@ class LikesRepository {
       return {for (final eventId in eventIds) eventId: <String>[]};
     }
 
-    // Scope the deletion query to the reaction ids we fetched. The consumer
-    // below only honors a Kind 5 whose `e` tag points at a fetched reaction
-    // AND whose author matches it, so `#e`-scoping is semantics-preserving and
-    // an `authors:` filter is redundant (dropped to halve the frame size).
-    // Chunk the `#e` list so a very high-engagement video can't build a single
-    // REQ frame over the relay's `max_message_length` — an oversized frame
-    // errors the socket and the query fails open, counting deletes (#5751).
-    final reactionIds = allReactionsById.keys.toList();
-    final deletionEvents = <Event>[];
-    if (reactionIds.isNotEmpty) {
-      final chunkedDeletions = await Future.wait([
-        for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
-          _nostrClient.queryEvents([
-            Filter(
-              kinds: const [EventKind.eventDeletion],
-              e: reactionIds.sublist(
-                i,
-                min(i + _deletionReqEidChunkSize, reactionIds.length),
-              ),
-            ),
-          ]),
-      ]);
-      chunkedDeletions.forEach(deletionEvents.addAll);
-    }
-
-    // Only honor a Kind 5 deletion when its author matches the reaction's
-    // author — otherwise anyone could suppress someone else's like by
-    // publishing a deletion that references the other user's reaction id.
-    final deletedReactionIds = <String>{};
-    for (final deletion in deletionEvents) {
-      for (final tag in deletion.tags) {
-        if (tag.length > 1 && tag[0] == 'e') {
-          final targetId = tag[1];
-          final target = allReactionsById[targetId];
-          if (target != null && target.pubkey == deletion.pubkey) {
-            deletedReactionIds.add(targetId);
-          }
-        }
-      }
-    }
+    final deletedReactionIds = await _deletedReactionIds(allReactionsById);
 
     return {
       for (final entry in reactionsByTarget.entries)
@@ -1746,6 +1715,54 @@ class LikesRepository {
           deletedReactionIds: deletedReactionIds,
         ),
     };
+  }
+
+  /// Resolves which of [reactionsById] their own author has since retracted.
+  ///
+  /// Scopes the deletion query to the reaction ids already fetched, so an
+  /// `authors:` filter would be redundant (dropped to halve the frame size).
+  /// Chunks the `#e` list so a very high-engagement target can't build a
+  /// single REQ frame over the relay's `max_message_length` — an oversized
+  /// frame errors the socket and the query fails open, counting deletes
+  /// (#5751).
+  ///
+  /// Only honors a Kind 5 whose author matches the reaction's author —
+  /// otherwise anyone could suppress someone else's vote by publishing a
+  /// deletion that references the other user's reaction id.
+  Future<Set<String>> _deletedReactionIds(
+    Map<String, Event> reactionsById,
+  ) async {
+    final reactionIds = reactionsById.keys.toList();
+    if (reactionIds.isEmpty) return const {};
+
+    final chunkedDeletions = await Future.wait([
+      for (var i = 0; i < reactionIds.length; i += _deletionReqEidChunkSize)
+        _nostrClient.queryEvents([
+          Filter(
+            kinds: const [EventKind.eventDeletion],
+            e: reactionIds.sublist(
+              i,
+              min(i + _deletionReqEidChunkSize, reactionIds.length),
+            ),
+          ),
+        ]),
+    ]);
+
+    final deleted = <String>{};
+    for (final chunk in chunkedDeletions) {
+      for (final deletion in chunk) {
+        for (final tag in deletion.tags) {
+          if (tag.length > 1 && tag[0] == 'e') {
+            final targetId = tag[1];
+            final target = reactionsById[targetId];
+            if (target != null && target.pubkey == deletion.pubkey) {
+              deleted.add(targetId);
+            }
+          }
+        }
+      }
+    }
+    return deleted;
   }
 
   Set<String> _reactionTargetEventIds(

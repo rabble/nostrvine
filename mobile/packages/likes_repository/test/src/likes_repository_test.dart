@@ -62,8 +62,12 @@ void main() {
     }
 
     // Helper to create a mock deletion event
-    MockEvent createMockDeletion(List<String> deletedEventIds) {
+    MockEvent createMockDeletion(
+      List<String> deletedEventIds, {
+      String authorPubkey = 'reaction_author_pubkey_1234567890abcdef',
+    }) {
       final event = MockEvent();
+      when(() => event.pubkey).thenReturn(authorPubkey);
       when(
         () => event.tags,
       ).thenReturn(deletedEventIds.map((id) => ['e', id]).toList());
@@ -4360,6 +4364,7 @@ void main() {
           mockQueryEventsSequence([
             [reaction],
             [reaction],
+            <Event>[], // no deletions
           ]);
 
           repository = createRepository(withLocalStorage: false);
@@ -4371,13 +4376,21 @@ void main() {
 
           expect(counts.upvotes[editedId], equals(1));
 
+          // Three single-filter requests: by `e`, by `a`, then the Kind 5
+          // sweep over the reactions those returned. Every one has to stay
+          // single-filter — NostrClient skips the local event cache the
+          // moment a call carries more than one.
           final captured = verify(
             () => mockNostrClient.queryEvents(captureAny()),
           ).captured.cast<List<Filter>>();
-          expect(captured, hasLength(2));
+          expect(captured, hasLength(3));
           expect(captured.every((filters) => filters.length == 1), isTrue);
           expect(captured[0].single.e, equals([editedId]));
           expect(captured[1].single.a, equals([coordinate]));
+          expect(
+            captured[2].single.kinds,
+            equals([EventKind.eventDeletion]),
+          );
         },
       );
 
@@ -4471,6 +4484,87 @@ void main() {
 
         expect(counts.upvotes[editedId], equals(1));
         expect(counts.upvotes[rootCommentId], equals(0));
+      });
+
+      test('getVoteCounts excludes a vote retracted on an earlier '
+          'revision', () async {
+        // Switching an upvote to a downvote on an edited reply publishes a
+        // Kind 5 for the pre-edit reaction and a new downvote on the current
+        // one. The coordinate leg reaches both, so counting the retracted
+        // upvote would leave netScore 0 — which comment_item renders by
+        // hiding the score entirely.
+        const voter = 'some_voter_pubkey_1234567890abcdef';
+        final retractedUpvote = createMockReaction(
+          id: 'retracted_upvote',
+          targetEventId: supersededId,
+          authorPubkey: voter,
+          tags: [
+            ['e', supersededId],
+            ['a', coordinate],
+          ],
+        );
+        final liveDownvote = createMockReaction(
+          id: 'live_downvote',
+          targetEventId: editedId,
+          authorPubkey: voter,
+          content: '-',
+          tags: [
+            ['e', editedId],
+            ['a', coordinate],
+          ],
+        );
+        mockQueryEventsSequence([
+          [liveDownvote],
+          [retractedUpvote, liveDownvote],
+          [
+            createMockDeletion(['retracted_upvote'], authorPubkey: voter),
+          ],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(0));
+        expect(counts.downvotes[editedId], equals(1));
+      });
+
+      test('getVoteCounts ignores a deletion published by someone other than '
+          'the voter', () async {
+        // Otherwise anyone could suppress another user's vote by referencing
+        // its reaction id.
+        const voter = 'some_voter_pubkey_1234567890abcdef';
+        final upvote = createMockReaction(
+          id: 'honest_upvote',
+          targetEventId: editedId,
+          authorPubkey: voter,
+          tags: [
+            ['e', editedId],
+            ['a', coordinate],
+          ],
+        );
+        mockQueryEventsSequence([
+          [upvote],
+          [upvote],
+          [
+            createMockDeletion(
+              ['honest_upvote'],
+              authorPubkey: 'an_impostor_pubkey_1234567890abcdef',
+            ),
+          ],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts(
+          [editedId],
+          addressableIds: const {editedId: coordinate},
+        );
+
+        expect(counts.upvotes[editedId], equals(1));
       });
 
       test('getVoteCounts ignores an unrelated coordinate', () async {
