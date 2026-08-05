@@ -619,6 +619,94 @@ void main() {
         expect(find.text('Shared by Publisher Pat'), findsOneWidget);
       });
 
+      testWidgets('uses distinct semantics for creator and publisher credits', (
+        tester,
+      ) async {
+        const creatorPubkey =
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+        const publisherPubkey =
+            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+        final testSound = createTestAudioEvent(
+          id: 'sound1',
+          pubkey: publisherPubkey,
+        ).copyWith(creatorName: 'Alice Beats', creatorPubkey: creatorPubkey);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              userProfileReactiveProvider(publisherPubkey).overrideWith((
+                ref,
+              ) async* {
+                yield UserProfile(
+                  pubkey: publisherPubkey,
+                  rawData: const {},
+                  createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+                  eventId: 'publisher-profile-event',
+                  displayName: 'Publisher Pat',
+                );
+              }),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('By Alice Beats'), findsOneWidget);
+        expect(find.text('Shared by Publisher Pat'), findsOneWidget);
+        expect(
+          find.bySemanticsIdentifier('sound_detail_creator_attribution'),
+          findsOneWidget,
+        );
+        expect(
+          find.bySemanticsIdentifier('sound_detail_publisher_attribution'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not profile-link draft-local imported audio', (
+        tester,
+      ) async {
+        final testSound = AudioEvent.fromLocalImport(
+          id: '${AudioEvent.localImportMarker}_sound1',
+          filePath: '/tmp/sound.m4a',
+          createdAt: 1700000000,
+          title: 'Imported loop',
+          mimeType: 'audio/mp4',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: testSound),
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text('Imported loop'), findsOneWidget);
+        expect(find.textContaining('By '), findsNothing);
+        expect(
+          find.bySemanticsIdentifier('sound_detail_creator_attribution'),
+          findsNothing,
+        );
+      });
+
       testWidgets('omits the source link when the source is not a URL', (
         tester,
       ) async {

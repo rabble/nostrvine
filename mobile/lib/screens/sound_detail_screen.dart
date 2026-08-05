@@ -31,6 +31,11 @@ import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+const _soundDetailCreatorAttributionIdentifier =
+    'sound_detail_creator_attribution';
+const _soundDetailPublisherAttributionIdentifier =
+    'sound_detail_publisher_attribution';
+
 /// Screen displaying details of a specific sound and videos using it.
 ///
 /// Features:
@@ -569,6 +574,8 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                       _ProfileAttributionInfo(
                         text: context.l10n.soundCreatorBy(profileCreditName),
                         pubkey: profileCreditPubkey,
+                        semanticsIdentifier:
+                            _soundDetailCreatorAttributionIdentifier,
                         license: _license,
                         sourceUrl: _sourceUrl,
                       )
@@ -582,6 +589,8 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                       _ProfileCreditLink(
                         text: context.l10n.soundSharedBy(publisherName),
                         pubkey: sound.pubkey,
+                        semanticsIdentifier:
+                            _soundDetailPublisherAttributionIdentifier,
                       ),
                     if (widget.reuseAllowed case final reuseAllowed?)
                       Text(
@@ -711,7 +720,7 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
   }
 
   String? _profileCreditPubkey(AudioEvent sound) {
-    if (sound.isBundled) return null;
+    if (sound.isBundled || sound.isLocalImport) return null;
     final creatorPubkey = sound.creatorPubkey;
     if (creatorPubkey != null && creatorPubkey.isNotEmpty) {
       return creatorPubkey;
@@ -726,12 +735,14 @@ class _ProfileAttributionInfo extends StatelessWidget {
   const _ProfileAttributionInfo({
     required this.text,
     required this.pubkey,
+    required this.semanticsIdentifier,
     this.license,
     this.sourceUrl,
   });
 
   final String text;
   final String pubkey;
+  final String semanticsIdentifier;
   final String? license;
   final String? sourceUrl;
 
@@ -739,14 +750,16 @@ class _ProfileAttributionInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text.rich(
       TextSpan(
-        style: VineTheme.bodySmallFont(
-          color: context.vineColors.secondaryText,
-        ),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
         children: [
           WidgetSpan(
             alignment: PlaceholderAlignment.baseline,
             baseline: TextBaseline.alphabetic,
-            child: _ProfileCreditLink(text: text, pubkey: pubkey),
+            child: _ProfileCreditLink(
+              text: text,
+              pubkey: pubkey,
+              semanticsIdentifier: semanticsIdentifier,
+            ),
           ),
           if (license != null) TextSpan(text: ' · $license'),
           if (sourceUrl != null) ...[
@@ -764,15 +777,20 @@ class _ProfileAttributionInfo extends StatelessWidget {
 }
 
 class _ProfileCreditLink extends StatelessWidget {
-  const _ProfileCreditLink({required this.text, required this.pubkey});
+  const _ProfileCreditLink({
+    required this.text,
+    required this.pubkey,
+    required this.semanticsIdentifier,
+  });
 
   final String text;
   final String pubkey;
+  final String semanticsIdentifier;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      identifier: 'sound_detail_creator_attribution',
+      identifier: semanticsIdentifier,
       button: true,
       label: context.l10n.profileChipTapHint(text),
       child: GestureDetector(
@@ -781,7 +799,7 @@ class _ProfileCreditLink extends StatelessWidget {
         child: Text(
           text,
           style: VineTheme.bodySmallFont(
-            color: VineTheme.onSurfaceVariant,
+            color: context.vineColors.secondaryText,
           ).copyWith(decoration: TextDecoration.underline),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -812,7 +830,7 @@ class _AttributionInfo extends StatelessWidget {
 
     return Text.rich(
       TextSpan(
-        style: TextStyle(color: context.vineColors.secondaryText, fontSize: 12),
+        style: VineTheme.bodySmallFont(color: context.vineColors.secondaryText),
         children: [
           TextSpan(text: attributionText),
           if (sourceUrl != null) ...[
@@ -845,9 +863,7 @@ class _SourceLink extends StatelessWidget {
       },
       child: Text(
         context.l10n.soundViewSource,
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
+        style: VineTheme.bodySmallFont(color: VineTheme.vineGreen).copyWith(
           decoration: TextDecoration.underline,
           decorationColor: VineTheme.vineGreen,
         ),
