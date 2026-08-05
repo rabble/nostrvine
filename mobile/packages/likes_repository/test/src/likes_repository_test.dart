@@ -1134,6 +1134,86 @@ void main() {
         ).called(1);
       });
 
+      test('resolves a downvote by coordinate after the target is edited '
+          '(#6124)', () async {
+        // An edit mints a new event id under the same coordinate. Without the
+        // coordinate companion index the pre-edit downvote is unreachable, so
+        // the deletion is never published and re-tapping mints a duplicate.
+        const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+        const supersededId = 'superseded_event_id_1234567890abcdef';
+        const editedId = 'edited_event_id_1234567890abcdef';
+
+        repository = createRepository(withLocalStorage: false);
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: supersededId,
+            content: '-',
+          ),
+        );
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => MockEvent());
+
+        await repository.downvoteEvent(
+          eventId: supersededId,
+          authorPubkey: testAuthorPubkey,
+          addressableId: coordinate,
+        );
+
+        // The edited revision answers to a different id, same coordinate.
+        await repository.removeDownvote(editedId, addressableId: coordinate);
+
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).called(1);
+      });
+
+      test('passes the coordinate through to sendLike (#6124)', () async {
+        const coordinate = '34236:$testAuthorPubkey:reply-d-tag';
+        repository = createRepository(withLocalStorage: false);
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+            content: '-',
+          ),
+        );
+
+        await repository.downvoteEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+          targetKind: 34236,
+          addressableId: coordinate,
+        );
+
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '-',
+            addressableId: coordinate,
+            targetAuthorPubkey: testAuthorPubkey,
+            targetKind: 34236,
+          ),
+        ).called(1);
+      });
+
       test(
         'throws NotDownvotedException when neither cache nor relay has one',
         () async {
