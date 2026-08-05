@@ -25,6 +25,11 @@ void main() {
             '-----BEGIN PGP PUBLIC KEY BLOCK-----\ntest_public_key\n-----END PGP PUBLIC KEY BLOCK-----',
         deviceAttestation: 'attestation_token_xyz',
         timestamp: '2025-01-01T10:00:06Z',
+        c2paManifestId: 'urn:c2pa:test-manifest',
+        creatorBindingAssertionLabel: 'nostr.creator',
+        cawgIdentityAssertionLabel: 'cawg.identity',
+        creatorBindingPayloadJson: '{"pubkey":"pubkey123"}',
+        verifiedIdentityBundleJson: '{"issuer":"identity.example"}',
       );
 
       testProofJson = jsonEncode(testProofData.toJson());
@@ -198,6 +203,26 @@ void main() {
 
       const noAttestation = NativeProofData(videoHash: 'abc123');
       expect(noAttestation.hasMobileAttestation, isFalse);
+    });
+
+    test('NativeProofData withDeviceAttestation swaps only that field', () {
+      final replaced = testProofData.withDeviceAttestation('fresh_token');
+
+      expect(replaced.deviceAttestation, equals('fresh_token'));
+      expect(
+        replaced.toJson()..remove('deviceAttestation'),
+        equals(testProofData.toJson()..remove('deviceAttestation')),
+        reason:
+            'dropping a field here would silently weaken the published '
+            'proof',
+      );
+    });
+
+    test('NativeProofData withDeviceAttestation clears the field', () {
+      expect(
+        testProofData.withDeviceAttestation(null).deviceAttestation,
+        isNull,
+      );
     });
 
     test('NativeProofData verificationLevel returns correct levels', () {

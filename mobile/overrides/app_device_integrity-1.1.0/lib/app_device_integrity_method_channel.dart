@@ -11,10 +11,13 @@ class MethodChannelAppDeviceIntegrity extends AppDeviceIntegrityPlatform {
 
   @override
   Future<String?> getAttestationServiceSupport(
-      {required String challengeString, int? gcp}) async {
-    final token = await methodChannel.invokeMethod<String>(
-        'getAttestationServiceSupport',
-        <String, dynamic>{'challengeString': challengeString, 'gcp': gcp});
+      {required String challengeString, int? gcp, String? keyScope}) async {
+    final token = await methodChannel
+        .invokeMethod<String>('getAttestationServiceSupport', <String, dynamic>{
+      'challengeString': challengeString,
+      'gcp': gcp,
+      'keyScope': keyScope,
+    });
     return token;
   }
 }

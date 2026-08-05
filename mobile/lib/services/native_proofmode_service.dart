@@ -4,7 +4,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:app_device_integrity/app_device_integrity.dart';
 import 'package:c2pa_flutter/c2pa.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/foundation.dart';
@@ -231,20 +230,9 @@ class NativeProofModeService {
         category: .video,
       );
 
-      //add iOS specific device attestation
-      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-        final appAttestationPlugin = AppDeviceIntegrity();
-        final tokenReceived = await appAttestationPlugin
-            .getAttestationServiceSupport(challengeString: proofHash);
-        if (tokenReceived != null) {
-          final String? proofDir = await _channel.invokeMethod('getProofDir', {
-            'proofHash': proofHash,
-          });
-
-          final deviceAttestation = File('$proofDir/$proofHash.attest');
-          deviceAttestation.writeAsString(tokenReceived);
-        }
-      }
+      // iOS App Attest is deliberately absent here: it runs at publish time,
+      // where the account the proof goes out under is known. See
+      // [IosDeviceAttestationService].
 
       // Read proof metadata from native library
       final metadata = await NativeProofModeService.readProofMetadata(
@@ -471,7 +459,8 @@ class NativeProofModeService {
         );
       }
 
-      // Read local device attestation info
+      // Written by Android's notarization provider during generation. iOS
+      // leaves this absent and attests at publish time instead.
       final deviceAttestation = File('$proofDir/$proofHash.attest');
       if (deviceAttestation.existsSync()) {
         metadata[NativeProofData.metadataDeviceAttestationKey] =

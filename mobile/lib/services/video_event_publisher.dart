@@ -27,6 +27,7 @@ import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/event_api_client.dart';
+import 'package:openvine/services/ios_device_attestation_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
@@ -177,7 +178,10 @@ class VideoEventPublisher {
     SavedSoundsService? savedSoundsService,
     EventApiClient? eventApiClient,
     AudioReuseConsentChecker? audioReuseConsentChecker,
-  }) : _uploadManager = uploadManager,
+    IosDeviceAttestationService? iosDeviceAttestationService,
+  }) : _iosDeviceAttestation =
+           iosDeviceAttestationService ?? IosDeviceAttestationService(),
+       _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
        _personalEventCache = personalEventCache,
@@ -199,6 +203,7 @@ class VideoEventPublisher {
   final AudioExtractionService? _audioExtractionService;
   final ProfileStatsDao? _profileStatsDao;
   final SavedSoundsService? _savedSoundsService;
+  final IosDeviceAttestationService _iosDeviceAttestation;
 
   /// REST-first publish client. When non-null, video events are published
   /// via `POST /api/events` first and only fall back to the WebSocket relay
@@ -1607,16 +1612,27 @@ class VideoEventPublisher {
         }
       }
 
+      NativeProofData? proofUsedForTags;
+      String? publishDeviceAttestationPubkeyHex;
+
       // Add ProofMode tags if native proof exists
       if (upload.hasProofMode) {
         try {
-          final nativeProof = upload.nativeProof;
-          if (nativeProof != null) {
+          final storedProof = upload.nativeProof;
+          if (storedProof != null) {
             Log.info(
               '📜 Adding ProofMode verification tags to Nostr event',
               name: 'VideoEventPublisher',
               category: LogCategory.video,
             );
+
+            final attestationResult = await _withPublishDeviceAttestation(
+              storedProof,
+            );
+            final nativeProof = attestationResult.proof;
+            proofUsedForTags = nativeProof;
+            publishDeviceAttestationPubkeyHex =
+                attestationResult.attestedPubkeyHex;
 
             //check C2PA metadata
             final C2paSigningService c2paSigningService = C2paSigningService();
@@ -1734,16 +1750,27 @@ class VideoEventPublisher {
         category: LogCategory.video,
       );
 
-      final reusedEvent = _loadRetryableSignedEvent(upload);
       final signWatch = Stopwatch()..start();
-      final event =
-          reusedEvent ??
-          await _authService.createAndSignEvent(
-            kind:
-                NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
-            content: content,
-            tags: tags,
-          );
+      final reusedEvent = _loadRetryableSignedEvent(upload);
+      final Event? event;
+      if (reusedEvent != null) {
+        event = reusedEvent;
+      } else {
+        final expectedPubkeyHex = publishDeviceAttestationPubkeyHex;
+        final proof = proofUsedForTags;
+        if (expectedPubkeyHex != null &&
+            proof != null &&
+            _authService.currentPublicKeyHex != expectedPubkeyHex) {
+          _clearPublishDeviceAttestationTags(tags: tags, proof: proof);
+        }
+
+        event = await _authService.createAndSignEvent(
+          kind:
+              NIP71VideoKinds.getPreferredAddressableKind(), // NIP-71 addressable short video
+          content: content,
+          tags: tags,
+        );
+      }
       signWatch.stop();
       logPublishPhase(
         'nostr.sign',
@@ -2027,6 +2054,90 @@ class VideoEventPublisher {
     return url.startsWith('http://') || url.startsWith('https://');
   }
 
+  /// Returns [proof] carrying the device attestation this publish should
+  /// broadcast.
+  ///
+  /// On iOS the payload is minted here rather than at proof generation, because
+  /// only now is the publishing account fixed — the challenge binds it, and the
+  /// App Attest key is scoped to it. That makes the value computed here
+  /// authoritative: it replaces whatever the stored proof carried, so a token
+  /// left behind for a different account cannot ride along. Platforms that
+  /// attest during generation keep what they produced.
+  Future<_PublishDeviceAttestationResult> _withPublishDeviceAttestation(
+    NativeProofData proof,
+  ) async {
+    if (!IosDeviceAttestationService.handlesPublishTimeAttestation) {
+      return _PublishDeviceAttestationResult(proof: proof);
+    }
+
+    final pubkeyHex = _authService?.currentPublicKeyHex;
+    if (pubkeyHex == null) {
+      Log.warning(
+        'No signing pubkey available - publishing without device attestation',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return _PublishDeviceAttestationResult(
+        proof: proof.withDeviceAttestation(null),
+      );
+    }
+
+    final attestation = await _iosDeviceAttestation.attestationFor(
+      proofHash: proof.videoHash,
+      pubkeyHex: pubkeyHex,
+    );
+
+    if (attestation == null) {
+      return _PublishDeviceAttestationResult(
+        proof: proof.withDeviceAttestation(null),
+      );
+    }
+
+    if (_authService?.currentPublicKeyHex != pubkeyHex) {
+      Log.warning(
+        'Signing account changed while minting device attestation - '
+        'publishing without device attestation',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return _PublishDeviceAttestationResult(
+        proof: proof.withDeviceAttestation(null),
+      );
+    }
+
+    return _PublishDeviceAttestationResult(
+      proof: proof.withDeviceAttestation(attestation),
+      attestedPubkeyHex: pubkeyHex,
+    );
+  }
+
+  void _clearPublishDeviceAttestationTags({
+    required List<List<String>> tags,
+    required NativeProofData proof,
+  }) {
+    final clearedProof = proof.withDeviceAttestation(null);
+
+    for (var i = 0; i < tags.length; i++) {
+      final tag = tags[i];
+      if (tag.isEmpty) continue;
+
+      switch (tag[0]) {
+        case 'proofmode':
+          tags[i] = ['proofmode', createProofManifestTag(clearedProof)];
+        case 'verification':
+          tags[i] = ['verification', getVerificationLevel(clearedProof)];
+      }
+    }
+
+    tags.removeWhere((tag) => tag.isNotEmpty && tag[0] == 'device_attestation');
+    Log.warning(
+      'Signing account changed before event signing - publishing without '
+      'device attestation',
+      name: 'VideoEventPublisher',
+      category: LogCategory.video,
+    );
+  }
+
   void _addIdentityDiscoveryTags(
     List<List<String>> tags,
     NativeProofData nativeProof,
@@ -2086,4 +2197,14 @@ class VideoEventPublisher {
       category: LogCategory.video,
     );
   }
+}
+
+class _PublishDeviceAttestationResult {
+  const _PublishDeviceAttestationResult({
+    required this.proof,
+    this.attestedPubkeyHex,
+  });
+
+  final NativeProofData proof;
+  final String? attestedPubkeyHex;
 }
