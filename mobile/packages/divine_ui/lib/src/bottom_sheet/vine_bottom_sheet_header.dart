@@ -14,6 +14,12 @@ import 'package:flutter/material.dart';
 /// That slot widget is therefore built twice, so it must carry no
 /// [GlobalKey] and no `initState` side effects — analytics, fetches,
 /// subscriptions and timers would all fire a second time for the hidden copy.
+///
+/// Because the slot is in the tree twice, widget finders that match it
+/// (`find.byKey`, `byType`, `byTooltip`) return two results: the hidden copy
+/// comes first when [trailing] is the filled slot, and second when [leading]
+/// is. Semantics finders are unaffected — the copy is excluded from the
+/// semantics tree.
 class VineBottomSheetHeader extends StatelessWidget {
   /// Creates a [VineBottomSheetHeader] with the given title and optional
   /// leading and trailing widgets.
