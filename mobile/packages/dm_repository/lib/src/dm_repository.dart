@@ -32,6 +32,7 @@ import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/signer/isolate_decrypt_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:nostr_sdk/utils/relay_url_policy.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Decrypts a gift-wrapped event (kind 1059) through the NIP-17 layers
@@ -127,13 +128,6 @@ abstract class DmHistoryDrainConfig {
   static const int unwrapBatchSize = 100;
 }
 
-const _relayLoopbackHosts = <String>{
-  'localhost',
-  '127.0.0.1',
-  '10.0.2.2',
-  '::1',
-};
-
 /// Compile-time gate for temporary per-conversation classification
 /// diagnostics. Off by default and structurally disabled in release builds:
 /// the `!kReleaseMode` term folds the constant to `false` under AOT product
@@ -187,16 +181,16 @@ enum _OwnDmInboxState {
   failed,
 }
 
-bool _isAllowedDmRelayUrl(String url) {
-  final uri = Uri.tryParse(url.trim());
-  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
-  if (uri.path.startsWith('//')) return false;
-  final scheme = uri.scheme.toLowerCase();
-  if (scheme == 'wss') return true;
-  if (scheme == 'ws') {
-    return _relayLoopbackHosts.contains(uri.host.toLowerCase());
-  }
-  return false;
+/// Who authored the kind-10050 a relay list is being read out of.
+///
+/// The two are admitted on different terms. Our own list may name the local
+/// stack; a counterparty's may not name anything on this device's network.
+enum DmRelayListSource {
+  /// The signed-in user's own kind-10050.
+  selfAuthored,
+
+  /// A counterparty's kind-10050, resolved to route a gift wrap to them.
+  remote,
 }
 
 /// Repository for NIP-17 direct message operations.
@@ -879,7 +873,10 @@ class DmRepository {
   _resolveOwnDmInbox() {
     final cached = _ownInboxFuture;
     if (cached != null) return cached;
-    final future = _queryOwnDmInbox(_userPubkey);
+    final future = _queryOwnDmInbox(
+      _userPubkey,
+      source: DmRelayListSource.selfAuthored,
+    );
     _ownInboxFuture = future;
     unawaited(
       future.then((res) {
@@ -2580,6 +2577,52 @@ class DmRepository {
     return (await _queryOwnDmInbox(pubkey)).relays;
   }
 
+  /// Filters and bounds the relay URLs advertised in a kind-10050.
+  ///
+  /// A relay list is untrusted input and nothing in the protocol bounds its
+  /// length, so the client bounds it. When [source] is
+  /// [DmRelayListSource.remote] the URLs came from the person being messaged,
+  /// and each one becomes an outbound connection from this device carrying
+  /// the gift wrap — so private, loopback and link-local targets are refused
+  /// on top of the usual scheme rule. Our own list keeps the loopback
+  /// allowance the local Docker stack needs.
+  ///
+  /// The cap is well above NIP-17's own "keep it to 1-3 relays" guidance:
+  /// the point is to turn unbounded into a small constant, not to be tight,
+  /// because truncating a real user silently costs them reachability.
+  List<String> _admitDmRelays(
+    Iterable<String> urls,
+    String pubkey,
+    DmRelayListSource source,
+  ) {
+    if (source == DmRelayListSource.selfAuthored) {
+      final admitted = <String>{
+        for (final url in urls)
+          if (isRelayUrlAllowed(url)) url,
+      };
+      if (admitted.length <= RelayListCaps.dmInbox) return admitted.toList();
+      Log.warning(
+        'Own kind-10050 lists ${admitted.length} relays; using the first '
+        '${RelayListCaps.dmInbox}',
+        category: LogCategory.system,
+      );
+      return admitted.take(RelayListCaps.dmInbox).toList();
+    }
+    return admitRemoteSuppliedRelays(
+      urls,
+      cap: RelayListCaps.dmInbox,
+      onRejected: (url) => Log.warning(
+        'Refusing DM inbox relay advertised by $pubkey: $url',
+        category: LogCategory.system,
+      ),
+      onTruncated: (kept, total) => Log.warning(
+        'kind-10050 for $pubkey lists $total relays; routing to the first '
+        '$kept',
+        category: LogCategory.system,
+      ),
+    );
+  }
+
   /// Queries [pubkey]'s kind-10050 DM inbox relay list and reports a
   /// found / absent / failed outcome (#4974).
   ///
@@ -2588,8 +2631,12 @@ class DmRepository {
   /// read (both fall back to the default pool either way), but RC3 must tell
   /// them apart — see [ensureDmRelayListPublished].
   Future<({_OwnDmInboxState state, List<String>? relays})> _queryOwnDmInbox(
-    String pubkey,
-  ) async {
+    String pubkey, {
+    // Defaults to the strict reading so a call site added later fails closed.
+    // Every path here except the signed-in user's own inbox is resolving
+    // somebody else's list.
+    DmRelayListSource source = DmRelayListSource.remote,
+  }) async {
     try {
       final events = await _nostrClient.queryEvents([
         nostr_filter.Filter(
@@ -2609,17 +2656,20 @@ class DmRepository {
       // kind-10050 event both unambiguously denote DM inbox relays. Matches
       // divine-web's resolveDmReadRelays. Shared with the send path via
       // resolveDmInboxRelays, so it also widens recipient resolution there.
-      final relays = <String>{
-        for (final tag in events.first.tags)
-          if (tag.length >= 2 &&
-              (tag[0] == 'relay' || tag[0] == 'r') &&
-              tag[1].isNotEmpty &&
-              _isAllowedDmRelayUrl(tag[1]))
-            tag[1],
-      };
+      final relays = _admitDmRelays(
+        [
+          for (final tag in events.first.tags)
+            if (tag.length >= 2 &&
+                (tag[0] == 'relay' || tag[0] == 'r') &&
+                tag[1].isNotEmpty)
+              tag[1],
+        ],
+        pubkey,
+        source,
+      );
       return relays.isEmpty
           ? (state: _OwnDmInboxState.absent, relays: null)
-          : (state: _OwnDmInboxState.found, relays: relays.toList());
+          : (state: _OwnDmInboxState.found, relays: relays);
     } on Object catch (e) {
       Log.warning(
         'Failed to resolve DM inbox relays for $pubkey: $e',
@@ -2658,7 +2708,7 @@ class DmRepository {
     final signer = _signer;
     final relayUrl = _dmInboxRelayUrl;
     if (syncState == null || signer == null) return;
-    if (relayUrl == null || !_isAllowedDmRelayUrl(relayUrl)) return;
+    if (relayUrl == null || !isRelayUrlAllowed(relayUrl)) return;
     final pubkey = _userPubkey;
     // Session-identity token: bail after any await if an account switch /
     // logout (or other teardown) bumped it while we were in flight.

@@ -17,6 +17,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart' as nostr_filter;
 import 'package:nostr_sdk/nip44/nip44_v2.dart';
+import 'package:nostr_sdk/utils/relay_url_policy.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_batch_unwrap.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/relay/publish_outcome.dart';
@@ -3859,8 +3860,6 @@ void main() {
         stubQuery([
           kind10050Event([
             'wss://valid.example',
-            'ws://localhost:7777',
-            'ws://10.0.2.2:7777',
             'ws://attacker.example',
             'http://attacker.example',
             'https://attacker.example',
@@ -3869,13 +3868,54 @@ void main() {
           ]),
         ]);
         final repository = createRepository();
-        expect(
-          await repository.resolveDmInboxRelays(_validPubkeyB),
-          [
+        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
+          'wss://valid.example',
+        ]);
+      });
+
+      // #6585: every entry here becomes an outbound connection from this
+      // device carrying the gift wrap, to an address the *recipient* chose.
+      // Pointing that at the sender's own network is never legitimate, and
+      // the local-stack loopback allowance does not extend to a list somebody
+      // else authored.
+      test('refuses private, loopback and link-local targets', () async {
+        stubQuery([
+          kind10050Event([
             'wss://valid.example',
             'ws://localhost:7777',
             'ws://10.0.2.2:7777',
-          ],
+            'wss://127.0.0.1',
+            'wss://localhost',
+            'wss://192.168.1.10',
+            'wss://10.1.2.3',
+            'wss://172.16.0.9',
+            'wss://169.254.169.254',
+            'wss://[fe80::1]',
+            'wss://2130706433',
+            'wss://printer.local',
+          ]),
+        ]);
+        final repository = createRepository();
+        expect(await repository.resolveDmInboxRelays(_validPubkeyB), [
+          'wss://valid.example',
+        ]);
+      });
+
+      test('caps how many relays one kind-10050 can point us at', () async {
+        stubQuery([
+          kind10050Event([
+            for (var i = 0; i < 50; i++) 'wss://relay-$i.example',
+          ]),
+        ]);
+        final repository = createRepository();
+        final resolved = await repository.resolveDmInboxRelays(_validPubkeyB);
+
+        expect(resolved, hasLength(RelayListCaps.dmInbox));
+        // Deterministic: first-N in tag order, not an arbitrary subset.
+        expect(resolved!.first, 'wss://relay-0.example');
+        expect(
+          resolved.last,
+          'wss://relay-${RelayListCaps.dmInbox - 1}.example',
         );
       });
 
@@ -3887,6 +3927,7 @@ void main() {
               'ws://attacker.example',
               'http://attacker.example',
               'wss://https://attacker.example',
+              'wss://192.168.0.1',
             ]),
           ]);
           final repository = createRepository();
