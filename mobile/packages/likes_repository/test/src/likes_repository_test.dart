@@ -4441,6 +4441,38 @@ void main() {
         expect(statuses.downvotedIds, isEmpty);
       });
 
+      test('getVoteCounts credits the last `e` tag when a reaction carries '
+          'several', () async {
+        // NIP-25: "the target event `id` should be last of the `e` tags".
+        // A client that copies the thread's ancestor tags would otherwise
+        // have its vote credited to the root comment instead of the reply.
+        const rootCommentId = 'root_comment_id_1234567890abcdef';
+        final reaction = createMockReaction(
+          id: 'ancestor_tagged_reaction',
+          targetEventId: editedId,
+          authorPubkey: 'some_voter_pubkey_1234567890abcdef',
+          tags: [
+            ['e', rootCommentId],
+            ['e', editedId],
+          ],
+        );
+        mockQueryEventsSequence([
+          [reaction],
+          <Event>[],
+          <Event>[],
+        ]);
+
+        repository = createRepository(withLocalStorage: false);
+
+        final counts = await repository.getVoteCounts([
+          rootCommentId,
+          editedId,
+        ]);
+
+        expect(counts.upvotes[editedId], equals(1));
+        expect(counts.upvotes[rootCommentId], equals(0));
+      });
+
       test('getVoteCounts ignores an unrelated coordinate', () async {
         final reaction = createMockReaction(
           id: 'other_reaction',

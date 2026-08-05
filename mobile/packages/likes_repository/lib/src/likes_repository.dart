@@ -1190,12 +1190,18 @@ class LikesRepository {
   /// cast against a superseded revision of an addressable target still lands
   /// on the revision the caller is currently showing (#6124). Returns `null`
   /// when the reaction targets nothing in the queried set.
+  ///
+  /// Scans the `e` tags last-first: NIP-25 says that when a reaction carries
+  /// more than one, "the target event `id` should be last of the `e` tags".
+  /// Reading forwards credits a copied ancestor tag instead of the real
+  /// target — Divine's own writer emits a single `e` tag, so this only
+  /// affects reactions from other clients.
   String? _resolveVoteTarget(
     Event event,
     Set<String> knownEventIds,
     Map<String, String> eventIdByCoordinate,
   ) {
-    for (final tag in event.tags) {
+    for (final tag in event.tags.reversed) {
       if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
         final targetId = tag[1];
         if (knownEventIds.contains(targetId)) return targetId;
