@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -36,6 +37,20 @@ void main() {
         const AvatarSvgState(status: AvatarSvgStatus.unavailable),
       ],
     );
+
+    test('does not throw when closed before repository completes', () async {
+      final repository = _CompleterAvatarSvgRepository();
+      final cubit = AvatarSvgCubit(repository: repository, url: url);
+
+      final load = cubit.load();
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state.status, AvatarSvgStatus.loading);
+
+      await cubit.close();
+      repository.complete(bytes);
+
+      await expectLater(load, completes);
+    });
   });
 }
 
@@ -46,4 +61,13 @@ class _FakeAvatarSvgRepository implements AvatarSvgRepository {
 
   @override
   Future<Uint8List?> load(String url) async => bytes;
+}
+
+class _CompleterAvatarSvgRepository implements AvatarSvgRepository {
+  final _completer = Completer<Uint8List?>();
+
+  void complete(Uint8List? bytes) => _completer.complete(bytes);
+
+  @override
+  Future<Uint8List?> load(String url) => _completer.future;
 }

@@ -5,7 +5,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:unified_logger/unified_logger.dart';
 import 'package:xml/xml.dart';
@@ -36,18 +35,31 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
   HttpAvatarSvgRepository({
     http.Client? client,
     AvatarSvgClock clock = DateTime.now,
+    Duration requestTimeout = AvatarSvgRepositoryConfig.requestTimeout,
   }) : _client = client ?? http.Client(),
-       _clock = clock;
+       _clock = clock,
+       _requestTimeout = requestTimeout;
 
   final http.Client _client;
   final AvatarSvgClock _clock;
+  final Duration _requestTimeout;
   final _cache = <String, _AvatarSvgCacheEntry>{};
+  final _inFlight = <String, Future<Uint8List?>>{};
 
   @override
   Future<Uint8List?> load(String url) async {
     final cached = _readCache(url);
     if (cached != null) return cached.bytes;
 
+    final inFlight = _inFlight[url];
+    if (inFlight != null) return inFlight;
+
+    final pending = _loadUncached(url);
+    _inFlight[url] = pending;
+    return pending.whenComplete(() => _inFlight.remove(url));
+  }
+
+  Future<Uint8List?> _loadUncached(String url) async {
     final uri = Uri.tryParse(url);
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
       _writeCache(url, null, AvatarSvgRepositoryConfig.negativeTtl);
@@ -77,12 +89,10 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
   Future<Uint8List?> _fetch(Uri uri) async {
     final request = http.Request('GET', uri)
       ..headers['accept'] = 'image/svg+xml,image/*;q=0.8,*/*;q=0.1';
-    final response = await _client
-        .send(request)
-        .timeout(AvatarSvgRepositoryConfig.requestTimeout);
+    final response = await _client.send(request).timeout(_requestTimeout);
 
     if (response.statusCode != 200) {
-      unawaited(response.stream.drain<void>());
+      await _cancelResponseBody(response.stream);
       _logRejected(uri, response.headers['content-type'], 'status');
       return null;
     }
@@ -109,13 +119,37 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
 
   Future<Uint8List?> _readBounded(Stream<List<int>> stream) async {
     final builder = BytesBuilder(copy: false);
-    await for (final chunk in stream) {
+    await for (final chunk in _withBodyTimeout(stream)) {
       builder.add(chunk);
       if (builder.length > AvatarSvgRepositoryConfig.maxBytes) {
         return null;
       }
     }
     return builder.takeBytes();
+  }
+
+  Stream<List<int>> _withBodyTimeout(Stream<List<int>> stream) {
+    return stream.timeout(
+      _requestTimeout,
+      onTimeout: (sink) {
+        sink.addError(
+          TimeoutException('Avatar SVG body read timed out', _requestTimeout),
+        );
+        sink.close();
+      },
+    );
+  }
+
+  Future<void> _cancelResponseBody(Stream<List<int>> stream) async {
+    final subscription = stream.listen(null, onError: (_, _) {});
+    try {
+      await subscription.cancel().timeout(_requestTimeout);
+    } on Object catch (error) {
+      UnifiedLogger.debug(
+        'Avatar SVG response body cancel failed: $error',
+        name: 'AvatarSvgRepository',
+      );
+    }
   }
 
   bool _hasSvgContentType(String? contentType) =>
@@ -132,7 +166,10 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
     while (index < bytes.length && _isAsciiWhitespace(bytes[index])) {
       index++;
     }
-    final remaining = utf8.decode(bytes.skip(index).take(16).toList());
+    final remaining = utf8.decode(
+      bytes.skip(index).take(16).toList(),
+      allowMalformed: true,
+    );
     return remaining.startsWith('<svg') || remaining.startsWith('<?xml');
   }
 
@@ -171,11 +208,6 @@ class HttpAvatarSvgRepository implements AvatarSvgRepository {
       'Avatar SVG rejected: url=$uri contentType=${contentType ?? '<none>'} reason=$reason',
       name: 'AvatarSvgRepository',
     );
-  }
-
-  @visibleForTesting
-  void clearCache() {
-    _cache.clear();
   }
 }
 

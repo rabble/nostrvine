@@ -20,17 +20,23 @@ class AvatarSvgCubit extends Cubit<AvatarSvgState> {
   final String _url;
 
   Future<void> load() async {
-    if (state.status == AvatarSvgStatus.loading) return;
+    if (isClosed || state.status == AvatarSvgStatus.loading) return;
 
-    emit(state.copyWith(status: AvatarSvgStatus.loading));
+    _emitIfOpen(state.copyWith(status: AvatarSvgStatus.loading));
     try {
       final bytes = await _repository.load(_url);
+      if (isClosed) return;
+
       if (bytes == null) {
-        emit(state.copyWith(status: AvatarSvgStatus.unavailable));
+        _emitIfOpen(
+          state.copyWith(status: AvatarSvgStatus.unavailable, bytes: null),
+        );
         return;
       }
-      emit(state.copyWith(status: AvatarSvgStatus.ready, bytes: bytes));
+      _emitIfOpen(state.copyWith(status: AvatarSvgStatus.ready, bytes: bytes));
     } on Object catch (error, stackTrace) {
+      if (isClosed) return;
+
       Log.error(
         'Avatar SVG load failed',
         name: 'AvatarSvgCubit',
@@ -39,7 +45,13 @@ class AvatarSvgCubit extends Cubit<AvatarSvgState> {
         stackTrace: stackTrace,
       );
       addError(error, stackTrace);
-      emit(state.copyWith(status: AvatarSvgStatus.unavailable));
+      _emitIfOpen(
+        state.copyWith(status: AvatarSvgStatus.unavailable, bytes: null),
+      );
     }
+  }
+
+  void _emitIfOpen(AvatarSvgState nextState) {
+    if (!isClosed) emit(nextState);
   }
 }
