@@ -43,9 +43,10 @@ class FeedAutoAdvancePastErrorListener extends StatefulWidget {
   final VoidCallback onSkipBrokenVideo;
   final Widget child;
 
-  /// Confirms (via a HEAD request) whether the active item's media is a hard
-  /// 404 and, if so, marks it broken. Returns `true` only for a confirmed 404.
-  /// Injected by the feed item from `deadMediaFeedGuardProvider`.
+  /// Confirms whether the active item's media is permanently unavailable — a
+  /// HEAD-confirmed 404 *plus* a terminal moderation verdict — and, if so,
+  /// marks it broken. Injected by the feed item from
+  /// `deadMediaFeedGuardProvider`.
   final Future<bool> Function()? confirmAndMarkMissing;
 
   @override

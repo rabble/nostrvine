@@ -297,7 +297,7 @@ void main() {
     );
 
     testWidgets(
-      'manual scroll: does NOT skip when the failure is not a confirmed 404',
+      'manual scroll: does NOT skip when the guard rejects the prune',
       (tester) async {
         var confirmCalls = 0;
         final updated = VideoPlaybackStatusState().withStatus(

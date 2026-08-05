@@ -616,26 +616,36 @@ String _$videoMetadataUpdateServiceHash() =>
 
 /// Broken video tracker service for filtering non-functional videos.
 ///
-/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// `keepAlive: true` so this stays the single instance per identity —
 /// [videoEventServiceProvider] attaches it to `VideoEventService` for
 /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
 /// videos on that *same* instance. Without `keepAlive`, this autodisposes
 /// once its initial watchers drop, so a later read can rebuild a fresh
 /// tracker that `VideoEventService` never sees — the home feed would then
 /// mark an item broken without it ever being filtered. See #5953 review.
+///
+/// It does rebuild on every auth transition, by design: the marks are stored
+/// per pubkey so one account's prunes cannot hide videos from another. That is
+/// safe only because [videoEventServiceProvider] reattaches the new tracker
+/// through a `ref.listen` rather than capturing one at build time.
 
 @ProviderFor(brokenVideoTracker)
 final brokenVideoTrackerProvider = BrokenVideoTrackerProvider._();
 
 /// Broken video tracker service for filtering non-functional videos.
 ///
-/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// `keepAlive: true` so this stays the single instance per identity —
 /// [videoEventServiceProvider] attaches it to `VideoEventService` for
 /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
 /// videos on that *same* instance. Without `keepAlive`, this autodisposes
 /// once its initial watchers drop, so a later read can rebuild a fresh
 /// tracker that `VideoEventService` never sees — the home feed would then
 /// mark an item broken without it ever being filtered. See #5953 review.
+///
+/// It does rebuild on every auth transition, by design: the marks are stored
+/// per pubkey so one account's prunes cannot hide videos from another. That is
+/// safe only because [videoEventServiceProvider] reattaches the new tracker
+/// through a `ref.listen` rather than capturing one at build time.
 
 final class BrokenVideoTrackerProvider
     extends
@@ -649,13 +659,18 @@ final class BrokenVideoTrackerProvider
         $FutureProvider<BrokenVideoTracker> {
   /// Broken video tracker service for filtering non-functional videos.
   ///
-  /// `keepAlive: true` so this stays the single app-session-stable instance —
+  /// `keepAlive: true` so this stays the single instance per identity —
   /// [videoEventServiceProvider] attaches it to `VideoEventService` for
   /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
   /// videos on that *same* instance. Without `keepAlive`, this autodisposes
   /// once its initial watchers drop, so a later read can rebuild a fresh
   /// tracker that `VideoEventService` never sees — the home feed would then
   /// mark an item broken without it ever being filtered. See #5953 review.
+  ///
+  /// It does rebuild on every auth transition, by design: the marks are stored
+  /// per pubkey so one account's prunes cannot hide videos from another. That is
+  /// safe only because [videoEventServiceProvider] reattaches the new tracker
+  /// through a `ref.listen` rather than capturing one at build time.
   BrokenVideoTrackerProvider._()
     : super(
         from: null,

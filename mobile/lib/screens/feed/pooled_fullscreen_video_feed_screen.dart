@@ -238,11 +238,10 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         .read(videoEventServiceProvider)
         .removedVideoIds;
 
-    // Persist moderation-confirmed unavailable ids so the video stays filtered
-    // out of every list surface (feed, profile, hashtag, grids) across
-    // restarts. The bloc only fires this after DeadMediaFeedGuard confirms both
-    // a 404 and a requester-independent blocked/quarantined moderation
-    // verdict (#6251).
+    // Persist permanently-unavailable ids so the video stays filtered out of
+    // every list surface (feed, profile, hashtag, grids) across restarts. The
+    // bloc only fires this after DeadMediaFeedGuard confirms both a 404 and a
+    // requester-independent, terminal moderation verdict (#6251).
     void persistConfirmedUnavailable(String videoId) {
       unawaited(
         ref
@@ -630,7 +629,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 },
               ),
             // Dispatch FullscreenFeedVideoUnavailable when the active video's
-            // playback status becomes notFound. The BLoC owns the HEAD-confirm,
+            // playback status becomes notFound. The BLoC owns the confirm,
             // removal, and dedupe logic — this listener is the screen-level
             // bridge that replaces the per-item post-frame callback.
             BlocListener<VideoPlaybackStatusCubit, VideoPlaybackStatusState>(

@@ -785,10 +785,10 @@ class __OverlayState extends ConsumerState<_Overlay> {
 
     final effectiveAutoActive = autoAdvanceAvailable && autoEffectivelyActive;
 
-    // Guard that HEAD-confirms a 404 and requires moderation-confirmed
-    // blocked/quarantined status before marking the item broken so the home
-    // feed can skip past + prune dead imported-Vine media. Null until its
-    // one-time tracker init resolves. See #5953 / #6251.
+    // Guard that HEAD-confirms a 404 and requires a terminal moderation verdict
+    // before marking the item broken so the home feed can skip past + prune
+    // dead imported-Vine media. Null until its one-time tracker init resolves.
+    // See #5953 / #6251.
     final deadMediaGuard = ref.watch(deadMediaFeedGuardProvider).asData?.value;
 
     final playbackStatus = context.select(

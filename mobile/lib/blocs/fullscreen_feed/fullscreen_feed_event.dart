@@ -65,10 +65,10 @@ final class FullscreenFeedVideoCacheStarted extends FullscreenFeedEvent {
 /// Dispatched when a video appears to be unavailable (player reported
 /// [PlaybackStatus.notFound], web HEAD 404, etc.).
 ///
-/// The BLoC confirms the failure with a HEAD request via the injected
-/// [MediaAvailabilityChecker] before permanently removing the video. If
-/// the asset actually responds 2xx/5xx/network-error, the event is treated
-/// as a transient player failure and the video stays in place.
+/// The BLoC gates removal on the injected [ConfirmVideoUnavailable]. Production
+/// requires a HEAD-confirmed 404 *and* a terminal moderation verdict, so a
+/// transient player failure, a network error, or a recoverable withhold leaves
+/// the video in place.
 ///
 /// Dedupe is owned by the BLoC — repeated dispatches for the same
 /// [videoId] are no-ops after the first confirmed removal.

@@ -40,8 +40,10 @@ typedef OnVideoConfirmedUnavailable = void Function(String videoId);
 /// Confirms whether a player-reported unavailable video is safe to prune.
 ///
 /// Production passes [DeadMediaFeedGuard.isConfirmedUnavailable], which first
-/// HEAD-confirms a 404 and then requires moderation to say the blob is blocked
-/// or quarantined. Tests may inject a smaller predicate.
+/// HEAD-confirms a 404 and then requires moderation to say the blob is
+/// `blocked`. Quarantined and age-restricted blobs also 404 but are reversible,
+/// so they keep their error tile instead of being pruned. Tests may inject a
+/// smaller predicate.
 typedef ConfirmVideoUnavailable =
     Future<bool> Function({required String? videoUrl, String? explicitSha256});
 

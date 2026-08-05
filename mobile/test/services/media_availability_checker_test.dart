@@ -58,11 +58,11 @@ void main() {
         expect(result, isFalse);
       });
 
-      // Blossom answers 401 (not 404) for an age-restricted blob and serves it
-      // to any authenticated request, so an anonymous probe cannot conclude the
-      // media is gone. Callers persist this answer via BrokenVideoTracker, so
-      // widening the predicate to 401 would hide viewable content for the
-      // tracker's full TTL. See #5953 / #6251.
+      // Blossom answers 401 for an age-gated fetch and serves the blob to any
+      // authenticated request, so an anonymous probe cannot conclude the media
+      // is gone. DeadMediaFeedGuard persists this answer once moderation
+      // confirms a terminal verdict, so widening the predicate to 401 would
+      // hide viewable content for the tracker's full TTL. See #5953 / #6251.
       test('returns false for the 401 age gate', () async {
         final client = MockClient((_) async => http.Response('', 401));
         final checker = MediaAvailabilityChecker(client: client);

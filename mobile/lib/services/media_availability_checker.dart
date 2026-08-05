@@ -33,10 +33,11 @@ class MediaAvailabilityChecker {
   /// that consults it. Measured at 8.0% of `classic=true` blobs (n=600) — a
   /// larger class than the 5.5% that 404. See #5953 / #6251.
   ///
-  /// Note that `true` means "not retrievable", not "the bytes are gone":
+  /// Note that `true` means "not retrievable *now*", not "the bytes are gone":
   /// blossom collapses `Banned`, `Deleted`, `Restricted` *and* genuinely-absent
-  /// metadata into 404. It remains the only status that justifies a persistent
-  /// prune, because none of those become retrievable by authenticating.
+  /// metadata into 404, and `Restricted` is reversible by a moderator. A 404
+  /// alone therefore does not justify a persistent prune — see
+  /// `DeadMediaFeedGuard`, which also requires a terminal moderation verdict.
   ///
   /// When no [client] is injected a throwaway [http.Client] is created and
   /// closed after the request.
