@@ -953,6 +953,8 @@ class CommentsRepository {
         content: event.content,
         authorPubkey: event.pubkey,
         createdAt: event.createdAtDateTime,
+        eventKind: event.kind,
+        addressableId: _ownAddressableId(event),
         rootEventId: parsedRootEventId ?? rootEventId,
         // For top-level comments, replyToEventId should be null
         replyToEventId: isTopLevel ? null : replyToEventId,
@@ -968,6 +970,21 @@ class CommentsRepository {
     } on Exception {
       return null;
     }
+  }
+
+  /// Builds an event's **own** addressable coordinate, or `null` when it has
+  /// none.
+  ///
+  /// Only addressable kinds (30000-39999) have coordinates, and only when the
+  /// event actually carries a `d` tag. A missing `d` must yield `null` rather
+  /// than substituting the event id the way `VideoEvent` does — that would
+  /// mint a well-formed coordinate addressing nothing, and a reaction tagged
+  /// with it would be unresolvable (#6124).
+  String? _ownAddressableId(Event event) {
+    if (event.kind < 30000 || event.kind > 39999) return null;
+    final dTag = event.dTagValue;
+    if (dTag.isEmpty) return null;
+    return AId(kind: event.kind, pubkey: event.pubkey, dTag: dTag).toAString();
   }
 
   /// Checks whether an event's uppercase `E` or `A` tag matches the queried
