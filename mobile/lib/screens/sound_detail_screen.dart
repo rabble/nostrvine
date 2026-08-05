@@ -18,11 +18,13 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/saved_sound_context_builder.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/library/saved_sound_details_editor.dart';
+import 'package:openvine/widgets/video_feed_item/audio_attribution_credit.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:provider/provider.dart' as inherited_provider;
 import 'package:sound_service/sound_service.dart';
@@ -485,12 +487,30 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
   @override
   Widget build(BuildContext context) {
     final sound = widget.sound;
-    final publisherProfile = _artistName == null
+    final profileCreditPubkey = _profileCreditPubkey(sound);
+    final profileCreditProfile = profileCreditPubkey == null
         ? null
-        : ref.watch(userProfileReactiveProvider(sound.pubkey)).value;
+        : ref.watch(userProfileReactiveProvider(profileCreditPubkey)).value;
+    final profileCreditName = profileCreditPubkey == null
+        ? null
+        : _artistName ??
+              AudioAttributionCredit.displayNameForPubkey(
+                pubkey: profileCreditPubkey,
+                profile: profileCreditProfile,
+              );
     final showsSeparatePublisher =
         _artistName != null &&
-        (sound.creatorPubkey == null || sound.creatorPubkey != sound.pubkey);
+        sound.creatorPubkey != null &&
+        sound.creatorPubkey != sound.pubkey;
+    final publisherProfile = showsSeparatePublisher
+        ? ref.watch(userProfileReactiveProvider(sound.pubkey)).value
+        : null;
+    final publisherName = showsSeparatePublisher
+        ? AudioAttributionCredit.publisherNameFor(
+            audio: sound,
+            publisherProfile: publisherProfile,
+          )
+        : null;
     return Container(
       padding: const EdgeInsets.all(16),
       color: context.vineColors.card,
@@ -530,20 +550,24 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                       overflow: TextOverflow.ellipsis,
                     ),
                     _buildMetadataRow(),
-                    if (_artistName != null)
+                    if (profileCreditPubkey != null &&
+                        profileCreditName != null)
+                      _ProfileAttributionInfo(
+                        text: context.l10n.soundCreatorBy(profileCreditName),
+                        pubkey: profileCreditPubkey,
+                        license: _license,
+                        sourceUrl: _sourceUrl,
+                      )
+                    else if (_artistName != null)
                       _AttributionInfo(
                         artistName: _artistName!,
                         license: _license,
                         sourceUrl: _sourceUrl,
                       ),
-                    if (showsSeparatePublisher && publisherProfile != null)
-                      Text(
-                        context.l10n.soundSharedBy(
-                          publisherProfile.bestDisplayName,
-                        ),
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceVariant,
-                        ),
+                    if (showsSeparatePublisher && publisherName != null)
+                      _ProfileCreditLink(
+                        text: context.l10n.soundSharedBy(publisherName),
+                        pubkey: sound.pubkey,
                       ),
                     if (widget.reuseAllowed case final reuseAllowed?)
                       Text(
@@ -597,9 +621,12 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
                               strokeWidth: 2,
                             ),
                           )
-                        : Icon(
-                            widget.isPlaying ? Icons.stop : Icons.play_arrow,
+                        : DivineIcon(
+                            icon: widget.isPlaying
+                                ? DivineIconName.squareFill
+                                : DivineIconName.play,
                             size: 20,
+                            color: VineTheme.vineGreen,
                           ),
                     label: Text(
                       widget.isPlaying
@@ -668,6 +695,86 @@ class _SoundHeaderState extends ConsumerState<_SoundHeader> {
       style: TextStyle(color: context.vineColors.secondaryText, fontSize: 14),
     );
   }
+
+  String? _profileCreditPubkey(AudioEvent sound) {
+    if (sound.isBundled) return null;
+    final creatorPubkey = sound.creatorPubkey;
+    if (creatorPubkey != null && creatorPubkey.isNotEmpty) {
+      return creatorPubkey;
+    }
+    if (_artistName == null) return sound.pubkey;
+    return null;
+  }
+}
+
+/// Displays a profile-backed creator credit with optional license/source text.
+class _ProfileAttributionInfo extends StatelessWidget {
+  const _ProfileAttributionInfo({
+    required this.text,
+    required this.pubkey,
+    this.license,
+    this.sourceUrl,
+  });
+
+  final String text;
+  final String pubkey;
+  final String? license;
+  final String? sourceUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        style: VineTheme.bodySmallFont(
+          color: context.vineColors.secondaryText,
+        ),
+        children: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: _ProfileCreditLink(text: text, pubkey: pubkey),
+          ),
+          if (license != null) TextSpan(text: ' · $license'),
+          if (sourceUrl != null) ...[
+            const TextSpan(text: ' · '),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: _SourceLink(sourceUrl: sourceUrl!),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileCreditLink extends StatelessWidget {
+  const _ProfileCreditLink({required this.text, required this.pubkey});
+
+  final String text;
+  final String pubkey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'sound_detail_creator_attribution',
+      button: true,
+      label: context.l10n.profileChipTapHint(text),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => context.pushOtherProfile(pubkey),
+        child: Text(
+          text,
+          style: VineTheme.bodySmallFont(
+            color: VineTheme.onSurfaceVariant,
+          ).copyWith(decoration: TextDecoration.underline),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
 }
 
 /// Displays artist name, license, and optional "View on Freesound" link.
@@ -699,26 +806,37 @@ class _AttributionInfo extends StatelessWidget {
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,
-              child: GestureDetector(
-                onTap: () async {
-                  final uri = Uri.parse(sourceUrl!);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  }
-                },
-                child: Text(
-                  context.l10n.soundViewSource,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
-              ),
+              child: _SourceLink(sourceUrl: sourceUrl!),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _SourceLink extends StatelessWidget {
+  const _SourceLink({required this.sourceUrl});
+
+  final String sourceUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        final uri = Uri.parse(sourceUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Text(
+        context.l10n.soundViewSource,
+        style: const TextStyle(
+          color: VineTheme.vineGreen,
+          fontSize: 12,
+          decoration: TextDecoration.underline,
+          decorationColor: VineTheme.vineGreen,
+        ),
       ),
     );
   }

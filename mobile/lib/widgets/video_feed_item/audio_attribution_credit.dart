@@ -7,6 +7,18 @@ import 'package:models/models.dart';
 class AudioAttributionCredit {
   const AudioAttributionCredit._();
 
+  /// Best display name for a pubkey-backed sound/profile credit.
+  static String displayNameForPubkey({
+    required String pubkey,
+    required UserProfile? profile,
+  }) => profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
+
+  /// Display name for the signer/publisher of a Kind 1063 audio event.
+  static String publisherNameFor({
+    required AudioEvent audio,
+    required UserProfile? publisherProfile,
+  }) => displayNameForPubkey(pubkey: audio.pubkey, profile: publisherProfile);
+
   /// The reused sound's original creator, carried on the video via its
   /// inspired-by source. Null when absent, so the video's own author is
   /// credited.
