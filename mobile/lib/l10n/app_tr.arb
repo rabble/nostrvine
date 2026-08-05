@@ -829,6 +829,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "Rölelere bağlanılamadı. Lütfen ağ bağlantını kontrol et.",
+    "relaySettingsSavedLocallyPublishPending": "Bu cihazda kaydedildi. Yayınlama tekrar çalıştığında hesabınla eşitleyeceğiz.",
     "relaySettingsAddRelayTitle": "Röle Ekle",
     "relaySettingsAddRelayPrompt": "Eklemek istediğin rölenin WebSocket URL'sini gir:",
     "relaySettingsBrowsePublicRelays": "Herkese açık rölelere nostr.co.uk adresinden göz at",

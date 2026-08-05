@@ -832,6 +832,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "Nie udało się połączyć z przekaźnikami. Sprawdź połączenie z siecią.",
+    "relaySettingsSavedLocallyPublishPending": "Zapisano na tym urządzeniu. Zsynchronizujemy to z Twoim kontem, gdy publikowanie znów zadziała.",
     "relaySettingsAddRelayTitle": "Dodaj przekaźnik",
     "relaySettingsAddRelayPrompt": "Wprowadź URL WebSocket przekaźnika, który chcesz dodać:",
     "relaySettingsBrowsePublicRelays": "Przeglądaj publiczne przekaźniki na nostr.co.uk",

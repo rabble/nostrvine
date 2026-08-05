@@ -71,6 +71,9 @@ enum AddRelayOutcome {
   /// URL parsed and was accepted by the service.
   added,
 
+  /// URL was saved locally, but the account relay list did not publish yet.
+  addedLocalOnly,
+
   /// URL was empty or didn't use a `wss://` / `ws://` scheme.
   invalidUrl,
 
@@ -80,17 +83,22 @@ enum AddRelayOutcome {
   /// URL was saved, but the relay did not accept a connection yet.
   addedConnectionPending,
 
+  /// URL was saved without a connection and did not publish to the account yet.
+  addedConnectionPendingLocalOnly,
+
   /// The service refused the URL or threw.
   failed,
 }
 
 /// Outcome of `RelaySettingsCubit.removeRelay(...)`.
-enum RemoveRelayOutcome { removed, failed }
+enum RemoveRelayOutcome { removed, removedLocalOnly, failed }
 
 /// Outcome of `RelaySettingsCubit.restoreDefaultRelay()`.
 enum RestoreDefaultRelayOutcome {
   restored,
+  restoredLocalOnly,
   restoredConnectionPending,
+  restoredConnectionPendingLocalOnly,
   failed,
 }
 
@@ -99,10 +107,7 @@ enum RestoreDefaultRelayOutcome {
 /// The View uses [connectedCount] to render the success snackbar (which
 /// embeds the count via l10n).
 class RetryConnectionOutcome extends Equatable {
-  const RetryConnectionOutcome._({
-    required this.kind,
-    this.connectedCount = 0,
-  });
+  const RetryConnectionOutcome._({required this.kind, this.connectedCount = 0});
 
   const RetryConnectionOutcome.connected(int count)
     : this._(kind: RetryConnectionOutcomeKind.connected, connectedCount: count);

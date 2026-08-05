@@ -963,6 +963,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "ከቅብብሎሽ ጋር መገናኘት አልተሳካም። እባክዎ የአውታረ መረብ ግንኙነትዎን ያረጋግጡ።",
+    "relaySettingsSavedLocallyPublishPending": "በዚህ መሣሪያ ላይ ተቀምጧል። ማተም እንደገና ሲሰራ ወደ መለያዎ እናስመሳስለዋለን።",
     "relaySettingsAddRelayTitle": "ቅብብል ጨምር",
     "relaySettingsAddRelayPrompt": "ማከል የምትፈልገውን የሪሌይ WebSocket URL አስገባ:",
     "relaySettingsBrowsePublicRelays": "በ nostr.co.uk ላይ የህዝብ ማሰራጫዎችን ያስሱ",

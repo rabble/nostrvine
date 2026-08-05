@@ -2053,6 +2053,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ከቅብብሎሽ ጋር መገናኘት አልተሳካም። እባክዎ የአውታረ መረብ ግንኙነትዎን ያረጋግጡ።';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'በዚህ መሣሪያ ላይ ተቀምጧል። ማተም እንደገና ሲሰራ ወደ መለያዎ እናስመሳስለዋለን።';
+
+  @override
   String get relaySettingsAddRelayTitle => 'ቅብብል ጨምር';
 
   @override

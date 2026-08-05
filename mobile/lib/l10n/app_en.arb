@@ -1264,6 +1264,7 @@
     }
   },
   "relaySettingsFailedToConnectCheck": "Failed to connect to relays. Please check your network connection.",
+  "relaySettingsSavedLocallyPublishPending": "Saved on this device. We'll sync it to your account when publishing works again.",
   "relaySettingsAddRelayTitle": "Add Relay",
   "relaySettingsAddRelayPrompt": "Enter the WebSocket URL of the relay you want to add:",
   "relaySettingsBrowsePublicRelays": "Browse public relays at nostr.co.uk",

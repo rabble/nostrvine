@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_cubit.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
+import 'package:openvine/repositories/relay_list_repository.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -15,6 +16,8 @@ class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockRelayCapabilityService extends Mock
     implements RelayCapabilityService {}
+
+class _MockRelayListRepository extends Mock implements RelayListRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -26,11 +29,13 @@ void main() {
 
   group(RelaySettingsCubit, () {
     late _MockNostrClient nostr;
+    late _MockRelayListRepository relayListRepository;
     late _MockRelayCapabilityService capabilities;
     late _MockVideoEventService videos;
 
     setUp(() {
       nostr = _MockNostrClient();
+      relayListRepository = _MockRelayListRepository();
       capabilities = _MockRelayCapabilityService();
       videos = _MockVideoEventService();
       when(() => nostr.configuredRelays).thenReturn(const []);
@@ -41,12 +46,16 @@ void main() {
       when(
         () => nostr.removeRelay(any(), source: any(named: 'source')),
       ).thenAnswer((_) async => true);
+      when(
+        relayListRepository.publishConfiguredRelayList,
+      ).thenAnswer((_) async => const RelayListPublishResult.published());
       when(nostr.forceReconnectAll).thenAnswer((_) async {});
       when(videos.resetAndResubscribeAll).thenAnswer((_) async {});
     });
 
     RelaySettingsCubit buildCubit() => RelaySettingsCubit(
       nostrClient: nostr,
+      relayListRepository: relayListRepository,
       relayCapabilityService: capabilities,
       videoEventService: videos,
     );
@@ -178,6 +187,7 @@ void main() {
             source: RelayAddSource.user,
           ),
         ).called(1);
+        verify(relayListRepository.publishConfiguredRelayList).called(1);
       },
     );
 
@@ -194,6 +204,9 @@ void main() {
         expect(outcome, AddRelayOutcome.failed);
       },
       expect: () => [const RelaySettingsState()],
+      verify: (_) {
+        verifyNever(relayListRepository.publishConfiguredRelayList);
+      },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
@@ -214,6 +227,31 @@ void main() {
       expect: () => [
         const RelaySettingsState(relays: ['wss://pending.example']),
       ],
+      verify: (_) {
+        verify(relayListRepository.publishConfiguredRelayList).called(1);
+      },
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'addRelay returns local-only when publish fails after local save',
+      setUp: () {
+        when(() => nostr.configuredRelays).thenReturn(['wss://added.example']);
+        when(relayListRepository.publishConfiguredRelayList).thenAnswer(
+          (_) async => RelayListPublishResult.failed(
+            StateError('no indexer accepted'),
+            StackTrace.current,
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        final outcome = await cubit.addRelay('wss://added.example');
+        expect(outcome, AddRelayOutcome.addedLocalOnly);
+      },
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://added.example']),
+      ],
+      errors: () => [isA<StateError>()],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
@@ -257,6 +295,7 @@ void main() {
             source: RelayRemoveSource.user,
           ),
         ).called(1);
+        verify(relayListRepository.publishConfiguredRelayList).called(1);
       },
     );
 
@@ -278,6 +317,9 @@ void main() {
       expect: () => [
         const RelaySettingsState(relays: ['wss://a.example']),
       ],
+      verify: (_) {
+        verifyNever(relayListRepository.publishConfiguredRelayList);
+      },
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
@@ -297,6 +339,32 @@ void main() {
         );
       },
       expect: () => [const RelaySettingsState()],
+      verify: (_) {
+        verify(relayListRepository.publishConfiguredRelayList).called(1);
+      },
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'removeRelay returns local-only when publish fails after local removal',
+      seed: () => const RelaySettingsState(relays: ['wss://gone.example']),
+      setUp: () {
+        when(() => nostr.configuredRelays).thenReturn(const []);
+        when(relayListRepository.publishConfiguredRelayList).thenAnswer(
+          (_) async => RelayListPublishResult.failed(
+            StateError('no indexer accepted'),
+            StackTrace.current,
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        expect(
+          await cubit.removeRelay('wss://gone.example'),
+          RemoveRelayOutcome.removedLocalOnly,
+        );
+      },
+      expect: () => [const RelaySettingsState()],
+      errors: () => [isA<StateError>()],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(
@@ -321,6 +389,7 @@ void main() {
             source: RelayAddSource.user,
           ),
         ).called(1);
+        verify(relayListRepository.publishConfiguredRelayList).called(1);
       },
     );
 
@@ -357,7 +426,37 @@ void main() {
             source: RelayAddSource.user,
           ),
         ).called(1);
+        verify(relayListRepository.publishConfiguredRelayList).called(1);
       },
+    );
+
+    blocTest<RelaySettingsCubit, RelaySettingsState>(
+      'restoreDefaultRelay returns local-only when publish fails after restore',
+      setUp: () {
+        when(
+          () => nostr.defaultRelayUrl,
+        ).thenReturn('wss://relay.staging.divine.video');
+        when(
+          () => nostr.configuredRelays,
+        ).thenReturn(['wss://relay.staging.divine.video']);
+        when(relayListRepository.publishConfiguredRelayList).thenAnswer(
+          (_) async => RelayListPublishResult.failed(
+            StateError('no indexer accepted'),
+            StackTrace.current,
+          ),
+        );
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        expect(
+          await cubit.restoreDefaultRelay(),
+          RestoreDefaultRelayOutcome.restoredLocalOnly,
+        );
+      },
+      expect: () => [
+        const RelaySettingsState(relays: ['wss://relay.staging.divine.video']),
+      ],
+      errors: () => [isA<StateError>()],
     );
 
     blocTest<RelaySettingsCubit, RelaySettingsState>(

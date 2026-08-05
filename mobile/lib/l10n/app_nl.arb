@@ -832,6 +832,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "Verbinden met relays mislukt. Check je netwerkverbinding.",
+    "relaySettingsSavedLocallyPublishPending": "Op dit apparaat opgeslagen. We synchroniseren het met je account zodra publiceren weer werkt.",
     "relaySettingsAddRelayTitle": "Relay toevoegen",
     "relaySettingsAddRelayPrompt": "Voer de WebSocket-URL in van de relay die je wilt toevoegen:",
     "relaySettingsBrowsePublicRelays": "Bekijk publieke relays op nostr.co.uk",

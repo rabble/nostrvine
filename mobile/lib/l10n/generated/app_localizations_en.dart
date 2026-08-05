@@ -2089,6 +2089,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to connect to relays. Please check your network connection.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'Saved on this device. We\'ll sync it to your account when publishing works again.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'Add Relay';
 
   @override

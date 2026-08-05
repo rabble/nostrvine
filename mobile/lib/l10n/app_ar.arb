@@ -829,6 +829,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "فشل الاتصال بالمحولات. يرجى التحقق من اتصال الشبكة.",
+    "relaySettingsSavedLocallyPublishPending": "تم الحفظ على هذا الجهاز. سنزامنه مع حسابك عندما يعمل النشر مرة أخرى.",
     "relaySettingsAddRelayTitle": "إضافة محول",
     "relaySettingsAddRelayPrompt": "أدخل رابط WebSocket للمحول الذي تريد إضافته:",
     "relaySettingsBrowsePublicRelays": "تصفّح المحولات العامة في nostr.co.uk",

@@ -12,6 +12,7 @@ import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -32,12 +33,19 @@ class RelaySettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final nostrService = ref.watch(nostrServiceProvider);
+    final relayListRepository = ref.watch(relayListRepositoryProvider);
     final capabilityService = ref.watch(relayCapabilityServiceProvider);
     final videoService = ref.watch(videoEventServiceProvider);
     return BlocProvider(
-      key: ValueKey((nostrService, capabilityService, videoService)),
+      key: ValueKey((
+        nostrService,
+        relayListRepository,
+        capabilityService,
+        videoService,
+      )),
       create: (_) => RelaySettingsCubit(
         nostrClient: nostrService,
+        relayListRepository: relayListRepository,
         relayCapabilityService: capabilityService,
         videoEventService: videoService,
       )..load(),
@@ -717,6 +725,12 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
         'Successfully added relay: $relayUrl',
         name: 'RelaySettingsScreen',
       );
+    case AddRelayOutcome.addedLocalOnly:
+      _showWarning(messenger, l10n.relaySettingsSavedLocallyPublishPending);
+      Log.warning(
+        'Added relay locally but kind:10002 publish is pending: $relayUrl',
+        name: 'RelaySettingsScreen',
+      );
     case AddRelayOutcome.addedConnectionPending:
       messenger.showSnackBar(
         SnackBar(
@@ -726,6 +740,16 @@ Future<void> _showAddRelayDialog(BuildContext context) async {
       );
       Log.info(
         'Added relay without connection: $relayUrl',
+        name: 'RelaySettingsScreen',
+      );
+    case AddRelayOutcome.addedConnectionPendingLocalOnly:
+      _showWarning(
+        messenger,
+        '${l10n.relaySettingsFailedToConnectCheck} '
+        '${l10n.relaySettingsSavedLocallyPublishPending}',
+      );
+      Log.warning(
+        'Added relay locally without connection and kind:10002 publish is pending: $relayUrl',
         name: 'RelaySettingsScreen',
       );
     case AddRelayOutcome.invalidUrl:
@@ -804,6 +828,12 @@ Future<void> _confirmRemoveRelay(
         'Successfully removed relay: $relayUrl',
         name: 'RelaySettingsScreen',
       );
+    case RemoveRelayOutcome.removedLocalOnly:
+      _showWarning(messenger, l10n.relaySettingsSavedLocallyPublishPending);
+      Log.warning(
+        'Removed relay locally but kind:10002 publish is pending: $relayUrl',
+        name: 'RelaySettingsScreen',
+      );
     case RemoveRelayOutcome.failed:
       _showError(messenger, l10n.relaySettingsFailedToRemoveRelay);
   }
@@ -846,6 +876,12 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
         ),
       );
       Log.info('Restored default relay', name: 'RelaySettingsScreen');
+    case RestoreDefaultRelayOutcome.restoredLocalOnly:
+      _showWarning(messenger, l10n.relaySettingsSavedLocallyPublishPending);
+      Log.warning(
+        'Restored default relay locally but kind:10002 publish is pending',
+        name: 'RelaySettingsScreen',
+      );
     case RestoreDefaultRelayOutcome.restoredConnectionPending:
       messenger.showSnackBar(
         SnackBar(
@@ -855,6 +891,16 @@ Future<void> _restoreDefaultRelay(BuildContext context) async {
       );
       Log.info(
         'Restored default relay without connection',
+        name: 'RelaySettingsScreen',
+      );
+    case RestoreDefaultRelayOutcome.restoredConnectionPendingLocalOnly:
+      _showWarning(
+        messenger,
+        '${l10n.relaySettingsFailedToConnectCheck} '
+        '${l10n.relaySettingsSavedLocallyPublishPending}',
+      );
+      Log.warning(
+        'Restored default relay locally without connection and kind:10002 publish is pending',
         name: 'RelaySettingsScreen',
       );
     case RestoreDefaultRelayOutcome.failed:
@@ -889,6 +935,12 @@ Future<void> _launchExternalUrl(BuildContext context, Uri url) async {
 void _showError(ScaffoldMessengerState messenger, String message) {
   messenger.showSnackBar(
     DivineSnackbarContainer.snackBar(message, error: true),
+  );
+}
+
+void _showWarning(ScaffoldMessengerState messenger, String message) {
+  messenger.showSnackBar(
+    SnackBar(content: Text(message), backgroundColor: VineTheme.warning),
   );
 }
 

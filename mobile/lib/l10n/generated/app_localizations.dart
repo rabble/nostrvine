@@ -3664,6 +3664,12 @@ abstract class AppLocalizations {
   /// **'Failed to connect to relays. Please check your network connection.'**
   String get relaySettingsFailedToConnectCheck;
 
+  /// No description provided for @relaySettingsSavedLocallyPublishPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device. We\'ll sync it to your account when publishing works again.'**
+  String get relaySettingsSavedLocallyPublishPending;
+
   /// No description provided for @relaySettingsAddRelayTitle.
   ///
   /// In en, this message translates to:

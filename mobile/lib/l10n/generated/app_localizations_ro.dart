@@ -2141,6 +2141,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'N-am putut conecta la relay-uri. Verifică-ți conexiunea la rețea.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'Salvat pe acest dispozitiv. Îl vom sincroniza cu contul tău când publicarea funcționează din nou.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'Adaugă relay';
 
   @override

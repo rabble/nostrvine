@@ -11,6 +11,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/relay_list_repository_provider.dart';
+import 'package:openvine/repositories/relay_list_repository.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
@@ -18,6 +20,31 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrService extends Mock implements NostrClient {}
+
+/// The real provider reaches AuthService and SharedPreferences, which this
+/// layout-focused suite does not wire up. Publishing always succeeds here so
+/// the assertions stay about the screen.
+class _FakeRelayListRepository implements RelayListRepository {
+  @override
+  Future<RelayListPublishResult> publishConfiguredRelayList() async =>
+      const RelayListPublishResult.published();
+
+  @override
+  Future<RelayListPublishResult> retryDirtyPublish() async =>
+      const RelayListPublishResult.published();
+
+  @override
+  bool isDirty(String pubkey) => false;
+}
+
+class _FailingRelayListRepository extends _FakeRelayListRepository {
+  @override
+  Future<RelayListPublishResult> publishConfiguredRelayList() async =>
+      RelayListPublishResult.failed(
+        StateError('no indexer accepted'),
+        StackTrace.current,
+      );
+}
 
 class _MockRelayCapabilityService extends Mock
     implements RelayCapabilityService {}
@@ -70,6 +97,9 @@ void main() {
           relayStatisticsStreamProvider.overrideWith(
             (_) => Stream.value({'wss://relay.divine.video': stats}),
           ),
+          relayListRepositoryProvider.overrideWithValue(
+            _FakeRelayListRepository(),
+          ),
           videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
       );
@@ -120,6 +150,9 @@ void main() {
         relayStatisticsServiceProvider.overrideWithValue(statsService),
         relayStatisticsStreamProvider.overrideWith(
           (_) => Stream.value({defaultRelay: stats}),
+        ),
+        relayListRepositoryProvider.overrideWithValue(
+          _FakeRelayListRepository(),
         ),
         videoEventServiceProvider.overrideWithValue(videoEventService),
       ],
@@ -187,6 +220,9 @@ void main() {
         relayStatisticsStreamProvider.overrideWith(
           (_) => Stream.value({customRelay: stats}),
         ),
+        relayListRepositoryProvider.overrideWithValue(
+          _FakeRelayListRepository(),
+        ),
         videoEventServiceProvider.overrideWithValue(videoEventService),
       ],
     );
@@ -224,6 +260,7 @@ void main() {
     Future<void> pumpScreen(
       WidgetTester tester, {
       required _MockNostrService nostrService,
+      RelayListRepository? relayListRepository,
     }) async {
       SharedPreferences.setMockInitialValues({});
 
@@ -245,6 +282,9 @@ void main() {
           relayStatisticsServiceProvider.overrideWithValue(statsService),
           relayStatisticsStreamProvider.overrideWith(
             (_) => const Stream<Map<String, RelayStatistics>>.empty(),
+          ),
+          relayListRepositoryProvider.overrideWithValue(
+            relayListRepository ?? _FakeRelayListRepository(),
           ),
           videoEventServiceProvider.overrideWithValue(videoEventService),
         ],
@@ -366,6 +406,51 @@ void main() {
         () => nostrService.addRelay(relay, source: RelayAddSource.user),
       ).called(1);
     });
+
+    testWidgets(
+      'still reports the connection failure when the relay list also '
+      'failed to publish',
+      (tester) async {
+        const relay = 'wss://pending.example.com';
+        final nostrService = _MockNostrService();
+        final configuredRelays = <String>[];
+        when(
+          () => nostrService.defaultRelayUrl,
+        ).thenReturn('wss://relay.divine.video');
+        when(
+          () => nostrService.configuredRelays,
+        ).thenAnswer((_) => List.unmodifiable(configuredRelays));
+        when(
+          () => nostrService.addRelay(relay, source: RelayAddSource.user),
+        ).thenAnswer((_) async {
+          configuredRelays.add(relay);
+          return false;
+        });
+
+        await pumpScreen(
+          tester,
+          nostrService: nostrService,
+          relayListRepository: _FailingRelayListRepository(),
+        );
+        // pumpScreen pins configuredRelays to const []; restore the live view
+        // so the cubit sees the relay that addRelay just saved locally.
+        when(
+          () => nostrService.configuredRelays,
+        ).thenAnswer((_) => List.unmodifiable(configuredRelays));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openAddSheetAndSubmit(tester, relay, l10n);
+
+        expect(
+          find.textContaining(l10n.relaySettingsFailedToConnectCheck),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining(l10n.relaySettingsSavedLocallyPublishPending),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('accepts uppercase WSS:// URL and forwards to NostrClient', (
       tester,

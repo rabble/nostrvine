@@ -5,6 +5,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/relay_settings/relay_settings_state.dart';
+import 'package:openvine/repositories/relay_list_repository.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
@@ -31,14 +32,17 @@ import 'package:openvine/utils/relay_url_utils.dart';
 class RelaySettingsCubit extends Cubit<RelaySettingsState> {
   RelaySettingsCubit({
     required NostrClient nostrClient,
+    required RelayListRepository relayListRepository,
     required RelayCapabilityService relayCapabilityService,
     required VideoEventService videoEventService,
   }) : _nostrClient = nostrClient,
+       _relayListRepository = relayListRepository,
        _relayCapabilityService = relayCapabilityService,
        _videoEventService = videoEventService,
        super(const RelaySettingsState());
 
   final NostrClient _nostrClient;
+  final RelayListRepository _relayListRepository;
   final RelayCapabilityService _relayCapabilityService;
   final VideoEventService _videoEventService;
 
@@ -106,11 +110,14 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
       );
       refreshRelays();
       if (!success) {
-        return _hasRelayConfigured(trimmed)
+        if (!_hasRelayConfigured(trimmed)) return AddRelayOutcome.failed;
+        return await _publishRelayListAfterLocalChange()
             ? AddRelayOutcome.addedConnectionPending
-            : AddRelayOutcome.failed;
+            : AddRelayOutcome.addedConnectionPendingLocalOnly;
       }
-      return AddRelayOutcome.added;
+      return await _publishRelayListAfterLocalChange()
+          ? AddRelayOutcome.added
+          : AddRelayOutcome.addedLocalOnly;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       return AddRelayOutcome.failed;
@@ -124,12 +131,14 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
         source: RelayRemoveSource.user,
       );
       refreshRelays();
-      if (!success) {
-        return _hasRelayConfigured(relayUrl)
-            ? RemoveRelayOutcome.failed
-            : RemoveRelayOutcome.removed;
+      // A `false` return only means "nothing to remove"; the relay is gone
+      // either way unless it is still configured.
+      if (!success && _hasRelayConfigured(relayUrl)) {
+        return RemoveRelayOutcome.failed;
       }
-      return RemoveRelayOutcome.removed;
+      return await _publishRelayListAfterLocalChange()
+          ? RemoveRelayOutcome.removed
+          : RemoveRelayOutcome.removedLocalOnly;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       return RemoveRelayOutcome.failed;
@@ -144,11 +153,16 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
       );
       refreshRelays();
       if (!success) {
-        return _hasDefaultRelayConfigured()
+        if (!_hasDefaultRelayConfigured()) {
+          return RestoreDefaultRelayOutcome.failed;
+        }
+        return await _publishRelayListAfterLocalChange()
             ? RestoreDefaultRelayOutcome.restoredConnectionPending
-            : RestoreDefaultRelayOutcome.failed;
+            : RestoreDefaultRelayOutcome.restoredConnectionPendingLocalOnly;
       }
-      return RestoreDefaultRelayOutcome.restored;
+      return await _publishRelayListAfterLocalChange()
+          ? RestoreDefaultRelayOutcome.restored
+          : RestoreDefaultRelayOutcome.restoredLocalOnly;
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       return RestoreDefaultRelayOutcome.failed;
@@ -182,5 +196,15 @@ class RelaySettingsCubit extends Cubit<RelaySettingsState> {
 
   bool _hasRelayConfigured(String relayUrl) {
     return state.relays.any((relay) => relayUrlsEquivalent(relay, relayUrl));
+  }
+
+  Future<bool> _publishRelayListAfterLocalChange() async {
+    final result = await _relayListRepository.publishConfiguredRelayList();
+    final error = result.error;
+    final stackTrace = result.stackTrace;
+    if (error != null) {
+      addError(error, stackTrace ?? StackTrace.current);
+    }
+    return !result.localOnly;
   }
 }

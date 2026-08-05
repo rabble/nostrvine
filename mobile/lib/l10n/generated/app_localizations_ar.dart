@@ -2074,6 +2074,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل الاتصال بالمحولات. يرجى التحقق من اتصال الشبكة.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'تم الحفظ على هذا الجهاز. سنزامنه مع حسابك عندما يعمل النشر مرة أخرى.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'إضافة محول';
 
   @override

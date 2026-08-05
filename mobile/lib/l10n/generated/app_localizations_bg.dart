@@ -2124,6 +2124,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Не успяхме да се свържем с релетата. Провери мрежовата си връзка.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'Запазено е на това устройство. Ще го синхронизираме с акаунта ти, когато публикуването заработи отново.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'Добави реле';
 
   @override
