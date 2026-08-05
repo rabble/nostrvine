@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for CuratedListService CRUD operations (create, update, delete lists)
 // ABOUTME: Tests core list management functionality with mocked dependencies
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -978,6 +979,40 @@ void main() {
           expect(result, isTrue);
           expect(service.getListById(list.id), isNull);
           verifyNever(() => mockNostr.publishEvent(any()));
+        },
+      );
+
+      test(
+        'deletes the requested list when an earlier one goes first',
+        () async {
+          final earlier = await service.createList(
+            name: 'Earlier',
+            isPublic: false,
+          );
+          final target = await service.createList(name: 'Target');
+          final later = await service.createList(
+            name: 'Later',
+            isPublic: false,
+          );
+          reset(mockNostr);
+
+          // Held open so the second delete lands inside the deletion publish,
+          // which under publishEventAwaitOk can run to a 15s deadline.
+          final deletionGate = Completer<void>();
+          when(() => mockNostr.publishEventAwaitOk(any())).thenAnswer((
+            invocation,
+          ) async {
+            await deletionGate.future;
+            return _accepted(invocation.positionalArguments[0] as Event);
+          });
+
+          final pendingDelete = service.deleteOwnedList(target!.id);
+          await service.deleteOwnedList(earlier!.id);
+          deletionGate.complete();
+
+          expect(await pendingDelete, isTrue);
+          expect(service.getListById(target.id), isNull);
+          expect(service.getListById(later!.id), isNotNull);
         },
       );
 

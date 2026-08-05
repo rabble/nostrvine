@@ -598,7 +598,7 @@ class CuratedListService extends ChangeNotifier {
         }
       }
 
-      await _removeListAndSubscription(listId, listIndex);
+      await _removeListAndSubscription(listId);
 
       Log.info(
         'Deleted owned curated list: ${list.name} ($listId)',
@@ -650,8 +650,14 @@ class CuratedListService extends ChangeNotifier {
     return false;
   }
 
-  Future<void> _removeListAndSubscription(String listId, int listIndex) async {
-    _lists.removeAt(listIndex);
+  /// Removes [listId] locally, re-resolving its position by ID.
+  ///
+  /// The caller captures its index before the deletion publish awaits, and
+  /// under `publishEventAwaitOk` that wait runs to a 15s deadline. Anything
+  /// removing an earlier list in the meantime shifts the index, so a
+  /// positional remove would drop the wrong one.
+  Future<void> _removeListAndSubscription(String listId) async {
+    _lists.removeWhere((list) => list.id == listId);
     _subscribedListIds.remove(listId);
     await _saveLists();
     await _saveSubscribedListIds();
