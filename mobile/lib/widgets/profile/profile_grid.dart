@@ -326,12 +326,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           final completer = Completer<void>();
           bloc.add(ProfileRepostedVideosSyncRequested(completer: completer));
           refreshes.add(completer.future);
-        case ProfileTabKind.saved:
-          final bloc = _savedVideosBloc;
-          if (bloc == null) break;
-          final completer = Completer<void>();
-          bloc.add(ProfileSavedVideosSyncRequested(completer: completer));
-          refreshes.add(completer.future);
         case ProfileTabKind.lists:
           final service = ref.read(curatedListsStateProvider.notifier).service;
           if (service == null) break;

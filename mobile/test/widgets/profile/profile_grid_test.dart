@@ -39,8 +39,6 @@ class _MockCommentsRepository extends Mock implements CommentsRepository {}
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
-class _MockBookmarkService extends Mock implements BookmarkService {}
-
 /// In-memory [CacheDao] whose writes can be parked, so a test can hold a tab
 /// BLoC in the post-emit snapshot write the way a real disk write does.
 class _GatedCacheDao implements CacheDao {
@@ -397,14 +395,21 @@ void main() {
       "pull-to-refresh completes when the next pull lands during a tab's "
       'snapshot write',
       (tester) async {
+        when(
+          likesRepository.getOrderedLikedEventIds,
+        ).thenAnswer((_) async => const <String>[]);
+        when(
+          likesRepository.syncUserReactions,
+        ).thenAnswer((_) async => const LikesSyncResult.empty());
+
         await tester.pumpWidget(buildSubject(isOwnProfile: true));
         await tester.pump();
 
-        // View Saved so it joins the set of tabs a refresh re-syncs, and let
-        // it settle on the empty bookmark list.
+        // View Liked so it joins the set of tabs a refresh re-syncs, and let
+        // it settle on the empty liked list.
         final tabBar = tester.widget<TabBar>(find.byType(TabBar));
         tabBar.controller!.animateTo(
-          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.saved),
+          profileTabKinds(isOwnProfile: true).indexOf(ProfileTabKind.liked),
         );
         await tester.pumpAndSettle();
 
