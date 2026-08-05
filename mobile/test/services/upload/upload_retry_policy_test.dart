@@ -178,6 +178,32 @@ void main() {
         );
       });
 
+      test('auth-expired BlossomResumableUploadException (401) → false', () {
+        expect(
+          policy.isRetriableError(
+            const BlossomResumableUploadException(
+              'Unauthorized',
+              statusCode: 401,
+              failureReason: BlossomUploadFailureReason.auth,
+            ),
+          ),
+          isFalse,
+        );
+      });
+
+      test('auth-expired BlossomResumableUploadException (403) → false', () {
+        expect(
+          policy.isRetriableError(
+            const BlossomResumableUploadException(
+              'Forbidden',
+              statusCode: 403,
+              failureReason: BlossomUploadFailureReason.auth,
+            ),
+          ),
+          isFalse,
+        );
+      });
+
       test('session expired string → false', () {
         expect(policy.isRetriableError(Exception('session expired')), isFalse);
       });

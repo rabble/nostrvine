@@ -849,6 +849,7 @@ class UploadManager implements BackgroundAwareService {
       await _handleUploadFailure(
         upload,
         Exception('Web platform uploads not yet implemented'),
+        StackTrace.current,
       );
       return;
     }
@@ -873,7 +874,11 @@ class UploadManager implements BackgroundAwareService {
         name: 'UploadManager',
         category: LogCategory.video,
       );
-      await _handleUploadFailure(upload, Exception('Video file not found'));
+      await _handleUploadFailure(
+        upload,
+        Exception('Video file not found'),
+        StackTrace.current,
+      );
       return;
     }
 
@@ -903,7 +908,7 @@ class UploadManager implements BackgroundAwareService {
         category: LogCategory.video,
       );
       await _performUploadWithRetry(upload, videoFile, onProgress);
-    } catch (e) {
+    } catch (e, stackTrace) {
       // A user-initiated pause/cancel tears down the in-flight transfer, which
       // surfaces here as a failure. pauseUpload/cancelUpload already wrote the
       // authoritative status, so don't overwrite it or report the stop as a
@@ -921,7 +926,7 @@ class UploadManager implements BackgroundAwareService {
         name: 'UploadManager',
         category: LogCategory.video,
       );
-      await _handleUploadFailure(upload, e);
+      await _handleUploadFailure(upload, e, stackTrace);
     } finally {
       _userStoppedUploadIds.remove(upload.id);
     }
@@ -1249,7 +1254,11 @@ class UploadManager implements BackgroundAwareService {
   }
 
   /// Handle upload failure with comprehensive crash reporting
-  Future<void> _handleUploadFailure(PendingUpload upload, Object error) async {
+  Future<void> _handleUploadFailure(
+    PendingUpload upload,
+    Object error,
+    StackTrace stackTrace,
+  ) async {
     final endTime = DateTime.now();
     final metrics = _reporter.metricsFor(upload.id);
     final latestUpload = getUpload(upload.id) ?? upload;
@@ -1290,6 +1299,7 @@ class UploadManager implements BackgroundAwareService {
       errorCategory,
       metrics,
       connectivity,
+      stackTrace: stackTrace,
       isManagerInitialized: _isInitialized,
     );
 

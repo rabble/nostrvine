@@ -4416,6 +4416,41 @@ void main() {
         );
       });
 
+      test(
+        'resumeUploadSession throws auth-classified exception on 401',
+        () async {
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/sessions'),
+              statusCode: 401,
+            ),
+          );
+
+          expect(
+            () => service.resumeUploadSession(
+              session: const BlossomResumableUploadSession(
+                uploadId: 'up_unauthorized',
+                uploadUrl:
+                    'https://upload.divine.video/sessions/up_unauthorized',
+                chunkSize: 1024,
+                nextOffset: 0,
+              ),
+            ),
+            throwsA(
+              isA<BlossomResumableUploadException>()
+                  .having((e) => e.statusCode, 'statusCode', 401)
+                  .having(
+                    (e) => e.failureReason,
+                    'failureReason',
+                    BlossomUploadFailureReason.auth,
+                  ),
+            ),
+          );
+        },
+      );
+
       test('resumeUploadSession throws on unexpected status', () async {
         when(
           () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
@@ -8148,6 +8183,117 @@ void main() {
           await tempDir.delete(recursive: true);
         },
       );
+
+      test('expired resumable session re-inits without session HEAD', () async {
+        service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+          defaultServerUrl: 'https://media.divine.video',
+          clock: () => DateTime.utc(2026),
+        );
+
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+        );
+
+        final tempDir = await Directory.systemTemp.createTemp(
+          'expired_resume_test_',
+        );
+        final file = File('${tempDir.path}/video.mp4')
+          ..writeAsBytesSync([0x00, 0x01, 0x02]);
+
+        var sessionHeadCalls = 0;
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          if (url.contains('/sessions/')) {
+            sessionHeadCalls++;
+          }
+          return Response(
+            requestOptions: RequestOptions(path: url),
+            statusCode: 200,
+            headers: Headers.fromMap({
+              'x-divine-upload-extensions': ['resumable-sessions'],
+            }),
+          );
+        });
+
+        when(
+          () => mockDio.post<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((invocation) async {
+          final url = invocation.positionalArguments.first as String;
+          if (url.contains('/upload/init')) {
+            return Response(
+              requestOptions: RequestOptions(path: url),
+              statusCode: 201,
+              data: {
+                'uploadId': 'up_new',
+                'uploadUrl': 'https://upload.divine.video/sessions/up_new',
+                'chunkSize': 1024,
+                'nextOffset': 0,
+              },
+            );
+          }
+          return Response(
+            requestOptions: RequestOptions(path: url),
+            statusCode: 200,
+            data: {
+              'url': 'https://media.divine.video/final',
+              'fallbackUrl': 'https://media.divine.video/final',
+            },
+          );
+        });
+
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/sessions/up_new'),
+            statusCode: 204,
+            headers: Headers.fromMap({
+              'upload-offset': ['3'],
+            }),
+          ),
+        );
+
+        final result = await service.uploadVideo(
+          videoFile: file,
+          nostrPubkey: _testPublicKey,
+          title: 'test',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
+          resumableSession: BlossomResumableUploadSession(
+            uploadId: 'up_old',
+            uploadUrl: 'https://upload.divine.video/sessions/up_old',
+            chunkSize: 1024,
+            nextOffset: 0,
+            expiresAt: DateTime.utc(2025),
+          ),
+        );
+
+        expect(result.success, isTrue);
+        expect(sessionHeadCalls, isZero);
+
+        await tempDir.delete(recursive: true);
+      });
     });
 
     group('upload response 409 with progress callback', () {

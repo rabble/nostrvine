@@ -75,11 +75,8 @@ void main() {
       () => crashReporter.setCustomKey(any(), any()),
     ).thenAnswer((_) async {});
     when(
-      () => crashReporter.recordError(
-        any(),
-        any(),
-        reason: any(named: 'reason'),
-      ),
+      () =>
+          crashReporter.recordError(any(), any(), reason: any(named: 'reason')),
     ).thenAnswer((_) async {});
 
     reporter = UploadProgressReporter(
@@ -237,12 +234,35 @@ void main() {
     test(
       'expired session (BlossomResumableUploadException 410) → UPLOAD_SESSION_EXPIRED',
       () async {
-        const error = BlossomResumableUploadException(
-          'Gone',
-          statusCode: 410,
-        );
+        const error = BlossomResumableUploadException('Gone', statusCode: 410);
         final result = await reporter.categorizeError(error);
         expect(result, equals('UPLOAD_SESSION_EXPIRED'));
+      },
+    );
+
+    test(
+      'auth-expired session (BlossomResumableUploadException 401) → AUTHENTICATION',
+      () async {
+        const error = BlossomResumableUploadException(
+          'Unauthorized',
+          statusCode: 401,
+          failureReason: BlossomUploadFailureReason.auth,
+        );
+        final result = await reporter.categorizeError(error);
+        expect(result, equals('AUTHENTICATION'));
+      },
+    );
+
+    test(
+      'auth-expired session (BlossomResumableUploadException 403) → AUTHENTICATION',
+      () async {
+        const error = BlossomResumableUploadException(
+          'Forbidden',
+          statusCode: 403,
+          failureReason: BlossomUploadFailureReason.auth,
+        );
+        final result = await reporter.categorizeError(error);
+        expect(result, equals('AUTHENTICATION'));
       },
     );
   });
@@ -423,12 +443,13 @@ void main() {
   // ---------------------------------------------------------------------------
   group('crash reporting', () {
     test(
-      'sendUploadFailureCrashReport routes the error to the crash port',
+      'sendUploadFailureCrashReport skips expected upload failures',
       () async {
         when(() => store.length).thenReturn(3);
         when(() => store.queuedCount).thenReturn(1);
         final upload = _makeUpload();
         final error = Exception('boom');
+        final stackTrace = StackTrace.current;
 
         await reporter.sendUploadFailureCrashReport(
           upload,
@@ -436,18 +457,52 @@ void main() {
           'NETWORK_ERROR',
           null,
           ConnectivityResult.wifi,
+          stackTrace: stackTrace,
+          isManagerInitialized: true,
+        );
+
+        verifyNever(
+          () => crashReporter.recordError(
+            any(),
+            any(),
+            reason: any(named: 'reason'),
+          ),
+        );
+        verify(
+          () => crashReporter.setCustomKey(any(), any()),
+        ).called(greaterThan(0));
+      },
+    );
+
+    test(
+      'sendUploadFailureCrashReport records reportable failures with caller stack',
+      () async {
+        when(() => store.length).thenReturn(3);
+        when(() => store.queuedCount).thenReturn(1);
+        final upload = _makeUpload();
+        final error = StateError('boom');
+        final stackTrace = StackTrace.current;
+
+        await reporter.sendUploadFailureCrashReport(
+          upload,
+          error,
+          'UNKNOWN',
+          null,
+          ConnectivityResult.wifi,
+          stackTrace: stackTrace,
           isManagerInitialized: true,
         );
 
         final captured = verify(
           () => crashReporter.recordError(
             captureAny(),
-            any(),
+            captureAny(),
             reason: captureAny(named: 'reason'),
           ),
         ).captured;
         expect(captured[0], same(error));
-        expect(captured[1], equals('Video upload failure - NETWORK_ERROR'));
+        expect(captured[1], same(stackTrace));
+        expect(captured[2], equals('Video upload failure - UNKNOWN'));
         verify(
           () => crashReporter.setCustomKey(any(), any()),
         ).called(greaterThan(0));
