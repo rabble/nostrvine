@@ -26,8 +26,9 @@ import 'package:unified_logger/unified_logger.dart';
 /// Grid widget displaying the current user's saved (bookmarked) videos.
 ///
 /// Requires [ProfileSavedVideosBloc] to be provided in the widget tree.
-/// Only used on the viewer's own profile — bookmarks are private, so there
-/// is no "other user's saved" variant.
+/// Only ever shows the viewer's own bookmarks — they are private, so there
+/// is no "other user's saved" variant. Hosted by `SavedVideosScreen`, which
+/// the profile's Lists tab links to.
 class ProfileSavedGrid extends StatefulWidget {
   const ProfileSavedGrid({required this.userIdHex, super.key});
 
@@ -40,7 +41,8 @@ class ProfileSavedGrid extends StatefulWidget {
 
 class _ProfileSavedGridState extends State<ProfileSavedGrid>
     with ScrollPaginationMixin {
-  /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
+  /// Resolved from the enclosing [PrimaryScrollController], which the host
+  /// screen supplies.
   ScrollController? _primaryScrollController;
 
   @override
