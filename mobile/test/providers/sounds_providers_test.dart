@@ -9,9 +9,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:sounds_repository/sounds_repository.dart';
 
@@ -21,6 +23,22 @@ class MockNostrClient extends Mock implements NostrClient {}
 class MockSoundsRepository extends Mock implements SoundsRepository {}
 
 class MockSoundLibraryService extends Mock implements SoundLibraryService {}
+
+class _StubAuthService extends Mock implements AuthService {
+  _StubAuthService(this._pubkey);
+
+  final String? _pubkey;
+
+  @override
+  String? get currentPublicKeyHex => _pubkey;
+
+  @override
+  Stream<AuthState> get authStateStream => const Stream<AuthState>.empty();
+
+  @override
+  AuthState get authState =>
+      _pubkey == null ? AuthState.unauthenticated : AuthState.authenticated;
+}
 
 /// Helper to create test AudioEvent instances
 AudioEvent createTestAudioEvent({
@@ -43,6 +61,8 @@ AudioEvent createTestAudioEvent({
 }
 
 void main() {
+  _ownerExceptionTests();
+
   group('SoundsProviders', () {
     late MockNostrClient mockNostrClient;
     late MockSoundsRepository mockRepository;
@@ -503,6 +523,69 @@ void main() {
 
         subscription.close();
       });
+    });
+  });
+}
+
+void _ownerExceptionTests() {
+  group('audioReuseConsent owner exception', () {
+    const ownerPubkey = 'owner-pubkey-hex';
+
+    ProviderContainer buildContainer(String? viewerPubkey) {
+      final container = ProviderContainer(
+        overrides: [
+          authServiceProvider.overrideWithValue(_StubAuthService(viewerPubkey)),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test(
+      'a creator may reuse their own sound even without a consent tag',
+      () async {
+        // The picker used to skip this check while the detail screen applied
+        // it, so one creator was told the same private sound was both usable
+        // and unusable. The provider is now the only place it lives.
+        // No consent tag and no explicit denial — the "unknown, ask the
+        // resolver" shape a legacy sound loads as.
+        final ownSound = createTestAudioEvent(
+          id: 'own',
+          pubkey: ownerPubkey,
+        ).copyWith(allowsReuse: false);
+        expect(ownSound.allowsReuse, isFalse);
+        expect(ownSound.hasExplicitReuseConsent, isFalse);
+
+        final container = buildContainer(ownerPubkey);
+        await expectLater(
+          container.read(audioReuseConsentProvider(ownSound).future),
+          completion(isTrue),
+        );
+      },
+    );
+
+    test('a signed-out viewer gets no owner exception', () async {
+      final sound = createTestAudioEvent(
+        id: 'own',
+        pubkey: ownerPubkey,
+      ).copyWith(allowsReuse: false, hasExplicitReuseConsent: true);
+      final container = buildContainer(null);
+      await expectLater(
+        container.read(audioReuseConsentProvider(sound).future),
+        completion(isFalse),
+      );
+    });
+
+    test("another creator's sound does not get the owner exception", () async {
+      final sound = createTestAudioEvent(
+        id: 'theirs',
+        pubkey: ownerPubkey,
+      ).copyWith(allowsReuse: false, hasExplicitReuseConsent: true);
+      final container = buildContainer('a-different-viewer-pubkey');
+      await expectLater(
+        container.read(audioReuseConsentProvider(sound).future),
+        completion(isFalse),
+      );
     });
   });
 }

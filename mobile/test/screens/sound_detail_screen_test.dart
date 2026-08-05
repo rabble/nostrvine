@@ -612,8 +612,45 @@ void main() {
           await tester.pump();
 
           expect(find.text('Use Sound'), findsOneWidget);
+          expect(find.text('Remixing allowed'), findsOneWidget);
+          expect(find.text('Credit only'), findsNothing);
         },
       );
+
+      testWidgets('withholds reuse badge while legacy terms are pending', (
+        tester,
+      ) async {
+        final termsCompleter = Completer<bool>();
+        final consentCompleter = Completer<bool>();
+        final sound = originalSound(allowReuse: false);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: SoundDetailScreen(sound: sound),
+            overrides: [
+              ...gridOverrides(),
+              audioReuseTermsProvider(
+                sound,
+              ).overrideWith((ref) => termsCompleter.future),
+              audioReuseConsentProvider(
+                sound,
+              ).overrideWith((ref) => consentCompleter.future),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Use Sound'), findsNothing);
+        expect(find.text('Credit only'), findsNothing);
+        expect(find.text('Remixing allowed'), findsNothing);
+
+        termsCompleter.complete(true);
+        consentCompleter.complete(true);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Use Sound'), findsOneWidget);
+        expect(find.text('Remixing allowed'), findsOneWidget);
+      });
 
       testWidgets('shows Use Sound for the creator viewing their own sound', (
         tester,

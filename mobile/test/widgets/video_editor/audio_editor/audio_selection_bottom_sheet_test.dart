@@ -15,8 +15,10 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/saved_sounds/saved_sounds_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/saved_sound.dart';
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
@@ -69,6 +71,7 @@ void main() {
       List<AudioEvent> savedSounds = const [],
       List<VineSound> bundledSounds = const [],
       AudioPlaybackService? audioService,
+      String? viewerPubkey,
     }) {
       final savedSoundsBloc = _MockSavedSoundsBloc();
       when(() => savedSoundsBloc.state).thenReturn(
@@ -90,6 +93,11 @@ void main() {
         value: savedSoundsBloc,
         child: ProviderScope(
           overrides: [
+            // `audioReuseConsentProvider` reads the viewer so it can grant a
+            // creator consent for their own sound.
+            authServiceProvider.overrideWithValue(
+              _StubAuthService(viewerPubkey),
+            ),
             soundLibraryServiceProvider.overrideWith(
               (_) async => _FakeSoundLibraryService(bundledSounds),
             ),
@@ -233,6 +241,55 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(AudioEditorSelectionOverlay), findsNothing);
+      });
+
+      testWidgets("selects the creator's own legacy sound", (tester) async {
+        const ownerPubkey = 'owner-pubkey-hex';
+        final audioService = _MockAudioPlaybackService();
+        final ownLegacySound = _createTestAudioEvent(
+          id: 'own-legacy-sound',
+          title: 'Own Legacy Sound',
+          pubkey: ownerPubkey,
+        ).copyWith(allowsReuse: false, hasExplicitReuseConsent: false);
+
+        when(() => audioService.isPlaying).thenReturn(false);
+        when(
+          () => audioService.playingStream,
+        ).thenAnswer((_) => const Stream<bool>.empty());
+        when(
+          () => audioService.durationStream,
+        ).thenAnswer((_) => const Stream<Duration?>.empty());
+        when(
+          () => audioService.positionStream,
+        ).thenAnswer((_) => const Stream<Duration>.empty());
+        when(() => audioService.duration).thenReturn(null);
+        when(
+          () => audioService.seek(Duration.zero),
+        ).thenAnswer((_) => Future<void>.value());
+        when(audioService.stop).thenAnswer((_) => Future<void>.value());
+        when(
+          () => audioService.loadAudio(ownLegacySound.url!),
+        ).thenAnswer((_) => Future.value(const Duration(seconds: 5)));
+        when(audioService.play).thenAnswer((_) => Future<void>.value());
+        when(audioService.pause).thenAnswer((_) => Future<void>.value());
+        when(audioService.dispose).thenAnswer((_) => Future<void>.value());
+
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data([ownLegacySound]),
+            audioService: audioService,
+            viewerPubkey: ownerPubkey,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Own Legacy Sound'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AudioEditorSelectionOverlay), findsOneWidget);
       });
 
       testWidgets('renders search empty state when no tab matches', (
@@ -582,4 +639,20 @@ class _FakeSoundLibraryService extends SoundLibraryService {
 
   @override
   Future<void> loadCustomSounds() async {}
+}
+
+class _StubAuthService extends Mock implements AuthService {
+  _StubAuthService([this._pubkey]);
+
+  final String? _pubkey;
+
+  @override
+  String? get currentPublicKeyHex => _pubkey;
+
+  @override
+  Stream<AuthState> get authStateStream => const Stream<AuthState>.empty();
+
+  @override
+  AuthState get authState =>
+      _pubkey == null ? AuthState.unauthenticated : AuthState.authenticated;
 }

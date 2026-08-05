@@ -2,6 +2,7 @@
 // ABOUTME: Provides reactive state management for sounds from SoundsRepository.
 
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/providers/auth_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/video_providers.dart';
@@ -140,11 +141,48 @@ Future<int> soundUsageCount(Ref ref, String audioEventId) async {
   return repository.fetchVideosUsingSoundCount(audioEventId);
 }
 
+/// Viewer-independent public reuse terms for sounds.
+///
+/// Returns `null` when a legacy sound needs source-video verification before
+/// the app can claim whether remixing is allowed.
+bool? audioReuseTermsFromEvent(AudioEvent sound) {
+  if (sound.isBundled || sound.isLocalImport) return true;
+  if (sound.externalSource case final external?) {
+    return external.license.allowsDerivatives;
+  }
+  if (sound.allowsReuse) return true;
+  if (sound.hasExplicitReuseConsent) return false;
+  return null;
+}
+
+/// Viewer-independent reuse terms for explicit and legacy audio events.
+@riverpod
+Future<bool> audioReuseTerms(Ref ref, AudioEvent sound) {
+  final knownTerms = audioReuseTermsFromEvent(sound);
+  if (knownTerms != null) return Future.value(knownTerms);
+  return AudioReuseConsentResolver(
+    soundsRepository: ref.watch(soundsRepositoryProvider),
+    videosRepository: ref.watch(videosRepositoryProvider),
+  ).verify(sound);
+}
+
 /// Fail-closed reuse consent for explicit and legacy audio events.
+///
+/// A creator always has consent for their own sound. The shared permission
+/// provider owns that rule so call sites agree; UI may still short-circuit
+/// synchronously knowable cases to avoid one-frame action flicker.
 @riverpod
 Future<bool> audioReuseConsent(Ref ref, AudioEvent sound) {
-  if (sound.allowsReuse) return Future.value(true);
-  if (sound.hasExplicitReuseConsent) return Future.value(false);
+  final knownTerms = audioReuseTermsFromEvent(sound);
+  if (knownTerms == true) return Future.value(true);
+  // Re-read on auth transitions so an account switch cannot leave the previous
+  // identity's ownership answer cached against this sound.
+  ref.watch(currentAuthStateProvider);
+  final viewer = ref.watch(authServiceProvider).currentPublicKeyHex;
+  if (viewer != null && viewer.isNotEmpty && viewer == sound.pubkey) {
+    return Future.value(true);
+  }
+  if (knownTerms == false) return Future.value(false);
   return AudioReuseConsentResolver(
     soundsRepository: ref.watch(soundsRepositoryProvider),
     videosRepository: ref.watch(videosRepositoryProvider),

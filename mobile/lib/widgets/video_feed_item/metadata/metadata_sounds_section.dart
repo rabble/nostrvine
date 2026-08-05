@@ -277,9 +277,11 @@ class _SoundListItem extends ConsumerWidget {
                 audio.creatorPubkey != audio.pubkey)
               context.l10n.soundSharedBy(publisherName),
           ].join(' · ');
+    // Null while legacy terms are still being verified. The badge states the
+    // sound's public terms, not the current viewer's permission to reuse it.
+    final knownReuseTerms = audioReuseTermsFromEvent(audio);
     final reuseAllowed =
-        audio.isBundled ||
-        (ref.watch(audioReuseConsentProvider(audio)).value ?? false);
+        knownReuseTerms ?? ref.watch(audioReuseTermsProvider(audio)).value;
 
     return Semantics(
       button: true,
@@ -317,16 +319,17 @@ class _SoundListItem extends ConsumerWidget {
                       color: context.vineColors.onSurfaceVariant,
                     ),
                   ),
-                  Text(
-                    reuseAllowed
-                        ? context.l10n.soundRemixingAllowed
-                        : context.l10n.soundCreditOnly,
-                    style: VineTheme.labelSmallFont(
-                      color: reuseAllowed
-                          ? VineTheme.vineGreen
-                          : VineTheme.onSurfaceVariant,
+                  if (reuseAllowed != null)
+                    Text(
+                      reuseAllowed
+                          ? context.l10n.soundRemixingAllowed
+                          : context.l10n.soundCreditOnly,
+                      style: VineTheme.labelSmallFont(
+                        color: reuseAllowed
+                            ? VineTheme.vineGreen
+                            : VineTheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
                   if (audio.licenseName case final license?)
                     Text(
                       license,
@@ -386,10 +389,7 @@ class _SoundListItem extends ConsumerWidget {
       // "Sound not found".
       hostContext.pushWithVideoPause(
         SoundDetailScreen.pathForId(audio.id),
-        extra: <String, dynamic>{
-          'sound': audio,
-          'sourceVideo': sourceVideo,
-        },
+        extra: <String, dynamic>{'sound': audio, 'sourceVideo': sourceVideo},
       );
     });
   }
