@@ -1,4 +1,4 @@
-// ABOUTME: Confirms feed media is 404 plus moderation-unavailable before
+// ABOUTME: Confirms feed media is 404 plus a terminal moderation block before
 // ABOUTME: the home feed skips past + persistently prunes it. See #6251.
 
 import 'package:openvine/services/broken_video_tracker.dart';
@@ -19,11 +19,13 @@ import 'package:openvine/services/video_moderation_status_service.dart';
 /// via [MediaAvailabilityChecker] — NOT the playback error string, which is
 /// platform-divergent (see #5953 findings).
 ///
-/// A 404 is only the first gate. Blossom can answer 404 for blobs that
-/// moderation still classifies as age-restricted, so a HEAD-confirmed 404 is
-/// persisted only when the requester-independent moderation status confirms the
-/// blob is blocked or quarantined. Age-restricted and unknown moderation states
-/// stay recoverable and must not be marked broken. See #6251.
+/// A 404 is only the first gate. Blossom answers 404 for quarantined blobs and
+/// for blobs moderation classifies as age-restricted, so a HEAD-confirmed 404
+/// is persisted only when the requester-independent moderation status says the
+/// blob is `blocked` — the single terminal verdict. Quarantine maps to a
+/// reversible RESTRICT (an approval-required uploader's SAFE clip is rewritten
+/// to it), so quarantined, age-restricted and unknown states stay recoverable
+/// and must not be marked broken. See #6251.
 class DeadMediaFeedGuard {
   const DeadMediaFeedGuard({
     required BrokenVideoTracker brokenVideoTracker,
@@ -39,12 +41,13 @@ class DeadMediaFeedGuard {
   final VideoModerationStatusService _moderationStatusService;
 
   /// Returns `true` iff [videoUrl] is a HEAD-confirmed 404 and moderation
-  /// confirms the blob is blocked or quarantined.
+  /// confirms the blob is `blocked`.
   ///
   /// Returns `false` when [videoUrl] is missing, reachable, returns any status
   /// other than 404, the HEAD request fails, the blob hash cannot be resolved,
-  /// the moderation lookup fails, or moderation says the blob is only
-  /// age-restricted. The caller must then keep the item recoverable.
+  /// the moderation lookup fails, or moderation reports a reversible verdict
+  /// (quarantined / age-restricted). The caller must then keep the item
+  /// recoverable.
   Future<bool> isConfirmedUnavailable({
     required String? videoUrl,
     String? explicitSha256,
@@ -60,7 +63,10 @@ class DeadMediaFeedGuard {
     if (sha256 == null) return false;
 
     final status = await _moderationStatusService.fetchStatus(sha256);
-    return status?.blocked == true || status?.quarantined == true;
+    // `blocked` (PERMANENT_BAN) is the only terminal verdict. QUARANTINE maps
+    // to blossom RESTRICT: reversible and pending review, so a quarantined
+    // blob 404s now but must stay recoverable. See #6251.
+    return status?.blocked == true;
   }
 
   /// Persists [videoId] as broken iff [isConfirmedUnavailable] returns `true`,

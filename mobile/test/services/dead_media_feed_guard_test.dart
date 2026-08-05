@@ -1,5 +1,5 @@
-// ABOUTME: Tests DeadMediaFeedGuard — confirms 404 plus blocked/quarantined
-// ABOUTME: moderation before marking broken; recoverable cases keep the item.
+// ABOUTME: Tests DeadMediaFeedGuard — confirms 404 plus a terminal `blocked`
+// ABOUTME: verdict before marking broken; reversible cases keep the item.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -184,7 +184,11 @@ void main() {
         verifyNever(() => tracker.markVideoBroken(any(), any()));
       });
 
-      test('prunes a 404 when moderation says quarantined', () async {
+      // QUARANTINE maps to blossom RESTRICT — the reversible, pending-review
+      // withhold, and the state an approval-required uploader's SAFE clip is
+      // rewritten to. BrokenVideoTracker holds marks for 7 days and nothing
+      // calls unmarkVideoBroken, so an un-quarantine never reaches the client.
+      test('does not prune a 404 when moderation says quarantined', () async {
         const url = 'https://media.divine.video/quarantined';
         final sha256 = 'd' * 64;
         when(
@@ -200,8 +204,50 @@ void main() {
           explicitSha256: sha256,
         );
 
-        expect(result, isTrue);
-        verify(() => tracker.markVideoBroken('v1', any())).called(1);
+        expect(result, isFalse);
+        verifyNever(() => tracker.markVideoBroken(any(), any()));
+      });
+    });
+
+    // The fullscreen feed injects this predicate straight into
+    // FullscreenFeedBloc (pooled_fullscreen_video_feed_screen.dart) and
+    // persists off its bool, so the reversible verdicts must be pinned here
+    // too — not only through confirmAndMarkMissing.
+    group('isConfirmedUnavailable', () {
+      const url = 'https://media.divine.video/hash';
+
+      setUp(() {
+        when(
+          () => checker.isConfirmedMissing(url),
+        ).thenAnswer((_) async => true);
+      });
+
+      test('is true for a 404 blocked by moderation', () async {
+        when(
+          () => moderationStatusService.fetchStatus(any()),
+        ).thenAnswer((_) async => status(blocked: true));
+
+        expect(
+          await guard.isConfirmedUnavailable(
+            videoUrl: url,
+            explicitSha256: 'e' * 64,
+          ),
+          isTrue,
+        );
+      });
+
+      test('is false for a 404 that is only quarantined', () async {
+        when(
+          () => moderationStatusService.fetchStatus(any()),
+        ).thenAnswer((_) async => status(quarantined: true));
+
+        expect(
+          await guard.isConfirmedUnavailable(
+            videoUrl: url,
+            explicitSha256: 'e' * 64,
+          ),
+          isFalse,
+        );
       });
     });
   });
