@@ -15,7 +15,6 @@ import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/dead_media_feed_guard.dart';
-import 'package:openvine/services/media_availability_checker.dart';
 import 'package:openvine/utils/video_identity.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -617,13 +616,12 @@ class FullscreenFeedBloc
     );
   }
 
+  /// Fails closed: without an injected confirmer there is no moderation
+  /// verdict, and a bare 404 is not grounds for the persistent prune (#6251).
   static Future<bool> _defaultConfirmVideoUnavailable({
     required String? videoUrl,
     String? explicitSha256,
-  }) async {
-    if (videoUrl == null || videoUrl.isEmpty) return false;
-    return const MediaAvailabilityChecker().isConfirmedMissing(videoUrl);
-  }
+  }) async => false;
 
   /// Handle UI acknowledgement of a pending skip signal.
   void _onSkipAcknowledged(
