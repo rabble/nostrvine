@@ -5026,6 +5026,79 @@ void main() {
       });
     });
 
+    group('getBulkVideoRevisions', () {
+      const currentId =
+          'bbbb0000000000000000000000000000000000000000000000000000000000b1';
+      const supersededId =
+          'aaaa0000000000000000000000000000000000000000000000000000000000a1';
+
+      void stubPost(String body, int status) {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(body, status));
+      }
+
+      test('returns every revision id for the requested event', () async {
+        stubPost(
+          '{"revisions":{"$currentId":["$currentId","$supersededId"]},'
+          '"missing":[]}',
+          200,
+        );
+
+        expect(
+          await client.getBulkVideoRevisions([currentId]),
+          equals({
+            currentId: [currentId, supersededId],
+          }),
+        );
+      });
+
+      test('returns empty map for an empty id list', () async {
+        expect(await client.getBulkVideoRevisions([]), isEmpty);
+        verifyNever(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        );
+      });
+
+      test('returns empty map when the endpoint is missing', () async {
+        // Older deployments have no such route. Revision data is an
+        // enhancement to engagement queries, so a 404 must degrade rather
+        // than throw and take the caller's list down with it.
+        stubPost('Not Found', 404);
+
+        expect(await client.getBulkVideoRevisions([currentId]), isEmpty);
+      });
+
+      test('returns empty map when the request throws', () async {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(Exception('network down'));
+
+        expect(await client.getBulkVideoRevisions([currentId]), isEmpty);
+      });
+
+      test('drops entries whose revision list is unusable', () async {
+        stubPost(
+          '{"revisions":{"$currentId":"not-a-list","$supersededId":[]}}',
+          200,
+        );
+
+        expect(await client.getBulkVideoRevisions([currentId]), isEmpty);
+      });
+    });
+
     group('getBulkVideoStats', () {
       test('returns stats from list format response', () async {
         const validResponse = '''

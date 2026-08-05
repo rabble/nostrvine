@@ -2248,16 +2248,64 @@ class FunnelcakeApiClient {
     }
   }
 
-  /// Fetches video stats for multiple videos in bulk.
+  /// Resolves video event IDs to every event ID sharing their NIP-33
+  /// coordinate.
+  ///
+  /// Editing an addressable video mints a new event ID for the same
+  /// coordinate, so a kind 7 reaction that carries only an `e` tag — which
+  /// NIP-25 permits, the `a` tag being a SHOULD — stays pinned to the revision
+  /// it was made against and is invisible to a query on the current ID alone
+  /// (#6021). The returned lists include the requested ID itself.
+  ///
+  /// [eventIds] is capped at 100 by the server; longer lists are truncated
+  /// there, so callers should chunk.
+  ///
+  /// Returns an **empty map** rather than throwing when the API is
+  /// unconfigured, the list is empty, the endpoint is missing (older
+  /// deployments), or the request fails. Revision data is an enhancement to
+  /// engagement queries, never a precondition for them, so a caller must be
+  /// able to carry on without it.
+  Future<Map<String, List<String>>> getBulkVideoRevisions(
+    List<String> eventIds,
+  ) async {
+    if (!isAvailable || eventIds.isEmpty) return const {};
+
+    final uri = Uri.parse('$_baseUrl/api/videos/revisions/bulk');
+
+    try {
+      final response = await _post(uri, body: {'event_ids': eventIds});
+      if (response.statusCode != 200) return const {};
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final revisions = data['revisions'];
+      if (revisions is! Map) return const {};
+
+      final result = <String, List<String>>{};
+      for (final entry in revisions.entries) {
+        final ids = entry.value;
+        if (ids is! List) continue;
+        final revisionIds = [
+          for (final id in ids)
+            if (id is String && id.isNotEmpty) id,
+        ];
+        if (revisionIds.isNotEmpty) {
+          result[entry.key.toString()] = revisionIds;
+        }
+      }
+      return result;
+    } on Object catch (_) {
+      return const {};
+    }
+  }
+
+  /// Fetches engagement stats for multiple videos in one request.
   ///
   /// [eventIds] is the list of Nostr event IDs to fetch stats for.
   ///
-  /// Returns a [BulkVideoStatsResponse] with a map of event ID to
-  /// stats.
+  /// Returns a [BulkVideoStatsResponse] with a map of event ID to stats.
   ///
   /// Throws:
-  /// - [FunnelcakeNotConfiguredException] if the API is not
-  ///   configured.
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
   /// - [FunnelcakeException] if eventIds list is empty.
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
