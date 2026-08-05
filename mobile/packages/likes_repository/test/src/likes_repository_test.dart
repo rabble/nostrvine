@@ -3116,6 +3116,190 @@ void main() {
           expect(counts[strandedInSecondChunk], equals(1));
           expect(counts['addressable_event_0'], equals(0));
         });
+
+        group('session revision cache', () {
+          /// Answers each relay query from its filter rather than from call
+          /// order, so a test can run several fetches without having to
+          /// predict how many queries each one issues.
+          void answerQueriesByFilter() {
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+              invocation,
+            ) async {
+              final filters =
+                  invocation.positionalArguments.first as List<Filter>;
+              final filter = filters.first;
+              if (filter.kinds?.first == EventKind.eventDeletion) {
+                return <Event>[];
+              }
+              final taggedIds = filter.e ?? const <String>[];
+              if (taggedIds.contains(supersededEventId)) {
+                return [strandedReaction()];
+              }
+              if (taggedIds.contains(targetEventId)) {
+                return [currentReaction()];
+              }
+              return <Event>[];
+            });
+          }
+
+          test("resolves a video's revisions once per session", () async {
+            answerQueriesByFilter();
+
+            var resolverCalls = 0;
+            repository = createRepository(
+              revisionsResolver: (ids) async {
+                resolverCalls++;
+                return {
+                  targetEventId: [targetEventId, supersededEventId],
+                };
+              },
+            );
+
+            final first = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+            final second = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+
+            expect(resolverCalls, equals(1));
+            // The saving must not cost the enrichment: the second fetch is
+            // served from the cache and still finds the stranded liker.
+            expect(first, containsAll(<String>[likerA, likerC]));
+            expect(second, containsAll(<String>[likerA, likerC]));
+          });
+
+          test('shares one lookup between concurrent fetches', () async {
+            answerQueriesByFilter();
+
+            var resolverCalls = 0;
+            final gate = Completer<void>();
+            repository = createRepository(
+              revisionsResolver: (ids) async {
+                resolverCalls++;
+                await gate.future;
+                return {
+                  targetEventId: [targetEventId, supersededEventId],
+                };
+              },
+            );
+
+            final both = Future.wait([
+              repository.fetchEventLikers(
+                eventId: targetEventId,
+                addressableId: addressableId,
+              ),
+              repository.getLikeCount(
+                targetEventId,
+                addressableId: addressableId,
+              ),
+            ]);
+            gate.complete();
+            await both;
+
+            // Registered before the first await, so the second caller finds
+            // the in-flight entry rather than starting its own request.
+            expect(resolverCalls, equals(1));
+          });
+
+          test('enriches the next fetch after a lookup overruns the '
+              'budget', () async {
+            answerQueriesByFilter();
+
+            var resolverCalls = 0;
+            final landed = Completer<Map<String, List<String>>>();
+            repository = createRepository(
+              revisionsResolver: (ids) {
+                resolverCalls++;
+                return landed.future;
+              },
+              revisionsResolverTimeout: const Duration(milliseconds: 1),
+            );
+
+            final beforeLanding = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+            expect(beforeLanding, equals(<String>[likerA]));
+
+            landed.complete({
+              targetEventId: [targetEventId, supersededEventId],
+            });
+
+            final afterLanding = await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+
+            // The overrun lookup was kept, not discarded: no second request,
+            // and the liker it was carrying now shows up.
+            expect(resolverCalls, equals(1));
+            expect(afterLanding, containsAll(<String>[likerA, likerC]));
+          });
+
+          test('does not cache a like count the lookup would have '
+              'raised', () async {
+            answerQueriesByFilter();
+
+            final landed = Completer<Map<String, List<String>>>();
+            repository = createRepository(
+              revisionsResolver: (ids) => landed.future,
+              revisionsResolverTimeout: const Duration(milliseconds: 1),
+            );
+
+            expect(
+              await repository.getLikeCount(
+                targetEventId,
+                addressableId: addressableId,
+              ),
+              equals(1),
+            );
+
+            landed.complete({
+              targetEventId: [targetEventId, supersededEventId],
+            });
+
+            // Caching the un-enriched 1 would pin it for the session; the
+            // second read has to go back to the relays and find likerC.
+            expect(
+              await repository.getLikeCount(
+                targetEventId,
+                addressableId: addressableId,
+              ),
+              equals(2),
+            );
+          });
+
+          test('clearCache drops the resolved revisions', () async {
+            answerQueriesByFilter();
+
+            var resolverCalls = 0;
+            repository = createRepository(
+              withLocalStorage: false,
+              revisionsResolver: (ids) async {
+                resolverCalls++;
+                return {
+                  targetEventId: [targetEventId, supersededEventId],
+                };
+              },
+            );
+
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+            await repository.clearCache();
+            await repository.fetchEventLikers(
+              eventId: targetEventId,
+              addressableId: addressableId,
+            );
+
+            // Sign-out clears it with every other per-user cache.
+            expect(resolverCalls, equals(2));
+          });
+        });
       });
 
       test('returns liker pubkeys ordered by recency', () async {

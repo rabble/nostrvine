@@ -62,6 +62,16 @@ const _bulkVideoRevisionsBatchSize = 100;
 /// budget even when the baseline relay queries already answered.
 /// Starting those queries first keeps them off the critical path; it does not
 /// release the result early.
+///
+/// What keeps that ceiling affordable is that it is spent per *video*, not
+/// per fetch: results land in [LikesRepository._revisionIdsByEventId], and a
+/// lookup that overruns the budget keeps running into it instead of being
+/// discarded. Measured on this branch — a resolver answering in 700ms (the
+/// shape funnelcake has today, while still 404ing) costs 702ms on a video's
+/// first engagement fetch and 0ms on every one after; one that overruns and
+/// lands at 4s costs 3002ms then 0ms. A resolver that never answers is the
+/// exception: it is re-awaited until the client's own 15s request timeout
+/// resolves it, so the few fetches inside that window each pay the budget.
 const _defaultVideoRevisionsResolverTimeout = Duration(seconds: 3);
 
 /// Callback to check if the device is currently online
@@ -137,6 +147,23 @@ class LikesRepository {
   final VideoRevisionsResolver? _revisionsResolver;
 
   final Duration _revisionsResolverTimeout;
+
+  /// Session cache of `video event id -> sibling NIP-33 revision ids`.
+  ///
+  /// A given event id's revision set cannot change: editing the video mints a
+  /// new id, which is a new key here. So this never goes stale, and the
+  /// [_revisionsResolverTimeout] budget is spent once per video per session
+  /// rather than once per engagement fetch.
+  ///
+  /// Holds the lookup's own future rather than its result, which buys two
+  /// things. Concurrent fetches for the same video — the feed's count and the
+  /// "Liked by" sheet, say — share one request. And a lookup that overran the
+  /// budget is not thrown away: it keeps running into this map, so the next
+  /// fetch gets the revisions this one had to skip.
+  ///
+  /// The stored futures never complete with an error; see
+  /// [_resolveRevisionChunk].
+  final Map<String, Future<List<String>>> _revisionIdsByEventId = {};
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -920,6 +947,12 @@ class LikesRepository {
   /// served as-is and is not re-resolved, so likes from others arriving after
   /// the first fetch show up in the live list but not in a cache-served count.)
   ///
+  /// A count computed while the revision lookup was still running is returned
+  /// but not cached: caching it would pin the un-enriched (lower) number for
+  /// the rest of the session, when the lookup that would raise it is about to
+  /// land in the session cache. The next fetch reads it from there and caches
+  /// the enriched count instead.
+  ///
   /// Note: This counts all likes, not just the current user's.
   Future<int> getLikeCount(String eventId, {String? addressableId}) async {
     final cached = _readCachedLikeCount(eventId, addressableId: addressableId);
@@ -933,11 +966,12 @@ class LikesRepository {
       // the list's relay cap and query timeout, so a video with more reactions
       // than the relay returns shows count == list, both capped below the true
       // total. Keep it a fetch (not COUNT) to preserve that equality.
-      final likersByEvent = await _fetchResolvedLikersByEvent(
+      final resolved = await _fetchResolvedLikersByEvent(
         [eventId],
         addressableIds: {eventId: addressableId},
       );
-      count = likersByEvent[eventId]?.length ?? 0;
+      count = resolved.likersByEvent[eventId]?.length ?? 0;
+      if (resolved.revisionsTimedOut) return count;
     } else {
       // Query relays for the count of Kind 7 reactions on this event.
       final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
@@ -966,7 +1000,8 @@ class LikesRepository {
   /// path (deduped + filtered); a batch with no addressable ids uses the raw
   /// e-tag tally. So a non-addressable id can get either count depending on
   /// batch composition, and whichever result lands first is cached for the
-  /// session.
+  /// session — unless the revision lookup was still running, in which case
+  /// nothing in the batch is cached, for the reason [getLikeCount] gives.
   ///
   /// Returns a map of event ID to like count. Events with zero likes
   /// are included with a count of 0.
@@ -1006,13 +1041,16 @@ class LikesRepository {
     }
 
     if (uncachedAddressableIds.isNotEmpty) {
-      final likersByEvent = await _fetchResolvedLikersByEvent(
+      final resolved = await _fetchResolvedLikersByEvent(
         uncachedIds,
         addressableIds: uncachedAddressableIds,
       );
       for (final id in uncachedIds) {
-        final count = likersByEvent[id]?.length ?? 0;
+        final count = resolved.likersByEvent[id]?.length ?? 0;
         counts[id] = count;
+        // Same reason as [getLikeCount]: don't pin a count the still-running
+        // revision lookup is about to raise.
+        if (resolved.revisionsTimedOut) continue;
         _writeCachedLikeCount(
           id,
           count,
@@ -1706,13 +1744,13 @@ class LikesRepository {
     String? addressableId,
   }) async {
     try {
-      final likersByEvent = await _fetchResolvedLikersByEvent(
+      final resolved = await _fetchResolvedLikersByEvent(
         [eventId],
         addressableIds: addressableId == null || addressableId.isEmpty
             ? null
             : {eventId: addressableId},
       );
-      return likersByEvent[eventId] ?? <String>[];
+      return resolved.likersByEvent[eventId] ?? <String>[];
     } catch (e) {
       throw FetchLikersFailedException(
         'Failed to fetch likers for event $eventId: $e',
@@ -1720,11 +1758,23 @@ class LikesRepository {
     }
   }
 
-  Future<Map<String, List<String>>> _fetchResolvedLikersByEvent(
+  /// Resolves active liker pubkeys per requested event id.
+  ///
+  /// `revisionsTimedOut` reports that the revision lookup was still running
+  /// when its budget expired, so `likersByEvent` may be missing likers
+  /// stranded on a superseded revision. Callers that cache a derived value
+  /// must skip the write when it is set — see [getLikeCount].
+  Future<({Map<String, List<String>> likersByEvent, bool revisionsTimedOut})>
+  _fetchResolvedLikersByEvent(
     List<String> eventIds, {
     Map<String, String>? addressableIds,
   }) async {
-    if (eventIds.isEmpty) return const {};
+    if (eventIds.isEmpty) {
+      return (
+        likersByEvent: const <String, List<String>>{},
+        revisionsTimedOut: false,
+      );
+    }
 
     final aTagToEventId = <String, String>{
       for (final entry in (addressableIds ?? const <String, String>{}).entries)
@@ -1753,10 +1803,11 @@ class LikesRepository {
     // only the current ids silently drops those likers (#6021). Resolve the
     // sibling revisions and query them too, mapping each back to the id the
     // caller asked about.
-    final revisionToEventId = await _resolveRevisionTargets(
+    final revisions = await _resolveRevisionTargets(
       eventIds,
       addressableIds: addressableIds,
     );
+    final revisionToEventId = revisions.byRevisionId;
     final revisionIds = revisionToEventId.keys.toList();
 
     // Accept a reaction whose `e` tag names any revision, not just the ids the
@@ -1795,18 +1846,24 @@ class LikesRepository {
     }
 
     if (allReactionsById.isEmpty) {
-      return {for (final eventId in eventIds) eventId: <String>[]};
+      return (
+        likersByEvent: {for (final eventId in eventIds) eventId: <String>[]},
+        revisionsTimedOut: revisions.timedOut,
+      );
     }
 
     final deletedReactionIds = await _deletedReactionIds(allReactionsById);
 
-    return {
-      for (final entry in reactionsByTarget.entries)
-        entry.key: _activeLikerPubkeys(
-          entry.value.values,
-          deletedReactionIds: deletedReactionIds,
-        ),
-    };
+    return (
+      likersByEvent: {
+        for (final entry in reactionsByTarget.entries)
+          entry.key: _activeLikerPubkeys(
+            entry.value.values,
+            deletedReactionIds: deletedReactionIds,
+          ),
+      },
+      revisionsTimedOut: revisions.timedOut,
+    );
   }
 
   /// Resolves which of [reactionsById] their own author has since retracted.
@@ -1870,15 +1927,23 @@ class LikesRepository {
 
   /// Maps each superseded revision id to the requested event id it belongs to.
   ///
-  /// Returns an empty map when no resolver is wired, when no requested id is
-  /// addressable, or when the resolver fails — the caller then queries the
+  /// `byRevisionId` is empty when no resolver is wired, when no requested id
+  /// is addressable, or when the lookup failed — the caller then queries the
   /// current ids alone, exactly as before #6021.
-  Future<Map<String, String>> _resolveRevisionTargets(
+  ///
+  /// `timedOut` reports that at least one lookup was still running when
+  /// [_revisionsResolverTimeout] expired, so `byRevisionId` is incomplete
+  /// rather than merely empty. Callers that cache a result derived from it
+  /// must not, because the same lookup is still filling
+  /// [_revisionIdsByEventId] and the next fetch will do better.
+  Future<({Map<String, String> byRevisionId, bool timedOut})>
+  _resolveRevisionTargets(
     List<String> eventIds, {
     Map<String, String>? addressableIds,
   }) async {
+    const noRevisions = (byRevisionId: <String, String>{}, timedOut: false);
     final resolver = _revisionsResolver;
-    if (resolver == null) return const {};
+    if (resolver == null) return noRevisions;
 
     // Only addressable videos can have superseded revisions; asking about
     // anything else is a wasted round-trip.
@@ -1886,67 +1951,99 @@ class LikesRepository {
       for (final id in eventIds)
         if (addressableIds?[id]?.isNotEmpty ?? false) id,
     ];
-    if (addressableEventIds.isEmpty) return const {};
+    if (addressableEventIds.isEmpty) return noRevisions;
 
-    final revisionMaps = await Future.wait([
-      for (final chunk in _chunkStrings(
-        addressableEventIds,
-        _bulkVideoRevisionsBatchSize,
-      ))
-        _resolveRevisionChunk(resolver, chunk),
+    _startRevisionLookups(resolver, addressableEventIds);
+
+    final timedOutIds = <String>[];
+    final revisionsByEventId = <String, List<String>>{};
+    await Future.wait([
+      for (final id in addressableEventIds)
+        _revisionIdsByEventId[id]!
+            .timeout(
+              _revisionsResolverTimeout,
+              onTimeout: () {
+                timedOutIds.add(id);
+                return const <String>[];
+              },
+            )
+            .then((revisionIds) => revisionsByEventId[id] = revisionIds),
     ]);
-    final revisionsByEventId = {
-      for (final revisionMap in revisionMaps) ...revisionMap,
-    };
+
+    if (timedOutIds.isNotEmpty) {
+      Log.warning(
+        'Timed out resolving video revisions for ${timedOutIds.length} event '
+        'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; '
+        'continuing with current ids only. The lookup keeps running into the '
+        'session cache, so the next fetch for these ids is enriched.',
+        name: 'LikesRepository',
+        category: LogCategory.api,
+      );
+    }
 
     final requested = eventIds.toSet();
     final revisionToEventId = <String, String>{};
     for (final entry in revisionsByEventId.entries) {
-      if (!requested.contains(entry.key)) continue;
       for (final revisionId in entry.value) {
         // Never let a revision alias shadow an id the caller asked about.
         if (revisionId.isEmpty || requested.contains(revisionId)) continue;
         revisionToEventId[revisionId] = entry.key;
       }
     }
-    return revisionToEventId;
+    return (byRevisionId: revisionToEventId, timedOut: timedOutIds.isNotEmpty);
   }
 
+  /// Registers a [_revisionIdsByEventId] entry for every id that has none yet.
+  ///
+  /// Chunked at the endpoint's cap so a bulk caller cannot have its request
+  /// truncated server-side, which would be indistinguishable from "this video
+  /// has no other revisions". Entries are registered synchronously, before any
+  /// await, so two fetches racing on the same video share one lookup.
+  void _startRevisionLookups(
+    VideoRevisionsResolver resolver,
+    List<String> eventIds,
+  ) {
+    final uncachedIds = [
+      for (final id in eventIds)
+        if (!_revisionIdsByEventId.containsKey(id)) id,
+    ];
+    for (final chunk in _chunkStrings(
+      uncachedIds,
+      _bulkVideoRevisionsBatchSize,
+    )) {
+      final chunkFuture = _resolveRevisionChunk(resolver, chunk);
+      for (final id in chunk) {
+        _revisionIdsByEventId[id] = chunkFuture.then(
+          (revisions) => revisions[id] ?? const <String>[],
+        );
+      }
+    }
+  }
+
+  /// Runs one chunk of the revision lookup, mapping every failure to the
+  /// empty map so the returned future can never complete with an error.
+  ///
+  /// Carries no timeout of its own — [_resolveRevisionTargets] applies the
+  /// budget per read, so a lookup that overruns it still lands in
+  /// [_revisionIdsByEventId] for the next fetch.
   Future<Map<String, List<String>>> _resolveRevisionChunk(
     VideoRevisionsResolver resolver,
     List<String> chunk,
-  ) async {
-    late final Future<Map<String, List<String>>> revisionsFuture;
+  ) {
     try {
-      // The error handler has to be attached to the resolver's own future,
-      // not written as a catch around the await below: `Future.timeout`
-      // reports the source future's error as *unhandled* even when the
-      // awaiting frame catches it, and an unhandled async error fails
-      // whichever test provoked it. Only the synchronous-throw case — a
-      // resolver that never returns a future at all — needs the catch.
-      revisionsFuture = resolver(chunk).then(
+      // The error handler is attached to the resolver's own future rather
+      // than written as a catch around an await. Once a read has timed out,
+      // this future sits in the cache with no listener; an error completing
+      // in that window would be reported as unhandled. Only the
+      // synchronous-throw case — a resolver that never returns a future at
+      // all — needs the catch.
+      return resolver(chunk).then(
         (revisions) => revisions,
         onError: (Object error) => _emptyRevisionsAfterFailure(chunk, error),
       );
     } on Object catch (error) {
-      return _emptyRevisionsAfterFailure(chunk, error);
+      return Future.value(_emptyRevisionsAfterFailure(chunk, error));
     }
-
-    // Both arms above resolve to a value, so this future cannot carry an
-    // error and needs no catch of its own.
-    return revisionsFuture.timeout(
-      _revisionsResolverTimeout,
-      onTimeout: () {
-        Log.warning(
-          'Timed out resolving video revisions for ${chunk.length} event '
-          'id(s) after ${_revisionsResolverTimeout.inMilliseconds}ms; '
-          'continuing with current ids only.',
-          name: 'LikesRepository',
-          category: LogCategory.api,
-        );
-        return const <String, List<String>>{};
-      },
-    );
   }
 
   Map<String, List<String>> _emptyRevisionsAfterFailure(
@@ -2238,6 +2335,7 @@ class LikesRepository {
     _downvoteRecordsByAddressableId.clear();
     _likeCountCache.clear();
     _likeCountCacheByAddressableId.clear();
+    _revisionIdsByEventId.clear();
     await _localStorage?.clearAll();
     _emitLikedIds();
     _emitDownvotedIds();
