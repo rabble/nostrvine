@@ -30,7 +30,11 @@ class ExploreFeedContent extends ConsumerStatefulWidget {
 class _ExploreFeedContentState extends ConsumerState<ExploreFeedContent> {
   @override
   Widget build(BuildContext context) {
+    // Both counters, because filterVideoList below applies the Divine-host,
+    // content-label, and video-shape preferences, and exploreTabVideosProvider
+    // is a plain StateProvider that a toggle does not invalidate.
     ref.watch(divineHostFilterVersionProvider);
+    ref.watch(contentFilterVersionProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
     final videos = videoEventService.filterVideoList(
       ref.watch(exploreTabVideosProvider) ?? const <VideoEvent>[],
