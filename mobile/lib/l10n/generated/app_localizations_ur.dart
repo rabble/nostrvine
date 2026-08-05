@@ -2087,6 +2087,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'ریلے سے منسلک نہیں ہو سکا۔ براہ کرم اپنا نیٹ ورک کنکشن چیک کریں۔';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'اس ڈیوائس پر محفوظ ہو گیا۔ اشاعت دوبارہ کام کرنے لگے تو ہم اسے آپ کے اکاؤنٹ سے ہم آہنگ کر دیں گے۔';
+
+  @override
   String get relaySettingsAddRelayTitle => 'ریلے شامل کریں';
 
   @override

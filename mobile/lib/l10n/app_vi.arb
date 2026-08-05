@@ -1184,6 +1184,7 @@
     }
   },
   "relaySettingsFailedToConnectCheck": "Không kết nối được với relay. Vui lòng kiểm tra kết nối mạng của bạn.",
+  "relaySettingsSavedLocallyPublishPending": "Đã lưu trên thiết bị này. Chúng tôi sẽ đồng bộ với tài khoản của bạn khi việc đăng lại hoạt động.",
   "relaySettingsAddRelayTitle": "Thêm relay",
   "relaySettingsAddRelayPrompt": "Nhập URL WebSocket của relay bạn muốn thêm:",
   "relaySettingsBrowsePublicRelays": "Duyệt relay công khai tại nostr.co.uk",

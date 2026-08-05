@@ -11,6 +11,7 @@ import 'package:openvine/app_update/app_update.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/relay_list_repository_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shell_obscured_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -308,6 +309,8 @@ class _AppShellState extends ConsumerState<AppShell> with RouteAware {
     // Transitional scaffold: refreshes feeds when the relay set changes.
     // TODO(#4338): remove when feed refresh is driven by a relay event stream in a cubit.
     ref.watch(relaySetChangeBridgeProvider);
+
+    ref.watch(relayListDirtyPublishBridgeProvider);
 
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);

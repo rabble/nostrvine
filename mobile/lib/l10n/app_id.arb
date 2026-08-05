@@ -827,6 +827,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "Gagal terhubung ke relay. Silakan cek koneksi jaringanmu.",
+    "relaySettingsSavedLocallyPublishPending": "Tersimpan di perangkat ini. Kami akan menyinkronkannya ke akunmu saat penerbitan berfungsi lagi.",
     "relaySettingsAddRelayTitle": "Tambah Relay",
     "relaySettingsAddRelayPrompt": "Masukkan URL WebSocket relay yang ingin kamu tambahkan:",
     "relaySettingsBrowsePublicRelays": "Jelajahi relay publik di nostr.co.uk",

@@ -830,6 +830,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "Kunde inte ansluta till reler. Kolla din nätverksanslutning.",
+    "relaySettingsSavedLocallyPublishPending": "Sparat på den här enheten. Vi synkar det till ditt konto när publicering fungerar igen.",
     "relaySettingsAddRelayTitle": "Lägg till rel",
     "relaySettingsAddRelayPrompt": "Ange WebSocket-URL:en för relen du vill lägga till:",
     "relaySettingsBrowsePublicRelays": "Bläddra bland publika reler på nostr.co.uk",

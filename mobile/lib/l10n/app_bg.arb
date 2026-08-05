@@ -906,6 +906,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "Не успяхме да се свържем с релетата. Провери мрежовата си връзка.",
+    "relaySettingsSavedLocallyPublishPending": "Запазено е на това устройство. Ще го синхронизираме с акаунта ти, когато публикуването заработи отново.",
     "relaySettingsAddRelayTitle": "Добави реле",
     "relaySettingsAddRelayPrompt": "Въведи WebSocket URL на релето, което искаш да добавиш:",
     "relaySettingsBrowsePublicRelays": "Разгледай публичните релета на nostr.co.uk",

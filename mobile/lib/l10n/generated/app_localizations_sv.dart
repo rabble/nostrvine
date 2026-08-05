@@ -2076,6 +2076,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte ansluta till reler. Kolla din nätverksanslutning.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'Sparat på den här enheten. Vi synkar det till ditt konto när publicering fungerar igen.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'Lägg till rel';
 
   @override

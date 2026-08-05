@@ -2114,6 +2114,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec de la connexion aux relays. Vérifie ta connexion réseau.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'Enregistré sur cet appareil. On le synchronisera avec ton compte quand la publication refonctionnera.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'Ajouter un relay';
 
   @override

@@ -830,6 +830,7 @@
         }
     },
     "relaySettingsFailedToConnectCheck": "No se pudo conectar a los relays. Revisá tu conexión de red.",
+    "relaySettingsSavedLocallyPublishPending": "Guardado en este dispositivo. Lo sincronizaremos con tu cuenta cuando la publicación vuelva a funcionar.",
     "relaySettingsAddRelayTitle": "Agregar relay",
     "relaySettingsAddRelayPrompt": "Ingresá la URL WebSocket del relay que querés agregar:",
     "relaySettingsBrowsePublicRelays": "Mirá relays públicos en nostr.co.uk",

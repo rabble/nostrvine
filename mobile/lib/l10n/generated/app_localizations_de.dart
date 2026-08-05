@@ -2105,6 +2105,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Verbindung zu Relays fehlgeschlagen. Bitte prüf deine Netzwerkverbindung.';
 
   @override
+  String get relaySettingsSavedLocallyPublishPending =>
+      'Auf diesem Gerät gespeichert. Wir synchronisieren es mit deinem Konto, sobald das Veröffentlichen wieder funktioniert.';
+
+  @override
   String get relaySettingsAddRelayTitle => 'Relay hinzufügen';
 
   @override

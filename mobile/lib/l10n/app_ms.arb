@@ -1184,6 +1184,7 @@
     }
   },
   "relaySettingsFailedToConnectCheck": "Gagal bersambung ke relay. Sila semak sambungan rangkaian anda.",
+  "relaySettingsSavedLocallyPublishPending": "Disimpan pada peranti ini. Kami akan menyegerakkannya ke akaun anda apabila penerbitan berfungsi semula.",
   "relaySettingsAddRelayTitle": "Tambah Relay",
   "relaySettingsAddRelayPrompt": "Masukkan URL WebSocket relay yang mahu anda tambah:",
   "relaySettingsBrowsePublicRelays": "Semak imbas relay awam di nostr.co.uk",

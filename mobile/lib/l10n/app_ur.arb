@@ -1184,6 +1184,7 @@
     }
   },
   "relaySettingsFailedToConnectCheck": "ریلے سے منسلک نہیں ہو سکا۔ براہ کرم اپنا نیٹ ورک کنکشن چیک کریں۔",
+  "relaySettingsSavedLocallyPublishPending": "اس ڈیوائس پر محفوظ ہو گیا۔ اشاعت دوبارہ کام کرنے لگے تو ہم اسے آپ کے اکاؤنٹ سے ہم آہنگ کر دیں گے۔",
   "relaySettingsAddRelayTitle": "ریلے شامل کریں",
   "relaySettingsAddRelayPrompt": "جس ریلے کو شامل کرنا چاہتے ہیں اس کا WebSocket URL درج کریں:",
   "relaySettingsBrowsePublicRelays": "عوامی ریلے nostr.co.uk پر دیکھیں",
