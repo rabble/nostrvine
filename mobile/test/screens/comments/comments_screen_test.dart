@@ -905,6 +905,36 @@ void main() {
 
         expect(find.text('Classic Vine'), findsOneWidget);
       });
+
+      testWidgets(
+        'shows archive notice for original Vines with unknown original dates',
+        (tester) async {
+          const state = CommentsListState(
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+            status: CommentsStatus.success,
+          );
+
+          final vineWithUnknownOriginalDate = VideoEvent(
+            id: '0e5e24db5148c7eda48b874dd44d5365071020e131a4f399f3ea6c7b996d3196',
+            pubkey: testVideoAuthorPubkey,
+            createdAt: 1777489813,
+            content: 'classic vine',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1777489813 * 1000),
+            rawTags: const {'platform': 'vine'},
+          );
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              listState: state,
+              videoEvent: vineWithUnknownOriginalDate,
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('Classic Vine'), findsOneWidget);
+        },
+      );
     });
 
     group('error handling', () {
@@ -996,64 +1026,61 @@ void main() {
     });
 
     group('sheet controller disposal', () {
-      testWidgets(
-        'cancels an in-flight expand before disposing so no '
-        '"used after disposed" assert fires',
-        (tester) async {
-          final controller = DraggableScrollableController();
+      testWidgets('cancels an in-flight expand before disposing so no '
+          '"used after disposed" assert fires', (tester) async {
+        final controller = DraggableScrollableController();
 
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Scaffold(
-                body: DraggableScrollableSheet(
-                  controller: controller,
-                  expand: false,
-                  initialChildSize: 0.7,
-                  minChildSize: 0.5,
-                  maxChildSize: 0.93,
-                  snap: true,
-                  snapSizes: const [0.7, 0.93],
-                  builder: (context, scrollController) => ListView(
-                    controller: scrollController,
-                    children: const [SizedBox(height: 2000)],
-                  ),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: DraggableScrollableSheet(
+                controller: controller,
+                expand: false,
+                initialChildSize: 0.7,
+                minChildSize: 0.5,
+                maxChildSize: 0.93,
+                snap: true,
+                snapSizes: const [0.7, 0.93],
+                builder: (context, scrollController) => ListView(
+                  controller: scrollController,
+                  children: const [SizedBox(height: 2000)],
                 ),
               ),
             ),
-          );
-          await tester.pump();
-          expect(controller.isAttached, isTrue);
+          ),
+        );
+        await tester.pump();
+        expect(controller.isAttached, isTrue);
 
-          // Arm a focus-style expand and interrupt it mid-flight, exactly as a
-          // scrim / back dismiss does while _expandSheetForKeyboard is still
-          // animating. The sheet future disposes the controller at pop-start,
-          // before the sheet unmounts and detaches it.
-          controller.animateTo(
-            0.93,
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeOut,
-          );
-          await tester.pump(); // start the animation
-          await tester.pump(const Duration(milliseconds: 80)); // mid-flight
-          expect(controller.size, greaterThan(0.7));
-          expect(controller.size, lessThan(0.93));
+        // Arm a focus-style expand and interrupt it mid-flight, exactly as a
+        // scrim / back dismiss does while _expandSheetForKeyboard is still
+        // animating. The sheet future disposes the controller at pop-start,
+        // before the sheet unmounts and detaches it.
+        controller.animateTo(
+          0.93,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+        await tester.pump(); // start the animation
+        await tester.pump(const Duration(milliseconds: 80)); // mid-flight
+        expect(controller.size, greaterThan(0.7));
+        expect(controller.size, lessThan(0.93));
 
-          disposeCommentsSheetController(controller);
+        disposeCommentsSheetController(controller);
 
-          // Advance past where the leftover animation ticks would have fired.
-          // The plain-dispose path notifies the disposed controller on each
-          // tick and throws; the cancel-first path leaves nothing ticking.
-          for (var i = 0; i < 6; i++) {
-            await tester.pump(const Duration(milliseconds: 40));
-          }
-          expect(tester.takeException(), isNull);
+        // Advance past where the leftover animation ticks would have fired.
+        // The plain-dispose path notifies the disposed controller on each
+        // tick and throws; the cancel-first path leaves nothing ticking.
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 40));
+        }
+        expect(tester.takeException(), isNull);
 
-          // Unmounting the still-mounted sheet detaches the disposed
-          // controller; that path must stay clean too.
-          await tester.pumpWidget(const SizedBox());
-          expect(tester.takeException(), isNull);
-        },
-      );
+        // Unmounting the still-mounted sheet detaches the disposed
+        // controller; that path must stay clean too.
+        await tester.pumpWidget(const SizedBox());
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }
@@ -1087,7 +1114,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
           const Divider(color: Colors.white24, height: 1),
           Expanded(
             child: CommentsList(
-              showClassicVineNotice: videoEvent.isVintageRecoveredVine,
+              showClassicVineNotice: videoEvent.isOriginalVine,
               scrollController: sheetScrollController,
             ),
           ),

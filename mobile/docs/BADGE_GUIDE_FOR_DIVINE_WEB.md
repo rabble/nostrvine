@@ -132,16 +132,16 @@ Do this:
 
 - require `platform: vine`
 
-There is also a narrower helper:
+There is also an original-date helper:
 
-- `video.isVintageRecoveredVine`
+- `video.hasUnknownOriginalDate`
 
 That means:
 
 - `isOriginalVine == true`
-- created/published time is before Vine shutdown
+- effective created/published time is at or after Vine shutdown
 
-Mobile uses `isVintageRecoveredVine` for the comments empty-state archive notice, not for the top-level badge choice.
+Mobile uses `isOriginalVine` for the comments empty-state archive notice. It uses `hasUnknownOriginalDate` only to avoid displaying an import timestamp as the original Vine date.
 
 ## Hosting Inputs
 
@@ -347,14 +347,13 @@ This is not part of the badge row, but it is easy to confuse with badge logic.
 
 In comments, mobile shows a `Classic Vine` archive notice when:
 
-- `video.isVintageRecoveredVine == true`
+- `video.isOriginalVine == true`
 
 That means:
 
 - `platform: vine`
-- plus pre-shutdown timestamp
 
-This is stricter than `isOriginalVine` and is specific to the comments empty state.
+This is specific to the comments empty state and independent of whether the original publish date is known.
 
 ## Short Version
 

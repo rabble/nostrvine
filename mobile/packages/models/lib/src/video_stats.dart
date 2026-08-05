@@ -294,6 +294,13 @@ class VideoStats {
       }
     }
 
+    // Funnelcake currently mirrors event created_at into this field when the
+    // event lacks a published_at tag. Keep the fallback so server-side field
+    // backfills can flow through without a client change.
+    publishedAt ??= _parseNullableInt(
+      eventData['published_at'] ?? json['published_at'],
+    );
+
     // Fall back to summary tag if content is empty
     description ??= summaryFromTag;
 
@@ -682,6 +689,13 @@ int _parseInt(dynamic value) {
   if (value is double) return value.toInt();
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
+}
+
+int? _parseNullableInt(dynamic value) {
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
 }
 
 final _hexPattern = RegExp(r'^[0-9a-fA-F]+$');

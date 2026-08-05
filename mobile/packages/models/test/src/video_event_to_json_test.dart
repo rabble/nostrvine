@@ -196,7 +196,7 @@ const _excludedDerivedGetters = <String>{
   'isVerifiedWeb',
   'hasBasicProof',
   'isOriginalVine',
-  'isVintageRecoveredVine',
+  'hasUnknownOriginalDate',
   'isOriginalContent',
   'width',
   'height',
@@ -209,10 +209,7 @@ const _excludedDerivedGetters = <String>{
   'isWebM',
 };
 
-const _excludedInternalFields = <String>{
-  'nostrEventTags',
-  'warnLabels',
-};
+const _excludedInternalFields = <String>{'nostrEventTags', 'warnLabels'};
 
 /// Adding a new persisted field to [VideoEvent] requires THREE coordinated
 /// edits — default-deny is intentional, but the cost is on the contributor:

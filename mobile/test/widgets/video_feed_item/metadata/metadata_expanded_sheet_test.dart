@@ -72,6 +72,8 @@ UserProfile _makeProfile(String pubkey, String name) => UserProfile(
 );
 
 VideoEvent _makeVideo({
+  String id =
+      'test_video_id_00000000000000000000000000000000000000000000000000',
   List<String> hashtags = const [],
   List<String> categories = const [],
   List<String> collaboratorPubkeys = const [],
@@ -86,7 +88,7 @@ VideoEvent _makeVideo({
   String? publishedAt,
   List<List<String>> nostrEventTags = const [],
 }) => VideoEvent(
-  id: 'test_video_id_00000000000000000000000000000000000000000000000000',
+  id: id,
   pubkey: _creatorPubkey,
   createdAt: createdAt,
   content: content,
@@ -334,6 +336,30 @@ void main() {
     );
 
     testWidgetsWithSurfaceSize(
+      'hides posted date when an original Vine has no original date',
+      (tester) async {
+        const importedAt = 1777489813;
+        final video = _makeVideo(
+          id: '0e5e24db5148c7eda48b874dd44d5365071020e131a4f399f3ea6c7b996d3196',
+          title: 'Classic vine',
+          content: 'From the archive',
+          createdAt: importedAt,
+          rawTags: {'platform': 'vine'},
+        );
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
+
+        final importedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(importedAt * 1000, isUtc: true),
+        );
+        expect(find.text(importedDate), findsNothing);
+        expect(find.text('Classic vine'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
       'renders Vine-era date for a classic vine timestamp',
       (tester) async {
         // 2012-12-11 21:38 UTC — a classic Vine-era timestamp.
@@ -463,9 +489,7 @@ void main() {
 
         await tester.pumpWidget(
           buildSubject(
-            child: MetadataStatsRow(
-              video: video.copyWith(originalReposts: 10),
-            ),
+            child: MetadataStatsRow(video: video.copyWith(originalReposts: 10)),
           ),
         );
 
@@ -487,9 +511,7 @@ void main() {
       'falls back to live nostr counts in the breakdown while loading',
       (tester) async {
         when(() => mockInteractionsBloc.state).thenReturn(
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.loading,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.loading),
         );
 
         final video = _makeVideo(
