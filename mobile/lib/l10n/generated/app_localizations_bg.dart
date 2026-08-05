@@ -1856,6 +1856,11 @@ class AppLocalizationsBg extends AppLocalizations {
   String get metadataRepostedByLabel => 'Повторно публикувано от';
 
   @override
+  String metadataMoreReposters(int count) {
+    return 'още $count';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

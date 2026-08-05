@@ -1841,6 +1841,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get metadataRepostedByLabel => 'Gerepost door';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count meer';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Loops';
   }

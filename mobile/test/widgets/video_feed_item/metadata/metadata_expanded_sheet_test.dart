@@ -3,12 +3,15 @@
 // ABOUTME: data is absent. Covers badges, title, stats, creator, tags,
 // ABOUTME: collaborators, inspired by, reposted by, and sounds sections.
 
+import 'dart:async';
+
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -18,7 +21,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
@@ -58,6 +63,12 @@ const _parentEventId =
     '32e8069cb2f468548236bf743563bfd930b96fe2e5731a4b2f58e38d24df82b2';
 const _parentAddressableId =
     '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:parent-d-tag';
+
+/// Chips dimmed by [Opacity]. Deliberately ignores fully opaque wrappers so
+/// the assertion means "nothing is dimmed" rather than "nothing anywhere
+/// uses Opacity".
+Finder _dimmed() =>
+    find.byWidgetPredicate((widget) => widget is Opacity && widget.opacity < 1);
 
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -463,9 +474,7 @@ void main() {
 
         await tester.pumpWidget(
           buildSubject(
-            child: MetadataStatsRow(
-              video: video.copyWith(originalReposts: 10),
-            ),
+            child: MetadataStatsRow(video: video.copyWith(originalReposts: 10)),
           ),
         );
 
@@ -487,9 +496,7 @@ void main() {
       'falls back to live nostr counts in the breakdown while loading',
       (tester) async {
         when(() => mockInteractionsBloc.state).thenReturn(
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.loading,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.loading),
         );
 
         final video = _makeVideo(
@@ -887,7 +894,7 @@ void main() {
           find.text(l10n.videoCollaboratorPendingDecoration),
           findsNothing,
         );
-        expect(find.byType(Opacity), findsNothing);
+        expect(_dimmed(), findsNothing);
       },
     );
 
@@ -925,10 +932,10 @@ void main() {
           find.text(l10n.videoCollaboratorPendingDecoration),
           findsOneWidget,
         );
-        // The pending chip is wrapped in an Opacity.
-        final opacityWidgets = tester.widgetList<Opacity>(find.byType(Opacity));
-        expect(opacityWidgets, hasLength(1));
-        expect(opacityWidgets.first.opacity, closeTo(0.7, 0.001));
+        // The pending chip is the only one wrapped in a dimming Opacity.
+        final dimmed = tester.widgetList<Opacity>(_dimmed());
+        expect(dimmed, hasLength(1));
+        expect(dimmed.first.opacity, closeTo(0.7, 0.001));
       },
     );
 
@@ -1012,7 +1019,43 @@ void main() {
           find.text(l10n.videoCollaboratorPendingDecoration),
           findsNothing,
         );
-        expect(find.byType(Opacity), findsNothing);
+        expect(_dimmed(), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'reveals fallback names after the profile grace window',
+      (tester) async {
+        final profile = Completer<UserProfile?>();
+
+        await tester.pumpWidget(
+          buildSubject(
+            providerOverrides: [
+              fetchUserProfileProvider(
+                _collaborator1,
+              ).overrideWith((ref) => profile.future),
+            ],
+            child: const MetadataCollaboratorsSectionBody(
+              visibility: CollaboratorVisibility.fallback(
+                taggedPubkeys: [_collaborator1],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final l10n = _l10n(tester);
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.metadataCollaboratorsLabel), findsOneWidget);
+
+        profile.complete(_makeProfile(_collaborator1, 'Alice'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Alice'), findsOneWidget);
       },
     );
   });
@@ -1109,6 +1152,227 @@ void main() {
     });
 
     testWidgetsWithSurfaceSize(
+      'caps the chips and offers the rest through the full list',
+      (tester) async {
+        final pubkeys = List<String>.generate(
+          12,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: VideoRepostersState(
+              pubkeys: pubkeys,
+              isLoading: false,
+            ),
+            providerOverrides: [
+              for (final pubkey in pubkeys)
+                fetchUserProfileProvider(
+                  pubkey,
+                ).overrideWith((ref) async => null),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Every reposter would otherwise be a chip that fetches its own
+        // profile — a popular video has thousands.
+        expect(find.byType(UserAvatar), findsNWidgets(5));
+        expect(
+          find.text(_l10n(tester).metadataMoreReposters(7)),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'the more-reposters button dismisses the sheet before navigating',
+      (tester) async {
+        final pubkeys = List<String>.generate(
+          12,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+        when(
+          () => mockRepostersCubit.state,
+        ).thenReturn(VideoRepostersState(pubkeys: pubkeys, isLoading: false));
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(
+              createMockSharedPreferences(),
+            ),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            for (final pubkey in pubkeys)
+              fetchUserProfileProvider(
+                pubkey,
+              ).overrideWith((ref) async => null),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) => TextButton(
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      builder: (_) => MultiBlocProvider(
+                        providers: [
+                          BlocProvider<VideoInteractionsBloc>.value(
+                            value: mockInteractionsBloc,
+                          ),
+                          BlocProvider<VideoRepostersCubit>.value(
+                            value: mockRepostersCubit,
+                          ),
+                        ],
+                        child: MetadataRepostedBySection(video: _makeVideo()),
+                      ),
+                    ),
+                    child: const Text('open sheet'),
+                  ),
+                ),
+              ),
+            ),
+            GoRoute(
+              path: '/video/:eventId/reposters',
+              name: VideoEngagementListScreen.repostersRouteName,
+              builder: (context, state) =>
+                  const Scaffold(body: Text('reposters list')),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.tap(find.text('open sheet'));
+        await tester.pumpAndSettle();
+
+        final moreLabel = _l10n(tester).metadataMoreReposters(7);
+        expect(find.text('Reposted by'), findsOneWidget);
+
+        await tester.tap(find.text(moreLabel));
+        await tester.pumpAndSettle();
+
+        expect(find.text('reposters list'), findsOneWidget);
+
+        // Every other destination in this sheet hands off the same way:
+        // dismiss, then push from the root navigator. Pushing with the sheet
+        // still mounted leaves it stacked over the list, so backing out of
+        // the list drops the user onto the sheet again instead of the video.
+        router.pop();
+        await tester.pumpAndSettle();
+
+        expect(find.text('open sheet'), findsOneWidget);
+        expect(find.text('Reposted by'), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'waits for the chip names before revealing the section',
+      (tester) async {
+        final profile = Completer<UserProfile?>();
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
+            ),
+            providerOverrides: [
+              fetchUserProfileProvider(
+                _reposterPubkey,
+              ).overrideWith((ref) => profile.future),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        // A chip falls back to a generated name while its profile loads.
+        // Showing the row first would swap every label a moment later and
+        // reflow the rows around the new widths.
+        expect(find.text('Reposted by'), findsNothing);
+
+        profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Improvising'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'reveals fallback chips after the profile grace window',
+      (tester) async {
+        final profile = Completer<UserProfile?>();
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
+            ),
+            providerOverrides: [
+              fetchUserProfileProvider(
+                _reposterPubkey,
+              ).overrideWith((ref) => profile.future),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Reposted by'), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Reposted by'), findsOneWidget);
+
+        profile.complete(_makeProfile(_reposterPubkey, 'Improvising'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Improvising'), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
+      'shows every reposter when they fit under the cap',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(
+              pubkeys: [_reposterPubkey],
+              isLoading: false,
+            ),
+            providerOverrides: [
+              fetchUserProfileProvider(_reposterPubkey).overrideWith(
+                (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+              ),
+            ],
+            child: MetadataRepostedBySection(video: _makeVideo()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Improvising'), findsOneWidget);
+        expect(find.textContaining('more'), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
       'hides when relay returns empty and no pre-populated data',
       (tester) async {
         final video = _makeVideo();
@@ -1119,6 +1383,104 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Reposted by'), findsNothing);
+      },
+    );
+
+    testWidgetsWithSurfaceSize('grows in when the relay answers late', (
+      tester,
+    ) async {
+      final reposters = StreamController<VideoRepostersState>.broadcast();
+      addTearDown(reposters.close);
+      when(() => mockRepostersCubit.stream).thenAnswer((_) => reposters.stream);
+
+      await tester.pumpWidget(
+        buildSubject(
+          providerOverrides: [
+            fetchUserProfileProvider(_reposterPubkey).overrideWith(
+              (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+            ),
+          ],
+          child: MetadataRepostedBySection(video: _makeVideo()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final section = find.byType(AnimatedReveal);
+      expect(tester.getSize(section).height, 0);
+
+      reposters.add(const VideoRepostersState(pubkeys: [_reposterPubkey]));
+      // The reposters are laid out on this frame, but the section is still
+      // collapsed — it grows from there rather than snapping the sections
+      // below it down.
+      await tester.pump();
+      final revealingHeight = tester.getSize(section).height;
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Reposted by'), findsOneWidget);
+      expect(revealingHeight, lessThan(tester.getSize(section).height));
+    });
+
+    testWidgetsWithSurfaceSize(
+      'stays revealed while a late relay answer widens the row',
+      (tester) async {
+        final relayPubkeys = List<String>.generate(
+          4,
+          (index) => (index + 1).toRadixString(16).padLeft(64, '0'),
+        );
+        final relayProfiles = {
+          for (final pubkey in relayPubkeys) pubkey: Completer<UserProfile?>(),
+        };
+
+        final reposters = StreamController<VideoRepostersState>.broadcast();
+        addTearDown(reposters.close);
+        when(
+          () => mockRepostersCubit.stream,
+        ).thenAnswer((_) => reposters.stream);
+
+        await tester.pumpWidget(
+          buildSubject(
+            repostersState: const VideoRepostersState(),
+            providerOverrides: [
+              fetchUserProfileProvider(_reposterPubkey).overrideWith(
+                (ref) async => _makeProfile(_reposterPubkey, 'Improvising'),
+              ),
+              for (final entry in relayProfiles.entries)
+                fetchUserProfileProvider(
+                  entry.key,
+                ).overrideWith((ref) => entry.value.future),
+            ],
+            // Feed consolidation pre-populated a single reposter, so the row
+            // is already on screen when the relay answers.
+            child: MetadataRepostedBySection(
+              video: _makeVideo(reposterPubkeys: const [_reposterPubkey]),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final section = find.byType(AnimatedReveal);
+        final revealedHeight = tester.getSize(section).height;
+        expect(revealedHeight, greaterThan(0));
+
+        reposters.add(
+          VideoRepostersState(pubkeys: [_reposterPubkey, ...relayPubkeys]),
+        );
+        await tester.pumpAndSettle();
+
+        // Re-gating on the widened set would drop the section to nothing
+        // while the four new profiles load — a bigger jump than the one the
+        // gate prevents. The already-named chip keeps its place.
+        expect(find.text('Improvising'), findsOneWidget);
+        expect(find.textContaining('more'), findsNothing);
+        expect(tester.getSize(section).height, revealedHeight);
+
+        for (final completer in relayProfiles.values) {
+          completer.complete(null);
+        }
+        await tester.pumpAndSettle();
+
+        expect(find.byType(UserAvatar), findsNWidgets(5));
       },
     );
   });

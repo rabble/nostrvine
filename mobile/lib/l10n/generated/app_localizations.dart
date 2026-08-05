@@ -3234,6 +3234,12 @@ abstract class AppLocalizations {
   /// **'Reposted by'**
   String get metadataRepostedByLabel;
 
+  /// Chip in the video metadata sheet opening the full reposters list, showing how many reposters are not displayed.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count} more'**
+  String metadataMoreReposters(int count);
+
   /// No description provided for @metadataLoopsLabel.
   ///
   /// In en, this message translates to:

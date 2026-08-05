@@ -993,6 +993,7 @@
   "metadataCollaboratorsLabel": "协作者",
   "metadataInspiredByLabel": "灵感来自",
   "metadataRepostedByLabel": "转发自",
+  "metadataMoreReposters": "还有 {count} 人",
   "metadataLoopsLabel": "{count, plural, =1{次循环} other{次循环}}",
   "@metadataLoopsLabel": {
     "placeholders": {

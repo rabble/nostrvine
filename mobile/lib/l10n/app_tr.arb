@@ -694,6 +694,7 @@
     "metadataCollaboratorsLabel": "İşbirlikçiler",
     "metadataInspiredByLabel": "İlham alındı",
     "metadataRepostedByLabel": "Yeniden paylaşan",
+    "metadataMoreReposters": "+{count} daha",
     "metadataLoopsLabel": "Döngüler",
     "metadataLikesLabel": "Beğeniler",
     "metadataCommentsLabel": "Yorumlar",

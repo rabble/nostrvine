@@ -697,6 +697,7 @@
     "metadataCollaboratorsLabel": "Colaboradores",
     "metadataInspiredByLabel": "Inspirado em",
     "metadataRepostedByLabel": "Repostado por",
+    "metadataMoreReposters": "+{count} mais",
     "metadataLoopsLabel": "Loops",
     "metadataLikesLabel": "Curtidas",
     "metadataCommentsLabel": "Comentários",

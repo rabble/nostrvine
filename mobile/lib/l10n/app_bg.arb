@@ -758,6 +758,7 @@
     "metadataCollaboratorsLabel": "Сътрудници",
     "metadataInspiredByLabel": "Вдъхновено от",
     "metadataRepostedByLabel": "Повторно публикувано от",
+    "metadataMoreReposters": "още {count}",
     "metadataLoopsLabel": "{count, plural, =1{Луп} other{Лупове}}",
     "@metadataLoopsLabel": {
         "placeholders": {

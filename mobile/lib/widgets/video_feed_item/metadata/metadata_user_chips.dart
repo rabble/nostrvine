@@ -2,22 +2,44 @@
 // ABOUTME: Creator, Collaborators, Inspired By, and Reposted By sections
 // ABOUTME: using tappable chips that navigate to user profiles.
 
+import 'dart:async';
+
 import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_collaborator_status/video_collaborator_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+
+/// Whether every chip in [pubkeys] already knows the name it will render.
+///
+/// [_TappableUserChip] falls back to a generated name while its profile
+/// loads, so a row shown before the profiles settle swaps every label — and
+/// reflows itself around the new widths — a moment later. Sections that can
+/// afford to arrive late hold their reveal until this is true.
+///
+/// Every provider is watched unconditionally so the rebuild arrives for
+/// whichever profile resolves last.
+bool _namesSettled(WidgetRef ref, List<String> pubkeys) {
+  final profiles = [
+    for (final pubkey in pubkeys) ref.watch(fetchUserProfileProvider(pubkey)),
+  ];
+  return profiles.every((profile) => profile.hasValue || profile.hasError);
+}
+
+const _nameRevealGrace = Duration(seconds: 1);
 
 /// Creator section showing the video author as a tappable chip.
 class MetadataCreatorSection extends StatelessWidget {
@@ -40,7 +62,7 @@ class MetadataCreatorSection extends StatelessWidget {
 /// `ignored` for this video. Pending collaborator chips are dimmed when
 /// the current user is the video's creator.
 ///
-/// Returns [SizedBox.shrink] when the resulting list is empty.
+/// Renders nothing while the resulting list is empty.
 class MetadataCollaboratorsSection extends ConsumerWidget {
   const MetadataCollaboratorsSection({required this.video, super.key});
 
@@ -109,36 +131,92 @@ class _CollaboratorsSectionStatusAware extends StatelessWidget {
 /// Renders the collaborators section from a [CollaboratorVisibility].
 ///
 /// Promoted to a top-level class with [visibleForTesting] so widget tests
-/// can exercise every render branch without standing up a Riverpod
-/// container, a `BlocProvider`, or a mock repository.
+/// can exercise every render branch without standing up a `BlocProvider` or
+/// a mock repository. A `ProviderScope` is still required: the chip names
+/// come from [fetchUserProfileProvider].
 @visibleForTesting
-class MetadataCollaboratorsSectionBody extends StatelessWidget {
-  const MetadataCollaboratorsSectionBody({
-    required this.visibility,
-    super.key,
-  });
+class MetadataCollaboratorsSectionBody extends ConsumerStatefulWidget {
+  const MetadataCollaboratorsSectionBody({required this.visibility, super.key});
 
   final CollaboratorVisibility visibility;
 
   @override
-  Widget build(BuildContext context) {
-    final visible = visibility.visiblePubkeys;
-    if (visible.isEmpty) return const SizedBox.shrink();
+  ConsumerState<MetadataCollaboratorsSectionBody> createState() =>
+      _MetadataCollaboratorsSectionBodyState();
+}
 
-    return MetadataSection(
-      label: context.l10n.metadataCollaboratorsLabel,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final pubkey in visible)
-            _TappableUserChip(
-              pubkey: pubkey,
-              isPending: visibility.isPendingForInviter(pubkey),
-            ),
-        ],
-      ),
+class _MetadataCollaboratorsSectionBodyState
+    extends ConsumerState<MetadataCollaboratorsSectionBody> {
+  List<String> _waitingFor = const [];
+  bool _graceElapsed = false;
+  Timer? _graceTimer;
+
+  @override
+  void dispose() {
+    _graceTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = widget.visibility.visiblePubkeys;
+    final namesSettled = _namesSettled(ref, visible);
+    final canReveal = visible.isNotEmpty && (namesSettled || _graceElapsed);
+
+    _syncGraceTimer(visible, namesSettled);
+
+    // A tagged collaborator stays hidden until their confirmation status
+    // resolves, so this section arrives late on videos that have one. Profile
+    // names get a short grace window to avoid common label reflows without
+    // hiding the whole section behind network tails.
+    return AnimatedReveal(
+      child: canReveal
+          ? MetadataSection(
+              label: context.l10n.metadataCollaboratorsLabel,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final pubkey in visible)
+                    _TappableUserChip(
+                      pubkey: pubkey,
+                      isPending: widget.visibility.isPendingForInviter(pubkey),
+                    ),
+                ],
+              ),
+            )
+          : null,
     );
+  }
+
+  void _syncGraceTimer(List<String> visible, bool namesSettled) {
+    if (visible.isEmpty || namesSettled) {
+      _cancelGraceTimer();
+      _waitingFor = visible;
+      _graceElapsed = false;
+      return;
+    }
+
+    if (_samePubkeys(_waitingFor, visible) &&
+        (_graceTimer != null || _graceElapsed)) {
+      return;
+    }
+
+    _graceTimer?.cancel();
+    _waitingFor = List.unmodifiable(visible);
+    _graceElapsed = false;
+    _graceTimer = Timer(_nameRevealGrace, () {
+      if (!mounted || !_samePubkeys(_waitingFor, visible)) return;
+      setState(() {
+        _graceElapsed = true;
+        _graceTimer = null;
+      });
+    });
+  }
+
+  void _cancelGraceTimer() {
+    _graceTimer?.cancel();
+    _graceTimer = null;
   }
 }
 
@@ -167,7 +245,7 @@ class MetadataInspiredBySection extends StatelessWidget {
 /// Reads reposter pubkeys from [VideoRepostersCubit] (provided by the
 /// metadata sheet) and merges with any pre-populated
 /// [VideoEvent.reposterPubkeys] from feed consolidation.
-/// Returns [SizedBox.shrink] when no reposters are found.
+/// Renders nothing while no reposters are found.
 class MetadataRepostedBySection extends StatelessWidget {
   const MetadataRepostedBySection({required this.video, super.key});
 
@@ -183,10 +261,13 @@ class MetadataRepostedBySection extends StatelessWidget {
         }.toList();
 
         if (state.isLoading && allPubkeys.isEmpty) {
-          return _RepostedByContent(pubkeys: video.reposterPubkeys ?? []);
+          return _RepostedByContent(
+            pubkeys: video.reposterPubkeys ?? [],
+            video: video,
+          );
         }
 
-        return _RepostedByContent(pubkeys: allPubkeys);
+        return _RepostedByContent(pubkeys: allPubkeys, video: video);
       },
     );
   }
@@ -194,26 +275,167 @@ class MetadataRepostedBySection extends StatelessWidget {
 
 /// Content widget for the Reposted-by section.
 ///
-/// Returns [SizedBox.shrink] when [pubkeys] is empty.
-class _RepostedByContent extends StatelessWidget {
-  const _RepostedByContent({required this.pubkeys});
+/// Shows at most [_maxVisibleReposters] chips and hands the rest to the
+/// reposters list screen. A popular video can be reposted thousands of
+/// times, and every chip resolves its own profile — rendering the full set
+/// would fire a profile fetch per reposter and lay them all out at once.
+///
+/// Renders nothing until the first capped set of chip names has resolved,
+/// and while [pubkeys] is empty. The reposters resolve from a relay
+/// round-trip, so the section is revealed through an [AnimatedReveal] rather
+/// than snapping the sections below it down on arrival.
+class _RepostedByContent extends ConsumerStatefulWidget {
+  const _RepostedByContent({required this.pubkeys, required this.video});
+
+  /// Roughly three rows of chips on a phone — nine came out at five.
+  ///
+  /// Not an exact row count: chip width follows the display name, and those
+  /// resolve per chip after this has already been laid out.
+  static const _maxVisibleReposters = 5;
 
   final List<String> pubkeys;
+  final VideoEvent video;
+
+  @override
+  ConsumerState<_RepostedByContent> createState() => _RepostedByContentState();
+}
+
+class _RepostedByContentState extends ConsumerState<_RepostedByContent> {
+  /// The last capped set whose chip names had all resolved.
+  ///
+  /// Feed consolidation can pre-populate fewer reposters than the cap, so a
+  /// relay answer widens a row that is already on screen. Re-gating the whole
+  /// section on the widened set would pull it back down to nothing while the
+  /// new profiles load — a bigger jump than the one the gate exists to
+  /// prevent. The row keeps rendering what it already revealed until the
+  /// wider set has settled too.
+  List<String> _revealed = const [];
+  List<String> _waitingFor = const [];
+  bool _graceElapsed = false;
+  Timer? _graceTimer;
+
+  @override
+  void dispose() {
+    _graceTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (pubkeys.isEmpty) return const SizedBox.shrink();
+    final candidate = widget.pubkeys
+        .take(_RepostedByContent._maxVisibleReposters)
+        .toList();
+    final namesSettled = _namesSettled(ref, candidate);
+    // A derived cache, not a rebuild trigger — this build already carries the
+    // resolved names, so there is nothing to schedule.
+    if (namesSettled || (_revealed.isEmpty && _graceElapsed)) {
+      _revealed = candidate;
+    }
+    _syncGraceTimer(candidate, namesSettled);
+    final visible = _revealed;
+    final hiddenCount = widget.pubkeys.length - candidate.length;
 
-    return MetadataSection(
-      label: context.l10n.metadataRepostedByLabel,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final pubkey in pubkeys) _TappableUserChip(pubkey: pubkey),
-        ],
-      ),
+    return AnimatedReveal(
+      child: visible.isEmpty
+          ? null
+          : MetadataSection(
+              label: context.l10n.metadataRepostedByLabel,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  for (final pubkey in visible)
+                    _TappableUserChip(pubkey: pubkey),
+                  if (hiddenCount > 0)
+                    _MoreRepostersChip(count: hiddenCount, video: widget.video),
+                ],
+              ),
+            ),
     );
+  }
+
+  void _syncGraceTimer(List<String> candidate, bool namesSettled) {
+    if (candidate.isEmpty || namesSettled || _revealed.isNotEmpty) {
+      _cancelGraceTimer();
+      _waitingFor = candidate;
+      _graceElapsed = false;
+      return;
+    }
+
+    if (_samePubkeys(_waitingFor, candidate) &&
+        (_graceTimer != null || _graceElapsed)) {
+      return;
+    }
+
+    _graceTimer?.cancel();
+    _waitingFor = List.unmodifiable(candidate);
+    _graceElapsed = false;
+    _graceTimer = Timer(_nameRevealGrace, () {
+      if (!mounted || !_samePubkeys(_waitingFor, candidate)) return;
+      setState(() {
+        _graceElapsed = true;
+        _graceTimer = null;
+      });
+    });
+  }
+
+  void _cancelGraceTimer() {
+    _graceTimer?.cancel();
+    _graceTimer = null;
+  }
+}
+
+bool _samePubkeys(List<String> a, List<String> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
+/// Button that opens the full reposters list for [video].
+///
+/// [DivineButtonSize.small] paints a 40px pill with the same 16px radius and
+/// 16/8 padding as [_TappableUserChip], so it sits on the chips' baseline
+/// while its outlined variant reads as an action rather than a person. The
+/// row centres its children because this carries a 4px tap-target halo the
+/// chips do not.
+class _MoreRepostersChip extends StatelessWidget {
+  const _MoreRepostersChip({required this.count, required this.video});
+
+  final int count;
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context) {
+    return DivineButton(
+      label: context.l10n.metadataMoreReposters(count),
+      type: DivineButtonType.secondary,
+      size: DivineButtonSize.small,
+      onPressed: () => _openRepostersList(context),
+    );
+  }
+
+  void _openRepostersList(BuildContext context) {
+    final addressableId = video.addressableId;
+    // Dismiss the sheet first, then navigate from the root navigator context
+    // — the same handoff every other destination in this sheet uses. Both the
+    // router lookup and the push run against the host context, which is
+    // outside the modal's widget tree.
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    final location = GoRouter.of(hostContext).namedLocation(
+      VideoEngagementListScreen.repostersRouteName,
+      pathParameters: {'eventId': video.id},
+      queryParameters: addressableId == null ? const {} : {'a': addressableId},
+    );
+    Navigator.of(context).pop();
+    // Defer to the next frame so the modal route's pop has settled in the
+    // route stack before we push the destination route.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!hostContext.mounted) return;
+      hostContext.pushWithVideoPause<void>(location);
+    });
   }
 }
 

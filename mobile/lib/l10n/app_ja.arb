@@ -694,6 +694,7 @@
     "metadataCollaboratorsLabel": "コラボレーター",
     "metadataInspiredByLabel": "インスパイア元",
     "metadataRepostedByLabel": "リポスト元",
+    "metadataMoreReposters": "他{count}人",
     "metadataLoopsLabel": "ループ",
     "metadataLikesLabel": "いいね",
     "metadataCommentsLabel": "コメント",

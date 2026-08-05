@@ -1832,6 +1832,11 @@ class AppLocalizationsUr extends AppLocalizations {
   String get metadataRepostedByLabel => 'ریپوسٹ کرنے والے';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count مزید';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

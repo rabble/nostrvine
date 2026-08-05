@@ -1720,6 +1720,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get metadataRepostedByLabel => 'リポスト元';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '他$count人';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'ループ';
   }

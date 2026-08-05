@@ -1862,6 +1862,11 @@ class AppLocalizationsFil extends AppLocalizations {
   String get metadataRepostedByLabel => 'Na-repost ni';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count pa';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

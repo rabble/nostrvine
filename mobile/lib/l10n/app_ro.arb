@@ -697,6 +697,7 @@
     "metadataCollaboratorsLabel": "Colaboratori",
     "metadataInspiredByLabel": "Inspirat de",
     "metadataRepostedByLabel": "Redistribuit de",
+    "metadataMoreReposters": "încă {count}",
     "metadataLoopsLabel": "Bucle",
     "metadataLikesLabel": "Aprecieri",
     "metadataCommentsLabel": "Comentarii",

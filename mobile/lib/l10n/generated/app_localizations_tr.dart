@@ -1798,6 +1798,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataRepostedByLabel => 'Yeniden paylaşan';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count daha';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Döngüler';
   }

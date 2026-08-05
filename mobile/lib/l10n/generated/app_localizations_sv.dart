@@ -1828,6 +1828,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get metadataRepostedByLabel => 'Återpublicerad av';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count till';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Loopar';
   }

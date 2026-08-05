@@ -1876,6 +1876,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get metadataRepostedByLabel => 'Redistribuit de';
 
   @override
+  String metadataMoreReposters(int count) {
+    return 'încă $count';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Bucle';
   }

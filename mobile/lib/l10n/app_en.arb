@@ -1061,6 +1061,15 @@
   "metadataCollaboratorsLabel": "Collaborators",
   "metadataInspiredByLabel": "Inspired by",
   "metadataRepostedByLabel": "Reposted by",
+  "metadataMoreReposters": "+{count} more",
+  "@metadataMoreReposters": {
+    "description": "Chip in the video metadata sheet opening the full reposters list, showing how many reposters are not displayed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loops}}",
   "@metadataLoopsLabel": {
     "placeholders": {

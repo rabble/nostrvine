@@ -454,6 +454,7 @@
     "metadataCollaboratorsLabel": "콜라보레이터",
     "metadataInspiredByLabel": "영감",
     "metadataRepostedByLabel": "리포스트",
+    "metadataMoreReposters": "외 {count}명",
     "metadataLoopsLabel": "루프",
     "metadataLikesLabel": "좋아요",
     "metadataCommentsLabel": "댓글",

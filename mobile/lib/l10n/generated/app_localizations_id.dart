@@ -1793,6 +1793,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataRepostedByLabel => 'Di-repost oleh';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '+$count lainnya';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return 'Loop';
   }

@@ -1730,6 +1730,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataRepostedByLabel => '리포스트';
 
   @override
+  String metadataMoreReposters(int count) {
+    return '외 $count명';
+  }
+
+  @override
   String metadataLoopsLabel(int count) {
     return '루프';
   }

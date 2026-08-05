@@ -694,6 +694,7 @@
     "metadataCollaboratorsLabel": "المتعاونون",
     "metadataInspiredByLabel": "مستوحى من",
     "metadataRepostedByLabel": "أعاد نشره",
+    "metadataMoreReposters": "+{count} آخرين",
     "metadataLoopsLabel": "التكرارات",
     "metadataLikesLabel": "الإعجابات",
     "metadataCommentsLabel": "التعليقات",

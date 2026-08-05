@@ -993,6 +993,7 @@
   "metadataCollaboratorsLabel": "Kolaborator",
   "metadataInspiredByLabel": "Diilhamkan oleh",
   "metadataRepostedByLabel": "Disiarkan semula oleh",
+  "metadataMoreReposters": "+{count} lagi",
   "metadataLoopsLabel": "{count, plural, =1{Loop} other{Loop}}",
   "@metadataLoopsLabel": {
     "placeholders": {
