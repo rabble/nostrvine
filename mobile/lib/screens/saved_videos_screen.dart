@@ -22,7 +22,7 @@ class SavedVideosScreen extends ConsumerWidget {
   const SavedVideosScreen({super.key});
 
   static const routeName = 'savedVideos';
-  static const path = '/saved';
+  static const path = '/saved-videos';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
