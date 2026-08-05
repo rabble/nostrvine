@@ -329,7 +329,7 @@ void main() {
               cacheBustToken: any(named: 'cacheBustToken'),
             ),
           ).thenAnswer(
-            (_) async => VideoCommentsResponse(
+            (_) async => const VideoCommentsResponse(
               comments: [
                 VideoComment(
                   id: 'rest_video_reply',
@@ -384,7 +384,7 @@ void main() {
             cacheBustToken: any(named: 'cacheBustToken'),
           ),
         ).thenAnswer(
-          (_) async => VideoCommentsResponse(
+          (_) async => const VideoCommentsResponse(
             comments: [
               VideoComment(
                 id: 'rest_comment_no_kind',
