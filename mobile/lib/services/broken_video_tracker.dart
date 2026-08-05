@@ -7,18 +7,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class BrokenVideoTracker {
-  static const String _storageKey = 'broken_video_urls';
-  static const String _timestampKey = 'broken_video_timestamps';
+  BrokenVideoTracker({String? ownerPubkey})
+    : _storageKey = _scopedKey('broken_video_urls', ownerPubkey),
+      _timestampKey = _scopedKey('broken_video_timestamps', ownerPubkey);
+
   static const Duration _cleanupDuration = Duration(
     days: 7,
   ); // Clean up old entries after 7 days
 
+  final String _storageKey;
+  final String _timestampKey;
   late SharedPreferences _prefs;
   Set<String> _brokenVideoIds = {};
   Map<String, DateTime> _brokenTimestamps = {};
 
+  static String _scopedKey(String baseKey, String? ownerPubkey) {
+    final scope = ownerPubkey == null || ownerPubkey.isEmpty
+        ? 'anonymous'
+        : ownerPubkey;
+    return '${baseKey}_$scope';
+  }
+
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
+    await _dropLegacyUnscopedEntries();
     await _loadBrokenVideos();
     await _cleanupOldEntries();
 
@@ -27,6 +39,18 @@ class BrokenVideoTracker {
       name: 'BrokenVideoTracker',
       category: LogCategory.system,
     );
+  }
+
+  /// Pre-#6251 marks were stored under unscoped keys that no scope reads and
+  /// the 7-day sweep never visits, so they would sit in storage forever. Those
+  /// marks are already unreachable — dropping them reclaims the bytes without
+  /// changing what is filtered.
+  Future<void> _dropLegacyUnscopedEntries() async {
+    for (final key in const ['broken_video_urls', 'broken_video_timestamps']) {
+      if (_prefs.containsKey(key)) {
+        await _prefs.remove(key);
+      }
+    }
   }
 
   Future<void> _loadBrokenVideos() async {

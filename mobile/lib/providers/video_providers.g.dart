@@ -269,7 +269,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'e2aabe88e273a2b1748f596b7b32fa920122911d';
+String _$videoEventServiceHash() => r'a7c6b23e1f8d4f9fd8828e8b4adab600999eccd5';
 
 /// Video event publisher for publishing video events to Nostr relays
 
@@ -616,26 +616,36 @@ String _$videoMetadataUpdateServiceHash() =>
 
 /// Broken video tracker service for filtering non-functional videos.
 ///
-/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// `keepAlive: true` so this stays the single instance per identity —
 /// [videoEventServiceProvider] attaches it to `VideoEventService` for
 /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
 /// videos on that *same* instance. Without `keepAlive`, this autodisposes
 /// once its initial watchers drop, so a later read can rebuild a fresh
 /// tracker that `VideoEventService` never sees — the home feed would then
 /// mark an item broken without it ever being filtered. See #5953 review.
+///
+/// It does rebuild on every auth transition, by design: the marks are stored
+/// per pubkey so one account's prunes cannot hide videos from another. That is
+/// safe only because [videoEventServiceProvider] reattaches the new tracker
+/// through a `ref.listen` rather than capturing one at build time.
 
 @ProviderFor(brokenVideoTracker)
 final brokenVideoTrackerProvider = BrokenVideoTrackerProvider._();
 
 /// Broken video tracker service for filtering non-functional videos.
 ///
-/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// `keepAlive: true` so this stays the single instance per identity —
 /// [videoEventServiceProvider] attaches it to `VideoEventService` for
 /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
 /// videos on that *same* instance. Without `keepAlive`, this autodisposes
 /// once its initial watchers drop, so a later read can rebuild a fresh
 /// tracker that `VideoEventService` never sees — the home feed would then
 /// mark an item broken without it ever being filtered. See #5953 review.
+///
+/// It does rebuild on every auth transition, by design: the marks are stored
+/// per pubkey so one account's prunes cannot hide videos from another. That is
+/// safe only because [videoEventServiceProvider] reattaches the new tracker
+/// through a `ref.listen` rather than capturing one at build time.
 
 final class BrokenVideoTrackerProvider
     extends
@@ -649,13 +659,18 @@ final class BrokenVideoTrackerProvider
         $FutureProvider<BrokenVideoTracker> {
   /// Broken video tracker service for filtering non-functional videos.
   ///
-  /// `keepAlive: true` so this stays the single app-session-stable instance —
+  /// `keepAlive: true` so this stays the single instance per identity —
   /// [videoEventServiceProvider] attaches it to `VideoEventService` for
   /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
   /// videos on that *same* instance. Without `keepAlive`, this autodisposes
   /// once its initial watchers drop, so a later read can rebuild a fresh
   /// tracker that `VideoEventService` never sees — the home feed would then
   /// mark an item broken without it ever being filtered. See #5953 review.
+  ///
+  /// It does rebuild on every auth transition, by design: the marks are stored
+  /// per pubkey so one account's prunes cannot hide videos from another. That is
+  /// safe only because [videoEventServiceProvider] reattaches the new tracker
+  /// through a `ref.listen` rather than capturing one at build time.
   BrokenVideoTrackerProvider._()
     : super(
         from: null,
@@ -683,20 +698,32 @@ final class BrokenVideoTrackerProvider
 }
 
 String _$brokenVideoTrackerHash() =>
-    r'c22a5abecce15fbb6194948c3b23af91f1a7ebab';
+    r'a0b2af154496e50f633f49069986b3c0ee1f5585';
 
-/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-/// broken so the home feed can skip past + persistently prune it. Reuses the
-/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-/// surface's `filterVideoList`. See #5953.
+/// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+/// says the blob is `blocked` before marking it broken. Reuses the singleton
+/// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+/// `filterVideoList`. See #5953 / #6251.
+///
+/// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+/// fullscreen feed reads this imperatively from a BLoC callback, and an
+/// autoDispose future provider that nothing listens to is disposed right after
+/// each `ref.read`, so `asData` is always null and the prune never fires. It
+/// worked only while an unrelated widget happened to be watching it.
 
 @ProviderFor(deadMediaFeedGuard)
 final deadMediaFeedGuardProvider = DeadMediaFeedGuardProvider._();
 
-/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-/// broken so the home feed can skip past + persistently prune it. Reuses the
-/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-/// surface's `filterVideoList`. See #5953.
+/// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+/// says the blob is `blocked` before marking it broken. Reuses the singleton
+/// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+/// `filterVideoList`. See #5953 / #6251.
+///
+/// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+/// fullscreen feed reads this imperatively from a BLoC callback, and an
+/// autoDispose future provider that nothing listens to is disposed right after
+/// each `ref.read`, so `asData` is always null and the prune never fires. It
+/// worked only while an unrelated widget happened to be watching it.
 
 final class DeadMediaFeedGuardProvider
     extends
@@ -708,17 +735,23 @@ final class DeadMediaFeedGuardProvider
     with
         $FutureModifier<DeadMediaFeedGuard>,
         $FutureProvider<DeadMediaFeedGuard> {
-  /// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-  /// broken so the home feed can skip past + persistently prune it. Reuses the
-  /// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-  /// surface's `filterVideoList`. See #5953.
+  /// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+  /// says the blob is `blocked` before marking it broken. Reuses the singleton
+  /// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+  /// `filterVideoList`. See #5953 / #6251.
+  ///
+  /// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+  /// fullscreen feed reads this imperatively from a BLoC callback, and an
+  /// autoDispose future provider that nothing listens to is disposed right after
+  /// each `ref.read`, so `asData` is always null and the prune never fires. It
+  /// worked only while an unrelated widget happened to be watching it.
   DeadMediaFeedGuardProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'deadMediaFeedGuardProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -739,7 +772,7 @@ final class DeadMediaFeedGuardProvider
 }
 
 String _$deadMediaFeedGuardHash() =>
-    r'c0eed3bb2461ee831a2619dd662ebaf88f0da3a5';
+    r'958fa1e62ea46ed215cdc446b81e0f21b4822344';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///

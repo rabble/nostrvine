@@ -1,5 +1,5 @@
 // ABOUTME: Tests that VideoEventService filters videos confirmed unavailable
-// ABOUTME: (hard 404) via the attached BrokenVideoTracker across list surfaces.
+// ABOUTME: via the attached BrokenVideoTracker across list surfaces.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -72,37 +72,28 @@ void main() {
       service.dispose();
     });
 
-    test(
-      'filterVideoList drops videos marked broken by the tracker',
-      () async {
-        await tracker.markVideoBroken('broken1', 'Confirmed 404');
-        service.setBrokenVideoTracker(tracker);
+    test('filterVideoList drops videos marked broken by the tracker', () async {
+      await tracker.markVideoBroken('broken1', 'Confirmed unavailable');
+      service.setBrokenVideoTracker(tracker);
 
-        final videos = [
-          _videoEvent(id: 'good1'),
-          _videoEvent(id: 'broken1'),
-          _videoEvent(id: 'good2'),
-        ];
+      final videos = [
+        _videoEvent(id: 'good1'),
+        _videoEvent(id: 'broken1'),
+        _videoEvent(id: 'good2'),
+      ];
 
-        final filtered = service.filterVideoList(videos);
+      final filtered = service.filterVideoList(videos);
 
-        expect(
-          filtered.map((v) => v.id),
-          equals(['good1', 'good2']),
-        );
-      },
-    );
+      expect(filtered.map((v) => v.id), equals(['good1', 'good2']));
+    });
 
-    test(
-      'filterVideoList keeps all videos when no tracker attached',
-      () {
-        final videos = [_videoEvent(id: 'a'), _videoEvent(id: 'b')];
+    test('filterVideoList keeps all videos when no tracker attached', () {
+      final videos = [_videoEvent(id: 'a'), _videoEvent(id: 'b')];
 
-        final filtered = service.filterVideoList(videos);
+      final filtered = service.filterVideoList(videos);
 
-        expect(filtered.map((v) => v.id), equals(['a', 'b']));
-      },
-    );
+      expect(filtered.map((v) => v.id), equals(['a', 'b']));
+    });
 
     test(
       'filterVideoList keeps videos that become broken only after attach',
@@ -113,8 +104,64 @@ void main() {
         expect(service.filterVideoList(videos).map((v) => v.id), ['x', 'y']);
 
         // Tracker reads live state, so a later mark is reflected immediately.
-        await tracker.markVideoBroken('x', 'Confirmed 404');
+        await tracker.markVideoBroken('x', 'Confirmed unavailable');
         expect(service.filterVideoList(videos).map((v) => v.id), ['y']);
+      },
+    );
+
+    // Scoping the keys orphaned the pre-#6251 unscoped pair: no scope reads
+    // them and `_cleanupOldEntries` only sweeps the loaded scope, so they
+    // would never expire. The containsKey assertions are the load-bearing
+    // ones — isVideoBroken already returns false without the cleanup.
+    test('drops the orphaned pre-#6251 unscoped entries', () async {
+      SharedPreferences.setMockInitialValues({
+        'broken_video_urls': '["legacy1"]',
+        'broken_video_timestamps':
+            '{"legacy1":${DateTime.now().millisecondsSinceEpoch}}',
+      });
+
+      final scopedTracker = BrokenVideoTracker();
+      await scopedTracker.initialize();
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('broken_video_urls'), isFalse);
+      expect(prefs.containsKey('broken_video_timestamps'), isFalse);
+      expect(scopedTracker.isVideoBroken('legacy1'), isFalse);
+    });
+
+    test(
+      'tracker persistence is scoped between anonymous and signed-in users',
+      () async {
+        final anonymousTracker = BrokenVideoTracker();
+        await anonymousTracker.initialize();
+        await anonymousTracker.markVideoBroken('signed-in-can-watch', '404');
+
+        final signedInTracker = BrokenVideoTracker(ownerPubkey: 'a' * 64);
+        await signedInTracker.initialize();
+
+        expect(signedInTracker.isVideoBroken('signed-in-can-watch'), isFalse);
+
+        await signedInTracker.markVideoBroken('blocked-for-user', '404');
+
+        final reloadedSignedInTracker = BrokenVideoTracker(
+          ownerPubkey: 'a' * 64,
+        );
+        await reloadedSignedInTracker.initialize();
+        final reloadedAnonymousTracker = BrokenVideoTracker();
+        await reloadedAnonymousTracker.initialize();
+
+        expect(
+          reloadedSignedInTracker.isVideoBroken('blocked-for-user'),
+          isTrue,
+        );
+        expect(
+          reloadedAnonymousTracker.isVideoBroken('blocked-for-user'),
+          isFalse,
+        );
+        expect(
+          reloadedAnonymousTracker.isVideoBroken('signed-in-can-watch'),
+          isTrue,
+        );
       },
     );
   });

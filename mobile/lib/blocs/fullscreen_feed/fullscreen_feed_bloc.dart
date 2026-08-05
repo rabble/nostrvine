@@ -14,7 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/media_availability_checker.dart';
+import 'package:openvine/services/dead_media_feed_guard.dart';
 import 'package:openvine/utils/video_identity.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -29,13 +29,23 @@ part 'fullscreen_feed_state.dart';
 typedef OnRemoveVideo = void Function(String videoId);
 
 /// Callback invoked by [FullscreenFeedBloc] when a video has been confirmed
-/// unavailable (a hard 404 verified via [MediaAvailabilityChecker]).
+/// unavailable by the shared prune guard.
 ///
 /// Unlike [OnRemoveVideo] — which only drops the id from in-memory caches for
 /// the current session — this persists the id so the video stays filtered out
 /// of every list surface across app restarts. A callback keeps the BLoC free
 /// of direct dependencies on concrete services.
 typedef OnVideoConfirmedUnavailable = void Function(String videoId);
+
+/// Confirms whether a player-reported unavailable video is safe to prune.
+///
+/// Production passes [DeadMediaFeedGuard.isConfirmedUnavailable], which first
+/// HEAD-confirms a 404 and then requires moderation to say the blob is
+/// `blocked`. Quarantined and age-restricted blobs also 404 but are reversible,
+/// so they keep their error tile instead of being pruned. Tests may inject a
+/// smaller predicate.
+typedef ConfirmVideoUnavailable =
+    Future<bool> Function({required String? videoUrl, String? explicitSha256});
 
 /// Returns `true` when [pubkey]'s content must be hidden (blocked / muted /
 /// blocked-us / muted-us). Injected so the BLoC stays free of Riverpod and
@@ -45,8 +55,8 @@ typedef OnVideoConfirmedUnavailable = void Function(String videoId);
 /// across mutations.
 typedef BlockAuthorFilter = bool Function(String pubkey);
 
-/// Returns `true` when [videoId] has been confirmed unavailable (a persisted
-/// hard 404). Injected so the BLoC stays free of concrete service
+/// Returns `true` when [videoId] has been confirmed unavailable and persisted.
+/// Injected so the BLoC stays free of concrete service
 /// dependencies — the launching `ConsumerWidget` resolves it from
 /// `BrokenVideoTracker.isVideoBroken`. The bound method reads live tracker
 /// state on every call, so newly-confirmed-missing videos are filtered from
@@ -97,7 +107,7 @@ class FullscreenFeedBloc
     BlossomAuthService? blossomAuthService,
     OnRemoveVideo? onRemoveVideo,
     OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
-    MediaAvailabilityChecker? availabilityChecker,
+    ConfirmVideoUnavailable? confirmVideoUnavailable,
     BlockAuthorFilter? blockFilter,
     UnavailableVideoFilter? unavailableFilter,
     FeedTuningRepository? feedTuningRepository,
@@ -111,8 +121,8 @@ class FullscreenFeedBloc
        _blossomAuthService = blossomAuthService,
        _onRemoveVideo = onRemoveVideo,
        _onVideoConfirmedUnavailable = onVideoConfirmedUnavailable,
-       _availabilityChecker =
-           availabilityChecker ?? const MediaAvailabilityChecker(),
+       _confirmVideoUnavailable =
+           confirmVideoUnavailable ?? _defaultConfirmVideoUnavailable,
        _blockFilter = blockFilter,
        _unavailableFilter = unavailableFilter,
        _feedTuningRepository = feedTuningRepository,
@@ -153,7 +163,7 @@ class FullscreenFeedBloc
   final BlossomAuthService? _blossomAuthService;
   final OnRemoveVideo? _onRemoveVideo;
   final OnVideoConfirmedUnavailable? _onVideoConfirmedUnavailable;
-  final MediaAvailabilityChecker _availabilityChecker;
+  final ConfirmVideoUnavailable _confirmVideoUnavailable;
   final BlockAuthorFilter? _blockFilter;
   final UnavailableVideoFilter? _unavailableFilter;
   final FeedTuningRepository? _feedTuningRepository;
@@ -549,9 +559,9 @@ class FullscreenFeedBloc
 
   /// Handle a player-reported unavailable video.
   ///
-  /// Confirms the asset really is missing via a HEAD request before
-  /// permanently removing it. Transient player errors (network flake, slow
-  /// TLS, etc.) must not trigger removal — only a hard 404 counts.
+  /// Confirms the asset is safe to prune before permanently removing it.
+  /// Transient player errors (network flake, slow TLS, etc.) and recoverable
+  /// age-restricted media must not trigger removal.
   ///
   /// Uses `sequential()` to serialize concurrent unavailable events so the
   /// dedupe set in [FullscreenFeedState.removedVideoIds] is authoritative
@@ -567,14 +577,18 @@ class FullscreenFeedBloc
     final index = state.videos.indexWhere((v) => v.id == videoId);
     if (index < 0) return;
 
-    final videoUrl = state.videos[index].videoUrl;
+    final video = state.videos[index];
+    final videoUrl = video.videoUrl;
     if (videoUrl == null || videoUrl.isEmpty) return;
 
-    final isMissing = await _availabilityChecker.isConfirmedMissing(videoUrl);
-    if (!isMissing) {
+    final unavailable = await _confirmVideoUnavailable(
+      videoUrl: videoUrl,
+      explicitSha256: video.sha256,
+    );
+    if (!unavailable) {
       Log.warning(
-        'FullscreenFeedBloc: Player reported notFound for $videoId but HEAD '
-        'did not confirm 404 — treating as transient error, video stays.',
+        'FullscreenFeedBloc: Player reported notFound for $videoId but '
+        'confirmation did not allow prune — video stays.',
         name: 'FullscreenFeedBloc',
         category: LogCategory.video,
       );
@@ -603,6 +617,13 @@ class FullscreenFeedBloc
       ),
     );
   }
+
+  /// Fails closed: without an injected confirmer there is no moderation
+  /// verdict, and a bare 404 is not grounds for the persistent prune (#6251).
+  static Future<bool> _defaultConfirmVideoUnavailable({
+    required String? videoUrl,
+    String? explicitSha256,
+  }) async => false;
 
   /// Handle UI acknowledgement of a pending skip signal.
   void _onSkipAcknowledged(
@@ -683,11 +704,11 @@ class FullscreenFeedBloc
     return videos.where((v) => !blockFilter(v.pubkey)).toList();
   }
 
-  /// Returns [videos] with videos confirmed unavailable (persisted hard 404)
-  /// removed, or the same list unchanged when no [UnavailableVideoFilter] was
-  /// injected. Applied at the stream boundary so static sources (liked, saved,
-  /// reposts, collabs, curated lists) drop videos that 404'd in a previous
-  /// session, which their by-id repositories don't filter. See #5237.
+  /// Returns [videos] with persisted unavailable videos removed, or the same
+  /// list unchanged when no [UnavailableVideoFilter] was injected. Applied at
+  /// the stream boundary so static sources (liked, saved, reposts, collabs,
+  /// curated lists) drop videos confirmed in a previous session, which their
+  /// by-id repositories don't filter. See #5237 / #6251.
   List<VideoEvent> _applyUnavailableFilter(List<VideoEvent> videos) {
     final unavailableFilter = _unavailableFilter;
     if (unavailableFilter == null) return videos;

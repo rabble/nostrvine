@@ -10,13 +10,10 @@ import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:feed_tuning_repository/feed_tuning_repository.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
-import 'package:openvine/services/media_availability_checker.dart';
 
 class MockFileInfo extends Mock implements FileInfo {}
 
@@ -95,7 +92,7 @@ void main() {
       BlossomAuthService? blossomAuthService,
       OnRemoveVideo? onRemoveVideo,
       OnVideoConfirmedUnavailable? onVideoConfirmedUnavailable,
-      MediaAvailabilityChecker? availabilityChecker,
+      ConfirmVideoUnavailable? confirmVideoUnavailable,
       BlockAuthorFilter? blockFilter,
       UnavailableVideoFilter? unavailableFilter,
       FeedTuningRepository? feedTuningRepository,
@@ -110,11 +107,19 @@ void main() {
       blossomAuthService: blossomAuthService,
       onRemoveVideo: onRemoveVideo,
       onVideoConfirmedUnavailable: onVideoConfirmedUnavailable,
-      availabilityChecker: availabilityChecker,
+      confirmVideoUnavailable: confirmVideoUnavailable,
       blockFilter: blockFilter,
       unavailableFilter: unavailableFilter,
       feedTuningRepository: feedTuningRepository,
     );
+
+    ConfirmVideoUnavailable confirmerReturning(
+      bool result, {
+      void Function(String? videoUrl, String? explicitSha256)? onCall,
+    }) => ({required videoUrl, explicitSha256}) async {
+      onCall?.call(videoUrl, explicitSha256);
+      return result;
+    };
 
     test('initial state has correct values', () {
       final bloc = createBloc(initialIndex: 2);
@@ -575,10 +580,8 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'opens tapped grid video when repository list filters an earlier item',
-        build: () => createBloc(
-          initialIndex: 2,
-          initialVideoId: 'tapped-video',
-        ),
+        build: () =>
+            createBloc(initialIndex: 2, initialVideoId: 'tapped-video'),
         act: (bloc) async {
           final tapped = createTestVideo('tapped-video');
 
@@ -594,11 +597,7 @@ void main() {
         expect: () => [
           isA<FullscreenFeedState>()
               .having((s) => s.currentIndex, 'currentIndex', 1)
-              .having(
-                (s) => s.currentVideo?.id,
-                'currentVideo',
-                'tapped-video',
-              )
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'tapped-video')
               .having(
                 (s) => s.initialTargetResolved,
                 'initialTargetResolved',
@@ -642,11 +641,7 @@ void main() {
               ),
           isA<FullscreenFeedState>()
               .having((s) => s.currentIndex, 'currentIndex', 1)
-              .having(
-                (s) => s.currentVideo?.id,
-                'currentVideo',
-                'target-video',
-              )
+              .having((s) => s.currentVideo?.id, 'currentVideo', 'target-video')
               .having(
                 (s) => s.initialTargetResolved,
                 'initialTargetResolved',
@@ -807,11 +802,11 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
         expect: () => [
           isA<FullscreenFeedState>()
-              .having(
-                (s) => s.videos.map((v) => v.id).toList(),
-                'video ids',
-                ['a', 'c', 'd'],
-              )
+              .having((s) => s.videos.map((v) => v.id).toList(), 'video ids', [
+                'a',
+                'c',
+                'd',
+              ])
               .having((s) => s.currentIndex, 'currentIndex', 1)
               .having((s) => s.currentVideo?.id, 'currentVideo', 'c'),
         ],
@@ -837,11 +832,11 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
         expect: () => [
           isA<FullscreenFeedState>()
-              .having(
-                (s) => s.videos.map((v) => v.id).toList(),
-                'video ids',
-                ['c', 'd', 'e'],
-              )
+              .having((s) => s.videos.map((v) => v.id).toList(), 'video ids', [
+                'c',
+                'd',
+                'e',
+              ])
               .having((s) => s.currentIndex, 'currentIndex', 1)
               .having((s) => s.currentVideo?.id, 'currentVideo', 'd'),
         ],
@@ -862,11 +857,10 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
         expect: () => [
           isA<FullscreenFeedState>()
-              .having(
-                (s) => s.videos.map((v) => v.id).toList(),
-                'video ids',
-                ['a', 'c'],
-              )
+              .having((s) => s.videos.map((v) => v.id).toList(), 'video ids', [
+                'a',
+                'c',
+              ])
               .having((s) => s.currentIndex, 'currentIndex', 1)
               .having((s) => s.currentVideo?.id, 'currentVideo', 'c'),
         ],
@@ -889,11 +883,10 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedBlocklistChanged()),
         expect: () => [
           isA<FullscreenFeedState>()
-              .having(
-                (s) => s.videos.map((v) => v.id).toList(),
-                'video ids',
-                ['b', 'c'],
-              )
+              .having((s) => s.videos.map((v) => v.id).toList(), 'video ids', [
+                'b',
+                'c',
+              ])
               .having((s) => s.currentIndex, 'currentIndex', 0)
               .having((s) => s.currentVideo?.id, 'currentVideo', 'b'),
         ],
@@ -1437,7 +1430,7 @@ void main() {
       );
     });
 
-    group('unavailableFilter (persisted 404)', () {
+    group('unavailableFilter (persisted unavailable media)', () {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'filters known-unavailable videos from incoming stream lists',
         build: () => createBloc(unavailableFilter: (id) => id == 'broken'),
@@ -1497,25 +1490,13 @@ void main() {
     });
 
     group('FullscreenFeedVideoUnavailable', () {
-      MediaAvailabilityChecker checkerReturning(int statusCode) {
-        final client = MockClient((_) async => http.Response('', statusCode));
-        return MediaAvailabilityChecker(client: client);
-      }
-
-      MediaAvailabilityChecker throwingChecker() {
-        final client = MockClient(
-          (_) async => throw http.ClientException('timeout'),
-        );
-        return MediaAvailabilityChecker(client: client);
-      }
-
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'removes video and emits pending skip when HEAD confirms 404',
+        'removes video and emits pending skip when confirmation allows prune',
         build: () {
           final removed = <String>[];
           return createBloc(
             onRemoveVideo: removed.add,
-            availabilityChecker: checkerReturning(404),
+            confirmVideoUnavailable: confirmerReturning(true),
           );
         },
         seed: () => FullscreenFeedState(
@@ -1540,12 +1521,12 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'calls onRemoveVideo callback when HEAD confirms 404',
+        'calls onRemoveVideo callback when confirmation allows prune',
         build: () => createBloc(
           onRemoveVideo: expectAsync1<void, String>((id) {
             expect(id, equals('video1'));
           }),
-          availabilityChecker: checkerReturning(404),
+          confirmVideoUnavailable: confirmerReturning(true),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1556,11 +1537,11 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'does not remove or skip when HEAD returns 200 (transient error)',
+        'does not remove or skip when confirmation rejects prune',
         build: () {
           return createBloc(
-            onRemoveVideo: (_) => fail('should not remove on non-404'),
-            availabilityChecker: checkerReturning(200),
+            onRemoveVideo: (_) => fail('should not remove on rejected prune'),
+            confirmVideoUnavailable: confirmerReturning(false),
           );
         },
         seed: () => FullscreenFeedState(
@@ -1573,11 +1554,11 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'does not remove when HEAD request throws (network error)',
+        'does not remove when confirmation is conservative after lookup failure',
         build: () {
           return createBloc(
-            onRemoveVideo: (_) => fail('should not remove on network error'),
-            availabilityChecker: throwingChecker(),
+            onRemoveVideo: (_) => fail('should not remove on failed lookup'),
+            confirmVideoUnavailable: confirmerReturning(false),
           );
         },
         seed: () => FullscreenFeedState(
@@ -1590,12 +1571,12 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'calls onVideoConfirmedUnavailable when HEAD confirms 404',
+        'calls onVideoConfirmedUnavailable when confirmation allows prune',
         build: () => createBloc(
           onVideoConfirmedUnavailable: expectAsync1<void, String>((id) {
             expect(id, equals('video1'));
           }),
-          availabilityChecker: checkerReturning(404),
+          confirmVideoUnavailable: confirmerReturning(true),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1606,11 +1587,11 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'does not call onVideoConfirmedUnavailable on transient error (200)',
+        'does not call onVideoConfirmedUnavailable when confirmation rejects',
         build: () => createBloc(
           onVideoConfirmedUnavailable: (_) =>
-              fail('should not persist on non-404'),
-          availabilityChecker: checkerReturning(200),
+              fail('should not persist on rejected prune'),
+          confirmVideoUnavailable: confirmerReturning(false),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1622,11 +1603,11 @@ void main() {
       );
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'does not call onVideoConfirmedUnavailable when HEAD throws',
+        'does not call onVideoConfirmedUnavailable after lookup failure',
         build: () => createBloc(
           onVideoConfirmedUnavailable: (_) =>
-              fail('should not persist on network error'),
-          availabilityChecker: throwingChecker(),
+              fail('should not persist after failed lookup'),
+          confirmVideoUnavailable: confirmerReturning(false),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1643,7 +1624,7 @@ void main() {
           var callCount = 0;
           return createBloc(
             onRemoveVideo: (_) => callCount++,
-            availabilityChecker: checkerReturning(404),
+            confirmVideoUnavailable: confirmerReturning(true),
           );
         },
         seed: () => FullscreenFeedState(
@@ -1677,7 +1658,7 @@ void main() {
         'no-ops when video id is not in the current list',
         build: () => createBloc(
           onRemoveVideo: (_) => fail('unknown video should not trigger remove'),
-          availabilityChecker: checkerReturning(404),
+          confirmVideoUnavailable: confirmerReturning(true),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1693,7 +1674,7 @@ void main() {
         'no-ops when video has no URL',
         build: () => createBloc(
           onRemoveVideo: (_) => fail('videos without URL cannot be confirmed'),
-          availabilityChecker: checkerReturning(404),
+          confirmVideoUnavailable: confirmerReturning(true),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1717,7 +1698,7 @@ void main() {
         'skip target matches index of removed video + 1',
         build: () => createBloc(
           onRemoveVideo: (_) {},
-          availabilityChecker: checkerReturning(404),
+          confirmVideoUnavailable: confirmerReturning(true),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
@@ -1737,6 +1718,25 @@ void main() {
             equals(2),
           ),
         ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'passes video URL and explicit sha256 to confirmation',
+        build: () => createBloc(
+          confirmVideoUnavailable: confirmerReturning(
+            true,
+            onCall: expectAsync2((videoUrl, explicitSha256) {
+              expect(videoUrl, equals('https://example.com/video_video1.mp4'));
+              expect(explicitSha256, equals('a' * 64));
+            }),
+          ),
+        ),
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [createTestVideo('video1', sha256: 'a' * 64)],
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedVideoUnavailable('video1')),
+        wait: const Duration(milliseconds: 100),
       );
     });
 
@@ -1771,9 +1771,7 @@ void main() {
         'allows subsequent unavailable events to emit a new skip',
         build: () => createBloc(
           onRemoveVideo: (_) {},
-          availabilityChecker: MediaAvailabilityChecker(
-            client: MockClient((_) async => http.Response('', 404)),
-          ),
+          confirmVideoUnavailable: confirmerReturning(true),
         ),
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,

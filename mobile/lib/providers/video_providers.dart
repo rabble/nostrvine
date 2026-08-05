@@ -42,6 +42,7 @@ import 'package:openvine/services/video_event_resolver.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_metadata_update_service.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -190,25 +191,24 @@ VideoEventService videoEventService(Ref ref) {
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
 
-  // Attach the broken-video tracker (async init) so videos confirmed
-  // unavailable (hard 404) stay filtered out of every list surface across
-  // restarts. Fire-and-forget: the tracker hydrates from SharedPreferences and
-  // is safe to attach once ready. See #5237.
-  unawaited(
-    ref
-        .read(brokenVideoTrackerProvider.future)
-        .then(service.setBrokenVideoTracker)
-        .catchError((Object error, StackTrace stackTrace) {
-          Log.error(
-            'Failed to attach broken video tracker to VideoEventService: '
-            '$error',
-            name: 'VideoEventService',
-            category: LogCategory.system,
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }),
-  );
+  // Attach the scoped broken-video tracker so videos confirmed unavailable stay
+  // filtered out of every list surface across restarts. `fireImmediately`
+  // attaches the initial async tracker once it hydrates; later auth transitions
+  // rebuild the tracker under a different pubkey scope and reattach it here.
+  // See #5237 / #6251.
+  ref.listen(brokenVideoTrackerProvider, (_, next) {
+    next.whenData(service.setBrokenVideoTracker);
+    if (next.hasError) {
+      Log.error(
+        'Failed to attach broken video tracker to VideoEventService: '
+        '${next.error}',
+        name: 'VideoEventService',
+        category: LogCategory.system,
+        error: next.error,
+        stackTrace: next.stackTrace,
+      );
+    }
+  }, fireImmediately: true);
 
   // Teach the OG Viner badge cache from every video that flows through the
   // service. The cache filters internally (only `isOriginalVine` videos
@@ -408,28 +408,51 @@ VideoMetadataUpdateService videoMetadataUpdateService(Ref ref) {
 
 /// Broken video tracker service for filtering non-functional videos.
 ///
-/// `keepAlive: true` so this stays the single app-session-stable instance —
+/// `keepAlive: true` so this stays the single instance per identity —
 /// [videoEventServiceProvider] attaches it to `VideoEventService` for
 /// `filterVideoList`, and [deadMediaFeedGuardProvider] must mark broken
 /// videos on that *same* instance. Without `keepAlive`, this autodisposes
 /// once its initial watchers drop, so a later read can rebuild a fresh
 /// tracker that `VideoEventService` never sees — the home feed would then
 /// mark an item broken without it ever being filtered. See #5953 review.
+///
+/// It does rebuild on every auth transition, by design: the marks are stored
+/// per pubkey so one account's prunes cannot hide videos from another. That is
+/// safe only because [videoEventServiceProvider] reattaches the new tracker
+/// through a `ref.listen` rather than capturing one at build time.
 @Riverpod(keepAlive: true)
 Future<BrokenVideoTracker> brokenVideoTracker(Ref ref) async {
-  final tracker = BrokenVideoTracker();
+  ref.watch(currentAuthStateProvider);
+  final ownerPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
+  final tracker = BrokenVideoTracker(ownerPubkey: ownerPubkey);
   await tracker.initialize();
   return tracker;
 }
 
-/// Guard that HEAD-confirms a feed item's media is a hard 404 and marks it
-/// broken so the home feed can skip past + persistently prune it. Reuses the
-/// singleton [brokenVideoTrackerProvider] so a mark here is visible to every
-/// surface's `filterVideoList`. See #5953.
-@riverpod
+/// Guard that HEAD-confirms a feed item's media is 404 and verifies moderation
+/// says the blob is `blocked` before marking it broken. Reuses the singleton
+/// [brokenVideoTrackerProvider] so a mark here is visible to every surface's
+/// `filterVideoList`. See #5953 / #6251.
+///
+/// `keepAlive: true` for the same reason as [brokenVideoTrackerProvider]: the
+/// fullscreen feed reads this imperatively from a BLoC callback, and an
+/// autoDispose future provider that nothing listens to is disposed right after
+/// each `ref.read`, so `asData` is always null and the prune never fires. It
+/// worked only while an unrelated widget happened to be watching it.
+@Riverpod(keepAlive: true)
 Future<DeadMediaFeedGuard> deadMediaFeedGuard(Ref ref) async {
+  // Watched before the await. A dispose *or* a rebuild during the suspension
+  // replaces the element's `ref`, and any `ref` use after that throws
+  // UnmountedRefException — which lands in an orphaned future, so the guard
+  // silently never resolves and the prune stops firing.
+  final moderationStatusService = ref.watch(
+    videoModerationStatusServiceProvider,
+  );
   final tracker = await ref.watch(brokenVideoTrackerProvider.future);
-  return DeadMediaFeedGuard(brokenVideoTracker: tracker);
+  return DeadMediaFeedGuard(
+    brokenVideoTracker: tracker,
+    moderationStatusService: moderationStatusService,
+  );
 }
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
