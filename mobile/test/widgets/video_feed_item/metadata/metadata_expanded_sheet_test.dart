@@ -360,6 +360,29 @@ void main() {
     );
 
     testWidgetsWithSurfaceSize(
+      'renders farewell-day date when original Vine has a published_at tag',
+      (tester) async {
+        const publishedAt = 1484627482;
+        final video = _makeVideo(
+          title: 'Final vine',
+          content: 'Thanks for everything',
+          createdAt: 1777489813,
+          publishedAt: '$publishedAt',
+          rawTags: const {'platform': 'vine', 'published_at': '1484627482'},
+        );
+
+        await tester.pumpWidget(
+          buildSubject(child: MetadataExpandedSheet(video: video)),
+        );
+
+        final expectedDate = DateFormat.yMMMMd('en').format(
+          DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000, isUtc: true),
+        );
+        expect(find.text(expectedDate), findsOneWidget);
+      },
+    );
+
+    testWidgetsWithSurfaceSize(
       'renders Vine-era date for a classic vine timestamp',
       (tester) async {
         // 2012-12-11 21:38 UTC — a classic Vine-era timestamp.

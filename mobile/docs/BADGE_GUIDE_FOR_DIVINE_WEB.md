@@ -139,7 +139,8 @@ There is also an original-date helper:
 That means:
 
 - `isOriginalVine == true`
-- effective created/published time is at or after Vine shutdown
+- no usable `published_at` tag
+- and missing/zero `created_at`, or `created_at` at/after Vine shutdown
 
 Mobile uses `isOriginalVine` for the comments empty-state archive notice. It uses `hasUnknownOriginalDate` only to avoid displaying an import timestamp as the original Vine date.
 

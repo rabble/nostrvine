@@ -1295,14 +1295,15 @@ class VideoEvent {
   /// All hashtags including the synthetic "classic" tag for original Vines.
   List<String> get allHashtags => [if (isOriginalVine) 'classic', ...hashtags];
 
-  /// True when this is a genuine Vine archive import but the best available
-  /// timestamp lands after Vine shut down, so the original publish date is not
-  /// known to the client.
+  /// True when this is a genuine Vine archive import without a usable original
+  /// publish date.
   bool get hasUnknownOriginalDate {
     if (!isOriginalVine) return false;
 
-    final effectiveCreatedAt = int.tryParse(publishedAt ?? '') ?? createdAt;
-    return effectiveCreatedAt >= _vineShutdownAtUtcSeconds;
+    final taggedPublishedAt = int.tryParse(rawTags['published_at'] ?? '');
+    if (taggedPublishedAt != null && taggedPublishedAt > 0) return false;
+
+    return createdAt <= 0 || createdAt >= _vineShutdownAtUtcSeconds;
   }
 
   /// Check if this is original content (not a repost)

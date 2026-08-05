@@ -123,52 +123,7 @@ void main() {
         expect(stats.trendingScore, equals(0.75));
       });
 
-      test('parses top-level published_at when no tag is present', () {
-        final stats = VideoStats.fromJson(const {
-          'id': 'abc123',
-          'pubkey': 'pub456',
-          'created_at': 1777489813,
-          'published_at': 1473050841,
-          'kind': 34236,
-          'd_tag': 'video-1',
-          'title': 'My Video',
-          'thumbnail': 'https://example.com/thumb.jpg',
-          'video_url': 'https://example.com/video.mp4',
-          'reactions': 0,
-          'comments': 0,
-          'reposts': 0,
-          'engagement_score': 0,
-        });
-
-        expect(stats.publishedAt, equals(1473050841));
-      });
-
-      test('parses nested event published_at when no tag is present', () {
-        final stats = VideoStats.fromJson(const {
-          'event': {
-            'id': 'event-id',
-            'pubkey': 'event-pubkey',
-            'created_at': 1777489813,
-            'published_at': '1473050841',
-            'kind': 34236,
-            'tags': [
-              ['d', 'video-1'],
-              ['url', 'https://example.com/video.mp4'],
-              ['thumb', 'https://example.com/thumb.jpg'],
-            ],
-          },
-          'stats': {
-            'reactions': 0,
-            'comments': 0,
-            'reposts': 0,
-            'engagement_score': 0,
-          },
-        });
-
-        expect(stats.publishedAt, equals(1473050841));
-      });
-
-      test('published_at tag wins over REST field', () {
+      test('parses published_at from tags instead of REST fields', () {
         final stats = VideoStats.fromJson(const {
           'id': 'abc123',
           'pubkey': 'pub456',
