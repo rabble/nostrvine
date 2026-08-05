@@ -11,7 +11,9 @@ import 'package:flutter/material.dart';
 ///
 /// When a title is shown and only one of the leading/trailing slots is filled,
 /// the empty side reserves the filled one's width so the title stays centered.
-/// That slot widget is therefore built twice — keep [GlobalKey]s out of it.
+/// That slot widget is therefore built twice, so it must carry no
+/// [GlobalKey] and no `initState` side effects — analytics, fetches,
+/// subscriptions and timers would all fire a second time for the hidden copy.
 class VineBottomSheetHeader extends StatelessWidget {
   /// Creates a [VineBottomSheetHeader] with the given title and optional
   /// leading and trailing widgets.
