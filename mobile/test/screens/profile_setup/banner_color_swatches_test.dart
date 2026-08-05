@@ -182,7 +182,9 @@ void main() {
       final result = await openSheet(tester);
       expect(result, isEmpty, reason: 'sheet is still open');
 
-      await tester.tap(find.byTooltip(l10n.commonBack));
+      // The header reserves the back button's width on the empty trailing
+      // side by re-rendering it hidden, so the real button is the first match.
+      await tester.tap(find.byTooltip(l10n.commonBack).first);
       await tester.pumpAndSettle();
 
       expect(find.text(l10n.profileSetupBannerColorPickerTitle), findsNothing);

@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 ///
 /// Combines drag handle and title section as per Figma design.
 /// Uses Bricolage Grotesque bold font at 24px for title.
+///
+/// When a title is shown and only one of the leading/trailing slots is filled,
+/// the empty side reserves the filled one's width so the title stays centered.
+/// That slot widget is therefore built twice — keep [GlobalKey]s out of it.
 class VineBottomSheetHeader extends StatelessWidget {
   /// Creates a [VineBottomSheetHeader] with the given title and optional
   /// leading and trailing widgets.
@@ -56,10 +60,10 @@ class VineBottomSheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasTitle = title != null && title is! SizedBox;
-    final hasLeadingSlot = leadingAction != null || leading != null;
-    final hasTrailingSlot = trailingAction != null || trailing != null;
-    final hasHeaderRow = hasTitle || hasLeadingSlot || hasTrailingSlot;
-    const placeholder = SizedBox(width: 40, height: 40);
+    final leadingSlot = leadingAction ?? leading;
+    final trailingSlot = trailingAction ?? trailing;
+    final hasHeaderRow =
+        hasTitle || leadingSlot != null || trailingSlot != null;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -88,12 +92,10 @@ class VineBottomSheetHeader extends StatelessWidget {
                   mainAxisAlignment: .spaceBetween,
                   spacing: 12,
                   children: [
-                    if (leadingAction != null)
-                      leadingAction!
-                    else if (leading != null)
-                      leading!
-                    else if (hasTrailingSlot)
-                      placeholder,
+                    if (leadingSlot != null)
+                      leadingSlot
+                    else if (hasTitle && trailingSlot != null)
+                      _SlotMirror(trailingSlot),
 
                     if (hasTitle)
                       Flexible(
@@ -110,12 +112,10 @@ class VineBottomSheetHeader extends StatelessWidget {
                     else
                       const Spacer(),
 
-                    if (trailingAction != null)
-                      trailingAction!
-                    else if (trailing != null)
-                      trailing!
-                    else if (hasLeadingSlot)
-                      placeholder,
+                    if (trailingSlot != null)
+                      trailingSlot
+                    else if (hasTitle && leadingSlot != null)
+                      _SlotMirror(leadingSlot),
                   ],
                 ),
               ),
@@ -131,6 +131,31 @@ class VineBottomSheetHeader extends StatelessWidget {
             color: context.vineColors.surfaceContainer,
           ),
       ],
+    );
+  }
+}
+
+/// Reserves the width of the opposite header slot so the title stays centered
+/// when only one side is filled.
+///
+/// A fixed-size box cannot do this: slot widgets size themselves, so a sort
+/// chip is as wide as its current label and a [DivineIconButton] is 48px, not
+/// the 40px a constant placeholder used to reserve. Mirroring the filled slot
+/// always reserves exactly the right width. The copy is laid out but never
+/// painted, focusable, tappable, or announced to screen readers.
+class _SlotMirror extends StatelessWidget {
+  const _SlotMirror(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Visibility(
+      visible: false,
+      maintainState: true,
+      maintainAnimation: true,
+      maintainSize: true,
+      child: child,
     );
   }
 }
