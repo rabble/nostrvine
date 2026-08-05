@@ -263,6 +263,24 @@ void main() {
     expect(_countPTagsFor(capturedTags, testPubkey), equals(0));
   });
 
+  test("skips the a-tag when inspired by the publisher's own video", () async {
+    stubSignAndPublish();
+
+    const ownAddressableId = '34236:$testPubkey:own-d-tag';
+    final result = await publisher.publishDirectUpload(
+      createUpload(),
+      inspiredByAddressableId: ownAddressableId,
+    );
+
+    expect(result, isTrue);
+    expect(
+      capturedTags.any(
+        (tag) => tag.length >= 2 && tag[0] == 'a' && tag[1] == ownAddressableId,
+      ),
+      isFalse,
+    );
+  });
+
   test(
     'keeps the collaborator p-tag when the creator is also a collaborator',
     () async {
@@ -376,6 +394,16 @@ void main() {
       );
 
       expect(result, isTrue);
+      expect(
+        _containsTag(capturedTags, const [
+          'a',
+          '34236:',
+          'wss://relay.divine.video',
+          'mention',
+        ]),
+        isTrue,
+        reason: 'only malformed p-tags are suppressed; the a-tag is unchanged',
+      );
       expect(
         capturedTags.any(
           (tag) =>

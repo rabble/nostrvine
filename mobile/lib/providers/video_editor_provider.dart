@@ -545,7 +545,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// populates [selectedAudioEventId] and [selectedAudioRelay] for the
   /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
   /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
-  /// already set.
+  /// already set, falling back to a single imported clip source when every
+  /// provenance-bearing clip agrees.
   DivineVideoDraft getActiveDraft({bool isAutosave = false, String? draftId}) {
     // Read selected sound from local state. The recorder flow sets
     // [selectedSound]; the editor's "add music" flow instead appends reused
@@ -556,7 +557,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         state.selectedSound ??
         (isAutosave ? null : _attributionSoundFromEditorTracks());
 
-    // Auto-populate inspired-by from selected sound's source video
+    // Auto-populate inspired-by from selected sound's source video.
+    // Sound wins because the existing audio attribution flow already exposes
+    // that credit in metadata and publish tags.
     var inspiredByVideo = state.inspiredByVideo;
     if (inspiredByVideo == null &&
         selectedSound?.sourceVideoReference != null) {
@@ -565,6 +568,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         relayUrl: selectedSound.sourceVideoRelay,
       );
     }
+    inspiredByVideo ??= _attributionSourceFromClips();
 
     return DivineVideoDraft.create(
       id:
@@ -1504,6 +1508,31 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       if (track.attributionEventId != null) return track;
     }
     return null;
+  }
+
+  /// The imported clip source to credit when the timeline has exactly one
+  /// attributable source. Clips without provenance are local/original material
+  /// and do not conflict with the reused source; multiple reused sources do.
+  InspiredByInfo? _attributionSourceFromClips() {
+    InspiredByInfo? source;
+    for (final clip in _clips) {
+      final addressableId = clip.sourceAddressableId;
+      if (addressableId == null || addressableId.isEmpty) continue;
+
+      final candidate = InspiredByInfo(
+        addressableId: addressableId,
+        relayUrl: clip.sourceRelayHint,
+      );
+      if (source == null) {
+        source = candidate;
+        continue;
+      }
+      if (source.addressableId != candidate.addressableId ||
+          source.relayUrl != candidate.relayUrl) {
+        return null;
+      }
+    }
+    return source;
   }
 
   /// Build render parameters for video export.
